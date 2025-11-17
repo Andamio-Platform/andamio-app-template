@@ -76,8 +76,10 @@
 npm install
 
 # Link andamio-db-api package (for type safety)
-# This should already be set up via symlink to ../../andamio-db-api
-# Verify the link exists:
+# Create symlink to ../../andamio-db-api:
+ln -s ../../andamio-db-api node_modules/andamio-db-api
+
+# Verify the symlink was created successfully:
 ls -la node_modules/andamio-db-api
 
 # Copy environment variables
@@ -172,10 +174,12 @@ src/
 
 **IMPORTANT**: This template imports types directly from the `andamio-db-api` package to ensure type safety across the entire stack.
 
-**Setup**: The `andamio-db-api` package is linked via symlink:
+**Setup**: The `andamio-db-api` package is linked via symlink. Create it with:
 ```bash
-node_modules/andamio-db-api -> ../../andamio-db-api
+ln -s ../../andamio-db-api node_modules/andamio-db-api
 ```
+
+This creates the symlink: `node_modules/andamio-db-api -> ../../andamio-db-api`
 
 This monorepo-style linking provides:
 - Direct access to type definitions from the database API

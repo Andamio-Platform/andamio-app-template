@@ -50,11 +50,11 @@ export async function createLoginSession(): Promise<LoginSession> {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to create login session");
+    const error = (await response.json()) as { message?: string };
+    throw new Error(error.message ?? "Failed to create login session");
   }
 
-  return response.json();
+  return response.json() as Promise<LoginSession>;
 }
 
 /**
@@ -85,11 +85,11 @@ export async function validateSignature(params: {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to validate signature");
+    const error = (await response.json()) as { message?: string };
+    throw new Error(error.message ?? "Failed to validate signature");
   }
 
-  return response.json();
+  return response.json() as Promise<AuthResponse>;
 }
 
 /**
@@ -149,7 +149,10 @@ export function clearStoredJWT(): void {
  */
 export function isJWTExpired(jwt: string): boolean {
   try {
-    const payload = JSON.parse(atob(jwt.split(".")[1]!));
+    const payload = JSON.parse(atob(jwt.split(".")[1]!)) as { exp?: number };
+    if (!payload.exp) {
+      return true;
+    }
     const exp = payload.exp * 1000; // Convert to milliseconds
     return Date.now() >= exp;
   } catch {

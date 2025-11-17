@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type ListOwnedCoursesOutput } from "andamio-db-api"
+import { type RouterOutputs } from "andamio-db-api";
+
+type ListOwnedCoursesOutput = RouterOutputs["course"]["listOwned"];
 
 /**
  * Component to display courses owned by the authenticated user
@@ -56,27 +57,20 @@ export function OwnedCoursesList() {
   // Not authenticated state
   if (!isAuthenticated) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            Connect and authenticate to view your courses
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-8 text-center border rounded-md">
+        <p className="text-sm text-muted-foreground">
+          Connect and authenticate to view your courses
+        </p>
+      </div>
     );
   }
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-            </CardHeader>
-          </Card>
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
     );
@@ -96,53 +90,42 @@ export function OwnedCoursesList() {
   // Empty state
   if (courses.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground">
-            No courses found. Create your first course to get started.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
+        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">
+          No courses found. Create your first course to get started.
+        </p>
+      </div>
     );
   }
 
   // Courses list
   return (
-    <div className="space-y-4">
-      {courses.map((course) => (
-        <Card key={course.courseCode}>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{course.title}</CardTitle>
-                  {course.live && (
-                    <Badge variant="default">Live</Badge>
-                  )}
-                  {!course.live && (
-                    <Badge variant="secondary">Draft</Badge>
-                  )}
-                </div>
-                {course.description && (
-                  <CardDescription>{course.description}</CardDescription>
-                )}
-                <div className="flex gap-2 pt-1">
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {course.courseCode}
-                  </Badge>
-                  {course.category && (
-                    <Badge variant="outline">{course.category}</Badge>
-                  )}
-                  {course.accessTier && (
-                    <Badge variant="outline">{course.accessTier}</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-      ))}
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Course Code</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead>Description</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {courses.map((course) => (
+            <TableRow key={course.courseCode}>
+              <TableCell className="font-mono text-xs">
+                {course.courseCode}
+              </TableCell>
+              <TableCell className="font-medium">
+                {course.title}
+              </TableCell>
+              <TableCell className="max-w-md truncate">
+                {course.description}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

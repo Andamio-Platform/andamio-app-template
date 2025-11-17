@@ -33,8 +33,10 @@ export default function DashboardPage() {
   let jwtExpiration: string | null = null;
   if (jwt) {
     try {
-      const payload = JSON.parse(atob(jwt.split(".")[1]!));
-      jwtExpiration = new Date(payload.exp * 1000).toLocaleString();
+      const payload = JSON.parse(atob(jwt.split(".")[1]!)) as { exp?: number };
+      if (payload.exp) {
+        jwtExpiration = new Date(payload.exp * 1000).toLocaleString();
+      }
     } catch {
       jwtExpiration = "Invalid";
     }

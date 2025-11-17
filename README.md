@@ -19,6 +19,14 @@ A clean, minimal template for building Cardano dApps with Andamio API integratio
 - **Course Details** - Title, description, status, category, access tier
 - **Live/Draft Status** - Visual badges for course status
 
+### Rich Text Editor
+- **Tiptap Integration** - Full-featured rich text editor
+- **Multiple Extension Kits** - Base, Basic, ReadOnly, and Full configurations
+- **shadcn/ui Styling** - Toolbar and bubble menu built with shadcn components
+- **Markdown Support** - Paste and export markdown
+- **Code Highlighting** - Syntax highlighting with lowlight
+- **Utilities** - Word count, character count, plain text extraction
+
 ### Wallet Authentication
 - **Cardano Wallet Connection** via Mesh SDK
 - **Signature-based Authentication** with Andamio Database API
@@ -224,6 +232,7 @@ The app uses a full-screen layout with sidebar navigation:
 ### Navigation
 - **Dashboard** (`/dashboard`) - User wallet and token information
 - **Courses** (`/courses`) - Owned courses list
+- **Editor** (`/editor`) - Rich text editor demo
 
 ### Route Groups
 The app uses Next.js route groups `(app)` to apply the sidebar layout only to authenticated pages:
@@ -259,6 +268,256 @@ Course management interface.
 - Lists all owned courses
 - Shows course details (title, description, status)
 - Displays badges (Live/Draft, category, access tier)
+
+### Editor (`/editor`)
+Rich text editor demo with Tiptap.
+
+**Features**:
+- **Full-featured Editor** - Rich text editing with toolbar and bubble menu
+- **Live Preview** - See rendered output in real-time
+- **JSON Output** - View ProseMirror JSON structure
+- **Word/Character Count** - Track document statistics
+- **Extension Kits** - Multiple editor configurations for different use cases
+
+**Available Extension Kits**:
+- `BaseExtensionKit` - Core text editing (headings, paragraphs, formatting)
+- `BasicEditorKit` - Text editing with lists and links
+- `ReadOnlyExtensionKit` - For displaying content without editing
+- `FullEditorKit` - All features including images and interactive menus
+
+## Tiptap Editor
+
+This template includes a complete Tiptap editor implementation built with shadcn/ui components.
+
+### Editor Components
+
+#### `ContentEditor`
+Main editable editor component.
+
+**Usage**:
+```typescript
+import { useAndamioEditor, ContentEditor } from "~/components/editor";
+
+function MyEditor() {
+  const editor = useAndamioEditor({
+    content: { type: "doc", content: [] },
+    onUpdate: ({ editor }) => {
+      console.log(editor.getJSON());
+    },
+  });
+
+  return <ContentEditor editor={editor} />;
+}
+```
+
+**Props**:
+- `editor` - Tiptap editor instance
+- `className` - Additional CSS classes
+- `height` - Editor height (default: "auto")
+- `children` - Additional content to render below editor
+
+#### `RenderEditor`
+Read-only display component for Tiptap content.
+
+**Usage**:
+```typescript
+import { RenderEditor } from "~/components/editor";
+
+function DisplayContent({ content }) {
+  return <RenderEditor content={content} />;
+}
+```
+
+**Props**:
+- `content` - ProseMirror JSON or HTML to display
+- `className` - Additional CSS classes
+- `size` - "sm" | "default" | "lg" (typography size)
+
+**Variants**:
+- `RenderEditorSm` - Small typography variant
+- `RenderEditorLg` - Large typography variant
+
+#### `AndamioFixedToolbar`
+Fixed toolbar with formatting buttons.
+
+**Usage**:
+```typescript
+import { AndamioFixedToolbar } from "~/components/editor";
+
+<AndamioFixedToolbar editor={editor} />
+```
+
+**Features**:
+- Undo/Redo
+- Headings (H1-H3)
+- Text formatting (Bold, Italic, Underline, Strike, Code)
+- Lists (Bullet, Ordered)
+- Blockquote
+
+#### `AndamioBubbleMenus`
+Floating menu that appears on text selection.
+
+**Usage**:
+```typescript
+import { AndamioBubbleMenus } from "~/components/editor";
+
+<AndamioBubbleMenus editor={editor} />
+```
+
+**Features**:
+- Text formatting (Bold, Italic, Underline, Strike, Code)
+- Link creation and editing
+- Auto-positioning on text selection
+
+### Editor Hooks
+
+#### `useAndamioEditor`
+Create a Tiptap editor instance with sensible defaults.
+
+**Usage**:
+```typescript
+import { useAndamioEditor } from "~/components/editor";
+
+const editor = useAndamioEditor({
+  content: myContent,
+  onUpdate: ({ editor }) => {
+    // Save content
+    saveContent(editor.getJSON());
+  },
+});
+```
+
+**Options** (extends Tiptap's `UseEditorOptions`):
+- `extensions` - Custom extension array (default: `FullEditorKit()`)
+- `content` - Initial content (JSON or HTML)
+- `editable` - Is editor editable (default: true)
+- `onUpdate` - Called when content changes
+- `onCreate` - Called when editor is created
+- `editorProps` - Additional Tiptap editor props
+
+### Extension Kits
+
+Pre-configured extension sets for different use cases.
+
+#### `BaseExtensionKit()`
+Core extensions for basic text editing.
+
+**Includes**:
+- StarterKit (without lists)
+- Markdown support
+- Text formatting (Underline, Color, TextStyle, TextAlign)
+
+#### `BasicEditorKit()`
+Text editing with lists and links.
+
+**Includes**:
+- All Base extensions
+- Links (with autolink)
+- Bullet and ordered lists
+
+#### `ReadOnlyExtensionKit()`
+For displaying content without editing.
+
+**Includes**:
+- All Basic extensions
+- Images
+- Code blocks with syntax highlighting
+- Links open on click
+
+#### `FullEditorKit()`
+All features for full content creation.
+
+**Includes**:
+- All Basic extensions
+- Bubble menu support
+- Images (inline and base64)
+- Code blocks with syntax highlighting
+
+**Usage**:
+```typescript
+import { useEditor } from "@tiptap/react";
+import { FullEditorKit } from "~/components/editor";
+
+const editor = useEditor({
+  extensions: FullEditorKit(),
+  content: myContent,
+});
+```
+
+### Editor Utilities
+
+#### `extractPlainText(editor)`
+Get plain text from editor.
+
+```typescript
+import { extractPlainText } from "~/components/editor";
+
+const text = extractPlainText(editor);
+```
+
+#### `proseMirrorToHtml(editor)`
+Convert editor content to HTML.
+
+```typescript
+import { proseMirrorToHtml } from "~/components/editor";
+
+const html = proseMirrorToHtml(editor);
+```
+
+#### `getWordCount(editor)`
+Get word count from editor.
+
+```typescript
+import { getWordCount } from "~/components/editor";
+
+const words = getWordCount(editor);
+```
+
+#### `getCharacterCount(editor)`
+Get character count from editor.
+
+```typescript
+import { getCharacterCount } from "~/components/editor";
+
+const chars = getCharacterCount(editor);
+```
+
+#### `isEditorEmpty(editor)`
+Check if editor is empty.
+
+```typescript
+import { isEditorEmpty } from "~/components/editor";
+
+const empty = isEditorEmpty(editor);
+```
+
+### Editor Folder Structure
+
+```
+src/components/editor/
+├── components/
+│   ├── ContentEditor/
+│   │   └── index.tsx                   # Main editable editor
+│   ├── RenderEditor/
+│   │   └── index.tsx                   # Read-only display
+│   └── menus/
+│       ├── AndamioBubbleMenus/
+│       │   └── index.tsx               # Floating selection menu
+│       └── AndamioFixedToolbar/
+│           └── index.tsx               # Fixed toolbar
+├── extension-kits/
+│   ├── base.ts                         # Base extensions
+│   ├── basic.ts                        # Basic editor kit
+│   ├── read-only.ts                    # Read-only kit
+│   ├── full.ts                         # Full editor kit
+│   └── index.ts                        # Kit exports
+├── hooks/
+│   ├── use-andamio-editor.ts           # Main editor hook
+│   └── index.ts                        # Hook exports
+├── utils/
+│   └── index.ts                        # Editor utilities
+└── index.ts                            # Main exports
+```
 
 ## Components
 

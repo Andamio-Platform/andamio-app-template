@@ -7,7 +7,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Badge } from "~/components/ui/badge";
-import { LayoutDashboard, BookOpen, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, LogOut, FileEdit } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 const navigation = [
@@ -20,6 +20,11 @@ const navigation = [
     name: "Courses",
     href: "/courses",
     icon: BookOpen,
+  },
+  {
+    name: "Editor",
+    href: "/editor",
+    icon: FileEdit,
   },
 ];
 

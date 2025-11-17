@@ -2,11 +2,16 @@ import Link from "@tiptap/extension-link";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
-import Image from "@tiptap/extension-image";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
 import type { Extensions } from "@tiptap/core";
-import { BaseExtensionKit } from "./base";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { Markdown } from "tiptap-markdown";
+import { ImageBlock } from "../extensions/ImageBlock";
 
 /**
  * Read-Only Extension Kit
@@ -17,7 +22,31 @@ export function ReadOnlyExtensionKit(): Extensions {
   const lowlight = createLowlight(common);
 
   return [
-    ...BaseExtensionKit(),
+    StarterKit.configure({
+      // Disable extensions we'll configure separately
+      bulletList: false,
+      orderedList: false,
+      listItem: false,
+      codeBlock: false,
+      link: false, // Disable default link to use custom configuration
+      heading: {
+        levels: [1, 2, 3, 4, 5, 6],
+      },
+    }),
+    Markdown.configure({
+      html: true,
+      transformPastedText: true,
+      transformCopiedText: true,
+    }),
+    Underline,
+    TextStyle,
+    Color.configure({
+      types: ["textStyle"],
+    }),
+    TextAlign.configure({
+      types: ["heading", "paragraph"],
+      alignments: ["left", "center", "right", "justify"],
+    }),
     Link.configure({
       openOnClick: true, // Allow clicking links in read-only mode
       HTMLAttributes: {
@@ -41,11 +70,7 @@ export function ReadOnlyExtensionKit(): Extensions {
         class: "leading-relaxed",
       },
     }),
-    Image.configure({
-      HTMLAttributes: {
-        class: "rounded-lg max-w-full h-auto",
-      },
-    }),
+    ImageBlock,
     CodeBlockLowlight.configure({
       lowlight,
       HTMLAttributes: {

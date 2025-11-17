@@ -2,24 +2,133 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { env } from "~/env";
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertCircle, BookOpen, Settings } from "lucide-react";
 import { type RouterOutputs } from "andamio-db-api";
 
 type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"];
 type LessonListOutput = RouterOutputs["lesson"]["getModuleLessons"];
+type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
+
+// Combined SLT + Lesson type
+type CombinedSLTLesson = {
+  moduleIndex: number;
+  sltText: string;
+  sltId: string;
+  lesson?: {
+    title: string | null;
+    description: string | null;
+    imageUrl: string | null;
+    videoUrl: string | null;
+    live: boolean | null;
+  };
+};
+
+interface SLTLessonTableProps {
+  data: CombinedSLTLesson[];
+  courseNftPolicyId: string;
+  moduleCode: string;
+}
+
+function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableProps) {
+  if (data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
+        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">
+          No learning targets defined for this module.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-20">Index</TableHead>
+            <TableHead>Learning Target</TableHead>
+            <TableHead>Lesson Title</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Media</TableHead>
+            <TableHead className="w-24">Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((item) => (
+            <TableRow key={item.moduleIndex}>
+              <TableCell className="font-mono text-xs">
+                <Badge variant="outline">{item.moduleIndex}</Badge>
+              </TableCell>
+              <TableCell className="font-medium max-w-xs">
+                {item.sltText}
+              </TableCell>
+              <TableCell className="font-medium">
+                {item.lesson ? (
+                  <Link
+                    href={`/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
+                    className="hover:underline text-primary"
+                  >
+                    {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground italic">No lesson yet</span>
+                )}
+              </TableCell>
+              <TableCell className="max-w-md truncate">
+                {item.lesson?.description ?? (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {item.lesson ? (
+                  <div className="flex gap-1">
+                    {item.lesson.imageUrl && (
+                      <Badge variant="outline">Image</Badge>
+                    )}
+                    {item.lesson.videoUrl && (
+                      <Badge variant="outline">Video</Badge>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {item.lesson ? (
+                  item.lesson.live ? (
+                    <Badge variant="default">Live</Badge>
+                  ) : (
+                    <Badge variant="secondary">Draft</Badge>
+                  )
+                ) : (
+                  <Badge variant="outline">No Lesson</Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export default function ModuleLessonsPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
+  const { isAuthenticated } = useAndamioAuth();
 
   const [module, setModule] = useState<ModuleOutput | null>(null);
-  const [lessons, setLessons] = useState<LessonListOutput>([]);
+  const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +150,17 @@ export default function ModuleLessonsPage() {
         const moduleData = (await moduleResponse.json()) as ModuleOutput;
         setModule(moduleData);
 
+        // Fetch SLTs for the module
+        const sltsResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}`
+        );
+
+        if (!sltsResponse.ok) {
+          throw new Error(`Failed to fetch SLTs: ${sltsResponse.statusText}`);
+        }
+
+        const sltsData = (await sltsResponse.json()) as SLTListOutput;
+
         // Fetch module lessons
         const lessonsResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/modules/${moduleCode}/lessons`
@@ -51,7 +171,27 @@ export default function ModuleLessonsPage() {
         }
 
         const lessonsData = (await lessonsResponse.json()) as LessonListOutput;
-        setLessons(lessonsData ?? []);
+
+        // Combine SLTs and Lessons
+        const combined: CombinedSLTLesson[] = sltsData.map((slt) => {
+          const lesson = lessonsData.find((l) => l.sltIndex === slt.moduleIndex);
+          return {
+            moduleIndex: slt.moduleIndex,
+            sltText: slt.sltText,
+            sltId: slt.id,
+            lesson: lesson
+              ? {
+                  title: lesson.title,
+                  description: lesson.description,
+                  imageUrl: lesson.imageUrl,
+                  videoUrl: lesson.videoUrl,
+                  live: lesson.live,
+                }
+              : undefined,
+          };
+        });
+
+        setCombinedData(combined);
       } catch (err) {
         console.error("Error fetching module and lessons:", err);
         setError(err instanceof Error ? err.message : "Failed to load module");
@@ -100,96 +240,43 @@ export default function ModuleLessonsPage() {
     );
   }
 
-  // Empty lessons state
-  if (lessons.length === 0) {
-    return (
-      <div className="space-y-6">
+  // Module display (with or without SLTs/lessons)
+  // TypeScript type narrowing: module is guaranteed non-null here
+  const moduleData: ModuleOutput = module;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{module.title}</h1>
-          {module.description && (
-            <p className="text-muted-foreground">{module.description}</p>
+          <h1 className="text-3xl font-bold">{moduleData.title}</h1>
+          {moduleData.description && (
+            <p className="text-muted-foreground">{moduleData.description}</p>
           )}
           <div className="flex gap-2 pt-2">
             <Badge variant="outline" className="font-mono text-xs">
-              {module.moduleCode}
+              {moduleData.moduleCode}
             </Badge>
-            <Badge variant="outline">{module.status}</Badge>
+            <Badge variant="outline">{moduleData.status}</Badge>
           </div>
         </div>
-
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground">
-            No lessons found for this module.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Module and lessons display
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{module.title}</h1>
-        {module.description && (
-          <p className="text-muted-foreground">{module.description}</p>
+        {isAuthenticated && (
+          <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
+            <Button variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Manage SLTs
+            </Button>
+          </Link>
         )}
-        <div className="flex gap-2 pt-2">
-          <Badge variant="outline" className="font-mono text-xs">
-            {module.moduleCode}
-          </Badge>
-          <Badge variant="outline">{module.status}</Badge>
-        </div>
       </div>
 
+      {/* Student Learning Targets & Lessons Combined */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Lessons</h2>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SLT</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Media</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lessons.map((lesson) => (
-                <TableRow key={lesson.sltIndex}>
-                  <TableCell className="font-mono text-xs">
-                    {lesson.sltIndex}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {lesson.title ?? lesson.sltText}
-                  </TableCell>
-                  <TableCell className="max-w-md truncate">
-                    {lesson.description}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {lesson.imageUrl && (
-                        <Badge variant="outline">Image</Badge>
-                      )}
-                      {lesson.videoUrl && (
-                        <Badge variant="outline">Video</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {lesson.live ? (
-                      <Badge variant="default">Live</Badge>
-                    ) : (
-                      <Badge variant="secondary">Draft</Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <h2 className="text-2xl font-semibold">Student Learning Targets & Lessons</h2>
+        <SLTLessonTable
+          data={combinedData}
+          courseNftPolicyId={courseNftPolicyId}
+          moduleCode={moduleCode}
+        />
       </div>
     </div>
   );

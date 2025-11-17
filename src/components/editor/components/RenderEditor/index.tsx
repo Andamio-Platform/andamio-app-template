@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import { ReadOnlyExtensionKit } from "../../extension-kits";
 import { cn } from "../../utils";
 import type { JSONContent } from "@tiptap/core";
+import { useEffect, useState } from "react";
 
 interface RenderEditorProps {
   /**
@@ -30,6 +31,12 @@ export function RenderEditor({
   className,
   size = "default",
 }: RenderEditorProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const editor = useEditor({
     extensions: ReadOnlyExtensionKit(),
     content: content ?? undefined,
@@ -37,7 +44,7 @@ export function RenderEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose max-w-none focus:outline-none",
+          "prose prose-slate dark:prose-invert max-w-none focus:outline-none",
           size === "sm" && "prose-sm",
           size === "default" && "prose-base",
           size === "lg" && "prose-lg",
@@ -47,12 +54,57 @@ export function RenderEditor({
     immediatelyRender: false,
   });
 
-  if (!editor || !content) {
+  // Update editor content when content prop changes
+  useEffect(() => {
+    if (editor && content && isMounted) {
+      // Debug: Log what we're trying to set
+      console.log("🔍 RenderEditor: Setting content", {
+        content,
+        contentType: typeof content,
+        isObject: typeof content === "object",
+        keys: typeof content === "object" && content !== null ? Object.keys(content) : [],
+      });
+
+      // Use queueMicrotask to avoid hydration issues
+      queueMicrotask(() => {
+        try {
+          editor.commands.setContent(content);
+          console.log("✅ RenderEditor: Content set successfully");
+          console.log("📊 Editor state:", {
+            html: editor.getHTML(),
+            json: editor.getJSON(),
+            text: editor.getText(),
+          });
+        } catch (error) {
+          console.error("❌ RenderEditor: Error setting content", error);
+        }
+      });
+    }
+  }, [editor, content, isMounted]);
+
+  // Don't render during SSR
+  if (!isMounted) {
+    return (
+      <div className={cn("rounded-lg bg-background animate-pulse", className)}>
+        <div className="h-32 bg-muted rounded" />
+      </div>
+    );
+  }
+
+  if (!content) {
     return null;
   }
 
+  if (!editor) {
+    return (
+      <div className={cn("rounded-lg bg-background p-4 text-muted-foreground", className)}>
+        Loading editor...
+      </div>
+    );
+  }
+
   return (
-    <div className={cn("rounded-lg bg-background", className)}>
+    <div className={cn("rounded-lg bg-background p-4", className)}>
       <EditorContent editor={editor} />
     </div>
   );

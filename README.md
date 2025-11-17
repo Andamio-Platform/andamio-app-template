@@ -1,9 +1,9 @@
 # Andamio T3 App Template
 
-**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-database-api` for importing types. The symlink `node_modules/andamio-database-api -> ../../andamio-database-api` provides full type safety across the stack. See full docs below.
+**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-db-api` for importing types. The symlink `node_modules/andamio-db-api -> ../../andamio-db-api` provides full type safety across the stack. See full docs below.
 
 ## Goals
-1. Test `andamio-database-api` locally
+1. Test `andamio-db-api` locally
 2. Define the stack to be used in the Andamio Reference Implementation
 3. Refine core packages and extensions to the Andamio template stack, preparing to be published. For example, `@andamio/core` will include API types and authentication functions. An extension like `@andamio/tiptap` might include our wrapper for the Tiptap editor, for easy integration with APIs.
 4. After using this template locally, refining the stack, and publishing packages, we will publish a version of this: for example, "A clean, minimal template for building Cardano dApps with Andamio API integration. Built on the [T3 Stack](https://create.t3.gg/) with Mesh SDK for wallet connectivity and shadcn/ui components."
@@ -67,7 +67,7 @@
 - Node.js 20+
 - npm 10+
 - Andamio Database API running (default: `http://localhost:4000/api`)
-- **Linked `andamio-database-api` package** for type imports
+- **Linked `andamio-db-api` package** for type imports
 
 ### Installation
 
@@ -75,10 +75,10 @@
 # Install dependencies
 npm install
 
-# Link andamio-database-api package (for type safety)
-# This should already be set up via symlink to ../../andamio-database-api
+# Link andamio-db-api package (for type safety)
+# This should already be set up via symlink to ../../andamio-db-api
 # Verify the link exists:
-ls -la node_modules/andamio-database-api
+ls -la node_modules/andamio-db-api
 
 # Copy environment variables
 cp .env.example .env
@@ -87,7 +87,7 @@ cp .env.example .env
 # NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api"
 ```
 
-**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-database-api` for importing types. The symlink `node_modules/andamio-database-api -> ../../andamio-database-api` provides full type safety across the stack.
+**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-db-api` for importing types. The symlink `node_modules/andamio-db-api -> ../../andamio-db-api` provides full type safety across the stack.
 
 ### Development
 
@@ -168,13 +168,13 @@ src/
 
 ## API Integration
 
-### Type Safety with `andamio-database-api`
+### Type Safety with `andamio-db-api`
 
-**IMPORTANT**: This template imports types directly from the `andamio-database-api` package to ensure type safety across the entire stack.
+**IMPORTANT**: This template imports types directly from the `andamio-db-api` package to ensure type safety across the entire stack.
 
-**Setup**: The `andamio-database-api` package is linked via symlink:
+**Setup**: The `andamio-db-api` package is linked via symlink:
 ```bash
-node_modules/andamio-database-api -> ../../andamio-database-api
+node_modules/andamio-db-api -> ../../andamio-db-api
 ```
 
 This monorepo-style linking provides:
@@ -184,7 +184,7 @@ This monorepo-style linking provides:
 
 **Example**:
 ```typescript
-import { type ListOwnedCoursesOutput } from "andamio-database-api";
+import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
 ```
@@ -205,7 +205,7 @@ const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
 #### Courses
 - `GET /courses/owned` - List courses owned by authenticated user
   - **Auth Required**: Yes (JWT in Authorization header)
-  - **Response Type**: `ListOwnedCoursesOutput` (from `andamio-database-api`)
+  - **Response Type**: `ListOwnedCoursesOutput` (from `andamio-db-api`)
   - **Response**: Array of Course objects with fields:
     - `courseCode`, `courseNftPolicyId`, `title`, `description`
     - `category`, `imageUrl`, `videoUrl`, `live`, `accessTier`
@@ -696,11 +696,11 @@ const navigation = [
 
 ### Adding a New API Endpoint
 
-**IMPORTANT**: Always import types from `andamio-database-api` package instead of defining them locally. This ensures type safety and prevents type drift.
+**IMPORTANT**: Always import types from `andamio-db-api` package instead of defining them locally. This ensures type safety and prevents type drift.
 
-1. Import type from `andamio-database-api`:
+1. Import type from `andamio-db-api`:
 ```typescript
-import { type MyDataOutput } from "andamio-database-api";
+import { type MyDataOutput } from "andamio-db-api";
 ```
 
 2. Make authenticated request:
@@ -715,7 +715,7 @@ const data = (await response.json()) as MyDataOutput;
 
 **Example** (from `OwnedCoursesList`):
 ```typescript
-import { type ListOwnedCoursesOutput } from "andamio-database-api";
+import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
 

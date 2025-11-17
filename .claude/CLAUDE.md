@@ -12,7 +12,7 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 - shadcn/ui component library (full suite installed)
 - Full-screen app layout with sidebar navigation
 - Wallet-based authentication with Andamio Database API
-- Type-safe API integration via linked `andamio-database-api` package
+- Type-safe API integration via linked `andamio-db-api` package
 
 ## Architecture
 
@@ -20,22 +20,22 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 This template is part of the `andamio-platform` monorepo:
 ```
 andamio-platform/
-├── andamio-database-api/     # Linked for type imports
+├── andamio-db-api/     # Linked for type imports
 ├── andamio-t3-app-template/  # This project
 └── ...
 ```
 
-The `andamio-database-api` package is linked via symlink:
+The `andamio-db-api` package is linked via symlink:
 ```bash
-node_modules/andamio-database-api -> ../../andamio-database-api
+node_modules/andamio-db-api -> ../../andamio-db-api
 ```
 
 ### Type Safety
-**CRITICAL**: Always import types from `andamio-database-api` package:
+**CRITICAL**: Always import types from `andamio-db-api` package:
 
 ```typescript
 // ✅ Correct
-import { type ListOwnedCoursesOutput } from "andamio-database-api";
+import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 // ❌ Wrong - Never define API types locally
 interface Course { ... }
@@ -208,9 +208,9 @@ const navigation = [
 
 ### Adding New API Endpoint
 
-1. Import type from `andamio-database-api`:
+1. Import type from `andamio-db-api`:
 ```typescript
-import { type YourOutputType } from "andamio-database-api";
+import { type YourOutputType } from "andamio-db-api";
 ```
 
 2. Make authenticated request:
@@ -266,7 +266,7 @@ The README should always reflect the current state of the project.
 - **UI Components**: shadcn/ui (default configuration)
 - **Blockchain**: Cardano (via Mesh SDK)
 - **State Management**: React hooks + tRPC
-- **Type Safety**: Direct imports from `andamio-database-api`
+- **Type Safety**: Direct imports from `andamio-db-api`
 
 ## Environment Variables
 

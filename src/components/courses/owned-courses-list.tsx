@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type ListOwnedCoursesOutput } from "andamio-database-api"
+import { type ListOwnedCoursesOutput } from "andamio-db-api"
 
 /**
  * Component to display courses owned by the authenticated user

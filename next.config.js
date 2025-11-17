@@ -5,6 +5,59 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+    images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*", // Allow images from all domains
+      },
+      {
+        protocol: "http",
+        hostname: "*", // Allow images from all domains
+      },
+      {
+        protocol: "https",
+        hostname: "*.andamio.io",
+      },
+      {
+        protocol: "https",
+        hostname: "andamio.io",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "drive.google.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+      },
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "gimbalabs.com",
+      },
+      {
+        protocol: "https",
+        hostname: "meshjs.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "img.freepik.com",
+      },
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+      },
+    ],
+  },
+};
 
 export default config;

@@ -7,7 +7,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Badge } from "~/components/ui/badge";
-import { LayoutDashboard, BookOpen, LogOut, FileEdit, GraduationCap, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, GraduationCap, Sparkles } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 const navigation = [
@@ -26,16 +26,6 @@ const navigation = [
     href: "/studio",
     icon: Sparkles,
   },
-  {
-    name: "Courses",
-    href: "/courses",
-    icon: BookOpen,
-  },
-  {
-    name: "Editor",
-    href: "/editor",
-    icon: FileEdit,
-  },
 ];
 
 export function AppSidebar() {
@@ -46,7 +36,9 @@ export function AppSidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-background">
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-semibold">Andamio</h1>
+        <Link href="/">
+          <h1 className="text-xl font-semibold">Andamio</h1>
+        </Link>
       </div>
 
       {/* Navigation */}

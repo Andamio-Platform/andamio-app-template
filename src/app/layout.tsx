@@ -6,6 +6,7 @@ import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
+import { AndamioAuthProvider } from "~/contexts/andamio-auth-context";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable}`}>
       <body>
         <MeshProvider>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <AndamioAuthProvider>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </AndamioAuthProvider>
         </MeshProvider>
       </body>
     </html>

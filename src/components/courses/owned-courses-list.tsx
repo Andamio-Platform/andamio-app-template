@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertCircle, BookOpen, Settings } from "lucide-react";
 import { type RouterOutputs } from "andamio-db-api";
 
 type ListOwnedCoursesOutput = RouterOutputs["course"]["listOwned"];
@@ -108,6 +110,7 @@ export function OwnedCoursesList() {
             <TableHead>Course Code</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -121,6 +124,16 @@ export function OwnedCoursesList() {
               </TableCell>
               <TableCell className="max-w-md truncate">
                 {course.description}
+              </TableCell>
+              <TableCell className="text-right">
+                {course.courseNftPolicyId && (
+                  <Link href={`/studio/course/${course.courseNftPolicyId}`}>
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4 mr-1" />
+                      Manage
+                    </Button>
+                  </Link>
+                )}
               </TableCell>
             </TableRow>
           ))}

@@ -28,6 +28,10 @@ import type { JSONContent } from "@tiptap/core";
 
 type IntroductionOutput = RouterOutputs["introduction"]["getIntroduction"];
 
+interface ApiError {
+  message?: string;
+}
+
 export default function IntroductionEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -138,7 +142,7 @@ export default function IntroductionEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to update introduction");
         }
 
@@ -164,7 +168,7 @@ export default function IntroductionEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to create introduction");
         }
 
@@ -384,12 +388,12 @@ export default function IntroductionEditPage() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            The module introduction provides students with an overview of what they'll learn in
+            The module introduction provides students with an overview of what they&apos;ll learn in
             this module.
           </p>
           <p>
             Use it to set expectations, explain the module structure, and motivate students about
-            the content they're about to explore.
+            the content they&apos;re about to explore.
           </p>
           <p className="font-medium text-foreground">
             Note: Introductions cannot be deleted, only updated.

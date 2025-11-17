@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { AlertCircle, BookOpen, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen } from "lucide-react";
 import { type RouterOutputs } from "andamio-db-api";
 import Link from "next/link";
 
@@ -29,6 +29,10 @@ type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPol
 type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
 type SLTOutput = RouterOutputs["slt"]["getSLT"];
 type LessonListOutput = RouterOutputs["lesson"]["getModuleLessons"];
+
+interface ApiError {
+  message?: string;
+}
 
 // Combined SLT + Lesson type for management view
 type CombinedSLTLesson = {
@@ -44,7 +48,6 @@ type CombinedSLTLesson = {
 
 export default function SLTManagementPage() {
   const params = useParams();
-  const router = useRouter();
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
@@ -142,6 +145,7 @@ export default function SLTManagementPage() {
     };
 
     void fetchModuleAndSLTs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseNftPolicyId, moduleCode]);
 
   const handleCreateSLT = async () => {
@@ -169,7 +173,7 @@ export default function SLTManagementPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to create SLT");
       }
 
@@ -211,7 +215,7 @@ export default function SLTManagementPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to update SLT");
       }
 
@@ -247,7 +251,7 @@ export default function SLTManagementPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to delete SLT");
       }
 

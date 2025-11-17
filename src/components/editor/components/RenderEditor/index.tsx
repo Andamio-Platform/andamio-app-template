@@ -44,10 +44,9 @@ export function RenderEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-slate dark:prose-invert max-w-none focus:outline-none",
-          size === "sm" && "prose-sm",
-          size === "default" && "prose-base",
-          size === "lg" && "prose-lg",
+          "editor-content focus:outline-none",
+          size === "sm" && "text-sm",
+          size === "lg" && "text-lg",
         ),
       },
     },

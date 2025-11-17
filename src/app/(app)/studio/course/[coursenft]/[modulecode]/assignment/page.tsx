@@ -30,6 +30,10 @@ import type { JSONContent } from "@tiptap/core";
 type AssignmentOutput = RouterOutputs["assignment"]["getAssignmentByCourseModuleCodes"];
 type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
 
+interface ApiError {
+  message?: string;
+}
+
 export default function AssignmentEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -108,7 +112,7 @@ export default function AssignmentEditPage() {
           } else {
             throw new Error(`Failed to fetch assignment: ${assignmentResponse.statusText}`);
           }
-        } catch (err) {
+        } catch {
           console.warn("Assignment not found, will create new one");
           setAssignmentExists(false);
         }
@@ -163,7 +167,7 @@ export default function AssignmentEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to update assignment");
         }
 
@@ -192,7 +196,7 @@ export default function AssignmentEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to create assignment");
         }
 
@@ -232,7 +236,7 @@ export default function AssignmentEditPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to delete assignment");
       }
 

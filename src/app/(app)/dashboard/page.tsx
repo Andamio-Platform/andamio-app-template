@@ -3,7 +3,6 @@
 import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AuthDebugPanel } from "~/components/debug/auth-debug-panel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
@@ -141,7 +140,6 @@ export default function DashboardPage() {
       </Card>
 
       {/* Debug Panel - Remove in production */}
-      <AuthDebugPanel />
     </div>
   );
 }

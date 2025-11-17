@@ -37,6 +37,7 @@ export function ContentEditor({
       <EditorContent
         editor={editor}
         className={cn(
+          "editor-content",
           "rounded-lg border border-border bg-background p-4",
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
         )}

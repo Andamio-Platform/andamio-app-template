@@ -28,6 +28,10 @@ import type { JSONContent } from "@tiptap/core";
 
 type LessonOutput = RouterOutputs["lesson"]["getLessonByPolicyId"];
 
+interface ApiError {
+  message?: string;
+}
+
 export default function LessonEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -136,7 +140,7 @@ export default function LessonEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to update lesson");
         }
 
@@ -167,7 +171,7 @@ export default function LessonEditPage() {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to create lesson");
         }
 
@@ -211,7 +215,7 @@ export default function LessonEditPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to delete lesson");
       }
 

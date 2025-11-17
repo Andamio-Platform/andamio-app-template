@@ -20,6 +20,10 @@ import { type RouterOutputs } from "andamio-db-api";
 type CourseOutput = RouterOutputs["course"]["getCourseByPolicyId"];
 type ModuleListOutput = RouterOutputs["courseModule"]["getCourseModuleOverviewsByCourseNftPolicyId"];
 
+interface ApiError {
+  message?: string;
+}
+
 export default function CourseEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -119,7 +123,7 @@ export default function CourseEditPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to update course");
       }
 

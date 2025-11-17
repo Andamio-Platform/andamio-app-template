@@ -123,4 +123,109 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Typography Scale - App-wide */
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+    @apply mb-4;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+    @apply mb-3 mt-6;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+    @apply mb-2 mt-5;
+  }
+
+  h4 {
+    @apply text-lg font-semibold tracking-tight;
+    @apply mb-2 mt-4;
+  }
+
+  h5 {
+    @apply text-base font-semibold tracking-tight;
+    @apply mb-2 mt-3;
+  }
+
+  h6 {
+    @apply text-sm font-semibold tracking-tight;
+    @apply mb-2 mt-3;
+  }
+
+  p {
+    @apply text-base leading-7;
+    @apply mb-4;
+  }
+
+  /* Lists */
+  ul, ol {
+    @apply mb-4 ml-6;
+  }
+
+  ul {
+    @apply list-disc;
+  }
+
+  ol {
+    @apply list-decimal;
+  }
+
+  li {
+    @apply mb-1;
+  }
+
+  /* Blockquote */
+  blockquote {
+    @apply border-l-4 border-muted-foreground/20 pl-4 italic my-4;
+  }
+
+  /* Code */
+  code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  pre {
+    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+  pre code {
+    @apply bg-transparent p-0;
+  }
+}
+
+/* Editor Content Styles - For both editing and rendering */
+.editor-content {
+  @apply prose prose-slate max-w-none;
+  @apply prose-headings:font-semibold prose-headings:tracking-tight;
+  @apply prose-h1:text-3xl prose-h1:mb-4;
+  @apply prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-6;
+  @apply prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-5;
+  @apply prose-h4:text-lg prose-h4:mb-2 prose-h4:mt-4;
+  @apply prose-p:text-base prose-p:leading-7 prose-p:mb-4;
+  @apply prose-ul:mb-4 prose-ol:mb-4;
+  @apply prose-li:mb-1;
+  @apply prose-blockquote:border-l-4 prose-blockquote:border-muted-foreground/20;
+  @apply prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm;
+  @apply prose-pre:bg-muted prose-pre:border prose-pre:border-border;
+  @apply prose-a:text-primary prose-a:underline prose-a:decoration-primary/30;
+  @apply prose-a:hover:decoration-primary;
+  @apply prose-strong:font-semibold;
+  @apply prose-em:italic;
+}
+
+/* Tiptap Editor Specific Styles */
+.ProseMirror {
+  @apply min-h-[200px] outline-none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-muted-foreground pointer-events-none float-left h-0;
+}
+
+.ProseMirror:focus {
+  @apply outline-none;
 }

@@ -25,6 +25,10 @@ import { type RouterOutputs } from "andamio-db-api";
 
 type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"];
 
+interface ApiError {
+  message?: string;
+}
+
 const MODULE_STATUSES = [
   "DRAFT",
   "APPROVED",
@@ -122,7 +126,7 @@ export default function ModuleEditPage() {
       );
 
       if (!updateResponse.ok) {
-        const errorData = await updateResponse.json();
+        const errorData = (await updateResponse.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to update module");
       }
 
@@ -142,7 +146,7 @@ export default function ModuleEditPage() {
         );
 
         if (!statusResponse.ok) {
-          const errorData = await statusResponse.json();
+          const errorData = (await statusResponse.json()) as ApiError;
           throw new Error(errorData.message ?? "Failed to update status");
         }
       }

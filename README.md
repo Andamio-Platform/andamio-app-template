@@ -1,8 +1,16 @@
 # Andamio T3 App Template
 
-A clean, minimal template for building Cardano dApps with Andamio API integration. Built on the [T3 Stack](https://create.t3.gg/) with Mesh SDK for wallet connectivity and shadcn/ui components.
+**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-database-api` for importing types. The symlink `node_modules/andamio-database-api -> ../../andamio-database-api` provides full type safety across the stack. See full docs below.
 
-## Features
+## Goals
+1. Test `andamio-database-api` locally
+2. Define the stack to be used in the Andamio Reference Implementation
+3. Refine core packages and extensions to the Andamio template stack, preparing to be published. For example, `@andamio/core` will include API types and authentication functions. An extension like `@andamio/tiptap` might include our wrapper for the Tiptap editor, for easy integration with APIs.
+4. After using this template locally, refining the stack, and publishing packages, we will publish a version of this: for example, "A clean, minimal template for building Cardano dApps with Andamio API integration. Built on the [T3 Stack](https://create.t3.gg/) with Mesh SDK for wallet connectivity and shadcn/ui components."
+5. While we're working on Goals 1-3, always make sure documentation and dependencies are up to date. Create systems that make this easy.
+
+
+## Current Features
 
 ### Full-Screen App Layout
 - **Sidebar Navigation** - Clean sidebar with app navigation

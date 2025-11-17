@@ -151,10 +151,10 @@ export default function CourseDetailPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Module Code</TableHead>
+                <TableHead className="w-32">Module Code</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-32">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,7 +171,7 @@ export default function CourseDetailPage() {
                       {module.title}
                     </Link>
                   </TableCell>
-                  <TableCell className="max-w-md truncate">
+                  <TableCell>
                     {module.description}
                   </TableCell>
                   <TableCell>

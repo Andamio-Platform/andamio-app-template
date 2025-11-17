@@ -58,7 +58,7 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
             <TableHead>Learning Target</TableHead>
             <TableHead>Lesson Title</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Media</TableHead>
+            <TableHead className="w-32">Media</TableHead>
             <TableHead className="w-24">Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -68,7 +68,7 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
               <TableCell className="font-mono text-xs">
                 <Badge variant="outline">{item.moduleIndex}</Badge>
               </TableCell>
-              <TableCell className="font-medium max-w-xs">
+              <TableCell className="font-medium">
                 {item.sltText}
               </TableCell>
               <TableCell className="font-medium">
@@ -83,7 +83,7 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
                   <span className="text-muted-foreground italic">No lesson yet</span>
                 )}
               </TableCell>
-              <TableCell className="max-w-md truncate">
+              <TableCell>
                 {item.lesson?.description ?? (
                   <span className="text-muted-foreground">—</span>
                 )}

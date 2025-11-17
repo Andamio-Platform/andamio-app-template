@@ -391,20 +391,20 @@ export default function SLTManagementPage() {
                   <TableCell className="font-mono text-xs">
                     <Badge variant="outline">{item.moduleIndex}</Badge>
                   </TableCell>
-                  <TableCell className="font-medium max-w-xs">{item.sltText}</TableCell>
-                  <TableCell className="max-w-sm">
+                  <TableCell className="font-medium">{item.sltText}</TableCell>
+                  <TableCell>
                     {item.lesson ? (
                       <div>
                         <div className="font-medium">
                           <Link
-                            href={`/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
+                            href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
                             className="hover:underline text-primary"
                           >
                             {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
                           </Link>
                         </div>
                         {item.lesson.description && (
-                          <div className="text-sm text-muted-foreground truncate">
+                          <div className="text-sm text-muted-foreground">
                             {item.lesson.description}
                           </div>
                         )}

@@ -56,26 +56,12 @@ export function RenderEditor({
   // Update editor content when content prop changes
   useEffect(() => {
     if (editor && content && isMounted) {
-      // Debug: Log what we're trying to set
-      console.log("🔍 RenderEditor: Setting content", {
-        content,
-        contentType: typeof content,
-        isObject: typeof content === "object",
-        keys: typeof content === "object" && content !== null ? Object.keys(content) : [],
-      });
-
       // Use queueMicrotask to avoid hydration issues
       queueMicrotask(() => {
         try {
           editor.commands.setContent(content);
-          console.log("✅ RenderEditor: Content set successfully");
-          console.log("📊 Editor state:", {
-            html: editor.getHTML(),
-            json: editor.getJSON(),
-            text: editor.getText(),
-          });
         } catch (error) {
-          console.error("❌ RenderEditor: Error setting content", error);
+          console.error("RenderEditor: Error setting content", error);
         }
       });
     }

@@ -310,10 +310,10 @@ export default function CourseEditPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Module Code</TableHead>
+                    <TableHead className="w-32">Module Code</TableHead>
                     <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-40 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

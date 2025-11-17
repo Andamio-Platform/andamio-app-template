@@ -134,10 +134,10 @@ export default function CoursePage() {
                     {course.title}
                   </Link>
                 </TableCell>
-                <TableCell className="font-mono text-xs max-w-xs truncate">
+                <TableCell className="font-mono text-xs break-all">
                   {course.courseNftPolicyId}
                 </TableCell>
-                <TableCell className="max-w-md truncate">
+                <TableCell>
                   {course.description}
                 </TableCell>
               </TableRow>

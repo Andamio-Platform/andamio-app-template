@@ -24,7 +24,7 @@ import { Switch } from "~/components/ui/switch";
 import { Separator } from "~/components/ui/separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
 import {
-  type LessonOutput,
+  type LessonWithSLTOutput,
   type CreateLessonInput,
   type UpdateLessonInput,
   createLessonInputSchema,
@@ -55,7 +55,7 @@ export default function LessonEditPage() {
   const moduleIndex = parseInt(params.moduleindex as string);
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [lesson, setLesson] = useState<LessonOutput | null>(null);
+  const [lesson, setLesson] = useState<LessonWithSLTOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lessonExists, setLessonExists] = useState(false);
@@ -95,7 +95,7 @@ export default function LessonEditPage() {
         );
 
         if (response.ok) {
-          const data = (await response.json()) as LessonOutput;
+          const data = (await response.json()) as LessonWithSLTOutput;
           setLesson(data);
           setLessonExists(true);
           setTitle(data.title ?? "");
@@ -176,7 +176,7 @@ export default function LessonEditPage() {
         const refetchResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
         );
-        const data = (await refetchResponse.json()) as LessonOutput;
+        const data = (await refetchResponse.json()) as LessonWithSLTOutput;
         setLesson(data);
       } else {
         // Build input object for lesson creation
@@ -220,7 +220,7 @@ export default function LessonEditPage() {
         const refetchResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
         );
-        const data = (await refetchResponse.json()) as LessonOutput;
+        const data = (await refetchResponse.json()) as LessonWithSLTOutput;
         setLesson(data);
         setLessonExists(true);
       }

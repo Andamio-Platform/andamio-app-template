@@ -25,7 +25,7 @@ import { Switch } from "~/components/ui/switch";
 import { Separator } from "~/components/ui/separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
 import {
-  type AssignmentOutput,
+  type AssignmentWithSLTsOutput,
   type ListSLTsOutput,
   type CreateAssignmentInput,
   type UpdateAssignmentInput,
@@ -56,7 +56,7 @@ export default function AssignmentEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [assignment, setAssignment] = useState<AssignmentOutput | null>(null);
+  const [assignment, setAssignment] = useState<AssignmentWithSLTsOutput | null>(null);
   const [slts, setSlts] = useState<ListSLTsOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export default function AssignmentEditPage() {
           );
 
           if (assignmentResponse.ok) {
-            const data = (await assignmentResponse.json()) as AssignmentOutput;
+            const data = (await assignmentResponse.json()) as AssignmentWithSLTsOutput;
             setAssignment(data);
             setAssignmentExists(true);
             setTitle(data.title ?? "");
@@ -199,7 +199,7 @@ export default function AssignmentEditPage() {
           throw new Error(errorData.message ?? "Failed to update assignment");
         }
 
-        const data = (await response.json()) as AssignmentOutput;
+        const data = (await response.json()) as AssignmentWithSLTsOutput;
         setAssignment(data);
       } else {
         // Build input object for assignment creation
@@ -241,7 +241,7 @@ export default function AssignmentEditPage() {
           throw new Error(errorData.message ?? "Failed to create assignment");
         }
 
-        const data = (await response.json()) as AssignmentOutput;
+        const data = (await response.json()) as AssignmentWithSLTsOutput;
         setAssignment(data);
         setAssignmentExists(true);
       }

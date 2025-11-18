@@ -11,7 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
-import { type LessonOutput } from "andamio-db-api";
+import { type LessonWithSLTOutput } from "andamio-db-api";
 import { RenderEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 
@@ -50,7 +50,7 @@ export default function LessonDetailPage() {
   const moduleCode = params.modulecode as string;
   const moduleIndex = parseInt(params.moduleindex as string);
 
-  const [lesson, setLesson] = useState<LessonOutput | null>(null);
+  const [lesson, setLesson] = useState<LessonWithSLTOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ export default function LessonDetailPage() {
           throw new Error(`Failed to fetch lesson: ${response.statusText}`);
         }
 
-        const data = (await response.json()) as LessonOutput;
+        const data = (await response.json()) as LessonWithSLTOutput;
         setLesson(data);
       } catch (err) {
         console.error("Error fetching lesson:", err);

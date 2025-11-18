@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X } from "lucide-react";
+import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X, Search } from "lucide-react";
 import {
   type CourseModuleOutput,
   type SLTOutput,
@@ -57,6 +57,7 @@ import { CSS } from "@dnd-kit/utilities";
  * Studio page for managing Student Learning Targets (SLTs)
  *
  * API Endpoints:
+ * - GET /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (public) - Get single SLT
  * - POST /slts (protected) - Create new SLT
  * - PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update SLT
  * - DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete SLT
@@ -223,6 +224,11 @@ export default function SLTManagementPage() {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Quick jump dialog
+  const [isJumpDialogOpen, setIsJumpDialogOpen] = useState(false);
+  const [jumpToIndex, setJumpToIndex] = useState<string>("");
+  const [isJumping, setIsJumping] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -559,6 +565,38 @@ export default function SLTManagementPage() {
     setIsCreateDialogOpen(true);
   };
 
+  const handleQuickJump = async () => {
+    const indexNum = parseInt(jumpToIndex, 10);
+    if (isNaN(indexNum)) {
+      setActionError("Please enter a valid module index");
+      return;
+    }
+
+    setIsJumping(true);
+    setActionError(null);
+
+    try {
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${indexNum}`
+      );
+
+      if (!response.ok) {
+        throw new Error("SLT not found at this index");
+      }
+
+      const slt = (await response.json()) as SLTOutput;
+      setIsJumpDialogOpen(false);
+      setJumpToIndex("");
+      // Open edit dialog with the fetched SLT
+      openEditDialog(slt);
+    } catch (err) {
+      console.error("Error jumping to SLT:", err);
+      setActionError(err instanceof Error ? err.message : "Failed to find SLT");
+    } finally {
+      setIsJumping(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -635,6 +673,14 @@ export default function SLTManagementPage() {
             </>
           ) : (
             <>
+              <Button
+                variant="outline"
+                onClick={() => setIsJumpDialogOpen(true)}
+                disabled={combinedData.length === 0}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Jump to SLT
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsReorderMode(true)}
@@ -876,6 +922,64 @@ export default function SLTManagementPage() {
               disabled={actionLoading}
             >
               {actionLoading ? "Deleting..." : "Delete SLT"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Jump Dialog */}
+      <Dialog open={isJumpDialogOpen} onOpenChange={setIsJumpDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Jump to SLT</DialogTitle>
+            <DialogDescription>
+              Enter a module index to quickly find and edit a specific SLT
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="jump-index">Module Index</Label>
+              <Input
+                id="jump-index"
+                type="number"
+                value={jumpToIndex}
+                onChange={(e) => setJumpToIndex(e.target.value)}
+                placeholder="e.g., 101"
+                disabled={isJumping}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void handleQuickJump();
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Available indexes: {combinedData.map((item) => item.moduleIndex).join(", ")}
+              </p>
+            </div>
+
+            {actionError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{actionError}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsJumpDialogOpen(false);
+                setJumpToIndex("");
+                setActionError(null);
+              }}
+              disabled={isJumping}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleQuickJump} disabled={isJumping || !jumpToIndex}>
+              {isJumping ? "Finding..." : "Find SLT"}
             </Button>
           </DialogFooter>
         </DialogContent>

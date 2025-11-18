@@ -17,7 +17,9 @@ import { type ListPublishedCoursesOutput } from "andamio-db-api";
  *
  * API Endpoints:
  * - GET /courses/published (public) - List all published courses
- * - GET /assignment-commitments/learner/course/{courseNftPolicyId} (protected)
+ * - GET /courses/{courseNftPolicyId}/course-modules (public) - List course modules
+ * - GET /assignment-commitments/{courseNftPolicyId}/{moduleCode}/has-commitments (public) - Check for commitments
+ * - GET /assignment-commitments/learner/course/{courseNftPolicyId} (protected) - Get learner commitments
  *
  * This component will be enhanced to show actual enrollment status
  * once the indexer integration is complete
@@ -80,36 +82,69 @@ export function MyLearning() {
 
         const allCourses = (await coursesResponse.json()) as ListPublishedCoursesOutput;
 
-        // For each course, fetch learner's commitments
+        // For each course, check if there are commitments before fetching full list
         const coursesWithProgress: CourseWithProgress[] = [];
 
         for (const course of allCourses) {
           if (!course.courseNftPolicyId) continue;
 
           try {
-            const commitmentsResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/learner/course/${course.courseNftPolicyId}`
+            // First, check if this course has any commitments (optimization)
+            // This uses the public endpoint to avoid fetching full commitment list unnecessarily
+            const moduleResponse = await fetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseNftPolicyId}/course-modules`
             );
 
-            if (commitmentsResponse.ok) {
-              const commitments = (await commitmentsResponse.json()) as AssignmentCommitment[];
+            if (!moduleResponse.ok) continue;
 
-              // Only include courses where learner has commitments
-              if (commitments.length > 0) {
-                const completedCount = commitments.filter(
-                  (c) => c.privateStatus === "COMPLETE" || c.networkStatus === "ASSIGNMENT_ACCEPTED"
-                ).length;
+            const modules = (await moduleResponse.json()) as Array<{ moduleCode: string }>;
 
-                coursesWithProgress.push({
-                  courseCode: course.courseCode,
-                  courseNftPolicyId: course.courseNftPolicyId,
-                  title: course.title,
-                  description: course.description,
-                  imageUrl: course.imageUrl,
-                  videoUrl: course.videoUrl,
-                  commitmentCount: commitments.length,
-                  completedCount,
-                });
+            // Check each module for commitments
+            let hasAnyCommitments = false;
+            for (const module of modules) {
+              const hasCommitmentsResponse = await fetch(
+                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${course.courseNftPolicyId}/${module.moduleCode}/has-commitments`
+              );
+
+              if (hasCommitmentsResponse.ok) {
+                const hasCommitmentsData = (await hasCommitmentsResponse.json()) as {
+                  hasCommitments: boolean;
+                  count: number;
+                };
+
+                if (hasCommitmentsData.hasCommitments) {
+                  hasAnyCommitments = true;
+                  break; // Found commitments, no need to check other modules
+                }
+              }
+            }
+
+            // Only fetch full commitment list if we know there are commitments
+            if (hasAnyCommitments) {
+              const commitmentsResponse = await authenticatedFetch(
+                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/learner/course/${course.courseNftPolicyId}`
+              );
+
+              if (commitmentsResponse.ok) {
+                const commitments = (await commitmentsResponse.json()) as AssignmentCommitment[];
+
+                // Only include courses where learner has commitments
+                if (commitments.length > 0) {
+                  const completedCount = commitments.filter(
+                    (c) => c.privateStatus === "COMPLETE" || c.networkStatus === "ASSIGNMENT_ACCEPTED"
+                  ).length;
+
+                  coursesWithProgress.push({
+                    courseCode: course.courseCode,
+                    courseNftPolicyId: course.courseNftPolicyId,
+                    title: course.title,
+                    description: course.description,
+                    imageUrl: course.imageUrl,
+                    videoUrl: course.videoUrl,
+                    commitmentCount: commitments.length,
+                    completedCount,
+                  });
+                }
               }
             }
           } catch (err) {

@@ -9,23 +9,33 @@ import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type CourseOutput, type ListCourseModulesOutput } from "andamio-db-api";
+import { type CourseOutput } from "andamio-db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 
 /**
- * Public page displaying course details and module list
+ * Public page displaying course details and module list with SLT counts
  *
  * API Endpoints:
  * - GET /courses/{courseNftPolicyId} (public)
- * - GET /courses/{courseNftPolicyId}/course-modules (public)
+ * - GET /course-modules/with-slts/{courseNftPolicyId} (public) - Optimized query for modules with SLTs
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  */
+
+interface ModuleWithSLTs {
+  title: string;
+  moduleCode: string;
+  slts: Array<{
+    moduleIndex: number;
+    sltText: string;
+  }>;
+}
+
 export default function CourseDetailPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [modules, setModules] = useState<ListCourseModulesOutput>([]);
+  const [modules, setModules] = useState<ModuleWithSLTs[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,9 +64,9 @@ export default function CourseDetailPage() {
         const courseData = (await courseResponse.json()) as CourseOutput;
         setCourse(courseData);
 
-        // Fetch course modules
+        // Fetch course modules with SLTs (optimized single query)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/with-slts/${courseNftPolicyId}`
         );
 
         if (!modulesResponse.ok) {
@@ -65,12 +75,12 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/with-slts/${courseNftPolicyId}`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }
 
-        const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
+        const modulesData = (await modulesResponse.json()) as ModuleWithSLTs[];
         setModules(modulesData ?? []);
       } catch (err) {
         console.error("Error fetching course and modules:", err);
@@ -155,15 +165,14 @@ export default function CourseDetailPage() {
       <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Modules</h2>
+        <h2 className="text-2xl font-semibold">Course Modules</h2>
         <div className="border rounded-md">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-32">Module Code</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-32">Status</TableHead>
+                <TableHead className="w-32 text-center">Learning Objectives</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -180,11 +189,10 @@ export default function CourseDetailPage() {
                       {module.title}
                     </Link>
                   </TableCell>
-                  <TableCell>
-                    {module.description}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{module.status}</Badge>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary">
+                      {module.slts.length} {module.slts.length === 1 ? "SLT" : "SLTs"}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}

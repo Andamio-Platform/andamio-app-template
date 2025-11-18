@@ -14,7 +14,7 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, ArrowLeft, Save, Settings, Trash2, Users } from "lucide-react";
+import { AlertCircle, ArrowLeft, FileText, Link2, Save, Settings, Trash2, Users } from "lucide-react";
 import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
@@ -27,7 +27,10 @@ import {
 /**
  * Studio page for editing course details
  *
- * API Endpoint: PATCH /courses/{courseNftPolicyId} (protected)
+ * API Endpoints:
+ * - PATCH /courses/{courseNftPolicyId} (protected)
+ * - GET /course-modules/assignment-summary/{courseNftPolicyId} (public)
+ * - GET /courses/{courseCode}/unpublished-projects (protected)
  * Input Validation: Uses updateCourseInputSchema for runtime validation
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  *
@@ -52,6 +55,28 @@ export default function CourseEditPage() {
   const [modules, setModules] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Assignment summary state
+  interface ModuleWithAssignments {
+    moduleCode: string;
+    title: string;
+    assignments: Array<{
+      assignmentCode: string;
+      title: string;
+      live: boolean | null;
+    }>;
+  }
+  const [assignmentSummary, setAssignmentSummary] = useState<ModuleWithAssignments[]>([]);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
+
+  // Course prerequisites state
+  interface UnpublishedProject {
+    id: string;
+    title: string;
+    description: string | null;
+  }
+  const [unpublishedProjects, setUnpublishedProjects] = useState<UnpublishedProject[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -98,6 +123,40 @@ export default function CourseEditPage() {
 
         const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
         setModules(modulesData ?? []);
+
+        // Fetch assignment summary
+        setIsLoadingAssignments(true);
+        try {
+          const assignmentSummaryResponse = await fetch(
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/assignment-summary/${courseNftPolicyId}`
+          );
+          if (assignmentSummaryResponse.ok) {
+            const summaryData = (await assignmentSummaryResponse.json()) as ModuleWithAssignments[];
+            setAssignmentSummary(summaryData ?? []);
+          }
+        } catch (err) {
+          console.error("Error fetching assignment summary:", err);
+        } finally {
+          setIsLoadingAssignments(false);
+        }
+
+        // Fetch unpublished projects with this course as prerequisite
+        if (courseData.courseCode) {
+          setIsLoadingProjects(true);
+          try {
+            const projectsResponse = await authenticatedFetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseData.courseCode}/unpublished-projects`
+            );
+            if (projectsResponse.ok) {
+              const projectsData = (await projectsResponse.json()) as UnpublishedProject[];
+              setUnpublishedProjects(projectsData ?? []);
+            }
+          } catch (err) {
+            console.error("Error fetching unpublished projects:", err);
+          } finally {
+            setIsLoadingProjects(false);
+          }
+        }
       } catch (err) {
         console.error("Error fetching course and modules:", err);
         setError(err instanceof Error ? err.message : "Failed to load course");
@@ -461,6 +520,107 @@ export default function CourseEditPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Assignment Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Assignment Overview</CardTitle>
+          <CardDescription>
+            All assignments across modules with their publication status
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingAssignments ? (
+            <Skeleton className="h-32 w-full" />
+          ) : assignmentSummary.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No assignments created yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {assignmentSummary.map((module) => (
+                <div key={module.moduleCode} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold">{module.title}</h4>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {module.moduleCode}
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {module.assignments.length} {module.assignments.length === 1 ? "assignment" : "assignments"}
+                    </Badge>
+                  </div>
+                  {module.assignments.length > 0 ? (
+                    <div className="space-y-2">
+                      {module.assignments.map((assignment) => (
+                        <div
+                          key={assignment.assignmentCode}
+                          className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{assignment.title}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {assignment.assignmentCode}
+                            </p>
+                          </div>
+                          <Badge variant={assignment.live ? "default" : "secondary"}>
+                            {assignment.live ? "Live" : "Draft"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No assignments in this module</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Course Prerequisites / Dependencies */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Course Dependencies</CardTitle>
+          <CardDescription>
+            Unpublished projects that require this course as a prerequisite
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingProjects ? (
+            <Skeleton className="h-32 w-full" />
+          ) : unpublishedProjects.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No projects depend on this course yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {unpublishedProjects.map((project) => (
+                <div key={project.id} className="border rounded-lg p-4">
+                  <h4 className="font-semibold mb-1">{project.title}</h4>
+                  {project.description && (
+                    <p className="text-sm text-muted-foreground">{project.description}</p>
+                  )}
+                  <Badge variant="outline" className="mt-2">
+                    Unpublished Project
+                  </Badge>
+                </div>
+              ))}
+              <Alert>
+                <Link2 className="h-4 w-4" />
+                <AlertDescription>
+                  These projects are using your course as a prerequisite. Ensure your course
+                  content remains stable to avoid breaking their requirements.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </CardContent>

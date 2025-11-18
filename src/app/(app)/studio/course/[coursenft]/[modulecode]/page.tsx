@@ -20,8 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Edit2, Save, Trash2, Upload } from "lucide-react";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 import {
   type CourseModuleOutput,
   type UpdateCourseModuleInput,
@@ -36,6 +45,9 @@ import {
  * API Endpoints:
  * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode} (protected)
  * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status (protected)
+ * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/code (protected) - Rename module code
+ * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/pending-tx (protected) - Set pending transaction
+ * - POST /course-modules/{courseNftPolicyId}/{moduleCode}/publish (protected) - Publish all module content
  * Input Validation: Uses updateCourseModuleInputSchema and updateModuleStatusInputSchema
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  */
@@ -85,6 +97,21 @@ export default function ModuleEditPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Rename dialog state
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [newModuleCode, setNewModuleCode] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
+  // Pending transaction state
+  const [isPendingTxDialogOpen, setIsPendingTxDialogOpen] = useState(false);
+  const [pendingTxHash, setPendingTxHash] = useState("");
+  const [isSettingPendingTx, setIsSettingPendingTx] = useState(false);
+  const [pendingTxError, setPendingTxError] = useState<string | null>(null);
+
+  // Publish content state
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -249,6 +276,122 @@ export default function ModuleEditPage() {
     );
   };
 
+  const handleRenameModule = async () => {
+    if (!newModuleCode.trim()) {
+      setRenameError("Module code cannot be empty");
+      return;
+    }
+
+    if (newModuleCode === moduleCode) {
+      setRenameError("New module code must be different");
+      return;
+    }
+
+    setIsRenaming(true);
+    setRenameError(null);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/code`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseNftPolicyId,
+            moduleCode,
+            newModuleCode: newModuleCode.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to rename module");
+      }
+
+      // Redirect to the new module code URL
+      router.push(`/studio/course/${courseNftPolicyId}/${newModuleCode.trim()}`);
+    } catch (err) {
+      console.error("Error renaming module:", err);
+      setRenameError(err instanceof Error ? err.message : "Failed to rename module");
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const handleSetPendingTx = async () => {
+    if (!pendingTxHash.trim()) {
+      setPendingTxError("Transaction hash cannot be empty");
+      return;
+    }
+
+    setIsSettingPendingTx(true);
+    setPendingTxError(null);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/pending-tx`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseNftPolicyId,
+            moduleCode,
+            pendingTxHash: pendingTxHash.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to set pending transaction");
+      }
+
+      const updatedModule = (await response.json()) as CourseModuleOutput;
+      setModule(updatedModule);
+      setIsPendingTxDialogOpen(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error("Error setting pending transaction:", err);
+      setPendingTxError(err instanceof Error ? err.message : "Failed to set pending transaction");
+    } finally {
+      setIsSettingPendingTx(false);
+    }
+  };
+
+  const handlePublishAllContent = async () => {
+    setIsPublishing(true);
+    setSaveError(null);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/publish`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseNftPolicyId,
+            moduleCode,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to publish content");
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error("Error publishing content:", err);
+      setSaveError(err instanceof Error ? err.message : "Failed to publish content");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -352,12 +495,71 @@ export default function ModuleEditPage() {
             />
           </div>
 
-          {/* Module Code (Read-only) */}
+          {/* Module Code with Rename */}
           <div className="space-y-2">
             <Label htmlFor="moduleCode">Module Code</Label>
-            <Input id="moduleCode" value={module.moduleCode} disabled />
+            <div className="flex gap-2">
+              <Input id="moduleCode" value={module.moduleCode} disabled className="flex-1" />
+              <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewModuleCode(module.moduleCode);
+                      setRenameError(null);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Rename
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Rename Module Code</DialogTitle>
+                    <DialogDescription>
+                      Enter a new code for this module. This will update the module identifier.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-module-code">New Module Code</Label>
+                      <Input
+                        id="new-module-code"
+                        value={newModuleCode}
+                        onChange={(e) => setNewModuleCode(e.target.value)}
+                        placeholder="e.g., module-102"
+                        maxLength={50}
+                        disabled={isRenaming}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Current: <code className="font-mono">{module.moduleCode}</code>
+                      </p>
+                    </div>
+                    {renameError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{renameError}</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsRenameDialogOpen(false)}
+                      disabled={isRenaming}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleRenameModule} disabled={isRenaming}>
+                      {isRenaming ? "Renaming..." : "Rename Module"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Module code cannot be changed from this page
+              Use the rename button to change the module code identifier
             </p>
           </div>
 
@@ -378,6 +580,101 @@ export default function ModuleEditPage() {
             </Select>
             <p className="text-sm text-muted-foreground">
               Current: {module.status} • Available transitions shown
+            </p>
+          </div>
+
+          {/* Pending Transaction */}
+          <div className="space-y-2">
+            <Label>Pending Transaction</Label>
+            {module.pendingTxHash ? (
+              <div className="flex gap-2">
+                <Input
+                  value={module.pendingTxHash}
+                  disabled
+                  className="flex-1 font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <a
+                    href={`https://cardanoscan.io/transaction/${module.pendingTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View on Explorer
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value="No pending transaction"
+                  disabled
+                  className="flex-1"
+                />
+                {module.status === "DRAFT" && (
+                  <Dialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPendingTxHash("");
+                          setPendingTxError(null);
+                        }}
+                      >
+                        Set Transaction
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Set Pending Transaction</DialogTitle>
+                        <DialogDescription>
+                          Enter the transaction hash for the on-chain operation related to this module.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="pending-tx-hash">Transaction Hash</Label>
+                          <Input
+                            id="pending-tx-hash"
+                            value={pendingTxHash}
+                            onChange={(e) => setPendingTxHash(e.target.value)}
+                            placeholder="Enter Cardano transaction hash"
+                            className="font-mono text-xs"
+                            disabled={isSettingPendingTx}
+                          />
+                        </div>
+                        {pendingTxError && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{pendingTxError}</AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsPendingTxDialogOpen(false)}
+                          disabled={isSettingPendingTx}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSetPendingTx} disabled={isSettingPendingTx}>
+                          {isSettingPendingTx ? "Setting..." : "Set Transaction"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {module.status === "DRAFT"
+                ? "Track on-chain transactions for this module (DRAFT only)"
+                : "Pending transactions can only be set for DRAFT modules"}
             </p>
           </div>
 
@@ -443,6 +740,30 @@ export default function ModuleEditPage() {
               Edit Module Assignment
             </Button>
           </Link>
+
+          {/* Publish Content */}
+          <div className="border-t pt-4 mt-4">
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  disabled={isPublishing}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isPublishing ? "Publishing..." : "Publish All Content"}
+                </Button>
+              }
+              title="Publish All Module Content"
+              description={`This will make all content (lessons, introduction, and assignments) for "${module.title}" live and visible to learners. Are you sure you want to continue?`}
+              confirmText="Publish Content"
+              onConfirm={handlePublishAllContent}
+              isLoading={isPublishing}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Sets all lessons, introduction, and assignments to live status
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

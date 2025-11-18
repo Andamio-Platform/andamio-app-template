@@ -9,12 +9,15 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen, Settings } from "lucide-react";
+import { Badge } from "~/components/ui/badge";
 import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 /**
  * Component to display courses owned by the authenticated user
  *
- * API Endpoint: GET /courses/owned (protected)
+ * API Endpoints:
+ * - GET /courses/owned (protected)
+ * - POST /course-modules/list (public) - Batch query for modules
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  *
  * @example
@@ -33,6 +36,9 @@ export function OwnedCoursesList() {
   const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Module counts per course
+  const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -56,6 +62,38 @@ export function OwnedCoursesList() {
 
         const data = (await response.json()) as ListOwnedCoursesOutput;
         setCourses(data ?? []);
+
+        // Fetch module counts for all courses using batch endpoint
+        if (data && data.length > 0) {
+          try {
+            const courseCodes = data.map((c) => c.courseCode);
+            const modulesResponse = await fetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ courseCodes }),
+              }
+            );
+
+            if (modulesResponse.ok) {
+              const modulesData = (await modulesResponse.json()) as Record<
+                string,
+                Array<{ moduleCode: string; title: string }>
+              >;
+
+              // Convert to counts
+              const counts: Record<string, number> = {};
+              for (const [courseCode, modules] of Object.entries(modulesData)) {
+                counts[courseCode] = modules.length;
+              }
+              setModuleCounts(counts);
+            }
+          } catch (err) {
+            console.error("Error fetching module counts:", err);
+            // Don't set error state, module counts are optional enhancement
+          }
+        }
       } catch (err) {
         console.error("Error fetching owned courses:", err);
         setError(err instanceof Error ? err.message : "Failed to load courses");
@@ -121,6 +159,7 @@ export function OwnedCoursesList() {
             <TableHead>Course Code</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead className="text-center">Modules</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -135,6 +174,15 @@ export function OwnedCoursesList() {
               </TableCell>
               <TableCell className="max-w-md truncate">
                 {course.description}
+              </TableCell>
+              <TableCell className="text-center">
+                {moduleCounts[course.courseCode] !== undefined ? (
+                  <Badge variant="secondary">
+                    {moduleCounts[course.courseCode]}
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">-</span>
+                )}
               </TableCell>
               <TableCell className="text-right">
                 {course.courseNftPolicyId && (

@@ -195,7 +195,7 @@ export default function LearnerAssignmentPage() {
                   href={assignment.imageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   {assignment.imageUrl}
                 </a>
@@ -208,7 +208,7 @@ export default function LearnerAssignmentPage() {
                   href={assignment.videoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   {assignment.videoUrl}
                 </a>

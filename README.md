@@ -638,13 +638,87 @@ npm run format:write # Fix Prettier formatting
 
 ## Styling Guidelines
 
-**IMPORTANT**: This template uses shadcn/ui components exclusively.
+**IMPORTANT**: This template uses shadcn/ui components and semantic colors exclusively.
 
+### Component Guidelines
 - ✅ Use shadcn/ui components from `~/components/ui/`
 - ✅ Compose shadcn components for complex UIs
 - ❌ No custom Tailwind classes (unless absolutely necessary)
 - ❌ No inline styles
 - ❌ No CSS modules
+
+### Semantic Color System
+
+**CRITICAL**: Always use semantic color variables. Never use hardcoded Tailwind colors like `text-blue-600`, `bg-green-500`, etc.
+
+All colors are defined in `src/styles/globals.css` with full light/dark mode support using OKLCH color space.
+
+#### Available Semantic Colors
+
+**Status Colors** (most commonly used):
+- `success` / `success-foreground` - ✅ Success states, completed items (green)
+- `warning` / `warning-foreground` - ⚠️ Warnings, pending states (yellow/amber)
+- `info` / `info-foreground` - ℹ️ Informational states (blue)
+- `destructive` / `destructive-foreground` - ❌ Errors, destructive actions (red)
+
+**Base Colors**:
+- `background` / `foreground` - Main page background and text
+- `card` / `card-foreground` - Card backgrounds and text
+- `popover` / `popover-foreground` - Popover backgrounds and text
+
+**Interactive Colors**:
+- `primary` / `primary-foreground` - Primary actions, links
+- `secondary` / `secondary-foreground` - Secondary actions
+- `muted` / `muted-foreground` - Muted/subtle elements
+- `accent` / `accent-foreground` - Accent/highlight elements
+
+**Utility Colors**:
+- `border`, `input`, `ring` - Borders, inputs, focus rings
+- `chart-1` through `chart-5` - Data visualization
+- `sidebar-*` - Sidebar-specific colors
+
+#### Color Usage Examples
+
+**✅ CORRECT**:
+```typescript
+// Success state
+<CheckCircle className="h-4 w-4 text-success" />
+<span className="text-success">Success!</span>
+
+// Warning state
+<AlertTriangle className="h-4 w-4 text-warning" />
+
+// Info state
+<Clock className="h-4 w-4 text-info" />
+
+// Error/destructive state
+<XCircle className="h-4 w-4 text-destructive" />
+
+// Links
+<a href="..." className="text-primary hover:underline">Link</a>
+
+// Muted text
+<p className="text-muted-foreground">Helper text</p>
+```
+
+**❌ WRONG - Never do this**:
+```typescript
+// Hardcoded colors - NEVER use these!
+<CheckCircle className="text-green-600" />
+<div className="bg-blue-500">Content</div>
+<span className="text-red-600">Error</span>
+```
+
+#### When to Use Which Color
+
+- **Success** → Completed tasks, successful operations, active states
+- **Warning** → Pending approvals, cautionary info, in-progress states
+- **Info** → Informational messages, neutral status, help text
+- **Destructive** → Errors, delete actions, critical alerts
+- **Primary** → Links, primary CTAs, active navigation
+- **Muted** → Placeholders, helper text, disabled states
+
+See `.claude/CLAUDE.md` for complete semantic color documentation.
 
 ## Adding Features
 

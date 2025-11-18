@@ -111,12 +111,12 @@ export function AuthStatusBar() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
             {isWalletConnected ? (
               <Badge variant="default" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                 {walletName ?? "Connected"}
               </Badge>
             ) : (
               <Badge variant="secondary" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-gray-400" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
                 Not Connected
               </Badge>
             )}
@@ -127,25 +127,25 @@ export function AuthStatusBar() {
           {/* Auth Status */}
           <div className="flex items-center gap-2">
             {isAuthenticated ? (
-              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <ShieldCheck className="h-4 w-4 text-success" />
             ) : authError ? (
               <ShieldAlert className="h-4 w-4 text-destructive" />
             ) : (
               <Shield className="h-4 w-4 text-muted-foreground" />
             )}
             {isAuthenticated ? (
-              <Badge variant="default" className="gap-1 bg-green-500 hover:bg-green-600">
-                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+              <Badge variant="default" className="gap-1">
+                <span className="h-2 w-2 rounded-full bg-success-foreground animate-pulse" />
                 Authenticated
               </Badge>
             ) : authError ? (
               <Badge variant="destructive" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-white" />
+                <span className="h-2 w-2 rounded-full bg-destructive-foreground" />
                 Auth Error
               </Badge>
             ) : (
               <Badge variant="secondary" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-gray-400" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
                 Not Authenticated
               </Badge>
             )}

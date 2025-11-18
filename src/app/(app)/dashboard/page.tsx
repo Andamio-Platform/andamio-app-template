@@ -55,8 +55,8 @@ export default function DashboardPage() {
 
       {/* Status Badge */}
       <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-5 w-5 text-green-600" />
-        <span className="font-medium text-green-600">Connected & Authenticated</span>
+        <CheckCircle2 className="h-5 w-5 text-success" />
+        <span className="font-medium text-success">Connected & Authenticated</span>
       </div>
 
       {/* Wallet Information */}

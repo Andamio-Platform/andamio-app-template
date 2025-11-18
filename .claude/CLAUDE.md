@@ -109,14 +109,16 @@ Lists courses owned by the authenticated user.
 
 ## Styling Guidelines
 
-**CRITICAL: Use only shadcn/ui components. No custom styling.**
+**CRITICAL: Use only shadcn/ui components and semantic colors. No custom styling.**
 
 **Rules**:
 - ✅ Use shadcn/ui components from `~/components/ui/`
 - ✅ Compose shadcn components for complex UIs
+- ✅ Use ONLY semantic color variables from `src/styles/globals.css`
 - ❌ No custom Tailwind classes (unless absolutely necessary)
 - ❌ No inline styles
 - ❌ No CSS modules
+- ❌ **NEVER** use hardcoded color classes like `text-blue-600`, `bg-green-500`, etc.
 
 **Available Components** (45+):
 - accordion, alert, alert-dialog, aspect-ratio, avatar
@@ -132,6 +134,143 @@ Lists courses owned by the authenticated user.
 - radio-group, resizable
 - scroll-area, select, separator, sheet, skeleton, slider, sonner, switch
 - table, tabs, textarea, toggle, toggle-group, tooltip
+
+## Semantic Color System
+
+**CRITICAL: Always use semantic color variables. Never use hardcoded Tailwind colors.**
+
+All colors are defined in `src/styles/globals.css` with full light/dark mode support.
+
+### Available Semantic Colors
+
+**Base Colors**:
+- `background` / `foreground` - Main page background and text
+- `card` / `card-foreground` - Card backgrounds and text
+- `popover` / `popover-foreground` - Popover backgrounds and text
+
+**Interactive Colors**:
+- `primary` / `primary-foreground` - Primary actions, links
+- `secondary` / `secondary-foreground` - Secondary actions
+- `muted` / `muted-foreground` - Muted/subtle elements
+- `accent` / `accent-foreground` - Accent/highlight elements
+
+**Status Colors**:
+- `destructive` / `destructive-foreground` - Errors, destructive actions (red)
+- `success` / `success-foreground` - Success states, completed items (green)
+- `warning` / `warning-foreground` - Warnings, pending states (yellow/amber)
+- `info` / `info-foreground` - Informational states, neutral actions (blue)
+
+**Utility Colors**:
+- `border` - Borders and dividers
+- `input` - Input field borders
+- `ring` - Focus rings
+
+**Chart Colors**:
+- `chart-1` through `chart-5` - Data visualization colors
+
+**Sidebar Colors**:
+- `sidebar` / `sidebar-foreground`
+- `sidebar-primary` / `sidebar-primary-foreground`
+- `sidebar-accent` / `sidebar-accent-foreground`
+- `sidebar-border` / `sidebar-ring`
+
+### Color Usage Examples
+
+**✅ CORRECT - Using semantic colors**:
+```typescript
+// Success state
+<CheckCircle className="h-4 w-4 text-success" />
+<span className="text-success">Success!</span>
+
+// Warning state
+<AlertTriangle className="h-4 w-4 text-warning" />
+<Badge variant="outline">Warning</Badge>
+
+// Info/pending state
+<Clock className="h-4 w-4 text-info" />
+
+// Error/destructive state
+<XCircle className="h-4 w-4 text-destructive" />
+<div className="text-destructive">Error message</div>
+
+// Links
+<a href="..." className="text-primary hover:underline">Link</a>
+
+// Muted/subtle text
+<p className="text-muted-foreground">Helper text</p>
+```
+
+**❌ WRONG - Hardcoded colors**:
+```typescript
+// Never do this!
+<CheckCircle className="h-4 w-4 text-green-600" />
+<div className="bg-blue-500 hover:bg-blue-600">Button</div>
+<span className="text-red-600">Error</span>
+<a className="text-blue-600 hover:underline">Link</a>
+```
+
+### When to Use Which Color
+
+**Success (green)**:
+- Completed tasks/assignments
+- Successful operations
+- Active/connected states
+- Checkmarks and confirmations
+
+**Warning (yellow/amber)**:
+- Pending approvals
+- Cautionary information
+- Non-critical alerts
+- In-progress states
+
+**Info (blue)**:
+- Informational messages
+- Neutral status indicators
+- Help text
+- Pending/awaiting states
+
+**Destructive (red)**:
+- Errors and failures
+- Destructive actions (delete, remove)
+- Critical alerts
+- Denied/rejected states
+
+**Primary (theme-dependent)**:
+- Links and hyperlinks
+- Primary call-to-action buttons
+- Active navigation items
+- Brand-related elements
+
+**Muted**:
+- Placeholder text
+- Helper text
+- Disabled states
+- Secondary information
+
+### Adding New Semantic Colors
+
+If you need a new semantic color:
+
+1. Add to `@theme inline` block in `globals.css`:
+```css
+--color-your-color: var(--your-color);
+--color-your-color-foreground: var(--your-color-foreground);
+```
+
+2. Add light mode values in `:root`:
+```css
+--your-color: oklch(0.6 0.15 145);
+--your-color-foreground: oklch(0.985 0 0);
+```
+
+3. Add dark mode values in `.dark`:
+```css
+--your-color: oklch(0.7 0.15 145);
+--your-color-foreground: oklch(0.145 0 0);
+```
+
+4. Document the new color in this section
+5. Update relevant components to use it
 
 ## API Integration
 

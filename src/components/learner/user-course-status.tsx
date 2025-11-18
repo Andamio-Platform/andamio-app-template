@@ -164,12 +164,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             <div className="flex items-center gap-2">
               {status.isEnrolled ? (
                 <>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   <Badge variant="default">Enrolled</Badge>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertTriangle className="h-4 w-4 text-warning" />
                   <Badge variant="secondary">Not Enrolled</Badge>
                 </>
               )}
@@ -187,12 +187,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             <div className="flex items-center gap-2">
               {status.awaitingApproval ? (
                 <>
-                  <Clock className="h-4 w-4 text-blue-600" />
+                  <Clock className="h-4 w-4 text-info" />
                   <Badge variant="outline">{status.awaitingApproval}</Badge>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   <Badge variant="secondary">None</Badge>
                 </>
               )}
@@ -211,7 +211,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {status.completedAssignments.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-600" />
+              <Trophy className="h-4 w-4 text-warning" />
               <p className="text-sm font-medium">Completed Assignments</p>
             </div>
             <div className="space-y-2">
@@ -250,7 +250,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
                     className="flex items-center gap-2 text-sm"
                   >
                     {isCompleted ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                     ) : (
                       <div className="h-4 w-4 rounded-full border-2 border-muted-foreground" />
                     )}

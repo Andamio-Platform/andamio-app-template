@@ -2,14 +2,43 @@
 
 > **Complete mapping of Andamio Database API endpoints to frontend implementation**
 > Last Updated: November 18, 2024
+> API Version: **v0.1.0** (Unstable)
 > Coverage: **51/52 endpoints (98.08%)**
 
 This document provides a comprehensive reference for all API endpoints, their purpose, and where they are used in the T3 App Template. Use this as the alignment document between backend API and frontend UX.
 
 ---
 
+## API Versioning
+
+**Current Version**: `0.1.0` (Unstable)
+
+The Andamio Database API uses **URL-based versioning**:
+
+```
+/api/v0/*    - Version 0 (Unstable - breaking changes may occur)
+/trpc/v0/*   - Version 0 tRPC endpoints
+```
+
+**⚠️ Version 0.x Status**:
+- **Unstable** - Breaking changes may occur between minor versions
+- Use for **development and testing only**
+- Not recommended for production
+- Will be stabilized as v1.0.0 once API design is finalized
+
+**Available Endpoints**:
+- **Versioned**: `/api/v0/*` (recommended - used throughout this app)
+- **Unversioned**: `/api/*` (backward compatibility alias, will be deprecated in v1)
+
+**Documentation**:
+- [CHANGELOG.md](../../andamio-db-api/CHANGELOG.md) - All version changes and breaking changes
+- [Versioning Policy](../../andamio-db-api/CHANGELOG.md#versioning-policy)
+
+---
+
 ## Table of Contents
 
+- [API Versioning](#api-versioning)
 - [Authentication](#authentication)
 - [User Roles](#user-roles)
 - [Courses](#courses)
@@ -26,7 +55,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ## Authentication
 
-### POST `/auth/login/session`
+### POST `/api/v0/auth/login/session`
 
 **Purpose**: Create a login session and return a nonce for wallet signature
 
@@ -43,12 +72,12 @@ This document provides a comprehensive reference for all API endpoints, their pu
 2. Frontend calls this endpoint with wallet address
 3. Backend returns nonce
 4. User signs nonce with wallet
-5. Frontend calls /auth/login/validate with signature
+5. Frontend calls /api/v0/auth/login/validate with signature
 ```
 
 ---
 
-### POST `/auth/login/validate`
+### POST `/api/v0/auth/login/validate`
 
 **Purpose**: Validate wallet signature and issue JWT token
 
@@ -65,7 +94,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ## User Roles
 
-### POST `/creator/create`
+### POST `/api/v0/creator/create`
 
 **Purpose**: Register authenticated user as a Creator
 
@@ -78,7 +107,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### POST `/learner/create`
+### POST `/api/v0/learner/create`
 
 **Purpose**: Register authenticated user as a Learner
 
@@ -93,7 +122,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ## Courses
 
-### GET `/courses/published`
+### GET `/api/v0/courses/published`
 
 **Purpose**: List all published courses (courses with NFT policy ID)
 
@@ -107,7 +136,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/courses/owned`
+### GET `/api/v0/courses/owned`
 
 **Purpose**: List courses owned by authenticated user
 
@@ -120,7 +149,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/courses/check/{courseCode}`
+### GET `/api/v0/courses/check/{courseCode}`
 
 **Purpose**: Check if a course code is already in use
 
@@ -133,7 +162,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/courses/{courseNftPolicyId}`
+### GET `/api/v0/courses/{courseNftPolicyId}`
 
 **Purpose**: Get detailed information about a specific course
 
@@ -147,7 +176,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### POST `/courses`
+### POST `/api/v0/courses`
 
 **Purpose**: Create a new course
 
@@ -162,7 +191,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### PATCH `/courses/{courseCode}`
+### PATCH `/api/v0/courses/{courseCode}`
 
 **Purpose**: Update course metadata
 
@@ -177,7 +206,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### DELETE `/courses/{courseCode}`
+### DELETE `/api/v0/courses/{courseCode}`
 
 **Purpose**: Delete a course and all its content
 
@@ -190,7 +219,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/courses/{courseCode}/unpublished-projects`
+### GET `/api/v0/courses/{courseCode}/unpublished-projects`
 
 **Purpose**: Get unpublished projects (treasuries) that require this course as prerequisite
 
@@ -205,7 +234,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ## Course Modules
 
-### GET `/course-modules/{courseNftPolicyId}/{moduleCode}`
+### GET `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Get detailed information about a specific module
 
@@ -219,7 +248,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/courses/{courseNftPolicyId}/course-modules`
+### GET `/api/v0/courses/{courseNftPolicyId}/course-modules`
 
 **Purpose**: List all modules for a course
 
@@ -234,7 +263,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/course-modules/with-slts/{courseNftPolicyId}`
+### GET `/api/v0/course-modules/with-slts/{courseNftPolicyId}`
 
 **Purpose**: Get course modules with SLTs in single optimized query
 
@@ -249,7 +278,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### GET `/course-modules/assignment-summary/{courseNftPolicyId}`
+### GET `/api/v0/course-modules/assignment-summary/{courseNftPolicyId}`
 
 **Purpose**: Get modules with assignment summaries and publication status
 
@@ -262,7 +291,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### POST `/course-modules/list`
+### POST `/api/v0/course-modules/list`
 
 **Purpose**: Batch query to get modules for multiple courses
 
@@ -278,7 +307,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### POST `/course-modules`
+### POST `/api/v0/course-modules`
 
 **Purpose**: Create a new course module
 
@@ -291,7 +320,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### PATCH `/course-modules/{courseNftPolicyId}/{moduleCode}`
+### PATCH `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Update module title and description
 
@@ -304,7 +333,7 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ---
 
-### PATCH `/course-modules/{courseNftPolicyId}/{moduleCode}/status`
+### PATCH `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}/status`
 
 **Purpose**: Update module status (DRAFT → APPROVED → PENDING_TX → ON_CHAIN, etc.)
 
@@ -324,7 +353,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/course-modules/{courseNftPolicyId}/{moduleCode}/code`
+### PATCH `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}/code`
 
 **Purpose**: Rename module code identifier
 
@@ -337,7 +366,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/course-modules/{courseNftPolicyId}/{moduleCode}/pending-tx`
+### PATCH `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}/pending-tx`
 
 **Purpose**: Set pending transaction hash for blockchain operation
 
@@ -350,7 +379,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/course-modules/{courseNftPolicyId}/{moduleCode}/publish`
+### POST `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}/publish`
 
 **Purpose**: Publish all module content (lessons, introduction, assignments) to live status
 
@@ -365,7 +394,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### DELETE `/course-modules/{courseNftPolicyId}/{moduleCode}`
+### DELETE `/api/v0/course-modules/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Delete module and all its content
 
@@ -380,7 +409,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Student Learning Targets (SLTs)
 
-### GET `/slts/{courseNftPolicyId}/{moduleCode}`
+### GET `/api/v0/slts/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Get all SLTs for a module
 
@@ -394,7 +423,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### GET `/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### GET `/api/v0/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Get a single SLT by module index
 
@@ -409,7 +438,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/slts`
+### POST `/api/v0/slts`
 
 **Purpose**: Create a new Student Learning Target
 
@@ -422,7 +451,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### PATCH `/api/v0/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Update SLT text
 
@@ -435,7 +464,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/slts/batch-update-indexes`
+### PATCH `/api/v0/slts/batch-update-indexes`
 
 **Purpose**: Reorder multiple SLTs in single operation
 
@@ -450,7 +479,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### DELETE `/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### DELETE `/api/v0/slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Delete a Student Learning Target
 
@@ -463,7 +492,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### ⚠️ PATCH `/slts/{courseNftPolicyId}/{moduleCode}/{currentModuleIndex}/index`
+### ⚠️ PATCH `/api/v0/slts/{courseNftPolicyId}/{moduleCode}/{currentModuleIndex}/index`
 
 **Purpose**: Update single SLT's index (reorder one SLT)
 
@@ -479,7 +508,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Lessons
 
-### GET `/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### GET `/api/v0/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Get a specific lesson
 
@@ -493,7 +522,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### GET `/courses/{courseNftPolicyId}/modules/{moduleCode}/lessons`
+### GET `/api/v0/courses/{courseNftPolicyId}/modules/{moduleCode}/lessons`
 
 **Purpose**: List all lessons for a module
 
@@ -507,7 +536,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/lessons`
+### POST `/api/v0/lessons`
 
 **Purpose**: Create a new lesson
 
@@ -520,7 +549,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### PATCH `/api/v0/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Update lesson content
 
@@ -534,7 +563,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### DELETE `/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+### DELETE `/api/v0/lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
 
 **Purpose**: Delete a lesson
 
@@ -549,7 +578,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Assignments
 
-### GET `/assignments/{courseNftPolicyId}/{moduleCode}`
+### GET `/api/v0/assignments/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Get assignment for a module
 
@@ -563,7 +592,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/assignments`
+### POST `/api/v0/assignments`
 
 **Purpose**: Create a new assignment
 
@@ -576,7 +605,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/assignments/{courseNftPolicyId}/{moduleCode}`
+### PATCH `/api/v0/assignments/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Update assignment details
 
@@ -589,7 +618,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/assignments/{courseNftPolicyId}/{moduleCode}/publish`
+### PATCH `/api/v0/assignments/{courseNftPolicyId}/{moduleCode}/publish`
 
 **Purpose**: Publish assignment to make it visible to learners
 
@@ -602,7 +631,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### DELETE `/assignments/{courseNftPolicyId}/{moduleCode}`
+### DELETE `/api/v0/assignments/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Delete an assignment
 
@@ -617,7 +646,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Module Introductions
 
-### GET `/introductions/{courseNftPolicyId}/{moduleCode}`
+### GET `/api/v0/introductions/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Get module introduction content
 
@@ -630,7 +659,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/introductions`
+### POST `/api/v0/introductions`
 
 **Purpose**: Create module introduction
 
@@ -643,7 +672,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/introductions/{courseNftPolicyId}/{moduleCode}`
+### PATCH `/api/v0/introductions/{courseNftPolicyId}/{moduleCode}`
 
 **Purpose**: Update introduction content
 
@@ -656,7 +685,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/introductions/{courseNftPolicyId}/{moduleCode}/publish`
+### PATCH `/api/v0/introductions/{courseNftPolicyId}/{moduleCode}/publish`
 
 **Purpose**: Publish introduction to make it visible to learners
 
@@ -671,7 +700,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Assignment Commitments
 
-### GET `/assignment-commitments/{courseNftPolicyId}/{moduleCode}/has-commitments`
+### GET `/api/v0/assignment-commitments/{courseNftPolicyId}/{moduleCode}/has-commitments`
 
 **Purpose**: Quick check if module has any learner commitments
 
@@ -686,7 +715,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### GET `/assignment-commitments/course/{courseNftPolicyId}`
+### GET `/api/v0/assignment-commitments/course/{courseNftPolicyId}`
 
 **Purpose**: Get all assignment commitments for a course (instructor view)
 
@@ -699,7 +728,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### GET `/assignment-commitments/learner/course/{courseNftPolicyId}`
+### GET `/api/v0/assignment-commitments/learner/course/{courseNftPolicyId}`
 
 **Purpose**: Get authenticated learner's commitments for a course
 
@@ -713,7 +742,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/assignment-commitments`
+### POST `/api/v0/assignment-commitments`
 
 **Purpose**: Create assignment commitment (learner starts assignment)
 
@@ -728,7 +757,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### PATCH `/assignment-commitments/{id}/evidence`
+### PATCH `/api/v0/assignment-commitments/{id}/evidence`
 
 **Purpose**: Update learner's assignment submission evidence
 
@@ -741,7 +770,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### DELETE `/assignment-commitments/{id}`
+### DELETE `/api/v0/assignment-commitments/{id}`
 
 **Purpose**: Delete assignment commitment (learner withdraws)
 
@@ -756,7 +785,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Learner Progress
 
-### GET `/user-course-status/{courseNftPolicyId}`
+### GET `/api/v0/user-course-status/{courseNftPolicyId}`
 
 **Purpose**: Get comprehensive learner progress for a course
 
@@ -803,9 +832,9 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ### Authentication Flow
 ```
-1. POST /auth/login/session        → Get nonce
+1. POST /api/v0/auth/login/session        → Get nonce
 2. User signs nonce with wallet
-3. POST /auth/login/validate       → Get JWT token
+3. POST /api/v0/auth/login/validate       → Get JWT token
 4. All subsequent requests use:    Authorization: Bearer {token}
 ```
 
@@ -818,23 +847,23 @@ DRAFT → Edit content → APPROVED → Set pending tx → PENDING_TX → ON_CHA
 
 ### Learner Journey
 ```
-1. GET /courses/published                    → Browse courses
-2. GET /courses/{courseNftPolicyId}          → View course details
-3. GET /courses/.../course-modules           → See modules
-4. POST /assignment-commitments              → Start assignment
-5. PATCH /assignment-commitments/.../evidence → Submit work
-6. GET /user-course-status/...               → Track progress
+1. GET /api/v0/courses/published                    → Browse courses
+2. GET /api/v0/courses/{courseNftPolicyId}          → View course details
+3. GET /api/v0/courses/.../course-modules           → See modules
+4. POST /api/v0/assignment-commitments              → Start assignment
+5. PATCH /api/v0/assignment-commitments/.../evidence → Submit work
+6. GET /api/v0/user-course-status/...               → Track progress
 ```
 
 ### Creator Journey
 ```
-1. POST /courses                             → Create course
-2. POST /course-modules                      → Add modules
-3. POST /slts                                → Define learning objectives
-4. POST /lessons                             → Create lessons
-5. POST /assignments                         → Create assignments
-6. POST /course-modules/.../publish          → Publish all content
-7. GET /assignment-commitments/course/...    → Review submissions
+1. POST /api/v0/courses                             → Create course
+2. POST /api/v0/course-modules                      → Add modules
+3. POST /api/v0/slts                                → Define learning objectives
+4. POST /api/v0/lessons                             → Create lessons
+5. POST /api/v0/assignments                         → Create assignments
+6. POST /api/v0/course-modules/.../publish          → Publish all content
+7. GET /api/v0/assignment-commitments/course/...    → Review submissions
 ```
 
 ---
@@ -845,22 +874,22 @@ DRAFT → Edit content → APPROVED → Set pending tx → PENDING_TX → ON_CHA
 
 | Single Operation | Batch Alternative | Benefit |
 |------------------|-------------------|---------|
-| GET `/slts/{...}/{index}` | GET `/slts/{...}` | Fetch all SLTs at once |
-| PATCH `/slts/{...}/{index}/index` | PATCH `/slts/batch-update-indexes` | Reorder multiple SLTs |
-| Multiple module queries | POST `/course-modules/list` | Query multiple courses |
+| GET `/api/v0/slts/{...}/{index}` | GET `/api/v0/slts/{...}` | Fetch all SLTs at once |
+| PATCH `/api/v0/slts/{...}/{index}/index` | PATCH `/api/v0/slts/batch-update-indexes` | Reorder multiple SLTs |
+| Multiple module queries | POST `/api/v0/course-modules/list` | Query multiple courses |
 
 ### Combined Queries
 
 | Separate Calls | Combined Endpoint | Reduction |
 |----------------|-------------------|-----------|
-| GET modules + GET SLTs | GET `/course-modules/with-slts/...` | 2→1 calls |
-| GET modules + GET assignments | GET `/course-modules/assignment-summary/...` | 2→1 calls |
+| GET modules + GET SLTs | GET `/api/v0/course-modules/with-slts/...` | 2→1 calls |
+| GET modules + GET assignments | GET `/api/v0/course-modules/assignment-summary/...` | 2→1 calls |
 
 ### Pre-flight Checks
 
 | Heavy Operation | Pre-check Endpoint | Benefit |
 |----------------|-------------------|---------|
-| Load all commitments | GET `.../has-commitments` | Skip if none exist |
+| Load all commitments | GET `/api/v0/.../has-commitments` | Skip if none exist |
 
 ---
 

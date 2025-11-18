@@ -101,9 +101,9 @@ export function MyLearning() {
 
             // Check each module for commitments
             let hasAnyCommitments = false;
-            for (const module of modules) {
+            for (const courseModule of modules) {
               const hasCommitmentsResponse = await fetch(
-                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${course.courseNftPolicyId}/${module.moduleCode}/has-commitments`
+                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${course.courseNftPolicyId}/${courseModule.moduleCode}/has-commitments`
               );
 
               if (hasCommitmentsResponse.ok) {

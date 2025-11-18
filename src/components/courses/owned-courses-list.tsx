@@ -9,13 +9,24 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen, Settings } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
-
-type ListOwnedCoursesOutput = RouterOutputs["course"]["listOwned"];
+import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 /**
  * Component to display courses owned by the authenticated user
- * Fetches from Andamio Database API /courses/owned endpoint
+ *
+ * API Endpoint: GET /courses/owned (protected)
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ *
+ * @example
+ * // The ListOwnedCoursesOutput type is auto-generated from the API
+ * const courses: ListOwnedCoursesOutput = [
+ *   {
+ *     id: "...",
+ *     courseCode: "example-101",
+ *     title: "Example Course",
+ *     // ... more fields
+ *   }
+ * ];
  */
 export function OwnedCoursesList() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();

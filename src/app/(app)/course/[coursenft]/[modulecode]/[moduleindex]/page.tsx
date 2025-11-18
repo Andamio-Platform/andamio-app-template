@@ -11,11 +11,19 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import { type LessonOutput } from "andamio-db-api";
 import { RenderEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 
-type LessonOutput = RouterOutputs["lesson"]["getLessonByPolicyId"];
+/**
+ * Public page displaying lesson content
+ *
+ * API Endpoint: GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (public)
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ *
+ * Note: Lessons are optional content tied to SLTs. If no lesson exists,
+ * this page will show "Lesson not found" message.
+ */
 
 /**
  * Ensures content is in valid Tiptap JSON format

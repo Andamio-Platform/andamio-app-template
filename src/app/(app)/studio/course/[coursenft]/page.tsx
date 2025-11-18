@@ -15,10 +15,26 @@ import { Textarea } from "~/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, ArrowLeft, Save, Settings } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type CourseOutput,
+  type ListCourseModulesOutput,
+  type UpdateCourseInput,
+  updateCourseInputSchema,
+} from "andamio-db-api";
 
-type CourseOutput = RouterOutputs["course"]["getCourseByPolicyId"];
-type ModuleListOutput = RouterOutputs["courseModule"]["getCourseModuleOverviewsByCourseNftPolicyId"];
+/**
+ * Studio page for editing course details
+ *
+ * API Endpoint: PATCH /courses/{courseNftPolicyId} (protected)
+ * Input Validation: Uses updateCourseInputSchema for runtime validation
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ *
+ * Pattern:
+ * 1. Build input object conforming to UpdateCourseInput type
+ * 2. Validate with updateCourseInputSchema.safeParse()
+ * 3. Handle validation errors
+ * 4. Send validated data to API
+ */
 
 interface ApiError {
   message?: string;
@@ -31,7 +47,7 @@ export default function CourseEditPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [modules, setModules] = useState<ModuleListOutput>([]);
+  const [modules, setModules] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +92,7 @@ export default function CourseEditPage() {
           throw new Error(`Failed to fetch modules: ${modulesResponse.statusText}`);
         }
 
-        const modulesData = (await modulesResponse.json()) as ModuleListOutput;
+        const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
         setModules(modulesData ?? []);
       } catch (err) {
         console.error("Error fetching course and modules:", err);
@@ -95,30 +111,40 @@ export default function CourseEditPage() {
       return;
     }
 
-    if (!title.trim()) {
-      setSaveError("Title is required");
-      return;
-    }
-
     setIsSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
 
     try {
+      // Build input object conforming to UpdateCourseInput type
+      const input: UpdateCourseInput = {
+        courseCode: course.courseCode,
+        data: {
+          title: title || undefined,
+          description: description || undefined,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+        },
+      };
+
+      // Validate input with schema
+      const validationResult = updateCourseInputSchema.safeParse(input);
+
+      if (!validationResult.success) {
+        // Extract validation errors
+        const errors = validationResult.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errors}`);
+      }
+
+      // Send validated data to API
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseCode}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            courseCode: course.courseCode,
-            data: {
-              title,
-              description: description || undefined,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-            },
-          }),
+          body: JSON.stringify(validationResult.data),
         }
       );
 
@@ -130,7 +156,7 @@ export default function CourseEditPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      // Refetch course
+      // Refetch course to get updated data
       const refetchResponse = await fetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
       );

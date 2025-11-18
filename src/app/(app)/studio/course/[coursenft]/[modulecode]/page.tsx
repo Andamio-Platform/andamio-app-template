@@ -21,9 +21,23 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { AlertCircle, ArrowLeft, Save } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type CourseModuleOutput,
+  type UpdateCourseModuleInput,
+  type UpdateModuleStatusInput,
+  updateCourseModuleInputSchema,
+  updateModuleStatusInputSchema,
+} from "andamio-db-api";
 
-type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"];
+/**
+ * Studio page for editing course module details and status
+ *
+ * API Endpoints:
+ * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode} (protected)
+ * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status (protected)
+ * Input Validation: Uses updateCourseModuleInputSchema and updateModuleStatusInputSchema
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 
 interface ApiError {
   message?: string;
@@ -56,7 +70,7 @@ export default function ModuleEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [module, setModule] = useState<ModuleOutput | null>(null);
+  const [module, setModule] = useState<CourseModuleOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +97,7 @@ export default function ModuleEditPage() {
           throw new Error(`Failed to fetch module: ${response.statusText}`);
         }
 
-        const data = (await response.json()) as ModuleOutput;
+        const data = (await response.json()) as CourseModuleOutput;
         setModule(data);
         setTitle(data.title ?? "");
         setDescription(data.description ?? "");
@@ -110,18 +124,31 @@ export default function ModuleEditPage() {
     setSaveSuccess(false);
 
     try {
-      // Update title and description
+      // Build input object for module update
+      const updateInput: UpdateCourseModuleInput = {
+        courseNftPolicyId,
+        moduleCode,
+        title,
+        description,
+      };
+
+      // Validate module update input
+      const updateValidation = updateCourseModuleInputSchema.safeParse(updateInput);
+
+      if (!updateValidation.success) {
+        const errors = updateValidation.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errors}`);
+      }
+
+      // Send validated module update
       const updateResponse = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
-            title,
-            description,
-          }),
+          body: JSON.stringify(updateValidation.data),
         }
       );
 
@@ -132,16 +159,30 @@ export default function ModuleEditPage() {
 
       // Update status if changed
       if (status !== module?.status) {
+        // Build input object for status update
+        const statusInput: UpdateModuleStatusInput = {
+          courseNftPolicyId,
+          moduleCode,
+          status: status as UpdateModuleStatusInput["status"],
+        };
+
+        // Validate status update input
+        const statusValidation = updateModuleStatusInputSchema.safeParse(statusInput);
+
+        if (!statusValidation.success) {
+          const errors = statusValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Status validation failed: ${errors}`);
+        }
+
+        // Send validated status update
         const statusResponse = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/status`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              status,
-            }),
+            body: JSON.stringify(statusValidation.data),
           }
         );
 
@@ -158,7 +199,7 @@ export default function ModuleEditPage() {
       const response = await fetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
       );
-      const data = (await response.json()) as ModuleOutput;
+      const data = (await response.json()) as CourseModuleOutput;
       setModule(data);
     } catch (err) {
       console.error("Error saving module:", err);

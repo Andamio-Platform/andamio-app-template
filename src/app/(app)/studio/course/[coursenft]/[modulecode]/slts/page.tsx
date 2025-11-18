@@ -22,13 +22,28 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type CourseModuleOutput,
+  type SLTOutput,
+  type ListSLTsOutput,
+  type ListLessonsOutput,
+  type CreateSLTInput,
+  type UpdateSLTInput,
+  createSLTInputSchema,
+  updateSLTInputSchema,
+} from "andamio-db-api";
 import Link from "next/link";
 
-type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"];
-type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
-type SLTOutput = RouterOutputs["slt"]["getSLT"];
-type LessonListOutput = RouterOutputs["lesson"]["getModuleLessons"];
+/**
+ * Studio page for managing Student Learning Targets (SLTs)
+ *
+ * API Endpoints:
+ * - POST /slts (protected) - Create new SLT
+ * - PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update SLT
+ * - DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete SLT
+ * Input Validation: Uses createSLTInputSchema and updateSLTInputSchema
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 
 interface ApiError {
   message?: string;
@@ -52,7 +67,7 @@ export default function SLTManagementPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [module, setModule] = useState<ModuleOutput | null>(null);
+  const [module, setModule] = useState<CourseModuleOutput | null>(null);
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +98,7 @@ export default function SLTManagementPage() {
       throw new Error(`Failed to fetch SLTs: ${sltsResponse.statusText}`);
     }
 
-    const sltsData = (await sltsResponse.json()) as SLTListOutput;
+    const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
 
     // Fetch module lessons
     const lessonsResponse = await fetch(
@@ -94,7 +109,7 @@ export default function SLTManagementPage() {
       throw new Error(`Failed to fetch lessons: ${lessonsResponse.statusText}`);
     }
 
-    const lessonsData = (await lessonsResponse.json()) as LessonListOutput;
+    const lessonsData = (await lessonsResponse.json()) as ListLessonsOutput;
 
     // Combine SLTs and Lessons
     const combined: CombinedSLTLesson[] = sltsData.map((slt) => {
@@ -131,7 +146,7 @@ export default function SLTManagementPage() {
           throw new Error(`Failed to fetch course module: ${moduleResponse.statusText}`);
         }
 
-        const moduleData = (await moduleResponse.json()) as ModuleOutput;
+        const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
         setModule(moduleData);
 
         // Fetch combined SLT and lesson data
@@ -158,17 +173,31 @@ export default function SLTManagementPage() {
     setActionError(null);
 
     try {
+      // Build input object for SLT creation
+      const createInput: CreateSLTInput = {
+        courseNftPolicyId,
+        moduleCode,
+        moduleIndex: newSLTIndex,
+        sltText: newSLTText,
+      };
+
+      // Validate create input
+      const createValidation = createSLTInputSchema.safeParse(createInput);
+
+      if (!createValidation.success) {
+        const errors = createValidation.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errors}`);
+      }
+
+      // Send validated create
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
-            moduleIndex: newSLTIndex,
-            sltText: newSLTText,
-          }),
+          body: JSON.stringify(createValidation.data),
         }
       );
 
@@ -202,15 +231,32 @@ export default function SLTManagementPage() {
     setActionError(null);
 
     try {
+      // Build input object for SLT update
+      const updateInput: UpdateSLTInput = {
+        courseNftPolicyId,
+        moduleCode,
+        moduleIndex: selectedSLT.moduleIndex,
+        sltText: editSLTText,
+        newModuleIndex: editSLTIndex !== selectedSLT.moduleIndex ? editSLTIndex : undefined,
+      };
+
+      // Validate update input
+      const updateValidation = updateSLTInputSchema.safeParse(updateInput);
+
+      if (!updateValidation.success) {
+        const errors = updateValidation.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errors}`);
+      }
+
+      // Send validated update
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.moduleIndex}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sltText: editSLTText,
-            newModuleIndex: editSLTIndex !== selectedSLT.moduleIndex ? editSLTIndex : undefined,
-          }),
+          body: JSON.stringify(updateValidation.data),
         }
       );
 

@@ -9,17 +9,22 @@ import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import { type CourseOutput, type ListCourseModulesOutput } from "andamio-db-api";
 
-type CourseOutput = RouterOutputs["course"]["getCourseByPolicyId"];
-type ModuleListOutput = RouterOutputs["courseModule"]["getCourseModuleOverviewsByCourseNftPolicyId"];
-
+/**
+ * Public page displaying course details and module list
+ *
+ * API Endpoints:
+ * - GET /courses/{courseNftPolicyId} (public)
+ * - GET /course-modules/{courseNftPolicyId} (public)
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 export default function CourseDetailPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [modules, setModules] = useState<ModuleListOutput>([]);
+  const [modules, setModules] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +55,7 @@ export default function CourseDetailPage() {
 
         // Fetch course modules
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}`
         );
 
         if (!modulesResponse.ok) {
@@ -59,12 +64,12 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }
 
-        const modulesData = (await modulesResponse.json()) as ModuleListOutput;
+        const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
         setModules(modulesData ?? []);
       } catch (err) {
         console.error("Error fetching course and modules:", err);

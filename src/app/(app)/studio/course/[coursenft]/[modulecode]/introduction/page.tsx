@@ -23,10 +23,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Switch } from "~/components/ui/switch";
 import { Separator } from "~/components/ui/separator";
 import { AlertCircle, ArrowLeft, Save } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type IntroductionOutput,
+  type CreateIntroductionInput,
+  type UpdateIntroductionInput,
+  createIntroductionInputSchema,
+  updateIntroductionInputSchema,
+} from "andamio-db-api";
 import type { JSONContent } from "@tiptap/core";
 
-type IntroductionOutput = RouterOutputs["introduction"]["getIntroduction"];
+/**
+ * Studio page for editing or creating course module introductions
+ *
+ * API Endpoints:
+ * - POST /introductions (protected) - Create new introduction
+ * - PATCH /introductions/{courseNftPolicyId}/{moduleCode} (protected) - Update introduction
+ * Input Validation: Uses createIntroductionInputSchema and updateIntroductionInputSchema
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 
 interface ApiError {
   message?: string;
@@ -122,22 +136,35 @@ export default function IntroductionEditPage() {
       const contentJson = editor?.getJSON();
 
       if (introductionExists) {
-        // Update existing introduction
+        // Build input object for introduction update
+        const updateInput: UpdateIntroductionInput = {
+          courseNftPolicyId,
+          moduleCode,
+          title,
+          description: description || undefined,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+          live,
+        };
+
+        // Validate update input
+        const updateValidation = updateIntroductionInputSchema.safeParse(updateInput);
+
+        if (!updateValidation.success) {
+          const errors = updateValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated update
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/${courseNftPolicyId}/${moduleCode}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              title,
-              description: description || undefined,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-              live,
-            }),
+            body: JSON.stringify(updateValidation.data),
           }
         );
 
@@ -149,21 +176,34 @@ export default function IntroductionEditPage() {
         const data = (await response.json()) as IntroductionOutput;
         setIntroduction(data);
       } else {
-        // Create new introduction
+        // Build input object for introduction creation
+        const createInput: CreateIntroductionInput = {
+          courseNftPolicyId,
+          moduleCode,
+          title,
+          description: description || undefined,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+        };
+
+        // Validate create input
+        const createValidation = createIntroductionInputSchema.safeParse(createInput);
+
+        if (!createValidation.success) {
+          const errors = createValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated create
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              title,
-              description: description || undefined,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-            }),
+            body: JSON.stringify(createValidation.data),
           }
         );
 

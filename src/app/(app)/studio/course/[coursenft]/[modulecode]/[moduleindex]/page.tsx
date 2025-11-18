@@ -23,10 +23,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Switch } from "~/components/ui/switch";
 import { Separator } from "~/components/ui/separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type LessonOutput,
+  type CreateLessonInput,
+  type UpdateLessonInput,
+  createLessonInputSchema,
+  updateLessonInputSchema,
+} from "andamio-db-api";
 import type { JSONContent } from "@tiptap/core";
 
-type LessonOutput = RouterOutputs["lesson"]["getLessonByPolicyId"];
+/**
+ * Studio page for editing or creating lessons (Student Learning Target content)
+ *
+ * API Endpoints:
+ * - POST /lessons (protected) - Create new lesson
+ * - PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update lesson
+ * - DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete lesson
+ * Input Validation: Uses createLessonInputSchema and updateLessonInputSchema
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 
 interface ApiError {
   message?: string;
@@ -119,23 +134,36 @@ export default function LessonEditPage() {
       const contentJson = editor?.getJSON();
 
       if (lessonExists) {
-        // Update existing lesson
+        // Build input object for lesson update
+        const updateInput: UpdateLessonInput = {
+          courseNftPolicyId,
+          moduleCode,
+          moduleIndex,
+          title: title || undefined,
+          description: description || undefined,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+          live,
+        };
+
+        // Validate update input
+        const updateValidation = updateLessonInputSchema.safeParse(updateInput);
+
+        if (!updateValidation.success) {
+          const errors = updateValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated update
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              moduleIndex,
-              title: title || undefined,
-              description: description || undefined,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-              live,
-            }),
+            body: JSON.stringify(updateValidation.data),
           }
         );
 
@@ -151,22 +179,35 @@ export default function LessonEditPage() {
         const data = (await refetchResponse.json()) as LessonOutput;
         setLesson(data);
       } else {
-        // Create new lesson
+        // Build input object for lesson creation
+        const createInput: CreateLessonInput = {
+          courseNftPolicyId,
+          moduleCode,
+          moduleIndex,
+          title: title || undefined,
+          description: description || undefined,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+        };
+
+        // Validate create input
+        const createValidation = createLessonInputSchema.safeParse(createInput);
+
+        if (!createValidation.success) {
+          const errors = createValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated create
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              moduleIndex,
-              title: title || undefined,
-              description: description || undefined,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-            }),
+            body: JSON.stringify(createValidation.data),
           }
         );
 

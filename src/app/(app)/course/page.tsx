@@ -7,12 +7,16 @@ import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import { type ListPublishedCoursesOutput } from "andamio-db-api";
 
-type ListCoursesOutput = RouterOutputs["course"]["getPublishedCourses"];
-
+/**
+ * Public page displaying all published courses
+ *
+ * API Endpoint: GET /courses/published (public)
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 export default function CoursePage() {
-  const [courses, setCourses] = useState<ListCoursesOutput>([]);
+  const [courses, setCourses] = useState<ListPublishedCoursesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +34,7 @@ export default function CoursePage() {
           throw new Error(`Failed to fetch courses: ${response.statusText}`);
         }
 
-        const data = (await response.json()) as ListCoursesOutput;
+        const data = (await response.json()) as ListPublishedCoursesOutput;
         setCourses(data ?? []);
       } catch (err) {
         console.error("Error fetching published courses:", err);

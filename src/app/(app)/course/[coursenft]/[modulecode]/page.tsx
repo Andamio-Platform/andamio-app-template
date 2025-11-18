@@ -11,11 +11,18 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen, Settings } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "andamio-db-api";
 
-type ModuleOutput = RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"];
-type LessonListOutput = RouterOutputs["lesson"]["getModuleLessons"];
-type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
+/**
+ * Public page displaying module details with SLTs and lessons
+ *
+ * API Endpoints:
+ * - GET /course-modules/{courseNftPolicyId}/{moduleCode} (public)
+ * - GET /slts/{courseNftPolicyId}/{moduleCode} (public)
+ * - GET /lessons/{courseNftPolicyId}/{moduleCode} (public)
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
+
 
 // Combined SLT + Lesson type
 type CombinedSLTLesson = {
@@ -127,7 +134,7 @@ export default function ModuleLessonsPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated } = useAndamioAuth();
 
-  const [module, setModule] = useState<ModuleOutput | null>(null);
+  const [module, setModule] = useState<CourseModuleOutput | null>(null);
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +154,7 @@ export default function ModuleLessonsPage() {
           throw new Error(`Failed to fetch course module: ${moduleResponse.statusText}`);
         }
 
-        const moduleData = (await moduleResponse.json()) as ModuleOutput;
+        const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
         setModule(moduleData);
 
         // Fetch SLTs for the module
@@ -159,7 +166,7 @@ export default function ModuleLessonsPage() {
           throw new Error(`Failed to fetch SLTs: ${sltsResponse.statusText}`);
         }
 
-        const sltsData = (await sltsResponse.json()) as SLTListOutput;
+        const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
 
         // Fetch module lessons
         const lessonsResponse = await fetch(
@@ -170,7 +177,7 @@ export default function ModuleLessonsPage() {
           throw new Error(`Failed to fetch lessons: ${lessonsResponse.statusText}`);
         }
 
-        const lessonsData = (await lessonsResponse.json()) as LessonListOutput;
+        const lessonsData = (await lessonsResponse.json()) as ListLessonsOutput;
 
         // Combine SLTs and Lessons
         const combined: CombinedSLTLesson[] = sltsData.map((slt) => {
@@ -242,7 +249,7 @@ export default function ModuleLessonsPage() {
 
   // Module display (with or without SLTs/lessons)
   // TypeScript type narrowing: module is guaranteed non-null here
-  const moduleData: ModuleOutput = module;
+  const moduleData: CourseModuleOutput = module;
 
   return (
     <div className="space-y-6">

@@ -24,11 +24,26 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Switch } from "~/components/ui/switch";
 import { Separator } from "~/components/ui/separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
-import { type RouterOutputs } from "andamio-db-api";
+import {
+  type AssignmentOutput,
+  type ListSLTsOutput,
+  type CreateAssignmentInput,
+  type UpdateAssignmentInput,
+  createAssignmentInputSchema,
+  updateAssignmentInputSchema,
+} from "andamio-db-api";
 import type { JSONContent } from "@tiptap/core";
 
-type AssignmentOutput = RouterOutputs["assignment"]["getAssignmentByCourseModuleCodes"];
-type SLTListOutput = RouterOutputs["slt"]["getModuleSLTs"];
+/**
+ * Studio page for editing or creating course module assignments
+ *
+ * API Endpoints:
+ * - POST /assignments (protected) - Create new assignment
+ * - PATCH /assignments/{courseNftPolicyId}/{moduleCode} (protected) - Update assignment
+ * - DELETE /assignments/{courseNftPolicyId}/{moduleCode} (protected) - Delete assignment
+ * Input Validation: Uses createAssignmentInputSchema and updateAssignmentInputSchema
+ * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ */
 
 interface ApiError {
   message?: string;
@@ -42,7 +57,7 @@ export default function AssignmentEditPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   const [assignment, setAssignment] = useState<AssignmentOutput | null>(null);
-  const [slts, setSlts] = useState<SLTListOutput>([]);
+  const [slts, setSlts] = useState<ListSLTsOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [assignmentExists, setAssignmentExists] = useState(false);
@@ -87,7 +102,7 @@ export default function AssignmentEditPage() {
           throw new Error(`Failed to fetch SLTs: ${sltsResponse.statusText}`);
         }
 
-        const sltsData = (await sltsResponse.json()) as SLTListOutput;
+        const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
         setSlts(sltsData);
 
         // Try to fetch assignment (may not exist yet)
@@ -146,23 +161,36 @@ export default function AssignmentEditPage() {
       const contentJson = editor?.getJSON();
 
       if (assignmentExists) {
-        // Update existing assignment
+        // Build input object for assignment update
+        const updateInput: UpdateAssignmentInput = {
+          courseNftPolicyId,
+          moduleCode,
+          title,
+          description,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+          live,
+          sltIds: selectedSltIds,
+        };
+
+        // Validate update input
+        const updateValidation = updateAssignmentInputSchema.safeParse(updateInput);
+
+        if (!updateValidation.success) {
+          const errors = updateValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated update
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              title,
-              description,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-              live,
-              sltIds: selectedSltIds,
-            }),
+            body: JSON.stringify(updateValidation.data),
           }
         );
 
@@ -174,24 +202,37 @@ export default function AssignmentEditPage() {
         const data = (await response.json()) as AssignmentOutput;
         setAssignment(data);
       } else {
-        // Create new assignment
+        // Build input object for assignment creation
         const assignmentCode = `${moduleCode}-ASSIGNMENT`;
+        const createInput: CreateAssignmentInput = {
+          courseNftPolicyId,
+          moduleCode,
+          assignmentCode,
+          title,
+          description,
+          contentJson,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+          sltIds: selectedSltIds,
+        };
+
+        // Validate create input
+        const createValidation = createAssignmentInputSchema.safeParse(createInput);
+
+        if (!createValidation.success) {
+          const errors = createValidation.error.errors
+            .map((err) => `${err.path.join(".")}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errors}`);
+        }
+
+        // Send validated create
         const response = await authenticatedFetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              courseNftPolicyId,
-              moduleCode,
-              assignmentCode,
-              title,
-              description,
-              contentJson,
-              imageUrl: imageUrl || undefined,
-              videoUrl: videoUrl || undefined,
-              sltIds: selectedSltIds,
-            }),
+            body: JSON.stringify(createValidation.data),
           }
         );
 
@@ -405,7 +446,7 @@ export default function AssignmentEditPage() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {slts.map((slt) => (
+                  {slts.map((slt: { id: string; moduleIndex: number; sltText: string }) => (
                     <div key={slt.id} className="flex items-start space-x-2">
                       <Checkbox
                         id={`slt-${slt.id}`}
@@ -487,8 +528,8 @@ export default function AssignmentEditPage() {
                   <h3 className="font-semibold mb-2">Covers Learning Targets:</h3>
                   <div className="flex flex-wrap gap-2">
                     {slts
-                      .filter((slt) => selectedSltIds.includes(slt.id))
-                      .map((slt) => (
+                      .filter((slt: { id: string; moduleIndex: number; sltText: string }) => selectedSltIds.includes(slt.id))
+                      .map((slt: { id: string; moduleIndex: number; sltText: string }) => (
                         <Badge key={slt.id} variant="secondary">
                           {slt.moduleIndex}: {slt.sltText}
                         </Badge>

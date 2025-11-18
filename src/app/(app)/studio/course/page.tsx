@@ -4,6 +4,7 @@ import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { OwnedCoursesList } from "~/components/courses/owned-courses-list";
+import { CreateCourseDialog } from "~/components/courses/create-course-dialog";
 
 export default function CourseStudioPage() {
   const { isAuthenticated } = useAndamioAuth();
@@ -28,11 +29,14 @@ export default function CourseStudioPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Course Studio</h1>
-        <p className="text-muted-foreground">
-          Manage and edit your Andamio courses
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Course Studio</h1>
+          <p className="text-muted-foreground">
+            Manage and edit your Andamio courses
+          </p>
+        </div>
+        <CreateCourseDialog />
       </div>
 
       <OwnedCoursesList />

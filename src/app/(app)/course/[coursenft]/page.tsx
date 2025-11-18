@@ -10,13 +10,14 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { type CourseOutput, type ListCourseModulesOutput } from "andamio-db-api";
+import { UserCourseStatus } from "~/components/learner/user-course-status";
 
 /**
  * Public page displaying course details and module list
  *
  * API Endpoints:
  * - GET /courses/{courseNftPolicyId} (public)
- * - GET /course-modules/{courseNftPolicyId} (public)
+ * - GET /courses/{courseNftPolicyId}/course-modules (public)
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  */
 export default function CourseDetailPage() {
@@ -55,7 +56,7 @@ export default function CourseDetailPage() {
 
         // Fetch course modules
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
         );
 
         if (!modulesResponse.ok) {
@@ -64,7 +65,7 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }
@@ -149,6 +150,9 @@ export default function CourseDetailPage() {
           <p className="text-muted-foreground">{course.description}</p>
         )}
       </div>
+
+      {/* User Course Status */}
+      <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />
 
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Modules</h2>

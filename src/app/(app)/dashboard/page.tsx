@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { Wallet, Key, CheckCircle2 } from "lucide-react";
+import { MyLearning } from "~/components/learner/my-learning";
 
 export default function DashboardPage() {
   const { isAuthenticated, user, jwt } = useAndamioAuth();
@@ -138,6 +139,9 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* My Learning Section */}
+      <MyLearning />
 
       {/* Debug Panel - Remove in production */}
     </div>

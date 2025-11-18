@@ -66,6 +66,7 @@ export default function IntroductionEditPage() {
   const [live, setLive] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -227,6 +228,42 @@ export default function IntroductionEditPage() {
     }
   };
 
+  const handleTogglePublish = async () => {
+    if (!isAuthenticated || !introductionExists) {
+      return;
+    }
+
+    setIsTogglingPublish(true);
+    setSaveError(null);
+
+    try {
+      const newLiveStatus = !live;
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/${courseNftPolicyId}/${moduleCode}/publish`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ live: newLiveStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to toggle publish status");
+      }
+
+      const data = (await response.json()) as { success: boolean; live: boolean };
+      setLive(data.live);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error("Error toggling publish status:", err);
+      setSaveError(err instanceof Error ? err.message : "Failed to toggle publish status");
+    } finally {
+      setIsTogglingPublish(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -356,9 +393,21 @@ export default function IntroductionEditPage() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch id="live" checked={live} onCheckedChange={setLive} />
-                <Label htmlFor="live">Live (visible to students)</Label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Switch id="live" checked={live} onCheckedChange={setLive} />
+                  <Label htmlFor="live">Live (visible to students)</Label>
+                </div>
+                {introductionExists && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTogglePublish}
+                    disabled={isTogglingPublish}
+                  >
+                    {isTogglingPublish ? "Toggling..." : live ? "Unpublish" : "Publish"}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

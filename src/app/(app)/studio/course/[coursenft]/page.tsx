@@ -14,7 +14,9 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, ArrowLeft, Save, Settings } from "lucide-react";
+import { AlertCircle, ArrowLeft, Save, Settings, Trash2 } from "lucide-react";
+import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
   type CourseOutput,
   type ListCourseModulesOutput,
@@ -60,6 +62,8 @@ export default function CourseEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchCourseAndModules = async () => {
@@ -167,6 +171,36 @@ export default function CourseEditPage() {
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isAuthenticated || !course) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to delete course");
+      }
+
+      // Redirect to course studio page
+      router.push("/studio/course");
+    } catch (err) {
+      console.error("Error deleting course:", err);
+      setSaveError(err instanceof Error ? err.message : "Failed to delete course");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -317,14 +351,54 @@ export default function CourseEditPage() {
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
+
+          {/* Danger Zone */}
+          <div className="border-t pt-4 mt-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-destructive">Danger Zone</h3>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete this course and all its modules, lessons, and assignments.
+              </p>
+              <ConfirmDialog
+                trigger={
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Course
+                  </Button>
+                }
+                title="Delete Course"
+                description={`Are you sure you want to delete "${course.title}"? This action cannot be undone. All modules, lessons, and assignments will be permanently removed.`}
+                confirmText="Delete Course"
+                variant="destructive"
+                onConfirm={handleDelete}
+                isLoading={isDeleting}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Course Modules */}
       <Card>
         <CardHeader>
-          <CardTitle>Course Modules ({modules.length})</CardTitle>
-          <CardDescription>Manage the modules in this course</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Course Modules ({modules.length})</CardTitle>
+              <CardDescription>Manage the modules in this course</CardDescription>
+            </div>
+            <CreateModuleDialog
+              courseNftPolicyId={courseNftPolicyId}
+              onModuleCreated={() => {
+                // Refetch modules after creation
+                void fetch(
+                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+                )
+                  .then((res) => res.json())
+                  .then((data) => setModules(data as ListCourseModulesOutput))
+                  .catch(console.error);
+              }}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {modules.length === 0 ? (

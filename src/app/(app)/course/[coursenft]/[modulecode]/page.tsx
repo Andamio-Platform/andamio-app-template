@@ -10,7 +10,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, BookOpen, Settings } from "lucide-react";
+import { AlertCircle, BookOpen, Settings, FileText } from "lucide-react";
 import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "andamio-db-api";
 
 /**
@@ -284,6 +284,22 @@ export default function ModuleLessonsPage() {
           courseNftPolicyId={courseNftPolicyId}
           moduleCode={moduleCode}
         />
+      </div>
+
+      {/* Module Assignment */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Module Assignment</h2>
+          <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+            <Button>
+              <FileText className="h-4 w-4 mr-2" />
+              View Assignment
+            </Button>
+          </Link>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Complete the assignment to demonstrate your understanding of this module's learning targets.
+        </p>
       </div>
     </div>
   );

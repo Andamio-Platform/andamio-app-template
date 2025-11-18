@@ -10,6 +10,58 @@ import {
   isJWTExpired,
   type AuthUser,
 } from "~/lib/andamio-auth";
+import { env } from "~/env";
+
+/**
+ * Automatically register user as Creator and Learner on first login
+ * Silently fails if user is already registered (409 Conflict)
+ */
+async function autoRegisterRoles(jwt: string): Promise<void> {
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${jwt}`,
+  };
+
+  try {
+    // Register as Creator
+    const creatorResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/creator`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({}),
+    });
+
+    if (creatorResponse.ok) {
+      const creatorData = (await creatorResponse.json()) as { success: boolean; creatorId: string };
+      console.log("✅ Registered as Creator:", creatorData.creatorId);
+    } else if (creatorResponse.status === 409) {
+      console.log("ℹ️ Already registered as Creator");
+    } else {
+      console.warn("Failed to register as Creator:", await creatorResponse.text());
+    }
+  } catch (error) {
+    console.warn("Error registering as Creator:", error);
+  }
+
+  try {
+    // Register as Learner
+    const learnerResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({}),
+    });
+
+    if (learnerResponse.ok) {
+      const learnerData = (await learnerResponse.json()) as { success: boolean; learnerId: string };
+      console.log("✅ Registered as Learner:", learnerData.learnerId);
+    } else if (learnerResponse.status === 409) {
+      console.log("ℹ️ Already registered as Learner");
+    } else {
+      console.warn("Failed to register as Learner:", await learnerResponse.text());
+    }
+  } catch (error) {
+    console.warn("Error registering as Learner:", error);
+  }
+}
 
 interface AndamioAuthContextType {
   // State
@@ -88,6 +140,9 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setJwt(authResponse.jwt);
       setUser(authResponse.user);
       setIsAuthenticated(true);
+
+      // Automatically register as Creator and Learner on first login
+      await autoRegisterRoles(authResponse.jwt);
 
       // Log JWT to console for debugging
       console.group("🔐 Andamio Authentication Successful");

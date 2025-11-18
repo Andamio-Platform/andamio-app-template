@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { AlertCircle, ArrowLeft, Save } from "lucide-react";
+import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
   type CourseModuleOutput,
   type UpdateCourseModuleInput,
@@ -82,6 +83,8 @@ export default function ModuleEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -206,6 +209,36 @@ export default function ModuleEditPage() {
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isAuthenticated || !module) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to delete module");
+      }
+
+      // Redirect to course edit page
+      router.push(`/studio/course/${courseNftPolicyId}`);
+    } catch (err) {
+      console.error("Error deleting module:", err);
+      setSaveError(err instanceof Error ? err.message : "Failed to delete module");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -360,6 +393,30 @@ export default function ModuleEditPage() {
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="border-t pt-4 mt-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-destructive">Danger Zone</h3>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete this module and all its lessons, SLTs, and assignments.
+              </p>
+              <ConfirmDialog
+                trigger={
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Module
+                  </Button>
+                }
+                title="Delete Module"
+                description={`Are you sure you want to delete "${module.title}"? This action cannot be undone. All lessons, SLTs, introduction, and assignments will be permanently removed.`}
+                confirmText="Delete Module"
+                variant="destructive"
+                onConfirm={handleDelete}
+                isLoading={isDeleting}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

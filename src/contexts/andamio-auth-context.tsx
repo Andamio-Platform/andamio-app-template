@@ -88,6 +88,24 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setJwt(authResponse.jwt);
       setUser(authResponse.user);
       setIsAuthenticated(true);
+
+      // Log JWT to console for debugging
+      console.group("🔐 Andamio Authentication Successful");
+      console.log("JWT Token:", authResponse.jwt);
+
+      // Decode and display JWT payload
+      try {
+        const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!));
+        console.log("JWT Payload:", payload);
+        console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
+      } catch (e) {
+        console.log("Could not decode JWT payload");
+      }
+
+      console.log("User:", authResponse.user);
+      console.log("\nTo use in API requests:");
+      console.log(`Authorization: Bearer ${authResponse.jwt}`);
+      console.groupEnd();
     } catch (error) {
       console.error("Authentication failed:", error);
       setAuthError(

@@ -14,7 +14,7 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { AlertCircle, ArrowLeft, Save, Settings, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Save, Settings, Trash2, Users } from "lucide-react";
 import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
@@ -374,6 +374,27 @@ export default function CourseEditPage() {
                 isLoading={isDeleting}
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Instructor Tools */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Instructor Tools</CardTitle>
+          <CardDescription>View student progress and manage submissions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3">
+            <Link href={`/studio/course/${courseNftPolicyId}/instructor`}>
+              <Button variant="outline" className="w-full justify-start">
+                <Users className="h-4 w-4 mr-2" />
+                Instructor Dashboard
+                <span className="ml-auto text-sm text-muted-foreground">
+                  View all student submissions
+                </span>
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

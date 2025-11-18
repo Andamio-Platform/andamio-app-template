@@ -11,7 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
-import { AlertCircle, ArrowLeft, FileText } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import type { JSONContent } from "@tiptap/core";
 
@@ -42,10 +42,6 @@ interface Assignment {
     moduleIndex: number;
     sltText: string;
   }>;
-}
-
-interface ApiError {
-  message?: string;
 }
 
 export default function LearnerAssignmentPage() {

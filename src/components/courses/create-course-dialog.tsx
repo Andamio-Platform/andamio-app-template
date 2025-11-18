@@ -19,7 +19,7 @@ import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Plus, AlertCircle, Loader2 } from "lucide-react";
-import { type CreateCourseOutput } from "andamio-db-api";
+import { type CourseOutput } from "andamio-db-api";
 
 /**
  * Dialog component for creating a new course
@@ -144,7 +144,7 @@ export function CreateCourseDialog() {
         throw new Error(errorData.message ?? "Failed to create course");
       }
 
-      const newCourse = (await response.json()) as CreateCourseOutput;
+      const newCourse = (await response.json()) as CourseOutput;
 
       // Close dialog and redirect to course edit page
       setOpen(false);

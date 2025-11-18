@@ -298,7 +298,7 @@ export default function ModuleLessonsPage() {
           </Link>
         </div>
         <p className="text-sm text-muted-foreground">
-          Complete the assignment to demonstrate your understanding of this module's learning targets.
+          Complete the assignment to demonstrate your understanding of this module&apos;s learning targets.
         </p>
       </div>
     </div>

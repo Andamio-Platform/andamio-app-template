@@ -7,13 +7,6 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Textarea } from "~/components/ui/textarea";
 import { Label } from "~/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Separator } from "~/components/ui/separator";
@@ -51,38 +44,38 @@ interface AssignmentCommitmentProps {
   moduleCode: string;
 }
 
-const PRIVATE_STATUSES = [
-  { value: "NOT_STARTED", label: "Not Started" },
-  { value: "SAVE_FOR_LATER", label: "Save for Later" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "COMPLETE", label: "Complete" },
-  { value: "COMMITMENT", label: "Ready to Commit" },
-  { value: "NETWORK_READY", label: "Network Ready" },
-] as const;
+// Status constants commented out - not currently used but kept for future reference
+// const PRIVATE_STATUSES = [
+//   { value: "NOT_STARTED", label: "Not Started" },
+//   { value: "SAVE_FOR_LATER", label: "Save for Later" },
+//   { value: "IN_PROGRESS", label: "In Progress" },
+//   { value: "COMPLETE", label: "Complete" },
+//   { value: "COMMITMENT", label: "Ready to Commit" },
+//   { value: "NETWORK_READY", label: "Network Ready" },
+// ] as const;
 
-const NETWORK_STATUSES = [
-  { value: "AWAITING_EVIDENCE", label: "Awaiting Evidence" },
-  { value: "PENDING_TX_COMMITMENT_MADE", label: "Commitment Made (Pending TX)" },
-  { value: "PENDING_TX_ADD_INFO", label: "Adding Info (Pending TX)" },
-  { value: "PENDING_APPROVAL", label: "Pending Approval" },
-  { value: "PENDING_TX_ASSIGNMENT_ACCEPTED", label: "Accepted (Pending TX)" },
-  { value: "ASSIGNMENT_ACCEPTED", label: "Assignment Accepted" },
-  { value: "PENDING_TX_ASSIGNMENT_DENIED", label: "Denied (Pending TX)" },
-  { value: "ASSIGNMENT_DENIED", label: "Assignment Denied" },
-  { value: "PENDING_TX_CLAIM_CREDENTIAL", label: "Claiming Credential (Pending TX)" },
-  { value: "CREDENTIAL_CLAIMED", label: "Credential Claimed" },
-  { value: "PENDING_TX_LEAVE_ASSIGNMENT", label: "Leaving (Pending TX)" },
-  { value: "ASSIGNMENT_LEFT", label: "Assignment Left" },
-] as const;
+// const NETWORK_STATUSES = [
+//   { value: "AWAITING_EVIDENCE", label: "Awaiting Evidence" },
+//   { value: "PENDING_TX_COMMITMENT_MADE", label: "Commitment Made (Pending TX)" },
+//   { value: "PENDING_TX_ADD_INFO", label: "Adding Info (Pending TX)" },
+//   { value: "PENDING_APPROVAL", label: "Pending Approval" },
+//   { value: "PENDING_TX_ASSIGNMENT_ACCEPTED", label: "Accepted (Pending TX)" },
+//   { value: "ASSIGNMENT_ACCEPTED", label: "Assignment Accepted" },
+//   { value: "PENDING_TX_ASSIGNMENT_DENIED", label: "Denied (Pending TX)" },
+//   { value: "ASSIGNMENT_DENIED", label: "Assignment Denied" },
+//   { value: "PENDING_TX_CLAIM_CREDENTIAL", label: "Claiming Credential (Pending TX)" },
+//   { value: "CREDENTIAL_CLAIMED", label: "Credential Claimed" },
+//   { value: "PENDING_TX_LEAVE_ASSIGNMENT", label: "Leaving (Pending TX)" },
+//   { value: "ASSIGNMENT_LEFT", label: "Assignment Left" },
+// ] as const;
 
 interface Commitment {
   id: string;
   assignmentId: string;
   learnerId: string;
   privateStatus: string;
-  privateEvidence: any;
   networkStatus: string;
-  networkEvidence: any;
+  networkEvidence: unknown;
   networkEvidenceHash: string | null;
   favorite: boolean;
   archived: boolean;
@@ -92,7 +85,7 @@ export function AssignmentCommitment({
   assignmentId,
   assignmentTitle,
   courseNftPolicyId,
-  moduleCode,
+  moduleCode: _moduleCode,
 }: AssignmentCommitmentProps) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [commitment, setCommitment] = useState<Commitment | null>(null);
@@ -104,7 +97,6 @@ export function AssignmentCommitment({
 
   // Form state
   const [privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
-  const [privateEvidence, setPrivateEvidence] = useState("");
   const [networkEvidence, setNetworkEvidence] = useState("");
 
   // Check if commitment exists
@@ -134,11 +126,6 @@ export function AssignmentCommitment({
         if (existingCommitment) {
           setCommitment(existingCommitment);
           setPrivateStatus(existingCommitment.privateStatus);
-          setPrivateEvidence(
-            typeof existingCommitment.privateEvidence === "string"
-              ? existingCommitment.privateEvidence
-              : JSON.stringify(existingCommitment.privateEvidence, null, 2)
-          );
           setNetworkEvidence(
             typeof existingCommitment.networkEvidence === "string"
               ? existingCommitment.networkEvidence
@@ -170,7 +157,6 @@ export function AssignmentCommitment({
           body: JSON.stringify({
             assignmentId,
             privateStatus: privateStatus || "NOT_STARTED",
-            privateEvidence: privateEvidence || undefined,
           }),
         }
       );
@@ -253,7 +239,6 @@ export function AssignmentCommitment({
 
       setCommitment(null);
       setPrivateStatus("NOT_STARTED");
-      setPrivateEvidence("");
       setNetworkEvidence("");
       setSuccess("Commitment deleted successfully!");
       setTimeout(() => setSuccess(null), 3000);
@@ -296,7 +281,7 @@ export function AssignmentCommitment({
     <Card>
       <CardHeader>
         <CardTitle>Your Progress</CardTitle>
-        <CardDescription>Track and submit your work for "{assignmentTitle}"</CardDescription>
+        <CardDescription>Track and submit your work for &quot;{assignmentTitle}&quot;</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -319,7 +304,7 @@ export function AssignmentCommitment({
             <div className="text-center py-8 border-2 border-dashed rounded-lg">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-sm text-muted-foreground mb-4">
-                You haven't started this assignment yet
+                You haven&apos;t started this assignment yet
               </p>
               <Button onClick={handleCreateCommitment} disabled={isSaving}>
                 {isSaving ? (
@@ -368,21 +353,6 @@ export function AssignmentCommitment({
             </div>
 
             <Separator />
-
-            {/* Private Evidence (Notes) */}
-            <div className="space-y-2">
-              <Label htmlFor="privateEvidence">Your Notes (Private)</Label>
-              <Textarea
-                id="privateEvidence"
-                placeholder="Keep track of your thoughts, progress, and notes here..."
-                value={privateEvidence}
-                onChange={(e) => setPrivateEvidence(e.target.value)}
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">
-                These notes are private and only visible to you
-              </p>
-            </div>
 
             {/* Network Evidence (Public Submission) */}
             <div className="space-y-2">

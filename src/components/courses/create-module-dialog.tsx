@@ -26,7 +26,7 @@ import {
 } from "~/components/ui/select";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Plus, AlertCircle, Loader2 } from "lucide-react";
-import { type CreateCourseModuleOutput } from "andamio-db-api";
+import { type CourseModuleOutput } from "andamio-db-api";
 
 /**
  * Dialog component for creating a new course module
@@ -104,7 +104,7 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
         throw new Error(errorData.message ?? "Failed to create module");
       }
 
-      const newModule = (await response.json()) as CreateCourseModuleOutput;
+      const newModule = (await response.json()) as CourseModuleOutput;
 
       // Close dialog
       setOpen(false);

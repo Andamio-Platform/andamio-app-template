@@ -184,7 +184,7 @@ export function MyLearning() {
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-sm text-muted-foreground mb-4">
-              You haven't started any courses yet.
+              You haven&apos;t started any courses yet.
             </p>
             <Link href="/course">
               <Button>Browse Courses</Button>

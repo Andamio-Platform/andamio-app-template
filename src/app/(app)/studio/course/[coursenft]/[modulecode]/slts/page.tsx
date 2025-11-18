@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen } from "lucide-react";
+import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X } from "lucide-react";
 import {
   type CourseModuleOutput,
   type SLTOutput,
@@ -29,10 +29,29 @@ import {
   type ListLessonsOutput,
   type CreateSLTInput,
   type UpdateSLTInput,
+  type BatchUpdateSLTIndexesInput,
   createSLTInputSchema,
   updateSLTInputSchema,
+  batchUpdateSLTIndexesInputSchema,
 } from "andamio-db-api";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 /**
  * Studio page for managing Student Learning Targets (SLTs)
@@ -41,7 +60,8 @@ import Link from "next/link";
  * - POST /slts (protected) - Create new SLT
  * - PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update SLT
  * - DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete SLT
- * Input Validation: Uses createSLTInputSchema and updateSLTInputSchema
+ * - PATCH /slts/batch-update-indexes (protected) - Batch update SLT indexes
+ * Input Validation: Uses createSLTInputSchema, updateSLTInputSchema, batchUpdateSLTIndexesInputSchema
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  */
 
@@ -61,6 +81,118 @@ type CombinedSLTLesson = {
   };
 };
 
+// Sortable row component
+function SortableSLTRow({
+  item,
+  courseNftPolicyId,
+  moduleCode,
+  isReorderMode,
+  onEdit,
+  onDelete,
+}: {
+  item: CombinedSLTLesson;
+  courseNftPolicyId: string;
+  moduleCode: string;
+  isReorderMode: boolean;
+  onEdit: (slt: SLTOutput) => void;
+  onDelete: (slt: SLTOutput) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.sltId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      {isReorderMode && (
+        <TableCell className="w-12">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </TableCell>
+      )}
+      <TableCell className="font-mono text-xs">
+        <Badge variant="outline">{item.moduleIndex}</Badge>
+      </TableCell>
+      <TableCell className="font-medium">{item.sltText}</TableCell>
+      <TableCell>
+        {item.lesson ? (
+          <div>
+            <div className="font-medium">
+              <Link
+                href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
+                className="hover:underline text-primary"
+              >
+                {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
+              </Link>
+            </div>
+            {item.lesson.description && (
+              <div className="text-sm text-muted-foreground">
+                {item.lesson.description}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted-foreground italic text-sm">No lesson yet</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {item.lesson ? (
+          item.lesson.live ? (
+            <Badge variant="default">Live</Badge>
+          ) : (
+            <Badge variant="secondary">Draft</Badge>
+          )
+        ) : (
+          <Badge variant="outline">No Lesson</Badge>
+        )}
+      </TableCell>
+      {!isReorderMode && (
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit({
+                id: item.sltId,
+                moduleIndex: item.moduleIndex,
+                sltText: item.sltText,
+              })}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete({
+                id: item.sltId,
+                moduleIndex: item.moduleIndex,
+                sltText: item.sltText,
+              })}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      )}
+    </TableRow>
+  );
+}
+
 export default function SLTManagementPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
@@ -71,6 +203,11 @@ export default function SLTManagementPage() {
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Reorder mode
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderedData, setReorderedData] = useState<CombinedSLTLesson[]>([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -86,6 +223,14 @@ export default function SLTManagementPage() {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Utility function to fetch and combine SLTs with lessons
   const fetchCombinedData = async () => {
@@ -129,6 +274,7 @@ export default function SLTManagementPage() {
     });
 
     setCombinedData(combined);
+    setReorderedData(combined);
   };
 
   useEffect(() => {
@@ -162,6 +308,81 @@ export default function SLTManagementPage() {
     void fetchModuleAndSLTs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseNftPolicyId, moduleCode]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setReorderedData((items) => {
+        const oldIndex = items.findIndex((item) => item.sltId === active.id);
+        const newIndex = items.findIndex((item) => item.sltId === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    if (!isAuthenticated) {
+      setActionError("You must be authenticated to reorder SLTs");
+      return;
+    }
+
+    setIsSavingOrder(true);
+    setActionError(null);
+
+    try {
+      // Build the updates array mapping each SLT to its new index (starting from 1)
+      const updates = reorderedData.map((item, index) => ({
+        id: item.sltId,
+        moduleIndex: index + 1,
+      }));
+
+      const batchInput: BatchUpdateSLTIndexesInput = { updates };
+
+      // Validate batch update input
+      const validation = batchUpdateSLTIndexesInputSchema.safeParse(batchInput);
+
+      if (!validation.success) {
+        const errors = validation.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errors}`);
+      }
+
+      // Send batch update request
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/batch-update-indexes`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(validation.data),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to update SLT order");
+      }
+
+      // Refresh data
+      await fetchCombinedData();
+
+      // Exit reorder mode
+      setIsReorderMode(false);
+    } catch (err) {
+      console.error("Error saving SLT order:", err);
+      setActionError(err instanceof Error ? err.message : "Failed to save order");
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleCancelReorder = () => {
+    setReorderedData(combinedData);
+    setIsReorderMode(false);
+    setActionError(null);
+  };
 
   const handleCreateSLT = async () => {
     if (!isAuthenticated) {
@@ -373,6 +594,8 @@ export default function SLTManagementPage() {
     );
   }
 
+  const dataToDisplay = isReorderMode ? reorderedData : combinedData;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -391,24 +614,66 @@ export default function SLTManagementPage() {
             Student Learning Targets for {module.moduleCode}
           </p>
         </div>
-        <Button onClick={openCreateDialog} disabled={combinedData.length >= 25}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add SLT
-        </Button>
+        <div className="flex gap-2">
+          {isReorderMode ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCancelReorder}
+                disabled={isSavingOrder}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveOrder}
+                disabled={isSavingOrder}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSavingOrder ? "Saving..." : "Save Order"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsReorderMode(true)}
+                disabled={combinedData.length === 0}
+              >
+                <GripVertical className="h-4 w-4 mr-2" />
+                Reorder
+              </Button>
+              <Button onClick={openCreateDialog} disabled={combinedData.length >= 25}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add SLT
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Action Error */}
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      )}
 
       {/* SLT Count Info */}
       <Card>
         <CardHeader>
           <CardTitle>Learning Targets ({combinedData.length}/25)</CardTitle>
           <CardDescription>
-            Each module can have up to 25 Student Learning Targets
+            {isReorderMode
+              ? "Drag and drop to reorder SLTs. Changes will be saved when you click 'Save Order'."
+              : "Each module can have up to 25 Student Learning Targets"}
           </CardDescription>
         </CardHeader>
       </Card>
 
       {/* SLTs Table */}
-      {combinedData.length === 0 ? (
+      {dataToDisplay.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
           <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-sm text-muted-foreground mb-4">
@@ -421,85 +686,43 @@ export default function SLTManagementPage() {
         </div>
       ) : (
         <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">Index</TableHead>
-                <TableHead>Learning Target</TableHead>
-                <TableHead>Lesson</TableHead>
-                <TableHead className="w-24">Status</TableHead>
-                <TableHead className="w-32 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {combinedData.map((item) => (
-                <TableRow key={item.moduleIndex}>
-                  <TableCell className="font-mono text-xs">
-                    <Badge variant="outline">{item.moduleIndex}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{item.sltText}</TableCell>
-                  <TableCell>
-                    {item.lesson ? (
-                      <div>
-                        <div className="font-medium">
-                          <Link
-                            href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
-                            className="hover:underline text-primary"
-                          >
-                            {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
-                          </Link>
-                        </div>
-                        {item.lesson.description && (
-                          <div className="text-sm text-muted-foreground">
-                            {item.lesson.description}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground italic text-sm">No lesson yet</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {item.lesson ? (
-                      item.lesson.live ? (
-                        <Badge variant="default">Live</Badge>
-                      ) : (
-                        <Badge variant="secondary">Draft</Badge>
-                      )
-                    ) : (
-                      <Badge variant="outline">No Lesson</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog({
-                          id: item.sltId,
-                          moduleIndex: item.moduleIndex,
-                          sltText: item.sltText,
-                        })}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openDeleteDialog({
-                          id: item.sltId,
-                          moduleIndex: item.moduleIndex,
-                          sltText: item.sltText,
-                        })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isReorderMode && <TableHead className="w-12"></TableHead>}
+                  <TableHead className="w-20">Index</TableHead>
+                  <TableHead>Learning Target</TableHead>
+                  <TableHead>Lesson</TableHead>
+                  <TableHead className="w-24">Status</TableHead>
+                  {!isReorderMode && <TableHead className="w-32 text-right">Actions</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                <SortableContext
+                  items={dataToDisplay.map((item) => item.sltId)}
+                  strategy={verticalListSortingStrategy}
+                  disabled={!isReorderMode}
+                >
+                  {dataToDisplay.map((item) => (
+                    <SortableSLTRow
+                      key={item.sltId}
+                      item={item}
+                      courseNftPolicyId={courseNftPolicyId}
+                      moduleCode={moduleCode}
+                      isReorderMode={isReorderMode}
+                      onEdit={openEditDialog}
+                      onDelete={openDeleteDialog}
+                    />
+                  ))}
+                </SortableContext>
+              </TableBody>
+            </Table>
+          </DndContext>
         </div>
       )}
 

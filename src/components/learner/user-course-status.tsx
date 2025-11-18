@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Badge } from "~/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import { Progress } from "~/components/ui/progress";
-import { Separator } from "~/components/ui/separator";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioProgress } from "~/components/andamio/andamio-progress";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import {
   AlertCircle,
   CheckCircle,
@@ -99,33 +99,33 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-          <CardDescription>Loading your course progress...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-32 w-full" />
-        </CardContent>
-      </Card>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Your Progress</AndamioCardTitle>
+          <AndamioCardDescription>Loading your course progress...</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioSkeleton className="h-32 w-full" />
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
   if (error || !status) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Your Progress</AndamioCardTitle>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioAlert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AndamioAlertDescription>
               {error ?? "Failed to load course status"}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+            </AndamioAlertDescription>
+          </AndamioAlert>
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
@@ -134,12 +134,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
   const progress = totalAssignments > 0 ? (completedCount / totalAssignments) * 100 : 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Progress</CardTitle>
-        <CardDescription>Track your completion status for {status.course.title}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <AndamioCard>
+      <AndamioCardHeader>
+        <AndamioCardTitle>Your Progress</AndamioCardTitle>
+        <AndamioCardDescription>Track your completion status for {status.course.title}</AndamioCardDescription>
+      </AndamioCardHeader>
+      <AndamioCardContent className="space-y-6">
         {/* Overall Progress */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -148,13 +148,13 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
               {completedCount} / {totalAssignments} assignments
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <AndamioProgress value={progress} className="h-2" />
           <p className="text-xs text-muted-foreground">
             {Math.round(progress)}% complete
           </p>
         </div>
 
-        <Separator />
+        <AndamioSeparator />
 
         {/* Status Indicators */}
         <div className="grid grid-cols-2 gap-4">
@@ -165,12 +165,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
               {status.isEnrolled ? (
                 <>
                   <CheckCircle className="h-4 w-4 text-success" />
-                  <Badge variant="default">Enrolled</Badge>
+                  <AndamioBadge variant="default">Enrolled</AndamioBadge>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4 text-warning" />
-                  <Badge variant="secondary">Not Enrolled</Badge>
+                  <AndamioBadge variant="secondary">Not Enrolled</AndamioBadge>
                 </>
               )}
             </div>
@@ -188,12 +188,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
               {status.awaitingApproval ? (
                 <>
                   <Clock className="h-4 w-4 text-info" />
-                  <Badge variant="outline">{status.awaitingApproval}</Badge>
+                  <AndamioBadge variant="outline">{status.awaitingApproval}</AndamioBadge>
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4 text-success" />
-                  <Badge variant="secondary">None</Badge>
+                  <AndamioBadge variant="secondary">None</AndamioBadge>
                 </>
               )}
             </div>
@@ -205,7 +205,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           </div>
         </div>
 
-        <Separator />
+        <AndamioSeparator />
 
         {/* Completed Assignments */}
         {status.completedAssignments.length > 0 && (
@@ -226,9 +226,9 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
                       Module: {assignment.moduleCode}
                     </p>
                   </div>
-                  <Badge variant="default" className="text-xs">
+                  <AndamioBadge variant="default" className="text-xs">
                     {assignment.networkStatus}
-                  </Badge>
+                  </AndamioBadge>
                 </div>
               ))}
             </div>
@@ -272,22 +272,22 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>On-chain sync status:</span>
             {status.syncSuccess ? (
-              <Badge variant="outline" className="text-xs">
+              <AndamioBadge variant="outline" className="text-xs">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Synced
-              </Badge>
+              </AndamioBadge>
             ) : (
-              <Badge variant="secondary" className="text-xs">
+              <AndamioBadge variant="secondary" className="text-xs">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Pending indexer
-              </Badge>
+              </AndamioBadge>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Full sync requires indexer integration for on-chain validation
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </AndamioCardContent>
+    </AndamioCard>
   );
 }

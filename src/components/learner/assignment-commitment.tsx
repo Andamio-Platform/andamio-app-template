@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Textarea } from "~/components/ui/textarea";
-import { Label } from "~/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import { Separator } from "~/components/ui/separator";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
   AlertCircle,
   CheckCircle,
@@ -252,50 +252,50 @@ export function AssignmentCommitment({
 
   if (!isAuthenticated) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Assignment Progress</CardTitle>
-          <CardDescription>Connect your wallet to start this assignment</CardDescription>
-        </CardHeader>
-      </Card>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
+          <AndamioCardDescription>Connect your wallet to start this assignment</AndamioCardDescription>
+        </AndamioCardHeader>
+      </AndamioCard>
     );
   }
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Assignment Progress</CardTitle>
-          <CardDescription>Loading your progress...</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
+          <AndamioCardDescription>Loading your progress...</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Progress</CardTitle>
-        <CardDescription>Track and submit your work for &quot;{assignmentTitle}&quot;</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <AndamioCard>
+      <AndamioCardHeader>
+        <AndamioCardTitle>Your Progress</AndamioCardTitle>
+        <AndamioCardDescription>Track and submit your work for &quot;{assignmentTitle}&quot;</AndamioCardDescription>
+      </AndamioCardHeader>
+      <AndamioCardContent className="space-y-4">
         {error && (
-          <Alert variant="destructive">
+          <AndamioAlert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+            <AndamioAlertDescription>{error}</AndamioAlertDescription>
+          </AndamioAlert>
         )}
 
         {success && (
-          <Alert>
+          <AndamioAlert>
             <CheckCircle className="h-4 w-4" />
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
+            <AndamioAlertDescription>{success}</AndamioAlertDescription>
+          </AndamioAlert>
         )}
 
         {!commitment ? (
@@ -306,7 +306,7 @@ export function AssignmentCommitment({
               <p className="text-sm text-muted-foreground mb-4">
                 You haven&apos;t started this assignment yet
               </p>
-              <Button onClick={handleCreateCommitment} disabled={isSaving}>
+              <AndamioButton onClick={handleCreateCommitment} disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -318,7 +318,7 @@ export function AssignmentCommitment({
                     Start Assignment
                   </>
                 )}
-              </Button>
+              </AndamioButton>
             </div>
           </div>
         ) : (
@@ -330,18 +330,18 @@ export function AssignmentCommitment({
                 <p className="text-sm font-medium">Status</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <Badge variant="outline">{commitment.privateStatus}</Badge>
+                  <AndamioBadge variant="outline">{commitment.privateStatus}</AndamioBadge>
                   {commitment.networkStatus !== "AWAITING_EVIDENCE" && (
-                    <Badge>{commitment.networkStatus}</Badge>
+                    <AndamioBadge>{commitment.networkStatus}</AndamioBadge>
                   )}
                 </div>
               </div>
-              <ConfirmDialog
+              <AndamioConfirmDialog
                 trigger={
-                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                  <AndamioButton variant="destructive" size="sm" disabled={isDeleting}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
-                  </Button>
+                  </AndamioButton>
                 }
                 title="Delete Commitment"
                 description="Are you sure you want to delete this assignment commitment? This action cannot be undone."
@@ -352,12 +352,12 @@ export function AssignmentCommitment({
               />
             </div>
 
-            <Separator />
+            <AndamioSeparator />
 
             {/* Network Evidence (Public Submission) */}
             <div className="space-y-2">
-              <Label htmlFor="networkEvidence">Submission Evidence</Label>
-              <Textarea
+              <AndamioLabel htmlFor="networkEvidence">Submission Evidence</AndamioLabel>
+              <AndamioTextarea
                 id="networkEvidence"
                 placeholder="Add links to your work, proof of completion, or other evidence..."
                 value={networkEvidence}
@@ -371,7 +371,7 @@ export function AssignmentCommitment({
 
             {/* Save Button */}
             <div className="flex justify-end gap-2">
-              <Button
+              <AndamioButton
                 onClick={handleUpdateEvidence}
                 disabled={isSaving || !networkEvidence.trim()}
               >
@@ -386,11 +386,11 @@ export function AssignmentCommitment({
                     Update Evidence
                   </>
                 )}
-              </Button>
+              </AndamioButton>
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </AndamioCardContent>
+    </AndamioCard>
   );
 }

@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen, Settings, FileText } from "lucide-react";
 import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "andamio-db-api";
 
@@ -58,27 +58,27 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
 
   return (
     <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-20">Index</TableHead>
-            <TableHead>Learning Target</TableHead>
-            <TableHead>Lesson Title</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="w-32">Media</TableHead>
-            <TableHead className="w-24">Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <AndamioTable>
+        <AndamioTableHeader>
+          <AndamioTableRow>
+            <AndamioTableHead className="w-20">Index</AndamioTableHead>
+            <AndamioTableHead>Learning Target</AndamioTableHead>
+            <AndamioTableHead>Lesson Title</AndamioTableHead>
+            <AndamioTableHead>Description</AndamioTableHead>
+            <AndamioTableHead className="w-32">Media</AndamioTableHead>
+            <AndamioTableHead className="w-24">Status</AndamioTableHead>
+          </AndamioTableRow>
+        </AndamioTableHeader>
+        <AndamioTableBody>
           {data.map((item) => (
-            <TableRow key={item.moduleIndex}>
-              <TableCell className="font-mono text-xs">
-                <Badge variant="outline">{item.moduleIndex}</Badge>
-              </TableCell>
-              <TableCell className="font-medium">
+            <AndamioTableRow key={item.moduleIndex}>
+              <AndamioTableCell className="font-mono text-xs">
+                <AndamioBadge variant="outline">{item.moduleIndex}</AndamioBadge>
+              </AndamioTableCell>
+              <AndamioTableCell className="font-medium">
                 {item.sltText}
-              </TableCell>
-              <TableCell className="font-medium">
+              </AndamioTableCell>
+              <AndamioTableCell className="font-medium">
                 {item.lesson ? (
                   <Link
                     href={`/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
@@ -89,41 +89,41 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
                 ) : (
                   <span className="text-muted-foreground italic">No lesson yet</span>
                 )}
-              </TableCell>
-              <TableCell>
+              </AndamioTableCell>
+              <AndamioTableCell>
                 {item.lesson?.description ?? (
                   <span className="text-muted-foreground">—</span>
                 )}
-              </TableCell>
-              <TableCell>
+              </AndamioTableCell>
+              <AndamioTableCell>
                 {item.lesson ? (
                   <div className="flex gap-1">
                     {item.lesson.imageUrl && (
-                      <Badge variant="outline">Image</Badge>
+                      <AndamioBadge variant="outline">Image</AndamioBadge>
                     )}
                     {item.lesson.videoUrl && (
-                      <Badge variant="outline">Video</Badge>
+                      <AndamioBadge variant="outline">Video</AndamioBadge>
                     )}
                   </div>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
-              </TableCell>
-              <TableCell>
+              </AndamioTableCell>
+              <AndamioTableCell>
                 {item.lesson ? (
                   item.lesson.live ? (
-                    <Badge variant="default">Live</Badge>
+                    <AndamioBadge variant="default">Live</AndamioBadge>
                   ) : (
-                    <Badge variant="secondary">Draft</Badge>
+                    <AndamioBadge variant="secondary">Draft</AndamioBadge>
                   )
                 ) : (
-                  <Badge variant="outline">No Lesson</Badge>
+                  <AndamioBadge variant="outline">No Lesson</AndamioBadge>
                 )}
-              </TableCell>
-            </TableRow>
+              </AndamioTableCell>
+            </AndamioTableRow>
           ))}
-        </TableBody>
-      </Table>
+        </AndamioTableBody>
+      </AndamioTable>
     </div>
   );
 }
@@ -215,13 +215,13 @@ export default function ModuleLessonsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-5 w-96" />
+          <AndamioSkeleton className="h-9 w-64 mb-2" />
+          <AndamioSkeleton className="h-5 w-96" />
         </div>
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <AndamioSkeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       </div>
@@ -236,13 +236,13 @@ export default function ModuleLessonsPage() {
           <h1 className="text-3xl font-bold">Module Not Found</h1>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>
             {error ?? "Module not found"}
-          </AlertDescription>
-        </Alert>
+          </AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -260,18 +260,18 @@ export default function ModuleLessonsPage() {
             <p className="text-muted-foreground">{moduleData.description}</p>
           )}
           <div className="flex gap-2 pt-2">
-            <Badge variant="outline" className="font-mono text-xs">
+            <AndamioBadge variant="outline" className="font-mono text-xs">
               {moduleData.moduleCode}
-            </Badge>
-            <Badge variant="outline">{moduleData.status}</Badge>
+            </AndamioBadge>
+            <AndamioBadge variant="outline">{moduleData.status}</AndamioBadge>
           </div>
         </div>
         {isAuthenticated && (
           <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
-            <Button variant="outline">
+            <AndamioButton variant="outline">
               <Settings className="h-4 w-4 mr-2" />
               Manage SLTs
-            </Button>
+            </AndamioButton>
           </Link>
         )}
       </div>
@@ -291,10 +291,10 @@ export default function ModuleLessonsPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Module Assignment</h2>
           <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-            <Button>
+            <AndamioButton>
               <FileText className="h-4 w-4 mr-2" />
               View Assignment
-            </Button>
+            </AndamioButton>
           </Link>
         </div>
         <p className="text-sm text-muted-foreground">

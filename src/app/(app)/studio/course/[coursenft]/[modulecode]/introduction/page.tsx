@@ -11,17 +11,17 @@ import {
   AndamioFixedToolbar,
   RenderEditor,
 } from "~/components/editor";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Switch } from "~/components/ui/switch";
-import { Separator } from "~/components/ui/separator";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioSwitch } from "~/components/andamio/andamio-switch";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save } from "lucide-react";
 import {
   type IntroductionOutput,
@@ -268,8 +268,8 @@ export default function IntroductionEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-96 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -279,17 +279,17 @@ export default function IntroductionEditPage() {
     return (
       <div className="space-y-6">
         <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -299,14 +299,14 @@ export default function IntroductionEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
-        <Badge variant={introductionExists ? "default" : "secondary"}>
+        <AndamioBadge variant={introductionExists ? "default" : "secondary"}>
           {introductionExists ? "Editing Introduction" : "Create New Introduction"}
-        </Badge>
+        </AndamioBadge>
       </div>
 
       <div>
@@ -320,38 +320,38 @@ export default function IntroductionEditPage() {
 
       {/* Success/Error Messages */}
       {saveSuccess && (
-        <Alert>
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Introduction saved successfully</AlertDescription>
-        </Alert>
+        <AndamioAlert>
+          <AndamioAlertTitle>Success</AndamioAlertTitle>
+          <AndamioAlertDescription>Introduction saved successfully</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {saveError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="edit" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
+      <AndamioTabs defaultValue="edit" className="space-y-4">
+        <AndamioTabsList>
+          <AndamioTabsTrigger value="edit">Edit</AndamioTabsTrigger>
+          <AndamioTabsTrigger value="preview">Preview</AndamioTabsTrigger>
+        </AndamioTabsList>
 
-        <TabsContent value="edit" className="space-y-6">
+        <AndamioTabsContent value="edit" className="space-y-6">
           {/* Metadata Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Introduction Details</CardTitle>
-              <CardDescription>Basic information about the module introduction</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Introduction Details</AndamioCardTitle>
+              <AndamioCardDescription>Basic information about the module introduction</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
+                <AndamioLabel htmlFor="title">Title *</AndamioLabel>
+                <AndamioInput
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -361,8 +361,8 @@ export default function IntroductionEditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
+                <AndamioLabel htmlFor="description">Description</AndamioLabel>
+                <AndamioTextarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -373,8 +373,8 @@ export default function IntroductionEditPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="imageUrl">Image URL</AndamioLabel>
+                  <AndamioInput
                     id="imageUrl"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
@@ -383,8 +383,8 @@ export default function IntroductionEditPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">Video URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="videoUrl">Video URL</AndamioLabel>
+                  <AndamioInput
                     id="videoUrl"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
@@ -395,87 +395,87 @@ export default function IntroductionEditPage() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Switch id="live" checked={live} onCheckedChange={setLive} />
-                  <Label htmlFor="live">Live (visible to students)</Label>
+                  <AndamioSwitch id="live" checked={live} onCheckedChange={setLive} />
+                  <AndamioLabel htmlFor="live">Live (visible to students)</AndamioLabel>
                 </div>
                 {introductionExists && (
-                  <Button
+                  <AndamioButton
                     variant="outline"
                     size="sm"
                     onClick={handleTogglePublish}
                     disabled={isTogglingPublish}
                   >
                     {isTogglingPublish ? "Toggling..." : live ? "Unpublish" : "Publish"}
-                  </Button>
+                  </AndamioButton>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Content Editor Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Introduction Content</CardTitle>
-              <CardDescription>
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Introduction Content</AndamioCardTitle>
+              <AndamioCardDescription>
                 Write the module introduction using the rich text editor
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {editor && (
                 <>
                   <AndamioFixedToolbar editor={editor} />
-                  <Separator />
+                  <AndamioSeparator />
                   <ContentEditor editor={editor} height="500px" />
                 </>
               )}
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2">
-            <Button
+            <AndamioButton
               variant="outline"
               onClick={() => router.push(`/studio/course/${courseNftPolicyId}/${moduleCode}`)}
             >
               Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !title.trim()}>
+            </AndamioButton>
+            <AndamioButton onClick={handleSave} disabled={isSaving || !title.trim()}>
               <Save className="h-4 w-4 mr-2" />
               {isSaving
                 ? "Saving..."
                 : introductionExists
                   ? "Save Changes"
                   : "Create Introduction"}
-            </Button>
+            </AndamioButton>
           </div>
-        </TabsContent>
+        </AndamioTabsContent>
 
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-              <CardDescription>Read-only preview of the introduction content</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <AndamioTabsContent value="preview">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Preview</AndamioCardTitle>
+              <AndamioCardDescription>Read-only preview of the introduction content</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <div>
                 <h2 className="text-2xl font-bold">{title || "Module Introduction"}</h2>
                 {description && <p className="text-muted-foreground mt-2">{description}</p>}
               </div>
 
-              <Separator />
+              <AndamioSeparator />
 
               {editor && <RenderEditor content={editor.getJSON()} />}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+      </AndamioTabs>
 
       {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About Module Introductions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>About Module Introductions</AndamioCardTitle>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
             The module introduction provides students with an overview of what they&apos;ll learn in
             this module.
@@ -487,8 +487,8 @@ export default function IntroductionEditPage() {
           <p className="font-medium text-foreground">
             Note: Introductions cannot be deleted, only updated.
           </p>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }

@@ -9,10 +9,10 @@ import {
   getWordCount,
   getCharacterCount,
 } from "~/components/editor";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Separator } from "~/components/ui/separator";
+import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 
 const sampleContent = {
   type: "doc",
@@ -168,74 +168,74 @@ export default function EditorPage() {
       {/* Stats */}
       {editor && (
         <div className="flex items-center gap-4">
-          <Badge variant="secondary">
+          <AndamioBadge variant="secondary">
             Words: {getWordCount(editor)}
-          </Badge>
-          <Badge variant="secondary">
+          </AndamioBadge>
+          <AndamioBadge variant="secondary">
             Characters: {getCharacterCount(editor)}
-          </Badge>
+          </AndamioBadge>
         </div>
       )}
 
       {/* Editor Tabs */}
-      <Tabs defaultValue="edit" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="json">JSON</TabsTrigger>
-        </TabsList>
+      <AndamioTabs defaultValue="edit" className="space-y-4">
+        <AndamioTabsList>
+          <AndamioTabsTrigger value="edit">Edit</AndamioTabsTrigger>
+          <AndamioTabsTrigger value="preview">Preview</AndamioTabsTrigger>
+          <AndamioTabsTrigger value="json">JSON</AndamioTabsTrigger>
+        </AndamioTabsList>
 
-        <TabsContent value="edit" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Editor</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <AndamioTabsContent value="edit" className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Editor</AndamioCardTitle>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {editor && (
                 <>
                   <AndamioFixedToolbar editor={editor} />
                   <AndamioBubbleMenus editor={editor} />
-                  <Separator />
+                  <AndamioSeparator />
                   <ContentEditor editor={editor} height="400px" />
                 </>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
 
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview (Read-only)</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <AndamioTabsContent value="preview">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Preview (Read-only)</AndamioCardTitle>
+            </AndamioCardHeader>
+            <AndamioCardContent>
               {editor && <RenderEditor content={editor.getJSON()} />}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
 
-        <TabsContent value="json">
-          <Card>
-            <CardHeader>
-              <CardTitle>JSON Output</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <AndamioTabsContent value="json">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>JSON Output</AndamioCardTitle>
+            </AndamioCardHeader>
+            <AndamioCardContent>
               <pre className="rounded-lg bg-muted p-4 text-sm overflow-x-auto">
                 <code>
                   {editor ? JSON.stringify(editor.getJSON(), null, 2) : ""}
                 </code>
               </pre>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+      </AndamioTabs>
 
       {/* Extension Kits Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Extension Kits</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Extension Kits</AndamioCardTitle>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
           <div>
             <h3 className="font-semibold mb-2">Available Extension Kits:</h3>
             <div className="grid gap-4 md:grid-cols-2">
@@ -265,8 +265,8 @@ export default function EditorPage() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }

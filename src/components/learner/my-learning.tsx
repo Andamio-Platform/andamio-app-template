@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, BookOpen, CheckCircle, Clock, FileText } from "lucide-react";
 import { type ListPublishedCoursesOutput } from "andamio-db-api";
 
@@ -172,81 +172,81 @@ export function MyLearning() {
   // Loading state
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>My Learning</CardTitle>
-          <CardDescription>Your enrolled courses and progress</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>My Learning</AndamioCardTitle>
+          <AndamioCardDescription>Your enrolled courses and progress</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20 w-full" />
+              <AndamioSkeleton key={i} className="h-20 w-full" />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>My Learning</CardTitle>
-          <CardDescription>Your enrolled courses and progress</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>My Learning</AndamioCardTitle>
+          <AndamioCardDescription>Your enrolled courses and progress</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioAlert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+            <AndamioAlertTitle>Error</AndamioAlertTitle>
+            <AndamioAlertDescription>{error}</AndamioAlertDescription>
+          </AndamioAlert>
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
   // Empty state
   if (courses.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>My Learning</CardTitle>
-          <CardDescription>Your enrolled courses and progress</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>My Learning</AndamioCardTitle>
+          <AndamioCardDescription>Your enrolled courses and progress</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-sm text-muted-foreground mb-4">
               You haven&apos;t started any courses yet.
             </p>
             <Link href="/course">
-              <Button>Browse Courses</Button>
+              <AndamioButton>Browse Courses</AndamioButton>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     );
   }
 
   // Courses list
   return (
-    <Card>
-      <CardHeader>
+    <AndamioCard>
+      <AndamioCardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>My Learning</CardTitle>
-            <CardDescription>Your enrolled courses and progress</CardDescription>
+            <AndamioCardTitle>My Learning</AndamioCardTitle>
+            <AndamioCardDescription>Your enrolled courses and progress</AndamioCardDescription>
           </div>
           <Link href="/course">
-            <Button variant="outline" size="sm">
+            <AndamioButton variant="outline" size="sm">
               Browse More Courses
-            </Button>
+            </AndamioButton>
           </Link>
         </div>
-      </CardHeader>
-      <CardContent>
+      </AndamioCardHeader>
+      <AndamioCardContent>
         <div className="space-y-4">
           {courses.map((course) => {
             const progress = course.commitmentCount > 0
@@ -287,13 +287,13 @@ export function MyLearning() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Badge variant={progress === 100 ? "default" : "secondary"}>
+                    <AndamioBadge variant={progress === 100 ? "default" : "secondary"}>
                       {progress === 100 ? "Complete" : "In Progress"}
-                    </Badge>
+                    </AndamioBadge>
                     <Link href={`/course/${course.courseNftPolicyId}`}>
-                      <Button size="sm" variant="ghost">
+                      <AndamioButton size="sm" variant="ghost">
                         Continue Learning
-                      </Button>
+                      </AndamioButton>
                     </Link>
                   </div>
                 </div>
@@ -301,7 +301,7 @@ export function MyLearning() {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </AndamioCardContent>
+    </AndamioCard>
   );
 }

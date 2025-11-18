@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen, Settings } from "lucide-react";
-import { Badge } from "~/components/ui/badge";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 /**
@@ -121,7 +121,7 @@ export function OwnedCoursesList() {
     return (
       <div className="space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} className="h-12 w-full" />
+          <AndamioSkeleton key={i} className="h-12 w-full" />
         ))}
       </div>
     );
@@ -130,11 +130,11 @@ export function OwnedCoursesList() {
   // Error state
   if (error) {
     return (
-      <Alert variant="destructive">
+      <AndamioAlert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+        <AndamioAlertTitle>Error</AndamioAlertTitle>
+        <AndamioAlertDescription>{error}</AndamioAlertDescription>
+      </AndamioAlert>
     );
   }
 
@@ -153,51 +153,51 @@ export function OwnedCoursesList() {
   // Courses list
   return (
     <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Course Code</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="text-center">Modules</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <AndamioTable>
+        <AndamioTableHeader>
+          <AndamioTableRow>
+            <AndamioTableHead>Course Code</AndamioTableHead>
+            <AndamioTableHead>Title</AndamioTableHead>
+            <AndamioTableHead>Description</AndamioTableHead>
+            <AndamioTableHead className="text-center">Modules</AndamioTableHead>
+            <AndamioTableHead className="text-right">Actions</AndamioTableHead>
+          </AndamioTableRow>
+        </AndamioTableHeader>
+        <AndamioTableBody>
           {courses.map((course) => (
-            <TableRow key={course.courseCode}>
-              <TableCell className="font-mono text-xs">
+            <AndamioTableRow key={course.courseCode}>
+              <AndamioTableCell className="font-mono text-xs">
                 {course.courseCode}
-              </TableCell>
-              <TableCell className="font-medium">
+              </AndamioTableCell>
+              <AndamioTableCell className="font-medium">
                 {course.title}
-              </TableCell>
-              <TableCell className="max-w-md truncate">
+              </AndamioTableCell>
+              <AndamioTableCell className="max-w-md truncate">
                 {course.description}
-              </TableCell>
-              <TableCell className="text-center">
+              </AndamioTableCell>
+              <AndamioTableCell className="text-center">
                 {moduleCounts[course.courseCode] !== undefined ? (
-                  <Badge variant="secondary">
+                  <AndamioBadge variant="secondary">
                     {moduleCounts[course.courseCode]}
-                  </Badge>
+                  </AndamioBadge>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
-              </TableCell>
-              <TableCell className="text-right">
+              </AndamioTableCell>
+              <AndamioTableCell className="text-right">
                 {course.courseNftPolicyId && (
                   <Link href={`/studio/course/${course.courseNftPolicyId}`}>
-                    <Button variant="ghost" size="sm">
+                    <AndamioButton variant="ghost" size="sm">
                       <Settings className="h-4 w-4 mr-1" />
                       Manage
-                    </Button>
+                    </AndamioButton>
                   </Link>
                 )}
-              </TableCell>
-            </TableRow>
+              </AndamioTableCell>
+            </AndamioTableRow>
           ))}
-        </TableBody>
-      </Table>
+        </AndamioTableBody>
+      </AndamioTable>
     </div>
   );
 }

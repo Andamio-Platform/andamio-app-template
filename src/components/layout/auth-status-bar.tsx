@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import {
   Wallet,
   Shield,
@@ -110,19 +110,19 @@ export function AuthStatusBar() {
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-muted-foreground" />
             {isWalletConnected ? (
-              <Badge variant="default" className="gap-1">
+              <AndamioBadge variant="default" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                 {walletName ?? "Connected"}
-              </Badge>
+              </AndamioBadge>
             ) : (
-              <Badge variant="secondary" className="gap-1">
+              <AndamioBadge variant="secondary" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-muted-foreground" />
                 Not Connected
-              </Badge>
+              </AndamioBadge>
             )}
           </div>
 
-          <Separator orientation="vertical" className="h-4" />
+          <AndamioSeparator orientation="vertical" className="h-4" />
 
           {/* Auth Status */}
           <div className="flex items-center gap-2">
@@ -134,35 +134,35 @@ export function AuthStatusBar() {
               <Shield className="h-4 w-4 text-muted-foreground" />
             )}
             {isAuthenticated ? (
-              <Badge variant="default" className="gap-1">
+              <AndamioBadge variant="default" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-success-foreground animate-pulse" />
                 Authenticated
-              </Badge>
+              </AndamioBadge>
             ) : authError ? (
-              <Badge variant="destructive" className="gap-1">
+              <AndamioBadge variant="destructive" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-destructive-foreground" />
                 Auth Error
-              </Badge>
+              </AndamioBadge>
             ) : (
-              <Badge variant="secondary" className="gap-1">
+              <AndamioBadge variant="secondary" className="gap-1">
                 <span className="h-2 w-2 rounded-full bg-muted-foreground" />
                 Not Authenticated
-              </Badge>
+              </AndamioBadge>
             )}
           </div>
 
           {/* JWT Expiry */}
           {isAuthenticated && timeUntilExpiry && (
             <>
-              <Separator orientation="vertical" className="h-4" />
+              <AndamioSeparator orientation="vertical" className="h-4" />
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <Badge
+                <AndamioBadge
                   variant="outline"
                   className={timeUntilExpiry === "Expired" ? "text-destructive" : ""}
                 >
                   {timeUntilExpiry === "Expired" ? "JWT Expired" : `Expires in ${timeUntilExpiry}`}
-                </Badge>
+                </AndamioBadge>
               </div>
             </>
           )}
@@ -170,12 +170,12 @@ export function AuthStatusBar() {
           {/* User Info */}
           {isAuthenticated && user && (
             <>
-              <Separator orientation="vertical" className="h-4" />
+              <AndamioSeparator orientation="vertical" className="h-4" />
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <Badge variant="outline" className="font-mono text-xs">
+                <AndamioBadge variant="outline" className="font-mono text-xs">
                   {user.accessTokenAlias ?? user.id.slice(0, 8)}
-                </Badge>
+                </AndamioBadge>
               </div>
             </>
           )}
@@ -184,7 +184,7 @@ export function AuthStatusBar() {
         {/* Right side - Actions */}
         <div className="flex items-center gap-2">
           {isAuthenticated && (
-            <Button
+            <AndamioButton
               variant="ghost"
               size="sm"
               onClick={logout}
@@ -192,7 +192,7 @@ export function AuthStatusBar() {
             >
               <LogOut className="h-3 w-3" />
               Logout
-            </Button>
+            </AndamioButton>
           )}
         </div>
       </div>

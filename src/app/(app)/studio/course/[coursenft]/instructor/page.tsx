@@ -5,34 +5,34 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
+  AndamioTable,
+  AndamioTableBody,
+  AndamioTableCell,
+  AndamioTableHead,
+  AndamioTableHeader,
+  AndamioTableRow,
+} from "~/components/andamio/andamio-table";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+} from "~/components/andamio/andamio-card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+  AndamioSelect,
+  AndamioSelectContent,
+  AndamioSelectItem,
+  AndamioSelectTrigger,
+  AndamioSelectValue,
+} from "~/components/andamio/andamio-select";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search } from "lucide-react";
 import {
   type CourseOutput,
@@ -192,19 +192,19 @@ export default function InstructorDashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-5 w-96" />
+          <AndamioSkeleton className="h-9 w-64 mb-2" />
+          <AndamioSkeleton className="h-5 w-96" />
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <AndamioSkeleton key={i} className="h-24 w-full" />
           ))}
         </div>
 
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-16 w-full" />
+            <AndamioSkeleton key={i} className="h-16 w-full" />
           ))}
         </div>
       </div>
@@ -219,11 +219,11 @@ export default function InstructorDashboardPage() {
           <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error ?? "Course not found"}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Course not found"}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -235,10 +235,10 @@ export default function InstructorDashboardPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Link href={`/studio/course/${courseNftPolicyId}`}>
-              <Button variant="ghost" size="sm">
+              <AndamioButton variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Course
-              </Button>
+              </AndamioButton>
             </Link>
           </div>
           <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
@@ -248,94 +248,94 @@ export default function InstructorDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Commitments</CardTitle>
+        <AndamioCard>
+          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <AndamioCardTitle className="text-sm font-medium">Total Commitments</AndamioCardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+        <AndamioCard>
+          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <AndamioCardTitle className="text-sm font-medium">Pending</AndamioCardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Accepted</CardTitle>
+        <AndamioCard>
+          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <AndamioCardTitle className="text-sm font-medium">Accepted</AndamioCardTitle>
             <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <div className="text-2xl font-bold text-success">{stats.accepted}</div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Denied</CardTitle>
+        <AndamioCard>
+          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <AndamioCardTitle className="text-sm font-medium">Denied</AndamioCardTitle>
             <XCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <div className="text-2xl font-bold text-destructive">{stats.denied}</div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter and search assignment commitments</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Filters</AndamioCardTitle>
+          <AndamioCardDescription>Filter and search assignment commitments</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="status-filter">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status-filter">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="AWAITING_EVIDENCE">Awaiting Evidence</SelectItem>
-                  <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
-                  <SelectItem value="ASSIGNMENT_ACCEPTED">Accepted</SelectItem>
-                  <SelectItem value="ASSIGNMENT_DENIED">Denied</SelectItem>
-                  <SelectItem value="CREDENTIAL_CLAIMED">Credential Claimed</SelectItem>
-                </SelectContent>
-              </Select>
+              <AndamioLabel htmlFor="status-filter">Status</AndamioLabel>
+              <AndamioSelect value={statusFilter} onValueChange={setStatusFilter}>
+                <AndamioSelectTrigger id="status-filter">
+                  <AndamioSelectValue placeholder="All statuses" />
+                </AndamioSelectTrigger>
+                <AndamioSelectContent>
+                  <AndamioSelectItem value="all">All Statuses</AndamioSelectItem>
+                  <AndamioSelectItem value="AWAITING_EVIDENCE">Awaiting Evidence</AndamioSelectItem>
+                  <AndamioSelectItem value="PENDING_APPROVAL">Pending Approval</AndamioSelectItem>
+                  <AndamioSelectItem value="ASSIGNMENT_ACCEPTED">Accepted</AndamioSelectItem>
+                  <AndamioSelectItem value="ASSIGNMENT_DENIED">Denied</AndamioSelectItem>
+                  <AndamioSelectItem value="CREDENTIAL_CLAIMED">Credential Claimed</AndamioSelectItem>
+                </AndamioSelectContent>
+              </AndamioSelect>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assignment-filter">Assignment</Label>
-              <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
-                <SelectTrigger id="assignment-filter">
-                  <SelectValue placeholder="All assignments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Assignments</SelectItem>
+              <AndamioLabel htmlFor="assignment-filter">Assignment</AndamioLabel>
+              <AndamioSelect value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                <AndamioSelectTrigger id="assignment-filter">
+                  <AndamioSelectValue placeholder="All assignments" />
+                </AndamioSelectTrigger>
+                <AndamioSelectContent>
+                  <AndamioSelectItem value="all">All Assignments</AndamioSelectItem>
                   {uniqueAssignments.map((assignment) => (
-                    <SelectItem key={assignment.assignmentCode} value={assignment.assignmentCode}>
+                    <AndamioSelectItem key={assignment.assignmentCode} value={assignment.assignmentCode}>
                       {assignment.title}
-                    </SelectItem>
+                    </AndamioSelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </AndamioSelectContent>
+              </AndamioSelect>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="search">Search Learner ID</Label>
+              <AndamioLabel htmlFor="search">Search Learner ID</AndamioLabel>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
+                <AndamioInput
                   id="search"
                   placeholder="Search by learner ID..."
                   className="pl-8"
@@ -351,7 +351,7 @@ export default function InstructorDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 Showing {filteredCommitments.length} of {commitments.length} commitments
               </span>
-              <Button
+              <AndamioButton
                 variant="ghost"
                 size="sm"
                 onClick={() => {
@@ -361,11 +361,11 @@ export default function InstructorDashboardPage() {
                 }}
               >
                 Clear Filters
-              </Button>
+              </AndamioButton>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Commitments Table */}
       {filteredCommitments.length === 0 ? (
@@ -377,7 +377,7 @@ export default function InstructorDashboardPage() {
               : "No commitments match your filters."}
           </p>
           {commitments.length > 0 && (
-            <Button
+            <AndamioButton
               variant="outline"
               size="sm"
               onClick={() => {
@@ -387,46 +387,46 @@ export default function InstructorDashboardPage() {
               }}
             >
               Clear Filters
-            </Button>
+            </AndamioButton>
           )}
         </div>
       ) : (
         <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Learner ID</TableHead>
-                <TableHead>Assignment</TableHead>
-                <TableHead>Network Status</TableHead>
-                <TableHead>Private Status</TableHead>
-                <TableHead>Evidence</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <AndamioTable>
+            <AndamioTableHeader>
+              <AndamioTableRow>
+                <AndamioTableHead>Learner ID</AndamioTableHead>
+                <AndamioTableHead>Assignment</AndamioTableHead>
+                <AndamioTableHead>Network Status</AndamioTableHead>
+                <AndamioTableHead>Private Status</AndamioTableHead>
+                <AndamioTableHead>Evidence</AndamioTableHead>
+              </AndamioTableRow>
+            </AndamioTableHeader>
+            <AndamioTableBody>
               {filteredCommitments.map((commitment) => (
-                <TableRow key={commitment.id}>
-                  <TableCell className="font-mono text-xs">
+                <AndamioTableRow key={commitment.id}>
+                  <AndamioTableCell className="font-mono text-xs">
                     {commitment.learnerId.substring(0, 12)}...
-                  </TableCell>
-                  <TableCell>
+                  </AndamioTableCell>
+                  <AndamioTableCell>
                     <div>
                       <div className="font-medium">{commitment.assignment.title}</div>
                       <div className="text-sm text-muted-foreground">
                         {commitment.assignment.assignmentCode}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(commitment.networkStatus)}>
+                  </AndamioTableCell>
+                  <AndamioTableCell>
+                    <AndamioBadge variant={getStatusVariant(commitment.networkStatus)}>
                       {formatNetworkStatus(commitment.networkStatus)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
+                    </AndamioBadge>
+                  </AndamioTableCell>
+                  <AndamioTableCell>
+                    <AndamioBadge variant="outline">
                       {formatNetworkStatus(commitment.privateStatus)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
+                    </AndamioBadge>
+                  </AndamioTableCell>
+                  <AndamioTableCell>
                     {commitment.networkEvidence ? (
                       <div className="max-w-xs truncate text-sm">
                         {typeof commitment.networkEvidence === "string"
@@ -436,11 +436,11 @@ export default function InstructorDashboardPage() {
                     ) : (
                       <span className="text-sm text-muted-foreground italic">No evidence</span>
                     )}
-                  </TableCell>
-                </TableRow>
+                  </AndamioTableCell>
+                </AndamioTableRow>
               ))}
-            </TableBody>
-          </Table>
+            </AndamioTableBody>
+          </AndamioTable>
         </div>
       )}
     </div>

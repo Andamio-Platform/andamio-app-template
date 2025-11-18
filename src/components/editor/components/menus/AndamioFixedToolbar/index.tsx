@@ -1,7 +1,7 @@
 "use client";
 
 import { type Editor } from "@tiptap/core";
-import { Toggle } from "~/components/ui/toggle";
+import { AndamioToggle } from "~/components/andamio/andamio-toggle";
 import {
   Bold,
   Italic,
@@ -17,7 +17,7 @@ import {
   Redo,
   UnderlineIcon,
 } from "lucide-react";
-import { Separator } from "~/components/ui/separator";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { cn } from "../../../utils";
 
 interface AndamioFixedToolbarProps {
@@ -41,7 +41,7 @@ export function AndamioFixedToolbar({
       )}
     >
       {/* History */}
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={false}
         onPressedChange={() => editor.chain().focus().undo().run()}
@@ -49,8 +49,8 @@ export function AndamioFixedToolbar({
         aria-label="Undo"
       >
         <Undo className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={false}
         onPressedChange={() => editor.chain().focus().redo().run()}
@@ -58,12 +58,12 @@ export function AndamioFixedToolbar({
         aria-label="Redo"
       >
         <Redo className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
 
-      <Separator orientation="vertical" className="mx-1 h-6" />
+      <AndamioSeparator orientation="vertical" className="mx-1 h-6" />
 
       {/* Headings */}
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("heading", { level: 1 })}
         onPressedChange={() =>
@@ -72,8 +72,8 @@ export function AndamioFixedToolbar({
         aria-label="Heading 1"
       >
         <Heading1 className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("heading", { level: 2 })}
         onPressedChange={() =>
@@ -82,8 +82,8 @@ export function AndamioFixedToolbar({
         aria-label="Heading 2"
       >
         <Heading2 className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("heading", { level: 3 })}
         onPressedChange={() =>
@@ -92,83 +92,83 @@ export function AndamioFixedToolbar({
         aria-label="Heading 3"
       >
         <Heading3 className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
 
-      <Separator orientation="vertical" className="mx-1 h-6" />
+      <AndamioSeparator orientation="vertical" className="mx-1 h-6" />
 
       {/* Text formatting */}
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("bold")}
         onPressedChange={() => editor.chain().focus().toggleBold().run()}
         aria-label="Bold"
       >
         <Bold className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("italic")}
         onPressedChange={() => editor.chain().focus().toggleItalic().run()}
         aria-label="Italic"
       >
         <Italic className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("underline")}
         onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
         aria-label="Underline"
       >
         <UnderlineIcon className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("strike")}
         onPressedChange={() => editor.chain().focus().toggleStrike().run()}
         aria-label="Strikethrough"
       >
         <Strikethrough className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("code")}
         onPressedChange={() => editor.chain().focus().toggleCode().run()}
         aria-label="Inline Code"
       >
         <Code className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
 
-      <Separator orientation="vertical" className="mx-1 h-6" />
+      <AndamioSeparator orientation="vertical" className="mx-1 h-6" />
 
       {/* Lists */}
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("bulletList")}
         onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
         aria-label="Bullet List"
       >
         <List className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("orderedList")}
         onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
         aria-label="Ordered List"
       >
         <ListOrdered className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
 
-      <Separator orientation="vertical" className="mx-1 h-6" />
+      <AndamioSeparator orientation="vertical" className="mx-1 h-6" />
 
       {/* Block elements */}
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("blockquote")}
         onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
         aria-label="Blockquote"
       >
         <Quote className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
     </div>
   );
 }

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -54,84 +54,126 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Clean Light Theme - Bold & Sharp */
+  --radius: 0rem;
+
+  /* Base */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+
+  /* Cards */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+
+  /* Primary - Subtle Blue */
+  --primary: oklch(0.45 0.15 250);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+
+  /* Secondary */
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
+
+  /* Muted */
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+
+  /* Accent */
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.145 0 0);
+
+  /* Status colors */
+  --destructive: oklch(0.55 0.2 25);
   --success: oklch(0.6 0.15 145);
   --success-foreground: oklch(0.985 0 0);
   --warning: oklch(0.75 0.15 85);
   --warning-foreground: oklch(0.145 0 0);
   --info: oklch(0.6 0.15 240);
   --info-foreground: oklch(0.985 0 0);
-  --border: oklch(0.45 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
+
+  /* Borders */
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.45 0.15 250);
+
+  /* Charts */
+  --chart-1: oklch(0.55 0.2 25);
+  --chart-2: oklch(0.6 0.2 145);
+  --chart-3: oklch(0.55 0.2 240);
+  --chart-4: oklch(0.65 0.2 60);
+  --chart-5: oklch(0.6 0.2 300);
+
+  /* Sidebar */
+  --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.45 0.15 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.92 0 0);
+  --sidebar-ring: oklch(0.45 0.15 250);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  /* Clean Dark Theme */
+
+  /* Base - Dark slate background */
+  --background: oklch(0.145 0.01 250);
+  --foreground: oklch(0.95 0.01 250);
+
+  /* Cards - Slightly lighter slate */
+  --card: oklch(0.18 0.01 250);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.18 0.01 250);
+  --popover-foreground: oklch(0.95 0.01 250);
+
+  /* Primary - Clean blue */
+  --primary: oklch(0.6 0.15 250);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* Secondary */
+  --secondary: oklch(0.25 0.01 250);
+  --secondary-foreground: oklch(0.95 0.01 250);
+
+  /* Muted */
+  --muted: oklch(0.25 0.01 250);
+  --muted-foreground: oklch(0.65 0.01 250);
+
+  /* Accent */
+  --accent: oklch(0.25 0.01 250);
+  --accent-foreground: oklch(0.95 0.01 250);
+
+  /* Status colors */
+  --destructive: oklch(0.6 0.2 25);
   --success: oklch(0.7 0.15 145);
   --success-foreground: oklch(0.145 0 0);
   --warning: oklch(0.8 0.15 85);
   --warning-foreground: oklch(0.145 0 0);
   --info: oklch(0.7 0.15 240);
-  --info-foreground: oklch(0.145 0 0);
-  --border: oklch(0.6 0 0);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --info-foreground: oklch(0.985 0 0);
+
+  /* Borders - Big White Borders */
+  --border: oklch(0.95 0 0);
+  --input: oklch(0.95 0 0);
+  --ring: oklch(0.6 0.15 250);
+
+  /* Charts */
+  --chart-1: oklch(0.6 0.2 25);
+  --chart-2: oklch(0.7 0.2 145);
+  --chart-3: oklch(0.6 0.2 240);
+  --chart-4: oklch(0.75 0.2 60);
+  --chart-5: oklch(0.65 0.2 300);
+
+  /* Sidebar - Darker slate */
+  --sidebar: oklch(0.12 0.01 250);
+  --sidebar-foreground: oklch(0.95 0.01 250);
+  --sidebar-primary: oklch(0.6 0.15 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent: oklch(0.25 0.01 250);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.95 0 0);
+  --sidebar-ring: oklch(0.6 0.15 250);
 }
 
 @layer base {
@@ -139,48 +181,52 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground leading-relaxed;
   }
 
-  /* Typography Scale - App-wide */
+  /* Typography Scale - Strong, Modern, Balanced */
   h1 {
-    @apply text-3xl font-bold tracking-tight;
-    @apply mb-4;
+    @apply text-4xl font-bold tracking-tight uppercase;
+    @apply mb-8 mt-0;
+    letter-spacing: 0.05em;
   }
 
   h2 {
-    @apply text-2xl font-semibold tracking-tight;
-    @apply mb-3 mt-6;
+    @apply text-3xl font-bold tracking-tight uppercase;
+    @apply mb-6 mt-12;
+    letter-spacing: 0.05em;
   }
 
   h3 {
-    @apply text-xl font-semibold tracking-tight;
-    @apply mb-2 mt-5;
+    @apply text-2xl font-bold tracking-tight uppercase;
+    @apply mb-4 mt-8;
+    letter-spacing: 0.03em;
   }
 
   h4 {
+    @apply text-xl font-bold tracking-tight;
+    @apply mb-3 mt-6;
+  }
+
+  h5 {
     @apply text-lg font-semibold tracking-tight;
     @apply mb-2 mt-4;
   }
 
-  h5 {
-    @apply text-base font-semibold tracking-tight;
-    @apply mb-2 mt-3;
-  }
-
   h6 {
-    @apply text-sm font-semibold tracking-tight;
-    @apply mb-2 mt-3;
+    @apply text-base font-semibold tracking-tight;
+    @apply mb-2 mt-4;
   }
 
   p {
-    @apply text-base leading-7;
-    @apply mb-4;
+    @apply text-base leading-relaxed;
+    @apply mb-6;
+    max-width: 65ch;
   }
 
-  /* Lists */
+  /* Lists - Better spacing */
   ul, ol {
-    @apply mb-4 ml-6;
+    @apply mb-6 ml-8 space-y-2;
   }
 
   ul {
@@ -192,45 +238,46 @@
   }
 
   li {
-    @apply mb-1;
+    @apply leading-relaxed;
   }
 
-  /* Blockquote */
+  /* Blockquote - Bold style */
   blockquote {
-    @apply border-l-4 border-muted-foreground/20 pl-4 italic my-4;
+    @apply border-l-4 border-border pl-6 italic my-8 py-2;
+    @apply text-lg;
   }
 
-  /* Code */
+  /* Code - More spacing */
   code {
-    @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+    @apply bg-muted px-2 py-1 text-sm font-mono border-2 border-border;
   }
 
   pre {
-    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+    @apply bg-muted p-6 overflow-x-auto my-8 border-4 border-border shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)];
   }
 
   pre code {
-    @apply bg-transparent p-0;
+    @apply bg-transparent p-0 border-0;
   }
 }
 
-/* Editor Content Styles - For both editing and rendering */
+/* Editor Content Styles - Strong, Modern, Balanced */
 .editor-content {
   @apply prose prose-slate max-w-none;
-  @apply prose-headings:font-semibold prose-headings:tracking-tight;
-  @apply prose-h1:text-3xl prose-h1:mb-4;
-  @apply prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-6;
-  @apply prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-5;
-  @apply prose-h4:text-lg prose-h4:mb-2 prose-h4:mt-4;
-  @apply prose-p:text-base prose-p:leading-7 prose-p:mb-4;
-  @apply prose-ul:mb-4 prose-ol:mb-4;
-  @apply prose-li:mb-1;
-  @apply prose-blockquote:border-l-4 prose-blockquote:border-muted-foreground/20;
-  @apply prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm;
-  @apply prose-pre:bg-muted prose-pre:border prose-pre:border-border;
-  @apply prose-a:text-primary prose-a:underline prose-a:decoration-primary/30;
+  @apply prose-headings:font-bold prose-headings:tracking-tight prose-headings:uppercase;
+  @apply prose-h1:text-4xl prose-h1:mb-8 prose-h1:mt-0;
+  @apply prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12;
+  @apply prose-h3:text-2xl prose-h3:mb-4 prose-h3:mt-8;
+  @apply prose-h4:text-xl prose-h4:mb-3 prose-h4:mt-6 prose-h4:normal-case;
+  @apply prose-p:text-base prose-p:leading-relaxed prose-p:mb-6;
+  @apply prose-ul:mb-6 prose-ul:space-y-2 prose-ol:mb-6 prose-ol:space-y-2;
+  @apply prose-li:leading-relaxed;
+  @apply prose-blockquote:border-l-4 prose-blockquote:border-border prose-blockquote:pl-6 prose-blockquote:my-8;
+  @apply prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:text-sm prose-code:border-2 prose-code:border-border;
+  @apply prose-pre:bg-muted prose-pre:border-4 prose-pre:border-border prose-pre:p-6 prose-pre:my-8;
+  @apply prose-a:text-primary prose-a:underline prose-a:decoration-primary/30 prose-a:font-semibold;
   @apply prose-a:hover:decoration-primary;
-  @apply prose-strong:font-semibold;
+  @apply prose-strong:font-bold;
   @apply prose-em:italic;
 }
 
@@ -246,4 +293,96 @@
 
 .ProseMirror:focus {
   @apply outline-none;
+}
+
+/* Modern Spacing & Layout - Balanced Design */
+@layer components {
+  /* Section spacing */
+  section {
+    @apply py-12;
+  }
+
+  /* Card spacing */
+  [data-slot="card"] {
+    @apply p-8 gap-8;
+  }
+
+  [data-slot="card-header"] {
+    @apply gap-4;
+  }
+
+  [data-slot="card-title"] {
+    @apply text-2xl font-bold uppercase tracking-wide mb-0;
+  }
+
+  [data-slot="card-description"] {
+    @apply text-base mt-2;
+  }
+
+  /* Form spacing */
+  form {
+    @apply space-y-6;
+  }
+
+  label {
+    @apply block font-semibold uppercase tracking-wide text-sm mb-2;
+  }
+
+  /* Input spacing */
+  input,
+  textarea,
+  select {
+    @apply px-4 py-3 w-full;
+  }
+
+  /* Button spacing */
+  button,
+  [role="button"] {
+    @apply px-6 py-3 font-bold uppercase tracking-wide;
+  }
+
+  /* Table spacing */
+  [data-slot="table-head"] {
+    @apply px-4 py-4 font-bold uppercase tracking-wide text-sm;
+  }
+
+  [data-slot="table-cell"] {
+    @apply px-4 py-4;
+  }
+
+  /* Alert spacing */
+  [data-slot="alert"] {
+    @apply p-6 gap-4;
+  }
+
+  /* Badge spacing */
+  [data-slot="badge"] {
+    @apply px-3 py-1 text-xs font-bold uppercase tracking-wider;
+  }
+}
+
+/* Sharp Edges & Clean Borders */
+@layer components {
+  /* Cards - WHITE BORDERS */
+  [data-slot="card"] {
+    border-width: 2px !important;
+    border-color: var(--border) !important;
+  }
+
+  /* Tables - WHITE BORDERS */
+  [data-slot="table"] {
+    border-width: 2px !important;
+    border-color: var(--border) !important;
+  }
+
+  [data-slot="table-head"],
+  [data-slot="table-cell"] {
+    border-width: 1px !important;
+    border-color: var(--border) !important;
+  }
+
+  /* Remove all rounded corners globally */
+  * {
+    border-radius: 0 !important;
+  }
 }

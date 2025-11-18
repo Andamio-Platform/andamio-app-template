@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { env } from "~/env";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
 import { type LessonWithSLTOutput } from "andamio-db-api";
 import { RenderEditor } from "~/components/editor";
@@ -88,9 +88,9 @@ export default function LessonDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-12 w-full" />
+        <AndamioSkeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -100,35 +100,35 @@ export default function LessonDetailPage() {
     return (
       <div className="space-y-6">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
         <div>
           <h1 className="text-3xl font-bold">Lesson Not Found</h1>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>
             {error ?? "Lesson not found"}
-          </AlertDescription>
-        </Alert>
+          </AndamioAlertDescription>
+        </AndamioAlert>
 
         {!error && (
-          <Card>
-            <CardContent className="pt-6">
+          <AndamioCard>
+            <AndamioCardContent className="pt-6">
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-sm text-muted-foreground">
                   This learning target doesn&apos;t have a lesson yet.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
         )}
       </div>
     );
@@ -140,29 +140,29 @@ export default function LessonDetailPage() {
       {/* Header with navigation */}
       <div className="flex items-center justify-between">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
         {lesson.live !== null && (
-          <Badge variant={lesson.live ? "default" : "secondary"}>
+          <AndamioBadge variant={lesson.live ? "default" : "secondary"}>
             {lesson.live ? "Live" : "Draft"}
-          </Badge>
+          </AndamioBadge>
         )}
       </div>
 
       {/* Student Learning Target */}
-      <Card>
-        <CardHeader>
+      <AndamioCard>
+        <AndamioCardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <CardDescription>Learning Target #{lesson.sltIndex}</CardDescription>
-              <CardTitle>{lesson.sltText}</CardTitle>
+              <AndamioCardDescription>Learning Target #{lesson.sltIndex}</AndamioCardDescription>
+              <AndamioCardTitle>{lesson.sltText}</AndamioCardTitle>
             </div>
           </div>
-        </CardHeader>
-      </Card>
+        </AndamioCardHeader>
+      </AndamioCard>
 
       {/* Lesson Title and Description */}
       <div className="space-y-4">
@@ -183,14 +183,14 @@ export default function LessonDetailPage() {
         <div className="space-y-4">
           {/* Video */}
           {lesson.videoUrl && (
-            <Card>
-              <CardHeader>
+            <AndamioCard>
+              <AndamioCardHeader>
                 <div className="flex items-center gap-2">
                   <Video className="h-5 w-5" />
-                  <CardTitle className="text-lg">Video</CardTitle>
+                  <AndamioCardTitle className="text-lg">Video</AndamioCardTitle>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </AndamioCardHeader>
+              <AndamioCardContent>
                 <div className="aspect-video w-full">
                   <iframe
                     src={lesson.videoUrl}
@@ -199,20 +199,20 @@ export default function LessonDetailPage() {
                     allowFullScreen
                   />
                 </div>
-              </CardContent>
-            </Card>
+              </AndamioCardContent>
+            </AndamioCard>
           )}
 
           {/* Image */}
           {lesson.imageUrl && (
-            <Card>
-              <CardHeader>
+            <AndamioCard>
+              <AndamioCardHeader>
                 <div className="flex items-center gap-2">
                   <ImageIcon className="h-5 w-5" />
-                  <CardTitle className="text-lg">Image</CardTitle>
+                  <AndamioCardTitle className="text-lg">Image</AndamioCardTitle>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </AndamioCardHeader>
+              <AndamioCardContent>
                 <div className="relative w-full aspect-video">
                   <Image
                     src={lesson.imageUrl}
@@ -221,8 +221,8 @@ export default function LessonDetailPage() {
                     className="object-cover rounded-md"
                   />
                 </div>
-              </CardContent>
-            </Card>
+              </AndamioCardContent>
+            </AndamioCard>
           )}
         </div>
       )}
@@ -231,11 +231,11 @@ export default function LessonDetailPage() {
       {lesson.contentJson && (() => {
         const formattedContent = ensureTiptapFormat(lesson.contentJson);
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Lesson Content</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Lesson Content</AndamioCardTitle>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {formattedContent ? (
                 <RenderEditor content={formattedContent} />
               ) : (
@@ -243,23 +243,23 @@ export default function LessonDetailPage() {
               )}
 
               
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
         );
       })()}
 
       {/* Empty content state */}
       {!lesson.contentJson && !lesson.imageUrl && !lesson.videoUrl && (
-        <Card>
-          <CardContent className="pt-6">
+        <AndamioCard>
+          <AndamioCardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-sm text-muted-foreground">
                 No content has been added to this lesson yet.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
       )}
     </div>
   );

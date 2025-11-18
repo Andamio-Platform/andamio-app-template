@@ -3,9 +3,9 @@
 import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { Wallet, Key, CheckCircle2 } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
 
@@ -60,17 +60,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Wallet Information */}
-      <Card>
-        <CardHeader>
+      <AndamioCard>
+        <AndamioCardHeader>
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            <CardTitle>Wallet Information</CardTitle>
+            <AndamioCardTitle>Wallet Information</AndamioCardTitle>
           </div>
-          <CardDescription>
+          <AndamioCardDescription>
             Your connected Cardano wallet details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Wallet Address</label>
             <div className="rounded-md border bg-muted p-3">
@@ -80,7 +80,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <Separator />
+          <AndamioSeparator />
 
           <div className="space-y-2">
             <label className="text-sm font-medium">User ID</label>
@@ -88,33 +88,33 @@ export default function DashboardPage() {
               <code className="text-sm font-mono">{user.id}</code>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Access Token Information */}
-      <Card>
-        <CardHeader>
+      <AndamioCard>
+        <AndamioCardHeader>
           <div className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            <CardTitle>Access Token</CardTitle>
+            <AndamioCardTitle>Access Token</AndamioCardTitle>
           </div>
-          <CardDescription>
+          <AndamioCardDescription>
             Your Andamio access token details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
           {user.accessTokenAlias ? (
             <>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Token Alias</label>
                 <div className="flex items-center gap-2">
-                  <Badge variant="default" className="text-sm">
+                  <AndamioBadge variant="default" className="text-sm">
                     {user.accessTokenAlias}
-                  </Badge>
+                  </AndamioBadge>
                 </div>
               </div>
 
-              <Separator />
+              <AndamioSeparator />
             </>
           ) : (
             <div className="rounded-md border border-dashed p-4 text-center">
@@ -128,7 +128,7 @@ export default function DashboardPage() {
             <label className="text-sm font-medium">JWT Status</label>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Badge variant="outline">Active</Badge>
+                <AndamioBadge variant="outline">Active</AndamioBadge>
               </div>
               {jwtExpiration && (
                 <p className="text-xs text-muted-foreground">
@@ -137,8 +137,8 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* My Learning Section */}
       <MyLearning />

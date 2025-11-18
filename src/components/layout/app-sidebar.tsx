@@ -4,9 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Button } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
-import { Badge } from "~/components/ui/badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { LayoutDashboard, LogOut, GraduationCap, Sparkles } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -49,7 +49,7 @@ export function AppSidebar() {
 
           return (
             <Link key={item.href} href={item.href}>
-              <Button
+              <AndamioButton
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start",
@@ -58,13 +58,13 @@ export function AppSidebar() {
               >
                 <Icon className="mr-2 h-4 w-4" />
                 {item.name}
-              </Button>
+              </AndamioButton>
             </Link>
           );
         })}
       </nav>
 
-      <Separator />
+      <AndamioSeparator />
 
       {/* User Section */}
       <div className="p-4">
@@ -74,11 +74,11 @@ export function AppSidebar() {
               <p className="text-xs font-medium text-muted-foreground">
                 Connected Wallet
               </p>
-              <Badge variant="outline" className="font-mono text-xs">
+              <AndamioBadge variant="outline" className="font-mono text-xs">
                 {user.cardanoBech32Addr?.slice(0, 12)}...
-              </Badge>
+              </AndamioBadge>
             </div>
-            <Button
+            <AndamioButton
               variant="outline"
               size="sm"
               onClick={logout}
@@ -86,7 +86,7 @@ export function AppSidebar() {
             >
               <LogOut className="mr-2 h-4 w-4" />
               Disconnect
-            </Button>
+            </AndamioButton>
           </div>
         ) : (
           <div className="space-y-1">

@@ -5,18 +5,18 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, ArrowLeft, FileText, Link2, Save, Settings, Trash2, Users } from "lucide-react";
 import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
   type CourseOutput,
   type ListCourseModulesOutput,
@@ -267,8 +267,8 @@ export default function CourseEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-64 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -278,17 +278,17 @@ export default function CourseEditPage() {
     return (
       <div className="space-y-6">
         <Link href="/studio/course">
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Courses
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error ?? "Course not found"}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Course not found"}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -304,17 +304,17 @@ export default function CourseEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href="/studio/course">
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Courses
-          </Button>
+          </AndamioButton>
         </Link>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs">
+          <AndamioBadge variant="outline" className="font-mono text-xs">
             {course.courseCode}
-          </Badge>
+          </AndamioBadge>
           {course.courseNftPolicyId && (
-            <Badge variant="default">Published</Badge>
+            <AndamioBadge variant="default">Published</AndamioBadge>
           )}
         </div>
       </div>
@@ -326,38 +326,38 @@ export default function CourseEditPage() {
 
       {/* Success/Error Messages */}
       {saveSuccess && (
-        <Alert>
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Course updated successfully</AlertDescription>
-        </Alert>
+        <AndamioAlert>
+          <AndamioAlertTitle>Success</AndamioAlertTitle>
+          <AndamioAlertDescription>Course updated successfully</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {saveError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* Course Details Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Course Details</CardTitle>
-          <CardDescription>Edit course information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Course Details</AndamioCardTitle>
+          <AndamioCardDescription>Edit course information</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
           {/* Course Code (Read-only) */}
           <div className="space-y-2">
-            <Label htmlFor="courseCode">Course Code</Label>
-            <Input id="courseCode" value={course.courseCode} disabled />
+            <AndamioLabel htmlFor="courseCode">Course Code</AndamioLabel>
+            <AndamioInput id="courseCode" value={course.courseCode} disabled />
             <p className="text-sm text-muted-foreground">Course code cannot be changed</p>
           </div>
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
+            <AndamioLabel htmlFor="title">Title *</AndamioLabel>
+            <AndamioInput
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -368,8 +368,8 @@ export default function CourseEditPage() {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
+            <AndamioLabel htmlFor="description">Description</AndamioLabel>
+            <AndamioTextarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -380,8 +380,8 @@ export default function CourseEditPage() {
 
           {/* Image URL */}
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
+            <AndamioLabel htmlFor="imageUrl">Image URL</AndamioLabel>
+            <AndamioInput
               id="imageUrl"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
@@ -391,8 +391,8 @@ export default function CourseEditPage() {
 
           {/* Video URL */}
           <div className="space-y-2">
-            <Label htmlFor="videoUrl">Video URL</Label>
-            <Input
+            <AndamioLabel htmlFor="videoUrl">Video URL</AndamioLabel>
+            <AndamioInput
               id="videoUrl"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
@@ -402,13 +402,13 @@ export default function CourseEditPage() {
 
           {/* Save Button */}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => router.push("/studio/course")}>
+            <AndamioButton variant="outline" onClick={() => router.push("/studio/course")}>
               Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+            </AndamioButton>
+            <AndamioButton onClick={handleSave} disabled={isSaving || !hasChanges}>
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            </AndamioButton>
           </div>
 
           {/* Danger Zone */}
@@ -418,12 +418,12 @@ export default function CourseEditPage() {
               <p className="text-sm text-muted-foreground">
                 Permanently delete this course and all its modules, lessons, and assignments.
               </p>
-              <ConfirmDialog
+              <AndamioConfirmDialog
                 trigger={
-                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                  <AndamioButton variant="destructive" size="sm" disabled={isDeleting}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Course
-                  </Button>
+                  </AndamioButton>
                 }
                 title="Delete Course"
                 description={`Are you sure you want to delete "${course.title}"? This action cannot be undone. All modules, lessons, and assignments will be permanently removed.`}
@@ -434,37 +434,37 @@ export default function CourseEditPage() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Instructor Tools */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Instructor Tools</CardTitle>
-          <CardDescription>View student progress and manage submissions</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Instructor Tools</AndamioCardTitle>
+          <AndamioCardDescription>View student progress and manage submissions</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           <div className="flex flex-col gap-3">
             <Link href={`/studio/course/${courseNftPolicyId}/instructor`}>
-              <Button variant="outline" className="w-full justify-start">
+              <AndamioButton variant="outline" className="w-full justify-start">
                 <Users className="h-4 w-4 mr-2" />
                 Instructor Dashboard
                 <span className="ml-auto text-sm text-muted-foreground">
                   View all student submissions
                 </span>
-              </Button>
+              </AndamioButton>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Course Modules */}
-      <Card>
-        <CardHeader>
+      <AndamioCard>
+        <AndamioCardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Course Modules ({modules.length})</CardTitle>
-              <CardDescription>Manage the modules in this course</CardDescription>
+              <AndamioCardTitle>Course Modules ({modules.length})</AndamioCardTitle>
+              <AndamioCardDescription>Manage the modules in this course</AndamioCardDescription>
             </div>
             <CreateModuleDialog
               courseNftPolicyId={courseNftPolicyId}
@@ -479,63 +479,63 @@ export default function CourseEditPage() {
               }}
             />
           </div>
-        </CardHeader>
-        <CardContent>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           {modules.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No modules found for this course.</p>
             </div>
           ) : (
             <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">Module Code</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="w-40 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <AndamioTable>
+                <AndamioTableHeader>
+                  <AndamioTableRow>
+                    <AndamioTableHead className="w-32">Module Code</AndamioTableHead>
+                    <AndamioTableHead>Title</AndamioTableHead>
+                    <AndamioTableHead className="w-32">Status</AndamioTableHead>
+                    <AndamioTableHead className="w-40 text-right">Actions</AndamioTableHead>
+                  </AndamioTableRow>
+                </AndamioTableHeader>
+                <AndamioTableBody>
                   {modules.map((module) => (
-                    <TableRow key={module.moduleCode}>
-                      <TableCell className="font-mono text-xs">
+                    <AndamioTableRow key={module.moduleCode}>
+                      <AndamioTableCell className="font-mono text-xs">
                         {module.moduleCode}
-                      </TableCell>
-                      <TableCell className="font-medium">{module.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{module.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </AndamioTableCell>
+                      <AndamioTableCell className="font-medium">{module.title}</AndamioTableCell>
+                      <AndamioTableCell>
+                        <AndamioBadge variant="outline">{module.status}</AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-right">
                         <Link
                           href={`/studio/course/${courseNftPolicyId}/${module.moduleCode}`}
                         >
-                          <Button variant="ghost" size="sm">
+                          <AndamioButton variant="ghost" size="sm">
                             <Settings className="h-4 w-4 mr-1" />
                             Edit Module
-                          </Button>
+                          </AndamioButton>
                         </Link>
-                      </TableCell>
-                    </TableRow>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
                   ))}
-                </TableBody>
-              </Table>
+                </AndamioTableBody>
+              </AndamioTable>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Assignment Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Assignment Overview</CardTitle>
-          <CardDescription>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Assignment Overview</AndamioCardTitle>
+          <AndamioCardDescription>
             All assignments across modules with their publication status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           {isLoadingAssignments ? (
-            <Skeleton className="h-32 w-full" />
+            <AndamioSkeleton className="h-32 w-full" />
           ) : assignmentSummary.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -552,9 +552,9 @@ export default function CourseEditPage() {
                         {module.moduleCode}
                       </p>
                     </div>
-                    <Badge variant="outline">
+                    <AndamioBadge variant="outline">
                       {module.assignments.length} {module.assignments.length === 1 ? "assignment" : "assignments"}
-                    </Badge>
+                    </AndamioBadge>
                   </div>
                   {module.assignments.length > 0 ? (
                     <div className="space-y-2">
@@ -569,9 +569,9 @@ export default function CourseEditPage() {
                               {assignment.assignmentCode}
                             </p>
                           </div>
-                          <Badge variant={assignment.live ? "default" : "secondary"}>
+                          <AndamioBadge variant={assignment.live ? "default" : "secondary"}>
                             {assignment.live ? "Live" : "Draft"}
-                          </Badge>
+                          </AndamioBadge>
                         </div>
                       ))}
                     </div>
@@ -582,20 +582,20 @@ export default function CourseEditPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Course Prerequisites / Dependencies */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Course Dependencies</CardTitle>
-          <CardDescription>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Course Dependencies</AndamioCardTitle>
+          <AndamioCardDescription>
             Unpublished projects that require this course as a prerequisite
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
           {isLoadingProjects ? (
-            <Skeleton className="h-32 w-full" />
+            <AndamioSkeleton className="h-32 w-full" />
           ) : unpublishedProjects.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -609,22 +609,22 @@ export default function CourseEditPage() {
                   {project.description && (
                     <p className="text-sm text-muted-foreground">{project.description}</p>
                   )}
-                  <Badge variant="outline" className="mt-2">
+                  <AndamioBadge variant="outline" className="mt-2">
                     Unpublished Project
-                  </Badge>
+                  </AndamioBadge>
                 </div>
               ))}
-              <Alert>
+              <AndamioAlert>
                 <Link2 className="h-4 w-4" />
-                <AlertDescription>
+                <AndamioAlertDescription>
                   These projects are using your course as a prerequisite. Ensure your course
                   content remains stable to avoid breaking their requirements.
-                </AlertDescription>
-              </Alert>
+                </AndamioAlertDescription>
+              </AndamioAlert>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }

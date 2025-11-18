@@ -5,12 +5,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { RenderEditor } from "~/components/editor";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Separator } from "~/components/ui/separator";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import type { JSONContent } from "@tiptap/core";
@@ -89,8 +89,8 @@ export default function LearnerAssignmentPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-96 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -100,17 +100,17 @@ export default function LearnerAssignmentPage() {
     return (
       <div className="space-y-6">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error ?? "Assignment not found"}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Assignment not found"}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -120,19 +120,19 @@ export default function LearnerAssignmentPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs">
+          <AndamioBadge variant="outline" className="font-mono text-xs">
             {assignment.assignmentCode}
-          </Badge>
+          </AndamioBadge>
           {assignment.live ? (
-            <Badge>Live</Badge>
+            <AndamioBadge>Live</AndamioBadge>
           ) : (
-            <Badge variant="secondary">Draft</Badge>
+            <AndamioBadge variant="secondary">Draft</AndamioBadge>
           )}
         </div>
       </div>
@@ -146,48 +146,48 @@ export default function LearnerAssignmentPage() {
 
       {/* Linked SLTs */}
       {assignment.slts && assignment.slts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Learning Targets</CardTitle>
-            <CardDescription>
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Learning Targets</AndamioCardTitle>
+            <AndamioCardDescription>
               This assignment covers {assignment.slts.length} Student Learning Target{assignment.slts.length !== 1 ? 's' : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <div className="space-y-2">
               {assignment.slts.map((slt) => (
                 <div key={slt.id} className="flex items-start gap-3 p-3 border rounded-md">
-                  <Badge variant="outline" className="mt-0.5">
+                  <AndamioBadge variant="outline" className="mt-0.5">
                     {slt.moduleIndex}
-                  </Badge>
+                  </AndamioBadge>
                   <p className="text-sm flex-1">{slt.sltText}</p>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
       )}
 
       {/* Assignment Content */}
       {assignment.contentJson && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assignment Details</CardTitle>
-            <CardDescription>Read the full assignment below</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Assignment Details</AndamioCardTitle>
+            <AndamioCardDescription>Read the full assignment below</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
             <RenderEditor content={assignment.contentJson as JSONContent} />
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
       )}
 
       {/* Media */}
       {(assignment.imageUrl || assignment.videoUrl) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assignment Media</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Assignment Media</AndamioCardTitle>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-4">
             {assignment.imageUrl && (
               <div>
                 <p className="text-sm font-medium mb-2">Image</p>
@@ -214,11 +214,11 @@ export default function LearnerAssignmentPage() {
                 </a>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AndamioCardContent>
+        </AndamioCard>
       )}
 
-      <Separator />
+      <AndamioSeparator />
 
       {/* Assignment Commitment Component */}
       <AssignmentCommitment

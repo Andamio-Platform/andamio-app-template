@@ -11,17 +11,17 @@ import {
   AndamioFixedToolbar,
   RenderEditor,
 } from "~/components/editor";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Switch } from "~/components/ui/switch";
-import { Separator } from "~/components/ui/separator";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioSwitch } from "~/components/andamio/andamio-switch";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
 import {
   type LessonWithSLTOutput,
@@ -274,8 +274,8 @@ export default function LessonEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-96 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -285,17 +285,17 @@ export default function LessonEditPage() {
     return (
       <div className="space-y-6">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -305,18 +305,18 @@ export default function LessonEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs">
+          <AndamioBadge variant="outline" className="font-mono text-xs">
             SLT {moduleIndex}
-          </Badge>
-          <Badge variant={lessonExists ? "default" : "secondary"}>
+          </AndamioBadge>
+          <AndamioBadge variant={lessonExists ? "default" : "secondary"}>
             {lessonExists ? "Editing Lesson" : "Create New Lesson"}
-          </Badge>
+          </AndamioBadge>
         </div>
       </div>
 
@@ -331,35 +331,35 @@ export default function LessonEditPage() {
 
       {/* Success/Error Messages */}
       {saveSuccess && (
-        <Alert>
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Lesson saved successfully</AlertDescription>
-        </Alert>
+        <AndamioAlert>
+          <AndamioAlertTitle>Success</AndamioAlertTitle>
+          <AndamioAlertDescription>Lesson saved successfully</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {saveError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="edit" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
+      <AndamioTabs defaultValue="edit" className="space-y-4">
+        <AndamioTabsList>
+          <AndamioTabsTrigger value="edit">Edit</AndamioTabsTrigger>
+          <AndamioTabsTrigger value="preview">Preview</AndamioTabsTrigger>
+        </AndamioTabsList>
 
-        <TabsContent value="edit" className="space-y-6">
+        <AndamioTabsContent value="edit" className="space-y-6">
           {/* Metadata Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Lesson Details</CardTitle>
-              <CardDescription>Basic information about the lesson</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Lesson Details</AndamioCardTitle>
+              <AndamioCardDescription>Basic information about the lesson</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {lesson?.sltText && (
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm font-medium mb-1">Student Learning Target:</p>
@@ -368,8 +368,8 @@ export default function LessonEditPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
+                <AndamioLabel htmlFor="title">Title</AndamioLabel>
+                <AndamioInput
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -382,8 +382,8 @@ export default function LessonEditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
+                <AndamioLabel htmlFor="description">Description</AndamioLabel>
+                <AndamioTextarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -394,8 +394,8 @@ export default function LessonEditPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="imageUrl">Image URL</AndamioLabel>
+                  <AndamioInput
                     id="imageUrl"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
@@ -404,8 +404,8 @@ export default function LessonEditPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">Video URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="videoUrl">Video URL</AndamioLabel>
+                  <AndamioInput
                     id="videoUrl"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
@@ -415,61 +415,61 @@ export default function LessonEditPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch id="live" checked={live} onCheckedChange={setLive} />
-                <Label htmlFor="live">Live (visible to students)</Label>
+                <AndamioSwitch id="live" checked={live} onCheckedChange={setLive} />
+                <AndamioLabel htmlFor="live">Live (visible to students)</AndamioLabel>
               </div>
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Content Editor Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Lesson Content</CardTitle>
-              <CardDescription>Write the lesson content using the rich text editor</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Lesson Content</AndamioCardTitle>
+              <AndamioCardDescription>Write the lesson content using the rich text editor</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {editor && (
                 <>
                   <AndamioFixedToolbar editor={editor} />
-                  <Separator />
+                  <AndamioSeparator />
                   <ContentEditor editor={editor} height="500px" />
                 </>
               )}
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Action Buttons */}
           <div className="flex justify-between">
             <div>
               {lessonExists && (
-                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                <AndamioButton variant="destructive" onClick={handleDelete} disabled={isDeleting}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   {isDeleting ? "Deleting..." : "Delete Lesson"}
-                </Button>
+                </AndamioButton>
               )}
             </div>
             <div className="flex gap-2">
-              <Button
+              <AndamioButton
                 variant="outline"
                 onClick={() => router.push(`/course/${courseNftPolicyId}/${moduleCode}`)}
               >
                 Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
+              </AndamioButton>
+              <AndamioButton onClick={handleSave} disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
                 {isSaving ? "Saving..." : lessonExists ? "Save Changes" : "Create Lesson"}
-              </Button>
+              </AndamioButton>
             </div>
           </div>
-        </TabsContent>
+        </AndamioTabsContent>
 
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-              <CardDescription>Read-only preview of the lesson content</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <AndamioTabsContent value="preview">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Preview</AndamioCardTitle>
+              <AndamioCardDescription>Read-only preview of the lesson content</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <div>
                 <h2 className="text-2xl font-bold">
                   {title || lesson?.sltText || `Lesson ${moduleIndex}`}
@@ -479,17 +479,17 @@ export default function LessonEditPage() {
 
               {lesson?.sltText && (
                 <div>
-                  <Badge variant="secondary">Learning Target: {lesson.sltText}</Badge>
+                  <AndamioBadge variant="secondary">Learning Target: {lesson.sltText}</AndamioBadge>
                 </div>
               )}
 
-              <Separator />
+              <AndamioSeparator />
 
               {editor && <RenderEditor content={editor.getJSON()} />}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+      </AndamioTabs>
     </div>
   );
 }

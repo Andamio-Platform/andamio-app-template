@@ -2,7 +2,7 @@ import "~/styles/globals.css";
 import "@meshsdk/react/styles.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
@@ -14,16 +14,17 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-space-grotesk",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={spaceGrotesk.variable}>
       <body>
         <MeshProvider>
           <AndamioAuthProvider>

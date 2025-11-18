@@ -11,18 +11,18 @@ import {
   AndamioFixedToolbar,
   RenderEditor,
 } from "~/components/editor";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Switch } from "~/components/ui/switch";
-import { Separator } from "~/components/ui/separator";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
+import { AndamioSwitch } from "~/components/andamio/andamio-switch";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
 import {
   type AssignmentWithSLTsOutput,
@@ -338,8 +338,8 @@ export default function AssignmentEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-96 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -349,17 +349,17 @@ export default function AssignmentEditPage() {
     return (
       <div className="space-y-6">
         <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -369,14 +369,14 @@ export default function AssignmentEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
-        <Badge variant={assignmentExists ? "default" : "secondary"}>
+        <AndamioBadge variant={assignmentExists ? "default" : "secondary"}>
           {assignmentExists ? "Editing Assignment" : "Create New Assignment"}
-        </Badge>
+        </AndamioBadge>
       </div>
 
       <div>
@@ -388,38 +388,38 @@ export default function AssignmentEditPage() {
 
       {/* Success/Error Messages */}
       {saveSuccess && (
-        <Alert>
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Assignment saved successfully</AlertDescription>
-        </Alert>
+        <AndamioAlert>
+          <AndamioAlertTitle>Success</AndamioAlertTitle>
+          <AndamioAlertDescription>Assignment saved successfully</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {saveError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="edit" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="edit">Edit</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-        </TabsList>
+      <AndamioTabs defaultValue="edit" className="space-y-4">
+        <AndamioTabsList>
+          <AndamioTabsTrigger value="edit">Edit</AndamioTabsTrigger>
+          <AndamioTabsTrigger value="preview">Preview</AndamioTabsTrigger>
+        </AndamioTabsList>
 
-        <TabsContent value="edit" className="space-y-6">
+        <AndamioTabsContent value="edit" className="space-y-6">
           {/* Metadata Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignment Details</CardTitle>
-              <CardDescription>Basic information about the assignment</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Assignment Details</AndamioCardTitle>
+              <AndamioCardDescription>Basic information about the assignment</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
+                <AndamioLabel htmlFor="title">Title *</AndamioLabel>
+                <AndamioInput
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -429,8 +429,8 @@ export default function AssignmentEditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
+                <AndamioLabel htmlFor="description">Description</AndamioLabel>
+                <AndamioTextarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -441,8 +441,8 @@ export default function AssignmentEditPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="imageUrl">Image URL</AndamioLabel>
+                  <AndamioInput
                     id="imageUrl"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
@@ -451,8 +451,8 @@ export default function AssignmentEditPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">Video URL</Label>
-                  <Input
+                  <AndamioLabel htmlFor="videoUrl">Video URL</AndamioLabel>
+                  <AndamioInput
                     id="videoUrl"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
@@ -463,32 +463,32 @@ export default function AssignmentEditPage() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Switch id="live" checked={live} onCheckedChange={setLive} />
-                  <Label htmlFor="live">Live (visible to students)</Label>
+                  <AndamioSwitch id="live" checked={live} onCheckedChange={setLive} />
+                  <AndamioLabel htmlFor="live">Live (visible to students)</AndamioLabel>
                 </div>
                 {assignmentExists && (
-                  <Button
+                  <AndamioButton
                     variant="outline"
                     size="sm"
                     onClick={handleTogglePublish}
                     disabled={isTogglingPublish}
                   >
                     {isTogglingPublish ? "Toggling..." : live ? "Unpublish" : "Publish"}
-                  </Button>
+                  </AndamioButton>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* SLT Selection Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Linked Student Learning Targets</CardTitle>
-              <CardDescription>
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Linked Student Learning Targets</AndamioCardTitle>
+              <AndamioCardDescription>
                 Select which SLTs this assignment covers ({selectedSltIds.length} selected)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
               {slts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No SLTs available. Create SLTs first to link them to this assignment.
@@ -497,7 +497,7 @@ export default function AssignmentEditPage() {
                 <div className="space-y-2">
                   {slts.map((slt: { id: string; moduleIndex: number; sltText: string }) => (
                     <div key={slt.id} className="flex items-start space-x-2">
-                      <Checkbox
+                      <AndamioCheckbox
                         id={`slt-${slt.id}`}
                         checked={selectedSltIds.includes(slt.id)}
                         onCheckedChange={() => toggleSlt(slt.id)}
@@ -506,67 +506,67 @@ export default function AssignmentEditPage() {
                         htmlFor={`slt-${slt.id}`}
                         className="text-sm cursor-pointer leading-tight"
                       >
-                        <Badge variant="outline" className="mr-2 font-mono text-xs">
+                        <AndamioBadge variant="outline" className="mr-2 font-mono text-xs">
                           {slt.moduleIndex}
-                        </Badge>
+                        </AndamioBadge>
                         {slt.sltText}
                       </label>
                     </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Content Editor Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignment Content</CardTitle>
-              <CardDescription>Write the assignment instructions and details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Assignment Content</AndamioCardTitle>
+              <AndamioCardDescription>Write the assignment instructions and details</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               {editor && (
                 <>
                   <AndamioFixedToolbar editor={editor} />
-                  <Separator />
+                  <AndamioSeparator />
                   <ContentEditor editor={editor} height="400px" />
                 </>
               )}
-            </CardContent>
-          </Card>
+            </AndamioCardContent>
+          </AndamioCard>
 
           {/* Action Buttons */}
           <div className="flex justify-between">
             <div>
               {assignmentExists && (
-                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                <AndamioButton variant="destructive" onClick={handleDelete} disabled={isDeleting}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   {isDeleting ? "Deleting..." : "Delete Assignment"}
-                </Button>
+                </AndamioButton>
               )}
             </div>
             <div className="flex gap-2">
-              <Button
+              <AndamioButton
                 variant="outline"
                 onClick={() => router.push(`/studio/course/${courseNftPolicyId}/${moduleCode}`)}
               >
                 Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving || !title.trim()}>
+              </AndamioButton>
+              <AndamioButton onClick={handleSave} disabled={isSaving || !title.trim()}>
                 <Save className="h-4 w-4 mr-2" />
                 {isSaving ? "Saving..." : assignmentExists ? "Save Changes" : "Create Assignment"}
-              </Button>
+              </AndamioButton>
             </div>
           </div>
-        </TabsContent>
+        </AndamioTabsContent>
 
-        <TabsContent value="preview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-              <CardDescription>Read-only preview of the assignment content</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <AndamioTabsContent value="preview">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Preview</AndamioCardTitle>
+              <AndamioCardDescription>Read-only preview of the assignment content</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <div>
                 <h2 className="text-2xl font-bold">{title || "Untitled Assignment"}</h2>
                 {description && <p className="text-muted-foreground mt-2">{description}</p>}
@@ -579,21 +579,21 @@ export default function AssignmentEditPage() {
                     {slts
                       .filter((slt: { id: string; moduleIndex: number; sltText: string }) => selectedSltIds.includes(slt.id))
                       .map((slt: { id: string; moduleIndex: number; sltText: string }) => (
-                        <Badge key={slt.id} variant="secondary">
+                        <AndamioBadge key={slt.id} variant="secondary">
                           {slt.moduleIndex}: {slt.sltText}
-                        </Badge>
+                        </AndamioBadge>
                       ))}
                   </div>
                 </div>
               )}
 
-              <Separator />
+              <AndamioSeparator />
 
               {editor && <RenderEditor content={editor.getJSON()} />}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+      </AndamioTabs>
     </div>
   );
 }

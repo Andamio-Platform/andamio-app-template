@@ -4,23 +4,23 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "~/components/ui/dialog";
+  AndamioDialog,
+  AndamioDialogContent,
+  AndamioDialogDescription,
+  AndamioDialogFooter,
+  AndamioDialogHeader,
+  AndamioDialogTitle,
+} from "~/components/andamio/andamio-dialog";
 import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X, Search } from "lucide-react";
 import {
   type CourseModuleOutput,
@@ -114,9 +114,9 @@ function SortableSLTRow({
   };
 
   return (
-    <TableRow ref={setNodeRef} style={style}>
+    <AndamioTableRow ref={setNodeRef} style={style}>
       {isReorderMode && (
-        <TableCell className="w-12">
+        <AndamioTableCell className="w-12">
           <div
             {...attributes}
             {...listeners}
@@ -124,13 +124,13 @@ function SortableSLTRow({
           >
             <GripVertical className="h-5 w-5 text-muted-foreground" />
           </div>
-        </TableCell>
+        </AndamioTableCell>
       )}
-      <TableCell className="font-mono text-xs">
-        <Badge variant="outline">{item.moduleIndex}</Badge>
-      </TableCell>
-      <TableCell className="font-medium">{item.sltText}</TableCell>
-      <TableCell>
+      <AndamioTableCell className="font-mono text-xs">
+        <AndamioBadge variant="outline">{item.moduleIndex}</AndamioBadge>
+      </AndamioTableCell>
+      <AndamioTableCell className="font-medium">{item.sltText}</AndamioTableCell>
+      <AndamioTableCell>
         {item.lesson ? (
           <div>
             <div className="font-medium">
@@ -150,22 +150,22 @@ function SortableSLTRow({
         ) : (
           <span className="text-muted-foreground italic text-sm">No lesson yet</span>
         )}
-      </TableCell>
-      <TableCell>
+      </AndamioTableCell>
+      <AndamioTableCell>
         {item.lesson ? (
           item.lesson.live ? (
-            <Badge variant="default">Live</Badge>
+            <AndamioBadge variant="default">Live</AndamioBadge>
           ) : (
-            <Badge variant="secondary">Draft</Badge>
+            <AndamioBadge variant="secondary">Draft</AndamioBadge>
           )
         ) : (
-          <Badge variant="outline">No Lesson</Badge>
+          <AndamioBadge variant="outline">No Lesson</AndamioBadge>
         )}
-      </TableCell>
+      </AndamioTableCell>
       {!isReorderMode && (
-        <TableCell className="text-right">
+        <AndamioTableCell className="text-right">
           <div className="flex justify-end gap-2">
-            <Button
+            <AndamioButton
               variant="ghost"
               size="sm"
               onClick={() => onEdit({
@@ -175,8 +175,8 @@ function SortableSLTRow({
               })}
             >
               <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
+            </AndamioButton>
+            <AndamioButton
               variant="ghost"
               size="sm"
               onClick={() => onDelete({
@@ -186,11 +186,11 @@ function SortableSLTRow({
               })}
             >
               <Trash2 className="h-4 w-4" />
-            </Button>
+            </AndamioButton>
           </div>
-        </TableCell>
+        </AndamioTableCell>
       )}
-    </TableRow>
+    </AndamioTableRow>
   );
 }
 
@@ -602,13 +602,13 @@ export default function SLTManagementPage() {
     return (
       <div className="space-y-6">
         <div>
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-5 w-96" />
+          <AndamioSkeleton className="h-9 w-64 mb-2" />
+          <AndamioSkeleton className="h-5 w-96" />
         </div>
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <AndamioSkeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       </div>
@@ -623,11 +623,11 @@ export default function SLTManagementPage() {
           <h1 className="text-3xl font-bold">Module Not Found</h1>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error ?? "Module not found"}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Module not found"}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -641,10 +641,10 @@ export default function SLTManagementPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-              <Button variant="ghost" size="sm">
+              <AndamioButton variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Module
-              </Button>
+              </AndamioButton>
             </Link>
           </div>
           <h1 className="text-3xl font-bold">Manage SLTs: {module.title}</h1>
@@ -655,44 +655,44 @@ export default function SLTManagementPage() {
         <div className="flex gap-2">
           {isReorderMode ? (
             <>
-              <Button
+              <AndamioButton
                 variant="outline"
                 onClick={handleCancelReorder}
                 disabled={isSavingOrder}
               >
                 <X className="h-4 w-4 mr-2" />
                 Cancel
-              </Button>
-              <Button
+              </AndamioButton>
+              <AndamioButton
                 onClick={handleSaveOrder}
                 disabled={isSavingOrder}
               >
                 <Save className="h-4 w-4 mr-2" />
                 {isSavingOrder ? "Saving..." : "Save Order"}
-              </Button>
+              </AndamioButton>
             </>
           ) : (
             <>
-              <Button
+              <AndamioButton
                 variant="outline"
                 onClick={() => setIsJumpDialogOpen(true)}
                 disabled={combinedData.length === 0}
               >
                 <Search className="h-4 w-4 mr-2" />
                 Jump to SLT
-              </Button>
-              <Button
+              </AndamioButton>
+              <AndamioButton
                 variant="outline"
                 onClick={() => setIsReorderMode(true)}
                 disabled={combinedData.length === 0}
               >
                 <GripVertical className="h-4 w-4 mr-2" />
                 Reorder
-              </Button>
-              <Button onClick={openCreateDialog} disabled={combinedData.length >= 25}>
+              </AndamioButton>
+              <AndamioButton onClick={openCreateDialog} disabled={combinedData.length >= 25}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add SLT
-              </Button>
+              </AndamioButton>
             </>
           )}
         </div>
@@ -700,23 +700,23 @@ export default function SLTManagementPage() {
 
       {/* Action Error */}
       {actionError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{actionError}</AlertDescription>
-        </Alert>
+          <AndamioAlertDescription>{actionError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* SLT Count Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Learning Targets ({combinedData.length}/25)</CardTitle>
-          <CardDescription>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Learning Targets ({combinedData.length}/25)</AndamioCardTitle>
+          <AndamioCardDescription>
             {isReorderMode
               ? "Drag and drop to reorder SLTs. Changes will be saved when you click 'Save Order'."
               : "Each module can have up to 25 Student Learning Targets"}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+      </AndamioCard>
 
       {/* SLTs Table */}
       {dataToDisplay.length === 0 ? (
@@ -725,10 +725,10 @@ export default function SLTManagementPage() {
           <p className="text-sm text-muted-foreground mb-4">
             No learning targets defined for this module.
           </p>
-          <Button onClick={openCreateDialog}>
+          <AndamioButton onClick={openCreateDialog}>
             <Plus className="h-4 w-4 mr-2" />
             Create First SLT
-          </Button>
+          </AndamioButton>
         </div>
       ) : (
         <div className="border rounded-md">
@@ -737,18 +737,18 @@ export default function SLTManagementPage() {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {isReorderMode && <TableHead className="w-12"></TableHead>}
-                  <TableHead className="w-20">Index</TableHead>
-                  <TableHead>Learning Target</TableHead>
-                  <TableHead>Lesson</TableHead>
-                  <TableHead className="w-24">Status</TableHead>
-                  {!isReorderMode && <TableHead className="w-32 text-right">Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <AndamioTable>
+              <AndamioTableHeader>
+                <AndamioTableRow>
+                  {isReorderMode && <AndamioTableHead className="w-12"></AndamioTableHead>}
+                  <AndamioTableHead className="w-20">Index</AndamioTableHead>
+                  <AndamioTableHead>Learning Target</AndamioTableHead>
+                  <AndamioTableHead>Lesson</AndamioTableHead>
+                  <AndamioTableHead className="w-24">Status</AndamioTableHead>
+                  {!isReorderMode && <AndamioTableHead className="w-32 text-right">Actions</AndamioTableHead>}
+                </AndamioTableRow>
+              </AndamioTableHeader>
+              <AndamioTableBody>
                 <SortableContext
                   items={dataToDisplay.map((item) => item.sltId)}
                   strategy={verticalListSortingStrategy}
@@ -766,33 +766,33 @@ export default function SLTManagementPage() {
                     />
                   ))}
                 </SortableContext>
-              </TableBody>
-            </Table>
+              </AndamioTableBody>
+            </AndamioTable>
           </DndContext>
         </div>
       )}
 
       {/* Create SLT Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New SLT</DialogTitle>
-            <DialogDescription>
+      <AndamioDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <AndamioDialogContent>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Create New SLT</AndamioDialogTitle>
+            <AndamioDialogDescription>
               Add a new Student Learning Target to this module
-            </DialogDescription>
-          </DialogHeader>
+            </AndamioDialogDescription>
+          </AndamioDialogHeader>
 
           <div className="space-y-4">
             {actionError && (
-              <Alert variant="destructive">
+              <AndamioAlert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{actionError}</AlertDescription>
-              </Alert>
+                <AndamioAlertDescription>{actionError}</AndamioAlertDescription>
+              </AndamioAlert>
             )}
 
             <div>
-              <Label htmlFor="new-slt-index">Module Index (0-25)</Label>
-              <Input
+              <AndamioLabel htmlFor="new-slt-index">Module Index (0-25)</AndamioLabel>
+              <AndamioInput
                 id="new-slt-index"
                 type="number"
                 min={0}
@@ -803,8 +803,8 @@ export default function SLTManagementPage() {
             </div>
 
             <div>
-              <Label htmlFor="new-slt-text">Learning Target Text</Label>
-              <Textarea
+              <AndamioLabel htmlFor="new-slt-text">Learning Target Text</AndamioLabel>
+              <AndamioTextarea
                 id="new-slt-text"
                 placeholder="Describe what students will learn..."
                 value={newSLTText}
@@ -814,40 +814,40 @@ export default function SLTManagementPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
+          <AndamioDialogFooter>
+            <AndamioButton
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={actionLoading}
             >
               Cancel
-            </Button>
-            <Button onClick={handleCreateSLT} disabled={actionLoading || !newSLTText}>
+            </AndamioButton>
+            <AndamioButton onClick={handleCreateSLT} disabled={actionLoading || !newSLTText}>
               {actionLoading ? "Creating..." : "Create SLT"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AndamioButton>
+          </AndamioDialogFooter>
+        </AndamioDialogContent>
+      </AndamioDialog>
 
       {/* Edit SLT Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit SLT</DialogTitle>
-            <DialogDescription>Update the learning target details</DialogDescription>
-          </DialogHeader>
+      <AndamioDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <AndamioDialogContent>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Edit SLT</AndamioDialogTitle>
+            <AndamioDialogDescription>Update the learning target details</AndamioDialogDescription>
+          </AndamioDialogHeader>
 
           <div className="space-y-4">
             {actionError && (
-              <Alert variant="destructive">
+              <AndamioAlert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{actionError}</AlertDescription>
-              </Alert>
+                <AndamioAlertDescription>{actionError}</AndamioAlertDescription>
+              </AndamioAlert>
             )}
 
             <div>
-              <Label htmlFor="edit-slt-index">Module Index (0-25)</Label>
-              <Input
+              <AndamioLabel htmlFor="edit-slt-index">Module Index (0-25)</AndamioLabel>
+              <AndamioInput
                 id="edit-slt-index"
                 type="number"
                 min={0}
@@ -858,8 +858,8 @@ export default function SLTManagementPage() {
             </div>
 
             <div>
-              <Label htmlFor="edit-slt-text">Learning Target Text</Label>
-              <Textarea
+              <AndamioLabel htmlFor="edit-slt-text">Learning Target Text</AndamioLabel>
+              <AndamioTextarea
                 id="edit-slt-text"
                 value={editSLTText}
                 onChange={(e) => setEditSLTText(e.target.value)}
@@ -868,37 +868,37 @@ export default function SLTManagementPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
+          <AndamioDialogFooter>
+            <AndamioButton
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
               disabled={actionLoading}
             >
               Cancel
-            </Button>
-            <Button onClick={handleEditSLT} disabled={actionLoading || !editSLTText}>
+            </AndamioButton>
+            <AndamioButton onClick={handleEditSLT} disabled={actionLoading || !editSLTText}>
               {actionLoading ? "Updating..." : "Update SLT"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AndamioButton>
+          </AndamioDialogFooter>
+        </AndamioDialogContent>
+      </AndamioDialog>
 
       {/* Delete SLT Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete SLT</DialogTitle>
-            <DialogDescription>
+      <AndamioDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AndamioDialogContent>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Delete SLT</AndamioDialogTitle>
+            <AndamioDialogDescription>
               Are you sure you want to delete this learning target? This action cannot be
               undone.
-            </DialogDescription>
-          </DialogHeader>
+            </AndamioDialogDescription>
+          </AndamioDialogHeader>
 
           {actionError && (
-            <Alert variant="destructive">
+            <AndamioAlert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{actionError}</AlertDescription>
-            </Alert>
+              <AndamioAlertDescription>{actionError}</AndamioAlertDescription>
+            </AndamioAlert>
           )}
 
           {selectedSLT && (
@@ -908,39 +908,39 @@ export default function SLTManagementPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button
+          <AndamioDialogFooter>
+            <AndamioButton
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={actionLoading}
             >
               Cancel
-            </Button>
-            <Button
+            </AndamioButton>
+            <AndamioButton
               variant="destructive"
               onClick={handleDeleteSLT}
               disabled={actionLoading}
             >
               {actionLoading ? "Deleting..." : "Delete SLT"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AndamioButton>
+          </AndamioDialogFooter>
+        </AndamioDialogContent>
+      </AndamioDialog>
 
       {/* Quick Jump Dialog */}
-      <Dialog open={isJumpDialogOpen} onOpenChange={setIsJumpDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Jump to SLT</DialogTitle>
-            <DialogDescription>
+      <AndamioDialog open={isJumpDialogOpen} onOpenChange={setIsJumpDialogOpen}>
+        <AndamioDialogContent>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Jump to SLT</AndamioDialogTitle>
+            <AndamioDialogDescription>
               Enter a module index to quickly find and edit a specific SLT
-            </DialogDescription>
-          </DialogHeader>
+            </AndamioDialogDescription>
+          </AndamioDialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="jump-index">Module Index</Label>
-              <Input
+              <AndamioLabel htmlFor="jump-index">Module Index</AndamioLabel>
+              <AndamioInput
                 id="jump-index"
                 type="number"
                 value={jumpToIndex}
@@ -959,15 +959,15 @@ export default function SLTManagementPage() {
             </div>
 
             {actionError && (
-              <Alert variant="destructive">
+              <AndamioAlert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{actionError}</AlertDescription>
-              </Alert>
+                <AndamioAlertDescription>{actionError}</AndamioAlertDescription>
+              </AndamioAlert>
             )}
           </div>
 
-          <DialogFooter>
-            <Button
+          <AndamioDialogFooter>
+            <AndamioButton
               variant="outline"
               onClick={() => {
                 setIsJumpDialogOpen(false);
@@ -977,13 +977,13 @@ export default function SLTManagementPage() {
               disabled={isJumping}
             >
               Cancel
-            </Button>
-            <Button onClick={handleQuickJump} disabled={isJumping || !jumpToIndex}>
+            </AndamioButton>
+            <AndamioButton onClick={handleQuickJump} disabled={isJumping || !jumpToIndex}>
               {isJumping ? "Finding..." : "Find SLT"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AndamioButton>
+          </AndamioDialogFooter>
+        </AndamioDialogContent>
+      </AndamioDialog>
     </div>
   );
 }

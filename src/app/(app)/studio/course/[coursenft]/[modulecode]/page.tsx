@@ -5,32 +5,32 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+  AndamioSelect,
+  AndamioSelectContent,
+  AndamioSelectItem,
+  AndamioSelectTrigger,
+  AndamioSelectValue,
+} from "~/components/andamio/andamio-select";
 import { AlertCircle, ArrowLeft, Edit2, Save, Trash2, Upload } from "lucide-react";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
+  AndamioDialog,
+  AndamioDialogContent,
+  AndamioDialogDescription,
+  AndamioDialogFooter,
+  AndamioDialogHeader,
+  AndamioDialogTitle,
+  AndamioDialogTrigger,
+} from "~/components/andamio/andamio-dialog";
 import {
   type CourseModuleOutput,
   type UpdateCourseModuleInput,
@@ -396,8 +396,8 @@ export default function ModuleEditPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-64 w-full" />
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -407,17 +407,17 @@ export default function ModuleEditPage() {
     return (
       <div className="space-y-6">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error ?? "Module not found"}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Module not found"}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -433,14 +433,14 @@ export default function ModuleEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <Button variant="ghost" size="sm">
+          <AndamioButton variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Module
-          </Button>
+          </AndamioButton>
         </Link>
-        <Badge variant="outline" className="font-mono text-xs">
+        <AndamioBadge variant="outline" className="font-mono text-xs">
           {module.moduleCode}
-        </Badge>
+        </AndamioBadge>
       </div>
 
       <div>
@@ -450,31 +450,31 @@ export default function ModuleEditPage() {
 
       {/* Success/Error Messages */}
       {saveSuccess && (
-        <Alert>
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Module updated successfully</AlertDescription>
-        </Alert>
+        <AndamioAlert>
+          <AndamioAlertTitle>Success</AndamioAlertTitle>
+          <AndamioAlertDescription>Module updated successfully</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {saveError && (
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{saveError}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
+        </AndamioAlert>
       )}
 
       {/* Edit Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Module Details</CardTitle>
-          <CardDescription>Edit the module title, description, and status</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Module Details</AndamioCardTitle>
+          <AndamioCardDescription>Edit the module title, description, and status</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
+            <AndamioLabel htmlFor="title">Title *</AndamioLabel>
+            <AndamioInput
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -485,8 +485,8 @@ export default function ModuleEditPage() {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
+            <AndamioLabel htmlFor="description">Description</AndamioLabel>
+            <AndamioTextarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -497,12 +497,12 @@ export default function ModuleEditPage() {
 
           {/* Module Code with Rename */}
           <div className="space-y-2">
-            <Label htmlFor="moduleCode">Module Code</Label>
+            <AndamioLabel htmlFor="moduleCode">Module Code</AndamioLabel>
             <div className="flex gap-2">
-              <Input id="moduleCode" value={module.moduleCode} disabled className="flex-1" />
-              <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
+              <AndamioInput id="moduleCode" value={module.moduleCode} disabled className="flex-1" />
+              <AndamioDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+                <AndamioDialogTrigger asChild>
+                  <AndamioButton
                     variant="outline"
                     size="sm"
                     onClick={() => {
@@ -512,19 +512,19 @@ export default function ModuleEditPage() {
                   >
                     <Edit2 className="h-4 w-4 mr-2" />
                     Rename
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Rename Module Code</DialogTitle>
-                    <DialogDescription>
+                  </AndamioButton>
+                </AndamioDialogTrigger>
+                <AndamioDialogContent>
+                  <AndamioDialogHeader>
+                    <AndamioDialogTitle>Rename Module Code</AndamioDialogTitle>
+                    <AndamioDialogDescription>
                       Enter a new code for this module. This will update the module identifier.
-                    </DialogDescription>
-                  </DialogHeader>
+                    </AndamioDialogDescription>
+                  </AndamioDialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="new-module-code">New Module Code</Label>
-                      <Input
+                      <AndamioLabel htmlFor="new-module-code">New Module Code</AndamioLabel>
+                      <AndamioInput
                         id="new-module-code"
                         value={newModuleCode}
                         onChange={(e) => setNewModuleCode(e.target.value)}
@@ -537,26 +537,26 @@ export default function ModuleEditPage() {
                       </p>
                     </div>
                     {renameError && (
-                      <Alert variant="destructive">
+                      <AndamioAlert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{renameError}</AlertDescription>
-                      </Alert>
+                        <AndamioAlertDescription>{renameError}</AndamioAlertDescription>
+                      </AndamioAlert>
                     )}
                   </div>
-                  <DialogFooter>
-                    <Button
+                  <AndamioDialogFooter>
+                    <AndamioButton
                       variant="outline"
                       onClick={() => setIsRenameDialogOpen(false)}
                       disabled={isRenaming}
                     >
                       Cancel
-                    </Button>
-                    <Button onClick={handleRenameModule} disabled={isRenaming}>
+                    </AndamioButton>
+                    <AndamioButton onClick={handleRenameModule} disabled={isRenaming}>
                       {isRenaming ? "Renaming..." : "Rename Module"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    </AndamioButton>
+                  </AndamioDialogFooter>
+                </AndamioDialogContent>
+              </AndamioDialog>
             </div>
             <p className="text-sm text-muted-foreground">
               Use the rename button to change the module code identifier
@@ -565,19 +565,19 @@ export default function ModuleEditPage() {
 
           {/* Status */}
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
+            <AndamioLabel htmlFor="status">Status</AndamioLabel>
+            <AndamioSelect value={status} onValueChange={setStatus}>
+              <AndamioSelectTrigger id="status">
+                <AndamioSelectValue />
+              </AndamioSelectTrigger>
+              <AndamioSelectContent>
                 {availableStatuses.map((s) => (
-                  <SelectItem key={s} value={s}>
+                  <AndamioSelectItem key={s} value={s}>
                     {s}
-                  </SelectItem>
+                  </AndamioSelectItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </AndamioSelectContent>
+            </AndamioSelect>
             <p className="text-sm text-muted-foreground">
               Current: {module.status} • Available transitions shown
             </p>
@@ -585,15 +585,15 @@ export default function ModuleEditPage() {
 
           {/* Pending Transaction */}
           <div className="space-y-2">
-            <Label>Pending Transaction</Label>
+            <AndamioLabel>Pending Transaction</AndamioLabel>
             {module.pendingTxHash ? (
               <div className="flex gap-2">
-                <Input
+                <AndamioInput
                   value={module.pendingTxHash}
                   disabled
                   className="flex-1 font-mono text-xs"
                 />
-                <Button
+                <AndamioButton
                   variant="outline"
                   size="sm"
                   asChild
@@ -605,19 +605,19 @@ export default function ModuleEditPage() {
                   >
                     View on Explorer
                   </a>
-                </Button>
+                </AndamioButton>
               </div>
             ) : (
               <div className="flex gap-2">
-                <Input
+                <AndamioInput
                   value="No pending transaction"
                   disabled
                   className="flex-1"
                 />
                 {module.status === "DRAFT" && (
-                  <Dialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
+                  <AndamioDialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
+                    <AndamioDialogTrigger asChild>
+                      <AndamioButton
                         variant="outline"
                         size="sm"
                         onClick={() => {
@@ -626,19 +626,19 @@ export default function ModuleEditPage() {
                         }}
                       >
                         Set Transaction
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Set Pending Transaction</DialogTitle>
-                        <DialogDescription>
+                      </AndamioButton>
+                    </AndamioDialogTrigger>
+                    <AndamioDialogContent>
+                      <AndamioDialogHeader>
+                        <AndamioDialogTitle>Set Pending Transaction</AndamioDialogTitle>
+                        <AndamioDialogDescription>
                           Enter the transaction hash for the on-chain operation related to this module.
-                        </DialogDescription>
-                      </DialogHeader>
+                        </AndamioDialogDescription>
+                      </AndamioDialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label htmlFor="pending-tx-hash">Transaction Hash</Label>
-                          <Input
+                          <AndamioLabel htmlFor="pending-tx-hash">Transaction Hash</AndamioLabel>
+                          <AndamioInput
                             id="pending-tx-hash"
                             value={pendingTxHash}
                             onChange={(e) => setPendingTxHash(e.target.value)}
@@ -648,26 +648,26 @@ export default function ModuleEditPage() {
                           />
                         </div>
                         {pendingTxError && (
-                          <Alert variant="destructive">
+                          <AndamioAlert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{pendingTxError}</AlertDescription>
-                          </Alert>
+                            <AndamioAlertDescription>{pendingTxError}</AndamioAlertDescription>
+                          </AndamioAlert>
                         )}
                       </div>
-                      <DialogFooter>
-                        <Button
+                      <AndamioDialogFooter>
+                        <AndamioButton
                           variant="outline"
                           onClick={() => setIsPendingTxDialogOpen(false)}
                           disabled={isSettingPendingTx}
                         >
                           Cancel
-                        </Button>
-                        <Button onClick={handleSetPendingTx} disabled={isSettingPendingTx}>
+                        </AndamioButton>
+                        <AndamioButton onClick={handleSetPendingTx} disabled={isSettingPendingTx}>
                           {isSettingPendingTx ? "Setting..." : "Set Transaction"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                        </AndamioButton>
+                      </AndamioDialogFooter>
+                    </AndamioDialogContent>
+                  </AndamioDialog>
                 )}
               </div>
             )}
@@ -680,16 +680,16 @@ export default function ModuleEditPage() {
 
           {/* Save Button */}
           <div className="flex justify-end gap-2">
-            <Button
+            <AndamioButton
               variant="outline"
               onClick={() => router.push(`/course/${courseNftPolicyId}/${moduleCode}`)}
             >
               Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+            </AndamioButton>
+            <AndamioButton onClick={handleSave} disabled={isSaving || !hasChanges}>
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            </AndamioButton>
           </div>
 
           {/* Danger Zone */}
@@ -699,12 +699,12 @@ export default function ModuleEditPage() {
               <p className="text-sm text-muted-foreground">
                 Permanently delete this module and all its lessons, SLTs, and assignments.
               </p>
-              <ConfirmDialog
+              <AndamioConfirmDialog
                 trigger={
-                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                  <AndamioButton variant="destructive" size="sm" disabled={isDeleting}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Module
-                  </Button>
+                  </AndamioButton>
                 }
                 title="Delete Module"
                 description={`Are you sure you want to delete "${module.title}"? This action cannot be undone. All lessons, SLTs, introduction, and assignments will be permanently removed.`}
@@ -715,44 +715,44 @@ export default function ModuleEditPage() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Quick Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Module Management</CardTitle>
-          <CardDescription>Manage module content and settings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Module Management</AndamioCardTitle>
+          <AndamioCardDescription>Manage module content and settings</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-2">
           <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
-            <Button variant="outline" className="w-full justify-start">
+            <AndamioButton variant="outline" className="w-full justify-start">
               Manage Student Learning Targets
-            </Button>
+            </AndamioButton>
           </Link>
           <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/introduction`}>
-            <Button variant="outline" className="w-full justify-start">
+            <AndamioButton variant="outline" className="w-full justify-start">
               Edit Module Introduction
-            </Button>
+            </AndamioButton>
           </Link>
           <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-            <Button variant="outline" className="w-full justify-start">
+            <AndamioButton variant="outline" className="w-full justify-start">
               Edit Module Assignment
-            </Button>
+            </AndamioButton>
           </Link>
 
           {/* Publish Content */}
           <div className="border-t pt-4 mt-4">
-            <ConfirmDialog
+            <AndamioConfirmDialog
               trigger={
-                <Button
+                <AndamioButton
                   variant="default"
                   className="w-full justify-start"
                   disabled={isPublishing}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isPublishing ? "Publishing..." : "Publish All Content"}
-                </Button>
+                </AndamioButton>
               }
               title="Publish All Module Content"
               description={`This will make all content (lessons, introduction, and assignments) for "${module.title}" live and visible to learners. Are you sure you want to continue?`}
@@ -764,8 +764,8 @@ export default function ModuleEditPage() {
               Sets all lessons, introduction, and assignments to live status
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }

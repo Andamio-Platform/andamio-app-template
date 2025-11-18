@@ -1,7 +1,7 @@
 "use client";
 
 import { type Editor } from "@tiptap/react";
-import { Toggle } from "~/components/ui/toggle";
+import { AndamioToggle } from "~/components/andamio/andamio-toggle";
 import {
   Bold,
   Italic,
@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { cn } from "../../../utils";
 import { useCallback, useState } from "react";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 
 interface AndamioBubbleMenusProps {
   editor: Editor;
@@ -60,7 +60,7 @@ export function AndamioBubbleMenus({
           className,
         )}
       >
-        <Input
+        <AndamioInput
           type="url"
           placeholder="Enter URL"
           value={linkUrl}
@@ -77,10 +77,10 @@ export function AndamioBubbleMenus({
           className="h-8 w-64"
           autoFocus
         />
-        <Button size="sm" onClick={setLink}>
+        <AndamioButton size="sm" onClick={setLink}>
           Set
-        </Button>
-        <Button
+        </AndamioButton>
+        <AndamioButton
           size="sm"
           variant="ghost"
           onClick={() => {
@@ -89,7 +89,7 @@ export function AndamioBubbleMenus({
           }}
         >
           Cancel
-        </Button>
+        </AndamioButton>
       </div>
     );
   }
@@ -101,54 +101,54 @@ export function AndamioBubbleMenus({
         className,
       )}
     >
-      <Toggle
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("bold")}
         onPressedChange={() => editor.chain().focus().toggleBold().run()}
         aria-label="Bold"
       >
         <Bold className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("italic")}
         onPressedChange={() => editor.chain().focus().toggleItalic().run()}
         aria-label="Italic"
       >
         <Italic className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("underline")}
         onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
         aria-label="Underline"
       >
         <UnderlineIcon className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("strike")}
         onPressedChange={() => editor.chain().focus().toggleStrike().run()}
         aria-label="Strikethrough"
       >
         <Strikethrough className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("code")}
         onPressedChange={() => editor.chain().focus().toggleCode().run()}
         aria-label="Inline Code"
       >
         <Code className="h-4 w-4" />
-      </Toggle>
-      <Toggle
+      </AndamioToggle>
+      <AndamioToggle
         size="sm"
         pressed={editor.isActive("link")}
         onPressedChange={openLinkInput}
         aria-label="Link"
       >
         <LinkIcon className="h-4 w-4" />
-      </Toggle>
+      </AndamioToggle>
     </div>
   );
 }

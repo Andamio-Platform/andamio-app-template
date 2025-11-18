@@ -4,27 +4,27 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { Button } from "~/components/ui/button";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
+  AndamioDialog,
+  AndamioDialogContent,
+  AndamioDialogDescription,
+  AndamioDialogFooter,
+  AndamioDialogHeader,
+  AndamioDialogTitle,
+  AndamioDialogTrigger,
+} from "~/components/andamio/andamio-dialog";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { Alert, AlertDescription } from "~/components/ui/alert";
+  AndamioSelect,
+  AndamioSelectContent,
+  AndamioSelectItem,
+  AndamioSelectTrigger,
+  AndamioSelectValue,
+} from "~/components/andamio/andamio-select";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { Plus, AlertCircle, Loader2 } from "lucide-react";
 import { type CourseModuleOutput } from "andamio-db-api";
 
@@ -153,36 +153,36 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
     formData.title.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm">
+    <AndamioDialog open={open} onOpenChange={handleOpenChange}>
+      <AndamioDialogTrigger asChild>
+        <AndamioButton size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Module
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+        </AndamioButton>
+      </AndamioDialogTrigger>
+      <AndamioDialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create New Module</DialogTitle>
-            <DialogDescription>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Create New Module</AndamioDialogTitle>
+            <AndamioDialogDescription>
               Add a new module to this course. You can add lessons and assignments later.
-            </DialogDescription>
-          </DialogHeader>
+            </AndamioDialogDescription>
+          </AndamioDialogHeader>
 
           <div className="space-y-4 py-4">
             {error && (
-              <Alert variant="destructive">
+              <AndamioAlert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+                <AndamioAlertDescription>{error}</AndamioAlertDescription>
+              </AndamioAlert>
             )}
 
             {/* Module Code */}
             <div className="space-y-2">
-              <Label htmlFor="moduleCode">
+              <AndamioLabel htmlFor="moduleCode">
                 Module Code <span className="text-destructive">*</span>
-              </Label>
-              <Input
+              </AndamioLabel>
+              <AndamioInput
                 id="moduleCode"
                 placeholder="module-101"
                 value={formData.moduleCode}
@@ -198,10 +198,10 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
 
             {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">
+              <AndamioLabel htmlFor="title">
                 Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
+              </AndamioLabel>
+              <AndamioInput
                 id="title"
                 placeholder="Introduction to Smart Contracts"
                 value={formData.title}
@@ -216,8 +216,8 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
+              <AndamioLabel htmlFor="description">Description</AndamioLabel>
+              <AndamioTextarea
                 id="description"
                 placeholder="Learn the basics of Cardano smart contracts..."
                 value={formData.description}
@@ -231,8 +231,8 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
 
             {/* Status */}
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
+              <AndamioLabel htmlFor="status">Status</AndamioLabel>
+              <AndamioSelect
                 value={formData.status}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
@@ -242,39 +242,39 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
                 }
                 disabled={isSubmitting}
               >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
+                <AndamioSelectTrigger id="status">
+                  <AndamioSelectValue placeholder="Select status" />
+                </AndamioSelectTrigger>
+                <AndamioSelectContent>
                   {moduleStatuses.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
+                    <AndamioSelectItem key={status.value} value={status.value}>
                       {status.label}
-                    </SelectItem>
+                    </AndamioSelectItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </AndamioSelectContent>
+              </AndamioSelect>
               <p className="text-xs text-muted-foreground">
                 Set the initial status for this module
               </p>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
+          <AndamioDialogFooter>
+            <AndamioButton
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={!isFormValid || isSubmitting}>
+            </AndamioButton>
+            <AndamioButton type="submit" disabled={!isFormValid || isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Module
-            </Button>
-          </DialogFooter>
+            </AndamioButton>
+          </AndamioDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </AndamioDialogContent>
+    </AndamioDialog>
   );
 }

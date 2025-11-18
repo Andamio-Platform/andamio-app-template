@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { env } from "~/env";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { type CourseOutput } from "andamio-db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
@@ -98,13 +98,13 @@ export default function CourseDetailPage() {
     return (
       <div className="space-y-6">
         <div>
-          <Skeleton className="h-9 w-64 mb-2" />
-          <Skeleton className="h-5 w-96" />
+          <AndamioSkeleton className="h-9 w-64 mb-2" />
+          <AndamioSkeleton className="h-5 w-96" />
         </div>
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <AndamioSkeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       </div>
@@ -119,13 +119,13 @@ export default function CourseDetailPage() {
           <h1 className="text-3xl font-bold">Course Not Found</h1>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>
             {error ?? "Course not found"}
-          </AlertDescription>
-        </Alert>
+          </AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -167,37 +167,37 @@ export default function CourseDetailPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Course Modules</h2>
         <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-32">Module Code</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="w-32 text-center">Learning Objectives</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <AndamioTable>
+            <AndamioTableHeader>
+              <AndamioTableRow>
+                <AndamioTableHead className="w-32">Module Code</AndamioTableHead>
+                <AndamioTableHead>Title</AndamioTableHead>
+                <AndamioTableHead className="w-32 text-center">Learning Objectives</AndamioTableHead>
+              </AndamioTableRow>
+            </AndamioTableHeader>
+            <AndamioTableBody>
               {modules.map((module) => (
-                <TableRow key={module.moduleCode}>
-                  <TableCell className="font-mono text-xs">
+                <AndamioTableRow key={module.moduleCode}>
+                  <AndamioTableCell className="font-mono text-xs">
                     {module.moduleCode}
-                  </TableCell>
-                  <TableCell>
+                  </AndamioTableCell>
+                  <AndamioTableCell>
                     <Link
                       href={`/course/${courseNftPolicyId}/${module.moduleCode}`}
                       className="font-medium hover:underline"
                     >
                       {module.title}
                     </Link>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="secondary">
+                  </AndamioTableCell>
+                  <AndamioTableCell className="text-center">
+                    <AndamioBadge variant="secondary">
                       {module.slts.length} {module.slts.length === 1 ? "SLT" : "SLTs"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
+                    </AndamioBadge>
+                  </AndamioTableCell>
+                </AndamioTableRow>
               ))}
-            </TableBody>
-          </Table>
+            </AndamioTableBody>
+          </AndamioTable>
         </div>
       </div>
     </div>

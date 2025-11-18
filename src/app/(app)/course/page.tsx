@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { env } from "~/env";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Skeleton } from "~/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { type ListPublishedCoursesOutput } from "andamio-db-api";
 
@@ -60,7 +60,7 @@ export default function CoursePage() {
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+            <AndamioSkeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       </div>
@@ -78,11 +78,11 @@ export default function CoursePage() {
           </p>
         </div>
 
-        <Alert variant="destructive">
+        <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }
@@ -119,35 +119,35 @@ export default function CoursePage() {
       </div>
 
       <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Course NFT Policy ID</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <AndamioTable>
+          <AndamioTableHeader>
+            <AndamioTableRow>
+              <AndamioTableHead>Title</AndamioTableHead>
+              <AndamioTableHead>Course NFT Policy ID</AndamioTableHead>
+              <AndamioTableHead>Description</AndamioTableHead>
+            </AndamioTableRow>
+          </AndamioTableHeader>
+          <AndamioTableBody>
             {courses.map((course) => (
-              <TableRow key={course.courseNftPolicyId ?? course.courseCode}>
-                <TableCell>
+              <AndamioTableRow key={course.courseNftPolicyId ?? course.courseCode}>
+                <AndamioTableCell>
                   <Link
                     href={`/course/${course.courseNftPolicyId}`}
                     className="font-medium hover:underline"
                   >
                     {course.title}
                   </Link>
-                </TableCell>
-                <TableCell className="font-mono text-xs break-all">
+                </AndamioTableCell>
+                <AndamioTableCell className="font-mono text-xs break-all">
                   {course.courseNftPolicyId}
-                </TableCell>
-                <TableCell>
+                </AndamioTableCell>
+                <AndamioTableCell>
                   {course.description}
-                </TableCell>
-              </TableRow>
+                </AndamioTableCell>
+              </AndamioTableRow>
             ))}
-          </TableBody>
-        </Table>
+          </AndamioTableBody>
+        </AndamioTable>
       </div>
     </div>
   );

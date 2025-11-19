@@ -14,7 +14,9 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AlertCircle, ArrowLeft, FileText, Link2, Save, Settings, Trash2, Users } from "lucide-react";
+import { AndamioAccordion, AndamioAccordionContent, AndamioAccordionItem, AndamioAccordionTrigger } from "~/components/andamio/andamio-accordion";
+import { AndamioCode } from "~/components/andamio/andamio-code";
+import { AlertCircle, ArrowLeft, FileText, Link2, Save, Settings, Trash2, Users, Database } from "lucide-react";
 import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
@@ -49,7 +51,7 @@ export default function CourseEditPage() {
   const params = useParams();
   const router = useRouter();
   const courseNftPolicyId = params.coursenft as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
   const [modules, setModules] = useState<ListCourseModulesOutput>([]);
@@ -77,6 +79,14 @@ export default function CourseEditPage() {
   }
   const [unpublishedProjects, setUnpublishedProjects] = useState<UnpublishedProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+
+  // NBA Course State data
+  const [courseUtxos, setCourseUtxos] = useState<unknown | null>(null);
+  const [isLoadingUtxos, setIsLoadingUtxos] = useState(false);
+  const [courseDecodedDatum, setCourseDecodedDatum] = useState<unknown | null>(null);
+  const [isLoadingDecodedDatum, setIsLoadingDecodedDatum] = useState(false);
+  const [courseInfo, setCourseInfo] = useState<unknown | null>(null);
+  const [isLoadingCourseInfo, setIsLoadingCourseInfo] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -157,6 +167,41 @@ export default function CourseEditPage() {
             setIsLoadingProjects(false);
           }
         }
+
+        // Fetch NBA course state data
+        setIsLoadingUtxos(true);
+        setIsLoadingCourseInfo(true);
+        try {
+          // Fetch UTXOs
+          const utxosResponse = await fetch(
+            `/api/nba/course-state/utxos?policy=${courseNftPolicyId}`
+          );
+          if (utxosResponse.ok) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const utxosData = await utxosResponse.json();
+            setCourseUtxos(utxosData);
+          }
+        } catch (err) {
+          console.error("Error fetching course UTXOs:", err);
+        } finally {
+          setIsLoadingUtxos(false);
+        }
+
+        // Fetch course info
+        try {
+          const infoResponse = await fetch(
+            `/api/nba/course-state/info?policy=${courseNftPolicyId}`
+          );
+          if (infoResponse.ok) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const infoData = await infoResponse.json();
+            setCourseInfo(infoData);
+          }
+        } catch (err) {
+          console.error("Error fetching course info:", err);
+        } finally {
+          setIsLoadingCourseInfo(false);
+        }
       } catch (err) {
         console.error("Error fetching course and modules:", err);
         setError(err instanceof Error ? err.message : "Failed to load course");
@@ -167,6 +212,31 @@ export default function CourseEditPage() {
 
     void fetchCourseAndModules();
   }, [courseNftPolicyId]);
+
+  // Fetch decoded datum when user is available
+  useEffect(() => {
+    if (!user?.accessTokenAlias) return;
+
+    const fetchDecodedDatum = async () => {
+      setIsLoadingDecodedDatum(true);
+      try {
+        const datumResponse = await fetch(
+          `/api/nba/course-state/decoded-datum?policy=${courseNftPolicyId}&alias=${user.accessTokenAlias}`
+        );
+        if (datumResponse.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const datumData = await datumResponse.json();
+          setCourseDecodedDatum(datumData);
+        }
+      } catch (err) {
+        console.error("Error fetching decoded datum:", err);
+      } finally {
+        setIsLoadingDecodedDatum(false);
+      }
+    };
+
+    void fetchDecodedDatum();
+  }, [courseNftPolicyId, user?.accessTokenAlias]);
 
   const handleSave = async () => {
     if (!isAuthenticated || !course) {
@@ -623,6 +693,72 @@ export default function CourseEditPage() {
               </AndamioAlert>
             </div>
           )}
+        </AndamioCardContent>
+      </AndamioCard>
+
+      {/* NBA On-Chain Data - Developer Tools */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            <AndamioCardTitle>On-Chain Data (NBA)</AndamioCardTitle>
+          </div>
+          <AndamioCardDescription>
+            Raw blockchain data for development and debugging
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioAccordion type="single" collapsible>
+            <AndamioAccordionItem value="utxos">
+              <AndamioAccordionTrigger>Course UTXOs</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingUtxos ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : courseUtxos ? (
+                  <AndamioCode data={courseUtxos} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No UTXO data available</p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="decoded-datum">
+              <AndamioAccordionTrigger>Decoded Datum</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingDecodedDatum ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : courseDecodedDatum ? (
+                  <AndamioCode data={courseDecodedDatum} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No decoded datum available (user may not be enrolled in course)
+                  </p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="course-info">
+              <AndamioAccordionTrigger>Course Info</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingCourseInfo ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : courseInfo ? (
+                  <AndamioCode data={courseInfo} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No course info available</p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+          </AndamioAccordion>
         </AndamioCardContent>
       </AndamioCard>
     </div>

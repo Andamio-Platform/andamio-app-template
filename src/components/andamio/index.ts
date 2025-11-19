@@ -18,6 +18,7 @@ export * from "./andamio-button";
 export * from "./andamio-badge";
 export * from "./andamio-card";
 export * from "./andamio-alert";
+export * from "./andamio-code";
 export * from "./andamio-input";
 export * from "./andamio-select";
 export * from "./andamio-textarea";

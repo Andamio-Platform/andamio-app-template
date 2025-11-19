@@ -1,16 +1,47 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { type AggregateUserInfoResponse } from "@andamiojs/datum-utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { Wallet, Key, CheckCircle2 } from "lucide-react";
+import { AndamioCode } from "~/components/andamio/andamio-code";
+import { Wallet, Key, CheckCircle2, Database } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
 
 export default function DashboardPage() {
   const { isAuthenticated, user, jwt } = useAndamioAuth();
+  const [nbaUserInfo, setNbaUserInfo] = useState<AggregateUserInfoResponse | null>(null);
+  const [nbaLoading, setNbaLoading] = useState(false);
+  const [nbaError, setNbaError] = useState<string | null>(null);
+
+  // Fetch NBA user info when authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !user?.accessTokenAlias) return;
+
+    const fetchNbaUserInfo = async () => {
+      setNbaLoading(true);
+      setNbaError(null);
+      try {
+        const response = await fetch(
+          `/api/nba/aggregate/user-info?alias=${user.accessTokenAlias}`
+        );
+        if (!response.ok) {
+          throw new Error(`NBA API error: ${response.status}`);
+        }
+        const data = (await response.json()) as AggregateUserInfoResponse;
+        setNbaUserInfo(data);
+      } catch (error) {
+        setNbaError(error instanceof Error ? error.message : "Failed to fetch NBA data");
+      } finally {
+        setNbaLoading(false);
+      }
+    };
+
+    void fetchNbaUserInfo();
+  }, [isAuthenticated, user?.accessTokenAlias]);
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -137,6 +168,39 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+        </AndamioCardContent>
+      </AndamioCard>
+
+      {/* NBA User Info (Legacy API) */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            <AndamioCardTitle>On-Chain Data (NBA)</AndamioCardTitle>
+          </div>
+          <AndamioCardDescription>
+            Legacy Node Backend API - aggregated user info
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          {nbaLoading && (
+            <div className="rounded-md border border-dashed p-4 text-center">
+              <p className="text-sm text-muted-foreground">Loading NBA data...</p>
+            </div>
+          )}
+          {nbaError && (
+            <div className="rounded-md border border-destructive bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">{nbaError}</p>
+            </div>
+          )}
+          {!nbaLoading && !nbaError && !!nbaUserInfo && (
+            <AndamioCode data={nbaUserInfo} />
+          )}
+          {!nbaLoading && !nbaError && !nbaUserInfo && (
+            <div className="rounded-md border border-dashed p-4 text-center">
+              <p className="text-sm text-muted-foreground">No data available</p>
+            </div>
+          )}
         </AndamioCardContent>
       </AndamioCard>
 

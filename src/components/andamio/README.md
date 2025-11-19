@@ -87,6 +87,31 @@ import {
 } from "~/components/andamio";
 ```
 
+#### `AndamioCode`
+Component for displaying formatted JSON or code blocks with proper styling.
+
+```typescript
+import { AndamioCode } from "~/components/andamio";
+
+// Display JSON data
+<AndamioCode data={myObject} />
+
+// Custom indentation
+<AndamioCode data={myObject} indent={4} />
+
+// Display raw code
+<AndamioCode>
+  const foo = "bar";
+</AndamioCode>
+```
+
+Features:
+- Automatic JSON stringification via `data` prop
+- Configurable indentation
+- Fixed `text-xs` size (overrides global CSS)
+- Proper overflow handling
+- Loading and empty states supported
+
 ### Pass-Through Components
 
 Components that currently just re-export the base shadcn component. These are placeholders for future Andamio-specific customizations.
@@ -272,6 +297,7 @@ When adding a new shadcn component:
 - `AndamioButton` - Loading states, icons
 - `AndamioBadge` - Status variants
 - `AndamioCard` - Consistent naming
+- `AndamioCode` - JSON/code display with formatting
 
 ### Pass-Through (Ready to Customize)
 All other components currently re-export from base shadcn:

@@ -249,15 +249,15 @@
 
   /* Code - More spacing */
   code {
-    @apply bg-muted px-2 py-1 text-sm font-mono border-2 border-border;
+    @apply bg-muted px-2 py-1 text-xs font-mono border-2 border-border;
   }
 
   pre {
-    @apply bg-muted p-6 overflow-x-auto my-8 border-4 border-border shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)];
+    @apply bg-muted p-6 overflow-x-auto my-8 border-4 border-border text-xs shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)];
   }
 
   pre code {
-    @apply bg-transparent p-0 border-0;
+    @apply bg-transparent p-0 border-0 text-xs;
   }
 }
 

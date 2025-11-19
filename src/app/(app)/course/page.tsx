@@ -7,13 +7,13 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type ListPublishedCoursesOutput } from "andamio-db-api";
+import { type ListPublishedCoursesOutput } from "@andamio-platform/db-api";
 
 /**
  * Public page displaying all published courses
  *
  * API Endpoint: GET /courses/published (public)
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
 export default function CoursePage() {
   const [courses, setCourses] = useState<ListPublishedCoursesOutput>([]);

@@ -9,7 +9,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type CourseOutput } from "andamio-db-api";
+import { type CourseOutput } from "@andamio-platform/db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 
 /**
@@ -18,7 +18,7 @@ import { UserCourseStatus } from "~/components/learner/user-course-status";
  * API Endpoints:
  * - GET /courses/{courseNftPolicyId} (public)
  * - GET /course-modules/with-slts/{courseNftPolicyId} (public) - Optimized query for modules with SLTs
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
 
 interface ModuleWithSLTs {

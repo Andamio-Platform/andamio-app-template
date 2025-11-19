@@ -31,7 +31,7 @@ import {
   type UpdateAssignmentInput,
   createAssignmentInputSchema,
   updateAssignmentInputSchema,
-} from "andamio-db-api";
+} from "@andamio-platform/db-api";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -42,7 +42,7 @@ import type { JSONContent } from "@tiptap/core";
  * - PATCH /assignments/{courseNftPolicyId}/{moduleCode} (protected) - Update assignment
  * - DELETE /assignments/{courseNftPolicyId}/{moduleCode} (protected) - Delete assignment
  * Input Validation: Uses createAssignmentInputSchema and updateAssignmentInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
 
 interface ApiError {

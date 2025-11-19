@@ -10,7 +10,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen, Settings } from "lucide-react";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { type ListOwnedCoursesOutput } from "andamio-db-api";
+import { type ListOwnedCoursesOutput } from "@andamio-platform/db-api";
 
 /**
  * Component to display courses owned by the authenticated user
@@ -18,7 +18,7 @@ import { type ListOwnedCoursesOutput } from "andamio-db-api";
  * API Endpoints:
  * - GET /courses/owned (protected)
  * - POST /course-modules/list (public) - Batch query for modules
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  *
  * @example
  * // The ListOwnedCoursesOutput type is auto-generated from the API

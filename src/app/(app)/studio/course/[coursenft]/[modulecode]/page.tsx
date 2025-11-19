@@ -37,7 +37,7 @@ import {
   type UpdateModuleStatusInput,
   updateCourseModuleInputSchema,
   updateModuleStatusInputSchema,
-} from "andamio-db-api";
+} from "@andamio-platform/db-api";
 
 /**
  * Studio page for editing course module details and status
@@ -49,7 +49,7 @@ import {
  * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/pending-tx (protected) - Set pending transaction
  * - POST /course-modules/{courseNftPolicyId}/{moduleCode}/publish (protected) - Publish all module content
  * Input Validation: Uses updateCourseModuleInputSchema and updateModuleStatusInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
 
 interface ApiError {

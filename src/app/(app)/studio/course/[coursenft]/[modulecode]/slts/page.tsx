@@ -33,7 +33,7 @@ import {
   createSLTInputSchema,
   updateSLTInputSchema,
   batchUpdateSLTIndexesInputSchema,
-} from "andamio-db-api";
+} from "@andamio-platform/db-api";
 import Link from "next/link";
 import {
   DndContext,
@@ -63,7 +63,7 @@ import { CSS } from "@dnd-kit/utilities";
  * - DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete SLT
  * - PATCH /slts/batch-update-indexes (protected) - Batch update SLT indexes
  * Input Validation: Uses createSLTInputSchema, updateSLTInputSchema, batchUpdateSLTIndexesInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
 
 interface ApiError {

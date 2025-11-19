@@ -37,7 +37,7 @@ import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search } fr
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
-} from "andamio-db-api";
+} from "@andamio-platform/db-api";
 
 /**
  * Instructor Dashboard Page

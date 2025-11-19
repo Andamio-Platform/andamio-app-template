@@ -11,7 +11,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
-import { type LessonWithSLTOutput } from "andamio-db-api";
+import { type LessonWithSLTOutput } from "@andamio-platform/db-api";
 import { RenderEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 
@@ -19,7 +19,7 @@ import type { JSONContent } from "@tiptap/core";
  * Public page displaying lesson content
  *
  * API Endpoint: GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (public)
- * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  *
  * Note: Lessons are optional content tied to SLTs. If no lesson exists,
  * this page will show "Lesson not found" message.

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { type DecodedAssignmentDecisionDatum, type DecodedModuleRefDatum } from "@andamiojs/datum-utils";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
@@ -81,12 +82,24 @@ export default function CourseEditPage() {
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
   // NBA Course State data
-  const [courseUtxos, setCourseUtxos] = useState<unknown | null>(null);
+  const [courseUtxos, setCourseUtxos] = useState<unknown>(null);
   const [isLoadingUtxos, setIsLoadingUtxos] = useState(false);
-  const [courseDecodedDatum, setCourseDecodedDatum] = useState<unknown | null>(null);
+  const [courseDecodedDatum, setCourseDecodedDatum] = useState<unknown>(null);
   const [isLoadingDecodedDatum, setIsLoadingDecodedDatum] = useState(false);
-  const [courseInfo, setCourseInfo] = useState<unknown | null>(null);
+  const [courseInfo, setCourseInfo] = useState<unknown>(null);
   const [isLoadingCourseInfo, setIsLoadingCourseInfo] = useState(false);
+
+  // NBA Assignment Validator data
+  const [assignmentUtxos, setAssignmentUtxos] = useState<unknown>(null);
+  const [isLoadingAssignmentUtxos, setIsLoadingAssignmentUtxos] = useState(false);
+  const [assignmentDecodedDatum, setAssignmentDecodedDatum] = useState<DecodedAssignmentDecisionDatum | null>(null);
+  const [isLoadingAssignmentDatum, setIsLoadingAssignmentDatum] = useState(false);
+
+  // NBA Module Ref Validator data
+  const [moduleRefUtxos, setModuleRefUtxos] = useState<unknown>(null);
+  const [isLoadingModuleRefUtxos, setIsLoadingModuleRefUtxos] = useState(false);
+  const [moduleRefDecodedDatum, setModuleRefDecodedDatum] = useState<DecodedModuleRefDatum | null>(null);
+  const [isLoadingModuleRefDatum, setIsLoadingModuleRefDatum] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -202,6 +215,40 @@ export default function CourseEditPage() {
         } finally {
           setIsLoadingCourseInfo(false);
         }
+
+        // Fetch NBA assignment validator UTXOs
+        setIsLoadingAssignmentUtxos(true);
+        try {
+          const assignmentUtxosResponse = await fetch(
+            `/api/nba/assignment-validator/utxos?policy=${courseNftPolicyId}`
+          );
+          if (assignmentUtxosResponse.ok) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const assignmentUtxosData = await assignmentUtxosResponse.json();
+            setAssignmentUtxos(assignmentUtxosData);
+          }
+        } catch (err) {
+          console.error("Error fetching assignment UTXOs:", err);
+        } finally {
+          setIsLoadingAssignmentUtxos(false);
+        }
+
+        // Fetch NBA module ref validator UTXOs
+        setIsLoadingModuleRefUtxos(true);
+        try {
+          const moduleRefUtxosResponse = await fetch(
+            `/api/nba/module-ref-validator/utxos?policy=${courseNftPolicyId}`
+          );
+          if (moduleRefUtxosResponse.ok) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const moduleRefUtxosData = await moduleRefUtxosResponse.json();
+            setModuleRefUtxos(moduleRefUtxosData);
+          }
+        } catch (err) {
+          console.error("Error fetching module ref UTXOs:", err);
+        } finally {
+          setIsLoadingModuleRefUtxos(false);
+        }
       } catch (err) {
         console.error("Error fetching course and modules:", err);
         setError(err instanceof Error ? err.message : "Failed to load course");
@@ -211,13 +258,14 @@ export default function CourseEditPage() {
     };
 
     void fetchCourseAndModules();
-  }, [courseNftPolicyId]);
+  }, [courseNftPolicyId, authenticatedFetch]);
 
   // Fetch decoded datum when user is available
   useEffect(() => {
     if (!user?.accessTokenAlias) return;
 
-    const fetchDecodedDatum = async () => {
+    const fetchDecodedData = async () => {
+      // Fetch course state decoded datum
       setIsLoadingDecodedDatum(true);
       try {
         const datumResponse = await fetch(
@@ -233,9 +281,41 @@ export default function CourseEditPage() {
       } finally {
         setIsLoadingDecodedDatum(false);
       }
+
+      // Fetch assignment validator decoded datum
+      setIsLoadingAssignmentDatum(true);
+      try {
+        const assignmentDatumResponse = await fetch(
+          `/api/nba/assignment-validator/decoded-datum?policy=${courseNftPolicyId}&alias=${user.accessTokenAlias}`
+        );
+        if (assignmentDatumResponse.ok) {
+          const assignmentDatumData = (await assignmentDatumResponse.json()) as DecodedAssignmentDecisionDatum;
+          setAssignmentDecodedDatum(assignmentDatumData);
+        }
+      } catch (err) {
+        console.error("Error fetching assignment decoded datum:", err);
+      } finally {
+        setIsLoadingAssignmentDatum(false);
+      }
+
+      // Fetch module ref validator decoded datum
+      setIsLoadingModuleRefDatum(true);
+      try {
+        const moduleRefDatumResponse = await fetch(
+          `/api/nba/module-ref-validator/decoded-datum?policy=${courseNftPolicyId}&alias=${user.accessTokenAlias}`
+        );
+        if (moduleRefDatumResponse.ok) {
+          const moduleRefDatumData = (await moduleRefDatumResponse.json()) as DecodedModuleRefDatum;
+          setModuleRefDecodedDatum(moduleRefDatumData);
+        }
+      } catch (err) {
+        console.error("Error fetching module ref decoded datum:", err);
+      } finally {
+        setIsLoadingModuleRefDatum(false);
+      }
     };
 
-    void fetchDecodedDatum();
+    void fetchDecodedData();
   }, [courseNftPolicyId, user?.accessTokenAlias]);
 
   const handleSave = async () => {
@@ -755,6 +835,74 @@ export default function CourseEditPage() {
                   <AndamioCode data={courseInfo} />
                 ) : (
                   <p className="text-sm text-muted-foreground">No course info available</p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="assignment-utxos">
+              <AndamioAccordionTrigger>Assignment Validator UTXOs</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingAssignmentUtxos ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : assignmentUtxos ? (
+                  <AndamioCode data={assignmentUtxos} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No assignment UTXO data available</p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="assignment-datum">
+              <AndamioAccordionTrigger>Assignment Validator Decoded Datum</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingAssignmentDatum ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : assignmentDecodedDatum ? (
+                  <AndamioCode data={assignmentDecodedDatum} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No assignment commitment available (user may not have active assignments)
+                  </p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="module-ref-utxos">
+              <AndamioAccordionTrigger>Module Ref Validator UTXOs</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingModuleRefUtxos ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : moduleRefUtxos ? (
+                  <AndamioCode data={moduleRefUtxos} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No module ref UTXO data available</p>
+                )}
+              </AndamioAccordionContent>
+            </AndamioAccordionItem>
+
+            <AndamioAccordionItem value="module-ref-datum">
+              <AndamioAccordionTrigger>Module Ref Validator Decoded Datum</AndamioAccordionTrigger>
+              <AndamioAccordionContent>
+                {isLoadingModuleRefDatum ? (
+                  <div className="space-y-2">
+                    <AndamioSkeleton className="h-4 w-full" />
+                    <AndamioSkeleton className="h-4 w-3/4" />
+                  </div>
+                ) : moduleRefDecodedDatum ? (
+                  <AndamioCode data={moduleRefDecodedDatum} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No module credential data available
+                  </p>
                 )}
               </AndamioAccordionContent>
             </AndamioAccordionItem>

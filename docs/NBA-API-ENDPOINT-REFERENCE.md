@@ -14,7 +14,7 @@ This document follows the format of andamio-t3-app-template/docs/API-ENDPOINT-RE
 > **Node Backend API (NBA) - Legacy On-Chain Data Aggregation**
 > Last Updated: November 19, 2024
 > Status: **Soon to be deprecated**
-> Coverage: **4 endpoints** (1 user aggregation, 3 course state)
+> Coverage: **8 endpoints** (1 user aggregation, 3 course state, 2 assignment validator, 2 module ref validator)
 
 This document provides reference for the legacy Node Backend API endpoints used for on-chain data aggregation. This API will be deprecated and replaced by the new Database API.
 
@@ -70,6 +70,8 @@ This means you can add new NBA endpoints to the frontend without creating new AP
 - [Important Guidelines](#important-guidelines)
 - [User Aggregation](#user-aggregation)
 - [Course State](#course-state)
+- [Assignment Validator](#assignment-validator)
+- [Module Ref Validator](#module-ref-validator)
 
 ---
 
@@ -241,6 +243,193 @@ const data = await response.json();
   <AndamioAccordionTrigger>Course Info</AndamioAccordionTrigger>
   <AndamioAccordionContent>
     <AndamioCode data={data} />
+  </AndamioAccordionContent>
+</AndamioAccordionItem>
+```
+
+**Display**: Raw JSON in an accordion at the bottom of the studio course page with loading and empty states.
+
+---
+
+## Assignment Validator
+
+### GET `/assignment-validator/utxos`
+
+**Purpose**: Get raw list of UTXOs for assignment commitments in a specific course
+
+**Access**: Public (no authentication required)
+
+**Query Parameters**:
+- `policy` (required): Course NFT policy ID (`courseNftPolicyId`)
+- `alias` (optional): User's access token alias
+
+**Frontend Endpoint**: `/api/nba/assignment-validator/utxos`
+- Uses dynamic proxy route: `src/app/api/nba/[...path]/route.ts`
+
+**Used In**:
+- `src/app/(app)/studio/course/[coursenft]/page.tsx:221` - Studio course page (On-Chain Data accordion)
+
+**Role**: Provides raw UTXO data for assignment commitments in a course. Shows all assignment validator UTXOs on-chain for this course. Useful for developers to inspect assignment commitment state.
+
+**Frontend Implementation**:
+```typescript
+import { AndamioCode } from "~/components/andamio/andamio-code";
+
+const response = await fetch(
+  `/api/nba/assignment-validator/utxos?policy=${courseNftPolicyId}`
+);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const data = await response.json();
+
+// Display in accordion
+<AndamioAccordionItem value="assignment-utxos">
+  <AndamioAccordionTrigger>Assignment Validator UTXOs</AndamioAccordionTrigger>
+  <AndamioAccordionContent>
+    <AndamioCode data={data} />
+  </AndamioAccordionContent>
+</AndamioAccordionItem>
+```
+
+**How Proxy Works:**
+
+The request flows through the dynamic catch-all route:
+1. Frontend calls: `/api/nba/assignment-validator/utxos?policy=X`
+2. Dynamic route (`src/app/api/nba/[...path]/route.ts`) extracts path: `["assignment-validator", "utxos"]`
+3. Reconstructs full URL: `NBA_API/assignment-validator/utxos?policy=X`
+4. Makes server-side fetch (no CORS issues)
+5. Returns JSON to frontend
+
+**Display**: Raw JSON in an accordion at the bottom of the studio course page with loading and empty states.
+
+---
+
+### GET `/assignment-validator/decoded-datum`
+
+**Purpose**: Get decoded datum for a user's assignment commitment in a course
+
+**Access**: Public (no authentication required)
+
+**Query Parameters**:
+- `policy` (required): Course NFT policy ID (`courseNftPolicyId`)
+- `alias` (required): User's access token alias
+
+**Response Type**: `DecodedAssignmentDecisionDatum` from `@andamiojs/datum-utils`
+
+**Frontend Endpoint**: `/api/nba/assignment-validator/decoded-datum`
+- Uses dynamic proxy route: `src/app/api/nba/[...path]/route.ts`
+
+**Used In**:
+- `src/app/(app)/studio/course/[coursenft]/page.tsx:288` - Studio course page (On-Chain Data accordion)
+
+**Role**: Provides decoded on-chain datum for a user's assignment commitment in a course. If no data is returned, it means the user does not have an active assignment commitment. Useful for developers to inspect assignment commitment details.
+
+**Frontend Implementation**:
+```typescript
+import { type DecodedAssignmentDecisionDatum } from "@andamiojs/datum-utils";
+import { AndamioCode } from "~/components/andamio/andamio-code";
+
+const response = await fetch(
+  `/api/nba/assignment-validator/decoded-datum?policy=${courseNftPolicyId}&alias=${user.accessTokenAlias}`
+);
+const data = (await response.json()) as DecodedAssignmentDecisionDatum;
+
+// Display in accordion
+<AndamioAccordionItem value="assignment-datum">
+  <AndamioAccordionTrigger>Assignment Validator Decoded Datum</AndamioAccordionTrigger>
+  <AndamioAccordionContent>
+    {data ? (
+      <AndamioCode data={data} />
+    ) : (
+      <p>No assignment commitment available (user may not have active assignments)</p>
+    )}
+  </AndamioAccordionContent>
+</AndamioAccordionItem>
+```
+
+**Display**: Raw JSON in an accordion at the bottom of the studio course page with message if user has no active assignments.
+
+---
+
+## Module Ref Validator
+
+### GET `/module-ref-validator/utxos`
+
+**Purpose**: Get raw list of UTXOs with Course Module Credential data
+
+**Access**: Public (no authentication required)
+
+**Query Parameters**:
+- `policy` (required): Course NFT policy ID (`courseNftPolicyId`)
+
+**Frontend Endpoint**: `/api/nba/module-ref-validator/utxos`
+- Uses dynamic proxy route: `src/app/api/nba/[...path]/route.ts`
+
+**Used In**:
+- `src/app/(app)/studio/course/[coursenft]/page.tsx:237` - Studio course page (On-Chain Data accordion)
+
+**Role**: Provides raw UTXO data for course module credentials. Shows all module ref validator UTXOs containing module metadata on-chain. Useful for developers to inspect module credential state.
+
+**Frontend Implementation**:
+```typescript
+import { AndamioCode } from "~/components/andamio/andamio-code";
+
+const response = await fetch(
+  `/api/nba/module-ref-validator/utxos?policy=${courseNftPolicyId}`
+);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const data = await response.json();
+
+// Display in accordion
+<AndamioAccordionItem value="module-ref-utxos">
+  <AndamioAccordionTrigger>Module Ref Validator UTXOs</AndamioAccordionTrigger>
+  <AndamioAccordionContent>
+    <AndamioCode data={data} />
+  </AndamioAccordionContent>
+</AndamioAccordionItem>
+```
+
+**Display**: Raw JSON in an accordion at the bottom of the studio course page with loading and empty states.
+
+---
+
+### GET `/module-ref-validator/decoded-datum`
+
+**Purpose**: Get decoded module credential data in friendly form
+
+**Access**: Public (no authentication required)
+
+**Query Parameters**:
+- `policy` (required): Course NFT policy ID (`courseNftPolicyId`)
+
+**Response Type**: `DecodedModuleRefDatum` from `@andamiojs/datum-utils`
+
+**Frontend Endpoint**: `/api/nba/module-ref-validator/decoded-datum`
+- Uses dynamic proxy route: `src/app/api/nba/[...path]/route.ts`
+
+**Used In**:
+- `src/app/(app)/studio/course/[coursenft]/page.tsx:304` - Studio course page (On-Chain Data accordion)
+
+**Role**: Provides decoded on-chain module credential data in friendly format. Shows SLTs (Student Learning Targets) and assignment details for course modules. Useful for developers to inspect module structure and requirements.
+
+**Frontend Implementation**:
+```typescript
+import { type DecodedModuleRefDatum } from "@andamiojs/datum-utils";
+import { AndamioCode } from "~/components/andamio/andamio-code";
+
+const response = await fetch(
+  `/api/nba/module-ref-validator/decoded-datum?policy=${courseNftPolicyId}`
+);
+const data = (await response.json()) as DecodedModuleRefDatum;
+
+// Display in accordion
+<AndamioAccordionItem value="module-ref-datum">
+  <AndamioAccordionTrigger>Module Ref Validator Decoded Datum</AndamioAccordionTrigger>
+  <AndamioAccordionContent>
+    {data ? (
+      <AndamioCode data={data} />
+    ) : (
+      <p>No module credential data available</p>
+    )}
   </AndamioAccordionContent>
 </AndamioAccordionItem>
 ```

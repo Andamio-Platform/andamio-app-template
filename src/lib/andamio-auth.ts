@@ -101,6 +101,7 @@ export async function authenticateWithWallet(params: {
   address: string;
   walletName?: string;
   convertUTF8?: boolean;
+  getAssets?: () => Promise<Array<{ unit: string; quantity: string }>>;
 }): Promise<AuthResponse> {
   // Step 1: Create session
   const session = await createLoginSession();
@@ -108,13 +109,38 @@ export async function authenticateWithWallet(params: {
   // Step 2: Sign nonce
   const signature = await params.signMessage(session.nonce);
 
-  // Step 3: Validate and get JWT
+  // Step 3: Detect access token in wallet (if getAssets provided)
+  let accessTokenUnit: string | undefined;
+  if (params.getAssets) {
+    try {
+      const assets = await params.getAssets();
+      const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
+
+      // Find access token in wallet assets
+      const accessToken = assets.find((asset) =>
+        asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID)
+      );
+
+      if (accessToken) {
+        accessTokenUnit = accessToken.unit;
+        console.log("🎫 Access Token detected in wallet:", accessTokenUnit);
+      } else {
+        console.log("ℹ️ No access token found in wallet");
+      }
+    } catch (error) {
+      console.warn("Failed to detect access token:", error);
+      // Continue authentication even if token detection fails
+    }
+  }
+
+  // Step 4: Validate and get JWT
   const authResponse = await validateSignature({
     sessionId: session.id,
     signature,
     address: params.address,
     convertUTF8: params.convertUTF8,
     walletPreference: params.walletName,
+    andamioAccessTokenUnit: accessTokenUnit ?? null,
   });
 
   return authResponse;

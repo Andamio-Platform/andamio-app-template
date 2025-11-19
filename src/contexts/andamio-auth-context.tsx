@@ -10,7 +10,76 @@ import {
   isJWTExpired,
   type AuthUser,
 } from "~/lib/andamio-auth";
+import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { env } from "~/env";
+
+/**
+ * Detect and sync access token from wallet to database
+ * Called when wallet is connected and we have a valid JWT
+ */
+async function syncAccessTokenFromWallet(
+  wallet: {
+    getAssets: () => Promise<Array<{ unit: string; quantity: string }>>;
+  },
+  currentUser: AuthUser | null,
+  jwt: string,
+  updateUser: (user: AuthUser) => void
+): Promise<void> {
+  if (!currentUser || !wallet) return;
+
+  try {
+    // Get wallet assets
+    const assets = await wallet.getAssets();
+    const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
+
+    // Find access token in wallet
+    const accessToken = assets.find((asset) => asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID));
+
+    if (!accessToken) {
+      console.log("ℹ️ No access token found in wallet");
+      return;
+    }
+
+    // Extract alias from token unit (policy ID + hex-encoded name)
+    const alias = extractAliasFromUnit(accessToken.unit, ACCESS_TOKEN_POLICY_ID);
+
+    // Check if we need to update the database
+    // If user already has this alias in the database, skip
+    if (currentUser.accessTokenAlias) {
+      console.log("✅ Access token already synced:", currentUser.accessTokenAlias);
+      return;
+    }
+
+    console.log("🔄 Syncing access token to database:", accessToken.unit);
+    console.log("🔄 Extracted alias:", alias);
+
+    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        accessTokenAlias: alias,
+      }),
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as { success: boolean; user: AuthUser; jwt: string };
+      console.log("✅ Access token alias synced to database:", alias);
+
+      // Store the new JWT
+      storeJWT(data.jwt);
+
+      // Update local user state
+      updateUser(data.user);
+    } else {
+      console.error("Failed to sync access token:", await response.text());
+    }
+  } catch (error) {
+    console.error("Error syncing access token:", error);
+  }
+}
 
 /**
  * Automatically register user as Creator and Learner on first login
@@ -100,12 +169,37 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     if (storedJWT && !isJWTExpired(storedJWT)) {
       setJwt(storedJWT);
       setIsAuthenticated(true);
-      // TODO: Optionally decode and set user data from JWT
+
+      // Decode JWT and set user data
+      try {
+        const payload = JSON.parse(atob(storedJWT.split(".")[1]!)) as {
+          userId: string;
+          address?: string;
+          accessTokenAlias?: string;
+        };
+        console.log("🔍 JWT Payload:", payload);
+
+        const userData: AuthUser = {
+          id: payload.userId,
+          cardanoBech32Addr: payload.address ?? null,
+          accessTokenAlias: payload.accessTokenAlias ?? null,
+        };
+        setUser(userData);
+        console.log("✅ User data loaded from stored JWT:", userData);
+        console.log("🔑 Access Token Alias:", userData.accessTokenAlias);
+
+        // If wallet is connected, check for access token in wallet
+        if (connected && wallet) {
+          void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
+        }
+      } catch (error) {
+        console.error("Failed to decode JWT:", error);
+      }
     } else if (storedJWT) {
       // JWT expired, clear it
       clearStoredJWT();
     }
-  }, []);
+  }, [connected, wallet]);
 
   /**
    * Authenticate with connected wallet
@@ -133,6 +227,11 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         address,
         walletName: walletName ?? undefined,
         convertUTF8: false, // Try false first, can be made configurable
+        getAssets: async () => {
+          // Get wallet assets to detect access token
+          const assets = await wallet.getAssets();
+          return assets;
+        },
       });
 
       // Store JWT and update state
@@ -144,16 +243,21 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       // Automatically register as Creator and Learner on first login
       await autoRegisterRoles(authResponse.jwt);
 
+      // Sync access token from wallet to database (in case it wasn't detected during auth)
+      await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
+
       // Log JWT to console for debugging
       console.group("🔐 Andamio Authentication Successful");
       console.log("JWT Token:", authResponse.jwt);
 
       // Decode and display JWT payload
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!));
         console.log("JWT Payload:", payload);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
-      } catch (e) {
+      } catch {
         console.log("Could not decode JWT payload");
       }
 

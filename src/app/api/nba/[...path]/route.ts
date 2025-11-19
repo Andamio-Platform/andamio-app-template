@@ -7,17 +7,24 @@ import { env } from "~/env";
  * Handles any NBA endpoint by forwarding the path and query parameters
  * to the NBA API server-side, avoiding CORS issues.
  *
+ * Supports both GET (data endpoints) and POST (transaction endpoints).
+ *
  * Examples:
- * - /api/nba/aggregate/user-info?alias=X → NBA_API/aggregate/user-info?alias=X
- * - /api/nba/some/other/endpoint?param=Y → NBA_API/some/other/endpoint?param=Y
+ * - GET  /api/nba/aggregate/user-info?alias=X → NBA_API/aggregate/user-info?alias=X
+ * - POST /api/nba/tx/access-token/mint → NBA_API/tx/access-token/mint
  */
-export async function GET(
+
+async function proxyRequest(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  params: Promise<{ path: string[] }>,
+  method: "GET" | "POST"
 ) {
   try {
+    // Await params (Next.js 15 requirement)
+    const { path } = await params;
+
     // Reconstruct the path from the dynamic segments
-    const nbaPath = params.path.join("/");
+    const nbaPath = path.join("/");
 
     // Get all query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -26,19 +33,42 @@ export async function GET(
     // Build the full NBA API URL
     const nbaUrl = `${env.ANDAMIO_NBA_API_URL}/${nbaPath}${queryString ? `?${queryString}` : ""}`;
 
-    console.log(`[NBA Proxy] Forwarding request to: ${nbaUrl}`);
+    console.log(`[NBA Proxy] Forwarding ${method} request to: ${nbaUrl}`);
+
+    // Prepare fetch options
+    const fetchOptions: RequestInit = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    // For POST requests, include the body
+    if (method === "POST") {
+      const body = await request.text();
+      fetchOptions.body = body;
+      console.log(`[NBA Proxy] Request body:`, body);
+    }
 
     // Fetch from NBA API server-side (avoids CORS)
-    const nbaResponse = await fetch(nbaUrl);
+    const nbaResponse = await fetch(nbaUrl, fetchOptions);
 
     if (!nbaResponse.ok) {
+      const errorBody = await nbaResponse.text();
       console.error(`[NBA Proxy] Error: ${nbaResponse.status} ${nbaResponse.statusText}`);
+      console.error(`[NBA Proxy] Full URL: ${nbaUrl}`);
+      console.error(`[NBA Proxy] Response body:`, errorBody);
       return NextResponse.json(
-        { error: `NBA API error: ${nbaResponse.status} ${nbaResponse.statusText}` },
+        {
+          error: `NBA API error: ${nbaResponse.status} ${nbaResponse.statusText}`,
+          url: nbaUrl,
+          details: errorBody || "No additional details"
+        },
         { status: nbaResponse.status }
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const data = await nbaResponse.json();
 
     return NextResponse.json(data);
@@ -49,4 +79,18 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  return proxyRequest(request, params, "GET");
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  return proxyRequest(request, params, "POST");
 }

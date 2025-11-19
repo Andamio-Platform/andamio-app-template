@@ -6,11 +6,10 @@ import { env } from "~/env";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { EnrollInCourse } from "~/components/transactions";
 import {
-  AlertCircle,
   CheckCircle,
   Clock,
   Trophy,
@@ -60,7 +59,6 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [status, setStatus] = useState<CourseStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -69,7 +67,6 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
     const fetchStatus = async () => {
       setIsLoading(true);
-      setError(null);
 
       try {
         const response = await authenticatedFetch(
@@ -77,14 +74,18 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch course status");
+          // If 404 or other error, assume not enrolled - we'll show enrollment component
+          console.log("Course status not found (likely not enrolled):", response.status);
+          setStatus(null);
+          return;
         }
 
         const data = (await response.json()) as CourseStatus;
         setStatus(data);
       } catch (err) {
         console.error("Error fetching course status:", err);
-        setError(err instanceof Error ? err.message : "Failed to load course status");
+        // Assume not enrolled on error
+        setStatus(null);
       } finally {
         setIsLoading(false);
       }
@@ -92,6 +93,34 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
     void fetchStatus();
   }, [isAuthenticated, authenticatedFetch, courseNftPolicyId]);
+
+  const refetchStatus = () => {
+    void (async () => {
+      setIsLoading(true);
+
+      try {
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/${courseNftPolicyId}`
+        );
+
+        if (!response.ok) {
+          // If 404 or other error, assume not enrolled
+          console.log("Course status not found (likely not enrolled):", response.status);
+          setStatus(null);
+          return;
+        }
+
+        const data = (await response.json()) as CourseStatus;
+        setStatus(data);
+      } catch (err) {
+        console.error("Error fetching course status:", err);
+        // Assume not enrolled on error
+        setStatus(null);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -111,21 +140,25 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
     );
   }
 
-  if (error || !status) {
+  // If no status data (likely not enrolled), show enrollment component
+  // We need to fetch course title separately for the enrollment component
+  if (!status) {
     return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Your Progress</AndamioCardTitle>
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AndamioAlertDescription>
-              {error ?? "Failed to load course status"}
-            </AndamioAlertDescription>
-          </AndamioAlert>
-        </AndamioCardContent>
-      </AndamioCard>
+      <EnrollInCourse
+        courseNftPolicyId={courseNftPolicyId}
+        onSuccess={refetchStatus}
+      />
+    );
+  }
+
+  // If status exists but not enrolled, show enrollment transaction
+  if (!status.isEnrolled) {
+    return (
+      <EnrollInCourse
+        courseNftPolicyId={courseNftPolicyId}
+        courseTitle={status.course.title}
+        onSuccess={refetchStatus}
+      />
     );
   }
 
@@ -156,56 +189,22 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
         <AndamioSeparator />
 
-        {/* Status Indicators */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Enrollment Status */}
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Enrollment</p>
-            <div className="flex items-center gap-2">
-              {status.isEnrolled ? (
-                <>
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <AndamioBadge variant="default">Enrolled</AndamioBadge>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-4 w-4 text-warning" />
-                  <AndamioBadge variant="secondary">Not Enrolled</AndamioBadge>
-                </>
-              )}
+        {/* Awaiting Approval Status */}
+        {status.awaitingApproval && (
+          <>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Pending Review</p>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-info" />
+                <AndamioBadge variant="outline">{status.awaitingApproval}</AndamioBadge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Assignment waiting for approval
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {status.isEnrolled
-                ? "You are enrolled in this course"
-                : "Enrollment requires indexer integration"}
-            </p>
-          </div>
-
-          {/* Awaiting Approval */}
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Pending Review</p>
-            <div className="flex items-center gap-2">
-              {status.awaitingApproval ? (
-                <>
-                  <Clock className="h-4 w-4 text-info" />
-                  <AndamioBadge variant="outline">{status.awaitingApproval}</AndamioBadge>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <AndamioBadge variant="secondary">None</AndamioBadge>
-                </>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {status.awaitingApproval
-                ? "Assignment waiting for approval"
-                : "No assignments awaiting review"}
-            </p>
-          </div>
-        </div>
-
-        <AndamioSeparator />
+            <AndamioSeparator />
+          </>
+        )}
 
         {/* Completed Assignments */}
         {status.completedAssignments.length > 0 && (

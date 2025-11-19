@@ -10,6 +10,7 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioCode } from "~/components/andamio/andamio-code";
 import { Wallet, Key, CheckCircle2, Database } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
+import { MintAccessToken } from "~/components/transactions";
 
 export default function DashboardPage() {
   const { isAuthenticated, user, jwt } = useAndamioAuth();
@@ -89,6 +90,11 @@ export default function DashboardPage() {
         <CheckCircle2 className="h-5 w-5 text-success" />
         <span className="font-medium text-success">Connected & Authenticated</span>
       </div>
+
+      {/* Mint Access Token - Show if user doesn't have an access token */}
+      {!user.accessTokenAlias && (
+        <MintAccessToken onSuccess={() => window.location.reload()} />
+      )}
 
       {/* Wallet Information */}
       <AndamioCard>

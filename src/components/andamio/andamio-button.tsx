@@ -65,16 +65,16 @@ export const AndamioButton = React.forwardRef<
         {...props}
       >
         {isLoading ? (
-          <>
+          <span className="flex items-center">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Loading...
-          </>
+          </span>
         ) : (
-          <>
+          <span className="flex items-center">
             {leftIcon && <span className="mr-2">{leftIcon}</span>}
             {children}
             {rightIcon && <span className="ml-2">{rightIcon}</span>}
-          </>
+          </span>
         )}
       </Button>
     );

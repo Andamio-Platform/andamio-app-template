@@ -423,7 +423,7 @@ export default function ModuleEditPage() {
   }
 
   // Error state
-  if (error || !module) {
+  if (error || !courseModule) {
     return (
       <div className="space-y-6">
         <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
@@ -586,7 +586,11 @@ export default function ModuleEditPage() {
           {/* Status */}
           <div className="space-y-2">
             <AndamioLabel htmlFor="status">Status</AndamioLabel>
-            <AndamioSelect value={status} onValueChange={setStatus}>
+            <AndamioSelect
+              value={status}
+              onValueChange={setStatus}
+              disabled={courseModule?.status === "PENDING_TX"}
+            >
               <AndamioSelectTrigger id="status">
                 <AndamioSelectValue />
               </AndamioSelectTrigger>
@@ -598,9 +602,18 @@ export default function ModuleEditPage() {
                 ))}
               </AndamioSelectContent>
             </AndamioSelect>
-            <p className="text-sm text-muted-foreground">
-              Current: {courseModule?.status} • Available transitions shown
-            </p>
+            {courseModule?.status === "PENDING_TX" ? (
+              <AndamioAlert>
+                <AlertCircle className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  Status is locked while transaction is pending. Only blockchain confirmation can update from PENDING_TX to ON_CHAIN.
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Current: {courseModule?.status} • Available transitions shown
+              </p>
+            )}
           </div>
 
           {/* Pending Transaction */}

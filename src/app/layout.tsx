@@ -8,6 +8,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
 import { AndamioAuthProvider } from "~/contexts/andamio-auth-context";
 import { Toaster } from "~/components/ui/sonner";
+import { PendingTxWatcher } from "~/components/pending-tx-watcher";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -29,7 +30,11 @@ export default function RootLayout({
       <body>
         <MeshProvider>
           <AndamioAuthProvider>
-            <TRPCReactProvider>{children}</TRPCReactProvider>
+            <TRPCReactProvider>
+              <PendingTxWatcher>
+                {children}
+              </PendingTxWatcher>
+            </TRPCReactProvider>
             <Toaster position="top-right" richColors closeButton />
           </AndamioAuthProvider>
         </MeshProvider>

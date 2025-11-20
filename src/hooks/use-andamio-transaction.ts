@@ -10,7 +10,6 @@
  */
 
 import { useCallback } from "react";
-import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "./use-andamio-auth";
 import { useTransaction } from "./use-transaction";
 import {
@@ -58,16 +57,52 @@ export interface AndamioTransactionConfig<TParams = unknown> {
  * ```
  */
 export function useAndamioTransaction<TParams = unknown>() {
-  const { wallet } = useWallet();
-  const { user, session } = useAndamioAuth();
+  const { user, jwt } = useAndamioAuth();
   const transaction = useTransaction<TParams>();
 
   const execute = useCallback(
     async (config: AndamioTransactionConfig<TParams>) => {
+      // Filter params to only include txParams (not sideEffectParams)
+      // The transaction API should only receive parameters defined in txApiSchema
+      const txApiSchema = config.definition.buildTxConfig.txApiSchema;
+      const allParams = config.params as Record<string, unknown>;
+
+      // Extract only the keys that are in txApiSchema
+      let txApiParams: Record<string, unknown> = {};
+
+      try {
+        // Try to parse the params with txApiSchema to get only valid keys
+        if (txApiSchema) {
+          const parsed = txApiSchema.parse(allParams);
+          txApiParams = parsed as Record<string, unknown>;
+        } else {
+          // Fallback: if no schema, use all params
+          txApiParams = allParams;
+        }
+      } catch (error) {
+        // If parsing fails, try to extract keys manually
+        // This handles partial matches where not all txApiSchema fields are provided
+        const schemaShape = (txApiSchema as any)?.shape;
+        if (schemaShape) {
+          const txApiKeys = Object.keys(schemaShape);
+          for (const key of txApiKeys) {
+            if (key in allParams) {
+              txApiParams[key] = allParams[key];
+            }
+          }
+        } else {
+          // Last fallback: use all params
+          txApiParams = allParams;
+        }
+      }
+
+      console.log('[useAndamioTransaction] Filtered params for tx API:', txApiParams);
+      console.log('[useAndamioTransaction] Full params (including sideEffectParams):', allParams);
+
       await transaction.execute({
         endpoint: config.definition.buildTxConfig.builder.endpoint!,
         method: "GET", // NBA endpoints use GET with query params
-        params: config.params,
+        params: txApiParams as TParams, // Only send txParams to transaction API
         onSuccess: async (txResult) => {
           console.log(`[${config.definition.txType}] Transaction submitted:`, txResult.txHash);
 
@@ -81,19 +116,20 @@ export function useAndamioTransaction<TParams = unknown>() {
               // Create submission context
               // Note: For transactions with multiple modules (like MINT_MODULE_TOKENS),
               // we may need to extract moduleCode from module_infos for side effect path resolution
-              const buildInputs = config.params as Record<string, unknown>;
+              // Use allParams which includes both txParams AND sideEffectParams
+              const buildInputs = allParams;
 
               // Try to extract moduleCode from module_infos if present
               if (buildInputs.module_infos && typeof buildInputs.module_infos === 'string') {
                 try {
-                  const moduleInfos = JSON.parse(buildInputs.module_infos);
+                  const moduleInfos = JSON.parse(buildInputs.module_infos) as Array<{ moduleId?: string }>;
                   if (Array.isArray(moduleInfos) && moduleInfos.length > 0) {
                     // For now, use the first module's code
                     // TODO: Handle multiple modules in side effects
                     buildInputs.moduleCode = moduleInfos[0]?.moduleId;
                   }
-                } catch (e) {
-                  console.warn('Failed to parse module_infos for moduleCode extraction');
+                } catch (parseError) {
+                  console.warn('Failed to parse module_infos for moduleCode extraction', parseError);
                 }
               }
 
@@ -102,7 +138,7 @@ export function useAndamioTransaction<TParams = unknown>() {
                 signedCbor: "", // We don't have access to this in the current flow
                 unsignedCbor: "", // We don't have access to this in the current flow
                 userId: user?.id ?? "",
-                walletAddress: user?.walletAddress ?? "",
+                walletAddress: user?.cardanoBech32Addr ?? "",
                 buildInputs,
                 timestamp: new Date(),
               };
@@ -113,7 +149,7 @@ export function useAndamioTransaction<TParams = unknown>() {
                 submissionContext,
                 {
                   apiBaseUrl: env.NEXT_PUBLIC_ANDAMIO_API_URL,
-                  authToken: session?.token ?? "",
+                  authToken: jwt ?? "",
                 }
               );
 
@@ -180,7 +216,7 @@ export function useAndamioTransaction<TParams = unknown>() {
         },
       });
     },
-    [transaction, user, session]
+    [transaction, user, jwt]
   );
 
   return {

@@ -29,7 +29,6 @@ interface AssignmentCommitment {
   id: string;
   assignmentId: string;
   learnerId: string;
-  privateStatus: string;
   networkStatus: string;
   favorite: boolean;
   archived: boolean;
@@ -131,7 +130,7 @@ export function MyLearning() {
                 // Only include courses where learner has commitments
                 if (commitments.length > 0) {
                   const completedCount = commitments.filter(
-                    (c) => c.privateStatus === "COMPLETE" || c.networkStatus === "ASSIGNMENT_ACCEPTED"
+                    (c) => c.networkStatus === "ASSIGNMENT_ACCEPTED" || c.networkStatus === "CREDENTIAL_CLAIMED"
                   ).length;
 
                   coursesWithProgress.push({

@@ -33,11 +33,14 @@ import {
 } from "~/components/andamio/andamio-select";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search } from "lucide-react";
+import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search, X } from "lucide-react";
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
 } from "@andamio-platform/db-api";
+import { ACCEPT_ASSIGNMENT, DENY_ASSIGNMENT } from "@andamio/transactions";
+import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
+import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 
 /**
  * Instructor Dashboard Page
@@ -51,13 +54,6 @@ import {
 interface ApiError {
   message?: string;
 }
-
-type CommitmentWithLearner = AssignmentCommitmentWithAssignmentOutput & {
-  learner?: {
-    name: string | null;
-    walletAddress: string;
-  };
-};
 
 // Network status color mapping based on workflow stages
 const getStatusVariant = (
@@ -86,13 +82,16 @@ const formatNetworkStatus = (status: string): string => {
 export default function InstructorDashboardPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [commitments, setCommitments] = useState<CommitmentWithLearner[]>([]);
-  const [filteredCommitments, setFilteredCommitments] = useState<CommitmentWithLearner[]>([]);
+  const [commitments, setCommitments] = useState<AssignmentCommitmentWithAssignmentOutput[]>([]);
+  const [filteredCommitments, setFilteredCommitments] = useState<AssignmentCommitmentWithAssignmentOutput[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Selected commitment for management
+  const [selectedCommitment, setSelectedCommitment] = useState<AssignmentCommitmentWithAssignmentOutput | null>(null);
 
   // Filtering state
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -114,51 +113,52 @@ export default function InstructorDashboardPage() {
     denied: commitments.filter((c) => c.networkStatus.includes("DENIED")).length,
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
+  // Fetch data function - extracted so it can be called from transaction success handlers
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // Fetch course details
-        const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
-        );
+    try {
+      // Fetch course details
+      const courseResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+      );
 
-        if (!courseResponse.ok) {
-          throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
-        }
-
-        const courseData = (await courseResponse.json()) as CourseOutput;
-        setCourse(courseData);
-
-        // Fetch assignment commitments for this course
-        if (!isAuthenticated) {
-          throw new Error("You must be authenticated to view assignment commitments");
-        }
-
-        const commitmentsResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/course/${courseNftPolicyId}`
-        );
-
-        if (!commitmentsResponse.ok) {
-          const errorData = (await commitmentsResponse.json()) as ApiError;
-          throw new Error(errorData.message ?? "Failed to fetch assignment commitments");
-        }
-
-        const commitmentsData =
-          (await commitmentsResponse.json()) as AssignmentCommitmentWithAssignmentOutput[];
-
-        setCommitments(commitmentsData as CommitmentWithLearner[]);
-        setFilteredCommitments(commitmentsData as CommitmentWithLearner[]);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load data");
-      } finally {
-        setIsLoading(false);
+      if (!courseResponse.ok) {
+        throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
       }
-    };
 
+      const courseData = (await courseResponse.json()) as CourseOutput;
+      setCourse(courseData);
+
+      // Fetch assignment commitments for this course
+      if (!isAuthenticated) {
+        throw new Error("You must be authenticated to view assignment commitments");
+      }
+
+      const commitmentsResponse = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/course/${courseNftPolicyId}`
+      );
+
+      if (!commitmentsResponse.ok) {
+        const errorData = (await commitmentsResponse.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to fetch assignment commitments");
+      }
+
+      const commitmentsData =
+        (await commitmentsResponse.json()) as AssignmentCommitmentWithAssignmentOutput[];
+
+      setCommitments(commitmentsData);
+      setFilteredCommitments(commitmentsData);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err instanceof Error ? err.message : "Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseNftPolicyId, isAuthenticated]);
@@ -177,10 +177,10 @@ export default function InstructorDashboardPage() {
       filtered = filtered.filter((c) => c.assignment.assignmentCode === assignmentFilter);
     }
 
-    // Search query (by learner ID for now)
+    // Search query (by learner access token alias)
     if (searchQuery) {
       filtered = filtered.filter((c) =>
-        c.learnerId.toLowerCase().includes(searchQuery.toLowerCase())
+        c.learnerAccessTokenAlias?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -332,12 +332,12 @@ export default function InstructorDashboardPage() {
             </div>
 
             <div className="space-y-2">
-              <AndamioLabel htmlFor="search">Search Learner ID</AndamioLabel>
+              <AndamioLabel htmlFor="search">Search Learner</AndamioLabel>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <AndamioInput
                   id="search"
-                  placeholder="Search by learner ID..."
+                  placeholder="Search by access token alias..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -395,18 +395,21 @@ export default function InstructorDashboardPage() {
           <AndamioTable>
             <AndamioTableHeader>
               <AndamioTableRow>
-                <AndamioTableHead>Learner ID</AndamioTableHead>
+                <AndamioTableHead>Learner Access Token</AndamioTableHead>
                 <AndamioTableHead>Assignment</AndamioTableHead>
                 <AndamioTableHead>Network Status</AndamioTableHead>
-                <AndamioTableHead>Private Status</AndamioTableHead>
                 <AndamioTableHead>Evidence</AndamioTableHead>
               </AndamioTableRow>
             </AndamioTableHeader>
             <AndamioTableBody>
               {filteredCommitments.map((commitment) => (
-                <AndamioTableRow key={commitment.id}>
+                <AndamioTableRow
+                  key={commitment.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSelectedCommitment(commitment)}
+                >
                   <AndamioTableCell className="font-mono text-xs">
-                    {commitment.learnerId.substring(0, 12)}...
+                    {commitment.learnerAccessTokenAlias ?? "No access token"}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <div>
@@ -419,11 +422,6 @@ export default function InstructorDashboardPage() {
                   <AndamioTableCell>
                     <AndamioBadge variant={getStatusVariant(commitment.networkStatus)}>
                       {formatNetworkStatus(commitment.networkStatus)}
-                    </AndamioBadge>
-                  </AndamioTableCell>
-                  <AndamioTableCell>
-                    <AndamioBadge variant="outline">
-                      {formatNetworkStatus(commitment.privateStatus)}
                     </AndamioBadge>
                   </AndamioTableCell>
                   <AndamioTableCell>
@@ -442,6 +440,126 @@ export default function InstructorDashboardPage() {
             </AndamioTableBody>
           </AndamioTable>
         </div>
+      )}
+
+      {/* Selected Commitment Detail View */}
+      {selectedCommitment && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <AndamioCardTitle>Manage Assignment Commitment</AndamioCardTitle>
+                <AndamioCardDescription>
+                  Review and accept or deny this assignment submission
+                </AndamioCardDescription>
+              </div>
+              <AndamioButton
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedCommitment(null)}
+              >
+                <X className="h-4 w-4" />
+              </AndamioButton>
+            </div>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-6">
+            {/* Commitment Details */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <AndamioLabel>Learner Access Token</AndamioLabel>
+                <p className="text-sm font-mono mt-1">
+                  {selectedCommitment.learnerAccessTokenAlias ?? "No access token"}
+                </p>
+              </div>
+              <div>
+                <AndamioLabel>Assignment</AndamioLabel>
+                <p className="text-sm font-medium mt-1">{selectedCommitment.assignment.title}</p>
+                <p className="text-xs text-muted-foreground">{selectedCommitment.assignment.assignmentCode}</p>
+              </div>
+              <div>
+                <AndamioLabel>Current Status</AndamioLabel>
+                <div className="mt-1">
+                  <AndamioBadge variant={getStatusVariant(selectedCommitment.networkStatus)}>
+                    {formatNetworkStatus(selectedCommitment.networkStatus)}
+                  </AndamioBadge>
+                </div>
+              </div>
+              <div>
+                <AndamioLabel>Evidence</AndamioLabel>
+                <p className="text-sm mt-1 max-w-md break-words">
+                  {selectedCommitment.networkEvidence ? (
+                    typeof selectedCommitment.networkEvidence === "string"
+                      ? selectedCommitment.networkEvidence
+                      : JSON.stringify(selectedCommitment.networkEvidence)
+                  ) : (
+                    <span className="text-muted-foreground italic">No evidence submitted</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Transaction Actions */}
+            <div className="flex gap-4 pt-4 border-t">
+              <AndamioTransaction
+                definition={ACCEPT_ASSIGNMENT}
+                inputs={{
+                  user_access_token: user?.accessTokenAlias
+                    ? buildAccessTokenUnit(user.accessTokenAlias, env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID)
+                    : "",
+                  student_alias: selectedCommitment.learnerAccessTokenAlias ?? "",
+                  policy: courseNftPolicyId,
+                  moduleCode: selectedCommitment.assignment.module.moduleCode,
+                }}
+                onSuccess={async () => {
+                  // Refresh commitments list
+                  await fetchData();
+                  setSelectedCommitment(null);
+                }}
+                requirements={{
+                  check: !!(
+                    selectedCommitment.learnerAccessTokenAlias &&
+                    !(
+                      selectedCommitment.networkStatus === "PENDING_TX_ASSIGNMENT_ACCEPTED" ||
+                      selectedCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" ||
+                      selectedCommitment.networkStatus === "CREDENTIAL_CLAIMED"
+                    )
+                  ),
+                  failureMessage: selectedCommitment.learnerAccessTokenAlias
+                    ? "This assignment has already been accepted or claimed"
+                    : "Learner does not have an access token",
+                }}
+              />
+              <AndamioTransaction
+                definition={DENY_ASSIGNMENT}
+                inputs={{
+                  user_access_token: user?.accessTokenAlias
+                    ? buildAccessTokenUnit(user.accessTokenAlias, env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID)
+                    : "",
+                  student_alias: selectedCommitment.learnerAccessTokenAlias ?? "",
+                  policy: courseNftPolicyId,
+                  moduleCode: selectedCommitment.assignment.module.moduleCode,
+                }}
+                onSuccess={async () => {
+                  // Refresh commitments list
+                  await fetchData();
+                  setSelectedCommitment(null);
+                }}
+                requirements={{
+                  check: !!(
+                    selectedCommitment.learnerAccessTokenAlias &&
+                    !(
+                      selectedCommitment.networkStatus === "PENDING_TX_ASSIGNMENT_DENIED" ||
+                      selectedCommitment.networkStatus === "ASSIGNMENT_DENIED"
+                    )
+                  ),
+                  failureMessage: selectedCommitment.learnerAccessTokenAlias
+                    ? "This assignment has already been denied"
+                    : "Learner does not have an access token",
+                }}
+              />
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
       )}
     </div>
   );

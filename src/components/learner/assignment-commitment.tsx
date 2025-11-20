@@ -33,8 +33,8 @@ import {
  *
  * API Endpoints:
  * - POST /assignment-commitments (protected)
- * - PATCH /assignment-commitments/{id}/evidence (protected)
- * - DELETE /assignment-commitments/{id} (protected)
+ * - PATCH /assignment-commitments/{courseNftPolicyId}/{moduleCode}/{assignmentCode}/{accessTokenAlias}/evidence (protected)
+ * - DELETE /assignment-commitments/{courseNftPolicyId}/{moduleCode}/{assignmentCode}/{accessTokenAlias} (protected)
  */
 
 interface AssignmentCommitmentProps {
@@ -73,21 +73,26 @@ interface Commitment {
   id: string;
   assignmentId: string;
   learnerId: string;
-  privateStatus: string;
   networkStatus: string;
   networkEvidence: unknown;
   networkEvidenceHash: string | null;
+  pendingTxHash: string | null;
   favorite: boolean;
   archived: boolean;
+  assignment: {
+    id: string;
+    assignmentCode: string;
+    title: string;
+  };
 }
 
 export function AssignmentCommitment({
   assignmentId,
   assignmentTitle,
   courseNftPolicyId,
-  moduleCode: _moduleCode,
+  moduleCode,
 }: AssignmentCommitmentProps) {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -125,7 +130,12 @@ export function AssignmentCommitment({
 
         if (existingCommitment) {
           setCommitment(existingCommitment);
-          setPrivateStatus(existingCommitment.privateStatus);
+          // Set local UI status based on network status
+          if (existingCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" || existingCommitment.networkStatus === "CREDENTIAL_CLAIMED") {
+            setPrivateStatus("COMPLETE");
+          } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
+            setPrivateStatus("COMMITMENT");
+          }
           setNetworkEvidence(
             typeof existingCommitment.networkEvidence === "string"
               ? existingCommitment.networkEvidence
@@ -156,7 +166,7 @@ export function AssignmentCommitment({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             assignmentId,
-            privateStatus: privateStatus || "NOT_STARTED",
+            networkStatus: "AWAITING_EVIDENCE",
           }),
         }
       );
@@ -179,7 +189,7 @@ export function AssignmentCommitment({
   };
 
   const handleUpdateEvidence = async () => {
-    if (!commitment) return;
+    if (!commitment || !user?.accessTokenAlias) return;
 
     setIsSaving(true);
     setError(null);
@@ -190,7 +200,7 @@ export function AssignmentCommitment({
       const evidenceHash = `hash-${Date.now()}`;
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${commitment.id}/evidence`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${courseNftPolicyId}/${moduleCode}/${commitment.assignment.assignmentCode}/${user.accessTokenAlias}/evidence`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -219,14 +229,14 @@ export function AssignmentCommitment({
   };
 
   const handleDeleteCommitment = async () => {
-    if (!commitment) return;
+    if (!commitment || !user?.accessTokenAlias) return;
 
     setIsDeleting(true);
     setError(null);
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${commitment.id}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${courseNftPolicyId}/${moduleCode}/${commitment.assignment.assignmentCode}/${user.accessTokenAlias}`,
         {
           method: "DELETE",
         }
@@ -330,7 +340,7 @@ export function AssignmentCommitment({
                 <p className="text-sm font-medium">Status</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <AndamioBadge variant="outline">{commitment.privateStatus}</AndamioBadge>
+                  <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
                   {commitment.networkStatus !== "AWAITING_EVIDENCE" && (
                     <AndamioBadge>{commitment.networkStatus}</AndamioBadge>
                   )}

@@ -129,9 +129,9 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
     }
 
     // Validate inputs when user attempts execution (not on render)
-    let validatedInputs: Record<string, string>;
+    let validatedInputs: TInput;
     try {
-      validatedInputs = definition.buildTxConfig.inputSchema.parse(inputs) as Record<string, string>;
+      validatedInputs = definition.buildTxConfig.inputSchema.parse(inputs) as TInput;
     } catch (err) {
       console.error("[AndamioTransaction] Input validation failed:", err);
       toast.error("Invalid Inputs", {

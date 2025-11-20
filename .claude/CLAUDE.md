@@ -43,6 +43,54 @@ interface Course { ... }
 
 This ensures zero type drift between the API and the app.
 
+## Coding Conventions
+
+### Variable Naming
+
+**CRITICAL: Never use `module` as a standalone variable name.**
+
+**Why?**
+- `module` is a reserved identifier in Node.js/CommonJS (e.g., `module.exports`, `module.id`)
+- Can cause naming conflicts and potential runtime issues
+- Reduces code clarity and maintainability
+
+**Rules**:
+- ✅ Always use `courseModule` for course module variables
+- ✅ Be specific and descriptive with variable names
+- ❌ Never use `module` alone as a variable name
+- ❌ Avoid other reserved/ambiguous names (e.g., `window`, `document`, `global`)
+
+**Examples**:
+
+```typescript
+// ✅ CORRECT - Specific and safe
+const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
+
+if (!courseModule) {
+  return <div>Module not found</div>;
+}
+
+const handleUpdate = async () => {
+  const updatedModule = await updateCourseModule(courseModule.id);
+  setCourseModule(updatedModule);
+};
+```
+
+```typescript
+// ❌ WRONG - Using reserved identifier
+const [module, setModule] = useState<CourseModuleOutput | null>(null);
+
+if (!module) {  // Dangerous!
+  return <div>Module not found</div>;
+}
+```
+
+**Apply this principle to other domain objects**:
+- Use `courseData` instead of `course` when `Course` is also a type
+- Use `lessonData` instead of `lesson` when appropriate
+- Use `assignmentData` instead of `assignment` when appropriate
+- Be explicit to avoid conflicts with type names and reserved words
+
 ## App Layout Structure
 
 ### Full-Screen Layout

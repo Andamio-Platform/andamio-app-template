@@ -85,7 +85,7 @@ export default function ModuleEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [module, setModule] = useState<CourseModuleOutput | null>(null);
+  const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [moduleWithSlts, setModuleWithSlts] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export default function ModuleEditPage() {
         }
 
         const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
-        setModule(moduleData);
+        setCourseModule(moduleData);
         setTitle(moduleData.title ?? "");
         setDescription(moduleData.description ?? "");
         setStatus(moduleData.status ?? "DRAFT");
@@ -208,7 +208,7 @@ export default function ModuleEditPage() {
       }
 
       // Update status if changed
-      if (status !== module?.status) {
+      if (status !== courseModule?.status) {
         // Build input object for status update
         const statusInput: UpdateModuleStatusInput = {
           courseNftPolicyId,
@@ -250,7 +250,7 @@ export default function ModuleEditPage() {
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
       );
       const data = (await response.json()) as CourseModuleOutput;
-      setModule(data);
+      setCourseModule(data);
     } catch (err) {
       console.error("Error saving module:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
@@ -290,9 +290,9 @@ export default function ModuleEditPage() {
   };
 
   const getAvailableStatuses = () => {
-    if (!module?.status) return MODULE_STATUSES;
+    if (!courseModule?.status) return MODULE_STATUSES;
     return MODULE_STATUSES.filter(
-      (s) => s === module.status || STATUS_TRANSITIONS[module.status]?.includes(s)
+      (s) => s === courseModule.status || STATUS_TRANSITIONS[courseModule.status]?.includes(s)
     );
   };
 
@@ -368,7 +368,7 @@ export default function ModuleEditPage() {
       }
 
       const updatedModule = (await response.json()) as CourseModuleOutput;
-      setModule(updatedModule);
+      setCourseModule(updatedModule);
       setIsPendingTxDialogOpen(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -444,9 +444,9 @@ export default function ModuleEditPage() {
 
   const availableStatuses = getAvailableStatuses();
   const hasChanges =
-    title !== (module.title ?? "") ||
-    description !== (module.description ?? "") ||
-    status !== module.status;
+    title !== (courseModule?.title ?? "") ||
+    description !== (courseModule?.description ?? "") ||
+    status !== courseModule?.status;
 
   return (
     <div className="space-y-6">
@@ -459,7 +459,7 @@ export default function ModuleEditPage() {
           </AndamioButton>
         </Link>
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {module.moduleCode}
+          {courseModule?.moduleCode}
         </AndamioBadge>
       </div>
 
@@ -519,14 +519,14 @@ export default function ModuleEditPage() {
           <div className="space-y-2">
             <AndamioLabel htmlFor="moduleCode">Module Code</AndamioLabel>
             <div className="flex gap-2">
-              <AndamioInput id="moduleCode" value={module.moduleCode} disabled className="flex-1" />
+              <AndamioInput id="moduleCode" value={courseModule?.moduleCode} disabled className="flex-1" />
               <AndamioDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
                 <AndamioDialogTrigger asChild>
                   <AndamioButton
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setNewModuleCode(module.moduleCode);
+                      setNewModuleCode(courseModule?.moduleCode ?? "");
                       setRenameError(null);
                     }}
                   >
@@ -553,7 +553,7 @@ export default function ModuleEditPage() {
                         disabled={isRenaming}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Current: <code className="font-mono">{module.moduleCode}</code>
+                        Current: <code className="font-mono">{courseModule?.moduleCode}</code>
                       </p>
                     </div>
                     {renameError && (
@@ -599,17 +599,17 @@ export default function ModuleEditPage() {
               </AndamioSelectContent>
             </AndamioSelect>
             <p className="text-sm text-muted-foreground">
-              Current: {module.status} • Available transitions shown
+              Current: {courseModule?.status} • Available transitions shown
             </p>
           </div>
 
           {/* Pending Transaction */}
           <div className="space-y-2">
             <AndamioLabel>Pending Transaction</AndamioLabel>
-            {module.pendingTxHash ? (
+            {courseModule?.pendingTxHash ? (
               <div className="flex gap-2">
                 <AndamioInput
-                  value={module.pendingTxHash}
+                  value={courseModule.pendingTxHash}
                   disabled
                   className="flex-1 font-mono text-xs"
                 />
@@ -619,7 +619,7 @@ export default function ModuleEditPage() {
                   asChild
                 >
                   <a
-                    href={`https://cardanoscan.io/transaction/${module.pendingTxHash}`}
+                    href={`https://cardanoscan.io/transaction/${courseModule?.pendingTxHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -634,7 +634,7 @@ export default function ModuleEditPage() {
                   disabled
                   className="flex-1"
                 />
-                {module.status === "DRAFT" && (
+                {courseModule?.status === "DRAFT" && (
                   <AndamioDialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
                     <AndamioDialogTrigger asChild>
                       <AndamioButton
@@ -692,7 +692,7 @@ export default function ModuleEditPage() {
               </div>
             )}
             <p className="text-sm text-muted-foreground">
-              {module.status === "DRAFT"
+              {courseModule?.status === "DRAFT"
                 ? "Track on-chain transactions for this module (DRAFT only)"
                 : "Pending transactions can only be set for DRAFT modules"}
             </p>
@@ -727,7 +727,7 @@ export default function ModuleEditPage() {
                   </AndamioButton>
                 }
                 title="Delete Module"
-                description={`Are you sure you want to delete "${module.title}"? This action cannot be undone. All lessons, SLTs, introduction, and assignments will be permanently removed.`}
+                description={`Are you sure you want to delete "${courseModule?.title}"? This action cannot be undone. All lessons, SLTs, introduction, and assignments will be permanently removed.`}
                 confirmText="Delete Module"
                 variant="destructive"
                 onConfirm={handleDelete}
@@ -739,17 +739,17 @@ export default function ModuleEditPage() {
       </AndamioCard>
 
       {/* Mint Module Tokens - Show when module is APPROVED */}
-      {module.status === "APPROVED" && moduleWithSlts.length > 0 && (
+      {courseModule?.status === "APPROVED" && moduleWithSlts.length > 0 && (
         <MintModuleTokens
           courseNftPolicyId={courseNftPolicyId}
-          modules={moduleWithSlts}
+          courseModules={moduleWithSlts}
           onSuccess={async () => {
             // Refetch module to see updated status
             const response = await fetch(
               `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
             );
             const data = (await response.json()) as CourseModuleOutput;
-            setModule(data);
+            setCourseModule(data);
             setStatus(data.status ?? "DRAFT");
           }}
         />
@@ -792,7 +792,7 @@ export default function ModuleEditPage() {
                 </AndamioButton>
               }
               title="Publish All Module Content"
-              description={`This will make all content (lessons, introduction, and assignments) for "${module.title}" live and visible to learners. Are you sure you want to continue?`}
+              description={`This will make all content (lessons, introduction, and assignments) for "${courseModule?.title}" live and visible to learners. Are you sure you want to continue?`}
               confirmText="Publish Content"
               onConfirm={handlePublishAllContent}
               isLoading={isPublishing}

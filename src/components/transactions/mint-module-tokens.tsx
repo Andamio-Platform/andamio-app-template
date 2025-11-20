@@ -33,7 +33,7 @@ export interface MintModuleTokensProps {
    * Should come from the `/courses/{courseNftPolicyId}/course-modules` endpoint
    * which now includes SLTs automatically
    */
-  modules: ListCourseModulesOutput;
+  courseModules: ListCourseModulesOutput;
 
   /**
    * Callback fired when minting is successful
@@ -52,20 +52,20 @@ export interface MintModuleTokensProps {
  * @example
  * ```tsx
  * // Fetch modules with SLTs included
- * const modules: ListCourseModulesOutput = await fetch(
+ * const courseModules: ListCourseModulesOutput = await fetch(
  *   `${API_URL}/courses/${courseNftPolicyId}/course-modules`
  * ).then(r => r.json());
  *
  * <MintModuleTokens
  *   courseNftPolicyId="abc123..."
- *   modules={modules}
+ *   courseModules={courseModules}
  *   onSuccess={() => router.refresh()}
  * />
  * ```
  */
 export function MintModuleTokens({
   courseNftPolicyId,
-  modules,
+  courseModules,
   onSuccess,
   onError,
 }: MintModuleTokensProps) {
@@ -82,28 +82,14 @@ export function MintModuleTokens({
       env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
     );
 
-    // Build module data with module title as assignment content
-    const moduleDataWithAssignments = modules.map((module) => ({
-      moduleId: module.moduleCode,
-      slts: module.slts.map((slt) => ({
-        sltId: slt.moduleIndex.toString(),
-        sltContent: slt.sltText,
-      })),
-      assignmentContent: module.title, // Use module title
-    }));
-
-    const moduleInfos = JSON.stringify(moduleDataWithAssignments);
-
-    console.log("user_access_token", userAccessTokenUnit);
-    console.log("policy", courseNftPolicyId);
-    console.log("module_infos", moduleInfos);
+    const moduleInfos = formatModuleInfosForMintModuleTokens(courseModules)
 
     return {
       user_access_token: userAccessTokenUnit,
       policy: courseNftPolicyId,
       module_infos: moduleInfos,
     };
-  }, [user?.accessTokenAlias, courseNftPolicyId, modules]);
+  }, [user?.accessTokenAlias, courseNftPolicyId, courseModules]);
 
   // Render with requirement check if needed
   return (
@@ -111,14 +97,6 @@ export function MintModuleTokens({
       definition={MINT_MODULE_TOKENS}
       inputs={inputs ?? { user_access_token: "", policy: "", module_infos: "" }}
       icon={<Coins className="h-5 w-5" />}
-      description={
-        inputs
-          ? [
-              `Minting ${modules.length} module token${modules.length === 1 ? "" : "s"} for this course.`,
-              "These tokens will be issued to students who complete module assignments.",
-            ]
-          : undefined
-      }
       requirements={
         !inputs
           ? {

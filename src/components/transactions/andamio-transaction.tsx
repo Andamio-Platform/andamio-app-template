@@ -13,7 +13,7 @@
 import React from "react";
 import type { AndamioTransactionDefinition } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useTransaction } from "~/hooks/use-transaction";
+import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -117,7 +117,7 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
   requirements,
 }: AndamioTransactionProps<TInput>) {
   const { isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useTransaction();
+  const { state, result, error, execute, reset } = useAndamioTransaction<TInput>();
 
   const handleExecute = async () => {
     // Check requirements first
@@ -141,26 +141,31 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
     }
 
     await execute({
-      endpoint: definition.buildTxConfig.builder.endpoint!,
-      method: "GET", // NBA endpoints use GET with query params
+      definition,
       params: validatedInputs,
       onSuccess: async (txResult) => {
         console.log(`[${definition.txType}] Success!`, txResult);
 
-        // Show success toast
-        toast.success(definition.ui.successInfo, {
-          description: definition.ui.title,
-          action:
-            txResult.txHash && txResult.blockchainExplorerUrl
-              ? {
-                  label: "View Transaction",
-                  onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-                }
-              : undefined,
-        });
+        // Show success toast (only if side effects succeeded)
+        if (txResult.sideEffectsSuccess) {
+          toast.success(definition.ui.successInfo, {
+            description: definition.ui.title,
+            action:
+              txResult.txHash && txResult.blockchainExplorerUrl
+                ? {
+                    label: "View Transaction",
+                    onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
+                  }
+                : undefined,
+          });
+        }
+        // Warning toast is shown by useAndamioTransaction if side effects failed
 
-        // Call parent callback
-        await onSuccess?.(txResult);
+        // Call parent callback with standard result format
+        await onSuccess?.({
+          txHash: txResult.txHash,
+          blockchainExplorerUrl: txResult.blockchainExplorerUrl,
+        });
       },
       onError: (txError) => {
         console.error(`[${definition.txType}] Error:`, txError);

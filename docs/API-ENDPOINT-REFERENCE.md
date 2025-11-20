@@ -250,31 +250,17 @@ The Andamio Database API uses **URL-based versioning**:
 
 ### GET `/api/v0/courses/{courseNftPolicyId}/course-modules`
 
-**Purpose**: List all modules for a course
-
-**Access**: Public
-
-**Used In**:
-- `src/app/(app)/studio/course/[coursenft]/page.tsx:92` - Studio course overview
-
-**Role**: Displays module list in course management interface. Shows module status and allows navigation to module editors.
-
-**Note**: Public course page uses the optimized `/course-modules/with-slts/` endpoint instead.
-
----
-
-### GET `/api/v0/course-modules/with-slts/{courseNftPolicyId}`
-
-**Purpose**: Get course modules with SLTs in single optimized query
+**Purpose**: List all modules for a course with SLTs included
 
 **Access**: Public
 
 **Used In**:
 - `src/app/(app)/course/[coursenft]/page.tsx:68` - Public course overview
+- `src/app/(app)/studio/course/[coursenft]/page.tsx:92` - Studio course overview
 
-**Role**: Performance optimization - fetches modules and their SLTs in one query. Displays SLT counts for each module on public course page.
+**Role**: Displays module list with SLT counts included in the response. Shows module status and allows navigation to module editors. SLTs are now automatically included in all module listings.
 
-**Benefit**: Reduces API calls from 2 to 1, improves page load time.
+**Benefit**: Single query returns both modules and their SLTs, improving performance.
 
 ---
 
@@ -807,7 +793,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 | Auth | 2 | 2 | 100% | ✅ Complete |
 | User Roles | 2 | 2 | 100% | ✅ Complete |
 | Courses | 8 | 8 | 100% | ✅ Complete |
-| Course Modules | 11 | 12 | 91.7% | 🟢 Excellent |
+| Course Modules | 10 | 11 | 90.9% | 🟢 Excellent |
 | SLTs | 6 | 7 | 85.7% | 🟢 Excellent |
 | Lessons | 5 | 5 | 100% | ✅ Complete |
 | Assignments | 5 | 5 | 100% | ✅ Complete |
@@ -817,7 +803,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ### Overall Coverage
 
-**51 of 52 endpoints used (98.08%)**
+**50 of 51 endpoints used (98.04%)**
 
 ### Unused Endpoints
 
@@ -882,8 +868,9 @@ DRAFT → Edit content → APPROVED → Set pending tx → PENDING_TX → ON_CHA
 
 | Separate Calls | Combined Endpoint | Reduction |
 |----------------|-------------------|-----------|
-| GET modules + GET SLTs | GET `/api/v0/course-modules/with-slts/...` | 2→1 calls |
 | GET modules + GET assignments | GET `/api/v0/course-modules/assignment-summary/...` | 2→1 calls |
+
+**Note**: SLTs are now automatically included in all module listings via `GET /api/v0/courses/{courseNftPolicyId}/course-modules`, eliminating the need for separate SLT queries.
 
 ### Pre-flight Checks
 

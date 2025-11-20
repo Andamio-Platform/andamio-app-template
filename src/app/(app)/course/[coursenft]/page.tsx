@@ -9,7 +9,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type CourseOutput } from "@andamio-platform/db-api";
+import { type CourseOutput, type ListCourseModulesOutput } from "@andamio-platform/db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 
 /**
@@ -17,25 +17,16 @@ import { UserCourseStatus } from "~/components/learner/user-course-status";
  *
  * API Endpoints:
  * - GET /courses/{courseNftPolicyId} (public)
- * - GET /course-modules/with-slts/{courseNftPolicyId} (public) - Optimized query for modules with SLTs
+ * - GET /courses/${courseNftPolicyId}/course-modules (public) - Optimized query for modules with SLTs
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
  */
-
-interface ModuleWithSLTs {
-  title: string;
-  moduleCode: string;
-  slts: Array<{
-    moduleIndex: number;
-    sltText: string;
-  }>;
-}
 
 export default function CourseDetailPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
 
   const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [modules, setModules] = useState<ModuleWithSLTs[]>([]);
+  const [modules, setModules] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +57,7 @@ export default function CourseDetailPage() {
 
         // Fetch course modules with SLTs (optimized single query)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/with-slts/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
         );
 
         if (!modulesResponse.ok) {
@@ -75,12 +66,12 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/with-slts/${courseNftPolicyId}`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }
 
-        const modulesData = (await modulesResponse.json()) as ModuleWithSLTs[];
+        const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
         setModules(modulesData ?? []);
       } catch (err) {
         console.error("Error fetching course and modules:", err);

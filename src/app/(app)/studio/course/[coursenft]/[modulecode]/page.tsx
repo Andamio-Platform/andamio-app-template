@@ -33,11 +33,13 @@ import {
 } from "~/components/andamio/andamio-dialog";
 import {
   type CourseModuleOutput,
+  type ListCourseModulesOutput,
   type UpdateCourseModuleInput,
   type UpdateModuleStatusInput,
   updateCourseModuleInputSchema,
   updateModuleStatusInputSchema,
 } from "@andamio-platform/db-api";
+import { MintModuleTokens } from "~/components/transactions";
 
 /**
  * Studio page for editing course module details and status
@@ -84,6 +86,7 @@ export default function ModuleEditPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   const [module, setModule] = useState<CourseModuleOutput | null>(null);
+  const [moduleWithSlts, setModuleWithSlts] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,19 +122,36 @@ export default function ModuleEditPage() {
       setError(null);
 
       try {
-        const response = await fetch(
+        // Fetch single module details
+        const moduleResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
         );
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch module: ${response.statusText}`);
+        if (!moduleResponse.ok) {
+          throw new Error(`Failed to fetch module: ${moduleResponse.statusText}`);
         }
 
-        const data = (await response.json()) as CourseModuleOutput;
-        setModule(data);
-        setTitle(data.title ?? "");
-        setDescription(data.description ?? "");
-        setStatus(data.status ?? "DRAFT");
+        const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
+        setModule(moduleData);
+        setTitle(moduleData.title ?? "");
+        setDescription(moduleData.description ?? "");
+        setStatus(moduleData.status ?? "DRAFT");
+
+        // Fetch all modules with SLTs for transaction (only if APPROVED)
+        if (moduleData.status === "APPROVED") {
+          const modulesResponse = await fetch(
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+          );
+
+          if (modulesResponse.ok) {
+            const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
+            // Filter to just this module
+            const thisModuleWithSlts = modulesData.filter(
+              (m) => m.moduleCode === moduleCode
+            );
+            setModuleWithSlts(thisModuleWithSlts);
+          }
+        }
       } catch (err) {
         console.error("Error fetching module:", err);
         setError(err instanceof Error ? err.message : "Failed to load module");
@@ -717,6 +737,23 @@ export default function ModuleEditPage() {
           </div>
         </AndamioCardContent>
       </AndamioCard>
+
+      {/* Mint Module Tokens - Show when module is APPROVED */}
+      {module.status === "APPROVED" && moduleWithSlts.length > 0 && (
+        <MintModuleTokens
+          courseNftPolicyId={courseNftPolicyId}
+          modules={moduleWithSlts}
+          onSuccess={async () => {
+            // Refetch module to see updated status
+            const response = await fetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+            );
+            const data = (await response.json()) as CourseModuleOutput;
+            setModule(data);
+            setStatus(data.status ?? "DRAFT");
+          }}
+        />
+      )}
 
       {/* Quick Links */}
       <AndamioCard>

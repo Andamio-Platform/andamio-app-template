@@ -11,8 +11,14 @@ export type { TransactionButtonProps } from "./transaction-button";
 export { TransactionStatus } from "./transaction-status";
 export type { TransactionStatusProps } from "./transaction-status";
 
+export { AndamioTransaction } from "./andamio-transaction";
+export type { AndamioTransactionProps } from "./andamio-transaction";
+
 export { MintAccessToken } from "./mint-access-token";
 export type { MintAccessTokenProps } from "./mint-access-token";
 
 export { EnrollInCourse } from "./enroll-in-course";
 export type { EnrollInCourseProps } from "./enroll-in-course";
+
+export { MintModuleTokens } from "./mint-module-tokens";
+export type { MintModuleTokensProps } from "./mint-module-tokens";

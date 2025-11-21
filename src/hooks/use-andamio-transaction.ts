@@ -7,6 +7,20 @@
  *
  * This hook bridges the gap between the generic useTransaction hook and
  * Andamio transaction definitions with side effects.
+ *
+ * ## Automatic Behaviors
+ *
+ * ### Unconfirmed Transaction Tracking
+ * After every successful transaction submission, this hook automatically:
+ * 1. Calls `PATCH /user/unconfirmed-tx` with the txHash
+ * 2. This sets `user.unconfirmedTx` in the database
+ * 3. Frontend should check this field to block new transactions while pending
+ * 4. When tx is confirmed on-chain (via polling), call the endpoint with `null`
+ *
+ * This prevents UTxO conflicts from rapid transaction submissions.
+ *
+ * @see andamio-db-api/src/routers/user.ts - API endpoint documentation
+ * @see pending-tx-watcher.tsx - Polling component that clears on confirmation
  */
 
 import { useCallback } from "react";
@@ -16,9 +30,12 @@ import {
   executeOnSubmit,
   type AndamioTransactionDefinition,
   type SubmissionContext,
+  type SideEffectRequestLog,
+  type SideEffectResultLog,
 } from "@andamio/transactions";
 import { env } from "~/env";
 import { toast } from "sonner";
+import { txLogger } from "~/lib/tx-logger";
 
 export interface AndamioTransactionConfig<TParams = unknown> {
   /** Transaction definition from @andamio/transactions */
@@ -96,22 +113,41 @@ export function useAndamioTransaction<TParams = unknown>() {
         }
       }
 
-      console.log('[useAndamioTransaction] Filtered params for tx API:', txApiParams);
-      console.log('[useAndamioTransaction] Full params (including sideEffectParams):', allParams);
-
       await transaction.execute({
         endpoint: config.definition.buildTxConfig.builder.endpoint!,
         method: "GET", // NBA endpoints use GET with query params
         params: txApiParams as TParams, // Only send txParams to transaction API
+        txType: config.definition.txType,
         onSuccess: async (txResult) => {
-          console.log(`[${config.definition.txType}] Transaction submitted:`, txResult.txHash);
+          // Update user's unconfirmedTx (blocks further transactions until confirmed)
+          const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
+          const unconfirmedTxBody = { txHash: txResult.txHash };
+          txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "PATCH", unconfirmedTxUrl, unconfirmedTxBody);
+          try {
+            const unconfirmedTxResponse = await fetch(unconfirmedTxUrl, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${jwt}`,
+              },
+              body: JSON.stringify(unconfirmedTxBody),
+            });
+            if (unconfirmedTxResponse.ok) {
+              const responseData = await unconfirmedTxResponse.json();
+              txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", true, responseData);
+            } else {
+              txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, await unconfirmedTxResponse.text());
+            }
+          } catch (error) {
+            // Non-critical - log but don't fail the transaction
+            txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, error);
+          }
 
           // Execute onSubmit side effects
           let sideEffectsSuccess = true;
 
           if (config.definition.onSubmit && config.definition.onSubmit.length > 0) {
             try {
-              console.log(`[${config.definition.txType}] Executing onSubmit side effects...`);
 
               // Create submission context
               // Note: For transactions with multiple modules (like MINT_MODULE_TOKENS),
@@ -143,24 +179,38 @@ export function useAndamioTransaction<TParams = unknown>() {
                 timestamp: new Date(),
               };
 
-              // Execute side effects
+              // Track counts for summary
+              let succeeded = 0, failed = 0, skipped = 0;
+
+              // Execute side effects with logging callbacks
               const sideEffectResult = await executeOnSubmit(
                 config.definition.onSubmit,
                 submissionContext,
                 {
                   apiBaseUrl: env.NEXT_PUBLIC_ANDAMIO_API_URL,
                   authToken: jwt ?? "",
+                  onRequest: (log: SideEffectRequestLog) => {
+                    txLogger.sideEffectRequest(log.phase, log.description, log.method, log.endpoint, log.body);
+                  },
+                  onResult: (log: SideEffectResultLog) => {
+                    if (log.skipped) {
+                      skipped++;
+                      txLogger.sideEffectSkipped(log.phase, log.description, log.skipReason ?? "Skipped");
+                    } else if (log.success) {
+                      succeeded++;
+                      txLogger.sideEffectResult(log.phase, log.description, true, log.response);
+                    } else {
+                      failed++;
+                      txLogger.sideEffectResult(log.phase, log.description, false, undefined, log.error);
+                    }
+                  },
                 }
               );
 
               sideEffectsSuccess = sideEffectResult.success;
 
-              // Log results
-              console.log(`[${config.definition.txType}] Side effects executed:`, {
-                success: sideEffectResult.success,
-                results: sideEffectResult.results.length,
-                criticalErrors: sideEffectResult.criticalErrors.length,
-              });
+              // Log summary
+              txLogger.sideEffectsSummary("onSubmit", sideEffectResult.results.length, succeeded, failed, skipped);
 
               // Notify about side effect results
               config.onSideEffectsComplete?.(sideEffectResult);
@@ -170,31 +220,10 @@ export function useAndamioTransaction<TParams = unknown>() {
                 toast.warning("Transaction Submitted", {
                   description: "Transaction was submitted, but some updates are pending. Please refresh the page.",
                 });
-                console.warn(
-                  `[${config.definition.txType}] Critical side effects failed:`,
-                  sideEffectResult.criticalErrors
-                );
-              }
-
-              // Log individual side effect results
-              for (const result of sideEffectResult.results) {
-                if (result.skipped) {
-                  console.log(`[SideEffect] Skipped: ${result.sideEffect.def}`);
-                } else if (!result.success) {
-                  console.error(
-                    `[SideEffect] Failed: ${result.sideEffect.def}`,
-                    result.error
-                  );
-                } else {
-                  console.log(
-                    `[SideEffect] Success: ${result.sideEffect.def}`,
-                    result.response
-                  );
-                }
               }
             } catch (error) {
               // Side effect execution failed completely
-              console.error(`[${config.definition.txType}] Side effect execution failed:`, error);
+              txLogger.txError(config.definition.txType, error);
               sideEffectsSuccess = false;
 
               toast.warning("Transaction Submitted", {
@@ -211,7 +240,6 @@ export function useAndamioTransaction<TParams = unknown>() {
           });
         },
         onError: (error) => {
-          console.error(`[${config.definition.txType}] Transaction failed:`, error);
           config.onError?.(error);
         },
       });

@@ -51,6 +51,12 @@ export interface TransactionConfig<TParams = unknown> {
   method?: "GET" | "POST";
 
   /**
+   * Transaction type for logging purposes
+   * Example: "MINT_MODULE_TOKENS"
+   */
+  txType?: string;
+
+  /**
    * Optional callback fired when transaction succeeds
    */
   onSuccess?: (result: TransactionResult) => void | Promise<void>;

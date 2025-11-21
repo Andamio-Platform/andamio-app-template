@@ -13,6 +13,7 @@
 import { useState, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { env } from "~/env";
+import { txLogger } from "~/lib/tx-logger";
 import type {
   TransactionConfig,
   TransactionState,
@@ -45,9 +46,7 @@ export function useTransaction<TParams = unknown>() {
         setState("fetching");
         config.onStateChange?.("fetching");
 
-        console.log(`[Transaction] Fetching unsigned CBOR from ${config.endpoint}`);
-
-        // Determine HTTP method (default to POST for backwards compatibility)
+        const txType = config.txType ?? config.endpoint;
         const method = config.method ?? "POST";
 
         // Build URL and fetch options based on method
@@ -60,74 +59,65 @@ export function useTransaction<TParams = unknown>() {
         };
 
         if (method === "GET") {
-          // For GET requests, convert params to query string
           const queryParams = new URLSearchParams(
             config.params as Record<string, string>
           );
           url = `${url}?${queryParams.toString()}`;
-          console.log(`[Transaction] GET request to: ${url}`);
         } else {
-          // For POST requests, send params as JSON body
           fetchOptions.body = JSON.stringify(config.params);
-          console.log(`[Transaction] POST request with body:`, config.params);
         }
+
+        // Log the build request
+        txLogger.buildRequest(txType, url, method, config.params);
 
         const nbaResponse = await fetch(url, fetchOptions);
 
         if (!nbaResponse.ok) {
           const errorText = await nbaResponse.text();
-          console.error(`[Transaction] NBA error response:`, errorText);
+          txLogger.buildResult(txType, false, { status: nbaResponse.status, error: errorText });
           throw new Error(`NBA API error: ${nbaResponse.status} ${nbaResponse.statusText}`);
         }
 
         const unsignedTx = (await nbaResponse.json()) as UnsignedTxResponse;
-        console.log("[Transaction] NBA response:", unsignedTx);
 
         if (!unsignedTx.unsignedTxCBOR) {
-          console.error("[Transaction] No CBOR in response. Full response:", JSON.stringify(unsignedTx, null, 2));
+          txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
           throw new Error("No CBOR returned from NBA");
         }
 
-        console.log("[Transaction] Unsigned CBOR received:", unsignedTx.unsignedTxCBOR.substring(0, 100) + "...");
+        txLogger.buildResult(txType, true, unsignedTx);
 
         // Step 2: Sign transaction with wallet
         setState("signing");
         config.onStateChange?.("signing");
 
-        console.log("[Transaction] Requesting wallet signature...");
-
         const signedTx = await wallet.signTx(unsignedTx.unsignedTxCBOR);
-
-        console.log("[Transaction] Transaction signed");
 
         // Step 3: Submit to blockchain
         setState("submitting");
         config.onStateChange?.("submitting");
 
-        console.log("[Transaction] Submitting to blockchain...");
-
         const txHash = await wallet.submitTx(signedTx);
-
-        console.log(`[Transaction] Submitted! Tx Hash: ${txHash}`);
 
         // Step 4: Success!
         setState("success");
         config.onStateChange?.("success");
 
+        const explorerUrl = getExplorerUrl(txHash);
+        txLogger.txSubmitted(txType, txHash, explorerUrl);
+
         const txResult: TransactionResult = {
           txHash,
           success: true,
-          blockchainExplorerUrl: getExplorerUrl(txHash),
+          blockchainExplorerUrl: explorerUrl,
         };
 
         setResult(txResult);
 
         // Call success callback
         await config.onSuccess?.(txResult);
-
-        console.log("[Transaction] Transaction completed successfully");
       } catch (err) {
-        console.error("[Transaction] Error:", err);
+        txLogger.txError(config.txType ?? config.endpoint, err);
 
         const errorMessage = err instanceof Error ? err.message : "Transaction failed";
 

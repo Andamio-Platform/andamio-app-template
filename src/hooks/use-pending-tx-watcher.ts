@@ -7,17 +7,30 @@
  * This is a temporary client-side solution. In production, this functionality
  * should be moved to a backend monitoring service for better reliability.
  *
- * Features:
+ * ## Features
  * - Automatic polling of blockchain for transaction confirmations
  * - Execution of onConfirmation side effects from transaction definitions
  * - Status updates via API after confirmation
  * - Error handling and retry logic
  * - Configurable polling interval
+ *
+ * ## Unconfirmed Transaction Clearing
+ * When a transaction is confirmed, this hook automatically:
+ * 1. Processes entity-specific side effects (module status, etc.)
+ * 2. Calls `PATCH /user/unconfirmed-tx` with `null` to clear the user's pending tx
+ * 3. Removes the transaction from the watch list
+ *
+ * This works in tandem with `useAndamioTransaction` which sets the unconfirmedTx
+ * when a transaction is submitted.
+ *
+ * @see useAndamioTransaction - Sets unconfirmedTx on submission
+ * @see andamio-db-api/src/routers/user.ts - API endpoint documentation
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAndamioAuth } from "./use-andamio-auth";
 import { env } from "~/env";
+import { txLogger } from "~/lib/tx-logger";
 import {
   checkTransactionsBatch,
   extractOnChainData,
@@ -247,6 +260,27 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
           case "task":
           case "task-commitment":
             console.warn(`[PendingTx] Handler not implemented for ${tx.entityType}`);
+        }
+
+        // Clear user's unconfirmedTx now that it's confirmed
+        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
+        const clearBody = { txHash: null };
+        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "PATCH", clearUrl, clearBody);
+        try {
+          const clearResponse = await authenticatedFetch(clearUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(clearBody),
+          });
+          if (clearResponse.ok) {
+            const responseData = await clearResponse.json();
+            txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", true, responseData);
+          } else {
+            txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", false, undefined, await clearResponse.text());
+          }
+        } catch (clearError) {
+          txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", false, undefined, clearError);
+          // Non-critical - continue with confirmation processing
         }
 
         // Remove from watch list

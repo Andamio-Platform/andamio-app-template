@@ -5,12 +5,16 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
+import { ContentEditor, useAndamioEditor, AndamioFixedToolbar, RenderEditor } from "~/components/editor";
+import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
+import { COMMIT_TO_ASSIGNMENT } from "@andamio/transactions";
+import { hashNormalizedContent } from "~/lib/hashing";
+import type { JSONContent } from "@tiptap/core";
 import {
   AlertCircle,
   CheckCircle,
@@ -19,8 +23,14 @@ import {
   Loader2,
   Save,
   Trash2,
-  Plus
+  Plus,
+  Send
 } from "lucide-react";
+
+/** Convert string to hex encoding */
+function stringToHex(str: string): string {
+  return Buffer.from(str, "utf-8").toString("hex");
+}
 
 /**
  * Assignment Commitment Component
@@ -39,6 +49,7 @@ import {
 
 interface AssignmentCommitmentProps {
   assignmentId: string;
+  assignmentCode: string;
   assignmentTitle: string;
   courseNftPolicyId: string;
   moduleCode: string;
@@ -88,6 +99,7 @@ interface Commitment {
 
 export function AssignmentCommitment({
   assignmentId,
+  assignmentCode,
   assignmentTitle,
   courseNftPolicyId,
   moduleCode,
@@ -99,10 +111,40 @@ export function AssignmentCommitment({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showSubmitTx, setShowSubmitTx] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
 
   // Form state
   const [privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
-  const [networkEvidence, setNetworkEvidence] = useState("");
+
+  // Tiptap editor for evidence
+  const editor = useAndamioEditor({
+    content: "",
+    onUpdate: ({ editor }) => {
+      // Track unsaved changes when user types
+      if (editor.getText().trim()) {
+        setHasUnsavedChanges(true);
+      }
+    },
+  });
+
+  // Warn user before leaving if they have unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !commitment) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved evidence. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, commitment]);
 
   // Check if commitment exists
   useEffect(() => {
@@ -136,11 +178,13 @@ export function AssignmentCommitment({
           } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
             setPrivateStatus("COMMITMENT");
           }
-          setNetworkEvidence(
-            typeof existingCommitment.networkEvidence === "string"
+          // Set editor content if evidence exists
+          if (existingCommitment.networkEvidence && editor) {
+            const content = typeof existingCommitment.networkEvidence === "string"
               ? existingCommitment.networkEvidence
-              : JSON.stringify(existingCommitment.networkEvidence, null, 2)
-          );
+              : JSON.stringify(existingCommitment.networkEvidence, null, 2);
+            editor.commands.setContent(content);
+          }
         }
       } catch (err) {
         console.error("Error fetching commitment:", err);
@@ -153,49 +197,40 @@ export function AssignmentCommitment({
     void fetchCommitment();
   }, [isAuthenticated, authenticatedFetch, assignmentId, courseNftPolicyId]);
 
-  const handleCreateCommitment = async () => {
-    setIsSaving(true);
+  const handleStartAssignment = () => {
+    setHasStarted(true);
     setError(null);
-    setSuccess(null);
+  };
 
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            assignmentId,
-            networkStatus: "AWAITING_EVIDENCE",
-          }),
-        }
-      );
+  const handleLockEvidence = () => {
+    if (!editor) return;
+    const content = editor.getJSON();
+    if (!content) return;
 
-      if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to create commitment");
-      }
+    const hash = hashNormalizedContent(content);
+    setEvidenceHash(hash);
+    setEvidenceContent(content);
+    setIsLocked(true);
+    setHasUnsavedChanges(false);
+    setSuccess("Evidence locked! You can now submit to the blockchain.");
+    setTimeout(() => setSuccess(null), 3000);
+  };
 
-      const newCommitment = (await response.json()) as Commitment;
-      setCommitment(newCommitment);
-      setSuccess("Commitment created successfully!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      console.error("Error creating commitment:", err);
-      setError(err instanceof Error ? err.message : "Failed to create commitment");
-    } finally {
-      setIsSaving(false);
-    }
+  const handleUnlockEvidence = () => {
+    setIsLocked(false);
+    setEvidenceHash(null);
+    setShowSubmitTx(false);
   };
 
   const handleUpdateEvidence = async () => {
-    if (!commitment || !user?.accessTokenAlias) return;
+    if (!commitment || !user?.accessTokenAlias || !editor) return;
 
     setIsSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
+      const evidenceContent = editor.getHTML();
       // Calculate a simple hash for the evidence
       const evidenceHash = `hash-${Date.now()}`;
 
@@ -205,7 +240,7 @@ export function AssignmentCommitment({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            networkEvidence: networkEvidence || "{}",
+            networkEvidence: evidenceContent || "{}",
             networkEvidenceHash: evidenceHash,
           }),
         }
@@ -218,7 +253,7 @@ export function AssignmentCommitment({
 
       const updatedCommitment = (await response.json()) as Commitment;
       setCommitment(updatedCommitment);
-      setSuccess("Evidence updated successfully!");
+      setSuccess("Draft saved successfully!");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error updating evidence:", err);
@@ -249,7 +284,7 @@ export function AssignmentCommitment({
 
       setCommitment(null);
       setPrivateStatus("NOT_STARTED");
-      setNetworkEvidence("");
+      editor?.commands.clearContent();
       setSuccess("Commitment deleted successfully!");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -308,28 +343,121 @@ export function AssignmentCommitment({
           </AndamioAlert>
         )}
 
-        {!commitment ? (
-          // No commitment yet - show create option
+        {!commitment && !hasStarted ? (
+          // No commitment yet - show start option
           <div className="space-y-4">
             <div className="text-center py-8 border-2 border-dashed rounded-lg">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-sm text-muted-foreground mb-4">
                 You haven&apos;t started this assignment yet
               </p>
-              <AndamioButton onClick={handleCreateCommitment} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Start Assignment
-                  </>
-                )}
+              <AndamioButton onClick={handleStartAssignment}>
+                <Plus className="h-4 w-4 mr-2" />
+                Start Assignment
               </AndamioButton>
             </div>
+          </div>
+        ) : !commitment && hasStarted ? (
+          // Started locally but not committed to blockchain yet
+          <div className="space-y-4">
+            {/* Warning banner */}
+            <AndamioAlert>
+              <AlertCircle className="h-4 w-4" />
+              <AndamioAlertDescription>
+                {isLocked
+                  ? "Your evidence is locked. Review it below and submit to the blockchain."
+                  : "Your work is not saved until you submit to the blockchain. Lock your evidence when ready."}
+              </AndamioAlertDescription>
+            </AndamioAlert>
+
+            {/* Network Evidence Editor or Locked View */}
+            {!isLocked ? (
+              <div className="space-y-2">
+                <AndamioLabel>Your Evidence</AndamioLabel>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Write your evidence below. When finished, lock it to generate a hash for submission.
+                </p>
+                <AndamioFixedToolbar editor={editor} />
+                <ContentEditor editor={editor} height="200px" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <AndamioLabel>Locked Evidence</AndamioLabel>
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  {evidenceContent && <RenderEditor content={evidenceContent} />}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span>Hash:</span>
+                  <code className="bg-muted px-2 py-1 rounded">{evidenceHash}</code>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2">
+              <AndamioButton
+                variant="outline"
+                onClick={() => {
+                  setHasStarted(false);
+                  setHasUnsavedChanges(false);
+                  setIsLocked(false);
+                  setEvidenceHash(null);
+                  editor?.commands.clearContent();
+                }}
+              >
+                Cancel
+              </AndamioButton>
+              {!isLocked ? (
+                <AndamioButton
+                  onClick={handleLockEvidence}
+                  disabled={!editor?.getText().trim()}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Lock Evidence
+                </AndamioButton>
+              ) : (
+                <>
+                  <AndamioButton variant="outline" onClick={handleUnlockEvidence}>
+                    Edit Evidence
+                  </AndamioButton>
+                  <AndamioButton onClick={() => setShowSubmitTx(true)}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Submit to Blockchain
+                  </AndamioButton>
+                </>
+              )}
+            </div>
+
+            {/* Submit to Blockchain Transaction */}
+            {showSubmitTx && user?.accessTokenAlias && evidenceHash && (
+              <>
+                <AndamioSeparator />
+                <AndamioTransaction
+                  definition={COMMIT_TO_ASSIGNMENT}
+                  inputs={{
+                    // txParams (for NBA transaction builder)
+                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                    policy: courseNftPolicyId,
+                    assignment_code: assignmentCode,
+                    assignment_info: evidenceHash, // Hash, not full content
+                    // sideEffectParams (for db-api)
+                    moduleCode: moduleCode,
+                    accessTokenAlias: user.accessTokenAlias,
+                    assignmentEvidence: JSON.stringify(evidenceContent), // Full content for database
+                  }}
+                  onSuccess={() => {
+                    setShowSubmitTx(false);
+                    setHasUnsavedChanges(false);
+                    setSuccess("Assignment submitted to blockchain!");
+                    // Refresh commitment data
+                    window.location.reload();
+                  }}
+                  onError={(err) => {
+                    setError(err.message);
+                  }}
+                />
+              </>
+            )}
           </div>
         ) : (
           // Commitment exists - show edit/update options
@@ -341,8 +469,8 @@ export function AssignmentCommitment({
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
-                  {commitment.networkStatus !== "AWAITING_EVIDENCE" && (
-                    <AndamioBadge>{commitment.networkStatus}</AndamioBadge>
+                  {commitment?.networkStatus !== "AWAITING_EVIDENCE" && (
+                    <AndamioBadge>{commitment?.networkStatus}</AndamioBadge>
                   )}
                 </div>
               </div>
@@ -366,24 +494,20 @@ export function AssignmentCommitment({
 
             {/* Network Evidence (Public Submission) */}
             <div className="space-y-2">
-              <AndamioLabel htmlFor="networkEvidence">Submission Evidence</AndamioLabel>
-              <AndamioTextarea
-                id="networkEvidence"
-                placeholder="Add links to your work, proof of completion, or other evidence..."
-                value={networkEvidence}
-                onChange={(e) => setNetworkEvidence(e.target.value)}
-                rows={6}
-              />
-              <p className="text-xs text-muted-foreground">
-                This evidence will be submitted on-chain for review
+              <AndamioLabel>Submission Evidence</AndamioLabel>
+              <p className="text-xs text-muted-foreground mb-2">
+                Write your evidence below. This will be submitted on-chain for review.
               </p>
+              <AndamioFixedToolbar editor={editor} />
+              <ContentEditor editor={editor} height="200px" />
             </div>
 
-            {/* Save Button */}
+            {/* Action Buttons */}
             <div className="flex justify-end gap-2">
               <AndamioButton
+                variant="outline"
                 onClick={handleUpdateEvidence}
-                disabled={isSaving || !networkEvidence.trim()}
+                disabled={isSaving || !editor?.getText().trim()}
               >
                 {isSaving ? (
                   <>
@@ -393,11 +517,48 @@ export function AssignmentCommitment({
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Update Evidence
+                    Save Draft
                   </>
                 )}
               </AndamioButton>
+              <AndamioButton
+                onClick={() => setShowSubmitTx(true)}
+                disabled={!editor?.getText().trim()}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Submit to Blockchain
+              </AndamioButton>
             </div>
+
+            {/* Submit to Blockchain Transaction */}
+            {showSubmitTx && user?.accessTokenAlias && (
+              <>
+                <AndamioSeparator />
+                <AndamioTransaction
+                  definition={COMMIT_TO_ASSIGNMENT}
+                  inputs={{
+                    // txParams (for NBA transaction builder)
+                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                    policy: courseNftPolicyId,
+                    assignment_code: assignmentCode,
+                    assignment_info: editor?.getHTML() ?? "",
+                    // sideEffectParams (for db-api)
+                    moduleCode: moduleCode,
+                    accessTokenAlias: user.accessTokenAlias,
+                    assignmentEvidence: editor?.getHTML() ?? "",
+                  }}
+                  onSuccess={() => {
+                    setShowSubmitTx(false);
+                    setSuccess("Assignment submitted to blockchain!");
+                    // Refresh commitment data
+                    window.location.reload();
+                  }}
+                  onError={(err) => {
+                    setError(err.message);
+                  }}
+                />
+              </>
+            )}
           </div>
         )}
       </AndamioCardContent>

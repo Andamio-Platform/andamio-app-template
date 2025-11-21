@@ -273,8 +273,8 @@
   @apply prose-ul:mb-6 prose-ul:space-y-2 prose-ol:mb-6 prose-ol:space-y-2;
   @apply prose-li:leading-relaxed;
   @apply prose-blockquote:border-l-4 prose-blockquote:border-border prose-blockquote:pl-6 prose-blockquote:my-8;
-  @apply prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:text-sm prose-code:border-2 prose-code:border-border;
-  @apply prose-pre:bg-muted prose-pre:border-4 prose-pre:border-border prose-pre:p-6 prose-pre:my-8;
+  @apply prose-code:bg-muted prose-code:text-foreground prose-code:px-2 prose-code:py-1 prose-code:text-sm prose-code:border-2 prose-code:border-border prose-code:rounded;
+  @apply prose-pre:bg-muted prose-pre:text-foreground prose-pre:border-4 prose-pre:border-border prose-pre:p-6 prose-pre:my-8 prose-pre:rounded-lg;
   @apply prose-a:text-primary prose-a:underline prose-a:decoration-primary/30 prose-a:font-semibold;
   @apply prose-a:hover:decoration-primary;
   @apply prose-strong:font-bold;

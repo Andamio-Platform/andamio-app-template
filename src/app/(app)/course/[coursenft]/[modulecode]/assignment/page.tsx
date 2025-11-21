@@ -223,6 +223,7 @@ export default function LearnerAssignmentPage() {
       {/* Assignment Commitment Component */}
       <AssignmentCommitment
         assignmentId={assignment.id}
+        assignmentCode={assignment.assignmentCode}
         assignmentTitle={assignment.title}
         courseNftPolicyId={courseNftPolicyId}
         moduleCode={moduleCode}

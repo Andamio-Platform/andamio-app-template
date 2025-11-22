@@ -60,7 +60,7 @@ interface CourseStatus {
 }
 
 export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
   const [status, setStatus] = useState<CourseStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -296,7 +296,10 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           <AndamioTransaction
             definition={BURN_LOCAL_STATE}
             inputs={{
-              user_access_token: buildAccessTokenUnit(status.userId),
+              user_access_token: buildAccessTokenUnit(
+                user?.accessTokenAlias ?? "",
+                env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
+              ),
               policy: courseNftPolicyId,
             }}
             showCard={false}

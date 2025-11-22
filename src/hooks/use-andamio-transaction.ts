@@ -99,7 +99,7 @@ export function useAndamioTransaction<TParams = unknown>() {
       } catch (error) {
         // If parsing fails, try to extract keys manually
         // This handles partial matches where not all txApiSchema fields are provided
-        const schemaShape = (txApiSchema as any)?.shape;
+        const schemaShape = (txApiSchema as unknown as { shape?: Record<string, unknown> })?.shape;
         if (schemaShape) {
           const txApiKeys = Object.keys(schemaShape);
           for (const key of txApiKeys) {

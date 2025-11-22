@@ -37,7 +37,7 @@ import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search, X }
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
-} from "@andamio-platform/db-api";
+} from "@andamio/db-api";
 import { ACCEPT_ASSIGNMENT, DENY_ASSIGNMENT } from "@andamio/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";

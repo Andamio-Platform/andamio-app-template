@@ -11,7 +11,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen, Settings, FileText } from "lucide-react";
-import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio-platform/db-api";
+import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
 
 /**
  * Public page displaying module details with SLTs and lessons
@@ -20,7 +20,7 @@ import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } 
  * - GET /course-modules/{courseNftPolicyId}/{moduleCode} (public)
  * - GET /slts/{courseNftPolicyId}/{moduleCode} (public)
  * - GET /lessons/{courseNftPolicyId}/{moduleCode} (public)
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
 

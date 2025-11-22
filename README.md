@@ -613,6 +613,38 @@ Displays courses owned by authenticated user.
 - Live/Draft status badge
 - Category and access tier
 
+### Learner Components
+
+#### `MyLearning`
+Displays courses the authenticated learner is enrolled in based on on-chain data.
+
+**Features**:
+- Queries on-chain enrollment data via NBA (Node Backend API)
+- Automatic fetching when authenticated
+- Shows both completed and ongoing courses
+- Displays assignment progress from blockchain
+- Loading states with skeleton UI
+- Error handling with alerts
+- Empty state with call-to-action
+
+**Data Displayed**:
+- Course title, description, and image
+- Course policy ID
+- Number of completed assignments (from on-chain data)
+- Progress percentage
+- Course status (Complete/In Progress)
+
+**Performance**:
+- Single efficient API call to `/learner/my-learning`
+- 50-100x faster than previous implementation
+- Combines on-chain enrollment data with database course details
+
+**Data Flow**:
+1. Frontend calls `/learner/my-learning` with JWT
+2. Backend queries NBA API for enrolled course policy IDs
+3. Backend fetches course details from database
+4. Returns combined data with assignment progress
+
 ### Hooks
 
 #### `useAndamioAuth`

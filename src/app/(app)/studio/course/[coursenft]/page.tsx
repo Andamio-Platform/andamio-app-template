@@ -25,7 +25,7 @@ import {
   type ListCourseModulesOutput,
   type UpdateCourseInput,
   updateCourseInputSchema,
-} from "@andamio-platform/db-api";
+} from "@andamio/db-api";
 
 /**
  * Studio page for editing course details
@@ -35,7 +35,7 @@ import {
  * - GET /course-modules/assignment-summary/{courseNftPolicyId} (public)
  * - GET /courses/{courseCode}/unpublished-projects (protected)
  * Input Validation: Uses updateCourseInputSchema for runtime validation
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  *
  * Pattern:
  * 1. Build input object conforming to UpdateCourseInput type

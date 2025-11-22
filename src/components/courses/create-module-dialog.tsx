@@ -26,13 +26,13 @@ import {
 } from "~/components/andamio/andamio-select";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { Plus, AlertCircle, Loader2 } from "lucide-react";
-import { type CourseModuleOutput } from "@andamio-platform/db-api";
+import { type CourseModuleOutput } from "@andamio/db-api";
 
 /**
  * Dialog component for creating a new course module
  *
  * API Endpoint: POST /course-modules (protected)
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
 interface CreateModuleDialogProps {

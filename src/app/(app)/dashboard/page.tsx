@@ -8,9 +8,11 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioCode } from "~/components/andamio/andamio-code";
-import { Wallet, Key, CheckCircle2, Database } from "lucide-react";
+import { Wallet, Key, Database } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessToken } from "~/components/transactions";
+import { WelcomeHero } from "~/components/dashboard/welcome-hero";
+import { GettingStarted } from "~/components/dashboard/getting-started";
 
 export default function DashboardPage() {
   const { isAuthenticated, user, jwt } = useAndamioAuth();
@@ -76,20 +78,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          View your wallet information and access token details
-        </p>
-      </div>
+    <div className="space-y-8">
+      {/* Welcome Hero */}
+      <WelcomeHero />
 
-      {/* Status Badge */}
-      <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-5 w-5 text-success" />
-        <span className="font-medium text-success">Connected & Authenticated</span>
-      </div>
+      {/* Getting Started Checklist */}
+      <GettingStarted
+        isAuthenticated={isAuthenticated}
+        hasAccessToken={!!user.accessTokenAlias}
+      />
 
       {/* Mint Access Token - Show if user doesn't have an access token */}
       {!user.accessTokenAlias && (

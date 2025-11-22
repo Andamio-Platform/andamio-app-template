@@ -38,7 +38,7 @@ import {
   type UpdateModuleStatusInput,
   updateCourseModuleInputSchema,
   updateModuleStatusInputSchema,
-} from "@andamio-platform/db-api";
+} from "@andamio/db-api";
 import { MintModuleTokens } from "~/components/transactions";
 
 /**
@@ -51,7 +51,7 @@ import { MintModuleTokens } from "~/components/transactions";
  * - PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/pending-tx (protected) - Set pending transaction
  * - POST /course-modules/{courseNftPolicyId}/{moduleCode}/publish (protected) - Publish all module content
  * Input Validation: Uses updateCourseModuleInputSchema and updateModuleStatusInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
 interface ApiError {

@@ -12,6 +12,7 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { ContentEditor, useAndamioEditor, AndamioFixedToolbar, RenderEditor } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
+import { ContentDisplay } from "~/components/content-display";
 import {
   COMMIT_TO_ASSIGNMENT,
   UPDATE_ASSIGNMENT,
@@ -86,18 +87,17 @@ interface AssignmentCommitmentProps {
 
 interface Commitment {
   id: string;
-  assignmentId: string;
-  learnerId: string;
+  learnerAccessTokenAlias: string;
   networkStatus: string;
   networkEvidence: unknown;
   networkEvidenceHash: string | null;
   pendingTxHash: string | null;
-  favorite: boolean;
-  archived: boolean;
   assignment: {
-    id: string;
     assignmentCode: string;
     title: string;
+    module: {
+      moduleCode: string;
+    };
   };
 }
 
@@ -172,9 +172,22 @@ export function AssignmentCommitment({
         }
 
         const commitments = (await response.json()) as Commitment[];
-        const existingCommitment = commitments.find((c) => c.assignmentId === assignmentId);
+
+        console.log("[AssignmentCommitment] Searching for assignmentCode:", assignmentCode);
+        console.log("[AssignmentCommitment] Fetched commitments:", commitments);
+        console.log("[AssignmentCommitment] Commitment assignmentCodes:", commitments.map(c => ({
+          assignmentCode: c.assignment.assignmentCode,
+          moduleCode: c.assignment.module.moduleCode
+        })));
+
+        const existingCommitment = commitments.find((c) => c.assignment.assignmentCode === assignmentCode);
+        console.log("[AssignmentCommitment] Found commitment:", existingCommitment);
 
         if (existingCommitment) {
+          console.log("[AssignmentCommitment] Network Evidence:", existingCommitment.networkEvidence);
+          console.log("[AssignmentCommitment] Network Evidence Type:", typeof existingCommitment.networkEvidence);
+          console.log("[AssignmentCommitment] Network Status:", existingCommitment.networkStatus);
+
           setCommitment(existingCommitment);
           // Set local UI status based on network status
           if (existingCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" || existingCommitment.networkStatus === "CREDENTIAL_CLAIMED") {
@@ -184,9 +197,27 @@ export function AssignmentCommitment({
           }
           // Set editor content if evidence exists
           if (existingCommitment.networkEvidence && editor) {
-            const content = typeof existingCommitment.networkEvidence === "string"
-              ? existingCommitment.networkEvidence
-              : JSON.stringify(existingCommitment.networkEvidence, null, 2);
+            // Handle different evidence formats
+            let content;
+            if (typeof existingCommitment.networkEvidence === "string") {
+              try {
+                // Try to parse as JSON first
+                const parsed = JSON.parse(existingCommitment.networkEvidence);
+                // If it has a 'type' property, it's likely Tiptap JSON
+                if (parsed && typeof parsed === "object" && "type" in parsed) {
+                  content = parsed;
+                } else {
+                  // Not Tiptap JSON, treat as plain string
+                  content = existingCommitment.networkEvidence;
+                }
+              } catch {
+                // Not valid JSON, treat as plain string (HTML or text)
+                content = existingCommitment.networkEvidence;
+              }
+            } else {
+              // Already an object
+              content = existingCommitment.networkEvidence;
+            }
             editor.commands.setContent(content);
           }
         }
@@ -199,7 +230,7 @@ export function AssignmentCommitment({
     };
 
     void fetchCommitment();
-  }, [isAuthenticated, authenticatedFetch, assignmentId, courseNftPolicyId]);
+  }, [isAuthenticated, authenticatedFetch, assignmentCode, courseNftPolicyId, editor]);
 
   const handleStartAssignment = () => {
     setHasStarted(true);
@@ -234,9 +265,10 @@ export function AssignmentCommitment({
     setSuccess(null);
 
     try {
-      const evidenceContent = editor.getHTML();
-      // Calculate a simple hash for the evidence
-      const evidenceHash = `hash-${Date.now()}`;
+      // Get Tiptap JSON (not HTML) for consistent storage
+      const evidenceContent = editor.getJSON();
+      // Calculate hash from normalized content
+      const evidenceHash = hashNormalizedContent(evidenceContent);
 
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${courseNftPolicyId}/${moduleCode}/${commitment.assignment.assignmentCode}/${user.accessTokenAlias}/evidence`,
@@ -244,7 +276,7 @@ export function AssignmentCommitment({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            networkEvidence: evidenceContent || "{}",
+            networkEvidence: evidenceContent, // Send as JSON object, not stringified
             networkEvidenceHash: evidenceHash,
           }),
         }
@@ -387,9 +419,9 @@ export function AssignmentCommitment({
             ) : (
               <div className="space-y-2">
                 <AndamioLabel>Locked Evidence</AndamioLabel>
-                <div className="border rounded-lg p-4 bg-muted/30">
-                  {evidenceContent && <RenderEditor content={evidenceContent} />}
-                </div>
+                {evidenceContent && (
+                  <ContentDisplay content={evidenceContent} variant="muted" />
+                )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                   <span>Hash:</span>
                   <code className="bg-muted px-2 py-1 rounded">{evidenceHash}</code>
@@ -440,14 +472,14 @@ export function AssignmentCommitment({
                   definition={COMMIT_TO_ASSIGNMENT}
                   inputs={{
                     // txParams (for NBA transaction builder)
-                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                     policy: courseNftPolicyId,
                     assignment_code: assignmentCode,
                     assignment_info: evidenceHash, // Hash, not full content
                     // sideEffectParams (for db-api)
                     moduleCode: moduleCode,
                     accessTokenAlias: user.accessTokenAlias,
-                    assignmentEvidence: JSON.stringify(evidenceContent), // Full content for database
+                    assignmentEvidence: evidenceContent, // Full Tiptap JSON content for database
                   }}
                   onSuccess={() => {
                     setShowSubmitTx(false);
@@ -496,11 +528,42 @@ export function AssignmentCommitment({
 
             <AndamioSeparator />
 
-            {/* Network Evidence (Public Submission) */}
+            {/* Submitted Evidence (Read-Only Display) */}
             <div className="space-y-2">
-              <AndamioLabel>Submission Evidence</AndamioLabel>
+              <AndamioLabel>Your Submitted Evidence</AndamioLabel>
+              {commitment?.networkEvidence ? (
+                <>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    This is the evidence you submitted on-chain for review.
+                  </p>
+                  <ContentDisplay
+                    content={commitment.networkEvidence as string | JSONContent}
+                    variant="muted"
+                  />
+                  {commitment.networkEvidenceHash && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <span>Hash:</span>
+                      <code className="bg-muted px-2 py-1 rounded">{commitment.networkEvidenceHash}</code>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <AndamioAlert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AndamioAlertDescription>
+                    No evidence submitted yet. Add your evidence below and submit to the blockchain.
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              )}
+            </div>
+
+            <AndamioSeparator />
+
+            {/* Update Evidence Section */}
+            <div className="space-y-2">
+              <AndamioLabel>Update Your Evidence</AndamioLabel>
               <p className="text-xs text-muted-foreground mb-2">
-                Write your evidence below. This will be submitted on-chain for review.
+                Edit your evidence below and save as a draft, or submit updates to the blockchain.
               </p>
               <AndamioFixedToolbar editor={editor} />
               <ContentEditor editor={editor} height="200px" />
@@ -530,7 +593,7 @@ export function AssignmentCommitment({
                 disabled={!editor?.getText().trim()}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Submit to Blockchain
+                Update on Blockchain
               </AndamioButton>
             </div>
 
@@ -542,14 +605,14 @@ export function AssignmentCommitment({
                   definition={COMMIT_TO_ASSIGNMENT}
                   inputs={{
                     // txParams (for NBA transaction builder)
-                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                     policy: courseNftPolicyId,
                     assignment_code: assignmentCode,
-                    assignment_info: editor?.getHTML() ?? "",
+                    assignment_info: editor?.getJSON() ? hashNormalizedContent(editor.getJSON()) : "",
                     // sideEffectParams (for db-api)
                     moduleCode: moduleCode,
                     accessTokenAlias: user.accessTokenAlias,
-                    assignmentEvidence: editor?.getHTML() ?? "",
+                    assignmentEvidence: editor?.getJSON() ?? {},
                   }}
                   onSuccess={() => {
                     setShowSubmitTx(false);
@@ -579,9 +642,9 @@ export function AssignmentCommitment({
                   <AndamioTransaction
                     definition={UPDATE_ASSIGNMENT}
                     inputs={{
-                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                       policy: courseNftPolicyId,
-                      assignment_info: editor?.getHTML() ?? "",
+                      assignment_info: editor?.getJSON() ? hashNormalizedContent(editor.getJSON()) : "",
                     }}
                     showCard={false}
                     onSuccess={() => {
@@ -608,7 +671,7 @@ export function AssignmentCommitment({
                   <AndamioTransaction
                     definition={LEAVE_ASSIGNMENT}
                     inputs={{
-                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                       policy: courseNftPolicyId,
                       moduleCode: moduleCode,
                       student_alias: user.accessTokenAlias,

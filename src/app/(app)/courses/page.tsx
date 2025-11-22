@@ -3,7 +3,7 @@
 import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { OwnedCoursesList } from "~/components/courses/owned-courses-list";
+import { CourseManager } from "~/components/courses/course-manager";
 
 export default function CoursesPage() {
   const { isAuthenticated } = useAndamioAuth();
@@ -30,14 +30,14 @@ export default function CoursesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Courses</h1>
+        <h1 className="text-3xl font-bold">Course Creator Studio</h1>
         <p className="text-muted-foreground">
-          Manage and view your Andamio courses
+          Manage and view all your Andamio courses with powerful filtering and sorting
         </p>
       </div>
 
-      {/* Courses List */}
-      <OwnedCoursesList />
+      {/* Course Manager with all features */}
+      <CourseManager />
     </div>
   );
 }

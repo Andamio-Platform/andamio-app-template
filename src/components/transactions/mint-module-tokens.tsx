@@ -20,7 +20,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import { env } from "~/env";
 import { Coins } from "lucide-react";
-import type { ListCourseModulesOutput } from "@andamio-platform/db-api";
+import type { ListCourseModulesOutput } from "@andamio/db-api";
 
 export interface MintModuleTokensProps {
   /**

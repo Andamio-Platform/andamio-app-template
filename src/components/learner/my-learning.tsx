@@ -10,45 +10,20 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, BookOpen, CheckCircle, Clock, FileText } from "lucide-react";
-import { type ListPublishedCoursesOutput } from "@andamio-platform/db-api";
+import type { z } from "zod";
+import { getMyLearningOutputSchema } from "@andamio/db-api";
 
 /**
  * My Learning component - Shows learner's enrolled courses and assignment progress
  *
  * API Endpoints:
- * - GET /courses/published (public) - List all published courses
- * - GET /courses/{courseNftPolicyId}/course-modules (public) - List course modules
- * - GET /assignment-commitments/{courseNftPolicyId}/{moduleCode}/has-commitments (public) - Check for commitments
- * - GET /assignment-commitments/learner/course/{courseNftPolicyId} (protected) - Get learner commitments
+ * - GET /learner/my-learning (protected) - Single efficient endpoint that returns all courses with commitments
  *
- * This component will be enhanced to show actual enrollment status
- * once the indexer integration is complete
+ * Performance: 1 API call instead of 50-100+ calls with previous implementation
  */
 
-interface AssignmentCommitment {
-  id: string;
-  assignmentId: string;
-  learnerId: string;
-  networkStatus: string;
-  favorite: boolean;
-  archived: boolean;
-  assignment: {
-    id: string;
-    assignmentCode: string;
-    title: string;
-  };
-}
-
-interface CourseWithProgress {
-  courseCode: string;
-  courseNftPolicyId: string | null;
-  title: string;
-  description: string | null;
-  imageUrl: string | null;
-  videoUrl: string | null;
-  commitmentCount: number;
-  completedCount: number;
-}
+type MyLearningData = z.infer<typeof getMyLearningOutputSchema>;
+type CourseWithProgress = MyLearningData['courses'][number];
 
 export function MyLearning() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
@@ -68,92 +43,28 @@ export function MyLearning() {
       setError(null);
 
       try {
-        // Fetch all published courses
-        const coursesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`
+        console.log("🔍 Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
+
+        // Single API call to get all courses with learner's commitments
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`
         );
 
-        if (!coursesResponse.ok) {
-          const errorText = await coursesResponse.text();
-          console.error("Failed to fetch courses:", coursesResponse.status, errorText);
-          throw new Error(`Failed to fetch courses: ${coursesResponse.status} ${coursesResponse.statusText}`);
+        console.log("📡 Response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ Failed to fetch my learning:", response.status, errorText);
+          throw new Error(`Failed to fetch my learning: ${response.status} ${response.statusText}`);
         }
 
-        const allCourses = (await coursesResponse.json()) as ListPublishedCoursesOutput;
+        const data = (await response.json()) as MyLearningData;
+        console.log("✅ My Learning data:", data);
+        console.log("📚 Number of courses:", data.courses.length);
 
-        // For each course, check if there are commitments before fetching full list
-        const coursesWithProgress: CourseWithProgress[] = [];
-
-        for (const course of allCourses) {
-          if (!course.courseNftPolicyId) continue;
-
-          try {
-            // First, check if this course has any commitments (optimization)
-            // This uses the public endpoint to avoid fetching full commitment list unnecessarily
-            const moduleResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseNftPolicyId}/course-modules`
-            );
-
-            if (!moduleResponse.ok) continue;
-
-            const modules = (await moduleResponse.json()) as Array<{ moduleCode: string }>;
-
-            // Check each module for commitments
-            let hasAnyCommitments = false;
-            for (const courseModule of modules) {
-              const hasCommitmentsResponse = await fetch(
-                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${course.courseNftPolicyId}/${courseModule.moduleCode}/has-commitments`
-              );
-
-              if (hasCommitmentsResponse.ok) {
-                const hasCommitmentsData = (await hasCommitmentsResponse.json()) as {
-                  hasCommitments: boolean;
-                  count: number;
-                };
-
-                if (hasCommitmentsData.hasCommitments) {
-                  hasAnyCommitments = true;
-                  break; // Found commitments, no need to check other modules
-                }
-              }
-            }
-
-            // Only fetch full commitment list if we know there are commitments
-            if (hasAnyCommitments) {
-              const commitmentsResponse = await authenticatedFetch(
-                `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/learner/course/${course.courseNftPolicyId}`
-              );
-
-              if (commitmentsResponse.ok) {
-                const commitments = (await commitmentsResponse.json()) as AssignmentCommitment[];
-
-                // Only include courses where learner has commitments
-                if (commitments.length > 0) {
-                  const completedCount = commitments.filter(
-                    (c) => c.networkStatus === "ASSIGNMENT_ACCEPTED" || c.networkStatus === "CREDENTIAL_CLAIMED"
-                  ).length;
-
-                  coursesWithProgress.push({
-                    courseCode: course.courseCode,
-                    courseNftPolicyId: course.courseNftPolicyId,
-                    title: course.title,
-                    description: course.description,
-                    imageUrl: course.imageUrl,
-                    videoUrl: course.videoUrl,
-                    commitmentCount: commitments.length,
-                    completedCount,
-                  });
-                }
-              }
-            }
-          } catch (err) {
-            console.error(`Error fetching commitments for ${course.courseCode}:`, err);
-          }
-        }
-
-        setCourses(coursesWithProgress);
+        setCourses(data.courses);
       } catch (err) {
-        console.error("Error fetching learning progress:", err);
+        console.error("💥 Error fetching learning progress:", err);
         setError(err instanceof Error ? err.message : "Failed to load learning progress");
       } finally {
         setIsLoading(false);
@@ -217,8 +128,11 @@ export function MyLearning() {
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-2">
               You haven&apos;t started any courses yet.
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Browse courses and commit to assignments to see them here.
             </p>
             <Link href="/course">
               <AndamioButton>Browse Courses</AndamioButton>

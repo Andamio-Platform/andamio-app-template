@@ -1,0 +1,122 @@
+/**
+ * Course filtering, sorting, and view mode utilities
+ * Used by Course Creator interface for managing course data
+ */
+
+import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+
+// View mode options
+export type CourseViewMode = "grid" | "table" | "list";
+
+// Filter options (using only available API fields)
+export type CourseFilter = {
+  search: string;
+  publicationStatus: "all" | "published" | "draft";
+};
+
+// Sort options (using only available API fields)
+export type CourseSortField = "title" | "courseCode" | "moduleCount";
+export type CourseSortDirection = "asc" | "desc";
+export type CourseSortConfig = {
+  field: CourseSortField;
+  direction: CourseSortDirection;
+};
+
+// Default filter state
+export const defaultCourseFilter: CourseFilter = {
+  search: "",
+  publicationStatus: "all",
+};
+
+// Default sort config
+export const defaultCourseSortConfig: CourseSortConfig = {
+  field: "title",
+  direction: "asc",
+};
+
+/**
+ * Filter courses based on filter criteria
+ */
+export function filterCourses(
+  courses: ListOwnedCoursesOutput,
+  filter: CourseFilter
+): ListOwnedCoursesOutput {
+  return courses.filter((courseData) => {
+    // Search filter (title, code, description)
+    if (filter.search) {
+      const searchLower = filter.search.toLowerCase();
+      const matchesSearch =
+        courseData.title.toLowerCase().includes(searchLower) ||
+        courseData.courseCode.toLowerCase().includes(searchLower) ||
+        (courseData.description?.toLowerCase().includes(searchLower) ?? false);
+      if (!matchesSearch) return false;
+    }
+
+    // Publication status filter
+    if (filter.publicationStatus !== "all") {
+      if (filter.publicationStatus === "published" && !courseData.courseNftPolicyId) {
+        return false;
+      }
+      if (filter.publicationStatus === "draft" && courseData.courseNftPolicyId) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Sort courses based on sort configuration
+ */
+export function sortCourses(
+  courses: ListOwnedCoursesOutput,
+  sortConfig: CourseSortConfig,
+  moduleCounts: Record<string, number>
+): ListOwnedCoursesOutput {
+  const sorted = [...courses];
+
+  sorted.sort((a, b) => {
+    let compareValue = 0;
+
+    switch (sortConfig.field) {
+      case "title":
+        compareValue = a.title.localeCompare(b.title);
+        break;
+      case "courseCode":
+        compareValue = a.courseCode.localeCompare(b.courseCode);
+        break;
+      case "moduleCount": {
+        const aCount = moduleCounts[a.courseCode] ?? 0;
+        const bCount = moduleCounts[b.courseCode] ?? 0;
+        compareValue = aCount - bCount;
+        break;
+      }
+    }
+
+    return sortConfig.direction === "asc" ? compareValue : -compareValue;
+  });
+
+  return sorted;
+}
+
+/**
+ * Calculate course statistics
+ */
+export function calculateCourseStats(
+  courses: ListOwnedCoursesOutput,
+  moduleCounts: Record<string, number>
+) {
+  const total = courses.length;
+  const published = courses.filter((c) => c.courseNftPolicyId !== null).length;
+  const draft = total - published;
+
+  const totalModules = Object.values(moduleCounts).reduce((sum, count) => sum + count, 0);
+
+  return {
+    total,
+    published,
+    draft,
+    totalModules,
+  };
+}

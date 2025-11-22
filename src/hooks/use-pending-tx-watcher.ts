@@ -36,7 +36,7 @@ import {
   extractOnChainData,
   type TransactionConfirmation,
 } from "~/lib/cardano-indexer";
-import type { CourseModuleOutput } from "@andamio-platform/db-api";
+import type { CourseModuleOutput } from "@andamio/db-api";
 
 /**
  * Pending transaction to monitor

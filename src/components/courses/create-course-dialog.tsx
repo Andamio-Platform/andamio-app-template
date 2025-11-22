@@ -19,7 +19,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { Plus, AlertCircle, Loader2 } from "lucide-react";
-import { type CourseOutput } from "@andamio-platform/db-api";
+import { type CourseOutput } from "@andamio/db-api";
 
 /**
  * Dialog component for creating a new course
@@ -28,7 +28,7 @@ import { type CourseOutput } from "@andamio-platform/db-api";
  * - POST /courses - Create new course
  * - POST /courses/check-code - Validate course code availability
  *
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 export function CreateCourseDialog() {
   const router = useRouter();

@@ -29,7 +29,7 @@ import {
   type UpdateIntroductionInput,
   createIntroductionInputSchema,
   updateIntroductionInputSchema,
-} from "@andamio-platform/db-api";
+} from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -39,7 +39,7 @@ import type { JSONContent } from "@tiptap/core";
  * - POST /introductions (protected) - Create new introduction
  * - PATCH /introductions/{courseNftPolicyId}/{moduleCode} (protected) - Update introduction
  * Input Validation: Uses createIntroductionInputSchema and updateIntroductionInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
 interface ApiError {

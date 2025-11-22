@@ -29,7 +29,7 @@ import {
   type UpdateLessonInput,
   createLessonInputSchema,
   updateLessonInputSchema,
-} from "@andamio-platform/db-api";
+} from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -40,7 +40,7 @@ import type { JSONContent } from "@tiptap/core";
  * - PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update lesson
  * - DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete lesson
  * Input Validation: Uses createLessonInputSchema and updateLessonInputSchema
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
 interface ApiError {

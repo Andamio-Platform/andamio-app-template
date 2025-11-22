@@ -7,13 +7,13 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { type ListPublishedCoursesOutput } from "@andamio-platform/db-api";
+import { type ListPublishedCoursesOutput } from "@andamio/db-api";
 
 /**
  * Public page displaying all published courses
  *
  * API Endpoint: GET /courses/published (public)
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio-platform/db-api
+ * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 export default function CoursePage() {
   const [courses, setCourses] = useState<ListPublishedCoursesOutput>([]);
@@ -98,12 +98,13 @@ export default function CoursePage() {
           </p>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground">
-            No published courses found.
-          </p>
-        </div>
+        <AndamioAlert>
+          <BookOpen className="h-4 w-4" />
+          <AndamioAlertTitle>No Published Courses</AndamioAlertTitle>
+          <AndamioAlertDescription>
+            There are currently no published courses available. Check back later or create your own course.
+          </AndamioAlertDescription>
+        </AndamioAlert>
       </div>
     );
   }

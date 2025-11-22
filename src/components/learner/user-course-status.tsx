@@ -9,11 +9,15 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { EnrollInCourse } from "~/components/transactions";
+import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
+import { BURN_LOCAL_STATE } from "@andamio/transactions";
+import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import {
   CheckCircle,
   Clock,
   Trophy,
   AlertTriangle,
+  LogOut,
 } from "lucide-react";
 
 /**
@@ -285,6 +289,22 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           <p className="text-xs text-muted-foreground mt-1">
             Full sync requires indexer integration for on-chain validation
           </p>
+        </div>
+
+        {/* Exit Course */}
+        <div className="pt-4 border-t">
+          <AndamioTransaction
+            definition={BURN_LOCAL_STATE}
+            inputs={{
+              user_access_token: buildAccessTokenUnit(status.userId),
+              policy: courseNftPolicyId,
+            }}
+            showCard={false}
+            onSuccess={() => {
+              refetchStatus();
+            }}
+            icon={<LogOut className="h-4 w-4" />}
+          />
         </div>
       </AndamioCardContent>
     </AndamioCard>

@@ -12,7 +12,11 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { ContentEditor, useAndamioEditor, AndamioFixedToolbar, RenderEditor } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
-import { COMMIT_TO_ASSIGNMENT } from "@andamio/transactions";
+import {
+  COMMIT_TO_ASSIGNMENT,
+  UPDATE_ASSIGNMENT,
+  LEAVE_ASSIGNMENT,
+} from "@andamio/transactions";
 import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
 import {
@@ -557,6 +561,68 @@ export function AssignmentCommitment({
                     setError(err.message);
                   }}
                 />
+              </>
+            )}
+
+            {/* UPDATE_ASSIGNMENT Transaction - Show when PENDING_APPROVAL or ASSIGNMENT_DENIED */}
+            {commitment && user?.accessTokenAlias &&
+             (commitment.networkStatus === "PENDING_APPROVAL" || commitment.networkStatus === "ASSIGNMENT_DENIED") && (
+              <>
+                <AndamioSeparator />
+                <div className="space-y-2">
+                  <AndamioLabel className="text-sm font-medium">Update Your Submission</AndamioLabel>
+                  <p className="text-xs text-muted-foreground">
+                    {commitment.networkStatus === "ASSIGNMENT_DENIED"
+                      ? "Your assignment was denied. You can update your evidence and resubmit for review."
+                      : "Your assignment is pending review. You can update your evidence if needed."}
+                  </p>
+                  <AndamioTransaction
+                    definition={UPDATE_ASSIGNMENT}
+                    inputs={{
+                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                      policy: courseNftPolicyId,
+                      assignment_info: editor?.getHTML() ?? "",
+                    }}
+                    showCard={false}
+                    onSuccess={() => {
+                      setSuccess("Assignment updated on blockchain!");
+                      window.location.reload();
+                    }}
+                    onError={(err) => {
+                      setError(err.message);
+                    }}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* LEAVE_ASSIGNMENT Transaction - Show as withdrawal option */}
+            {commitment && user?.accessTokenAlias && commitment.networkStatus !== "ASSIGNMENT_ACCEPTED" && (
+              <>
+                <AndamioSeparator />
+                <div className="space-y-2">
+                  <AndamioLabel className="text-sm font-medium text-destructive">Withdraw from Assignment</AndamioLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Remove your commitment to this assignment. You can recommit later if needed.
+                  </p>
+                  <AndamioTransaction
+                    definition={LEAVE_ASSIGNMENT}
+                    inputs={{
+                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}${stringToHex(user.accessTokenAlias)}`,
+                      policy: courseNftPolicyId,
+                      moduleCode: moduleCode,
+                      student_alias: user.accessTokenAlias,
+                    }}
+                    showCard={false}
+                    onSuccess={() => {
+                      setSuccess("You've withdrawn from this assignment.");
+                      window.location.reload();
+                    }}
+                    onError={(err) => {
+                      setError(err.message);
+                    }}
+                  />
+                </div>
               </>
             )}
           </div>

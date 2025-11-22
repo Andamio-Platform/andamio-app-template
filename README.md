@@ -2,12 +2,37 @@
 
 **Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-db-api` for importing types. The symlink `node_modules/andamio-db-api -> ../../andamio-db-api` provides full type safety across the stack. See full docs below.
 
+## 🎯 Current Status
+
+**Phase 1: Course & Learning System** - ✅ **COMPLETE** (as of 2024-11-22)
+- ✅ All 8 course transactions integrated and tested (129 tests passing)
+- ✅ Full course/module/assignment lifecycle implemented
+- ✅ Student and instructor workflows fully functional
+- ✅ Hash handling patterns established
+
+**Phase 2: Access Token & Global State** - ⏳ **NEXT UP**
+- User identity and onboarding flows
+- Platform-wide state management
+- See [ROADMAP.md](./ROADMAP.md) for details
+
+**Phase 3: Project & Contribution System** - 📋 **PLANNING**
+- Treasury management and fund distribution
+- Contributor workflows and milestone tracking
+- See [STATUS.md](./STATUS.md) for full breakdown
+
+📊 **Quick Links**: [STATUS.md](./STATUS.md) | [ROADMAP.md](./ROADMAP.md) | [Test Coverage](#testing)
+
+---
+
 ## Goals
-1. Test `andamio-db-api` locally
-2. Define the stack to be used in the Andamio Reference Implementation
-3. Refine core packages and extensions to the Andamio template stack, preparing to be published. For example, `@andamio/core` will include API types and authentication functions. An extension like `@andamio/tiptap` might include our wrapper for the Tiptap editor, for easy integration with APIs.
-4. After using this template locally, refining the stack, and publishing packages, we will publish a version of this: for example, "A clean, minimal template for building Cardano dApps with Andamio API integration. Built on the [T3 Stack](https://create.t3.gg/) with Mesh SDK for wallet connectivity and shadcn/ui components."
-5. While we're working on Goals 1-3, always make sure documentation and dependencies are up to date. Create systems that make this easy.
+
+This template serves as both a **testing ground** and **reference implementation** for the Andamio ecosystem:
+
+1. ✅ **Test `andamio-db-api` locally** - Full integration with type-safe API client
+2. ✅ **Define the reference stack** - T3 Stack + Mesh SDK + shadcn/ui + Andamio packages
+3. ⏳ **Refine core packages** - Preparing `@andamio/transactions`, `@andamio/core`, `@andamio/tiptap` for npm
+4. 📋 **Publish clean template** - After package extraction, publish community-ready template
+5. ✅ **Maintain documentation** - Living docs updated continuously as features are built
 
 
 ## Current Features

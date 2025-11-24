@@ -16,6 +16,10 @@ interface ContentEditorProps {
    * Useful for word count, save status, etc.
    */
   children?: React.ReactNode;
+  /**
+   * Whether full-screen mode is active
+   */
+  isFullscreen?: boolean;
 }
 
 /**
@@ -27,6 +31,7 @@ export function ContentEditor({
   className,
   height = "auto",
   children,
+  isFullscreen = false,
 }: ContentEditorProps) {
   if (!editor) {
     return null;
@@ -40,8 +45,9 @@ export function ContentEditor({
           "editor-content",
           "rounded-lg border border-border bg-background p-4",
           "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+          isFullscreen && "min-h-[calc(100vh-16rem)]",
         )}
-        style={{ minHeight: height }}
+        style={isFullscreen ? undefined : { minHeight: height }}
       />
       {children && <div className="flex items-center justify-between gap-4">{children}</div>}
     </div>

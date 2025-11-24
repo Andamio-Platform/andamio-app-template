@@ -9,6 +9,8 @@ import {
   getWordCount,
   getCharacterCount,
 } from "~/components/editor";
+import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
+import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
@@ -155,6 +157,9 @@ export default function EditorPage() {
     content: sampleContent,
   });
 
+  const { isFullscreen, toggleFullscreen, exitFullscreen } =
+    useFullscreenEditor();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -192,12 +197,33 @@ export default function EditorPage() {
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
               {editor && (
-                <>
-                  <AndamioFixedToolbar editor={editor} />
+                <FullscreenEditorWrapper
+                  isFullscreen={isFullscreen}
+                  onExitFullscreen={exitFullscreen}
+                  editor={editor}
+                  toolbar={
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  }
+                >
+                  {!isFullscreen && (
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  )}
                   <AndamioBubbleMenus editor={editor} />
-                  <AndamioSeparator />
-                  <ContentEditor editor={editor} height="400px" />
-                </>
+                  {!isFullscreen && <AndamioSeparator />}
+                  <ContentEditor
+                    editor={editor}
+                    height="400px"
+                    isFullscreen={isFullscreen}
+                  />
+                </FullscreenEditorWrapper>
               )}
             </AndamioCardContent>
           </AndamioCard>

@@ -16,6 +16,8 @@ import {
   Undo,
   Redo,
   UnderlineIcon,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { cn } from "../../../utils";
@@ -23,6 +25,14 @@ import { cn } from "../../../utils";
 interface AndamioFixedToolbarProps {
   editor: Editor;
   className?: string;
+  /**
+   * Whether full-screen mode is active
+   */
+  isFullscreen?: boolean;
+  /**
+   * Callback to toggle full-screen mode
+   */
+  onToggleFullscreen?: () => void;
 }
 
 /**
@@ -32,6 +42,8 @@ interface AndamioFixedToolbarProps {
 export function AndamioFixedToolbar({
   editor,
   className,
+  isFullscreen = false,
+  onToggleFullscreen,
 }: AndamioFixedToolbarProps) {
   return (
     <div
@@ -169,6 +181,27 @@ export function AndamioFixedToolbar({
       >
         <Quote className="h-4 w-4" />
       </AndamioToggle>
+
+      {/* Full-screen toggle (if enabled) */}
+      {onToggleFullscreen && (
+        <>
+          <AndamioSeparator orientation="vertical" className="mx-1 h-6" />
+          <AndamioToggle
+            size="sm"
+            pressed={isFullscreen}
+            onPressedChange={onToggleFullscreen}
+            aria-label={
+              isFullscreen ? "Exit full screen" : "Enter full screen"
+            }
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </AndamioToggle>
+        </>
+      )}
     </div>
   );
 }

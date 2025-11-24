@@ -11,6 +11,8 @@ import {
   AndamioFixedToolbar,
   RenderEditor,
 } from "~/components/editor";
+import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
+import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -76,6 +78,10 @@ export default function LessonEditPage() {
   const editor = useAndamioEditor({
     content: lesson?.contentJson as JSONContent,
   });
+
+  // Full-screen state
+  const { isFullscreen, toggleFullscreen, exitFullscreen } =
+    useFullscreenEditor();
 
   // Update editor when lesson loads
   useEffect(() => {
@@ -429,11 +435,32 @@ export default function LessonEditPage() {
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
               {editor && (
-                <>
-                  <AndamioFixedToolbar editor={editor} />
-                  <AndamioSeparator />
-                  <ContentEditor editor={editor} height="500px" />
-                </>
+                <FullscreenEditorWrapper
+                  isFullscreen={isFullscreen}
+                  onExitFullscreen={exitFullscreen}
+                  editor={editor}
+                  toolbar={
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  }
+                >
+                  {!isFullscreen && (
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  )}
+                  {!isFullscreen && <AndamioSeparator />}
+                  <ContentEditor
+                    editor={editor}
+                    height="500px"
+                    isFullscreen={isFullscreen}
+                  />
+                </FullscreenEditorWrapper>
               )}
             </AndamioCardContent>
           </AndamioCard>

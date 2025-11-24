@@ -11,6 +11,8 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { ContentEditor, useAndamioEditor, AndamioFixedToolbar, RenderEditor } from "~/components/editor";
+import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
+import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { ContentDisplay } from "~/components/content-display";
 import {
@@ -135,6 +137,10 @@ export function AssignmentCommitment({
       }
     },
   });
+
+  // Full-screen state
+  const { isFullscreen, toggleFullscreen, exitFullscreen } =
+    useFullscreenEditor();
 
   // Warn user before leaving if they have unsaved changes
   useEffect(() => {
@@ -413,8 +419,31 @@ export function AssignmentCommitment({
                 <p className="text-xs text-muted-foreground mb-2">
                   Write your evidence below. When finished, lock it to generate a hash for submission.
                 </p>
-                <AndamioFixedToolbar editor={editor} />
-                <ContentEditor editor={editor} height="200px" />
+                <FullscreenEditorWrapper
+                  isFullscreen={isFullscreen}
+                  onExitFullscreen={exitFullscreen}
+                  editor={editor}
+                  toolbar={
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  }
+                >
+                  {!isFullscreen && (
+                    <AndamioFixedToolbar
+                      editor={editor}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
+                    />
+                  )}
+                  <ContentEditor
+                    editor={editor}
+                    height="200px"
+                    isFullscreen={isFullscreen}
+                  />
+                </FullscreenEditorWrapper>
               </div>
             ) : (
               <div className="space-y-2">
@@ -565,8 +594,31 @@ export function AssignmentCommitment({
               <p className="text-xs text-muted-foreground mb-2">
                 Edit your evidence below and save as a draft, or submit updates to the blockchain.
               </p>
-              <AndamioFixedToolbar editor={editor} />
-              <ContentEditor editor={editor} height="200px" />
+              <FullscreenEditorWrapper
+                isFullscreen={isFullscreen}
+                onExitFullscreen={exitFullscreen}
+                editor={editor}
+                toolbar={
+                  <AndamioFixedToolbar
+                    editor={editor}
+                    isFullscreen={isFullscreen}
+                    onToggleFullscreen={toggleFullscreen}
+                  />
+                }
+              >
+                {!isFullscreen && (
+                  <AndamioFixedToolbar
+                    editor={editor}
+                    isFullscreen={isFullscreen}
+                    onToggleFullscreen={toggleFullscreen}
+                  />
+                )}
+                <ContentEditor
+                  editor={editor}
+                  height="200px"
+                  isFullscreen={isFullscreen}
+                />
+              </FullscreenEditorWrapper>
             </div>
 
             {/* Action Buttons */}

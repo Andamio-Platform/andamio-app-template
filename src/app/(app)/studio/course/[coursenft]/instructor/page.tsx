@@ -119,9 +119,14 @@ export default function InstructorDashboardPage() {
     setError(null);
 
     try {
-      // Fetch course details
+      // Fetch course details (POST /courses/get)
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+        }
       );
 
       if (!courseResponse.ok) {
@@ -137,7 +142,12 @@ export default function InstructorDashboardPage() {
       }
 
       const commitmentsResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/course/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-by-course`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+        }
       );
 
       if (!commitmentsResponse.ok) {

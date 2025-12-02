@@ -56,7 +56,14 @@ export function CourseManager() {
       setError(null);
 
       try {
-        const response = await authenticatedFetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`);
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to fetch courses: ${response.statusText}`);
@@ -69,7 +76,7 @@ export function CourseManager() {
         if (data && data.length > 0) {
           try {
             const courseCodes = data.map((c) => c.course_code);
-            const modulesResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`, {
+            const modulesResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list-by-courses`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ course_codes: courseCodes }),

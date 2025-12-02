@@ -16,8 +16,8 @@ import { type ListOwnedCoursesOutput } from "@andamio/db-api";
  * Component to display courses owned by the authenticated user
  *
  * API Endpoints:
- * - GET /courses/owned (protected)
- * - POST /course-modules/list (public) - Batch query for modules
+ * - POST /courses/owned (protected, body: { limit? })
+ * - POST /course-modules/list-by-courses (public, body: { course_codes })
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  *
  * @example
@@ -53,7 +53,12 @@ export function OwnedCoursesList() {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
         );
 
         if (!response.ok) {
@@ -68,7 +73,7 @@ export function OwnedCoursesList() {
           try {
             const courseCodes = data.map((c) => c.course_code);
             const modulesResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list-by-courses`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

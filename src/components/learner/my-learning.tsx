@@ -45,9 +45,14 @@ export function MyLearning() {
       try {
         console.log("🔍 Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
 
-        // Single API call to get all courses with learner's commitments
+        // Single API call to get all courses with learner's commitments (POST /learner/my-learning)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
         );
 
         console.log("📡 Response status:", response.status);

@@ -18,7 +18,7 @@ import type { JSONContent } from "@tiptap/core";
 /**
  * Public page displaying lesson content
  *
- * API Endpoint: GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (public)
+ * API Endpoint: POST /lessons/get (body: { course_nft_policy_id, module_code, slt_index })
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  *
  * Note: Lessons are optional content tied to SLTs. If no lesson exists,
@@ -61,7 +61,16 @@ export default function LessonDetailPage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              module_index: moduleIndex,
+            }),
+          }
         );
 
         if (!response.ok) {

@@ -95,7 +95,15 @@ export default function IntroductionEditPage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (response.ok) {
@@ -165,11 +173,11 @@ export default function IntroductionEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated update
+        // Send validated update (POST /introductions/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/${courseNftPolicyId}/${moduleCode}`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/update`,
           {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updateValidation.data),
           }
@@ -204,9 +212,9 @@ export default function IntroductionEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated create
+        // Send validated create (POST /introductions/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -245,11 +253,15 @@ export default function IntroductionEditPage() {
     try {
       const newLiveStatus = !live;
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/${courseNftPolicyId}/${moduleCode}/publish`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/publish`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ live: newLiveStatus }),
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            live: newLiveStatus,
+          }),
         }
       );
 

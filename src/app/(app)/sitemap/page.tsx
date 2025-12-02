@@ -212,17 +212,29 @@ export default function SitemapPage() {
     const fetchCourses = async () => {
       setIsLoading(true);
       try {
-        // Fetch published courses (public)
-        const pubResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`);
+        // Fetch published courses (public) - POST /courses/published
+        const pubResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
+        );
         if (pubResponse.ok) {
           const pubData = (await pubResponse.json()) as ListPublishedCoursesOutput;
           setPublishedCourses(pubData ?? []);
         }
 
-        // Fetch owned courses if authenticated
+        // Fetch owned courses if authenticated - POST /courses/owned
         if (isAuthenticated) {
           const ownedResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            }
           );
           if (ownedResponse.ok) {
             const ownedData = (await ownedResponse.json()) as ListOwnedCoursesOutput;

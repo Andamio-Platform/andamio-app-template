@@ -61,7 +61,7 @@ export function CreateCourseDialog() {
 
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/check-code`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/check`,
         {
           method: "POST",
           headers: {
@@ -75,8 +75,8 @@ export function CreateCourseDialog() {
         throw new Error("Failed to check course code");
       }
 
-      const data = (await response.json()) as { exists: boolean };
-      if (data.exists) {
+      const exists = (await response.json()) as boolean;
+      if (exists) {
         setCodeError("Course code already exists");
       }
     } catch (err) {
@@ -123,7 +123,7 @@ export function CreateCourseDialog() {
       }
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/create`,
         {
           method: "POST",
           headers: {

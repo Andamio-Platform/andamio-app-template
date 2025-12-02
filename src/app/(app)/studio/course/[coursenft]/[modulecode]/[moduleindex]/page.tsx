@@ -97,7 +97,16 @@ export default function LessonEditPage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              module_index: moduleIndex,
+            }),
+          }
         );
 
         if (response.ok) {
@@ -163,11 +172,11 @@ export default function LessonEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated update
+        // Send validated update (POST /lessons/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/update`,
           {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updateValidation.data),
           }
@@ -178,9 +187,18 @@ export default function LessonEditPage() {
           throw new Error(errorData.message ?? "Failed to update lesson");
         }
 
-        // Refetch lesson
+        // Refetch lesson (POST /lessons/get)
         const refetchResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              module_index: moduleIndex,
+            }),
+          }
         );
         const data = (await refetchResponse.json()) as LessonWithSLTOutput;
         setLesson(data);
@@ -207,9 +225,9 @@ export default function LessonEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated create
+        // Send validated create (POST /lessons/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -222,9 +240,18 @@ export default function LessonEditPage() {
           throw new Error(errorData.message ?? "Failed to create lesson");
         }
 
-        // Refetch lesson
+        // Refetch lesson (POST /lessons/get)
         const refetchResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              module_index: moduleIndex,
+            }),
+          }
         );
         const data = (await refetchResponse.json()) as LessonWithSLTOutput;
         setLesson(data);
@@ -255,9 +282,15 @@ export default function LessonEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            module_index: moduleIndex,
+          }),
         }
       );
 

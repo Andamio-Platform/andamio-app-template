@@ -161,15 +161,15 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update module status to ON_CHAIN
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/confirm-transaction`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/confirm-transaction`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
-            txHash: tx.txHash,
-            moduleHash: moduleHash ?? undefined,
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            tx_hash: tx.txHash,
+            module_hash: moduleHash ?? undefined,
           }),
         }
       );
@@ -203,14 +203,14 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update assignment commitment status
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${tx.entityId}/confirm-transaction`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/confirm-transaction`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: tx.entityId,
-            txHash: tx.txHash,
-            networkEvidenceHash: networkEvidenceHash ?? undefined,
+            tx_hash: tx.txHash,
+            network_evidence_hash: networkEvidenceHash ?? undefined,
           }),
         }
       );
@@ -263,12 +263,12 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         }
 
         // Clear user's unconfirmedTx now that it's confirmed
-        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
-        const clearBody = { txHash: null };
-        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "PATCH", clearUrl, clearBody);
+        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-unconfirmed-tx`;
+        const clearBody = { tx_hash: null };
+        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "POST", clearUrl, clearBody);
         try {
           const clearResponse = await authenticatedFetch(clearUrl, {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(clearBody),
           });

@@ -60,7 +60,15 @@ export default function LearnerAssignmentPage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (response.status === 404) {

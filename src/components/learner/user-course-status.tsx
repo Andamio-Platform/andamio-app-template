@@ -74,7 +74,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!response.ok) {
@@ -104,7 +109,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!response.ok) {

@@ -119,9 +119,14 @@ export default function CourseEditPage() {
       setError(null);
 
       try {
-        // Fetch course details
+        // Fetch course details (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!courseResponse.ok) {
@@ -135,9 +140,14 @@ export default function CourseEditPage() {
         setImageUrl(courseData.image_url ?? "");
         setVideoUrl(courseData.video_url ?? "");
 
-        // Fetch course modules
+        // Fetch course modules (POST with body)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!modulesResponse.ok) {
@@ -147,11 +157,16 @@ export default function CourseEditPage() {
         const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
         setModules(modulesData ?? []);
 
-        // Fetch assignment summary
+        // Fetch assignment summary (POST with body)
         setIsLoadingAssignments(true);
         try {
           const assignmentSummaryResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/assignment-summary/${courseNftPolicyId}`
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/assignment-summary`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+            }
           );
           if (assignmentSummaryResponse.ok) {
             const summaryData = (await assignmentSummaryResponse.json()) as ModuleWithAssignments[];
@@ -163,12 +178,17 @@ export default function CourseEditPage() {
           setIsLoadingAssignments(false);
         }
 
-        // Fetch unpublished projects with this course as prerequisite
+        // Fetch unpublished projects with this course as prerequisite (POST with body)
         if (courseData.course_code) {
           setIsLoadingProjects(true);
           try {
             const projectsResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseData.course_code}/unpublished-projects`
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/unpublished-projects`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ course_code: courseData.course_code }),
+              }
             );
             if (projectsResponse.ok) {
               const projectsData = (await projectsResponse.json()) as UnpublishedProject[];
@@ -351,13 +371,16 @@ export default function CourseEditPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send validated data to API
+      // Send validated data to API (POST /courses/update)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.course_code}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(validationResult.data),
+          body: JSON.stringify({
+            course_code: course.course_code,
+            data: validationResult.data,
+          }),
         }
       );
 
@@ -369,9 +392,14 @@ export default function CourseEditPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      // Refetch course to get updated data
+      // Refetch course to get updated data (POST /courses/get)
       const refetchResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+        }
       );
       const data = (await refetchResponse.json()) as CourseOutput;
       setCourse(data);
@@ -392,9 +420,11 @@ export default function CourseEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_code: course.course_code }),
         }
       );
 
@@ -619,9 +649,14 @@ export default function CourseEditPage() {
             <CreateModuleDialog
               courseNftPolicyId={courseNftPolicyId}
               onModuleCreated={() => {
-                // Refetch modules after creation
+                // Refetch modules after creation (POST with body)
                 void fetch(
-                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+                  }
                 )
                   .then((res) => res.json())
                   .then((data) => setModules(data as ListCourseModulesOutput))

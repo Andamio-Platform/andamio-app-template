@@ -122,9 +122,17 @@ export default function ModuleEditPage() {
       setError(null);
 
       try {
-        // Fetch single module details
+        // Fetch single module details (POST with body)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!moduleResponse.ok) {
@@ -140,7 +148,12 @@ export default function ModuleEditPage() {
         // Fetch all modules with SLTs for transaction (only if APPROVED)
         if (moduleData.status === "APPROVED") {
           const modulesResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+            }
           );
 
           if (modulesResponse.ok) {
@@ -192,11 +205,11 @@ export default function ModuleEditPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send validated module update
+      // Send validated module update (POST /course-modules/update)
       const updateResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateValidation.data),
         }
@@ -226,11 +239,11 @@ export default function ModuleEditPage() {
           throw new Error(`Status validation failed: ${errors}`);
         }
 
-        // Send validated status update
+        // Send validated status update (POST /course-modules/update-status)
         const statusResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/status`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update-status`,
           {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(statusValidation.data),
           }
@@ -245,9 +258,17 @@ export default function ModuleEditPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      // Refetch module
+      // Refetch module (POST /course-modules/get)
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+          }),
+        }
       );
       const data = (await response.json()) as CourseModuleOutput;
       setCourseModule(data);
@@ -268,9 +289,14 @@ export default function ModuleEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+          }),
         }
       );
 
@@ -312,9 +338,9 @@ export default function ModuleEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/code`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update-code`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -350,9 +376,9 @@ export default function ModuleEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/pending-tx`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/set-pending-tx`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -386,7 +412,7 @@ export default function ModuleEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}/publish`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/publish`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -757,9 +783,17 @@ export default function ModuleEditPage() {
           courseNftPolicyId={courseNftPolicyId}
           courseModules={moduleWithSlts}
           onSuccess={async () => {
-            // Refetch module to see updated status
+            // Refetch module to see updated status (POST /course-modules/get)
             const response = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  course_nft_policy_id: courseNftPolicyId,
+                  module_code: moduleCode,
+                }),
+              }
             );
             const data = (await response.json()) as CourseModuleOutput;
             setCourseModule(data);

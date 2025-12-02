@@ -227,14 +227,17 @@ const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
 
 ### Andamio Database API Endpoints Used
 
+> **Note**: All Andamio Database API endpoints use POST requests with JSON bodies (except `/pending-transactions` which is GET). See [API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) for complete documentation.
+
 #### Authentication
 - `POST /auth/login/session` - Create login session, get nonce
 - `POST /auth/login/validate` - Validate signature, get JWT
 
 #### Courses
-- `GET /courses/owned` - List courses owned by authenticated user
+- `POST /courses/owned` - List courses owned by authenticated user
   - **Auth Required**: Yes (JWT in Authorization header)
-  - **Response Type**: `ListOwnedCoursesOutput` (from `andamio-db-api`)
+  - **Request Body**: `{}`
+  - **Response Type**: `ListOwnedCoursesOutput` (from `@andamio/db-api`)
   - **Response**: Array of Course objects with fields:
     - `courseCode`, `courseNftPolicyId`, `title`, `description`
     - `category`, `imageUrl`, `videoUrl`, `live`, `accessTier`

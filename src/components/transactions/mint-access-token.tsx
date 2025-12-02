@@ -59,14 +59,14 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         // Update the user's access token alias in the database
         try {
           const response = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-alias`,
             {
-              method: "PATCH",
+              method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                accessTokenAlias: alias.trim(),
+                access_token_alias: alias.trim(),
               }),
             }
           );

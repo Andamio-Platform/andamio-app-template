@@ -27,7 +27,12 @@ export default function CoursePage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
         );
 
         if (!response.ok) {

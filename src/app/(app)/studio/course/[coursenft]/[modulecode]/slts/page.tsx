@@ -240,9 +240,17 @@ export default function SLTManagementPage() {
 
   // Utility function to fetch and combine SLTs with lessons
   const fetchCombinedData = async () => {
-    // Fetch SLTs for the module
+    // Fetch SLTs for the module (POST /slts/list)
     const sltsResponse = await fetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}`
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
+        }),
+      }
     );
 
     if (!sltsResponse.ok) {
@@ -251,9 +259,17 @@ export default function SLTManagementPage() {
 
     const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
 
-    // Fetch module lessons
+    // Fetch module lessons (POST /lessons/list)
     const lessonsResponse = await fetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/modules/${moduleCode}/lessons`
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/list`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
+        }),
+      }
     );
 
     if (!lessonsResponse.ok) {
@@ -289,9 +305,17 @@ export default function SLTManagementPage() {
       setError(null);
 
       try {
-        // Fetch course module details
+        // Fetch course module details (POST /course-modules/get)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!moduleResponse.ok) {
@@ -356,11 +380,11 @@ export default function SLTManagementPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send batch update request
+      // Send batch update request (POST /slts/batch-update-indexes)
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/batch-update-indexes`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(validation.data),
         }
@@ -418,9 +442,9 @@ export default function SLTManagementPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send validated create
+      // Send validated create (POST /slts/create)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -477,11 +501,11 @@ export default function SLTManagementPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send validated update
+      // Send validated update (POST /slts/update)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.module_index}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateValidation.data),
         }
@@ -517,9 +541,15 @@ export default function SLTManagementPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.module_index}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            module_index: selectedSLT.module_index,
+          }),
         }
       );
 
@@ -577,7 +607,16 @@ export default function SLTManagementPage() {
 
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${indexNum}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            module_index: indexNum,
+          }),
+        }
       );
 
       if (!response.ok) {

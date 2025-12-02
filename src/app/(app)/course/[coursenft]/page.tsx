@@ -36,9 +36,14 @@ export default function CourseDetailPage() {
       setError(null);
 
       try {
-        // Fetch course details
+        // Fetch course details (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!courseResponse.ok) {
@@ -47,7 +52,7 @@ export default function CourseDetailPage() {
             status: courseResponse.status,
             statusText: courseResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`
           });
           throw new Error(`Course not found (${courseResponse.status})`);
         }
@@ -55,9 +60,14 @@ export default function CourseDetailPage() {
         const courseData = (await courseResponse.json()) as CourseOutput;
         setCourse(courseData);
 
-        // Fetch course modules with SLTs (optimized single query)
+        // Fetch course modules with SLTs (POST with body)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!modulesResponse.ok) {
@@ -66,7 +76,7 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/course-modules`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }

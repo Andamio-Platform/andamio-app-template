@@ -17,9 +17,9 @@ import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } 
  * Public page displaying module details with SLTs and lessons
  *
  * API Endpoints:
- * - GET /course-modules/{courseNftPolicyId}/{moduleCode} (public)
- * - GET /slts/{courseNftPolicyId}/{moduleCode} (public)
- * - GET /lessons/{courseNftPolicyId}/{moduleCode} (public)
+ * - POST /course-modules/get (body: { course_nft_policy_id, module_code })
+ * - POST /slts/list (body: { course_nft_policy_id, module_code })
+ * - POST /lessons/list (body: { course_nft_policy_id, module_code })
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
 
@@ -145,9 +145,17 @@ export default function ModuleLessonsPage() {
       setError(null);
 
       try {
-        // Fetch course module details
+        // Fetch course module details (POST with body)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!moduleResponse.ok) {
@@ -157,9 +165,17 @@ export default function ModuleLessonsPage() {
         const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
         setModule(moduleData);
 
-        // Fetch SLTs for the module
+        // Fetch SLTs for the module (POST with body)
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!sltsResponse.ok) {
@@ -168,9 +184,17 @@ export default function ModuleLessonsPage() {
 
         const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
 
-        // Fetch module lessons
+        // Fetch module lessons (POST with body)
         const lessonsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseNftPolicyId}/modules/${moduleCode}/lessons`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!lessonsResponse.ok) {

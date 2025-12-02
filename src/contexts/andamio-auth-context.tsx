@@ -53,14 +53,14 @@ async function syncAccessTokenFromWallet(
     console.log("🔄 Syncing access token to database:", accessToken.unit);
     console.log("🔄 Extracted alias:", alias);
 
-    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`, {
-      method: "PATCH",
+    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-alias`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${jwt}`,
       },
       body: JSON.stringify({
-        accessTokenAlias: alias,
+        access_token_alias: alias,
       }),
     });
 
@@ -93,7 +93,7 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
   try {
     // Register as Creator
-    const creatorResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/creator`, {
+    const creatorResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/creator/create`, {
       method: "POST",
       headers,
       body: JSON.stringify({}),
@@ -113,7 +113,7 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
   try {
     // Register as Learner
-    const learnerResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner`, {
+    const learnerResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/create`, {
       method: "POST",
       headers,
       body: JSON.stringify({}),

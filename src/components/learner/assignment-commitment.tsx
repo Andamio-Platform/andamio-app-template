@@ -168,9 +168,14 @@ export function AssignmentCommitment({
       setError(null);
 
       try {
-        // Fetch all commitments for this course
+        // Fetch all commitments for this course (POST /assignment-commitments/list-learner-by-course)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/learner/course/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-learner-by-course`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
         );
 
         if (!response.ok) {
@@ -277,13 +282,17 @@ export function AssignmentCommitment({
       const evidenceHash = hashNormalizedContent(evidenceContent);
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${courseNftPolicyId}/${moduleCode}/${commitment.assignment.assignmentCode}/${user.accessTokenAlias}/evidence`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/update-evidence`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            networkEvidence: evidenceContent, // Send as JSON object, not stringified
-            networkEvidenceHash: evidenceHash,
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            assignment_code: commitment.assignment.assignmentCode,
+            access_token_alias: user.accessTokenAlias,
+            network_evidence: evidenceContent, // Send as JSON object, not stringified
+            network_evidence_hash: evidenceHash,
           }),
         }
       );
@@ -313,9 +322,16 @@ export function AssignmentCommitment({
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/${courseNftPolicyId}/${moduleCode}/${commitment.assignment.assignmentCode}/${user.accessTokenAlias}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            assignment_code: commitment.assignment.assignmentCode,
+            access_token_alias: user.accessTokenAlias,
+          }),
         }
       );
 

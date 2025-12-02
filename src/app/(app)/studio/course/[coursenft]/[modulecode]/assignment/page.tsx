@@ -100,9 +100,17 @@ export default function AssignmentEditPage() {
       setError(null);
 
       try {
-        // Fetch SLTs first (always available)
+        // Fetch SLTs first (always available) - POST /slts/list
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
         );
 
         if (!sltsResponse.ok) {
@@ -112,10 +120,18 @@ export default function AssignmentEditPage() {
         const sltsData = (await sltsResponse.json()) as ListSLTsOutput;
         setSlts(sltsData);
 
-        // Try to fetch assignment (may not exist yet)
+        // Try to fetch assignment (may not exist yet) - POST /assignments/get
         try {
           const assignmentResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}`
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/get`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                course_nft_policy_id: courseNftPolicyId,
+                module_code: moduleCode,
+              }),
+            }
           );
 
           if (assignmentResponse.ok) {
@@ -190,11 +206,11 @@ export default function AssignmentEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated update
+        // Send validated update (POST /assignments/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/update`,
           {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updateValidation.data),
           }
@@ -231,9 +247,9 @@ export default function AssignmentEditPage() {
           throw new Error(`Validation failed: ${errors}`);
         }
 
-        // Send validated create
+        // Send validated create (POST /assignments/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -275,9 +291,14 @@ export default function AssignmentEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/delete`,
         {
-          method: "DELETE",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+          }),
         }
       );
 
@@ -307,11 +328,15 @@ export default function AssignmentEditPage() {
     try {
       const newLiveStatus = !live;
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/${courseNftPolicyId}/${moduleCode}/publish`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/publish`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ live: newLiveStatus }),
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            live: newLiveStatus,
+          }),
         }
       );
 

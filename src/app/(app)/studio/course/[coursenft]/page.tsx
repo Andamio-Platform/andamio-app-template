@@ -61,10 +61,10 @@ export default function CourseEditPage() {
 
   // Assignment summary state
   interface ModuleWithAssignments {
-    moduleCode: string;
+    module_code: string;
     title: string;
     assignments: Array<{
-      assignmentCode: string;
+      assignment_code: string;
       title: string;
       live: boolean | null;
     }>;
@@ -132,8 +132,8 @@ export default function CourseEditPage() {
         setCourse(courseData);
         setTitle(courseData.title ?? "");
         setDescription(courseData.description ?? "");
-        setImageUrl(courseData.imageUrl ?? "");
-        setVideoUrl(courseData.videoUrl ?? "");
+        setImageUrl(courseData.image_url ?? "");
+        setVideoUrl(courseData.video_url ?? "");
 
         // Fetch course modules
         const modulesResponse = await fetch(
@@ -164,11 +164,11 @@ export default function CourseEditPage() {
         }
 
         // Fetch unpublished projects with this course as prerequisite
-        if (courseData.courseCode) {
+        if (courseData.course_code) {
           setIsLoadingProjects(true);
           try {
             const projectsResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseData.courseCode}/unpublished-projects`
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${courseData.course_code}/unpublished-projects`
             );
             if (projectsResponse.ok) {
               const projectsData = (await projectsResponse.json()) as UnpublishedProject[];
@@ -331,12 +331,12 @@ export default function CourseEditPage() {
     try {
       // Build input object conforming to UpdateCourseInput type
       const input: UpdateCourseInput = {
-        courseCode: course.courseCode,
+        course_code: course.course_code,
         data: {
           title: title || undefined,
           description: description || undefined,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
         },
       };
 
@@ -353,7 +353,7 @@ export default function CourseEditPage() {
 
       // Send validated data to API
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseCode}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.course_code}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -446,8 +446,8 @@ export default function CourseEditPage() {
   const hasChanges =
     title !== (course.title ?? "") ||
     description !== (course.description ?? "") ||
-    imageUrl !== (course.imageUrl ?? "") ||
-    videoUrl !== (course.videoUrl ?? "");
+    imageUrl !== (course.image_url ?? "") ||
+    videoUrl !== (course.video_url ?? "");
 
   return (
     <div className="space-y-6">
@@ -461,9 +461,9 @@ export default function CourseEditPage() {
         </Link>
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            {course.courseCode}
+            {course.course_code}
           </AndamioBadge>
-          {course.courseNftPolicyId && (
+          {course.course_nft_policy_id && (
             <AndamioBadge variant="default">Published</AndamioBadge>
           )}
         </div>
@@ -500,7 +500,7 @@ export default function CourseEditPage() {
           {/* Course Code (Read-only) */}
           <div className="space-y-2">
             <AndamioLabel htmlFor="courseCode">Course Code</AndamioLabel>
-            <AndamioInput id="courseCode" value={course.courseCode} disabled />
+            <AndamioInput id="courseCode" value={course.course_code} disabled />
             <p className="text-sm text-muted-foreground">Course code cannot be changed</p>
           </div>
 
@@ -648,9 +648,9 @@ export default function CourseEditPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {modules.map((module) => (
-                    <AndamioTableRow key={module.moduleCode}>
+                    <AndamioTableRow key={module.module_code}>
                       <AndamioTableCell className="font-mono text-xs">
-                        {module.moduleCode}
+                        {module.module_code}
                       </AndamioTableCell>
                       <AndamioTableCell className="font-medium">{module.title}</AndamioTableCell>
                       <AndamioTableCell>
@@ -658,7 +658,7 @@ export default function CourseEditPage() {
                       </AndamioTableCell>
                       <AndamioTableCell className="text-right">
                         <Link
-                          href={`/studio/course/${courseNftPolicyId}/${module.moduleCode}`}
+                          href={`/studio/course/${courseNftPolicyId}/${module.module_code}`}
                         >
                           <AndamioButton variant="ghost" size="sm">
                             <Settings className="h-4 w-4 mr-1" />
@@ -694,12 +694,12 @@ export default function CourseEditPage() {
           ) : (
             <div className="space-y-4">
               {assignmentSummary.map((module) => (
-                <div key={module.moduleCode} className="border rounded-lg p-4">
+                <div key={module.module_code} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h4 className="font-semibold">{module.title}</h4>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {module.moduleCode}
+                        {module.module_code}
                       </p>
                     </div>
                     <AndamioBadge variant="outline">
@@ -710,13 +710,13 @@ export default function CourseEditPage() {
                     <div className="space-y-2">
                       {module.assignments.map((assignment) => (
                         <div
-                          key={assignment.assignmentCode}
+                          key={assignment.assignment_code}
                           className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded"
                         >
                           <div className="flex-1">
                             <p className="text-sm font-medium">{assignment.title}</p>
                             <p className="text-xs text-muted-foreground font-mono">
-                              {assignment.assignmentCode}
+                              {assignment.assignment_code}
                             </p>
                           </div>
                           <AndamioBadge variant={assignment.live ? "default" : "secondary"}>

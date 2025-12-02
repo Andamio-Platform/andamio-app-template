@@ -67,7 +67,7 @@ export function CreateCourseDialog() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ courseCode: code }),
+          body: JSON.stringify({ course_code: code }),
         }
       );
 
@@ -130,11 +130,11 @@ export function CreateCourseDialog() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            courseCode: formData.courseCode,
+            course_code: formData.courseCode,
             title: formData.title,
             description: formData.description || undefined,
-            imageUrl: formData.imageUrl || undefined,
-            videoUrl: formData.videoUrl || undefined,
+            image_url: formData.imageUrl || undefined,
+            video_url: formData.videoUrl || undefined,
           }),
         }
       );
@@ -150,8 +150,8 @@ export function CreateCourseDialog() {
       setOpen(false);
 
       // Redirect to course studio page if we have a policy ID
-      if (newCourse.courseNftPolicyId) {
-        router.push(`/studio/course/${newCourse.courseNftPolicyId}`);
+      if (newCourse.course_nft_policy_id) {
+        router.push(`/studio/course/${newCourse.course_nft_policy_id}`);
       } else {
         // Refresh the current page to show the new course
         router.refresh();

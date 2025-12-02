@@ -22,11 +22,11 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
   return (
     <div className="space-y-0">
       {courses.map((courseData, index) => (
-        <div key={courseData.courseCode}>
+        <div key={courseData.course_code}>
           <div className="flex flex-col sm:flex-row items-start gap-4 p-4 sm:p-6 border hover:bg-muted/50 transition-colors">
             {/* Status Icon */}
             <div className="flex-shrink-0">
-              {courseData.courseNftPolicyId ? (
+              {courseData.course_nft_policy_id ? (
                 <CheckCircle className="h-6 w-6 text-success" />
               ) : (
                 <FileText className="h-6 w-6 text-muted-foreground" />
@@ -38,7 +38,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
               {/* Title & Code */}
               <div>
                 <h3 className="font-semibold text-base sm:text-lg leading-tight mb-1">{courseData.title}</h3>
-                <code className="text-xs font-mono text-muted-foreground">{courseData.courseCode}</code>
+                <code className="text-xs font-mono text-muted-foreground">{courseData.course_code}</code>
               </div>
 
               {/* Description */}
@@ -49,7 +49,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
               {/* Badges */}
               <div className="flex flex-wrap gap-2">
                 {/* Publication Status */}
-                {courseData.courseNftPolicyId ? (
+                {courseData.course_nft_policy_id ? (
                   <AndamioBadge variant="outline" className="text-success border-success">
                     Published
                   </AndamioBadge>
@@ -60,10 +60,10 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
                 )}
 
                 {/* Module Count */}
-                {moduleCounts[courseData.courseCode] !== undefined && (
+                {moduleCounts[courseData.course_code] !== undefined && (
                   <AndamioBadge variant="secondary">
                     <Layers className="h-3 w-3 mr-1" />
-                    {moduleCounts[courseData.courseCode]} modules
+                    {moduleCounts[courseData.course_code]} modules
                   </AndamioBadge>
                 )}
               </div>
@@ -71,8 +71,8 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
 
             {/* Action Button */}
             <div className="flex-shrink-0 w-full sm:w-auto">
-              {courseData.courseNftPolicyId && (
-                <Link href={`/studio/course/${courseData.courseNftPolicyId}`} className="block sm:inline-block">
+              {courseData.course_nft_policy_id && (
+                <Link href={`/studio/course/${courseData.course_nft_policy_id}`} className="block sm:inline-block">
                   <AndamioButton variant="outline" size="sm" className="w-full sm:w-auto">
                     <Settings className="h-4 w-4 mr-2" />
                     Manage

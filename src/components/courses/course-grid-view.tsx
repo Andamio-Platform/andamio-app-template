@@ -22,11 +22,11 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {courses.map((courseData) => (
-        <AndamioCard key={courseData.courseCode} className="flex flex-col">
+        <AndamioCard key={courseData.course_code} className="flex flex-col">
           <AndamioCardHeader>
             <div className="flex items-start justify-between gap-2">
               <AndamioCardTitle className="line-clamp-2 text-base sm:text-lg">{courseData.title}</AndamioCardTitle>
-              {courseData.courseNftPolicyId ? (
+              {courseData.course_nft_policy_id ? (
                 <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
               ) : (
                 <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -41,13 +41,13 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
             {/* Course Code */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Code:</span>
-              <code className="text-xs font-mono">{courseData.courseCode}</code>
+              <code className="text-xs font-mono">{courseData.course_code}</code>
             </div>
 
             {/* Badges Row */}
             <div className="flex flex-wrap gap-2">
               {/* Publication Status */}
-              {courseData.courseNftPolicyId ? (
+              {courseData.course_nft_policy_id ? (
                 <AndamioBadge variant="outline" className="text-success border-success">
                   Published
                 </AndamioBadge>
@@ -58,18 +58,18 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
               )}
 
               {/* Module Count */}
-              {moduleCounts[courseData.courseCode] !== undefined && (
+              {moduleCounts[courseData.course_code] !== undefined && (
                 <AndamioBadge variant="secondary">
                   <Layers className="h-3 w-3 mr-1" />
-                  {moduleCounts[courseData.courseCode]}
+                  {moduleCounts[courseData.course_code]}
                 </AndamioBadge>
               )}
             </div>
           </AndamioCardContent>
 
           <AndamioCardFooter className="mt-auto">
-            {courseData.courseNftPolicyId && (
-              <Link href={`/studio/course/${courseData.courseNftPolicyId}`} className="w-full">
+            {courseData.course_nft_policy_id && (
+              <Link href={`/studio/course/${courseData.course_nft_policy_id}`} className="w-full">
                 <AndamioButton variant="outline" size="sm" className="w-full">
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Course

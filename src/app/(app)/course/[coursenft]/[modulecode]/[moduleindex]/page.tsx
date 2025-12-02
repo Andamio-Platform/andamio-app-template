@@ -157,8 +157,8 @@ export default function LessonDetailPage() {
         <AndamioCardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <AndamioCardDescription>Learning Target #{lesson.sltIndex}</AndamioCardDescription>
-              <AndamioCardTitle>{lesson.sltText}</AndamioCardTitle>
+              <AndamioCardDescription>Learning Target #{lesson.slt_index}</AndamioCardDescription>
+              <AndamioCardTitle>{lesson.slt_text}</AndamioCardTitle>
             </div>
           </div>
         </AndamioCardHeader>
@@ -168,7 +168,7 @@ export default function LessonDetailPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-4xl font-bold">
-            {lesson.title ?? `Lesson ${lesson.sltIndex}`}
+            {lesson.title ?? `Lesson ${lesson.slt_index}`}
           </h1>
           {lesson.description && (
             <p className="text-xl text-muted-foreground mt-2">
@@ -179,10 +179,10 @@ export default function LessonDetailPage() {
       </div>
 
       {/* Media Section */}
-      {(lesson.imageUrl || lesson.videoUrl) && (
+      {(lesson.image_url || lesson.video_url) && (
         <div className="space-y-4">
           {/* Video */}
-          {lesson.videoUrl && (
+          {lesson.video_url && (
             <AndamioCard>
               <AndamioCardHeader>
                 <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export default function LessonDetailPage() {
               <AndamioCardContent>
                 <div className="aspect-video w-full">
                   <iframe
-                    src={lesson.videoUrl}
+                    src={lesson.video_url}
                     className="w-full h-full rounded-md"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -204,7 +204,7 @@ export default function LessonDetailPage() {
           )}
 
           {/* Image */}
-          {lesson.imageUrl && (
+          {lesson.image_url && (
             <AndamioCard>
               <AndamioCardHeader>
                 <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function LessonDetailPage() {
               <AndamioCardContent>
                 <div className="relative w-full aspect-video">
                   <Image
-                    src={lesson.imageUrl}
+                    src={lesson.image_url}
                     alt={lesson.title ?? "Lesson image"}
                     fill
                     className="object-cover rounded-md"
@@ -228,8 +228,8 @@ export default function LessonDetailPage() {
       )}
 
       {/* Lesson Content */}
-      {lesson.contentJson && (() => {
-        const formattedContent = ensureTiptapFormat(lesson.contentJson);
+      {lesson.content_json && (() => {
+        const formattedContent = ensureTiptapFormat(lesson.content_json);
         return (
           <AndamioCard>
             <AndamioCardHeader>
@@ -249,7 +249,7 @@ export default function LessonDetailPage() {
       })()}
 
       {/* Empty content state */}
-      {!lesson.contentJson && !lesson.imageUrl && !lesson.videoUrl && (
+      {!lesson.content_json && !lesson.image_url && !lesson.video_url && (
         <AndamioCard>
           <AndamioCardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-12 text-center">

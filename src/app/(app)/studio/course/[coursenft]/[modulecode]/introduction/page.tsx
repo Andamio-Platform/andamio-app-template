@@ -74,7 +74,7 @@ export default function IntroductionEditPage() {
 
   // Initialize Tiptap editor
   const editor = useAndamioEditor({
-    content: introduction?.contentJson as JSONContent,
+    content: introduction?.content_json as JSONContent,
   });
 
   // Full-screen state
@@ -83,8 +83,8 @@ export default function IntroductionEditPage() {
 
   // Update editor when introduction loads
   useEffect(() => {
-    if (editor && introduction?.contentJson) {
-      editor.commands.setContent(introduction.contentJson as JSONContent);
+    if (editor && introduction?.content_json) {
+      editor.commands.setContent(introduction.content_json as JSONContent);
     }
   }, [editor, introduction]);
 
@@ -104,8 +104,8 @@ export default function IntroductionEditPage() {
           setIntroductionExists(true);
           setTitle(data.title ?? "");
           setDescription(data.description ?? "");
-          setImageUrl(data.imageUrl ?? "");
-          setVideoUrl(data.videoUrl ?? "");
+          setImageUrl(data.image_url ?? "");
+          setVideoUrl(data.video_url ?? "");
           setLive(data.live ?? false);
         } else if (response.status === 404) {
           // Introduction doesn't exist yet - that's OK, we'll create it
@@ -145,13 +145,13 @@ export default function IntroductionEditPage() {
       if (introductionExists) {
         // Build input object for introduction update
         const updateInput: UpdateIntroductionInput = {
-          courseNftPolicyId,
-          moduleCode,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
           title,
           description: description || undefined,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
           live,
         };
 
@@ -185,13 +185,13 @@ export default function IntroductionEditPage() {
       } else {
         // Build input object for introduction creation
         const createInput: CreateIntroductionInput = {
-          courseNftPolicyId,
-          moduleCode,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
           title,
           description: description || undefined,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
         };
 
         // Validate create input

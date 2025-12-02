@@ -34,10 +34,10 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
         </AndamioTableHeader>
         <AndamioTableBody>
           {courses.map((courseData) => (
-            <AndamioTableRow key={courseData.courseCode}>
+            <AndamioTableRow key={courseData.course_code}>
               {/* Status Icon */}
               <AndamioTableCell>
-                {courseData.courseNftPolicyId ? (
+                {courseData.course_nft_policy_id ? (
                   <CheckCircle className="h-5 w-5 text-success" />
                 ) : (
                   <FileText className="h-5 w-5 text-muted-foreground" />
@@ -45,7 +45,7 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
               </AndamioTableCell>
 
               {/* Course Code */}
-              <AndamioTableCell className="font-mono text-xs">{courseData.courseCode}</AndamioTableCell>
+              <AndamioTableCell className="font-mono text-xs">{courseData.course_code}</AndamioTableCell>
 
               {/* Title */}
               <AndamioTableCell className="font-medium">
@@ -63,8 +63,8 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
 
               {/* Module Count */}
               <AndamioTableCell className="text-center">
-                {moduleCounts[courseData.courseCode] !== undefined ? (
-                  <AndamioBadge variant="secondary">{moduleCounts[courseData.courseCode]}</AndamioBadge>
+                {moduleCounts[courseData.course_code] !== undefined ? (
+                  <AndamioBadge variant="secondary">{moduleCounts[courseData.course_code]}</AndamioBadge>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
@@ -72,8 +72,8 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
 
               {/* Actions */}
               <AndamioTableCell className="text-right">
-                {courseData.courseNftPolicyId && (
-                  <Link href={`/studio/course/${courseData.courseNftPolicyId}`}>
+                {courseData.course_nft_policy_id && (
+                  <Link href={`/studio/course/${courseData.course_nft_policy_id}`}>
                     <AndamioButton variant="ghost" size="sm">
                       <Settings className="h-4 w-4 md:mr-1" />
                       <span className="hidden md:inline">Manage</span>

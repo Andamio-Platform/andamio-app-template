@@ -15,7 +15,7 @@ export type CourseFilter = {
 };
 
 // Sort options (using only available API fields)
-export type CourseSortField = "title" | "courseCode" | "moduleCount";
+export type CourseSortField = "title" | "course_code" | "moduleCount";
 export type CourseSortDirection = "asc" | "desc";
 export type CourseSortConfig = {
   field: CourseSortField;
@@ -47,17 +47,17 @@ export function filterCourses(
       const searchLower = filter.search.toLowerCase();
       const matchesSearch =
         courseData.title.toLowerCase().includes(searchLower) ||
-        courseData.courseCode.toLowerCase().includes(searchLower) ||
+        courseData.course_code.toLowerCase().includes(searchLower) ||
         (courseData.description?.toLowerCase().includes(searchLower) ?? false);
       if (!matchesSearch) return false;
     }
 
     // Publication status filter
     if (filter.publicationStatus !== "all") {
-      if (filter.publicationStatus === "published" && !courseData.courseNftPolicyId) {
+      if (filter.publicationStatus === "published" && !courseData.course_nft_policy_id) {
         return false;
       }
-      if (filter.publicationStatus === "draft" && courseData.courseNftPolicyId) {
+      if (filter.publicationStatus === "draft" && courseData.course_nft_policy_id) {
         return false;
       }
     }
@@ -83,12 +83,12 @@ export function sortCourses(
       case "title":
         compareValue = a.title.localeCompare(b.title);
         break;
-      case "courseCode":
-        compareValue = a.courseCode.localeCompare(b.courseCode);
+      case "course_code":
+        compareValue = a.course_code.localeCompare(b.course_code);
         break;
       case "moduleCount": {
-        const aCount = moduleCounts[a.courseCode] ?? 0;
-        const bCount = moduleCounts[b.courseCode] ?? 0;
+        const aCount = moduleCounts[a.course_code] ?? 0;
+        const bCount = moduleCounts[b.course_code] ?? 0;
         compareValue = aCount - bCount;
         break;
       }
@@ -108,7 +108,7 @@ export function calculateCourseStats(
   moduleCounts: Record<string, number>
 ) {
   const total = courses.length;
-  const published = courses.filter((c) => c.courseNftPolicyId !== null).length;
+  const published = courses.filter((c) => c.course_nft_policy_id !== null).length;
   const draft = total - published;
 
   const totalModules = Object.values(moduleCounts).reduce((sum, count) => sum + count, 0);

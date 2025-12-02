@@ -68,17 +68,17 @@ export function CourseManager() {
         // Fetch module counts for all courses using batch endpoint
         if (data && data.length > 0) {
           try {
-            const courseCodes = data.map((c) => c.courseCode);
+            const courseCodes = data.map((c) => c.course_code);
             const modulesResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ courseCodes }),
+              body: JSON.stringify({ course_codes: courseCodes }),
             });
 
             if (modulesResponse.ok) {
               const modulesData = (await modulesResponse.json()) as Record<
                 string,
-                Array<{ moduleCode: string; title: string }>
+                Array<{ module_code: string; title: string }>
               >;
 
               // Convert to counts

@@ -110,10 +110,10 @@ export default function Home() {
           </div>
 
           <h1 className="!text-5xl md:!text-6xl font-bold tracking-tight text-center">
-            Build what's yours
+            Build what&apos;s yours
             <br />
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Connect to what's global
+              Connect to what&apos;s global
             </span>
           </h1>
 
@@ -200,7 +200,7 @@ export default function Home() {
         <div className="text-center space-y-0">
           <h2 className="!text-3xl font-bold text-center">Explore</h2>
           <AndamioSectionDescription className="text-lg">
-            See what's possible. Every route is ready.
+            See what&apos;s possible. Every route is ready.
           </AndamioSectionDescription>
         </div>
 

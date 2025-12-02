@@ -72,9 +72,9 @@ interface ApiError {
 
 // Combined SLT + Lesson type for management view
 type CombinedSLTLesson = {
-  moduleIndex: number;
-  sltText: string;
-  sltId: string;
+  module_index: number;
+  slt_text: string;
+  slt_id: string;
   lesson?: {
     title: string | null;
     description: string | null;
@@ -105,7 +105,7 @@ function SortableSLTRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.sltId });
+  } = useSortable({ id: item.slt_id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -127,18 +127,18 @@ function SortableSLTRow({
         </AndamioTableCell>
       )}
       <AndamioTableCell className="font-mono text-xs">
-        <AndamioBadge variant="outline">{item.moduleIndex}</AndamioBadge>
+        <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
       </AndamioTableCell>
-      <AndamioTableCell className="font-medium">{item.sltText}</AndamioTableCell>
+      <AndamioTableCell className="font-medium">{item.slt_text}</AndamioTableCell>
       <AndamioTableCell>
         {item.lesson ? (
           <div>
             <div className="font-medium">
               <Link
-                href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
+                href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
                 className="hover:underline text-primary"
               >
-                {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
+                {item.lesson.title ?? `Lesson ${item.module_index}`}
               </Link>
             </div>
             {item.lesson.description && (
@@ -169,9 +169,9 @@ function SortableSLTRow({
               variant="ghost"
               size="sm"
               onClick={() => onEdit({
-                id: item.sltId,
-                moduleIndex: item.moduleIndex,
-                sltText: item.sltText,
+                id: item.slt_id,
+                module_index: item.module_index,
+                slt_text: item.slt_text,
               })}
             >
               <Pencil className="h-4 w-4" />
@@ -180,9 +180,9 @@ function SortableSLTRow({
               variant="ghost"
               size="sm"
               onClick={() => onDelete({
-                id: item.sltId,
-                moduleIndex: item.moduleIndex,
-                sltText: item.sltText,
+                id: item.slt_id,
+                module_index: item.module_index,
+                slt_text: item.slt_text,
               })}
             >
               <Trash2 className="h-4 w-4" />
@@ -264,11 +264,11 @@ export default function SLTManagementPage() {
 
     // Combine SLTs and Lessons
     const combined: CombinedSLTLesson[] = sltsData.map((slt) => {
-      const lesson = lessonsData.find((l) => l.sltIndex === slt.moduleIndex);
+      const lesson = lessonsData.find((l) => l.slt_index === slt.module_index);
       return {
-        moduleIndex: slt.moduleIndex,
-        sltText: slt.sltText,
-        sltId: slt.id,
+        module_index: slt.module_index,
+        slt_text: slt.slt_text,
+        slt_id: slt.id,
         lesson: lesson
           ? {
               title: lesson.title,
@@ -320,8 +320,8 @@ export default function SLTManagementPage() {
 
     if (over && active.id !== over.id) {
       setReorderedData((items) => {
-        const oldIndex = items.findIndex((item) => item.sltId === active.id);
-        const newIndex = items.findIndex((item) => item.sltId === over.id);
+        const oldIndex = items.findIndex((item) => item.slt_id === active.id);
+        const newIndex = items.findIndex((item) => item.slt_id === over.id);
 
         return arrayMove(items, oldIndex, newIndex);
       });
@@ -340,8 +340,8 @@ export default function SLTManagementPage() {
     try {
       // Build the updates array mapping each SLT to its new index (starting from 1)
       const updates = reorderedData.map((item, index) => ({
-        id: item.sltId,
-        moduleIndex: index + 1,
+        id: item.slt_id,
+        module_index: index + 1,
       }));
 
       const batchInput: BatchUpdateSLTIndexesInput = { updates };
@@ -402,10 +402,10 @@ export default function SLTManagementPage() {
     try {
       // Build input object for SLT creation
       const createInput: CreateSLTInput = {
-        courseNftPolicyId,
-        moduleCode,
-        moduleIndex: newSLTIndex,
-        sltText: newSLTText,
+        course_nft_policy_id: courseNftPolicyId,
+        module_code: moduleCode,
+        module_index: newSLTIndex,
+        slt_text: newSLTText,
       };
 
       // Validate create input
@@ -460,11 +460,11 @@ export default function SLTManagementPage() {
     try {
       // Build input object for SLT update
       const updateInput: UpdateSLTInput = {
-        courseNftPolicyId,
-        moduleCode,
-        moduleIndex: selectedSLT.moduleIndex,
-        sltText: editSLTText,
-        newModuleIndex: editSLTIndex !== selectedSLT.moduleIndex ? editSLTIndex : undefined,
+        course_nft_policy_id: courseNftPolicyId,
+        module_code: moduleCode,
+        module_index: selectedSLT.module_index,
+        slt_text: editSLTText,
+        new_module_index: editSLTIndex !== selectedSLT.module_index ? editSLTIndex : undefined,
       };
 
       // Validate update input
@@ -479,7 +479,7 @@ export default function SLTManagementPage() {
 
       // Send validated update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.moduleIndex}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.module_index}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -517,7 +517,7 @@ export default function SLTManagementPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.moduleIndex}`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/${courseNftPolicyId}/${moduleCode}/${selectedSLT.module_index}`,
         {
           method: "DELETE",
         }
@@ -544,8 +544,8 @@ export default function SLTManagementPage() {
 
   const openEditDialog = (slt: SLTOutput) => {
     setSelectedSLT(slt);
-    setEditSLTText(slt.sltText);
-    setEditSLTIndex(slt.moduleIndex);
+    setEditSLTText(slt.slt_text);
+    setEditSLTIndex(slt.module_index);
     setActionError(null);
     setIsEditDialogOpen(true);
   };
@@ -558,7 +558,7 @@ export default function SLTManagementPage() {
 
   const openCreateDialog = () => {
     // Suggest next available index
-    const maxIndex = combinedData.reduce((max, item) => Math.max(max, item.moduleIndex), -1);
+    const maxIndex = combinedData.reduce((max, item) => Math.max(max, item.module_index), -1);
     setNewSLTIndex(maxIndex + 1);
     setNewSLTText("");
     setActionError(null);
@@ -649,7 +649,7 @@ export default function SLTManagementPage() {
           </div>
           <h1 className="text-3xl font-bold">Manage SLTs: {module.title}</h1>
           <p className="text-muted-foreground">
-            Student Learning Targets for {module.moduleCode}
+            Student Learning Targets for {module.module_code}
           </p>
         </div>
         <div className="flex gap-2">
@@ -750,13 +750,13 @@ export default function SLTManagementPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 <SortableContext
-                  items={dataToDisplay.map((item) => item.sltId)}
+                  items={dataToDisplay.map((item) => item.slt_id)}
                   strategy={verticalListSortingStrategy}
                   disabled={!isReorderMode}
                 >
                   {dataToDisplay.map((item) => (
                     <SortableSLTRow
-                      key={item.sltId}
+                      key={item.slt_id}
                       item={item}
                       courseNftPolicyId={courseNftPolicyId}
                       moduleCode={moduleCode}
@@ -903,8 +903,8 @@ export default function SLTManagementPage() {
 
           {selectedSLT && (
             <div className="p-4 border rounded-md bg-muted">
-              <p className="text-sm font-mono mb-2">Index: {selectedSLT.moduleIndex}</p>
-              <p className="text-sm">{selectedSLT.sltText}</p>
+              <p className="text-sm font-mono mb-2">Index: {selectedSLT.module_index}</p>
+              <p className="text-sm">{selectedSLT.slt_text}</p>
             </div>
           )}
 
@@ -954,7 +954,7 @@ export default function SLTManagementPage() {
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                Available indexes: {combinedData.map((item) => item.moduleIndex).join(", ")}
+                Available indexes: {combinedData.map((item) => item.module_index).join(", ")}
               </p>
             </div>
 

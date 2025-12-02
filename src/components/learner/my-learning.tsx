@@ -162,19 +162,19 @@ export function MyLearning() {
       <AndamioCardContent>
         <div className="space-y-4">
           {courses.map((course) => {
-            const progress = course.commitmentCount > 0
-              ? Math.round((course.completedCount / course.commitmentCount) * 100)
+            const progress = course.commitment_count > 0
+              ? Math.round((course.completed_count / course.commitment_count) * 100)
               : 0;
 
             return (
               <div
-                key={course.courseNftPolicyId}
+                key={course.course_nft_policy_id}
                 className="border rounded-lg p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <Link
-                      href={`/course/${course.courseNftPolicyId}`}
+                      href={`/course/${course.course_nft_policy_id}`}
                       className="hover:underline"
                     >
                       <h3 className="font-semibold mb-1">{course.title}</h3>
@@ -187,11 +187,11 @@ export function MyLearning() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <FileText className="h-4 w-4" />
-                        <span>{course.commitmentCount} assignments</span>
+                        <span>{course.commitment_count} assignments</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <CheckCircle className="h-4 w-4" />
-                        <span>{course.completedCount} completed</span>
+                        <span>{course.completed_count} completed</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
@@ -203,7 +203,7 @@ export function MyLearning() {
                     <AndamioBadge variant={progress === 100 ? "default" : "secondary"}>
                       {progress === 100 ? "Complete" : "In Progress"}
                     </AndamioBadge>
-                    <Link href={`/course/${course.courseNftPolicyId}`}>
+                    <Link href={`/course/${course.course_nft_policy_id}`}>
                       <AndamioButton size="sm" variant="ghost">
                         Continue Learning
                       </AndamioButton>

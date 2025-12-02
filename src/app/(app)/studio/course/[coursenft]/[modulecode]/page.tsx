@@ -147,7 +147,7 @@ export default function ModuleEditPage() {
             const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
             // Filter to just this module
             const thisModuleWithSlts = modulesData.filter(
-              (m) => m.moduleCode === moduleCode
+              (m) => m.module_code === moduleCode
             );
             setModuleWithSlts(thisModuleWithSlts);
           }
@@ -176,8 +176,8 @@ export default function ModuleEditPage() {
     try {
       // Build input object for module update
       const updateInput: UpdateCourseModuleInput = {
-        courseNftPolicyId,
-        moduleCode,
+        course_nft_policy_id: courseNftPolicyId,
+        module_code: moduleCode,
         title,
         description,
       };
@@ -211,8 +211,8 @@ export default function ModuleEditPage() {
       if (status !== courseModule?.status) {
         // Build input object for status update
         const statusInput: UpdateModuleStatusInput = {
-          courseNftPolicyId,
-          moduleCode,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
           status: status as UpdateModuleStatusInput["status"],
         };
 
@@ -317,9 +317,9 @@ export default function ModuleEditPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
-            newModuleCode: newModuleCode.trim(),
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            new_module_code: newModuleCode.trim(),
           }),
         }
       );
@@ -355,9 +355,9 @@ export default function ModuleEditPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
-            pendingTxHash: pendingTxHash.trim(),
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            pending_tx_hash: pendingTxHash.trim(),
           }),
         }
       );
@@ -391,8 +391,8 @@ export default function ModuleEditPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode,
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
           }),
         }
       );
@@ -459,7 +459,7 @@ export default function ModuleEditPage() {
           </AndamioButton>
         </Link>
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {courseModule?.moduleCode}
+          {courseModule?.module_code}
         </AndamioBadge>
       </div>
 
@@ -519,14 +519,14 @@ export default function ModuleEditPage() {
           <div className="space-y-2">
             <AndamioLabel htmlFor="moduleCode">Module Code</AndamioLabel>
             <div className="flex gap-2">
-              <AndamioInput id="moduleCode" value={courseModule?.moduleCode} disabled className="flex-1" />
+              <AndamioInput id="moduleCode" value={courseModule?.module_code} disabled className="flex-1" />
               <AndamioDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
                 <AndamioDialogTrigger asChild>
                   <AndamioButton
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setNewModuleCode(courseModule?.moduleCode ?? "");
+                      setNewModuleCode(courseModule?.module_code ?? "");
                       setRenameError(null);
                     }}
                   >
@@ -553,7 +553,7 @@ export default function ModuleEditPage() {
                         disabled={isRenaming}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Current: <code className="font-mono">{courseModule?.moduleCode}</code>
+                        Current: <code className="font-mono">{courseModule?.module_code}</code>
                       </p>
                     </div>
                     {renameError && (
@@ -619,10 +619,10 @@ export default function ModuleEditPage() {
           {/* Pending Transaction */}
           <div className="space-y-2">
             <AndamioLabel>Pending Transaction</AndamioLabel>
-            {courseModule?.pendingTxHash ? (
+            {courseModule?.pending_tx_hash ? (
               <div className="flex gap-2">
                 <AndamioInput
-                  value={courseModule.pendingTxHash}
+                  value={courseModule.pending_tx_hash}
                   disabled
                   className="flex-1 font-mono text-xs"
                 />
@@ -632,7 +632,7 @@ export default function ModuleEditPage() {
                   asChild
                 >
                   <a
-                    href={`https://cardanoscan.io/transaction/${courseModule?.pendingTxHash}`}
+                    href={`https://cardanoscan.io/transaction/${courseModule?.pending_tx_hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

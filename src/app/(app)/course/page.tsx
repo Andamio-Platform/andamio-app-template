@@ -130,17 +130,17 @@ export default function CoursePage() {
           </AndamioTableHeader>
           <AndamioTableBody>
             {courses.map((course) => (
-              <AndamioTableRow key={course.courseNftPolicyId ?? course.courseCode}>
+              <AndamioTableRow key={course.course_nft_policy_id ?? course.course_code}>
                 <AndamioTableCell>
                   <Link
-                    href={`/course/${course.courseNftPolicyId}`}
+                    href={`/course/${course.course_nft_policy_id}`}
                     className="font-medium hover:underline"
                   >
                     {course.title}
                   </Link>
                 </AndamioTableCell>
                 <AndamioTableCell className="font-mono text-xs break-all">
-                  {course.courseNftPolicyId}
+                  {course.course_nft_policy_id}
                 </AndamioTableCell>
                 <AndamioTableCell>
                   {course.description}

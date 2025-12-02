@@ -66,20 +66,20 @@ export function OwnedCoursesList() {
         // Fetch module counts for all courses using batch endpoint
         if (data && data.length > 0) {
           try {
-            const courseCodes = data.map((c) => c.courseCode);
+            const courseCodes = data.map((c) => c.course_code);
             const modulesResponse = await fetch(
               `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ courseCodes }),
+                body: JSON.stringify({ course_codes: courseCodes }),
               }
             );
 
             if (modulesResponse.ok) {
               const modulesData = (await modulesResponse.json()) as Record<
                 string,
-                Array<{ moduleCode: string; title: string }>
+                Array<{ module_code: string; title: string }>
               >;
 
               // Convert to counts
@@ -165,9 +165,9 @@ export function OwnedCoursesList() {
         </AndamioTableHeader>
         <AndamioTableBody>
           {courses.map((course) => (
-            <AndamioTableRow key={course.courseCode}>
+            <AndamioTableRow key={course.course_code}>
               <AndamioTableCell className="font-mono text-xs">
-                {course.courseCode}
+                {course.course_code}
               </AndamioTableCell>
               <AndamioTableCell className="font-medium">
                 {course.title}
@@ -176,17 +176,17 @@ export function OwnedCoursesList() {
                 {course.description}
               </AndamioTableCell>
               <AndamioTableCell className="text-center">
-                {moduleCounts[course.courseCode] !== undefined ? (
+                {moduleCounts[course.course_code] !== undefined ? (
                   <AndamioBadge variant="secondary">
-                    {moduleCounts[course.courseCode]}
+                    {moduleCounts[course.course_code]}
                   </AndamioBadge>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
               </AndamioTableCell>
               <AndamioTableCell className="text-right">
-                {course.courseNftPolicyId && (
-                  <Link href={`/studio/course/${course.courseNftPolicyId}`}>
+                {course.course_nft_policy_id && (
+                  <Link href={`/studio/course/${course.course_nft_policy_id}`}>
                     <AndamioButton variant="ghost" size="sm">
                       <Settings className="h-4 w-4 mr-1" />
                       Manage

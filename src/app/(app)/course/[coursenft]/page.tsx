@@ -168,13 +168,13 @@ export default function CourseDetailPage() {
             </AndamioTableHeader>
             <AndamioTableBody>
               {modules.map((module) => (
-                <AndamioTableRow key={module.moduleCode}>
+                <AndamioTableRow key={module.module_code}>
                   <AndamioTableCell className="font-mono text-xs">
-                    {module.moduleCode}
+                    {module.module_code}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <Link
-                      href={`/course/${courseNftPolicyId}/${module.moduleCode}`}
+                      href={`/course/${courseNftPolicyId}/${module.module_code}`}
                       className="font-medium hover:underline"
                     >
                       {module.title}

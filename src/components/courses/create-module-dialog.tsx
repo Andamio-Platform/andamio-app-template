@@ -90,8 +90,8 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            courseNftPolicyId,
-            moduleCode: formData.moduleCode,
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: formData.moduleCode,
             title: formData.title,
             description: formData.description || undefined,
             status: formData.status,
@@ -115,7 +115,7 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
       }
 
       // Redirect to module edit page
-      router.push(`/studio/course/${courseNftPolicyId}/${newModule.moduleCode}`);
+      router.push(`/studio/course/${courseNftPolicyId}/${newModule.module_code}`);
 
       // Reset form
       setFormData({

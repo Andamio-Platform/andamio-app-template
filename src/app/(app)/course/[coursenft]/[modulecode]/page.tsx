@@ -26,14 +26,14 @@ import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } 
 
 // Combined SLT + Lesson type
 type CombinedSLTLesson = {
-  moduleIndex: number;
-  sltText: string;
-  sltId: string;
+  module_index: number;
+  slt_text: string;
+  slt_id: string;
   lesson?: {
     title: string | null;
     description: string | null;
-    imageUrl: string | null;
-    videoUrl: string | null;
+    image_url: string | null;
+    video_url: string | null;
     live: boolean | null;
   };
 };
@@ -71,20 +71,20 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
         </AndamioTableHeader>
         <AndamioTableBody>
           {data.map((item) => (
-            <AndamioTableRow key={item.moduleIndex}>
+            <AndamioTableRow key={item.module_index}>
               <AndamioTableCell className="font-mono text-xs">
-                <AndamioBadge variant="outline">{item.moduleIndex}</AndamioBadge>
+                <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
               </AndamioTableCell>
               <AndamioTableCell className="font-medium">
-                {item.sltText}
+                {item.slt_text}
               </AndamioTableCell>
               <AndamioTableCell className="font-medium">
                 {item.lesson ? (
                   <Link
-                    href={`/course/${courseNftPolicyId}/${moduleCode}/${item.moduleIndex}`}
+                    href={`/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
                     className="hover:underline text-primary"
                   >
-                    {item.lesson.title ?? `Lesson ${item.moduleIndex}`}
+                    {item.lesson.title ?? `Lesson ${item.module_index}`}
                   </Link>
                 ) : (
                   <span className="text-muted-foreground italic">No lesson yet</span>
@@ -98,10 +98,10 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
               <AndamioTableCell>
                 {item.lesson ? (
                   <div className="flex gap-1">
-                    {item.lesson.imageUrl && (
+                    {item.lesson.image_url && (
                       <AndamioBadge variant="outline">Image</AndamioBadge>
                     )}
-                    {item.lesson.videoUrl && (
+                    {item.lesson.video_url && (
                       <AndamioBadge variant="outline">Video</AndamioBadge>
                     )}
                   </div>
@@ -181,17 +181,17 @@ export default function ModuleLessonsPage() {
 
         // Combine SLTs and Lessons
         const combined: CombinedSLTLesson[] = sltsData.map((slt) => {
-          const lesson = lessonsData.find((l) => l.sltIndex === slt.moduleIndex);
+          const lesson = lessonsData.find((l) => l.slt_index === slt.module_index);
           return {
-            moduleIndex: slt.moduleIndex,
-            sltText: slt.sltText,
-            sltId: slt.id,
+            module_index: slt.module_index,
+            slt_text: slt.slt_text,
+            slt_id: slt.id,
             lesson: lesson
               ? {
                   title: lesson.title,
                   description: lesson.description,
-                  imageUrl: lesson.imageUrl,
-                  videoUrl: lesson.videoUrl,
+                  image_url: lesson.image_url,
+                  video_url: lesson.video_url,
                   live: lesson.live,
                 }
               : undefined,
@@ -261,7 +261,7 @@ export default function ModuleLessonsPage() {
           )}
           <div className="flex gap-2 pt-2">
             <AndamioBadge variant="outline" className="font-mono text-xs">
-              {moduleData.moduleCode}
+              {moduleData.module_code}
             </AndamioBadge>
             <AndamioBadge variant="outline">{moduleData.status}</AndamioBadge>
           </div>

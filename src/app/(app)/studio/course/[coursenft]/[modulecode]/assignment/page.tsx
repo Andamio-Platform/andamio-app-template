@@ -27,7 +27,7 @@ import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
 import {
-  type AssignmentWithSLTsOutput,
+  type AssignmentOutput,
   type ListSLTsOutput,
   type CreateAssignmentInput,
   type UpdateAssignmentInput,
@@ -58,7 +58,7 @@ export default function AssignmentEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [assignment, setAssignment] = useState<AssignmentWithSLTsOutput | null>(null);
+  const [assignment, setAssignment] = useState<AssignmentOutput | null>(null);
   const [slts, setSlts] = useState<ListSLTsOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function AssignmentEditPage() {
 
   // Initialize Tiptap editor
   const editor = useAndamioEditor({
-    content: assignment?.contentJson as JSONContent,
+    content: assignment?.content_json as JSONContent,
   });
 
   // Full-screen state
@@ -89,8 +89,8 @@ export default function AssignmentEditPage() {
 
   // Update editor when assignment loads
   useEffect(() => {
-    if (editor && assignment?.contentJson) {
-      editor.commands.setContent(assignment.contentJson as JSONContent);
+    if (editor && assignment?.content_json) {
+      editor.commands.setContent(assignment.content_json as JSONContent);
     }
   }, [editor, assignment]);
 
@@ -119,15 +119,15 @@ export default function AssignmentEditPage() {
           );
 
           if (assignmentResponse.ok) {
-            const data = (await assignmentResponse.json()) as AssignmentWithSLTsOutput;
+            const data = (await assignmentResponse.json()) as AssignmentOutput;
             setAssignment(data);
             setAssignmentExists(true);
             setTitle(data.title ?? "");
             setDescription(data.description ?? "");
-            setImageUrl(data.imageUrl ?? "");
-            setVideoUrl(data.videoUrl ?? "");
+            setImageUrl(data.image_url ?? "");
+            setVideoUrl(data.video_url ?? "");
             setLive(data.live ?? false);
-            setSelectedSltIds(data.slts.map((s) => s.id));
+            // Note: SLTs are now fetched separately
           } else if (assignmentResponse.status === 404) {
             // Assignment doesn't exist yet - that's OK
             setAssignmentExists(false);
@@ -170,15 +170,14 @@ export default function AssignmentEditPage() {
       if (assignmentExists) {
         // Build input object for assignment update
         const updateInput: UpdateAssignmentInput = {
-          courseNftPolicyId,
-          moduleCode,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
           title,
           description,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
           live,
-          sltIds: selectedSltIds,
         };
 
         // Validate update input
@@ -206,21 +205,20 @@ export default function AssignmentEditPage() {
           throw new Error(errorData.message ?? "Failed to update assignment");
         }
 
-        const data = (await response.json()) as AssignmentWithSLTsOutput;
+        const data = (await response.json()) as AssignmentOutput;
         setAssignment(data);
       } else {
         // Build input object for assignment creation
         const assignmentCode = `${moduleCode}-ASSIGNMENT`;
         const createInput: CreateAssignmentInput = {
-          courseNftPolicyId,
-          moduleCode,
-          assignmentCode,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
+          assignment_code: assignmentCode,
           title,
           description,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
-          sltIds: selectedSltIds,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
         };
 
         // Validate create input
@@ -248,7 +246,7 @@ export default function AssignmentEditPage() {
           throw new Error(errorData.message ?? "Failed to create assignment");
         }
 
-        const data = (await response.json()) as AssignmentWithSLTsOutput;
+        const data = (await response.json()) as AssignmentOutput;
         setAssignment(data);
         setAssignmentExists(true);
       }
@@ -501,7 +499,7 @@ export default function AssignmentEditPage() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {slts.map((slt: { id: string; moduleIndex: number; sltText: string }) => (
+                  {slts.map((slt) => (
                     <div key={slt.id} className="flex items-start space-x-2">
                       <AndamioCheckbox
                         id={`slt-${slt.id}`}
@@ -513,9 +511,9 @@ export default function AssignmentEditPage() {
                         className="text-sm cursor-pointer leading-tight"
                       >
                         <AndamioBadge variant="outline" className="mr-2 font-mono text-xs">
-                          {slt.moduleIndex}
+                          {slt.module_index}
                         </AndamioBadge>
-                        {slt.sltText}
+                        {slt.slt_text}
                       </label>
                     </div>
                   ))}
@@ -604,10 +602,10 @@ export default function AssignmentEditPage() {
                   <h3 className="font-semibold mb-2">Covers Learning Targets:</h3>
                   <div className="flex flex-wrap gap-2">
                     {slts
-                      .filter((slt: { id: string; moduleIndex: number; sltText: string }) => selectedSltIds.includes(slt.id))
-                      .map((slt: { id: string; moduleIndex: number; sltText: string }) => (
+                      .filter((slt) => selectedSltIds.includes(slt.id))
+                      .map((slt) => (
                         <AndamioBadge key={slt.id} variant="secondary">
-                          {slt.moduleIndex}: {slt.sltText}
+                          {slt.module_index}: {slt.slt_text}
                         </AndamioBadge>
                       ))}
                   </div>

@@ -76,7 +76,7 @@ export default function LessonEditPage() {
 
   // Initialize Tiptap editor
   const editor = useAndamioEditor({
-    content: lesson?.contentJson as JSONContent,
+    content: lesson?.content_json as JSONContent,
   });
 
   // Full-screen state
@@ -85,8 +85,8 @@ export default function LessonEditPage() {
 
   // Update editor when lesson loads
   useEffect(() => {
-    if (editor && lesson?.contentJson) {
-      editor.commands.setContent(lesson.contentJson as JSONContent);
+    if (editor && lesson?.content_json) {
+      editor.commands.setContent(lesson.content_json as JSONContent);
     }
   }, [editor, lesson]);
 
@@ -106,8 +106,8 @@ export default function LessonEditPage() {
           setLessonExists(true);
           setTitle(data.title ?? "");
           setDescription(data.description ?? "");
-          setImageUrl(data.imageUrl ?? "");
-          setVideoUrl(data.videoUrl ?? "");
+          setImageUrl(data.image_url ?? "");
+          setVideoUrl(data.video_url ?? "");
           setLive(data.live ?? false);
         } else if (response.status === 404) {
           // Lesson doesn't exist yet - that's OK, we'll create it
@@ -142,14 +142,14 @@ export default function LessonEditPage() {
       if (lessonExists) {
         // Build input object for lesson update
         const updateInput: UpdateLessonInput = {
-          courseNftPolicyId,
-          moduleCode,
-          moduleIndex,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
+          module_index: moduleIndex,
           title: title || undefined,
           description: description || undefined,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
           live,
         };
 
@@ -187,14 +187,14 @@ export default function LessonEditPage() {
       } else {
         // Build input object for lesson creation
         const createInput: CreateLessonInput = {
-          courseNftPolicyId,
-          moduleCode,
-          moduleIndex,
+          course_nft_policy_id: courseNftPolicyId,
+          module_code: moduleCode,
+          module_index: moduleIndex,
           title: title || undefined,
           description: description || undefined,
-          contentJson,
-          imageUrl: imageUrl || undefined,
-          videoUrl: videoUrl || undefined,
+          content_json: contentJson,
+          image_url: imageUrl || undefined,
+          video_url: videoUrl || undefined,
         };
 
         // Validate create input
@@ -331,7 +331,7 @@ export default function LessonEditPage() {
           {lessonExists ? "Edit Lesson" : "Create Lesson"}
         </h1>
         <p className="text-muted-foreground">
-          {lesson?.sltText || `Lesson for SLT ${moduleIndex}`}
+          {lesson?.slt_text || `Lesson for SLT ${moduleIndex}`}
         </p>
       </div>
 
@@ -366,10 +366,10 @@ export default function LessonEditPage() {
               <AndamioCardDescription>Basic information about the lesson</AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
-              {lesson?.sltText && (
+              {lesson?.slt_text && (
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm font-medium mb-1">Student Learning Target:</p>
-                  <p className="text-sm">{lesson.sltText}</p>
+                  <p className="text-sm">{lesson.slt_text}</p>
                 </div>
               )}
 
@@ -379,7 +379,7 @@ export default function LessonEditPage() {
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={lesson?.sltText || "Lesson title"}
+                  placeholder={lesson?.slt_text || "Lesson title"}
                   maxLength={200}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -499,14 +499,14 @@ export default function LessonEditPage() {
             <AndamioCardContent className="space-y-4">
               <div>
                 <h2 className="text-2xl font-bold">
-                  {title || lesson?.sltText || `Lesson ${moduleIndex}`}
+                  {title || lesson?.slt_text || `Lesson ${moduleIndex}`}
                 </h2>
                 {description && <p className="text-muted-foreground mt-2">{description}</p>}
               </div>
 
-              {lesson?.sltText && (
+              {lesson?.slt_text && (
                 <div>
-                  <AndamioBadge variant="secondary">Learning Target: {lesson.sltText}</AndamioBadge>
+                  <AndamioBadge variant="secondary">Learning Target: {lesson.slt_text}</AndamioBadge>
                 </div>
               )}
 

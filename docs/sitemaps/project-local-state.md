@@ -67,7 +67,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error/empty states
 - **Component**: `src/app/(app)/project/page.tsx`
 - **API Endpoint**: `POST /projects/list`
-- **Type**: Array of published project objects
+- **Type**: `ListPublishedTreasuriesOutput`
 
 #### `/project/[treasurynft]`
 - **Purpose**: Individual project detail page with tasks
@@ -92,9 +92,9 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - `POST /tasks/list` - Task list
   - `POST /prerequisites/list-on-chain` - Contributor prerequisites
 - **Types**:
-  - Published project object
-  - Array of task objects
-  - Array of contributor prerequisite objects
+  - `TreasuryOutput`
+  - `TaskInfoOutput[]`
+  - Contributor prerequisite objects (on-chain data)
 
 #### `/project/[treasurynft]/[taskhash]`
 - **Purpose**: Task detail page with commitment workflow
@@ -132,8 +132,8 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - `POST /task-commitments/confirm-transaction` - Confirm tx (authenticated)
   - `POST /contributors/create` - Create contributor role (authenticated)
 - **Types**:
-  - Task object
-  - Task commitment object
+  - `TaskInfoOutput`
+  - `TaskCommitmentOutput`
 
 ---
 
@@ -152,7 +152,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Auth gate (shows login if not authenticated)
 - **Component**: `src/app/(app)/studio/project/page.tsx`
 - **API Endpoint**: `POST /projects/list-owned`
-- **Type**: Array of owned project objects
+- **Type**: `ListOwnedTreasuriesOutput`
 
 #### `/studio/project/[treasurynft]`
 - **Purpose**: Project dashboard and metadata CRUD
@@ -177,7 +177,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /projects/update` - Update project metadata
   - `POST /tasks/list` - Get task summary
 - **Types**:
-  - Owned project object
+  - `TreasuryWithEscrowsOutput`
 
 #### `/studio/project/[treasurynft]/manage-treasury`
 - **Purpose**: Treasury management - approve drafts, run on-chain transactions
@@ -201,8 +201,8 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /projects/list-owned` (with filter) - Get project with treasury info
   - `POST /tasks/list` - Get draft tasks for approval
 - **Types**:
-  - Owned project object with escrows
-  - Array of draft task objects
+  - `TreasuryWithEscrowsOutput`
+  - `TaskInfoOutput[]`
 - **Note**: This route primarily handles on-chain transactions via Mesh SDK; the API provides read-only data for display
 
 #### `/studio/project/[treasurynft]/manage-contributors`
@@ -222,8 +222,8 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /projects/list-owned` (with filter) - Get project with contributor data
   - `POST /prerequisites/list-on-chain` - Get prerequisites
 - **Types**:
-  - Owned project object
-  - Array of contributor prerequisite objects
+  - `TreasuryWithEscrowsOutput`
+  - Contributor prerequisite objects (on-chain data)
 - **Note**: Contributor enrollment data comes from on-chain/NBA API; this route displays it
 
 #### `/studio/project/[treasurynft]/commitments`
@@ -260,9 +260,9 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /tasks/list` - Get tasks for filter dropdown
   - `POST /task-commitments/update-status` - Update commitment status (approve/deny)
 - **Types**:
-  - Owned project object
-  - Array of task objects
-  - Array of task commitment objects (from project data)
+  - `TreasuryWithEscrowsOutput`
+  - `TaskInfoOutput[]`
+  - `TaskCommitmentOutput[]`
 - **Note**: Task commitments are retrieved as part of project/task data; manager actions use update-status endpoint
 
 #### `/studio/project/[treasurynft]/commitments/[alias]`
@@ -288,8 +288,8 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /projects/list-owned` (with filter) - Get project details
   - `POST /task-commitments/update-status` - Update commitment status
 - **Types**:
-  - Owned project object
-  - Array of task commitment objects (filtered by contributor)
+  - `TreasuryWithEscrowsOutput`
+  - `TaskCommitmentOutput[]`
 
 #### `/studio/project/[treasurynft]/draft-tasks`
 - **Purpose**: List and manage draft tasks
@@ -316,8 +316,8 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /tasks/list` - Get all tasks
   - `POST /tasks/delete` - Delete draft task
 - **Types**:
-  - Owned project object
-  - Array of task objects
+  - `TreasuryWithEscrowsOutput`
+  - `TaskInfoOutput[]`
 
 #### `/studio/project/[treasurynft]/draft-tasks/new`
 - **Purpose**: Create a new task
@@ -343,8 +343,8 @@ These routes are for project managers and treasury owners to manage their projec
 - **API Endpoints**:
   - `POST /tasks/create` - Create task
 - **Types**:
-  - Task creation input schema
-  - Created task object
+  - `CreateTaskInput`
+  - `CreateTaskOutput`
 
 #### `/studio/project/[treasurynft]/draft-tasks/[taskindex]`
 - **Purpose**: Edit and manage existing draft task
@@ -376,8 +376,8 @@ These routes are for project managers and treasury owners to manage their projec
   - `POST /tasks/update` - Update task (DRAFT only)
   - `POST /tasks/delete` - Delete task (DRAFT only)
 - **Types**:
-  - Task object
-  - Task update input schema
+  - `TaskInfoOutput`
+  - `CreateTaskInput` (used for updates as well)
 
 #### `/studio/project/[treasurynft]/transaction-history`
 - **Purpose**: Display transaction history for the project
@@ -399,8 +399,8 @@ These routes are for project managers and treasury owners to manage their projec
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project with transaction history
 - **Types**:
-  - Owned project object
-  - Transaction history array (from project data)
+  - `TreasuryWithEscrowsOutput`
+  - Transaction history (on-chain data via Koios API)
 - **Note**: Transaction history may come from on-chain data via Koios API
 
 ---

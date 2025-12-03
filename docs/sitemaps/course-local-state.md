@@ -42,7 +42,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/page.tsx`
 - **API Endpoint**: `GET /courses/published`
-- **Type**: `RouterOutputs["course"]["getPublishedCourses"]`
+- **Type**: `ListPublishedCoursesOutput`
 
 #### `/course/[coursenft]`
 - **Purpose**: Individual course detail page
@@ -62,8 +62,8 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - `GET /courses/{courseNftPolicyId}` - Course details
   - `GET /courses/{courseNftPolicyId}/course-modules` - Module list
 - **Types**:
-  - `RouterOutputs["course"]["getCourseByPolicyId"]`
-  - `RouterOutputs["courseModule"]["getCourseModuleOverviewsByCourseNftPolicyId"]`
+  - `CourseOutput`
+  - `ListCourseModulesOutput`
 
 #### `/course/[coursenft]/[modulecode]`
 - **Purpose**: Course module detail page with learning targets and lessons
@@ -88,9 +88,9 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - `GET /slts/{courseNftPolicyId}/{moduleCode}` - SLT list
   - `GET /courses/{courseNftPolicyId}/modules/{moduleCode}/lessons` - Lesson list
 - **Types**:
-  - `RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"]`
-  - `RouterOutputs["slt"]["getModuleSLTs"]`
-  - `RouterOutputs["lesson"]["getModuleLessons"]`
+  - `CourseModuleOutput`
+  - `ListSLTsOutput`
+  - `ListLessonsOutput`
 
 #### `/course/[coursenft]/[modulecode]/[moduleindex]`
 - **Purpose**: Individual lesson detail page
@@ -113,7 +113,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error states
 - **Component**: `src/app/(app)/course/[coursenft]/[modulecode]/[moduleindex]/page.tsx`
 - **API Endpoint**: `GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
-- **Type**: `RouterOutputs["lesson"]["getLessonByPolicyId"]`
+- **Type**: `LessonWithSLTOutput`
 
 #### `/course/[coursenft]/[modulecode]/assignment`
 - **Purpose**: Learner-facing assignment detail page
@@ -136,7 +136,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/[coursenft]/[modulecode]/assignment/page.tsx`
 - **API Endpoint**: `GET /assignments/{courseNftPolicyId}/{moduleCode}`
-- **Type**: Custom Assignment interface (to be migrated to andamio-db-api types)
+- **Type**: `AssignmentOutput`
 
 ---
 
@@ -205,8 +205,8 @@ These routes are for course creators to manage their courses and require authent
   - `GET /courses/{courseNftPolicyId}/course-modules` - Get modules
   - `PATCH /courses/{courseCode}` - Update course (authenticated)
 - **Types**:
-  - `RouterOutputs["course"]["getCourseByPolicyId"]`
-  - `RouterOutputs["courseModule"]["getCourseModuleOverviewsByCourseNftPolicyId"]`
+  - `CourseOutput`
+  - `ListCourseModulesOutput`
 
 #### `/studio/course/[coursenft]/instructor`
 - **Purpose**: Instructor dashboard - view student assignment commitments
@@ -260,7 +260,7 @@ These routes are for course creators to manage their courses and require authent
   - `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}` - Update module (authenticated)
   - `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status` - Update status (authenticated)
 - **Types**:
-  - `RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"]`
+  - `CourseModuleOutput`
 
 #### `/studio/course/[coursenft]/[modulecode]/slts`
 - **Purpose**: Manage Student Learning Targets (SLTs) for a module
@@ -300,10 +300,10 @@ These routes are for course creators to manage their courses and require authent
   - `PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update SLT (authenticated)
   - `DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete SLT (authenticated)
 - **Types**:
-  - `RouterOutputs["courseModule"]["getCourseModuleByCourseNftPolicyId"]`
-  - `RouterOutputs["slt"]["getModuleSLTs"]`
-  - `RouterOutputs["slt"]["getSLT"]`
-  - `RouterOutputs["lesson"]["getModuleLessons"]`
+  - `CourseModuleOutput`
+  - `ListSLTsOutput`
+  - `SLTOutput`
+  - `ListLessonsOutput`
 
 #### `/studio/course/[coursenft]/[modulecode]/assignment`
 - **Purpose**: Assignment CRUD management page
@@ -326,8 +326,8 @@ These routes are for course creators to manage their courses and require authent
   - `PATCH /assignments/{courseNftPolicyId}/{moduleCode}` - Update assignment (authenticated)
   - `DELETE /assignments/{courseNftPolicyId}/{moduleCode}` - Delete assignment (authenticated)
 - **Types**:
-  - `RouterOutputs["assignment"]["getAssignmentByCourseModuleCodes"]`
-  - `RouterOutputs["slt"]["getModuleSLTs"]`
+  - `AssignmentOutput`
+  - `ListSLTsOutput`
 
 #### `/studio/course/[coursenft]/[modulecode]/[moduleindex]`
 - **Purpose**: Lesson CRUD management page
@@ -351,7 +351,7 @@ These routes are for course creators to manage their courses and require authent
   - `PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update lesson (authenticated)
   - `DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete lesson (authenticated)
 - **Types**:
-  - `RouterOutputs["lesson"]["getLessonByPolicyId"]`
+  - `LessonWithSLTOutput`
 
 #### `/studio/course/[coursenft]/[modulecode]/introduction`
 - **Purpose**: Introduction CRUD management page
@@ -373,7 +373,7 @@ These routes are for course creators to manage their courses and require authent
   - `PATCH /introductions/{courseNftPolicyId}/{moduleCode}` - Update introduction (authenticated)
   - **Note**: No DELETE endpoint (introductions cannot be deleted, only updated)
 - **Types**:
-  - `RouterOutputs["introduction"]["getIntroduction"]`
+  - `IntroductionOutput`
 
 ---
 

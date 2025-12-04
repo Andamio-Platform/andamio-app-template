@@ -57,13 +57,14 @@ This document maps all planned Project-related routes in the Andamio T3 App Temp
 
 These routes are accessible to all users (authenticated or not) and provide the project browsing and contribution experience.
 
-#### `/project`
+#### `/projects`
 - **Purpose**: Browse all published projects (project catalog)
 - **Authentication**: Not required (public)
 - **Features**:
   - Displays table of all published projects
   - Shows project title, treasury NFT policy ID, description
-  - Links to individual project pages
+  - Should show task count
+  - Links to individual project page
   - Loading/error/empty states
 - **Component**: `src/app/(app)/project/page.tsx`
 - **API Endpoint**: `POST /projects/list`

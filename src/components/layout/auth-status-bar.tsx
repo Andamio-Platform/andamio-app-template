@@ -5,6 +5,7 @@ import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { MobileNav } from "./mobile-nav";
 import {
   Wallet,
   Shield,
@@ -98,40 +99,43 @@ export function AuthStatusBar() {
 
   return (
     <div className="h-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-full items-center justify-between px-4">
-        {/* Left: Status Indicators */}
-        <div className="flex items-center gap-4">
-          {/* Wallet Status */}
-          <div className="flex items-center gap-2">
-            <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-            <div className="flex items-center gap-1.5">
+      <div className="flex h-full items-center justify-between px-3 sm:px-4">
+        {/* Left: Mobile Menu + Status Indicators */}
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          {/* Mobile Menu - Visible on small screens only */}
+          <MobileNav />
+
+          {/* Wallet Status - Hidden on very small screens */}
+          <div className="hidden xs:flex items-center gap-2">
+            <Wallet className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <div className="flex items-center gap-1.5 min-w-0">
               <Circle
                 className={cn(
-                  "h-1.5 w-1.5 fill-current",
+                  "h-1.5 w-1.5 fill-current flex-shrink-0",
                   isWalletConnected ? "text-success" : "text-muted-foreground"
                 )}
               />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground truncate">
                 {isWalletConnected ? walletName ?? "Wallet" : "Not connected"}
               </span>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-4 w-px bg-border" />
+          {/* Divider - Hidden on small screens */}
+          <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
 
-          {/* Auth Status */}
-          <div className="flex items-center gap-2">
+          {/* Auth Status - Hidden on very small screens */}
+          <div className="hidden xs:flex items-center gap-2">
             {isAuthenticated ? (
-              <ShieldCheck className="h-3.5 w-3.5 text-success" />
+              <ShieldCheck className="h-3.5 w-3.5 text-success flex-shrink-0" />
             ) : authError ? (
-              <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+              <ShieldAlert className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
             ) : (
-              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+              <Shield className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
             )}
             <span
               className={cn(
-                "text-xs",
+                "text-xs whitespace-nowrap",
                 isAuthenticated
                   ? "text-success"
                   : authError
@@ -140,21 +144,21 @@ export function AuthStatusBar() {
               )}
             >
               {isAuthenticated
-                ? "Authenticated"
+                ? "Auth"
                 : authError
                 ? "Error"
-                : "Not authenticated"}
+                : "Unauth"}
             </span>
           </div>
 
-          {/* JWT Timer - Only show when authenticated */}
+          {/* JWT Timer - Only show when authenticated, hidden on small screens */}
           {isAuthenticated && timeUntilExpiry && (
             <>
-              <div className="h-4 w-px bg-border" />
-              <div className="flex items-center gap-1.5">
+              <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
+              <div className="hidden sm:flex items-center gap-1.5">
                 <Clock
                   className={cn(
-                    "h-3.5 w-3.5",
+                    "h-3.5 w-3.5 flex-shrink-0",
                     isExpiringSoon ? "text-warning" : "text-muted-foreground"
                   )}
                 />
@@ -168,18 +172,18 @@ export function AuthStatusBar() {
                       : "text-muted-foreground"
                   )}
                 >
-                  {timeUntilExpiry === "Expired" ? "Expired" : timeUntilExpiry}
+                  {timeUntilExpiry === "Expired" ? "Exp" : timeUntilExpiry}
                 </span>
               </div>
             </>
           )}
 
-          {/* User Alias - Only show when authenticated */}
+          {/* User Alias - Only show when authenticated, hidden on very small screens */}
           {isAuthenticated && user?.accessTokenAlias && (
             <>
-              <div className="h-4 w-px bg-border" />
-              <div className="flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
+              <div className="hidden sm:flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <AndamioBadge variant="secondary" className="h-5 text-[10px] font-mono px-1.5">
                   {user.accessTokenAlias}
                 </AndamioBadge>
@@ -189,13 +193,13 @@ export function AuthStatusBar() {
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {isAuthenticated && (
             <AndamioButton
               variant="ghost"
               size="sm"
               onClick={logout}
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="hidden sm:flex h-6 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
               <LogOut className="mr-1.5 h-3 w-3" />
               Logout

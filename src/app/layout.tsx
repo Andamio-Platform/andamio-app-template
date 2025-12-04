@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 import "@meshsdk/react/styles.css";
 
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
@@ -9,6 +9,13 @@ import { MeshProvider } from "~/components/providers/mesh-provider";
 import { AndamioAuthProvider } from "~/contexts/andamio-auth-context";
 import { Toaster } from "~/components/ui/sonner";
 import { PendingTxWatcher } from "~/components/pending-tx-watcher";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   title: "Andamio T3 App Template",

@@ -5,9 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { LayoutDashboard, LogOut, GraduationCap, Sparkles, BookOpen, Map, Palette, FolderKanban } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  GraduationCap,
+  Sparkles,
+  BookOpen,
+  Map,
+  Palette,
+  FolderKanban,
+  ChevronRight,
+  Layers
+} from "lucide-react";
 import { cn } from "~/lib/utils";
 
 const navigation = [
@@ -15,36 +25,43 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    description: "Overview & status",
   },
   {
     name: "Browse Courses",
     href: "/course",
     icon: GraduationCap,
+    description: "Explore catalog",
   },
   {
     name: "My Courses",
     href: "/courses",
     icon: BookOpen,
+    description: "Your course library",
   },
   {
     name: "Browse Projects",
     href: "/project",
     icon: FolderKanban,
+    description: "Find projects",
   },
   {
     name: "Studio",
     href: "/studio",
     icon: Sparkles,
+    description: "Creator tools",
   },
   {
     name: "Components",
     href: "/components",
     icon: Palette,
+    description: "UI showcase",
   },
   {
     name: "Sitemap",
     href: "/sitemap",
     icon: Map,
+    description: "All routes",
   },
 ];
 
@@ -53,64 +70,102 @@ export function AppSidebar() {
   const { isAuthenticated, user, logout } = useAndamioAuth();
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-background">
-      {/* Header */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/">
-          <h1 className="text-xl font-semibold">Andamio</h1>
+    <div className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
+      {/* Brand Header */}
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Layers className="h-4 w-4" />
+        </div>
+        <Link href="/" className="flex flex-col">
+          <span className="text-base font-semibold text-sidebar-foreground">Andamio</span>
+          <span className="text-[10px] text-muted-foreground">Learning Platform</span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
 
-          return (
-            <Link key={item.href} href={item.href}>
-              <AndamioButton
-                variant={isActive ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start",
-                  isActive && "bg-secondary"
-                )}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {item.name}
-              </AndamioButton>
-            </Link>
-          );
-        })}
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 flex-shrink-0 transition-colors",
+                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
+                    )}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className={cn(
+                      "block font-medium truncate",
+                      isActive && "text-sidebar-foreground"
+                    )}>
+                      {item.name}
+                    </span>
+                  </div>
+                  {isActive && (
+                    <ChevronRight className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
-      <AndamioSeparator />
-
       {/* User Section */}
-      <div className="p-4">
+      <div className="border-t border-sidebar-border p-4">
         {isAuthenticated && user ? (
           <div className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">
+            {/* Wallet Info */}
+            <div className="rounded-lg bg-sidebar-accent/50 p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
                 Connected Wallet
               </p>
-              <AndamioBadge variant="outline" className="font-mono text-xs">
-                {user.cardanoBech32Addr?.slice(0, 12)}...
-              </AndamioBadge>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                <code className="text-xs text-sidebar-foreground truncate">
+                  {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-6)}
+                </code>
+              </div>
+              {user.accessTokenAlias && (
+                <div className="mt-2 pt-2 border-t border-sidebar-border">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                    Token
+                  </p>
+                  <AndamioBadge variant="secondary" className="text-xs">
+                    {user.accessTokenAlias}
+                  </AndamioBadge>
+                </div>
+              )}
             </div>
+
+            {/* Disconnect Button */}
             <AndamioButton
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={logout}
-              className="w-full"
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Disconnect
             </AndamioButton>
           </div>
         ) : (
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Not connected</p>
+          <div className="rounded-lg bg-sidebar-accent/50 p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              Connect wallet to get started
+            </p>
           </div>
         )}
       </div>

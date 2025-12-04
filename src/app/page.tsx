@@ -3,335 +3,309 @@
 import React from "react";
 import Link from "next/link";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioSectionDescription } from "~/components/andamio/andamio-section-description";
 import {
-  Zap,
-  Shield,
-  Palette,
-  Code2,
-  Database,
-  Layers,
-  Wallet,
   ArrowRight,
   CheckCircle2,
   BookOpen,
+  Layers,
+  Shield,
+  Blocks,
   Sparkles,
-  LayoutDashboard,
-  FileCode2,
+  GraduationCap,
+  Award,
+  Users,
 } from "lucide-react";
-
-const features = [
-  {
-    icon: Layers,
-    title: "Local and Global",
-    description: "Your courses, your contributors, your community. Connected to a global network of compatible apps and shared infrastructure.",
-  },
-  {
-    icon: Shield,
-    title: "On-Chain Anchors",
-    description: "Learning paths, contribution records, credentials—all verified on Cardano. Portable across apps, owned by users.",
-  },
-  {
-    icon: Database,
-    title: "Shared Infrastructure",
-    description: "Build on common primitives. Extend them. Make them yours. The foundation is here, the vision is yours.",
-  },
-  {
-    icon: Zap,
-    title: "One Install",
-    description: "npm install @andamio/core. Connect to global infrastructure. Build something local and unique.",
-  },
-  {
-    icon: Palette,
-    title: "Production Ready",
-    description: "45+ components. Auth flow. Course management. Blockchain integration. Start with infrastructure, ship your vision.",
-  },
-  {
-    icon: Code2,
-    title: "Your Stack",
-    description: "Next.js 15, TypeScript, tRPC, Tailwind v4. The modern tools you already use.",
-  },
-];
-
-const quickLinks = [
-  {
-    icon: LayoutDashboard,
-    title: "Dashboard",
-    href: "/dashboard",
-    description: "View your personal dashboard",
-  },
-  {
-    icon: BookOpen,
-    title: "Browse Courses",
-    href: "/course",
-    description: "Explore published courses",
-  },
-  {
-    icon: Sparkles,
-    title: "Studio",
-    href: "/studio",
-    description: "Creator studio hub",
-  },
-  {
-    icon: FileCode2,
-    title: "Components",
-    href: "/components",
-    description: "Component showcase",
-  },
-];
-
-const codeExample = `// Install Andamio
-npm install @andamio/core
-
-// Your app is now connected
-import { useAndamioAuth } from "@andamio/core";
-import { type Course } from "@andamio/db-api";
-
-export function MyCourses() {
-  const { authenticatedFetch } = useAndamioAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-
-  // Full type safety from API to UI
-  const data = await authenticatedFetch("/courses/owned");
-
-  return <CourseList courses={data} />;
-}`;
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border bg-background/50 backdrop-blur-sm">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Andamio T3 App Template</span>
-          </div>
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-primary/3 to-transparent" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent" />
 
-          <h1 className="!text-5xl md:!text-6xl font-bold tracking-tight text-center">
-            Build what&apos;s yours
-            <br />
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Connect to what&apos;s global
-            </span>
-          </h1>
+        <div className="relative mx-auto max-w-5xl px-6 pt-24 pb-32 sm:pt-32 sm:pb-40 lg:px-8">
+          <div className="text-center">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
+              <Layers className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium text-primary tracking-wide">ANDAMIO PLATFORM</span>
+            </div>
 
-          <AndamioSectionDescription>
-            Your app, your vision, your community. Built on shared infrastructure.
-            <br />
-            Learning, contributions, credentials—on-chain, interoperable, yours.
-          </AndamioSectionDescription>
+            {/* Main Headline - MASSIVE */}
+            <h1 className="!mt-8 !mb-0 !text-6xl sm:!text-7xl md:!text-8xl lg:!text-9xl font-bold tracking-tighter">
+              Learn. Build.
+              <br />
+              <span className="text-primary">Prove it.</span>
+            </h1>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/dashboard">
-              <AndamioButton size="lg" className="w-full sm:w-auto">
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </AndamioButton>
-            </Link>
-            <Link href="/components">
-              <AndamioButton size="lg" variant="outline" className="w-full sm:w-auto">
-                View Components
-              </AndamioButton>
-            </Link>
-            <Link href="/sitemap">
-              <AndamioButton size="lg" variant="ghost" className="w-full sm:w-auto">
-                Explore Routes
-              </AndamioButton>
-            </Link>
-          </div>
-        </div>
-      </div>
+            {/* Subheadline */}
+            <p className="mx-auto !my-12 text-xl text-muted-foreground sm:text-2xl">
+              Professional learning with verifiable credentials on Cardano.
+            </p>
 
-      {/* Features Grid */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="text-center space-y-0">
-          <h2 className="!text-3xl font-bold text-center">How It Works</h2>
-          <AndamioSectionDescription className="text-lg">
-            Global infrastructure. Local identity. Your app stays yours.
-          </AndamioSectionDescription>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <AndamioCard key={feature.title} className="border-2 hover:border-primary/50 transition-colors">
-                <AndamioCardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <AndamioCardTitle className="text-lg">{feature.title}</AndamioCardTitle>
-                  </div>
-                </AndamioCardHeader>
-                <AndamioCardContent>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </AndamioCardContent>
-              </AndamioCard>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Code Example */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-0">
-            <h2 className="!text-3xl font-bold text-center">Web3 Infrastructure</h2>
-            <AndamioSectionDescription className="text-lg">
-              The Cardano primitives that make decentralized learning and contribution systems possible.
-            </AndamioSectionDescription>
-          </div>
-
-          <AndamioCard className="border-2">
-            <AndamioCardContent className="p-6">
-              <pre className="text-sm overflow-x-auto">
-                <code>{codeExample}</code>
-              </pre>
-            </AndamioCardContent>
-          </AndamioCard>
-        </div>
-      </div>
-
-      {/* Quick Links */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="text-center space-y-0">
-          <h2 className="!text-3xl font-bold text-center">Explore</h2>
-          <AndamioSectionDescription className="text-lg">
-            See what&apos;s possible. Every route is ready.
-          </AndamioSectionDescription>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-          {quickLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link key={link.href} href={link.href}>
-                <AndamioCard className="h-full hover:bg-accent transition-colors cursor-pointer border-2 hover:border-primary/50">
-                  <AndamioCardHeader>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <AndamioCardTitle className="text-base">{link.title}</AndamioCardTitle>
-                    </div>
-                    <AndamioCardDescription className="text-xs">
-                      {link.description}
-                    </AndamioCardDescription>
-                  </AndamioCardHeader>
-                </AndamioCard>
+            {/* CTA Buttons */}
+            <div className="mt-12 flex flex-col items-center justify-center gap-4">
+              <Link href="/dashboard">
+                <AndamioButton size="lg" className="h-12 px-6 gap-2">
+                  Start Learning
+                  <ArrowRight className="h-4 w-4" />
+                </AndamioButton>
               </Link>
-            );
-          })}
+              <Link href="/course">
+                <AndamioButton size="lg" variant="outline" className="h-12 px-6">
+                  Browse Courses
+                </AndamioButton>
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      </section>
+
+      {/* Value Props */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="grid gap-12 sm:grid-cols-3">
+            {[
+              {
+                icon: GraduationCap,
+                title: "Structured Learning",
+                description: "Goal-driven courses with clear paths from beginner to expert.",
+              },
+              {
+                icon: Award,
+                title: "Verifiable Credentials",
+                description: "On-chain certificates that prove your skills. Portable and permanent.",
+              },
+              {
+                icon: Users,
+                title: "Community Driven",
+                description: "Learn with peers and build your reputation in the ecosystem.",
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.title} className="text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                    <Icon className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="!mt-5 !mb-0 !text-xl sm:!text-2xl font-semibold">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-muted-foreground !mb-0">
+                    {item.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="border-y border-border bg-muted/40 py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="!text-4xl sm:!text-5xl lg:!text-6xl font-bold tracking-tight !mb-0">
+              How it works
+            </h2>
+            <p className="mt-6 text-xl text-muted-foreground !mb-0">
+              Three steps to building your verified skill portfolio.
+            </p>
+          </div>
+
+          <div className="mt-20 grid gap-8 sm:grid-cols-3 sm:gap-12">
+            {[
+              {
+                step: "01",
+                title: "Connect Wallet",
+                description: "Link your Cardano wallet to create your learning identity.",
+              },
+              {
+                step: "02",
+                title: "Complete Courses",
+                description: "Work through structured modules and hands-on assignments.",
+              },
+              {
+                step: "03",
+                title: "Earn Credentials",
+                description: "Receive verifiable on-chain proof of your achievements.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="text-center">
+                <div className="text-7xl sm:text-8xl font-bold text-primary/15 leading-none">
+                  {item.step}
+                </div>
+                <h3 className="!mt-4 !mb-0 !text-xl sm:!text-2xl font-semibold">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-muted-foreground !mb-0">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
+            {/* Content */}
+            <div className="text-center lg:text-left">
+              <h2 className="!text-4xl sm:!text-5xl lg:!text-6xl font-bold tracking-tight !mb-0">
+                Everything you need
+              </h2>
+              <p className="mt-6 text-xl text-muted-foreground !mb-0">
+                A complete platform for learning, teaching, and proving competency.
+              </p>
+
+              <div className="mt-10 grid gap-3 text-left sm:grid-cols-2">
+                {[
+                  "Structured course modules",
+                  "Interactive assignments",
+                  "Progress tracking",
+                  "On-chain credentials",
+                  "Wallet authentication",
+                  "Role-based access",
+                  "Rich text editor",
+                  "Transaction monitoring",
+                ].map((feature) => (
+                  <div key={feature} className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-success" />
+                    <span className="text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Visual */}
+            <div className="relative mx-auto max-w-md lg:max-w-none">
+              <div className="rounded-xl border border-border bg-card p-6 shadow-lg">
+                <div className="flex items-center gap-3 border-b border-border pb-5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Blocks className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold !mb-0">Course Progress</p>
+                    <p className="text-xs text-muted-foreground !mb-0">Plutus Smart Contracts</p>
+                  </div>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {[
+                    { name: "Introduction to Cardano", complete: true },
+                    { name: "Plutus Foundations", complete: true },
+                    { name: "Building Validators", complete: false },
+                    { name: "Testing & Deployment", complete: false },
+                  ].map((moduleItem, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      {moduleItem.complete ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                      )}
+                      <span className={`text-sm ${moduleItem.complete ? "text-muted-foreground line-through" : ""}`}>
+                        {moduleItem.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6">
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-medium">50%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full w-1/2 rounded-full bg-primary" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -z-10 -top-3 -right-3 h-full w-full rounded-xl border border-primary/20" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Tech Stack */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-0">
-            <h2 className="!text-3xl font-bold text-center">The Stack</h2>
-            <AndamioSectionDescription className="text-lg">
-              Platform meets tooling. Everything works together.
-            </AndamioSectionDescription>
+      <section className="border-t border-border bg-muted/40 py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <p className="text-center text-xs font-medium text-muted-foreground tracking-wider mb-8">
+            BUILT WITH
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+            {[
+              { name: "Next.js 15", icon: Blocks },
+              { name: "TypeScript", icon: Blocks },
+              { name: "Cardano", icon: Shield },
+              { name: "Tailwind", icon: Sparkles },
+              { name: "tRPC", icon: Blocks },
+              { name: "Mesh SDK", icon: Blocks },
+            ].map((tech) => (
+              <div key={tech.name} className="flex items-center gap-2 text-muted-foreground">
+                <tech.icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{tech.name}</span>
+              </div>
+            ))}
           </div>
-
-          <AndamioCard className="border-2">
-            <AndamioCardContent className="p-8">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Code2 className="h-4 w-4 text-primary" />
-                    Andamio Platform
-                  </h3>
-                  <ul className="space-y-2 text-sm">
-                    {[
-                      "@andamio/core - Platform SDK",
-                      "@andamio/db-api - Type-safe API",
-                      "Course & module management",
-                      "Assignment tracking",
-                      "On-chain credentials",
-                      "Contribution verification",
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" />
-                    Developer Tools
-                  </h3>
-                  <ul className="space-y-2 text-sm">
-                    {[
-                      "Next.js 15 App Router",
-                      "TypeScript & tRPC",
-                      "Tailwind CSS v4",
-                      "Cardano wallet auth",
-                      "45+ UI components",
-                      "Production patterns",
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </AndamioCardContent>
-          </AndamioCard>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <div className="container mx-auto px-4 py-24">
-        <div className="max-w-3xl mx-auto">
-          <AndamioCard className="border-2 border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10">
-            <AndamioCardContent className="p-16 text-center space-y-0">
-              <h2 className="!text-3xl font-bold text-center">See the System</h2>
-              <AndamioSectionDescription>
-                Connect your wallet. Explore how learning, contributions, and credentials work together on-chain.
-              </AndamioSectionDescription>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/dashboard">
-                  <AndamioButton size="lg" className="w-full sm:w-auto">
-                    <Wallet className="mr-2 h-4 w-4" />
-                    Go to Dashboard
-                  </AndamioButton>
-                </Link>
-                <Link href="/sitemap">
-                  <AndamioButton size="lg" variant="outline" className="w-full sm:w-auto">
-                    View All Routes
-                  </AndamioButton>
-                </Link>
-              </div>
-            </AndamioCardContent>
-          </AndamioCard>
+      {/* CTA */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-6 lg:px-8 text-center">
+          <h2 className="!text-4xl sm:!text-5xl lg:!text-6xl font-bold tracking-tight !mb-0">
+            Ready to get started?
+          </h2>
+          <p className="mt-6 text-xl text-muted-foreground !mb-0">
+            Connect your wallet and begin your learning journey today.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/dashboard">
+              <AndamioButton size="lg" className="h-12 px-6 gap-2">
+                Go to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </AndamioButton>
+            </Link>
+            <Link href="/course">
+              <AndamioButton size="lg" variant="outline" className="h-12 px-6 gap-2">
+                <BookOpen className="h-4 w-4" />
+                Browse Courses
+              </AndamioButton>
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <div className="container mx-auto px-4 py-12 border-t mt-12">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-6 text-sm text-muted-foreground">
-          <p>Built with the T3 Stack and Andamio Platform</p>
-          <div className="flex gap-4">
-            <Link href="/sitemap" className="hover:text-foreground transition-colors">
-              Sitemap
-            </Link>
-            <Link href="/components" className="hover:text-foreground transition-colors">
-              Components
-            </Link>
-            <Link href="/dashboard" className="hover:text-foreground transition-colors">
-              Dashboard
-            </Link>
+      <footer className="border-t border-border py-10">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <Layers className="h-3.5 w-3.5" />
+              </div>
+              <span className="font-semibold">Andamio</span>
+            </div>
+            <p className="text-sm text-muted-foreground !mb-0">
+              Professional learning on Cardano
+            </p>
+            <div className="flex items-center gap-6">
+              <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+              <Link href="/course" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Courses
+              </Link>
+              <Link href="/components" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Components
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

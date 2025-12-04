@@ -5,7 +5,6 @@ import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import {
   Wallet,
   Shield,
@@ -13,9 +12,11 @@ import {
   Clock,
   LogOut,
   User,
-  ShieldAlert
+  ShieldAlert,
+  Circle
 } from "lucide-react";
 import { getStoredJWT } from "~/lib/andamio-auth";
+import { cn } from "~/lib/utils";
 
 interface JWTPayload {
   exp?: number;
@@ -23,14 +24,7 @@ interface JWTPayload {
 }
 
 /**
- * AuthStatusBar - Displays authentication and wallet connection status
- *
- * Shows:
- * - Wallet connection status and name
- * - Authentication status
- * - JWT expiration countdown
- * - User information
- * - Quick logout action
+ * AuthStatusBar - A minimal, professional status bar showing connection state
  */
 export function AuthStatusBar() {
   const { name: walletName } = useWallet();
@@ -43,11 +37,13 @@ export function AuthStatusBar() {
   } = useAndamioAuth();
 
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<string | null>(null);
+  const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   // Update JWT expiration countdown
   useEffect(() => {
     if (!isAuthenticated) {
       setTimeUntilExpiry(null);
+      setIsExpiringSoon(false);
       return;
     }
 
@@ -55,26 +51,29 @@ export function AuthStatusBar() {
       const jwt = getStoredJWT();
       if (!jwt) {
         setTimeUntilExpiry(null);
+        setIsExpiringSoon(false);
         return;
       }
 
       try {
-        // Decode JWT to get expiration
         const payload = JSON.parse(atob(jwt.split('.')[1]!)) as JWTPayload;
         if (!payload.exp) {
           setTimeUntilExpiry(null);
           return;
         }
-        const expiresAt = payload.exp * 1000; // Convert to milliseconds
+        const expiresAt = payload.exp * 1000;
         const now = Date.now();
         const diff = expiresAt - now;
 
         if (diff <= 0) {
           setTimeUntilExpiry("Expired");
+          setIsExpiringSoon(true);
           return;
         }
 
-        // Format time remaining
+        // Check if expiring within 5 minutes
+        setIsExpiringSoon(diff < 5 * 60 * 1000);
+
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
@@ -92,105 +91,113 @@ export function AuthStatusBar() {
       }
     };
 
-    // Update immediately
     updateExpiry();
-
-    // Update every second
     const interval = setInterval(updateExpiry, 1000);
-
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   return (
-    <div className="border-b bg-muted/30">
-      <div className="flex items-center justify-between px-4 py-2">
-        {/* Left side - Status indicators */}
-        <div className="flex items-center gap-3">
+    <div className="h-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-full items-center justify-between px-4">
+        {/* Left: Status Indicators */}
+        <div className="flex items-center gap-4">
           {/* Wallet Status */}
           <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-            {isWalletConnected ? (
-              <AndamioBadge variant="default" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                {walletName ?? "Connected"}
-              </AndamioBadge>
-            ) : (
-              <AndamioBadge variant="secondary" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                Not Connected
-              </AndamioBadge>
-            )}
+            <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="flex items-center gap-1.5">
+              <Circle
+                className={cn(
+                  "h-1.5 w-1.5 fill-current",
+                  isWalletConnected ? "text-success" : "text-muted-foreground"
+                )}
+              />
+              <span className="text-xs text-muted-foreground">
+                {isWalletConnected ? walletName ?? "Wallet" : "Not connected"}
+              </span>
+            </div>
           </div>
 
-          <AndamioSeparator orientation="vertical" className="h-4" />
+          {/* Divider */}
+          <div className="h-4 w-px bg-border" />
 
           {/* Auth Status */}
           <div className="flex items-center gap-2">
             {isAuthenticated ? (
-              <ShieldCheck className="h-4 w-4 text-success" />
+              <ShieldCheck className="h-3.5 w-3.5 text-success" />
             ) : authError ? (
-              <ShieldAlert className="h-4 w-4 text-destructive" />
+              <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
             ) : (
-              <Shield className="h-4 w-4 text-muted-foreground" />
+              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
             )}
-            {isAuthenticated ? (
-              <AndamioBadge variant="default" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-success-foreground animate-pulse" />
-                Authenticated
-              </AndamioBadge>
-            ) : authError ? (
-              <AndamioBadge variant="destructive" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-destructive-foreground" />
-                Auth Error
-              </AndamioBadge>
-            ) : (
-              <AndamioBadge variant="secondary" className="gap-1">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                Not Authenticated
-              </AndamioBadge>
-            )}
+            <span
+              className={cn(
+                "text-xs",
+                isAuthenticated
+                  ? "text-success"
+                  : authError
+                  ? "text-destructive"
+                  : "text-muted-foreground"
+              )}
+            >
+              {isAuthenticated
+                ? "Authenticated"
+                : authError
+                ? "Error"
+                : "Not authenticated"}
+            </span>
           </div>
 
-          {/* JWT Expiry */}
+          {/* JWT Timer - Only show when authenticated */}
           {isAuthenticated && timeUntilExpiry && (
             <>
-              <AndamioSeparator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <AndamioBadge
-                  variant="outline"
-                  className={timeUntilExpiry === "Expired" ? "text-destructive" : ""}
+              <div className="h-4 w-px bg-border" />
+              <div className="flex items-center gap-1.5">
+                <Clock
+                  className={cn(
+                    "h-3.5 w-3.5",
+                    isExpiringSoon ? "text-warning" : "text-muted-foreground"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs font-mono",
+                    timeUntilExpiry === "Expired"
+                      ? "text-destructive"
+                      : isExpiringSoon
+                      ? "text-warning"
+                      : "text-muted-foreground"
+                  )}
                 >
-                  {timeUntilExpiry === "Expired" ? "JWT Expired" : `Expires in ${timeUntilExpiry}`}
-                </AndamioBadge>
+                  {timeUntilExpiry === "Expired" ? "Expired" : timeUntilExpiry}
+                </span>
               </div>
             </>
           )}
 
-          {/* User Info */}
-          {isAuthenticated && user && (
+          {/* User Alias - Only show when authenticated */}
+          {isAuthenticated && user?.accessTokenAlias && (
             <>
-              <AndamioSeparator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <AndamioBadge variant="outline" className="font-mono text-xs">
-                  {user.accessTokenAlias ?? user.id.slice(0, 8)}
+              <div className="h-4 w-px bg-border" />
+              <div className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                <AndamioBadge variant="secondary" className="h-5 text-[10px] font-mono px-1.5">
+                  {user.accessTokenAlias}
                 </AndamioBadge>
               </div>
             </>
           )}
         </div>
 
-        {/* Right side - Actions */}
+        {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {isAuthenticated && (
             <AndamioButton
               variant="ghost"
               size="sm"
               onClick={logout}
-              className="h-7 gap-1 text-xs"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
-              <LogOut className="h-3 w-3" />
+              <LogOut className="mr-1.5 h-3 w-3" />
               Logout
             </AndamioButton>
           )}

@@ -3,8 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { CheckCircle2, Circle, Rocket } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, Palette, FolderPlus, Map } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 interface ChecklistItem {
   id: string;
@@ -13,6 +13,7 @@ interface ChecklistItem {
   link?: string;
   linkText?: string;
   completed: boolean;
+  icon: React.ElementType;
 }
 
 interface GettingStartedProps {
@@ -24,47 +25,53 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
   const checklist: ChecklistItem[] = [
     {
       id: "connect",
-      title: "Connect your Cardano wallet",
-      description: "Connect a CIP-30 compatible wallet (Eternl, Nami, Flint, etc.)",
+      title: "Connect your wallet",
+      description: "Use a CIP-30 compatible wallet like Eternl or Nami",
       completed: isAuthenticated,
+      icon: Wallet,
     },
     {
       id: "token",
-      title: "Mint an access token",
-      description: "Create your on-chain access token for Andamio",
+      title: "Get an access token",
+      description: "Mint your on-chain access token to unlock all features",
       completed: hasAccessToken,
+      icon: Key,
     },
     {
       id: "explore",
-      title: "Explore the components",
-      description: "See all 45+ available UI components and copy code examples",
-      link: "/components",
-      linkText: "View Components",
+      title: "Browse available courses",
+      description: "Explore the course catalog and find something to learn",
+      link: "/course",
+      linkText: "Browse courses",
       completed: false,
+      icon: BookOpen,
     },
     {
-      id: "courses",
-      title: "Browse published courses",
-      description: "Check out the course catalog and see how courses are displayed",
-      link: "/course",
-      linkText: "Browse Courses",
+      id: "components",
+      title: "View UI components",
+      description: "Explore the component library and copy code examples",
+      link: "/components",
+      linkText: "View components",
       completed: false,
+      icon: Palette,
     },
     {
       id: "create",
       title: "Create your first course",
-      description: "Use the Course Creator Studio to build a course",
+      description: "Use the studio to build and publish educational content",
       link: "/courses",
-      linkText: "My Courses",
+      linkText: "Go to studio",
       completed: false,
+      icon: FolderPlus,
     },
     {
       id: "sitemap",
-      title: "Explore the sitemap",
-      description: "See all available routes and navigate the template easily",
+      title: "Explore all routes",
+      description: "View the complete sitemap and navigation structure",
       link: "/sitemap",
-      linkText: "View Sitemap",
+      linkText: "View sitemap",
       completed: false,
+      icon: Map,
     },
   ];
 
@@ -73,72 +80,88 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
   const progress = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <AndamioCard className="border-2">
-      <AndamioCardHeader className="space-y-4">
+    <AndamioCard>
+      <AndamioCardHeader className="pb-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-primary" />
+          <div>
             <AndamioCardTitle>Getting Started</AndamioCardTitle>
+            <AndamioCardDescription className="mt-1">
+              Complete these steps to get the most out of Andamio
+            </AndamioCardDescription>
           </div>
-          <AndamioBadge variant="secondary">
-            {completedCount} / {totalCount}
-          </AndamioBadge>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-primary">{completedCount}/{totalCount}</p>
+            <p className="text-xs text-muted-foreground">completed</p>
+          </div>
         </div>
-        <AndamioCardDescription className="text-base">
-          Complete these steps to get the most out of this template
-        </AndamioCardDescription>
-      </AndamioCardHeader>
-      <AndamioCardContent className="space-y-6">
-        {/* Progress indicator */}
-        {progress > 0 && (
-          <div className="space-y-2">
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-right">
-              {progress}% complete
-            </p>
-          </div>
-        )}
 
-        {/* Checklist items */}
-        <div className="space-y-3">
+        {/* Progress bar */}
+        <div className="mt-4">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </AndamioCardHeader>
+
+      <AndamioCardContent className="pt-0">
+        <div className="space-y-2">
           {checklist.map((item) => {
-            const Icon = item.completed ? CheckCircle2 : Circle;
+            const Icon = item.icon;
             return (
               <div
                 key={item.id}
-                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                  item.completed ? "bg-success/5 border-success/20" : "hover:bg-accent"
-                }`}
+                className={cn(
+                  "flex items-start gap-4 rounded-lg border p-4 transition-colors",
+                  item.completed
+                    ? "border-success/30 bg-success/5"
+                    : "border-border hover:border-primary/30 hover:bg-accent/50"
+                )}
               >
-                <Icon
-                  className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                    item.completed ? "text-success" : "text-muted-foreground"
-                  }`}
-                />
-                <div className="flex-1 min-w-0 space-y-1">
-                  <p
-                    className={`font-medium text-sm ${
-                      item.completed ? "text-success line-through" : ""
-                    }`}
-                  >
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.description}
-                  </p>
-                  {item.link && !item.completed && (
-                    <Link
-                      href={item.link}
-                      className="inline-block text-xs text-primary hover:underline"
-                    >
-                      {item.linkText} →
-                    </Link>
+                {/* Status icon */}
+                <div className="flex-shrink-0 mt-0.5">
+                  {item.completed ? (
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-muted-foreground" />
                   )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md",
+                      item.completed ? "bg-success/10" : "bg-muted"
+                    )}>
+                      <Icon className={cn(
+                        "h-4 w-4",
+                        item.completed ? "text-success" : "text-muted-foreground"
+                      )} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={cn(
+                        "font-medium text-sm",
+                        item.completed && "text-success"
+                      )}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.description}
+                      </p>
+                      {item.link && !item.completed && (
+                        <Link
+                          href={item.link}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-2"
+                        >
+                          {item.linkText}
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

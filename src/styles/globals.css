@@ -54,126 +54,126 @@
 }
 
 :root {
-  /* Clean Light Theme - Bold & Sharp */
-  --radius: 0rem;
+  /* Professional Light Theme - Clean, Goal-Driven, Utility-First */
+  --radius: 0.625rem;
 
-  /* Base */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Base - Crisp white with subtle warmth */
+  --background: oklch(0.995 0.002 240);
+  --foreground: oklch(0.13 0.02 260);
 
-  /* Cards */
+  /* Cards - Clean white with subtle depth */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.13 0.02 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.13 0.02 260);
 
-  /* Primary - Subtle Blue */
-  --primary: oklch(0.45 0.15 250);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Primary - Professional indigo-blue */
+  --primary: oklch(0.48 0.17 265);
+  --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary */
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.145 0 0);
+  /* Secondary - Soft slate */
+  --secondary: oklch(0.965 0.005 260);
+  --secondary-foreground: oklch(0.25 0.02 260);
 
-  /* Muted */
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.45 0 0);
+  /* Muted - Subtle gray for backgrounds */
+  --muted: oklch(0.97 0.005 260);
+  --muted-foreground: oklch(0.45 0.02 260);
 
-  /* Accent */
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.145 0 0);
+  /* Accent - Light accent for hover states */
+  --accent: oklch(0.96 0.015 265);
+  --accent-foreground: oklch(0.13 0.02 260);
 
-  /* Status colors */
-  --destructive: oklch(0.55 0.2 25);
-  --success: oklch(0.6 0.15 145);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.75 0.15 85);
-  --warning-foreground: oklch(0.145 0 0);
-  --info: oklch(0.6 0.15 240);
-  --info-foreground: oklch(0.985 0 0);
+  /* Status colors - Clear and purposeful */
+  --destructive: oklch(0.55 0.22 25);
+  --success: oklch(0.52 0.17 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.16 75);
+  --warning-foreground: oklch(0.2 0.02 75);
+  --info: oklch(0.55 0.18 250);
+  --info-foreground: oklch(0.99 0 0);
 
-  /* Borders */
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.45 0.15 250);
+  /* Borders - Subtle definition */
+  --border: oklch(0.92 0.005 260);
+  --input: oklch(0.90 0.005 260);
+  --ring: oklch(0.48 0.17 265);
 
-  /* Charts */
-  --chart-1: oklch(0.55 0.2 25);
-  --chart-2: oklch(0.6 0.2 145);
-  --chart-3: oklch(0.55 0.2 240);
-  --chart-4: oklch(0.65 0.2 60);
-  --chart-5: oklch(0.6 0.2 300);
+  /* Charts - Vibrant but professional */
+  --chart-1: oklch(0.48 0.17 265);
+  --chart-2: oklch(0.52 0.17 155);
+  --chart-3: oklch(0.55 0.18 250);
+  --chart-4: oklch(0.75 0.16 75);
+  --chart-5: oklch(0.55 0.22 25);
 
-  /* Sidebar */
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.45 0.15 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.92 0 0);
-  --sidebar-ring: oklch(0.45 0.15 250);
+  /* Sidebar - Clean navigation */
+  --sidebar: oklch(0.985 0.005 260);
+  --sidebar-foreground: oklch(0.13 0.02 260);
+  --sidebar-primary: oklch(0.48 0.17 265);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.015 265);
+  --sidebar-accent-foreground: oklch(0.13 0.02 260);
+  --sidebar-border: oklch(0.93 0.005 260);
+  --sidebar-ring: oklch(0.48 0.17 265);
 }
 
 .dark {
-  /* Clean Dark Theme */
+  /* Professional Dark Theme - Focused, Clear, High-Contrast */
 
-  /* Base - Dark slate background */
-  --background: oklch(0.145 0.01 250);
-  --foreground: oklch(0.95 0.01 250);
+  /* Base - Deep slate with subtle blue undertone */
+  --background: oklch(0.12 0.015 265);
+  --foreground: oklch(0.96 0.005 260);
 
-  /* Cards - Slightly lighter slate */
-  --card: oklch(0.18 0.01 250);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.18 0.01 250);
-  --popover-foreground: oklch(0.95 0.01 250);
+  /* Cards - Elevated surface */
+  --card: oklch(0.155 0.015 265);
+  --card-foreground: oklch(0.96 0.005 260);
+  --popover: oklch(0.17 0.015 265);
+  --popover-foreground: oklch(0.96 0.005 260);
 
-  /* Primary - Clean blue */
-  --primary: oklch(0.6 0.15 250);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Primary - Bright, accessible blue */
+  --primary: oklch(0.65 0.18 265);
+  --primary-foreground: oklch(0.12 0.015 265);
 
-  /* Secondary */
-  --secondary: oklch(0.25 0.01 250);
-  --secondary-foreground: oklch(0.95 0.01 250);
+  /* Secondary - Elevated slate */
+  --secondary: oklch(0.20 0.015 265);
+  --secondary-foreground: oklch(0.92 0.005 260);
 
-  /* Muted */
-  --muted: oklch(0.25 0.01 250);
-  --muted-foreground: oklch(0.65 0.01 250);
+  /* Muted - Subtle backgrounds */
+  --muted: oklch(0.18 0.015 265);
+  --muted-foreground: oklch(0.58 0.02 260);
 
-  /* Accent */
-  --accent: oklch(0.25 0.01 250);
-  --accent-foreground: oklch(0.95 0.01 250);
+  /* Accent - Interactive highlight */
+  --accent: oklch(0.22 0.02 265);
+  --accent-foreground: oklch(0.96 0.005 260);
 
-  /* Status colors */
-  --destructive: oklch(0.6 0.2 25);
-  --success: oklch(0.7 0.15 145);
-  --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.8 0.15 85);
-  --warning-foreground: oklch(0.145 0 0);
-  --info: oklch(0.7 0.15 240);
-  --info-foreground: oklch(0.985 0 0);
+  /* Status colors - Vivid and clear */
+  --destructive: oklch(0.62 0.22 20);
+  --success: oklch(0.60 0.18 155);
+  --success-foreground: oklch(0.12 0.02 155);
+  --warning: oklch(0.80 0.15 80);
+  --warning-foreground: oklch(0.15 0.02 75);
+  --info: oklch(0.62 0.18 250);
+  --info-foreground: oklch(0.99 0 0);
 
-  /* Borders - Big White Borders */
-  --border: oklch(0.95 0 0);
-  --input: oklch(0.95 0 0);
-  --ring: oklch(0.6 0.15 250);
+  /* Borders - Subtle definition in dark mode */
+  --border: oklch(0.28 0.015 265);
+  --input: oklch(0.25 0.015 265);
+  --ring: oklch(0.65 0.18 265);
 
   /* Charts */
-  --chart-1: oklch(0.6 0.2 25);
-  --chart-2: oklch(0.7 0.2 145);
-  --chart-3: oklch(0.6 0.2 240);
-  --chart-4: oklch(0.75 0.2 60);
-  --chart-5: oklch(0.65 0.2 300);
+  --chart-1: oklch(0.65 0.18 265);
+  --chart-2: oklch(0.60 0.18 155);
+  --chart-3: oklch(0.62 0.18 250);
+  --chart-4: oklch(0.80 0.15 80);
+  --chart-5: oklch(0.62 0.22 20);
 
-  /* Sidebar - Darker slate */
-  --sidebar: oklch(0.12 0.01 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.6 0.15 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.01 250);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(0.95 0 0);
-  --sidebar-ring: oklch(0.6 0.15 250);
+  /* Sidebar - Darker for depth */
+  --sidebar: oklch(0.10 0.015 265);
+  --sidebar-foreground: oklch(0.96 0.005 260);
+  --sidebar-primary: oklch(0.65 0.18 265);
+  --sidebar-primary-foreground: oklch(0.12 0.015 265);
+  --sidebar-accent: oklch(0.18 0.02 265);
+  --sidebar-accent-foreground: oklch(0.96 0.005 260);
+  --sidebar-border: oklch(0.25 0.015 265);
+  --sidebar-ring: oklch(0.65 0.18 265);
 }
 
 @layer base {
@@ -181,49 +181,50 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground leading-relaxed;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Typography Scale - Strong, Modern, Balanced */
+  /* Typography Scale - Bold, Impactful */
   h1 {
-    @apply font-bold tracking-tight;
-    @apply mb-8 mt-0;
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground;
+    @apply mb-6 mt-0;
   }
 
   h2 {
-    @apply font-bold tracking-tight;
-    @apply mb-6 mt-12;
+    @apply text-3xl sm:text-4xl font-bold tracking-tight text-foreground;
+    @apply mb-4 mt-12 first:mt-0;
   }
 
   h3 {
-    @apply font-bold tracking-tight;
-    @apply mb-4 mt-8;
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+    @apply mb-3 mt-8 first:mt-0;
   }
 
   h4 {
-    @apply text-xl font-bold tracking-tight;
-    @apply mb-3 mt-6;
+    @apply text-xl font-semibold text-foreground;
+    @apply mb-2 mt-6 first:mt-0;
   }
 
   h5 {
-    @apply text-lg font-semibold tracking-tight;
-    @apply mb-2 mt-4;
+    @apply text-lg font-semibold text-foreground;
+    @apply mb-2 mt-4 first:mt-0;
   }
 
   h6 {
-    @apply text-base font-semibold tracking-tight;
-    @apply mb-2 mt-4;
+    @apply text-base font-semibold text-foreground;
+    @apply mb-1 mt-3 first:mt-0;
   }
 
   p {
-    @apply text-base leading-relaxed;
-    @apply mb-6;
-    max-width: 65ch;
+    @apply text-base leading-relaxed text-foreground/90;
+    @apply mb-4 last:mb-0;
+    max-width: 70ch;
   }
 
-  /* Lists - Better spacing */
+  /* Lists - Clean and organized */
   ul, ol {
-    @apply mb-6 ml-8 space-y-2;
+    @apply mb-4 ml-6 space-y-1.5;
   }
 
   ul {
@@ -235,46 +236,45 @@
   }
 
   li {
-    @apply leading-relaxed;
+    @apply leading-relaxed text-foreground/90;
   }
 
-  /* Blockquote - Bold style */
+  /* Blockquote - Refined */
   blockquote {
-    @apply border-l-4 border-border pl-6 italic my-8 py-2;
-    @apply text-lg;
+    @apply border-l-2 border-primary/30 pl-4 italic my-6;
+    @apply text-muted-foreground;
   }
 
-  /* Code - More spacing */
+  /* Code - Professional */
   code {
-    @apply bg-muted px-2 py-1 text-xs font-mono border-2 border-border;
+    @apply bg-muted px-1.5 py-0.5 text-sm font-mono rounded-md text-foreground/90;
   }
 
   pre {
-    @apply bg-muted p-6 overflow-x-auto my-8 border-4 border-border text-xs shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)];
+    @apply bg-muted p-4 overflow-x-auto my-6 rounded-lg text-sm border border-border;
   }
 
   pre code {
-    @apply bg-transparent p-0 border-0 text-xs;
+    @apply bg-transparent p-0 text-sm rounded-none;
   }
 }
 
-/* Editor Content Styles - Strong, Modern, Balanced */
+/* Editor Content Styles */
 .editor-content {
-  @apply prose prose-slate max-w-none;
-  @apply prose-headings:font-bold prose-headings:tracking-tight;
-  @apply prose-h1:text-4xl prose-h1:mb-8 prose-h1:mt-0;
-  @apply prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12;
-  @apply prose-h3:text-2xl prose-h3:mb-4 prose-h3:mt-8;
-  @apply prose-h4:text-xl prose-h4:mb-3 prose-h4:mt-6;
-  @apply prose-p:text-base prose-p:leading-relaxed prose-p:mb-6;
-  @apply prose-ul:mb-6 prose-ul:space-y-2 prose-ol:mb-6 prose-ol:space-y-2;
+  @apply prose prose-slate max-w-none dark:prose-invert;
+  @apply prose-headings:font-semibold prose-headings:tracking-tight;
+  @apply prose-h1:text-3xl prose-h1:mb-4 prose-h1:mt-0;
+  @apply prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-8;
+  @apply prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-6;
+  @apply prose-h4:text-lg prose-h4:mb-2 prose-h4:mt-4;
+  @apply prose-p:text-base prose-p:leading-relaxed prose-p:mb-4;
+  @apply prose-ul:mb-4 prose-ul:space-y-1.5 prose-ol:mb-4 prose-ol:space-y-1.5;
   @apply prose-li:leading-relaxed;
-  @apply prose-blockquote:border-l-4 prose-blockquote:border-border prose-blockquote:pl-6 prose-blockquote:my-8;
-  @apply prose-code:bg-muted prose-code:text-foreground prose-code:px-2 prose-code:py-1 prose-code:text-sm prose-code:border-2 prose-code:border-border prose-code:rounded;
-  @apply prose-pre:bg-muted prose-pre:text-foreground prose-pre:border-4 prose-pre:border-border prose-pre:p-6 prose-pre:my-8 prose-pre:rounded-lg;
-  @apply prose-a:text-primary prose-a:underline prose-a:decoration-primary/30 prose-a:font-semibold;
-  @apply prose-a:hover:decoration-primary;
-  @apply prose-strong:font-bold;
+  @apply prose-blockquote:border-l-2 prose-blockquote:border-primary/30 prose-blockquote:pl-4 prose-blockquote:my-6;
+  @apply prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:rounded-md;
+  @apply prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border prose-pre:p-4 prose-pre:my-6 prose-pre:rounded-lg;
+  @apply prose-a:text-primary prose-a:no-underline prose-a:font-medium hover:prose-a:underline;
+  @apply prose-strong:font-semibold;
   @apply prose-em:italic;
 }
 
@@ -292,94 +292,109 @@
   @apply outline-none;
 }
 
-/* Modern Spacing & Layout - Balanced Design */
+/* Professional Component Styling */
 @layer components {
   /* Section spacing */
   section {
-    @apply py-12;
+    @apply py-8;
   }
 
-  /* Card spacing */
+  /* Card styling - Clean with subtle shadow */
   [data-slot="card"] {
-    @apply p-8 gap-8;
+    @apply p-6 gap-6 shadow-sm;
   }
 
   [data-slot="card-header"] {
-    @apply gap-4;
+    @apply gap-2 pb-0;
   }
 
   [data-slot="card-title"] {
-    @apply text-2xl font-bold uppercase tracking-wide mb-0;
+    @apply text-lg font-semibold tracking-tight mb-0;
   }
 
   [data-slot="card-description"] {
-    @apply text-base mt-2;
+    @apply text-sm text-muted-foreground mt-1;
   }
 
-  /* Form spacing */
+  /* Form styling */
   form {
-    @apply space-y-6;
+    @apply space-y-5;
   }
 
   label {
-    @apply block font-semibold uppercase tracking-wide text-sm mb-2;
+    @apply block font-medium text-sm text-foreground mb-1.5;
   }
 
-  /* Input spacing */
+  /* Input styling */
   input,
   textarea,
   select {
-    @apply px-4 py-3 w-full;
+    @apply px-3 py-2 w-full text-sm;
   }
 
-  /* Button spacing */
+  /* Button styling */
   button,
   [role="button"] {
-    @apply px-6 py-3 font-bold uppercase tracking-wide;
+    @apply px-4 py-2 font-medium text-sm transition-colors;
   }
 
-  /* Table spacing */
+  /* Table styling */
   [data-slot="table-head"] {
-    @apply px-4 py-4 font-bold uppercase tracking-wide text-sm;
+    @apply px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground bg-muted/50;
   }
 
   [data-slot="table-cell"] {
-    @apply px-4 py-4;
+    @apply px-4 py-3 text-sm;
   }
 
-  /* Alert spacing */
+  /* Alert styling */
   [data-slot="alert"] {
-    @apply p-6 gap-4;
+    @apply p-4 gap-3;
   }
 
-  /* Badge spacing */
+  /* Badge styling */
   [data-slot="badge"] {
-    @apply px-3 py-1 text-xs font-bold uppercase tracking-wider;
+    @apply px-2.5 py-0.5 text-xs font-medium;
   }
 }
 
-/* Sharp Edges & Clean Borders */
+/* Card borders and shadows */
 @layer components {
-  /* Cards - WHITE BORDERS */
   [data-slot="card"] {
-    border-width: 2px !important;
-    border-color: var(--border) !important;
+    border-width: 1px;
+    border-color: var(--border);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   }
 
-  /* Tables - WHITE BORDERS */
+  /* Hover effect for interactive cards */
+  [data-slot="card"]:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  }
+
+  /* Table styling */
   [data-slot="table"] {
-    border-width: 2px !important;
-    border-color: var(--border) !important;
+    border-width: 1px;
+    border-color: var(--border);
   }
 
   [data-slot="table-head"],
   [data-slot="table-cell"] {
-    border-width: 1px !important;
-    border-color: var(--border) !important;
+    border-bottom-width: 1px;
+    border-color: var(--border);
+  }
+}
+
+/* Focus and interaction states */
+@layer utilities {
+  .focus-ring {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Remove all rounded corners globally */
-  * {
-    border-radius: 0 !important;
+  .hover-lift {
+    @apply transition-transform hover:-translate-y-0.5;
+  }
+
+  .hover-glow {
+    @apply transition-shadow hover:shadow-md;
   }
 }

@@ -1,5 +1,5 @@
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { mergeAttributes, type Range, type ChainedCommands } from "@tiptap/core";
+import { mergeAttributes, type Range, type ChainedCommands, type CommandProps } from "@tiptap/core";
 
 import { ImageBlockView } from "./components/ImageBlockView";
 import { Image } from "../Image";
@@ -90,8 +90,8 @@ export const ImageBlock = Image.extend({
     return {
       setImageBlock:
         (attrs: { src: string }) =>
-        ({ commands }: { commands: ChainedCommands }) => {
-          return commands.insertContent({
+        (props: CommandProps) => {
+          return props.commands.insertContent({
             type: "imageBlock",
             attrs: { src: attrs.src },
           });
@@ -99,11 +99,11 @@ export const ImageBlock = Image.extend({
 
       setImageBlockAt:
         (attrs: { src: string; pos: number | Range }) =>
-        ({ commands }: { commands: ChainedCommands }) => {
+        (props: CommandProps) => {
           const pos =
             typeof attrs.pos === "number" ? attrs.pos : attrs.pos.from;
 
-          return commands.insertContentAt(pos, {
+          return props.commands.insertContentAt(pos, {
             type: "imageBlock",
             attrs: { src: attrs.src },
           });
@@ -111,13 +111,13 @@ export const ImageBlock = Image.extend({
 
       setImageBlockAlign:
         (align: "left" | "center" | "right") =>
-        ({ commands }: { commands: ChainedCommands }) =>
-          commands.updateAttributes("imageBlock", { align }),
+        (props: CommandProps) =>
+          props.commands.updateAttributes("imageBlock", { align }),
 
       setImageBlockWidth:
         (width: number) =>
-        ({ commands }: { commands: ChainedCommands }) =>
-          commands.updateAttributes("imageBlock", {
+        (props: CommandProps) =>
+          props.commands.updateAttributes("imageBlock", {
             width: `${Math.max(0, width)}`,
             height: `${Math.max(0, width)}`,
           }),

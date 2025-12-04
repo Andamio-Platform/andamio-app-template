@@ -1,0 +1,358 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { env } from "~/env";
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { ContentDisplay } from "~/components/content-display";
+import { AlertCircle, ArrowLeft, CheckCircle, Clock, Coins, ListChecks, Users } from "lucide-react";
+import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
+import type { JSONContent } from "@tiptap/core";
+
+type TaskListOutput = CreateTaskOutput[];
+
+/**
+ * Task Detail Page - Public view of a task with commitment functionality
+ *
+ * API Endpoints:
+ * - POST /tasks/list (public) - Get task by filtering
+ * - POST /task-commitments/get (protected) - Get user's commitment
+ */
+export default function TaskDetailPage() {
+  const params = useParams();
+  const treasuryNftPolicyId = params.treasurynft as string;
+  const taskHash = params.taskhash as string;
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  const [task, setTask] = useState<CreateTaskOutput | null>(null);
+  const [commitment, setCommitment] = useState<GetTaskCommitmentByTaskHashOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTaskAndCommitment = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Fetch all tasks for this project
+        const tasksResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
+          }
+        );
+
+        if (!tasksResponse.ok) {
+          throw new Error("Failed to fetch tasks");
+        }
+
+        const tasks = (await tasksResponse.json()) as TaskListOutput;
+        const taskData = tasks.find((t) => t.task_hash === taskHash);
+
+        if (!taskData) {
+          throw new Error("Task not found");
+        }
+
+        setTask(taskData);
+
+        // If authenticated, fetch commitment status
+        if (isAuthenticated) {
+          try {
+            const commitmentResponse = await authenticatedFetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task_hash: taskHash }),
+              }
+            );
+
+            if (commitmentResponse.ok) {
+              const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+              setCommitment(commitmentData);
+            }
+          } catch (err) {
+            // User might not have a commitment yet - that's OK
+            console.log("No commitment found for user");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching task:", err);
+        setError(err instanceof Error ? err.message : "Failed to load task");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void fetchTaskAndCommitment();
+  }, [treasuryNftPolicyId, taskHash, isAuthenticated, authenticatedFetch]);
+
+  // Helper to format lovelace as ADA
+  const formatLovelace = (lovelace: string): string => {
+    const ada = parseInt(lovelace) / 1_000_000;
+    return ada.toLocaleString() + " ADA";
+  };
+
+  // Helper to format POSIX timestamp
+  const formatTimestamp = (timestamp: string): string => {
+    const ms = parseInt(timestamp);
+    if (isNaN(ms)) return timestamp;
+    return new Date(ms).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Helper to get commitment status variant
+  const getCommitmentStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
+    if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED") return "default";
+    if (status.includes("DENIED") || status.includes("REFUSED")) return "destructive";
+    if (status.includes("PENDING")) return "outline";
+    return "secondary";
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <AndamioSkeleton className="h-8 w-32" />
+        <AndamioSkeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !task) {
+    return (
+      <div className="space-y-6">
+        <Link href={`/project/${treasuryNftPolicyId}`}>
+          <AndamioButton variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Project
+          </AndamioButton>
+        </Link>
+
+        <AndamioAlert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error ?? "Task not found"}</AndamioAlertDescription>
+        </AndamioAlert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Link href={`/project/${treasuryNftPolicyId}`}>
+          <AndamioButton variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Project
+          </AndamioButton>
+        </Link>
+        <div className="flex items-center gap-2">
+          <AndamioBadge variant="outline" className="font-mono text-xs">
+            #{task.index}
+          </AndamioBadge>
+          <AndamioBadge variant="default">
+            {task.status === "ON_CHAIN" ? "Live" : task.status}
+          </AndamioBadge>
+        </div>
+      </div>
+
+      {/* Task Title and Description */}
+      <div>
+        <h1 className="text-3xl font-bold">{task.title}</h1>
+        <p className="text-muted-foreground mt-2">{task.description}</p>
+      </div>
+
+      {/* Task Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="flex items-center gap-2 p-4 border rounded-lg">
+          <Coins className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Reward</p>
+            <p className="font-semibold">{formatLovelace(task.lovelace)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 p-4 border rounded-lg">
+          <Clock className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Expires</p>
+            <p className="font-semibold text-sm">{formatTimestamp(task.expiration_time)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 p-4 border rounded-lg">
+          <Users className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Commitments</p>
+            <p className="font-semibold">
+              {task.num_allocated_commitments} / {task.num_allowed_commitments}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 p-4 border rounded-lg">
+          <ListChecks className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Criteria</p>
+            <p className="font-semibold">{task.acceptance_criteria.length} items</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Task Hash */}
+      <div className="p-3 bg-muted rounded-lg">
+        <p className="text-xs text-muted-foreground mb-1">Task Hash (On-Chain ID)</p>
+        <p className="font-mono text-sm break-all">{task.task_hash}</p>
+      </div>
+
+      {/* Task Content */}
+      {task.content_json && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Task Details</AndamioCardTitle>
+            <AndamioCardDescription>Full task instructions and requirements</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <ContentDisplay content={task.content_json as JSONContent} />
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
+
+      {/* Acceptance Criteria */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Acceptance Criteria</AndamioCardTitle>
+          <AndamioCardDescription>What you need to deliver to complete this task</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <ul className="space-y-2">
+            {task.acceptance_criteria.map((criterion, index) => (
+              <li key={index} className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 mt-1 text-muted-foreground" />
+                <span>{criterion}</span>
+              </li>
+            ))}
+          </ul>
+        </AndamioCardContent>
+      </AndamioCard>
+
+      {/* Token Rewards (if any) */}
+      {task.tokens && task.tokens.length > 0 && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Additional Token Rewards</AndamioCardTitle>
+            <AndamioCardDescription>Native tokens included with this task</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="space-y-2">
+              {task.tokens.map((token) => (
+                <div key={token.subject} className="flex items-center justify-between p-2 border rounded">
+                  <div>
+                    <p className="font-medium">
+                      {token.name ?? token.asset_name_decoded ?? token.asset_name}
+                    </p>
+                    {token.ticker && (
+                      <p className="text-sm text-muted-foreground">{token.ticker}</p>
+                    )}
+                  </div>
+                  <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
+                </div>
+              ))}
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
+
+      {/* Commitment Status */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Your Commitment</AndamioCardTitle>
+          <AndamioCardDescription>
+            {isAuthenticated
+              ? commitment
+                ? "Track your progress on this task"
+                : "Commit to this task to get started"
+              : "Connect your wallet to commit to this task"}
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          {!isAuthenticated ? (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground mb-4">Connect your wallet to commit to this task</p>
+            </div>
+          ) : commitment ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Status</span>
+                <AndamioBadge variant={getCommitmentStatusVariant(commitment.status)}>
+                  {commitment.status.replace(/_/g, " ")}
+                </AndamioBadge>
+              </div>
+
+              {commitment.pending_tx_hash && (
+                <>
+                  <AndamioSeparator />
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Pending Transaction</p>
+                    <p className="font-mono text-xs break-all">{commitment.pending_tx_hash}</p>
+                  </div>
+                </>
+              )}
+
+              {commitment.evidence && (
+                <>
+                  <AndamioSeparator />
+                  <div>
+                    <p className="text-sm font-medium mb-2">Your Evidence</p>
+                    <ContentDisplay
+                      content={commitment.evidence as JSONContent}
+                      variant="muted"
+                    />
+                  </div>
+                </>
+              )}
+
+              <AndamioSeparator />
+
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Started: {new Date(commitment.created).toLocaleDateString()}</span>
+                <span>Updated: {new Date(commitment.updated).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground mb-4">
+                You haven&apos;t committed to this task yet
+              </p>
+              <AndamioAlert>
+                <AlertCircle className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  Task commitment functionality requires blockchain transactions.
+                  Full commitment workflow coming soon.
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            </div>
+          )}
+        </AndamioCardContent>
+      </AndamioCard>
+    </div>
+  );
+}

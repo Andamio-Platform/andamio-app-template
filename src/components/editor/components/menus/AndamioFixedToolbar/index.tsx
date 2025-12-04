@@ -23,7 +23,7 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { cn } from "../../../utils";
 
 interface AndamioFixedToolbarProps {
-  editor: Editor;
+  editor: Editor | null;
   className?: string;
   /**
    * Whether full-screen mode is active
@@ -45,6 +45,11 @@ export function AndamioFixedToolbar({
   isFullscreen = false,
   onToggleFullscreen,
 }: AndamioFixedToolbarProps) {
+  // Don't render until editor is ready
+  if (!editor) {
+    return null;
+  }
+
   return (
     <div
       className={cn(

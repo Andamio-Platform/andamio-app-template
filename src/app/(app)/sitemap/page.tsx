@@ -23,8 +23,9 @@ import {
   FileEdit,
   GraduationCap,
   Users,
+  FolderKanban,
 } from "lucide-react";
-import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput } from "@andamio/db-api";
+import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 
 interface RouteInfo {
   path: string;
@@ -59,6 +60,12 @@ const staticRoutes: RouteCategory[] = [
         requiresAuth: false,
       },
       {
+        path: "/project",
+        label: "Browse Projects",
+        description: "Public catalog of all published projects (Contributor view)",
+        requiresAuth: false,
+      },
+      {
         path: "/courses",
         label: "My Courses (Course Creator Studio)",
         description: "Advanced course management with filtering, sorting, and multiple views",
@@ -84,8 +91,14 @@ const staticRoutes: RouteCategory[] = [
     routes: [
       {
         path: "/studio/course",
-        label: "Course Studio (Legacy)",
-        description: "Simple course list with Create Course button",
+        label: "Course Studio",
+        description: "Manage your owned courses",
+        requiresAuth: true,
+      },
+      {
+        path: "/studio/project",
+        label: "Project Studio",
+        description: "Manage your owned projects and tasks",
         requiresAuth: true,
       },
       {
@@ -199,36 +212,112 @@ const dynamicRouteTemplates: RouteCategory[] = [
       },
     ],
   },
+  {
+    category: "Contributor Project Pages",
+    icon: FolderKanban,
+    routes: [
+      {
+        path: "/project/[treasuryNftPolicyId]",
+        label: "Project Detail",
+        description: "View project overview and available tasks (Contributor view)",
+        requiresAuth: false,
+        dynamic: true,
+        params: ["treasuryNftPolicyId"],
+      },
+      {
+        path: "/project/[treasuryNftPolicyId]/[taskHash]",
+        label: "Task Detail",
+        description: "View task details and commit to work (Contributor view)",
+        requiresAuth: false,
+        dynamic: true,
+        params: ["treasuryNftPolicyId", "taskHash"],
+      },
+    ],
+  },
+  {
+    category: "Creator Studio Project Pages",
+    icon: FileEdit,
+    routes: [
+      {
+        path: "/studio/project/[treasuryNftPolicyId]",
+        label: "Project Dashboard",
+        description: "Project management dashboard (Creator view)",
+        requiresAuth: true,
+        dynamic: true,
+        params: ["treasuryNftPolicyId"],
+      },
+      {
+        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks",
+        label: "Manage Tasks",
+        description: "View and manage draft and live tasks",
+        requiresAuth: true,
+        dynamic: true,
+        params: ["treasuryNftPolicyId"],
+      },
+      {
+        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks/new",
+        label: "Create Task",
+        description: "Create a new task for the project",
+        requiresAuth: true,
+        dynamic: true,
+        params: ["treasuryNftPolicyId"],
+      },
+      {
+        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks/[taskIndex]",
+        label: "Edit Task",
+        description: "Edit an existing draft task",
+        requiresAuth: true,
+        dynamic: true,
+        params: ["treasuryNftPolicyId", "taskIndex"],
+      },
+    ],
+  },
 ];
 
 export default function SitemapPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [ownedCourses, setOwnedCourses] = useState<ListOwnedCoursesOutput>([]);
   const [publishedCourses, setPublishedCourses] = useState<ListPublishedCoursesOutput>([]);
+  const [publishedProjects, setPublishedProjects] = useState<ListPublishedTreasuriesOutput>([]);
+  const [ownedProjects, setOwnedProjects] = useState<ListOwnedTreasuriesOutput>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch courses for dynamic route examples
+  // Fetch courses and projects for dynamic route examples
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch published courses (public) - POST /courses/published
-        const pubResponse = await fetch(
+        // Fetch published courses (public) - GET /courses/published
+        const pubCourseResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
+          {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+          }
+        );
+        if (pubCourseResponse.ok) {
+          const pubData = (await pubCourseResponse.json()) as ListPublishedCoursesOutput;
+          setPublishedCourses(pubData ?? []);
+        }
+
+        // Fetch published projects (public) - POST /projects/list
+        const pubProjectResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({}),
           }
         );
-        if (pubResponse.ok) {
-          const pubData = (await pubResponse.json()) as ListPublishedCoursesOutput;
-          setPublishedCourses(pubData ?? []);
+        if (pubProjectResponse.ok) {
+          const pubData = (await pubProjectResponse.json()) as ListPublishedTreasuriesOutput;
+          setPublishedProjects(pubData ?? []);
         }
 
-        // Fetch owned courses if authenticated - POST /courses/owned
+        // Fetch owned data if authenticated
         if (isAuthenticated) {
-          const ownedResponse = await authenticatedFetch(
+          // Owned courses - POST /courses/owned
+          const ownedCourseResponse = await authenticatedFetch(
             `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
             {
               method: "POST",
@@ -236,24 +325,40 @@ export default function SitemapPage() {
               body: JSON.stringify({}),
             }
           );
-          if (ownedResponse.ok) {
-            const ownedData = (await ownedResponse.json()) as ListOwnedCoursesOutput;
+          if (ownedCourseResponse.ok) {
+            const ownedData = (await ownedCourseResponse.json()) as ListOwnedCoursesOutput;
             setOwnedCourses(ownedData ?? []);
+          }
+
+          // Owned projects - POST /projects/owned
+          const ownedProjectResponse = await authenticatedFetch(
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/owned`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            }
+          );
+          if (ownedProjectResponse.ok) {
+            const ownedData = (await ownedProjectResponse.json()) as ListOwnedTreasuriesOutput;
+            setOwnedProjects(ownedData ?? []);
           }
         }
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    void fetchCourses();
+    void fetchData();
   }, [isAuthenticated, authenticatedFetch]);
 
-  // Get first published course for examples
+  // Get first items for examples
   const examplePublishedCourse = publishedCourses[0];
   const exampleOwnedCourse = ownedCourses[0];
+  const examplePublishedProject = publishedProjects[0];
+  const exampleOwnedProject = ownedProjects[0];
 
   return (
     <div className="space-y-8 pb-16">
@@ -406,6 +511,44 @@ export default function SitemapPage() {
                         .replace("[moduleIndex]", "0");
                       canNavigate = false; // Module might not exist
                     }
+                  } else if (
+                    category.category === "Contributor Project Pages" &&
+                    examplePublishedProject
+                  ) {
+                    const treasuryNftPolicyId = examplePublishedProject.treasury_nft_policy_id;
+                    if (treasuryNftPolicyId) {
+                      if (route.path === "/project/[treasuryNftPolicyId]") {
+                        exampleUrl = `/project/${treasuryNftPolicyId}`;
+                        canNavigate = true;
+                      } else if (route.path.includes("[taskHash]")) {
+                        exampleUrl = route.path
+                          .replace("[treasuryNftPolicyId]", treasuryNftPolicyId)
+                          .replace("[taskHash]", "example-task-hash");
+                        canNavigate = false; // Task might not exist
+                      }
+                    }
+                  } else if (
+                    category.category === "Creator Studio Project Pages" &&
+                    exampleOwnedProject
+                  ) {
+                    const treasuryNftPolicyId = exampleOwnedProject.treasury_nft_policy_id;
+                    if (treasuryNftPolicyId) {
+                      if (route.path === "/studio/project/[treasuryNftPolicyId]") {
+                        exampleUrl = `/studio/project/${treasuryNftPolicyId}`;
+                        canNavigate = true;
+                      } else if (route.path === "/studio/project/[treasuryNftPolicyId]/draft-tasks") {
+                        exampleUrl = `/studio/project/${treasuryNftPolicyId}/draft-tasks`;
+                        canNavigate = true;
+                      } else if (route.path === "/studio/project/[treasuryNftPolicyId]/draft-tasks/new") {
+                        exampleUrl = `/studio/project/${treasuryNftPolicyId}/draft-tasks/new`;
+                        canNavigate = true;
+                      } else if (route.path.includes("[taskIndex]")) {
+                        exampleUrl = route.path
+                          .replace("[treasuryNftPolicyId]", treasuryNftPolicyId)
+                          .replace("[taskIndex]", "1");
+                        canNavigate = false; // Task might not exist
+                      }
+                    }
                   }
 
                   return (
@@ -466,20 +609,20 @@ export default function SitemapPage() {
         );
       })}
 
-      {/* Course Data Summary */}
+      {/* Data Summary */}
       <AndamioCard>
         <AndamioCardHeader className="space-y-4">
           <div className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            <AndamioCardTitle>Available Course Data</AndamioCardTitle>
+            <AndamioCardTitle>Available Data</AndamioCardTitle>
           </div>
           <AndamioCardDescription className="text-base">
-            Course data available for generating example dynamic routes
+            Course and project data available for generating example dynamic routes
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="pt-4">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading course data...</p>
+            <p className="text-sm text-muted-foreground">Loading data...</p>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border p-3">
@@ -499,6 +642,24 @@ export default function SitemapPage() {
                   </p>
                 </div>
                 <AndamioBadge variant="outline">{ownedCourses.length} courses</AndamioBadge>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <p className="text-sm font-medium">Published Projects</p>
+                  <p className="text-xs text-muted-foreground">
+                    Available for contributor route examples
+                  </p>
+                </div>
+                <AndamioBadge variant="outline">{publishedProjects.length} projects</AndamioBadge>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <p className="text-sm font-medium">Owned Projects</p>
+                  <p className="text-xs text-muted-foreground">
+                    Available for project studio route examples
+                  </p>
+                </div>
+                <AndamioBadge variant="outline">{ownedProjects.length} projects</AndamioBadge>
               </div>
             </div>
           )}

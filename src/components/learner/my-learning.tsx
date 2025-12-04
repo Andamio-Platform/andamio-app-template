@@ -57,6 +57,13 @@ export function MyLearning() {
 
         console.log("📡 Response status:", response.status);
 
+        // 404 means no learner record exists yet - treat as empty state, not error
+        if (response.status === 404) {
+          console.log("📭 No learner record found - user hasn't enrolled in any courses yet");
+          setCourses([]);
+          return;
+        }
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error("❌ Failed to fetch my learning:", response.status, errorText);

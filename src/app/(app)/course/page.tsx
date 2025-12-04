@@ -29,11 +29,16 @@ export default function CoursePage() {
         const response = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
+            method: "GET",
+            headers: { "Accept": "application/json" },
           }
         );
+
+        // 404 means no published courses exist yet - treat as empty state, not error
+        if (response.status === 404) {
+          setCourses([]);
+          return;
+        }
 
         if (!response.ok) {
           throw new Error(`Failed to fetch courses: ${response.statusText}`);

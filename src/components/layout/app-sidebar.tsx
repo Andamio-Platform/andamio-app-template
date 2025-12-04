@@ -7,7 +7,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { LayoutDashboard, LogOut, GraduationCap, Sparkles, BookOpen, Map, Palette } from "lucide-react";
+import { LayoutDashboard, LogOut, GraduationCap, Sparkles, BookOpen, Map, Palette, FolderKanban } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 const navigation = [
@@ -25,6 +25,11 @@ const navigation = [
     name: "My Courses",
     href: "/courses",
     icon: BookOpen,
+  },
+  {
+    name: "Browse Projects",
+    href: "/project",
+    icon: FolderKanban,
   },
   {
     name: "Studio",

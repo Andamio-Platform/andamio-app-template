@@ -58,22 +58,24 @@ export default function StudioPage() {
           </AndamioCard>
         </Link>
 
-        <AndamioCard className="opacity-50">
-          <AndamioCardHeader>
-            <div className="flex items-center gap-2">
-              <FolderKanban className="h-5 w-5" />
-              <AndamioCardTitle>Project Studio</AndamioCardTitle>
-            </div>
-            <AndamioCardDescription>
-              Create and manage your Andamio projects
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <AndamioButton variant="outline" className="w-full" disabled>
-              Coming Soon
-            </AndamioButton>
-          </AndamioCardContent>
-        </AndamioCard>
+        <Link href="/studio/project">
+          <AndamioCard className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <AndamioCardHeader>
+              <div className="flex items-center gap-2">
+                <FolderKanban className="h-5 w-5" />
+                <AndamioCardTitle>Project Studio</AndamioCardTitle>
+              </div>
+              <AndamioCardDescription>
+                Create and manage your Andamio projects
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
+              <AndamioButton variant="outline" className="w-full">
+                Manage Projects
+              </AndamioButton>
+            </AndamioCardContent>
+          </AndamioCard>
+        </Link>
       </div>
     </div>
   );

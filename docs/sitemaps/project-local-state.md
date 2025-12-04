@@ -64,7 +64,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Displays table of all published projects
   - Shows project title, treasury NFT policy ID, description
   - Should show task count
-  - Links to individual project pages
+  - Links to individual project page
   - Loading/error/empty states
 - **Component**: `src/app/(app)/project/page.tsx`
 - **API Endpoint**: `POST /projects/list`

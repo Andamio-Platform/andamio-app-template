@@ -25,6 +25,8 @@ export interface TransactionResult {
   success: boolean;
   error?: string;
   blockchainExplorerUrl?: string;
+  /** Full response from the transaction API (includes courseId, etc.) */
+  apiResponse?: Record<string, unknown>;
 }
 
 /**
@@ -122,4 +124,22 @@ export interface SubmitAssignmentParams {
   walletAddress: string;
   accessTokenAlias: string;
   submissionInfo: string;
+}
+
+/**
+ * Wallet data structure for v2 transactions
+ */
+export interface WalletData {
+  usedAddresses: string[];
+  changeAddress: string;
+}
+
+/**
+ * Create Course transaction parameters
+ * For POST /tx/v2/admin/course/create endpoint
+ */
+export interface CreateCourseParams {
+  walletData: WalletData;
+  alias: string;
+  teachers: string[];
 }

@@ -22,3 +22,6 @@ export type { EnrollInCourseProps } from "./enroll-in-course";
 
 export { MintModuleTokens } from "./mint-module-tokens";
 export type { MintModuleTokensProps } from "./mint-module-tokens";
+
+export { CreateCourse } from "./create-course";
+export type { CreateCourseProps } from "./create-course";

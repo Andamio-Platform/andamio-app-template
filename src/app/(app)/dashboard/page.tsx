@@ -7,7 +7,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { Wallet, Key, Database, Clock, Shield, Copy, Check } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
-import { MintAccessToken } from "~/components/transactions";
+import { MintAccessToken, CreateCourse } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -73,6 +73,16 @@ export default function DashboardPage() {
 
       {/* My Learning Section - Only show if user has access token */}
       {hasAccessToken && <MyLearning />}
+
+      {/* Create Course Section - Only show if user has access token */}
+      {hasAccessToken && (
+        <CreateCourse
+          onSuccess={(txHash) => {
+            console.log("Course created with txHash:", txHash);
+            // Optionally redirect or refresh
+          }}
+        />
+      )}
 
       {/* Account Details Section */}
       <div className="grid gap-6 md:grid-cols-2">

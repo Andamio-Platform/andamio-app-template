@@ -134,6 +134,7 @@ export function useTransaction<TParams = unknown>() {
           txHash,
           success: true,
           blockchainExplorerUrl: explorerUrl,
+          apiResponse: unsignedTx as unknown as Record<string, unknown>,
         };
 
         setResult(txResult);

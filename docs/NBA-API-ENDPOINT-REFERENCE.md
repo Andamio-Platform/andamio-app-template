@@ -1,5 +1,12 @@
 # Andamio On Chain Data
-## Via Node Backend API (soon to be deprecated)
+## Via Node Backend API
+
+> ⚠️ **DEPRECATED**: This document is historical reference only. The NBA API has been removed from the codebase and replaced by **Andamioscan**. See [DATA-SOURCES.md](./DATA-SOURCES.md) for current architecture.
+>
+> - `/api/nba/` proxy route has been deleted
+> - All NBA fetches have been commented out
+> - "Coming Soon" placeholders are shown in the UI
+> - Andamioscan integration is in progress
 
 This document follows the format of andamio-t3-app-template/docs/API-ENDPOINT-REFERENCE.md.
 

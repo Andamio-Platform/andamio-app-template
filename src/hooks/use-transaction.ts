@@ -2,12 +2,15 @@
  * useTransaction Hook
  *
  * Core hook for handling Cardano transaction lifecycle:
- * 1. Fetch unsigned CBOR from NBA endpoint
+ * 1. Fetch unsigned CBOR from Andamioscan endpoint
  * 2. Sign transaction with user's wallet
  * 3. Submit signed transaction to blockchain
  * 4. Handle confirmation and callbacks
  *
  * Will be extracted to @andamio/transactions package.
+ *
+ * TODO: Currently disabled while migrating from NBA to Andamioscan API.
+ * Transaction building will be re-enabled once Andamioscan endpoints are ready.
  */
 
 import { useState, useCallback } from "react";
@@ -21,6 +24,9 @@ import type {
   UnsignedTxResponse,
 } from "~/types/transaction";
 
+// Feature flag for Andamioscan API readiness
+const ANDAMIOSCAN_TX_ENABLED = false;
+
 export function useTransaction<TParams = unknown>() {
   const { wallet, connected } = useWallet();
   const [state, setState] = useState<TransactionState>("idle");
@@ -29,6 +35,15 @@ export function useTransaction<TParams = unknown>() {
 
   const execute = useCallback(
     async (config: TransactionConfig<TParams>) => {
+      // TODO: Remove this check when Andamioscan transaction building is ready
+      if (!ANDAMIOSCAN_TX_ENABLED) {
+        const err = "Transaction building is temporarily unavailable. Andamioscan integration coming soon.";
+        setError(err);
+        setState("error");
+        config.onError?.(new Error(err));
+        return;
+      }
+
       if (!connected || !wallet) {
         const err = "Wallet not connected";
         setError(err);
@@ -42,7 +57,7 @@ export function useTransaction<TParams = unknown>() {
         setError(null);
         setResult(null);
 
-        // Step 1: Fetch unsigned CBOR from NBA
+        // Step 1: Fetch unsigned CBOR from Andamioscan
         setState("fetching");
         config.onStateChange?.("fetching");
 
@@ -50,7 +65,7 @@ export function useTransaction<TParams = unknown>() {
         const method = config.method ?? "POST";
 
         // Build URL and fetch options based on method
-        let url = `/api/nba${config.endpoint}`;
+        let url = `/api/andamioscan${config.endpoint}`;
         const fetchOptions: RequestInit = {
           method,
           headers: {
@@ -70,19 +85,19 @@ export function useTransaction<TParams = unknown>() {
         // Log the build request
         txLogger.buildRequest(txType, url, method, config.params);
 
-        const nbaResponse = await fetch(url, fetchOptions);
+        const andamioscanResponse = await fetch(url, fetchOptions);
 
-        if (!nbaResponse.ok) {
-          const errorText = await nbaResponse.text();
-          txLogger.buildResult(txType, false, { status: nbaResponse.status, error: errorText });
-          throw new Error(`NBA API error: ${nbaResponse.status} ${nbaResponse.statusText}`);
+        if (!andamioscanResponse.ok) {
+          const errorText = await andamioscanResponse.text();
+          txLogger.buildResult(txType, false, { status: andamioscanResponse.status, error: errorText });
+          throw new Error(`Andamioscan API error: ${andamioscanResponse.status} ${andamioscanResponse.statusText}`);
         }
 
-        const unsignedTx = (await nbaResponse.json()) as UnsignedTxResponse;
+        const unsignedTx = (await andamioscanResponse.json()) as UnsignedTxResponse;
 
         if (!unsignedTx.unsignedTxCBOR) {
           txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
-          throw new Error("No CBOR returned from NBA");
+          throw new Error("No CBOR returned from Andamioscan");
         }
 
         txLogger.buildResult(txType, true, unsignedTx);

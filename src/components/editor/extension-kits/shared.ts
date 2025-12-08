@@ -38,21 +38,44 @@ export interface ExtensionConfig {
 
 /**
  * CSS classes for consistent styling across editor and viewer
+ * Uses semantic colors from globals.css for full dark/light mode support
  */
 export const EDITOR_STYLES = {
-  link: "text-primary underline underline-offset-4 cursor-pointer",
-  bulletList: "list-disc list-outside ml-6 space-y-2",
-  orderedList: "list-decimal list-outside ml-6 space-y-2",
-  listItem: "leading-relaxed",
+  // Links - primary color with underline offset for readability
+  link: "text-primary underline underline-offset-4 cursor-pointer hover:text-primary/80 transition-colors",
+
+  // Lists - proper indentation and spacing
+  bulletList: "list-disc list-outside ml-6 space-y-1.5 marker:text-muted-foreground",
+  orderedList: "list-decimal list-outside ml-6 space-y-1.5 marker:text-muted-foreground",
+  listItem: "leading-relaxed pl-1",
+
+  // Code blocks - distinct background with syntax highlighting support
   codeBlock:
-    "bg-muted text-muted-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto not-prose",
-  image: "rounded-lg max-w-full h-auto",
-  // Table styles - responsive wrapper handles overflow
-  table: "border-collapse border border-border w-full my-4",
-  tableRow: "",
-  tableCell: "border border-border p-2 min-w-[100px] align-top",
+    "bg-muted/70 text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto not-prose border border-border/50 shadow-sm",
+
+  // Images - rounded with subtle shadow
+  image: "rounded-lg max-w-full h-auto shadow-md",
+
+  // Table styles - visible borders, proper spacing, professional look
+  table: "border-collapse w-full my-6 text-sm border border-border rounded-lg overflow-hidden shadow-sm",
+  tableRow: "border-b border-border last:border-b-0 even:bg-muted/30",
+  tableCell: "border border-border/50 px-4 py-3 min-w-[120px] align-top text-left",
   tableHeader:
-    "border border-border p-2 min-w-[100px] align-top bg-muted font-semibold text-left",
+    "border border-border/50 px-4 py-3 min-w-[120px] align-middle bg-muted/70 font-semibold text-left text-foreground",
+
+  // Headings - distinct sizing hierarchy (applied via prose classes, here for reference)
+  heading1: "text-3xl font-bold tracking-tight mt-8 mb-4 text-foreground",
+  heading2: "text-2xl font-semibold tracking-tight mt-8 mb-3 text-foreground",
+  heading3: "text-xl font-semibold tracking-tight mt-6 mb-2 text-foreground",
+  heading4: "text-lg font-medium mt-6 mb-2 text-foreground",
+  heading5: "text-base font-medium mt-4 mb-2 text-foreground/90",
+  heading6: "text-sm font-medium uppercase tracking-wide mt-4 mb-2 text-muted-foreground",
+
+  // Blockquote - left border accent with subtle background
+  blockquote: "border-l-4 border-primary/50 bg-muted/30 pl-4 py-2 pr-4 my-6 italic text-muted-foreground",
+
+  // Horizontal rule - subtle divider
+  horizontalRule: "border-t-2 border-border my-8",
 } as const;
 
 /**

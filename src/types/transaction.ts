@@ -10,7 +10,7 @@
  */
 export type TransactionState =
   | "idle"        // Not started
-  | "fetching"    // Fetching unsigned CBOR from NBA
+  | "fetching"    // Fetching unsigned CBOR from Andamioscan
   | "signing"     // Waiting for user to sign with wallet
   | "submitting"  // Submitting signed tx to blockchain
   | "confirming"  // Waiting for blockchain confirmation
@@ -32,18 +32,18 @@ export interface TransactionResult {
  */
 export interface TransactionConfig<TParams = unknown> {
   /**
-   * NBA endpoint for fetching unsigned CBOR
+   * Andamioscan endpoint for fetching unsigned CBOR
    * Example: "/tx/mint-access-token"
    */
   endpoint: string;
 
   /**
-   * Parameters to send to the NBA endpoint
+   * Parameters to send to the Andamioscan endpoint
    */
   params: TParams;
 
   /**
-   * HTTP method to use for the NBA request
+   * HTTP method to use for the Andamioscan request
    * - GET: Parameters sent as query string (e.g., mint access token)
    * - POST: Parameters sent as JSON body (e.g., submit assignment)
    * @default "POST"
@@ -73,7 +73,7 @@ export interface TransactionConfig<TParams = unknown> {
 }
 
 /**
- * Response from NBA transaction endpoint
+ * Response from Andamioscan transaction endpoint
  * Contains unsigned CBOR hex string
  */
 export interface UnsignedTxResponse {

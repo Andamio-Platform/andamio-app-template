@@ -25,6 +25,8 @@ export * from "./andamio-textarea";
 export * from "./andamio-dialog";
 export * from "./andamio-sheet";
 export * from "./andamio-dropdown-menu";
+export * from "./andamio-section-description";
+export * from "./andamio-states";
 
 // Simple pass-through wrappers (for consistency)
 export * from "./andamio-accordion";

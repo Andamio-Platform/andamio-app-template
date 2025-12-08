@@ -484,7 +484,7 @@ export function AssignmentCommitment({
                 <AndamioTransaction
                   definition={COMMIT_TO_ASSIGNMENT}
                   inputs={{
-                    // txParams (for NBA transaction builder)
+                    // txParams (for Andamioscan transaction builder)
                     user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                     policy: courseNftPolicyId,
                     assignment_code: assignmentCode,
@@ -621,7 +621,7 @@ export function AssignmentCommitment({
                 <AndamioTransaction
                   definition={COMMIT_TO_ASSIGNMENT}
                   inputs={{
-                    // txParams (for NBA transaction builder)
+                    // txParams (for Andamioscan transaction builder)
                     user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                     policy: courseNftPolicyId,
                     assignment_code: assignmentCode,

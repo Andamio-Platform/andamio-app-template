@@ -183,20 +183,54 @@ export function ContentEditor({
       attributes: {
         class: cn(
           "andamio-editor-content",
-          "prose prose-sm sm:prose-base max-w-none",
+          "prose prose-sm sm:prose-base max-w-none dark:prose-invert",
           "focus:outline-none",
           "min-h-full",
-          // Enhanced typography
-          "prose-headings:font-semibold prose-headings:tracking-tight",
-          "prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl",
-          "prose-p:leading-relaxed",
-          "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-          "prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-blockquote:pr-4",
-          "prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
-          "prose-pre:bg-muted prose-pre:border prose-pre:border-border",
-          "prose-img:rounded-lg prose-img:shadow-sm",
+
+          // Headings - distinct size hierarchy with proper spacing
+          "prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground",
+          "prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-4 prose-h1:mt-8 first:prose-h1:mt-0",
+          "prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-8 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border/50",
+          "prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-6",
+          "prose-h4:text-lg prose-h4:font-medium prose-h4:mb-2 prose-h4:mt-6",
+          "prose-h5:text-base prose-h5:font-medium prose-h5:mb-2 prose-h5:mt-4 prose-h5:text-foreground/90",
+          "prose-h6:text-sm prose-h6:font-medium prose-h6:uppercase prose-h6:tracking-wide prose-h6:mb-2 prose-h6:mt-4 prose-h6:text-muted-foreground",
+
+          // Paragraphs and text
+          "prose-p:leading-relaxed prose-p:mb-4",
+          "prose-strong:font-semibold prose-strong:text-foreground",
+          "prose-em:italic",
+
+          // Links
+          "prose-a:text-primary prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-a:transition-colors",
+
+          // Blockquotes - accent border with subtle background
+          "prose-blockquote:border-l-4 prose-blockquote:border-primary/50 prose-blockquote:bg-muted/30",
+          "prose-blockquote:py-2 prose-blockquote:pl-4 prose-blockquote:pr-4 prose-blockquote:my-6",
+          "prose-blockquote:italic prose-blockquote:text-muted-foreground prose-blockquote:not-italic",
+
+          // Code - inline and blocks
+          "prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
+          "prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
+          "prose-code:border prose-code:border-border/30",
+          "prose-pre:bg-muted/70 prose-pre:border prose-pre:border-border/50 prose-pre:shadow-sm",
+
+          // Images
+          "prose-img:rounded-lg prose-img:shadow-md",
+
+          // Lists - proper spacing
           "prose-ul:my-4 prose-ol:my-4",
-          "prose-li:my-1",
+          "prose-li:my-1 prose-li:leading-relaxed",
+
+          // Tables - visible borders
+          "prose-table:border prose-table:border-border prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm",
+          "prose-thead:bg-muted/70",
+          "prose-th:border prose-th:border-border/50 prose-th:px-4 prose-th:py-3 prose-th:text-left prose-th:font-semibold",
+          "prose-td:border prose-td:border-border/50 prose-td:px-4 prose-td:py-3",
+          "prose-tr:border-b prose-tr:border-border/50",
+
+          // Horizontal rule
+          "prose-hr:border-border prose-hr:my-8",
         ),
         "data-placeholder": placeholder,
       },

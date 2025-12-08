@@ -115,7 +115,7 @@ export function useAndamioTransaction<TParams = unknown>() {
 
       await transaction.execute({
         endpoint: config.definition.buildTxConfig.builder.endpoint!,
-        method: "GET", // NBA endpoints use GET with query params
+        method: "GET", // Andamioscan endpoints use GET with query params
         params: txApiParams as TParams, // Only send txParams to transaction API
         txType: config.definition.txType,
         onSuccess: async (txResult) => {

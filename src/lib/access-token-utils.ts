@@ -27,7 +27,7 @@ export function hexToString(hex: string): string {
 
 /**
  * Build the full access token unit (policy ID + hex-encoded name)
- * Required for NBA API requests
+ * Required for Andamioscan API requests
  *
  * @param alias - The user's access token alias (plain text)
  * @param policyId - The access token policy ID

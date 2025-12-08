@@ -225,7 +225,7 @@ These routes are for project managers and treasury owners to manage their projec
 - **Types**:
   - `TreasuryWithEscrowsOutput`
   - Contributor prerequisite objects (on-chain data)
-- **Note**: Contributor enrollment data comes from on-chain/NBA API; this route displays it
+- **Note**: Contributor enrollment data comes from on-chain/Andamioscan API; this route displays it
 
 #### `/studio/project/[treasurynft]/commitments`
 - **Purpose**: View all task commitments for the project
@@ -576,7 +576,7 @@ COMMITMENT_MADE ──(unlock)──> PENDING_TX_UNLOCKED_BY_CONTRIBUTOR ──(
 5. **Empty States**: All list/collection views have empty states with guidance and appropriate actions
 6. **Responsive Design**: All routes use Andamio components (based on shadcn/ui) with Tailwind CSS v4
 7. **Authentication Flow**: Uses `useAndamioAuth` hook with JWT stored in localStorage
-8. **Role Verification**: Project Manager and Contributor roles verified via NBA API on-chain queries
+8. **Role Verification**: Project Manager and Contributor roles verified via Andamioscan on-chain queries
 9. **PENDING_TX Protection**: Status updates blocked during pending blockchain transactions
 10. **Semantic Colors**: All components use semantic color variables (success, warning, info, destructive, etc.)
 11. **POST for All Endpoints**: Unlike the Course API (REST-style), Project API uses POST for all endpoints with body parameters
@@ -603,6 +603,6 @@ These are potential project-related routes that could be added:
 | HTTP Methods | REST-style (GET, POST, PATCH, DELETE) | All POST with body parameters |
 | Path Parameters | URL path params (`/courses/{id}`) | Body params (`{ treasury_nft_policy_id }`) |
 | Identifiers | `courseNftPolicyId`, `moduleCode`, `moduleIndex` | `treasury_nft_policy_id`, `task_hash`, `task_index` |
-| Role Verification | JWT claims | NBA API on-chain queries |
+| Role Verification | JWT claims | Andamioscan on-chain queries |
 | Content Editor | Tiptap (`contentJson`) | Tiptap (`content_json`) |
 | Status Protection | N/A | PENDING_TX protection |

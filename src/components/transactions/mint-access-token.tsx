@@ -48,7 +48,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
 
     await execute({
       endpoint: "/tx/access-token/mint",
-      method: "GET", // NBA endpoint uses GET with query parameters
+      method: "GET", // Andamioscan endpoint uses GET with query parameters
       params: {
         user_address: user.cardanoBech32Addr,
         new_alias: alias.trim(),

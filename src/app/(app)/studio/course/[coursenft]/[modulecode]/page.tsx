@@ -281,7 +281,7 @@ export default function ModuleEditPage() {
   };
 
   const handleDelete = async () => {
-    if (!isAuthenticated || !module) {
+    if (!isAuthenticated || !courseModule) {
       return;
     }
 

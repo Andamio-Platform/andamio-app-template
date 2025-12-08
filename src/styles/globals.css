@@ -266,26 +266,59 @@
   }
 }
 
-/* Editor Content Styles */
+/* ==========================================================================
+   Editor Content Styles - Professional Typography
+   ========================================================================== */
+
 .editor-content {
   @apply prose prose-slate max-w-none dark:prose-invert;
-  @apply prose-headings:font-semibold prose-headings:tracking-tight;
-  @apply prose-h1:text-3xl prose-h1:mb-4 prose-h1:mt-0;
-  @apply prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-8;
+
+  /* Headings - Distinct visual hierarchy */
+  @apply prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground;
+  @apply prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-4 prose-h1:mt-0;
+  @apply prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-8 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border/50;
   @apply prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-6;
-  @apply prose-h4:text-lg prose-h4:mb-2 prose-h4:mt-4;
+  @apply prose-h4:text-lg prose-h4:font-medium prose-h4:mb-2 prose-h4:mt-6;
+  @apply prose-h5:text-base prose-h5:font-medium prose-h5:mb-2 prose-h5:mt-4;
+  @apply prose-h6:text-sm prose-h6:font-medium prose-h6:uppercase prose-h6:tracking-wide prose-h6:mb-2 prose-h6:mt-4 prose-h6:text-muted-foreground;
+
+  /* Body text */
   @apply prose-p:text-base prose-p:leading-relaxed prose-p:mb-4;
+  @apply prose-strong:font-semibold prose-strong:text-foreground;
+  @apply prose-em:italic;
+
+  /* Lists */
   @apply prose-ul:mb-4 prose-ul:space-y-1.5 prose-ol:mb-4 prose-ol:space-y-1.5;
   @apply prose-li:leading-relaxed;
-  @apply prose-blockquote:border-l-2 prose-blockquote:border-primary/30 prose-blockquote:pl-4 prose-blockquote:my-6;
-  @apply prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:rounded-md;
-  @apply prose-pre:bg-muted prose-pre:text-foreground prose-pre:border prose-pre:border-border prose-pre:p-4 prose-pre:my-6 prose-pre:rounded-lg;
-  @apply prose-a:text-primary prose-a:no-underline prose-a:font-medium hover:prose-a:underline;
-  @apply prose-strong:font-semibold;
-  @apply prose-em:italic;
+
+  /* Blockquotes */
+  @apply prose-blockquote:border-l-4 prose-blockquote:border-primary/50 prose-blockquote:bg-muted/30;
+  @apply prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:my-6;
+
+  /* Code */
+  @apply prose-code:bg-muted/70 prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:rounded-md;
+  @apply prose-code:border prose-code:border-border/30;
+  @apply prose-pre:bg-muted/70 prose-pre:text-foreground prose-pre:border prose-pre:border-border/50 prose-pre:p-4 prose-pre:my-6 prose-pre:rounded-lg prose-pre:shadow-sm;
+
+  /* Links */
+  @apply prose-a:text-primary prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-a:transition-colors;
+
+  /* Tables */
+  @apply prose-table:border prose-table:border-border prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm prose-table:my-6;
+  @apply prose-th:bg-muted/70 prose-th:border prose-th:border-border/50 prose-th:px-4 prose-th:py-3 prose-th:text-left prose-th:font-semibold;
+  @apply prose-td:border prose-td:border-border/50 prose-td:px-4 prose-td:py-3;
+
+  /* Horizontal rule */
+  @apply prose-hr:border-border prose-hr:my-8;
+
+  /* Images */
+  @apply prose-img:rounded-lg prose-img:shadow-md;
 }
 
-/* Tiptap Editor Specific Styles */
+/* ==========================================================================
+   Tiptap ProseMirror Specific Styles
+   ========================================================================== */
+
 .ProseMirror {
   @apply min-h-[200px] outline-none;
 }
@@ -297,6 +330,217 @@
 
 .ProseMirror:focus {
   @apply outline-none;
+}
+
+/* ==========================================================================
+   ProseMirror Heading Styles - Distinct Visual Hierarchy
+   ========================================================================== */
+
+.ProseMirror h1 {
+  @apply text-3xl font-bold tracking-tight text-foreground;
+  @apply mb-4 mt-8 first:mt-0;
+}
+
+.ProseMirror h2 {
+  @apply text-2xl font-semibold tracking-tight text-foreground;
+  @apply mb-3 mt-8 pb-2 border-b border-border/50;
+}
+
+.ProseMirror h3 {
+  @apply text-xl font-semibold tracking-tight text-foreground;
+  @apply mb-2 mt-6;
+}
+
+.ProseMirror h4 {
+  @apply text-lg font-medium text-foreground;
+  @apply mb-2 mt-6;
+}
+
+.ProseMirror h5 {
+  @apply text-base font-medium text-foreground/90;
+  @apply mb-2 mt-4;
+}
+
+.ProseMirror h6 {
+  @apply text-sm font-medium uppercase tracking-wide text-muted-foreground;
+  @apply mb-2 mt-4;
+}
+
+/* ==========================================================================
+   ProseMirror Body & Block Styles
+   ========================================================================== */
+
+.ProseMirror p {
+  @apply text-base leading-relaxed text-foreground/90;
+  @apply mb-4;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-primary/50 bg-muted/30;
+  @apply py-2 pl-4 pr-4 my-6;
+  @apply text-muted-foreground;
+}
+
+.ProseMirror hr {
+  @apply border-t-2 border-border my-8;
+}
+
+/* ==========================================================================
+   ProseMirror List Styles
+   ========================================================================== */
+
+.ProseMirror ul {
+  @apply list-disc list-outside ml-6 my-4 space-y-1.5;
+}
+
+.ProseMirror ol {
+  @apply list-decimal list-outside ml-6 my-4 space-y-1.5;
+}
+
+.ProseMirror li {
+  @apply leading-relaxed pl-1;
+}
+
+.ProseMirror li > p {
+  @apply mb-0;
+}
+
+/* ==========================================================================
+   ProseMirror Code Styles
+   ========================================================================== */
+
+.ProseMirror code {
+  @apply bg-muted/70 text-foreground px-1.5 py-0.5 text-sm rounded-md;
+  @apply border border-border/30 font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-muted/70 text-foreground border border-border/50;
+  @apply p-4 my-6 rounded-lg shadow-sm overflow-x-auto;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent border-0 p-0 text-sm;
+}
+
+/* ==========================================================================
+   ProseMirror Table Styles
+   ========================================================================== */
+
+.ProseMirror table {
+  @apply w-full my-6 text-sm rounded-lg overflow-hidden shadow-md;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 2px solid oklch(0.70 0.01 260);
+}
+
+.dark .ProseMirror table {
+  border-color: oklch(0.45 0.02 260);
+}
+
+.ProseMirror th {
+  @apply px-4 py-3;
+  @apply bg-muted font-semibold text-left text-foreground;
+  border: 1px solid oklch(0.70 0.01 260);
+}
+
+.dark .ProseMirror th {
+  border-color: oklch(0.45 0.02 260);
+}
+
+.ProseMirror td {
+  @apply px-4 py-3;
+  @apply align-top text-left bg-background;
+  border: 1px solid oklch(0.70 0.01 260);
+}
+
+.dark .ProseMirror td {
+  border-color: oklch(0.45 0.02 260);
+}
+
+/* Header row bottom border emphasis */
+.ProseMirror thead tr th {
+  border-bottom: 2px solid oklch(0.60 0.02 260);
+}
+
+.dark .ProseMirror thead tr th {
+  border-bottom-color: oklch(0.50 0.02 260);
+}
+
+/* Alternating row backgrounds for better readability */
+.ProseMirror tbody tr:nth-child(even) td {
+  @apply bg-muted/40;
+}
+
+/* Hover state for rows */
+.ProseMirror tbody tr:hover td {
+  @apply bg-muted/60;
+}
+
+/* ==========================================================================
+   ProseMirror Link Styles
+   ========================================================================== */
+
+.ProseMirror a {
+  @apply text-primary no-underline font-medium;
+  @apply hover:underline transition-colors cursor-pointer;
+}
+
+/* ==========================================================================
+   ProseMirror Image Styles
+   ========================================================================== */
+
+.ProseMirror img {
+  @apply rounded-lg max-w-full h-auto shadow-md;
+}
+
+/* Table cell selection highlight */
+.ProseMirror .selectedCell {
+  @apply bg-primary/10;
+}
+
+/* Table column resize handle */
+.ProseMirror .column-resize-handle {
+  @apply absolute right-[-2px] top-0 bottom-0 w-1 bg-primary/50 pointer-events-none;
+}
+
+/* Selected table cell */
+.ProseMirror table .selectedCell::after {
+  @apply absolute inset-0 bg-primary/5 pointer-events-none;
+  content: "";
+}
+
+/* Strikethrough text */
+.ProseMirror s,
+.ProseMirror del {
+  @apply line-through text-muted-foreground;
+}
+
+/* Mark/highlight text */
+.ProseMirror mark {
+  @apply bg-warning/30 text-foreground px-0.5 rounded-sm;
+}
+
+/* Subscript and superscript */
+.ProseMirror sub {
+  @apply text-xs align-sub;
+}
+
+.ProseMirror sup {
+  @apply text-xs align-super;
+}
+
+/* Task lists */
+.ProseMirror ul[data-type="taskList"] {
+  @apply list-none pl-0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  @apply flex items-start gap-2;
+}
+
+.ProseMirror ul[data-type="taskList"] li input[type="checkbox"] {
+  @apply mt-1;
 }
 
 /* Professional Component Styling */

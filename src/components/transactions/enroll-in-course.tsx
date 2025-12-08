@@ -63,7 +63,7 @@ export function EnrollInCourse({
     }
 
     // Build the full access token unit (policy ID + hex-encoded name)
-    // The alias is stored in plain text, but NBA expects the full asset unit
+    // The alias is stored in plain text, but Andamioscan expects the full asset unit
     const userAccessToken = buildAccessTokenUnit(
       user.accessTokenAlias,
       env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID

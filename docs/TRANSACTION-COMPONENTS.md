@@ -1,5 +1,13 @@
 # Andamio Template Transaction Components
 
+> ⚠️ **Migration in Progress**: Transaction building is transitioning from NBA to **Andamioscan**.
+> See [DATA-SOURCES.md](./DATA-SOURCES.md) for current architecture.
+>
+> **Current Status**:
+> - `ANDAMIOSCAN_TX_ENABLED = false` in `use-transaction.ts`
+> - Transaction attempts show "Coming Soon" error
+> - Andamioscan endpoints being integrated one-by-one
+
 Andamio is a Web3 platform with many transactions happening on-chain.
 
 In /Users/james/projects/01-current-projects/andamio-platform, we already have a number of great prototypes for transaction interactions.
@@ -12,7 +20,7 @@ We have some other concerns: keeping the registry up to date, and pulling in (or
 
 ## Initial Rules
 
-1. The NBA returns unsigned CBOR that the user needs to sign
+1. **Andamioscan** returns unsigned CBOR that the user needs to sign
 2. We hit the tx endpoints with nice fetch requests, just like any other data
 3. Completed transactions need to update our database
 
@@ -47,7 +55,7 @@ We have some other concerns: keeping the registry up to date, and pulling in (or
 ```
 1. User clicks TransactionButton
    ↓
-2. useTransaction fetches unsigned CBOR from NBA endpoint
+2. useTransaction fetches unsigned CBOR from Andamioscan endpoint
    ↓
 3. User signs transaction with wallet (Mesh SDK)
    ↓
@@ -58,13 +66,15 @@ We have some other concerns: keeping the registry up to date, and pulling in (or
 6. Display tx hash and Cardano explorer link
 ```
 
-### NBA Transaction Endpoints
+### Andamioscan Transaction Endpoints
+
+> **Status**: 🚧 Coming Soon - being integrated
 
 Transaction endpoints can use different HTTP methods:
 - **GET**: Parameters sent as query string (e.g., mint access token)
 - **POST**: Parameters sent as JSON body (e.g., submit assignment)
 - **Response**: Unsigned CBOR (hex string)
-- **Endpoint**: `/api/nba/tx/{transaction-name}`
+- **Endpoint**: `/api/andamioscan/tx/{transaction-name}`
 
 The `useTransaction` hook automatically handles both methods based on the `method` parameter in the transaction config.
 
@@ -72,15 +82,17 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 
 ## Implemented Transactions
 
+> **Note**: All transactions currently show "Coming Soon" error until Andamioscan is integrated.
+
 ### Mint Access Token
 
-**Status**: ✅ Ready to Use
+**Status**: 🚧 Awaiting Andamioscan
 
 **Purpose**: Mint a new Andamio Access Token NFT for the user
 
-**NBA Endpoint**: `/tx/access-token/mint`
+**Andamioscan Endpoint**: `/tx/access-token/mint`
 
-**Frontend Endpoint**: `/api/nba/tx/access-token/mint`
+**Frontend Endpoint**: `/api/andamioscan/tx/access-token/mint`
 
 **HTTP Method**: `GET` (parameters sent as query string)
 
@@ -91,7 +103,7 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 **Flow**:
 1. User enters desired alias on dashboard
 2. Click "Mint Access Token" button
-3. Fetch unsigned CBOR from NBA
+3. Fetch unsigned CBOR from Andamioscan
 4. Sign with wallet
 5. Submit to blockchain
 6. Update database with new access token record
@@ -109,13 +121,13 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 
 ### Enroll in Course (Mint Local State)
 
-**Status**: ✅ Ready to Use
+**Status**: 🚧 Awaiting Andamioscan
 
 **Purpose**: Enroll a learner in a course by minting their course local state NFT
 
-**NBA Endpoint**: `/tx/student/mint-local-state`
+**Andamioscan Endpoint**: `/tx/student/mint-local-state`
 
-**Frontend Endpoint**: `/api/nba/tx/student/mint-local-state`
+**Frontend Endpoint**: `/api/andamioscan/tx/student/mint-local-state`
 
 **HTTP Method**: `GET` (parameters sent as query string)
 
@@ -128,7 +140,7 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 2. System checks enrollment status via `/user-course-status/{courseNftPolicyId}`
 3. If not enrolled, show EnrollInCourse component
 4. Click "Enroll in Course" button
-5. Fetch unsigned CBOR from NBA
+5. Fetch unsigned CBOR from Andamioscan
 6. Sign with wallet
 7. Submit to blockchain
 8. On success, refetch status to show progress card

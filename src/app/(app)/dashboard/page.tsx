@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { type AggregateUserInfoResponse } from "@andamiojs/datum-utils";
+import React from "react";
+// TODO: Re-enable when Andamioscan is ready
+// import { type AggregateUserInfoResponse } from "@andamiojs/datum-utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioCode } from "~/components/andamio/andamio-code";
-import { Wallet, Key, Database } from "lucide-react";
+// TODO: Re-enable when Andamioscan is ready
+// import { AndamioCode } from "~/components/andamio/andamio-code";
+import { Wallet, Key, Database, Clock } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessToken } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
@@ -16,35 +18,36 @@ import { GettingStarted } from "~/components/dashboard/getting-started";
 
 export default function DashboardPage() {
   const { isAuthenticated, user, jwt } = useAndamioAuth();
-  const [nbaUserInfo, setNbaUserInfo] = useState<AggregateUserInfoResponse | null>(null);
-  const [nbaLoading, setNbaLoading] = useState(false);
-  const [nbaError, setNbaError] = useState<string | null>(null);
 
-  // Fetch NBA user info when authenticated
-  useEffect(() => {
-    if (!isAuthenticated || !user?.accessTokenAlias) return;
-
-    const fetchNbaUserInfo = async () => {
-      setNbaLoading(true);
-      setNbaError(null);
-      try {
-        const response = await fetch(
-          `/api/nba/aggregate/user-info?alias=${user.accessTokenAlias}`
-        );
-        if (!response.ok) {
-          throw new Error(`NBA API error: ${response.status}`);
-        }
-        const data = (await response.json()) as AggregateUserInfoResponse;
-        setNbaUserInfo(data);
-      } catch (error) {
-        setNbaError(error instanceof Error ? error.message : "Failed to fetch NBA data");
-      } finally {
-        setNbaLoading(false);
-      }
-    };
-
-    void fetchNbaUserInfo();
-  }, [isAuthenticated, user?.accessTokenAlias]);
+  // TODO: Re-enable when Andamioscan API is ready
+  // const [onChainUserInfo, setOnChainUserInfo] = useState<AggregateUserInfoResponse | null>(null);
+  // const [onChainLoading, setOnChainLoading] = useState(false);
+  // const [onChainError, setOnChainError] = useState<string | null>(null);
+  //
+  // useEffect(() => {
+  //   if (!isAuthenticated || !user?.accessTokenAlias) return;
+  //
+  //   const fetchOnChainUserInfo = async () => {
+  //     setOnChainLoading(true);
+  //     setOnChainError(null);
+  //     try {
+  //       const response = await fetch(
+  //         `/api/andamioscan/aggregate/user-info?alias=${user.accessTokenAlias}`
+  //       );
+  //       if (!response.ok) {
+  //         throw new Error(`Andamioscan API error: ${response.status}`);
+  //       }
+  //       const data = (await response.json()) as AggregateUserInfoResponse;
+  //       setOnChainUserInfo(data);
+  //     } catch (error) {
+  //       setOnChainError(error instanceof Error ? error.message : "Failed to fetch on-chain data");
+  //     } finally {
+  //       setOnChainLoading(false);
+  //     }
+  //   };
+  //
+  //   void fetchOnChainUserInfo();
+  // }, [isAuthenticated, user?.accessTokenAlias]);
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -174,36 +177,31 @@ export default function DashboardPage() {
         </AndamioCardContent>
       </AndamioCard>
 
-      {/* NBA User Info (Legacy API) */}
+      {/* On-Chain Data (Andamioscan) - Coming Soon */}
       <AndamioCard>
         <AndamioCardHeader>
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            <AndamioCardTitle>On-Chain Data (NBA)</AndamioCardTitle>
+            <AndamioCardTitle>On-Chain Data</AndamioCardTitle>
+            <AndamioBadge variant="outline" className="ml-2">
+              <Clock className="mr-1 h-3 w-3" />
+              Coming Soon
+            </AndamioBadge>
           </div>
           <AndamioCardDescription>
-            Legacy Node Backend API - aggregated user info
+            Andamioscan integration - aggregated on-chain user data
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
-          {nbaLoading && (
-            <div className="rounded-md border border-dashed p-4 text-center">
-              <p className="text-sm text-muted-foreground">Loading NBA data...</p>
-            </div>
-          )}
-          {nbaError && (
-            <div className="rounded-md border border-destructive bg-destructive/10 p-4">
-              <p className="text-sm text-destructive">{nbaError}</p>
-            </div>
-          )}
-          {!nbaLoading && !nbaError && !!nbaUserInfo && (
-            <AndamioCode data={nbaUserInfo} />
-          )}
-          {!nbaLoading && !nbaError && !nbaUserInfo && (
-            <div className="rounded-md border border-dashed p-4 text-center">
-              <p className="text-sm text-muted-foreground">No data available</p>
-            </div>
-          )}
+          <div className="rounded-md border border-dashed bg-muted/50 p-6 text-center">
+            <Database className="mx-auto h-8 w-8 text-muted-foreground/50" />
+            <p className="mt-3 text-sm font-medium text-muted-foreground">
+              Andamioscan Integration Coming Soon
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              On-chain user data will be available here once the Andamioscan API is connected.
+            </p>
+          </div>
         </AndamioCardContent>
       </AndamioCard>
 

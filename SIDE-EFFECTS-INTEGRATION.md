@@ -73,7 +73,7 @@ The side effects are executed automatically behind the scenes.
    ↓
 3. useAndamioTransaction.execute() is called
    ↓
-4. useTransaction fetches unsigned CBOR from NBA
+4. useTransaction fetches unsigned CBOR from Andamioscan
    ↓
 5. User signs transaction in wallet
    ↓

@@ -194,6 +194,36 @@ src/
 5. **Store JWT** - Save JWT to localStorage for authenticated requests
 6. **Make Requests** - Include JWT in Authorization header
 
+## Data Sources
+
+This app pulls data from **two main sources**:
+
+| Source | Type | Purpose | Documentation |
+|--------|------|---------|---------------|
+| **Andamio Database API** | Off-chain | Courses, users, assignments, lessons, learning progress | [API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) |
+| **Andamio Indexer API** | On-chain | UTXOs, decoded datums, enrollment states, blockchain-indexed data | [NBA-API-ENDPOINT-REFERENCE.md](./docs/NBA-API-ENDPOINT-REFERENCE.md) |
+
+Additionally, **Koios API** is used for transaction confirmation checking (see `src/lib/cardano-indexer.ts`).
+
+```
+┌────────────────────────────────────────────────────────┐
+│                  T3 App Template                       │
+└─────────────────────────┬──────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+          ▼               ▼               ▼
+   ┌─────────────┐  ┌───────────┐  ┌───────────┐
+   │ Andamio DB  │  │ Andamio   │  │ Koios API │
+   │ API         │  │ Indexer   │  │           │
+   │ (Off-chain) │  │ (On-chain)│  │ (Tx info) │
+   └─────────────┘  └───────────┘  └───────────┘
+```
+
+📖 **Full Documentation**: [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md)
+
+---
+
 ## API Integration
 
 ### Type Safety with `andamio-db-api`

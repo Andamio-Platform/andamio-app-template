@@ -31,20 +31,20 @@ export function hexToString(hex: string): string {
  *
  * @param alias - The user's access token alias (plain text)
  * @param policyId - The access token policy ID
- * @param prefix - Token name prefix (default: "222")
+ * @param prefix - Token name prefix (default: "u" for user tokens, "g" for group tokens)
  * @returns Full asset unit (policy ID + hex name)
  *
  * @example
  * ```typescript
  * const unit = buildAccessTokenUnit("CMI663VI", "c76c35088ac826c8...");
- * // Returns: "c76c35088ac826c8...323232434d49363633564"
- * //          (policy ID + hex("222CMI663VI"))
+ * // Returns: "c76c35088ac826c8...75434d49363633564"
+ * //          (policy ID + hex("uCMI663VI"))
  * ```
  */
 export function buildAccessTokenUnit(
   alias: string,
   policyId: string,
-  prefix = "222"
+  prefix = "u"
 ): string {
   // Build token name: prefix + alias
   const tokenName = prefix + alias;
@@ -61,13 +61,13 @@ export function buildAccessTokenUnit(
  *
  * @param unit - Full asset unit (policy ID + hex name)
  * @param policyId - The access token policy ID
- * @param prefixLength - Length of the prefix (default: 3 characters for "222" or "100")
+ * @param prefixLength - Length of the prefix (default: 1 character for "u" or "g")
  * @returns The plain text alias
  *
  * @example
  * ```typescript
  * const alias = extractAliasFromUnit(
- *   "c76c35088ac826c8...323232434d49363633564",
+ *   "c76c35088ac826c8...75434d49363633564",
  *   "c76c35088ac826c8..."
  * );
  * // Returns: "CMI663VI"
@@ -76,7 +76,7 @@ export function buildAccessTokenUnit(
 export function extractAliasFromUnit(
   unit: string,
   policyId: string,
-  prefixLength = 3
+  prefixLength = 1
 ): string {
   // Remove policy ID to get hex name
   const hexName = unit.replace(policyId, "");
@@ -84,7 +84,7 @@ export function extractAliasFromUnit(
   // Convert hex to string
   const tokenName = hexToString(hexName);
 
-  // Remove prefix (first 3 characters)
+  // Remove prefix (first character)
   const alias = tokenName.slice(prefixLength);
 
   return alias;

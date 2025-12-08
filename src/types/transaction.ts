@@ -28,31 +28,44 @@ export interface TransactionResult {
 }
 
 /**
+ * API backend options for transaction building
+ */
+export type TxApiBackend = "atlas-tx" | "andamioscan";
+
+/**
  * Configuration for a transaction
  */
 export interface TransactionConfig<TParams = unknown> {
   /**
-   * Andamioscan endpoint for fetching unsigned CBOR
-   * Example: "/tx/mint-access-token"
+   * API endpoint for fetching unsigned CBOR
+   * Example: "/tx/v2/general/mint-access-token"
    */
   endpoint: string;
 
   /**
-   * Parameters to send to the Andamioscan endpoint
+   * Parameters to send to the API endpoint
    */
   params: TParams;
 
   /**
-   * HTTP method to use for the Andamioscan request
-   * - GET: Parameters sent as query string (e.g., mint access token)
-   * - POST: Parameters sent as JSON body (e.g., submit assignment)
+   * HTTP method to use for the API request
+   * - GET: Parameters sent as query string
+   * - POST: Parameters sent as JSON body
    * @default "POST"
    */
   method?: "GET" | "POST";
 
   /**
+   * API backend to use for transaction building
+   * - atlas-tx: Atlas Transaction API (default, for building transactions)
+   * - andamioscan: Andamioscan API (for on-chain data queries)
+   * @default "atlas-tx"
+   */
+  apiBackend?: TxApiBackend;
+
+  /**
    * Transaction type for logging purposes
-   * Example: "MINT_MODULE_TOKENS"
+   * Example: "MINT_ACCESS_TOKEN"
    */
   txType?: string;
 
@@ -83,10 +96,13 @@ export interface UnsignedTxResponse {
 
 /**
  * Mint Access Token transaction parameters
+ * For POST /tx/v2/general/mint-access-token endpoint
  */
 export interface MintAccessTokenParams {
-  user_address: string;
-  new_alias: string;
+  /** User's wallet address in bech32 format */
+  walletData: string;
+  /** Desired alias for the access token */
+  alias: string;
 }
 
 /**

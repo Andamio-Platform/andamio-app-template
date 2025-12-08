@@ -58,6 +58,18 @@ export async function createLoginSession(): Promise<LoginSession> {
 }
 
 /**
+ * API response format (snake_case from server)
+ */
+interface ValidateSignatureApiResponse {
+  jwt: string;
+  user: {
+    id: string;
+    cardano_bech32_addr: string | null;
+    access_token_alias: string | null;
+  };
+}
+
+/**
  * Step 2: Validate signature and get JWT
  * Verifies the wallet signature and returns a JWT token
  */
@@ -78,9 +90,9 @@ export async function validateSignature(params: {
       id: params.sessionId,
       signature: params.signature,
       address: params.address,
-      convertUTF8: params.convertUTF8 ?? false,
-      walletPreference: params.walletPreference,
-      andamioAccessTokenUnit: params.andamioAccessTokenUnit,
+      convert_utf8: params.convertUTF8 ?? false,
+      wallet_preference: params.walletPreference,
+      andamio_access_token_unit: params.andamioAccessTokenUnit,
     }),
   });
 
@@ -89,7 +101,16 @@ export async function validateSignature(params: {
     throw new Error(error.message ?? "Failed to validate signature");
   }
 
-  return response.json() as Promise<AuthResponse>;
+  // Transform snake_case API response to camelCase
+  const apiResponse = (await response.json()) as ValidateSignatureApiResponse;
+  return {
+    jwt: apiResponse.jwt,
+    user: {
+      id: apiResponse.user.id,
+      cardanoBech32Addr: apiResponse.user.cardano_bech32_addr,
+      accessTokenAlias: apiResponse.user.access_token_alias,
+    },
+  };
 }
 
 /**

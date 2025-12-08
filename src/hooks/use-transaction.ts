@@ -2,15 +2,16 @@
  * useTransaction Hook
  *
  * Core hook for handling Cardano transaction lifecycle:
- * 1. Fetch unsigned CBOR from Andamioscan endpoint
+ * 1. Fetch unsigned CBOR from transaction API endpoint
  * 2. Sign transaction with user's wallet
  * 3. Submit signed transaction to blockchain
  * 4. Handle confirmation and callbacks
  *
- * Will be extracted to @andamio/transactions package.
+ * Supports multiple API backends:
+ * - atlas-tx: Atlas Transaction API (for building transactions)
+ * - andamioscan: Andamioscan API (for on-chain data)
  *
- * TODO: Currently disabled while migrating from NBA to Andamioscan API.
- * Transaction building will be re-enabled once Andamioscan endpoints are ready.
+ * Will be extracted to @andamio/transactions package.
  */
 
 import { useState, useCallback } from "react";
@@ -24,8 +25,8 @@ import type {
   UnsignedTxResponse,
 } from "~/types/transaction";
 
-// Feature flag for Andamioscan API readiness
-const ANDAMIOSCAN_TX_ENABLED = false;
+// Feature flag for transaction API readiness
+const TX_API_ENABLED = true;
 
 export function useTransaction<TParams = unknown>() {
   const { wallet, connected } = useWallet();
@@ -35,9 +36,8 @@ export function useTransaction<TParams = unknown>() {
 
   const execute = useCallback(
     async (config: TransactionConfig<TParams>) => {
-      // TODO: Remove this check when Andamioscan transaction building is ready
-      if (!ANDAMIOSCAN_TX_ENABLED) {
-        const err = "Transaction building is temporarily unavailable. Andamioscan integration coming soon.";
+      if (!TX_API_ENABLED) {
+        const err = "Transaction building is temporarily unavailable.";
         setError(err);
         setState("error");
         config.onError?.(new Error(err));
@@ -57,15 +57,16 @@ export function useTransaction<TParams = unknown>() {
         setError(null);
         setResult(null);
 
-        // Step 1: Fetch unsigned CBOR from Andamioscan
+        // Step 1: Fetch unsigned CBOR from transaction API
         setState("fetching");
         config.onStateChange?.("fetching");
 
         const txType = config.txType ?? config.endpoint;
         const method = config.method ?? "POST";
+        const apiBackend = config.apiBackend ?? "atlas-tx";
 
-        // Build URL and fetch options based on method
-        let url = `/api/andamioscan${config.endpoint}`;
+        // Build URL based on API backend
+        let url = `/api/${apiBackend}${config.endpoint}`;
         const fetchOptions: RequestInit = {
           method,
           headers: {
@@ -85,19 +86,27 @@ export function useTransaction<TParams = unknown>() {
         // Log the build request
         txLogger.buildRequest(txType, url, method, config.params);
 
-        const andamioscanResponse = await fetch(url, fetchOptions);
+        const apiResponse = await fetch(url, fetchOptions);
 
-        if (!andamioscanResponse.ok) {
-          const errorText = await andamioscanResponse.text();
-          txLogger.buildResult(txType, false, { status: andamioscanResponse.status, error: errorText });
-          throw new Error(`Andamioscan API error: ${andamioscanResponse.status} ${andamioscanResponse.statusText}`);
+        if (!apiResponse.ok) {
+          const errorText = await apiResponse.text();
+          let errorDetails: string;
+          try {
+            // Try to parse as JSON to get more details
+            const errorJson = JSON.parse(errorText) as { error?: string; details?: string; message?: string };
+            errorDetails = errorJson.details ?? errorJson.message ?? errorJson.error ?? errorText;
+          } catch {
+            errorDetails = errorText;
+          }
+          txLogger.buildResult(txType, false, { status: apiResponse.status, error: errorDetails });
+          throw new Error(`Transaction API error: ${apiResponse.status} - ${errorDetails}`);
         }
 
-        const unsignedTx = (await andamioscanResponse.json()) as UnsignedTxResponse;
+        const unsignedTx = (await apiResponse.json()) as UnsignedTxResponse;
 
         if (!unsignedTx.unsignedTxCBOR) {
           txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
-          throw new Error("No CBOR returned from Andamioscan");
+          throw new Error("No CBOR returned from transaction API");
         }
 
         txLogger.buildResult(txType, true, unsignedTx);

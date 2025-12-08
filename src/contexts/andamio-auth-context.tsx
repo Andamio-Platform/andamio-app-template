@@ -156,12 +156,14 @@ const AndamioAuthContext = createContext<AndamioAuthContextType | undefined>(und
  * Manages JWT storage, wallet authentication, and authenticated API requests.
  */
 export function AndamioAuthProvider({ children }: { children: React.ReactNode }) {
-  const { connected, wallet, name: walletName } = useWallet();
+  const { connected, wallet, name: walletName, disconnect: disconnectWallet } = useWallet();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [jwt, setJwt] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  // Track if we've attempted auto-auth for this wallet connection
+  const [hasAttemptedAutoAuth, setHasAttemptedAutoAuth] = useState(false);
 
   // Check for stored JWT on mount
   useEffect(() => {
@@ -174,14 +176,14 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       try {
         const payload = JSON.parse(atob(storedJWT.split(".")[1]!)) as {
           userId: string;
-          address?: string;
+          cardanoBech32Addr?: string;
           accessTokenAlias?: string;
         };
         console.log("🔍 JWT Payload:", payload);
 
         const userData: AuthUser = {
           id: payload.userId,
-          cardanoBech32Addr: payload.address ?? null,
+          cardanoBech32Addr: payload.cardanoBech32Addr ?? null,
           accessTokenAlias: payload.accessTokenAlias ?? null,
         };
         setUser(userData);
@@ -200,6 +202,13 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       clearStoredJWT();
     }
   }, [connected, wallet]);
+
+  // Reset auto-auth attempt tracking when wallet disconnects
+  useEffect(() => {
+    if (!connected) {
+      setHasAttemptedAutoAuth(false);
+    }
+  }, [connected]);
 
   /**
    * Authenticate with connected wallet
@@ -276,8 +285,23 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     }
   }, [connected, wallet, walletName]);
 
+  // Auto-authenticate when wallet connects (combines connect + sign into one step)
+  useEffect(() => {
+    // Only auto-auth if:
+    // 1. Wallet is connected
+    // 2. Not already authenticated
+    // 3. Not currently authenticating
+    // 4. Haven't already attempted auto-auth for this connection
+    if (connected && wallet && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth) {
+      console.log("🔄 Auto-authenticating after wallet connection...");
+      setHasAttemptedAutoAuth(true);
+      void authenticate();
+    }
+  }, [connected, wallet, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, authenticate]);
+
   /**
    * Logout and clear auth state
+   * Also disconnects the wallet to complete the logout flow
    */
   const logout = useCallback(() => {
     clearStoredJWT();
@@ -285,7 +309,9 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     setUser(null);
     setIsAuthenticated(false);
     setAuthError(null);
-  }, []);
+    // Disconnect the wallet as well
+    disconnectWallet();
+  }, [disconnectWallet]);
 
   /**
    * Make authenticated API request

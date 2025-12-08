@@ -63,9 +63,11 @@ This template serves as both a **testing ground** and **reference implementation
 
 ### Wallet Authentication
 - **Cardano Wallet Connection** via Mesh SDK
+- **Auto-Authentication** - Signing prompt appears automatically after wallet connects
 - **Signature-based Authentication** with Andamio Database API
 - **JWT Management** with automatic expiration handling
 - **Persistent Sessions** via localStorage
+- **Complete Logout** - Clears JWT and disconnects wallet in one action
 
 ### Andamio API Integration
 - **Type-safe API calls** with proper error handling
@@ -187,12 +189,15 @@ src/
 
 ## Authentication Flow
 
+The authentication flow combines wallet connection and signing into a single seamless step:
+
 1. **Connect Wallet** - User connects Cardano wallet via Mesh SDK
-2. **Create Session** - Request nonce from `/auth/login/session`
-3. **Sign Message** - User signs nonce with their wallet
-4. **Validate Signature** - Send signature to `/auth/login/validate`
-5. **Store JWT** - Save JWT to localStorage for authenticated requests
-6. **Make Requests** - Include JWT in Authorization header
+2. **Auto-Authenticate** - Signing prompt appears automatically after wallet connects
+3. **Sign Message** - User signs the nonce in their wallet (creates session + validates in one flow)
+4. **Store JWT** - JWT saved to localStorage for authenticated requests
+5. **Make Requests** - JWT included in Authorization header automatically
+
+**Logout**: When the user logs out, both the JWT is cleared and the wallet is disconnected, returning them to the initial "Connect Wallet" state.
 
 ## Data Sources
 
@@ -521,17 +526,18 @@ Left sidebar navigation with user info.
 ### Auth Components
 
 #### `AndamioAuthButton`
-Complete authentication interface.
+Complete authentication interface with streamlined UX.
 
 **Features**:
 - Wallet connection UI (via Mesh CardanoWallet)
-- Sign message prompt
-- Authenticated state display
-- Logout functionality
+- Auto-authentication after wallet connects (signing prompt appears automatically)
+- Authenticated state display with user info
+- Logout functionality (clears JWT and disconnects wallet)
 
 **States**:
 - Not connected - Shows wallet connection UI
-- Connected, not authenticated - Shows "Sign Message" button
+- Connected, authenticating - Shows loading state while waiting for signature
+- Authentication failed - Shows error with "Try Again" button
 - Authenticated - Shows user info and logout button
 
 ### Course Components
@@ -587,7 +593,7 @@ Displays courses the authenticated learner is enrolled in based on on-chain data
 ### Hooks
 
 #### `useAndamioAuth`
-Manages authentication state and provides helpers.
+Manages authentication state and provides helpers. Authentication is triggered automatically when wallet connects.
 
 **Returns**:
 ```typescript
@@ -601,11 +607,15 @@ Manages authentication state and provides helpers.
   isWalletConnected: boolean;
 
   // Actions
-  authenticate: () => Promise<void>;
-  logout: () => void;
+  authenticate: () => Promise<void>;  // Called automatically on wallet connect
+  logout: () => void;                 // Clears JWT AND disconnects wallet
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 ```
+
+**Auto-Authentication**: When the wallet connects, `authenticate()` is called automatically. The user only needs to approve the signature in their wallet.
+
+**Logout Behavior**: Calling `logout()` clears the stored JWT, resets all auth state, and disconnects the wallet via Mesh SDK.
 
 ## Environment Variables
 

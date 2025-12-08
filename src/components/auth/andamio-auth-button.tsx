@@ -60,14 +60,19 @@ export function AndamioAuthButton() {
     );
   }
 
-  // Wallet connected but not authenticated
+  // Wallet connected but not authenticated - auto-auth should be in progress
+  // This state shows while waiting for signature or if there was an error
   if (isWalletConnected) {
     return (
       <AndamioCard>
         <AndamioCardHeader>
-          <AndamioCardTitle>Authenticate with Andamio</AndamioCardTitle>
+          <AndamioCardTitle>
+            {authError ? "Authentication Failed" : "Authenticating..."}
+          </AndamioCardTitle>
           <AndamioCardDescription>
-            Sign a message with your wallet to authenticate
+            {authError
+              ? "Please try again or reconnect your wallet"
+              : "Please sign the message in your wallet"}
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
@@ -76,16 +81,22 @@ export function AndamioAuthButton() {
               <AndamioAlertDescription>{authError}</AndamioAlertDescription>
             </AndamioAlert>
           )}
-          <AndamioButton
-            onClick={authenticate}
-            disabled={isAuthenticating}
-            className="w-full"
-          >
-            {isAuthenticating && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            {isAuthenticating ? "Authenticating..." : "Sign Message to Authenticate"}
-          </AndamioButton>
+          {authError ? (
+            <AndamioButton
+              onClick={authenticate}
+              disabled={isAuthenticating}
+              className="w-full"
+            >
+              {isAuthenticating && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isAuthenticating ? "Authenticating..." : "Try Again"}
+            </AndamioButton>
+          ) : (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </AndamioCardContent>
       </AndamioCard>
     );

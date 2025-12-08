@@ -2,19 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, Palette, FolderPlus, Map } from "lucide-react";
+import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "~/lib/utils";
-
-interface ChecklistItem {
-  id: string;
-  title: string;
-  description: string;
-  link?: string;
-  linkText?: string;
-  completed: boolean;
-  icon: React.ElementType;
-}
 
 interface GettingStartedProps {
   isAuthenticated: boolean;
@@ -22,150 +12,104 @@ interface GettingStartedProps {
 }
 
 export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStartedProps) {
-  const checklist: ChecklistItem[] = [
+  // Only show the essential onboarding steps
+  const steps = [
     {
       id: "connect",
-      title: "Connect your wallet",
-      description: "Use a CIP-30 compatible wallet like Eternl or Nami",
+      title: "Connect Wallet",
       completed: isAuthenticated,
       icon: Wallet,
     },
     {
       id: "token",
-      title: "Get an access token",
-      description: "Mint your on-chain access token to unlock all features",
+      title: "Mint Access Token",
       completed: hasAccessToken,
       icon: Key,
     },
     {
       id: "explore",
-      title: "Browse available courses",
-      description: "Explore the course catalog and find something to learn",
-      link: "/course",
-      linkText: "Browse courses",
+      title: "Start Learning",
       completed: false,
       icon: BookOpen,
-    },
-    {
-      id: "components",
-      title: "View UI components",
-      description: "Explore the component library and copy code examples",
-      link: "/components",
-      linkText: "View components",
-      completed: false,
-      icon: Palette,
-    },
-    {
-      id: "create",
-      title: "Create your first course",
-      description: "Use the studio to build and publish educational content",
-      link: "/courses",
-      linkText: "Go to studio",
-      completed: false,
-      icon: FolderPlus,
-    },
-    {
-      id: "sitemap",
-      title: "Explore all routes",
-      description: "View the complete sitemap and navigation structure",
-      link: "/sitemap",
-      linkText: "View sitemap",
-      completed: false,
-      icon: Map,
+      link: "/course",
     },
   ];
 
-  const completedCount = checklist.filter((item) => item.completed).length;
-  const totalCount = checklist.length;
-  const progress = Math.round((completedCount / totalCount) * 100);
+  const completedCount = steps.filter((s) => s.completed).length;
+  const allComplete = completedCount === steps.length - 1 && hasAccessToken; // Last step is ongoing
+
+  // Don't show if user has completed onboarding (has access token)
+  if (hasAccessToken) {
+    return null;
+  }
 
   return (
-    <AndamioCard>
-      <AndamioCardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <AndamioCardTitle>Getting Started</AndamioCardTitle>
-            <AndamioCardDescription className="mt-1">
-              Complete these steps to get the most out of Andamio
-            </AndamioCardDescription>
+    <AndamioCard className="border-warning/30 bg-gradient-to-r from-warning/5 to-transparent">
+      <AndamioCardContent className="py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
+              <GraduationCap className="h-5 w-5 text-warning" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Getting Started</p>
+              <p className="text-xs text-muted-foreground">
+                {completedCount} of {steps.length} steps complete
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-primary">{completedCount}/{totalCount}</p>
-            <p className="text-xs text-muted-foreground">completed</p>
-          </div>
-        </div>
 
-        {/* Progress bar */}
-        <div className="mt-4">
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      </AndamioCardHeader>
+          {/* Steps - horizontal on desktop */}
+          <div className="flex-1 flex items-center gap-2 sm:justify-end">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isLast = index === steps.length - 1;
 
-      <AndamioCardContent className="pt-0">
-        <div className="space-y-2">
-          {checklist.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.id}
-                className={cn(
-                  "flex items-start gap-4 rounded-lg border p-4 transition-colors",
-                  item.completed
-                    ? "border-success/30 bg-success/5"
-                    : "border-border hover:border-primary/30 hover:bg-accent/50"
-                )}
-              >
-                {/* Status icon */}
-                <div className="flex-shrink-0 mt-0.5">
-                  {item.completed ? (
-                    <CheckCircle2 className="h-5 w-5 text-success" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md",
-                      item.completed ? "bg-success/10" : "bg-muted"
-                    )}>
-                      <Icon className={cn(
-                        "h-4 w-4",
-                        item.completed ? "text-success" : "text-muted-foreground"
-                      )} />
-                    </div>
-                    <div className="flex-1">
-                      <p className={cn(
-                        "font-medium text-sm",
-                        item.completed && "text-success"
-                      )}>
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {item.description}
-                      </p>
-                      {item.link && !item.completed && (
-                        <Link
-                          href={item.link}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-2"
-                        >
-                          {item.linkText}
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
+              return (
+                <React.Fragment key={step.id}>
+                  {step.link && !step.completed ? (
+                    <Link
+                      href={step.link}
+                      className={cn(
+                        "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors",
+                        step.completed
+                          ? "bg-success/10 text-success"
+                          : "bg-muted hover:bg-accent"
                       )}
+                    >
+                      {step.completed ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <Icon className="h-4 w-4" />
+                      )}
+                      <span className="hidden sm:inline font-medium">{step.title}</span>
+                      {!step.completed && <ArrowRight className="h-3 w-3" />}
+                    </Link>
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm",
+                        step.completed
+                          ? "bg-success/10 text-success"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {step.completed ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <Circle className="h-4 w-4" />
+                      )}
+                      <span className="hidden sm:inline font-medium">{step.title}</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  )}
+                  {!isLast && (
+                    <div className="hidden sm:block h-px w-4 bg-border" />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
       </AndamioCardContent>
     </AndamioCard>

@@ -144,16 +144,20 @@ Lists courses owned by the authenticated user.
 
 ## Authentication Flow
 
+The authentication flow combines wallet connection and signing into a single seamless step:
+
 1. User connects Cardano wallet (Mesh SDK)
-2. App requests nonce from `/auth/login/session`
-3. User signs nonce with wallet
-4. App validates signature at `/auth/login/validate`
-5. JWT stored in localStorage
-6. JWT included in all authenticated requests
+2. **Auto-authenticate** - Signing prompt appears automatically after wallet connects
+3. User signs nonce with wallet (session creation + validation happens automatically)
+4. JWT stored in localStorage
+5. JWT included in all authenticated requests
+
+**Logout**: Clears JWT AND disconnects wallet, returning user to initial state.
 
 **Components**:
-- `AndamioAuthButton` - Complete auth UI (`src/components/auth/andamio-auth-button.tsx`)
-- `useAndamioAuth` - Auth state management hook (`src/hooks/use-andamio-auth.ts`)
+- `AndamioAuthButton` - Complete auth UI with auto-authentication (`src/components/auth/andamio-auth-button.tsx`)
+- `useAndamioAuth` - Auth state management hook with auto-auth on wallet connect (`src/hooks/use-andamio-auth.ts`)
+- `AndamioAuthProvider` - Context provider that manages global auth state (`src/contexts/andamio-auth-context.tsx`)
 
 ## Styling Guidelines
 

@@ -180,9 +180,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Prevent viewport scrolling issues on iOS */
+    -webkit-touch-callout: none;
   }
 
   /* Typography Scale - Bold, Impactful */
@@ -396,5 +403,10 @@
 
   .hover-glow {
     @apply transition-shadow hover:shadow-md;
+  }
+
+  /* Touch-friendly targets for mobile - minimum 44x44px recommended for accessibility */
+  .touch-target {
+    @apply min-h-[2.75rem] min-w-[2.75rem] sm:min-h-auto sm:min-w-auto;
   }
 }

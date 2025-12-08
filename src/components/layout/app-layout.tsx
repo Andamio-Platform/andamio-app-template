@@ -9,9 +9,10 @@ interface AppLayoutProps {
 }
 
 /**
- * Professional full-screen app layout
+ * Professional full-screen app layout with responsive design
+ * - Mobile: Hamburger menu in status bar, full-width content
+ * - Desktop (md+): Sidebar on left, content on right
  * - Minimal status bar at top
- * - Clean sidebar navigation on left
  * - Spacious main content area with refined padding
  */
 export function AppLayout({ children }: AppLayoutProps) {
@@ -22,12 +23,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Container */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Fixed width */}
-        <AppSidebar />
+        {/* Sidebar - Hidden on mobile, visible on desktop (md+) */}
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
 
-        {/* Content Area - Scrollable */}
+        {/* Content Area - Scrollable, full width on mobile */}
         <main className="flex-1 overflow-y-auto bg-muted/30">
-          <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8 lg:py-10">
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             {children}
           </div>
         </main>

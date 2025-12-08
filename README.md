@@ -53,12 +53,13 @@ This template serves as both a **testing ground** and **reference implementation
 - **Live/Draft Status** - Visual badges for course status
 
 ### Rich Text Editor
-- **Tiptap Integration** - Full-featured rich text editor
-- **Multiple Extension Kits** - Base, Basic, ReadOnly, and Full configurations
-- **shadcn/ui Styling** - Toolbar and bubble menu built with shadcn components
-- **Markdown Support** - Paste and export markdown
+- **ContentEditor** - Self-contained rich text editor with built-in toolbar, fullscreen mode, word count
+- **ContentViewer** - Read-only display component for viewing content
+- **Unified Extension Kit** - Shared configuration ensures consistent rendering
+- **shadcn/ui Styling** - Beautiful, polished interface with focus states
+- **Markdown Support** - Paste markdown, auto-converts to rich text
 - **Code Highlighting** - Syntax highlighting with lowlight
-- **Utilities** - Word count, character count, plain text extraction
+- **Focus Mode** - Immersive fullscreen editing experience
 
 ### Wallet Authentication
 - **Cardano Wallet Connection** via Mesh SDK
@@ -310,254 +311,159 @@ Course management interface.
 - Displays badges (Live/Draft, category, access tier)
 
 ### Editor (`/editor`)
-Rich text editor demo with Tiptap.
+Rich text editor demo showcasing the Andamio Editor.
 
 **Features**:
-- **Full-featured Editor** - Rich text editing with toolbar and bubble menu
-- **Live Preview** - See rendered output in real-time
-- **JSON Output** - View ProseMirror JSON structure
-- **Word/Character Count** - Track document statistics
-- **Extension Kits** - Multiple editor configurations for different use cases
+- **ContentEditor** - Full-featured editing with built-in toolbar
+- **ContentViewer** - Live preview of content as readers will see it
+- **Focus Mode** - Immersive fullscreen editing experience
+- **Word/Character Count** - Real-time document statistics
+- **Markdown Paste** - Paste markdown and auto-convert to rich text
 
-**Available Extension Kits**:
-- `BaseExtensionKit` - Core text editing (headings, paragraphs, formatting)
-- `BasicEditorKit` - Text editing with lists and links
-- `ReadOnlyExtensionKit` - For displaying content without editing
-- `FullEditorKit` - All features including images and interactive menus
+**Toolbar Options**:
+- `minimal` - Undo/Redo + basic formatting
+- `basic` - + headings, lists, blockquote
+- `full` - + alignment, link, image, code block (default)
 
-## Tiptap Editor
+## Andamio Editor
 
-This template includes a complete Tiptap editor implementation built with shadcn/ui components.
+The Andamio Editor provides exactly **two primary components** for all content editing and viewing needs. For comprehensive documentation, see [`src/components/editor/README.md`](./src/components/editor/README.md).
 
-### Editor Components
+### Quick Start
 
-#### `ContentEditor`
-Main editable editor component.
-
-**Usage**:
 ```typescript
-import { useAndamioEditor, ContentEditor } from "~/components/editor";
+import { ContentEditor, ContentViewer } from "~/components/editor";
+import type { JSONContent } from "@tiptap/core";
 
-function MyEditor() {
-  const editor = useAndamioEditor({
-    content: { type: "doc", content: [] },
-    onUpdate: ({ editor }) => {
-      console.log(editor.getJSON());
-    },
-  });
+// State management
+const [content, setContent] = useState<JSONContent | null>(null);
 
-  return <ContentEditor editor={editor} />;
-}
+// For editing
+<ContentEditor
+  content={content}
+  onContentChange={setContent}
+  placeholder="Start writing..."
+  showWordCount
+/>
+
+// For viewing
+<ContentViewer content={content} />
 ```
 
-**Props**:
-- `editor` - Tiptap editor instance
-- `className` - Additional CSS classes
-- `height` - Editor height (default: "auto")
-- `children` - Additional content to render below editor
+### ContentEditor
 
-#### `RenderEditor`
+Self-contained rich text editor with built-in toolbar, fullscreen mode, and word count.
+
+**Key Props**:
+- `content` - Initial content (JSONContent, HTML string, or null)
+- `onContentChange` - Callback when content changes
+- `showToolbar` - Show formatting toolbar (default: true)
+- `toolbarConfig` - "minimal" | "basic" | "full" (default: "full")
+- `enableFullscreen` - Enable Focus Mode (default: true)
+- `showWordCount` / `showCharacterCount` - Show statistics
+- `minHeight` / `maxHeight` - Control editor dimensions
+- `footer` - Custom footer content (e.g., save button)
+
+**Example**:
+```typescript
+<ContentEditor
+  content={lesson.content_json}
+  onContentChange={(json) => setContent(json)}
+  placeholder="Write your lesson content..."
+  minHeight="500px"
+  showWordCount
+  footer={<SaveButton onClick={handleSave} />}
+/>
+```
+
+### ContentViewer
+
 Read-only display component for Tiptap content.
 
-**Usage**:
-```typescript
-import { RenderEditor } from "~/components/editor";
-
-function DisplayContent({ content }) {
-  return <RenderEditor content={content} />;
-}
-```
-
-**Props**:
-- `content` - ProseMirror JSON or HTML to display
-- `className` - Additional CSS classes
-- `size` - "sm" | "default" | "lg" (typography size)
+**Key Props**:
+- `content` - Content to display (JSONContent, HTML, stringified JSON)
+- `size` - "sm" | "default" | "lg"
+- `withBackground` - Show subtle background
+- `emptyContent` - Custom empty state
 
 **Variants**:
-- `RenderEditorSm` - Small typography variant
-- `RenderEditorLg` - Large typography variant
+- `ContentViewerSm` - Small text size
+- `ContentViewerLg` - Large text size
+- `ContentViewerCompact` - No padding or background
 
-#### `AndamioFixedToolbar`
-Fixed toolbar with formatting buttons.
-
-**Usage**:
+**Example**:
 ```typescript
-import { AndamioFixedToolbar } from "~/components/editor";
-
-<AndamioFixedToolbar editor={editor} />
+<ContentViewer
+  content={lesson.content_json}
+  emptyContent={<p className="text-muted-foreground">No content yet</p>}
+/>
 ```
 
-**Features**:
-- Undo/Redo
-- Headings (H1-H3)
-- Text formatting (Bold, Italic, Underline, Strike, Code)
-- Lists (Bullet, Ordered)
-- Blockquote
+### Toolbar Configuration
 
-#### `AndamioBubbleMenus`
-Floating menu that appears on text selection.
+| Preset | Features |
+|--------|----------|
+| `minimal` | Undo/Redo, Bold, Italic, Underline, Strikethrough, Code |
+| `basic` | + Headings (H1-H3), Lists, Blockquote |
+| `full` | + Alignment, Link, Image, Code Block, Focus Mode |
 
-**Usage**:
-```typescript
-import { AndamioBubbleMenus } from "~/components/editor";
+### Editor Capabilities
 
-<AndamioBubbleMenus editor={editor} />
-```
+- **Text Formatting**: Bold, Italic, Underline, Strikethrough, Inline Code
+- **Headings**: H1, H2, H3 with keyboard shortcuts
+- **Lists**: Bullet lists, Ordered lists, Nested lists
+- **Blocks**: Blockquotes, Code blocks with syntax highlighting
+- **Media**: Images with alignment options
+- **Links**: Auto-linking URLs, Manual link insertion
+- **Markdown**: Paste markdown and auto-convert to rich text
+- **Focus Mode**: Immersive fullscreen editing
 
-**Features**:
-- Text formatting (Bold, Italic, Underline, Strike, Code)
-- Link creation and editing
-- Auto-positioning on text selection
+### Keyboard Shortcuts
 
-### Editor Hooks
-
-#### `useAndamioEditor`
-Create a Tiptap editor instance with sensible defaults.
-
-**Usage**:
-```typescript
-import { useAndamioEditor } from "~/components/editor";
-
-const editor = useAndamioEditor({
-  content: myContent,
-  onUpdate: ({ editor }) => {
-    // Save content
-    saveContent(editor.getJSON());
-  },
-});
-```
-
-**Options** (extends Tiptap's `UseEditorOptions`):
-- `extensions` - Custom extension array (default: `FullEditorKit()`)
-- `content` - Initial content (JSON or HTML)
-- `editable` - Is editor editable (default: true)
-- `onUpdate` - Called when content changes
-- `onCreate` - Called when editor is created
-- `editorProps` - Additional Tiptap editor props
-
-### Extension Kits
-
-Pre-configured extension sets for different use cases.
-
-#### `BaseExtensionKit()`
-Core extensions for basic text editing.
-
-**Includes**:
-- StarterKit (without lists)
-- Markdown support
-- Text formatting (Underline, Color, TextStyle, TextAlign)
-
-#### `BasicEditorKit()`
-Text editing with lists and links.
-
-**Includes**:
-- All Base extensions
-- Links (with autolink)
-- Bullet and ordered lists
-
-#### `ReadOnlyExtensionKit()`
-For displaying content without editing.
-
-**Includes**:
-- All Basic extensions
-- Images
-- Code blocks with syntax highlighting
-- Links open on click
-
-#### `FullEditorKit()`
-All features for full content creation.
-
-**Includes**:
-- All Basic extensions
-- Bubble menu support
-- Images (inline and base64)
-- Code blocks with syntax highlighting
-
-**Usage**:
-```typescript
-import { useEditor } from "@tiptap/react";
-import { FullEditorKit } from "~/components/editor";
-
-const editor = useEditor({
-  extensions: FullEditorKit(),
-  content: myContent,
-});
-```
+| Action | Shortcut |
+|--------|----------|
+| Bold | `Ctrl/Cmd + B` |
+| Italic | `Ctrl/Cmd + I` |
+| Underline | `Ctrl/Cmd + U` |
+| Undo | `Ctrl/Cmd + Z` |
+| Redo | `Ctrl/Cmd + Shift + Z` |
 
 ### Editor Utilities
 
-#### `extractPlainText(editor)`
-Get plain text from editor.
-
 ```typescript
-import { extractPlainText } from "~/components/editor";
-
-const text = extractPlainText(editor);
+import {
+  extractPlainText,
+  proseMirrorToHtml,
+  getWordCount,
+  getCharacterCount,
+  isEditorEmpty
+} from "~/components/editor";
 ```
 
-#### `proseMirrorToHtml(editor)`
-Convert editor content to HTML.
-
-```typescript
-import { proseMirrorToHtml } from "~/components/editor";
-
-const html = proseMirrorToHtml(editor);
-```
-
-#### `getWordCount(editor)`
-Get word count from editor.
-
-```typescript
-import { getWordCount } from "~/components/editor";
-
-const words = getWordCount(editor);
-```
-
-#### `getCharacterCount(editor)`
-Get character count from editor.
-
-```typescript
-import { getCharacterCount } from "~/components/editor";
-
-const chars = getCharacterCount(editor);
-```
-
-#### `isEditorEmpty(editor)`
-Check if editor is empty.
-
-```typescript
-import { isEditorEmpty } from "~/components/editor";
-
-const empty = isEditorEmpty(editor);
-```
-
-### Editor Folder Structure
+### File Structure
 
 ```
 src/components/editor/
+├── index.ts                          # Main exports
+├── README.md                         # Full documentation
 ├── components/
 │   ├── ContentEditor/
-│   │   └── index.tsx                   # Main editable editor
-│   ├── RenderEditor/
-│   │   └── index.tsx                   # Read-only display
-│   └── menus/
-│       ├── AndamioBubbleMenus/
-│       │   └── index.tsx               # Floating selection menu
-│       └── AndamioFixedToolbar/
-│           └── index.tsx               # Fixed toolbar
+│   │   ├── index.tsx                 # Main editor component
+│   │   └── EditorToolbar.tsx         # Configurable toolbar
+│   └── ContentViewer/
+│       └── index.tsx                 # Viewer component
 ├── extension-kits/
-│   ├── base.ts                         # Base extensions
-│   ├── basic.ts                        # Basic editor kit
-│   ├── read-only.ts                    # Read-only kit
-│   ├── full.ts                         # Full editor kit
-│   └── index.ts                        # Kit exports
+│   ├── shared.ts                     # Unified extension config
+│   └── index.ts                      # Exports
+├── extensions/
+│   └── ImageBlock/                   # Custom image extension
 ├── hooks/
-│   ├── use-andamio-editor.ts           # Main editor hook
-│   └── index.ts                        # Hook exports
-├── utils/
-│   └── index.ts                        # Editor utilities
-└── index.ts                            # Main exports
+│   └── index.ts                      # useContentEditor hook
+└── utils/
+    └── index.ts                      # Utility functions
 ```
+
+> **Full Documentation**: See [`src/components/editor/README.md`](./src/components/editor/README.md) for complete API reference, Markdown support details, migration guide, and future roadmap.
 
 ## Components
 

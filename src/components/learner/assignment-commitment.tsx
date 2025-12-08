@@ -10,9 +10,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
-import { ContentEditor, useAndamioEditor, AndamioFixedToolbar, RenderEditor } from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { ContentDisplay } from "~/components/content-display";
 import {
@@ -127,20 +125,13 @@ export function AssignmentCommitment({
   // Form state
   const [privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
 
-  // Tiptap editor for evidence
-  const editor = useAndamioEditor({
-    content: "",
-    onUpdate: ({ editor }) => {
-      // Track unsaved changes when user types
-      if (editor.getText().trim()) {
-        setHasUnsavedChanges(true);
-      }
-    },
-  });
+  // Evidence content state
+  const [localEvidenceContent, setLocalEvidenceContent] = useState<JSONContent | null>(null);
 
-  // Full-screen state
-  const { isFullscreen, toggleFullscreen, exitFullscreen } =
-    useFullscreenEditor();
+  const handleEvidenceContentChange = (content: JSONContent) => {
+    setLocalEvidenceContent(content);
+    setHasUnsavedChanges(true);
+  };
 
   // Warn user before leaving if they have unsaved changes
   useEffect(() => {
@@ -206,8 +197,8 @@ export function AssignmentCommitment({
           } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
             setPrivateStatus("COMMITMENT");
           }
-          // Set editor content if evidence exists
-          if (existingCommitment.networkEvidence && editor) {
+          // Set local evidence content if evidence exists
+          if (existingCommitment.networkEvidence) {
             // Handle different evidence formats
             let content;
             if (typeof existingCommitment.networkEvidence === "string") {
@@ -229,7 +220,7 @@ export function AssignmentCommitment({
               // Already an object
               content = existingCommitment.networkEvidence;
             }
-            editor.commands.setContent(content);
+            setLocalEvidenceContent(content);
           }
         }
       } catch (err) {
@@ -241,7 +232,7 @@ export function AssignmentCommitment({
     };
 
     void fetchCommitment();
-  }, [isAuthenticated, authenticatedFetch, assignmentCode, courseNftPolicyId, editor]);
+  }, [isAuthenticated, authenticatedFetch, assignmentCode, courseNftPolicyId]);
 
   const handleStartAssignment = () => {
     setHasStarted(true);
@@ -249,13 +240,11 @@ export function AssignmentCommitment({
   };
 
   const handleLockEvidence = () => {
-    if (!editor) return;
-    const content = editor.getJSON();
-    if (!content) return;
+    if (!localEvidenceContent) return;
 
-    const hash = hashNormalizedContent(content);
+    const hash = hashNormalizedContent(localEvidenceContent);
     setEvidenceHash(hash);
-    setEvidenceContent(content);
+    setEvidenceContent(localEvidenceContent);
     setIsLocked(true);
     setHasUnsavedChanges(false);
     setSuccess("Evidence locked! You can now submit to the blockchain.");
@@ -269,17 +258,15 @@ export function AssignmentCommitment({
   };
 
   const handleUpdateEvidence = async () => {
-    if (!commitment || !user?.accessTokenAlias || !editor) return;
+    if (!commitment || !user?.accessTokenAlias || !localEvidenceContent) return;
 
     setIsSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Get Tiptap JSON (not HTML) for consistent storage
-      const evidenceContent = editor.getJSON();
       // Calculate hash from normalized content
-      const evidenceHash = hashNormalizedContent(evidenceContent);
+      const evidenceHash = hashNormalizedContent(localEvidenceContent);
 
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/update-evidence`,
@@ -291,7 +278,7 @@ export function AssignmentCommitment({
             module_code: moduleCode,
             assignment_code: commitment.assignment.assignmentCode,
             access_token_alias: user.accessTokenAlias,
-            network_evidence: evidenceContent, // Send as JSON object, not stringified
+            network_evidence: localEvidenceContent, // Send as JSON object, not stringified
             network_evidence_hash: evidenceHash,
           }),
         }
@@ -342,7 +329,7 @@ export function AssignmentCommitment({
 
       setCommitment(null);
       setPrivateStatus("NOT_STARTED");
-      editor?.commands.clearContent();
+      setLocalEvidenceContent(null);
       setSuccess("Commitment deleted successfully!");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -435,31 +422,12 @@ export function AssignmentCommitment({
                 <p className="text-xs text-muted-foreground mb-2">
                   Write your evidence below. When finished, lock it to generate a hash for submission.
                 </p>
-                <FullscreenEditorWrapper
-                  isFullscreen={isFullscreen}
-                  onExitFullscreen={exitFullscreen}
-                  editor={editor}
-                  toolbar={
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  }
-                >
-                  {!isFullscreen && (
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  )}
-                  <ContentEditor
-                    editor={editor}
-                    height="200px"
-                    isFullscreen={isFullscreen}
-                  />
-                </FullscreenEditorWrapper>
+                <ContentEditor
+                  content={localEvidenceContent}
+                  onContentChange={handleEvidenceContentChange}
+                  minHeight="200px"
+                  placeholder="Write your assignment evidence..."
+                />
               </div>
             ) : (
               <div className="space-y-2">
@@ -483,7 +451,7 @@ export function AssignmentCommitment({
                   setHasUnsavedChanges(false);
                   setIsLocked(false);
                   setEvidenceHash(null);
-                  editor?.commands.clearContent();
+                  setLocalEvidenceContent(null);
                 }}
               >
                 Cancel
@@ -491,7 +459,7 @@ export function AssignmentCommitment({
               {!isLocked ? (
                 <AndamioButton
                   onClick={handleLockEvidence}
-                  disabled={!editor?.getText().trim()}
+                  disabled={!localEvidenceContent}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Lock Evidence
@@ -610,31 +578,12 @@ export function AssignmentCommitment({
               <p className="text-xs text-muted-foreground mb-2">
                 Edit your evidence below and save as a draft, or submit updates to the blockchain.
               </p>
-              <FullscreenEditorWrapper
-                isFullscreen={isFullscreen}
-                onExitFullscreen={exitFullscreen}
-                editor={editor}
-                toolbar={
-                  <AndamioFixedToolbar
-                    editor={editor}
-                    isFullscreen={isFullscreen}
-                    onToggleFullscreen={toggleFullscreen}
-                  />
-                }
-              >
-                {!isFullscreen && (
-                  <AndamioFixedToolbar
-                    editor={editor}
-                    isFullscreen={isFullscreen}
-                    onToggleFullscreen={toggleFullscreen}
-                  />
-                )}
-                <ContentEditor
-                  editor={editor}
-                  height="200px"
-                  isFullscreen={isFullscreen}
-                />
-              </FullscreenEditorWrapper>
+              <ContentEditor
+                content={localEvidenceContent}
+                onContentChange={handleEvidenceContentChange}
+                minHeight="200px"
+                placeholder="Update your assignment evidence..."
+              />
             </div>
 
             {/* Action Buttons */}
@@ -642,7 +591,7 @@ export function AssignmentCommitment({
               <AndamioButton
                 variant="outline"
                 onClick={handleUpdateEvidence}
-                disabled={isSaving || !editor?.getText().trim()}
+                disabled={isSaving || !localEvidenceContent}
               >
                 {isSaving ? (
                   <>
@@ -658,7 +607,7 @@ export function AssignmentCommitment({
               </AndamioButton>
               <AndamioButton
                 onClick={() => setShowSubmitTx(true)}
-                disabled={!editor?.getText().trim()}
+                disabled={!localEvidenceContent}
               >
                 <Send className="h-4 w-4 mr-2" />
                 Update on Blockchain
@@ -676,11 +625,11 @@ export function AssignmentCommitment({
                     user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                     policy: courseNftPolicyId,
                     assignment_code: assignmentCode,
-                    assignment_info: editor?.getJSON() ? hashNormalizedContent(editor.getJSON()) : "",
+                    assignment_info: localEvidenceContent ? hashNormalizedContent(localEvidenceContent) : "",
                     // sideEffectParams (for db-api)
                     moduleCode: moduleCode,
                     accessTokenAlias: user.accessTokenAlias,
-                    assignmentEvidence: editor?.getJSON() ?? {},
+                    assignmentEvidence: localEvidenceContent ?? {},
                   }}
                   onSuccess={() => {
                     setShowSubmitTx(false);
@@ -712,7 +661,7 @@ export function AssignmentCommitment({
                     inputs={{
                       user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                       policy: courseNftPolicyId,
-                      assignment_info: editor?.getJSON() ? hashNormalizedContent(editor.getJSON()) : "",
+                      assignment_info: localEvidenceContent ? hashNormalizedContent(localEvidenceContent) : "",
                     }}
                     showCard={false}
                     onSuccess={() => {

@@ -1,22 +1,12 @@
 "use client";
 
-import {
-  useAndamioEditor,
-  ContentEditor,
-  AndamioFixedToolbar,
-  AndamioBubbleMenus,
-  RenderEditor,
-  getWordCount,
-  getCharacterCount,
-} from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { useState } from "react";
+import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
-import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import type { JSONContent } from "@tiptap/core";
 
-const sampleContent = {
+const sampleContent: JSONContent = {
   type: "doc",
   content: [
     {
@@ -136,16 +126,7 @@ const sampleContent = {
       content: [
         {
           type: "text",
-          text: "Select some text to see the ",
-        },
-        {
-          type: "text",
-          marks: [{ type: "italic" }],
-          text: "bubble menu",
-        },
-        {
-          type: "text",
-          text: ". Use the toolbar above for more formatting options.",
+          text: "Edit this content, switch to preview tab, or view the JSON structure.",
         },
       ],
     },
@@ -153,12 +134,11 @@ const sampleContent = {
 };
 
 export default function EditorPage() {
-  const editor = useAndamioEditor({
-    content: sampleContent,
-  });
+  const [contentJson, setContentJson] = useState<JSONContent>(sampleContent);
 
-  const { isFullscreen, toggleFullscreen, exitFullscreen } =
-    useFullscreenEditor();
+  const handleContentChange = (content: JSONContent) => {
+    setContentJson(content);
+  };
 
   return (
     <div className="space-y-6">
@@ -169,18 +149,6 @@ export default function EditorPage() {
           A rich text editor built with Tiptap and shadcn/ui
         </p>
       </div>
-
-      {/* Stats */}
-      {editor && (
-        <div className="flex items-center gap-4">
-          <AndamioBadge variant="secondary">
-            Words: {getWordCount(editor)}
-          </AndamioBadge>
-          <AndamioBadge variant="secondary">
-            Characters: {getCharacterCount(editor)}
-          </AndamioBadge>
-        </div>
-      )}
 
       {/* Editor Tabs */}
       <AndamioTabs defaultValue="edit" className="space-y-4">
@@ -196,35 +164,13 @@ export default function EditorPage() {
               <AndamioCardTitle>Editor</AndamioCardTitle>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
-              {editor && (
-                <FullscreenEditorWrapper
-                  isFullscreen={isFullscreen}
-                  onExitFullscreen={exitFullscreen}
-                  editor={editor}
-                  toolbar={
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  }
-                >
-                  {!isFullscreen && (
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  )}
-                  <AndamioBubbleMenus editor={editor} />
-                  {!isFullscreen && <AndamioSeparator />}
-                  <ContentEditor
-                    editor={editor}
-                    height="400px"
-                    isFullscreen={isFullscreen}
-                  />
-                </FullscreenEditorWrapper>
-              )}
+              <ContentEditor
+                content={contentJson}
+                onContentChange={handleContentChange}
+                minHeight="400px"
+                showWordCount
+                placeholder="Start writing..."
+              />
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>
@@ -235,7 +181,7 @@ export default function EditorPage() {
               <AndamioCardTitle>Preview (Read-only)</AndamioCardTitle>
             </AndamioCardHeader>
             <AndamioCardContent>
-              {editor && <RenderEditor content={editor.getJSON()} />}
+              <ContentViewer content={contentJson} />
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>
@@ -248,7 +194,7 @@ export default function EditorPage() {
             <AndamioCardContent>
               <pre className="rounded-lg bg-muted p-4 text-sm overflow-x-auto">
                 <code>
-                  {editor ? JSON.stringify(editor.getJSON(), null, 2) : ""}
+                  {JSON.stringify(contentJson, null, 2)}
                 </code>
               </pre>
             </AndamioCardContent>

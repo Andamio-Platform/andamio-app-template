@@ -5,14 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import {
-  useAndamioEditor,
-  ContentEditor,
-  AndamioFixedToolbar,
-  RenderEditor,
-} from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -78,21 +71,12 @@ export default function AssignmentEditPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Initialize Tiptap editor
-  const editor = useAndamioEditor({
-    content: assignment?.content_json as JSONContent,
-  });
+  // Content state for editor
+  const [contentJson, setContentJson] = useState<JSONContent | null>(null);
 
-  // Full-screen state
-  const { isFullscreen, toggleFullscreen, exitFullscreen } =
-    useFullscreenEditor();
-
-  // Update editor when assignment loads
-  useEffect(() => {
-    if (editor && assignment?.content_json) {
-      editor.commands.setContent(assignment.content_json as JSONContent);
-    }
-  }, [editor, assignment]);
+  const handleContentChange = (content: JSONContent) => {
+    setContentJson(content);
+  };
 
   useEffect(() => {
     const fetchAssignmentAndSLTs = async () => {
@@ -143,6 +127,7 @@ export default function AssignmentEditPage() {
             setImageUrl(data.image_url ?? "");
             setVideoUrl(data.video_url ?? "");
             setLive(data.live ?? false);
+            setContentJson((data.content_json as JSONContent) ?? null);
             // Note: SLTs are now fetched separately
           } else if (assignmentResponse.status === 404) {
             // Assignment doesn't exist yet - that's OK
@@ -181,8 +166,6 @@ export default function AssignmentEditPage() {
     setSaveSuccess(false);
 
     try {
-      const contentJson = editor?.getJSON();
-
       if (assignmentExists) {
         // Build input object for assignment update
         const updateInput: UpdateAssignmentInput = {
@@ -554,34 +537,13 @@ export default function AssignmentEditPage() {
               <AndamioCardDescription>Write the assignment instructions and details</AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
-              {editor && (
-                <FullscreenEditorWrapper
-                  isFullscreen={isFullscreen}
-                  onExitFullscreen={exitFullscreen}
-                  editor={editor}
-                  toolbar={
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  }
-                >
-                  {!isFullscreen && (
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  )}
-                  {!isFullscreen && <AndamioSeparator />}
-                  <ContentEditor
-                    editor={editor}
-                    height="400px"
-                    isFullscreen={isFullscreen}
-                  />
-                </FullscreenEditorWrapper>
-              )}
+              <ContentEditor
+                content={contentJson}
+                onContentChange={handleContentChange}
+                minHeight="400px"
+                showWordCount
+                placeholder="Write the assignment instructions and details..."
+              />
             </AndamioCardContent>
           </AndamioCard>
 
@@ -639,7 +601,7 @@ export default function AssignmentEditPage() {
 
               <AndamioSeparator />
 
-              {editor && <RenderEditor content={editor.getJSON()} />}
+              <ContentViewer content={contentJson} />
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>

@@ -5,14 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import {
-  useAndamioEditor,
-  ContentEditor,
-  AndamioFixedToolbar,
-  RenderEditor,
-} from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -68,27 +61,12 @@ export default function LessonEditPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [live, setLive] = useState(false);
+  const [contentJson, setContentJson] = useState<JSONContent | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Initialize Tiptap editor
-  const editor = useAndamioEditor({
-    content: lesson?.content_json as JSONContent,
-  });
-
-  // Full-screen state
-  const { isFullscreen, toggleFullscreen, exitFullscreen } =
-    useFullscreenEditor();
-
-  // Update editor when lesson loads
-  useEffect(() => {
-    if (editor && lesson?.content_json) {
-      editor.commands.setContent(lesson.content_json as JSONContent);
-    }
-  }, [editor, lesson]);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -118,6 +96,7 @@ export default function LessonEditPage() {
           setImageUrl(data.image_url ?? "");
           setVideoUrl(data.video_url ?? "");
           setLive(data.live ?? false);
+          setContentJson(data.content_json as JSONContent ?? null);
         } else if (response.status === 404) {
           // Lesson doesn't exist yet - that's OK, we'll create it
           setLessonExists(false);
@@ -135,6 +114,10 @@ export default function LessonEditPage() {
     void fetchLesson();
   }, [courseNftPolicyId, moduleCode, moduleIndex]);
 
+  const handleContentChange = (content: JSONContent) => {
+    setContentJson(content);
+  };
+
   const handleSave = async () => {
     if (!isAuthenticated) {
       setSaveError("You must be authenticated to edit lessons");
@@ -146,8 +129,6 @@ export default function LessonEditPage() {
     setSaveSuccess(false);
 
     try {
-      const contentJson = editor?.getJSON();
-
       if (lessonExists) {
         // Build input object for lesson update
         const updateInput: UpdateLessonInput = {
@@ -156,7 +137,7 @@ export default function LessonEditPage() {
           module_index: moduleIndex,
           title: title || undefined,
           description: description || undefined,
-          content_json: contentJson,
+          content_json: contentJson ?? undefined,
           image_url: imageUrl || undefined,
           video_url: videoUrl || undefined,
           live,
@@ -210,7 +191,7 @@ export default function LessonEditPage() {
           module_index: moduleIndex,
           title: title || undefined,
           description: description || undefined,
-          content_json: contentJson,
+          content_json: contentJson ?? undefined,
           image_url: imageUrl || undefined,
           video_url: videoUrl || undefined,
         };
@@ -466,35 +447,14 @@ export default function LessonEditPage() {
               <AndamioCardTitle>Lesson Content</AndamioCardTitle>
               <AndamioCardDescription>Write the lesson content using the rich text editor</AndamioCardDescription>
             </AndamioCardHeader>
-            <AndamioCardContent className="space-y-4">
-              {editor && (
-                <FullscreenEditorWrapper
-                  isFullscreen={isFullscreen}
-                  onExitFullscreen={exitFullscreen}
-                  editor={editor}
-                  toolbar={
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  }
-                >
-                  {!isFullscreen && (
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  )}
-                  {!isFullscreen && <AndamioSeparator />}
-                  <ContentEditor
-                    editor={editor}
-                    height="500px"
-                    isFullscreen={isFullscreen}
-                  />
-                </FullscreenEditorWrapper>
-              )}
+            <AndamioCardContent>
+              <ContentEditor
+                content={contentJson}
+                onContentChange={handleContentChange}
+                minHeight="400px"
+                showWordCount
+                placeholder="Write your lesson content here..."
+              />
             </AndamioCardContent>
           </AndamioCard>
 
@@ -545,7 +505,7 @@ export default function LessonEditPage() {
 
               <AndamioSeparator />
 
-              {editor && <RenderEditor content={editor.getJSON()} />}
+              <ContentViewer content={contentJson} />
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>

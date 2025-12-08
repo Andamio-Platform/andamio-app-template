@@ -1,18 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import {
-  useAndamioEditor,
-  ContentEditor,
-  AndamioFixedToolbar,
-  RenderEditor,
-} from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -66,27 +59,12 @@ export default function IntroductionEditPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [live, setLive] = useState(false);
+  const [contentJson, setContentJson] = useState<JSONContent | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Initialize Tiptap editor
-  const editor = useAndamioEditor({
-    content: introduction?.content_json as JSONContent,
-  });
-
-  // Full-screen state
-  const { isFullscreen, toggleFullscreen, exitFullscreen } =
-    useFullscreenEditor();
-
-  // Update editor when introduction loads
-  useEffect(() => {
-    if (editor && introduction?.content_json) {
-      editor.commands.setContent(introduction.content_json as JSONContent);
-    }
-  }, [editor, introduction]);
 
   useEffect(() => {
     const fetchIntroduction = async () => {
@@ -115,6 +93,7 @@ export default function IntroductionEditPage() {
           setImageUrl(data.image_url ?? "");
           setVideoUrl(data.video_url ?? "");
           setLive(data.live ?? false);
+          setContentJson(data.content_json as JSONContent ?? null);
         } else if (response.status === 404) {
           // Introduction doesn't exist yet - that's OK, we'll create it
           setIntroductionExists(false);
@@ -132,6 +111,10 @@ export default function IntroductionEditPage() {
     void fetchIntroduction();
   }, [courseNftPolicyId, moduleCode]);
 
+  const handleContentChange = (content: JSONContent) => {
+    setContentJson(content);
+  };
+
   const handleSave = async () => {
     if (!isAuthenticated) {
       setSaveError("You must be authenticated to edit introductions");
@@ -148,8 +131,6 @@ export default function IntroductionEditPage() {
     setSaveSuccess(false);
 
     try {
-      const contentJson = editor?.getJSON();
-
       if (introductionExists) {
         // Build input object for introduction update
         const updateInput: UpdateIntroductionInput = {
@@ -157,7 +138,7 @@ export default function IntroductionEditPage() {
           module_code: moduleCode,
           title,
           description: description || undefined,
-          content_json: contentJson,
+          content_json: contentJson ?? undefined,
           image_url: imageUrl || undefined,
           video_url: videoUrl || undefined,
           live,
@@ -197,7 +178,7 @@ export default function IntroductionEditPage() {
           module_code: moduleCode,
           title,
           description: description || undefined,
-          content_json: contentJson,
+          content_json: contentJson ?? undefined,
           image_url: imageUrl || undefined,
           video_url: videoUrl || undefined,
         };
@@ -438,35 +419,14 @@ export default function IntroductionEditPage() {
                 Write the module introduction using the rich text editor
               </AndamioCardDescription>
             </AndamioCardHeader>
-            <AndamioCardContent className="space-y-4">
-              {editor && (
-                <FullscreenEditorWrapper
-                  isFullscreen={isFullscreen}
-                  onExitFullscreen={exitFullscreen}
-                  editor={editor}
-                  toolbar={
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  }
-                >
-                  {!isFullscreen && (
-                    <AndamioFixedToolbar
-                      editor={editor}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                    />
-                  )}
-                  {!isFullscreen && <AndamioSeparator />}
-                  <ContentEditor
-                    editor={editor}
-                    height="500px"
-                    isFullscreen={isFullscreen}
-                  />
-                </FullscreenEditorWrapper>
-              )}
+            <AndamioCardContent>
+              <ContentEditor
+                content={contentJson}
+                onContentChange={handleContentChange}
+                minHeight="400px"
+                showWordCount
+                placeholder="Write your module introduction here..."
+              />
             </AndamioCardContent>
           </AndamioCard>
 
@@ -503,7 +463,7 @@ export default function IntroductionEditPage() {
 
               <AndamioSeparator />
 
-              {editor && <RenderEditor content={editor.getJSON()} />}
+              <ContentViewer content={contentJson} />
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>

@@ -1,25 +1,30 @@
 /**
  * ContentDisplay Component
  *
- * A reusable component for displaying read-only content in various formats.
+ * A styled wrapper around ContentViewer for displaying read-only content.
  * Handles Tiptap JSON, HTML strings, and stringified JSON automatically.
+ *
+ * NOTE: Consider using ContentViewer directly for simpler use cases.
+ * ContentDisplay adds container styling (border, background, padding).
  *
  * @example
  * ```tsx
- * // Display Tiptap JSON content
+ * // Display Tiptap JSON content with default styling
  * <ContentDisplay content={jsonContent} />
  *
- * // Display HTML string
- * <ContentDisplay content="<p>Hello world</p>" />
+ * // Display with custom variant
+ * <ContentDisplay content={content} variant="accent" />
  *
- * // Display with custom className
- * <ContentDisplay content={content} className="bg-muted/30" />
+ * // For simple display without container, use ContentViewer directly:
+ * import { ContentViewer } from "~/components/editor";
+ * <ContentViewer content={content} />
  * ```
  */
 
 import React from "react";
-import { RenderEditor } from "~/components/editor";
+import { ContentViewer, ContentViewerCompact } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
+import { cn } from "~/lib/utils";
 
 export interface ContentDisplayProps {
   /**
@@ -28,7 +33,7 @@ export interface ContentDisplayProps {
    * - HTML string
    * - Stringified JSON
    */
-  content: string | JSONContent | Record<string, unknown>;
+  content: string | JSONContent | Record<string, unknown> | null | undefined;
 
   /**
    * Additional CSS classes for the container
@@ -61,67 +66,31 @@ export function ContentDisplay({
     accent: "bg-accent/10",
   }[variant];
 
-  // Build container classes
-  const containerClasses = [
-    showBorder && "border rounded-lg",
-    "p-4",
-    bgClass,
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  // Render content based on type
-  const renderContent = () => {
-    // If it's a string, try to parse it as JSON first
-    if (typeof content === "string") {
-      try {
-        const parsed = JSON.parse(content) as JSONContent;
-        // If successfully parsed and has type property, it's likely Tiptap JSON
-        if (parsed && typeof parsed === "object" && "type" in parsed) {
-          return <RenderEditor content={parsed} />;
-        }
-      } catch {
-        // Not JSON, treat as HTML string
-      }
-      // Render as HTML with Tailwind typography
-      return (
-        <div
-          className="prose prose-sm max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-      );
-    }
-
-    // If it's already an object, assume it's Tiptap JSON
-    return <RenderEditor content={content as JSONContent} />;
-  };
-
-  return <div className={containerClasses}>{renderContent()}</div>;
+  return (
+    <div
+      className={cn(
+        showBorder && "border rounded-lg",
+        "p-4",
+        bgClass,
+        className,
+      )}
+    >
+      <ContentViewerCompact content={content as JSONContent} />
+    </div>
+  );
 }
 
 /**
- * Lightweight wrapper for displaying content without any container styling
+ * Lightweight wrapper for displaying content without any container styling.
+ *
+ * @deprecated Use ContentViewer or ContentViewerCompact directly instead:
+ * ```tsx
+ * import { ContentViewer, ContentViewerCompact } from "~/components/editor";
+ * <ContentViewerCompact content={content} />
+ * ```
  */
 export function ContentDisplayInline({
   content,
 }: Pick<ContentDisplayProps, "content">) {
-  if (typeof content === "string") {
-    try {
-      const parsed = JSON.parse(content) as JSONContent;
-      if (parsed && typeof parsed === "object" && "type" in parsed) {
-        return <RenderEditor content={parsed} />;
-      }
-    } catch {
-      // Not JSON, treat as HTML
-    }
-    return (
-      <div
-        className="prose prose-sm max-w-none dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
-  }
-
-  return <RenderEditor content={content as JSONContent} />;
+  return <ContentViewerCompact content={content as JSONContent} />;
 }

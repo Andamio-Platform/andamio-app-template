@@ -430,6 +430,40 @@ const data = (await response.json()) as YourOutputType;
 **Courses**:
 - `src/components/courses/owned-courses-list.tsx` - Course list component
 
+**Editor** (see `src/components/editor/README.md` for full docs):
+- `src/components/editor/index.ts` - Main exports
+- `src/components/editor/components/ContentEditor/index.tsx` - **Primary editing component**
+- `src/components/editor/components/ContentViewer/index.tsx` - **Primary viewing component**
+- `src/components/editor/extension-kits/shared.ts` - Unified extension configuration
+
+## Editor Usage
+
+**CRITICAL: Use only ContentEditor and ContentViewer for all content editing/viewing.**
+
+```typescript
+import { ContentEditor, ContentViewer } from "~/components/editor";
+import type { JSONContent } from "@tiptap/core";
+
+// Store content in state
+const [content, setContent] = useState<JSONContent | null>(initialContent);
+
+// For editing
+<ContentEditor
+  content={content}
+  onContentChange={setContent}
+  showWordCount
+/>
+
+// For viewing
+<ContentViewer content={content} />
+```
+
+**DO NOT use deprecated patterns**:
+- ❌ `useAndamioEditor` hook
+- ❌ `RenderEditor` component
+- ❌ `AndamioFixedToolbar` component
+- ❌ `FullscreenEditorWrapper` component
+
 ## Documentation
 
 **CRITICAL: Always update docs with every commit.**

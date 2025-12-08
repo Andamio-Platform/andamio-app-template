@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
-import { RenderEditor } from "~/components/editor";
+import { ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -184,7 +184,7 @@ export default function LearnerAssignmentPage() {
             <AndamioCardDescription>Read the full assignment below</AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
-            <RenderEditor content={assignment.contentJson as JSONContent} />
+            <ContentViewer content={assignment.contentJson as JSONContent} />
           </AndamioCardContent>
         </AndamioCard>
       )}

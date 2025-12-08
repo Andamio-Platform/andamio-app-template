@@ -12,7 +12,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
 import { type LessonWithSLTOutput } from "@andamio/db-api";
-import { RenderEditor } from "~/components/editor";
+import { ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -24,25 +24,6 @@ import type { JSONContent } from "@tiptap/core";
  * Note: Lessons are optional content tied to SLTs. If no lesson exists,
  * this page will show "Lesson not found" message.
  */
-
-/**
- * Ensures content is in valid Tiptap JSON format
- * Tiptap expects: { type: "doc", content: [...] }
- */
-function ensureTiptapFormat(content: Record<string, unknown> | null): JSONContent | null {
-  if (!content) return null;
-
-  // If it already has the doc structure, return as is
-  if (content.type === "doc") {
-    return content as JSONContent;
-  }
-
-  // If it's just raw content, wrap it in a doc
-  return {
-    type: "doc",
-    content: Array.isArray(content) ? content as JSONContent[] : [content as JSONContent],
-  };
-}
 
 export default function LessonDetailPage() {
   const params = useParams();
@@ -237,25 +218,21 @@ export default function LessonDetailPage() {
       )}
 
       {/* Lesson Content */}
-      {lesson.content_json && (() => {
-        const formattedContent = ensureTiptapFormat(lesson.content_json);
-        return (
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle>Lesson Content</AndamioCardTitle>
-            </AndamioCardHeader>
-            <AndamioCardContent className="space-y-4">
-              {formattedContent ? (
-                <RenderEditor content={formattedContent} />
-              ) : (
+      {lesson.content_json && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Lesson Content</AndamioCardTitle>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <ContentViewer
+              content={lesson.content_json as JSONContent}
+              emptyContent={
                 <p className="text-muted-foreground italic">Unable to parse lesson content</p>
-              )}
-
-              
-            </AndamioCardContent>
-          </AndamioCard>
-        );
-      })()}
+              }
+            />
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
 
       {/* Empty content state */}
       {!lesson.content_json && !lesson.image_url && !lesson.video_url && (

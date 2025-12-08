@@ -14,9 +14,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { ContentEditor, useAndamioEditor, AndamioFixedToolbar } from "~/components/editor";
-import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
-import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
+import { ContentEditor } from "~/components/editor";
 import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
@@ -54,11 +52,12 @@ export default function EditTaskPage() {
   const [acceptanceCriteria, setAcceptanceCriteria] = useState<string[]>([""]);
   const [numAllowedCommitments, setNumAllowedCommitments] = useState(1);
 
-  // Editor for rich content
-  const editor = useAndamioEditor({
-    content: "",
-  });
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreenEditor();
+  // Content state for editor
+  const [contentJson, setContentJson] = useState<JSONContent | null>(null);
+
+  const handleContentChange = (content: JSONContent) => {
+    setContentJson(content);
+  };
 
   // Save state
   const [isSaving, setIsSaving] = useState(false);
@@ -103,11 +102,7 @@ export default function EditTaskPage() {
         setExpirationTime(taskData.expiration_time);
         setAcceptanceCriteria(taskData.acceptance_criteria.length > 0 ? taskData.acceptance_criteria : [""]);
         setNumAllowedCommitments(taskData.num_allowed_commitments);
-
-        // Set editor content if available
-        if (taskData.content_json && editor) {
-          editor.commands.setContent(taskData.content_json as JSONContent);
-        }
+        setContentJson((taskData.content_json as JSONContent) ?? null);
       } catch (err) {
         console.error("Error fetching task:", err);
         setLoadError(err instanceof Error ? err.message : "Failed to load task");
@@ -117,7 +112,7 @@ export default function EditTaskPage() {
     };
 
     void fetchTask();
-  }, [treasuryNftPolicyId, taskIndex, editor]);
+  }, [treasuryNftPolicyId, taskIndex]);
 
   // Acceptance criteria handlers
   const addCriterion = () => {
@@ -155,9 +150,6 @@ export default function EditTaskPage() {
     setSaveSuccess(false);
 
     try {
-      // Get editor content as JSON
-      const contentJson = editor?.getJSON();
-
       // Filter out empty acceptance criteria
       const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
 
@@ -331,27 +323,12 @@ export default function EditTaskPage() {
             <p className="text-xs text-muted-foreground mb-2">
               Add detailed instructions, examples, or resources for the task
             </p>
-            <FullscreenEditorWrapper
-              isFullscreen={isFullscreen}
-              onExitFullscreen={exitFullscreen}
-              editor={editor}
-              toolbar={
-                <AndamioFixedToolbar
-                  editor={editor}
-                  isFullscreen={isFullscreen}
-                  onToggleFullscreen={toggleFullscreen}
-                />
-              }
-            >
-              {!isFullscreen && (
-                <AndamioFixedToolbar
-                  editor={editor}
-                  isFullscreen={isFullscreen}
-                  onToggleFullscreen={toggleFullscreen}
-                />
-              )}
-              <ContentEditor editor={editor} height="200px" isFullscreen={isFullscreen} />
-            </FullscreenEditorWrapper>
+            <ContentEditor
+              content={contentJson}
+              onContentChange={handleContentChange}
+              minHeight="200px"
+              placeholder="Add detailed task instructions..."
+            />
           </div>
 
           {/* Reward (Lovelace) */}

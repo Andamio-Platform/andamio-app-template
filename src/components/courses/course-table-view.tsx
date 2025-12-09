@@ -3,10 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { CheckCircle, FileText, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import {
+  CourseStatusIcon,
+  CourseModuleCount,
+} from "./course-ui";
 
 interface CourseTableViewProps {
   courses: ListOwnedCoursesOutput;
@@ -15,7 +18,7 @@ interface CourseTableViewProps {
 
 /**
  * Table view for courses - detailed data grid
- * Uses only semantic colors from globals.css
+ * Uses shared components from course-ui.tsx for consistency
  * Horizontal scroll on mobile for better responsiveness
  */
 export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps) {
@@ -37,11 +40,7 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
             <AndamioTableRow key={courseData.course_code}>
               {/* Status Icon */}
               <AndamioTableCell>
-                {courseData.course_nft_policy_id ? (
-                  <CheckCircle className="h-5 w-5 text-success" />
-                ) : (
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                )}
+                <CourseStatusIcon isPublished={!!courseData.course_nft_policy_id} />
               </AndamioTableCell>
 
               {/* Course Code */}
@@ -63,9 +62,8 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
 
               {/* Module Count */}
               <AndamioTableCell className="text-center">
-                {moduleCounts[courseData.course_code] !== undefined ? (
-                  <AndamioBadge variant="secondary">{moduleCounts[courseData.course_code]}</AndamioBadge>
-                ) : (
+                <CourseModuleCount count={moduleCounts[courseData.course_code]} showIcon={false} />
+                {moduleCounts[courseData.course_code] === undefined && (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
               </AndamioTableCell>

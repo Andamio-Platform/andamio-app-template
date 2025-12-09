@@ -24,6 +24,7 @@ import {
   getCourseStudents,
   getCourseStudent,
   getUserGlobalState,
+  getCoursesOwnedByAlias,
   type AndamioscanCourse,
   type AndamioscanStudent,
   type AndamioscanUserGlobalState,
@@ -264,4 +265,27 @@ export function useStudentProgress(
     isLoading,
     error,
   };
+}
+
+/**
+ * Hook to get all courses owned (taught) by a user
+ *
+ * A user "owns" a course if their alias appears in the course's teachers array.
+ *
+ * @param alias - User's access token alias
+ * @returns Query result with array of owned courses
+ *
+ * @example
+ * ```tsx
+ * const { data: ownedCourses, isLoading } = useCoursesOwnedByAlias(userAlias);
+ * const courseIds = ownedCourses?.map(c => c.course_id) ?? [];
+ * ```
+ */
+export function useCoursesOwnedByAlias(
+  alias: string | undefined
+): UseQueryResult<AndamioscanCourse[]> {
+  return useQuery(
+    async () => (alias ? getCoursesOwnedByAlias(alias) : []),
+    [alias]
+  );
 }

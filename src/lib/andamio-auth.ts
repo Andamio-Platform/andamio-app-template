@@ -1,4 +1,5 @@
 import { env } from "~/env";
+import { authLogger } from "~/lib/debug-logger";
 
 /**
  * Andamio Authentication Service
@@ -144,12 +145,12 @@ export async function authenticateWithWallet(params: {
 
       if (accessToken) {
         accessTokenUnit = accessToken.unit;
-        console.log("🎫 Access Token detected in wallet:", accessTokenUnit);
+        authLogger.info("Access Token detected in wallet:", accessTokenUnit);
       } else {
-        console.log("ℹ️ No access token found in wallet");
+        authLogger.info("No access token found in wallet");
       }
     } catch (error) {
-      console.warn("Failed to detect access token:", error);
+      authLogger.warn("Failed to detect access token:", error);
       // Continue authentication even if token detection fails
     }
   }

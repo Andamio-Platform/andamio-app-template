@@ -18,6 +18,7 @@ import { useState, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
+import { getTransactionExplorerUrl, type CardanoNetwork } from "~/lib/constants";
 import type {
   TransactionConfig,
   TransactionState,
@@ -189,12 +190,6 @@ export function useTransaction<TParams = unknown>() {
  * Get Cardano explorer URL for a transaction hash
  */
 function getExplorerUrl(txHash: string): string {
-  // TODO: Determine network from env (mainnet vs preprod vs preview)
-  const network = env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod";
-
-  if (network === "mainnet") {
-    return `https://cardanoscan.io/transaction/${txHash}`;
-  }
-
-  return `https://preprod.cardanoscan.io/transaction/${txHash}`;
+  const network = (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") as CardanoNetwork;
+  return getTransactionExplorerUrl(txHash, network);
 }

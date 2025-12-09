@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -64,7 +65,7 @@ export default function IntroductionEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
   useEffect(() => {
     const fetchIntroduction = async () => {
@@ -128,7 +129,6 @@ export default function IntroductionEditPage() {
 
     setIsSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
 
     try {
       if (introductionExists) {
@@ -213,8 +213,7 @@ export default function IntroductionEditPage() {
         setIntroductionExists(true);
       }
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      showSuccess();
     } catch (err) {
       console.error("Error saving introduction:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
@@ -253,8 +252,7 @@ export default function IntroductionEditPage() {
 
       const data = (await response.json()) as { success: boolean; live: boolean };
       setLive(data.live);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+      showSuccess();
     } catch (err) {
       console.error("Error toggling publish status:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to toggle publish status");

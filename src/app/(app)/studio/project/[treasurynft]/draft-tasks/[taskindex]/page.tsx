@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -62,7 +63,7 @@ export default function EditTaskPage() {
   // Save state
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
   // Fetch task data
   useEffect(() => {
@@ -147,7 +148,6 @@ export default function EditTaskPage() {
 
     setIsSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
 
     try {
       // Filter out empty acceptance criteria
@@ -179,8 +179,7 @@ export default function EditTaskPage() {
         throw new Error(errorData.message ?? "Failed to update task");
       }
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      showSuccess();
     } catch (err) {
       console.error("Error updating task:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to update task");

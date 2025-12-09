@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useCopyFeedback } from "~/hooks/use-success-notification";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { Wallet, Key, Shield, Copy, Check } from "lucide-react";
@@ -13,15 +15,9 @@ import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
-  const [copiedField, setCopiedField] = React.useState<string | null>(null);
-
-  // Copy to clipboard helper
-  const copyToClipboard = async (text: string, field: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
+  const { isCopied: addressCopied, copy: copyAddress } = useCopyFeedback();
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -68,7 +64,7 @@ export default function DashboardPage() {
 
       {/* Mint Access Token - Prominent when user doesn't have one */}
       {!hasAccessToken && (
-        <MintAccessToken onSuccess={() => window.location.reload()} />
+        <MintAccessToken onSuccess={() => router.refresh()} />
       )}
 
       {/* My Learning Section - Only show if user has access token */}
@@ -107,9 +103,9 @@ export default function DashboardPage() {
                 <AndamioButton
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => user.cardanoBech32Addr && copyToClipboard(user.cardanoBech32Addr, "address")}
+                  onClick={() => user.cardanoBech32Addr && copyAddress(user.cardanoBech32Addr)}
                 >
-                  {copiedField === "address" ? (
+                  {addressCopied ? (
                     <Check className="h-3.5 w-3.5 text-success" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />

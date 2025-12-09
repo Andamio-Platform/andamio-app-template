@@ -1,882 +1,239 @@
 # Andamio T3 App Template
 
-**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-db-api` for importing types. The symlink `node_modules/andamio-db-api -> ../../andamio-db-api` provides full type safety across the stack. See full docs below.
+A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
 
-## 🎯 Current Status
+**Version**: 0.4.0 | **Last Updated**: December 2024
 
-**Phase 1: Course & Learning System** - ✅ **COMPLETE** (as of 2024-11-22)
-- ✅ All 8 course transactions integrated and tested (129 tests passing)
-- ✅ Full course/module/assignment lifecycle implemented
-- ✅ Student and instructor workflows fully functional
-- ✅ Hash handling patterns established
+## Current Status
 
-**Phase 2: Access Token & Global State** - ⏳ **NEXT UP**
-- User identity and onboarding flows
-- Platform-wide state management
-- See [ROADMAP.md](./ROADMAP.md) for details
+| Phase | Status | Description |
+|-------|--------|-------------|
+| **Course & Learning** | ✅ Complete | 8 transactions, 129 tests, full lifecycle |
+| **Creator Studio** | ✅ Complete | Course/module editing, on-chain sync, rich text |
+| **Project System** | 🚧 In Progress | Treasury, tasks, commitments |
 
-**Phase 3: Project & Contribution System** - 📋 **PLANNING**
-- Treasury management and fund distribution
-- Contributor workflows and milestone tracking
-- See [STATUS.md](./STATUS.md) for full breakdown
-
-📊 **Quick Links**: [STATUS.md](./STATUS.md) | [ROADMAP.md](./ROADMAP.md) | [Test Coverage](#testing)
-
----
-
-## Goals
-
-This template serves as both a **testing ground** and **reference implementation** for the Andamio ecosystem:
-
-1. ✅ **Test `andamio-db-api` locally** - Full integration with type-safe API client
-2. ✅ **Define the reference stack** - T3 Stack + Mesh SDK + shadcn/ui + Andamio packages
-3. ⏳ **Refine core packages** - Preparing `@andamio/transactions`, `@andamio/core`, `@andamio/tiptap` for npm
-4. 📋 **Publish clean template** - After package extraction, publish community-ready template
-5. ✅ **Maintain documentation** - Living docs updated continuously as features are built
-
-
-## Current Features
-
-### Full-Screen App Layout
-- **Sidebar Navigation** - Clean sidebar with app navigation
-- **Full-screen Layout** - App fills entire viewport
-- **Responsive Design** - Mobile-friendly from the start
-
-### User Dashboard
-- **Wallet Information** - Connected wallet address and user ID
-- **Access Token Details** - Token alias and JWT expiration
-- **Authentication Status** - Clear visual status indicators
-
-### Course Management
-- **Owned Courses** - View all courses you own or contribute to
-- **Course Details** - Title, description, status, category, access tier
-- **Live/Draft Status** - Visual badges for course status
-
-### Rich Text Editor
-- **ContentEditor** - Self-contained rich text editor with built-in toolbar, fullscreen mode, word count
-- **ContentViewer** - Read-only display component for viewing content
-- **Unified Extension Kit** - Shared configuration ensures consistent rendering
-- **shadcn/ui Styling** - Beautiful, polished interface with focus states
-- **Markdown Support** - Paste markdown, auto-converts to rich text
-- **Code Highlighting** - Syntax highlighting with lowlight
-- **Focus Mode** - Immersive fullscreen editing experience
-
-### Wallet Authentication
-- **Cardano Wallet Connection** via Mesh SDK
-- **Auto-Authentication** - Signing prompt appears automatically after wallet connects
-- **Signature-based Authentication** with Andamio Database API
-- **JWT Management** with automatic expiration handling
-- **Persistent Sessions** via localStorage
-- **Complete Logout** - Clears JWT and disconnects wallet in one action
-
-### Andamio API Integration
-- **Type-safe API calls** with proper error handling
-- **Authenticated requests** with JWT bearer tokens
-- **Clean error states** with shadcn/ui alerts
-
-### UI Components
-- **Full shadcn/ui suite** - All 45+ components pre-installed
-- **Clean, minimal design** - No custom styling, pure shadcn/ui
+📊 **Detailed Status**: [STATUS.md](./STATUS.md) | [ROADMAP.md](./ROADMAP.md)
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **API**: tRPC v11
-- **Styling**: Tailwind CSS v4
-- **UI Components**: shadcn/ui (complete suite)
-- **Blockchain**: Cardano (via Mesh SDK)
-- **State Management**: React hooks + tRPC React Query
+- **Framework**: Next.js 15 (App Router) + TypeScript
+- **API**: tRPC v11 + Andamio Database API
+- **Styling**: Tailwind CSS v4 + shadcn/ui
+- **Blockchain**: Cardano via Mesh SDK
+- **Editor**: Tiptap with custom extensions
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- npm 10+
-- Andamio Database API running (default: `http://localhost:4000/api`)
-- **Linked `andamio-db-api` package** for type imports
-
-### Installation
+## Quick Start
 
 ```bash
-# Install dependencies
+# From andamio-platform-monorepo root:
+./scripts/setup.sh
+
+# Or manually:
 npm install
-
-# Link andamio-db-api package (for type safety)
-# Create symlink to ../../andamio-db-api:
-ln -s ../../andamio-db-api node_modules/andamio-db-api
-
-# Verify the symlink was created successfully:
-ls -la node_modules/andamio-db-api
-
-# Copy environment variables
 cp .env.example .env
-
-# Update .env with your Andamio API URL
-# NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api"
-```
-
-**Note**: This template is part of the `andamio-platform` monorepo and uses a local link to `andamio-db-api` for importing types. The symlink `node_modules/andamio-db-api -> ../../andamio-db-api` provides full type safety across the stack.
-
-### Development
-
-```bash
-# Start development server
 npm run dev
-
-# Open http://localhost:3000
 ```
 
-### Build
+Open [http://localhost:3000](http://localhost:3000)
 
-```bash
-# Type check
-npm run typecheck
-
-# Lint
-npm run lint
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
+**Prerequisites**: Node.js 20+, Andamio Database API running at `localhost:4000`
 
 ## Project Structure
 
 ```
 src/
-├── app/                               # Next.js App Router
-│   ├── (app)/                        # App layout route group
-│   │   ├── layout.tsx                # App layout wrapper
-│   │   ├── dashboard/
-│   │   │   └── page.tsx              # User dashboard page
-│   │   └── courses/
-│   │       └── page.tsx              # Courses page
-│   ├── layout.tsx                    # Root layout with MeshProvider
-│   └── page.tsx                      # Home (redirects to dashboard)
+├── app/(app)/                    # Pages with sidebar layout
+│   ├── dashboard/                # User dashboard
+│   ├── courses/                  # Course listing (grid/list/table views)
+│   ├── course/[coursenft]/       # Learner course views
+│   ├── studio/                   # Creator Studio
+│   │   ├── course/[coursenft]/   # Course editor (tabbed)
+│   │   └── project/[treasurynft]/ # Project editor (tabbed)
+│   └── project/[treasurynft]/    # Public project views
 │
 ├── components/
-│   ├── auth/
-│   │   └── andamio-auth-button.tsx   # Complete auth UI
-│   ├── courses/
-│   │   └── owned-courses-list.tsx    # Display owned courses
-│   ├── layout/
-│   │   ├── app-layout.tsx            # Full-screen app layout
-│   │   └── app-sidebar.tsx           # Sidebar navigation
-│   ├── providers/
-│   │   └── mesh-provider.tsx         # Mesh SDK provider
-│   └── ui/                           # shadcn/ui components (45+)
+│   ├── andamio/                  # UI wrappers (68+ components)
+│   ├── auth/                     # Auth components + RequireAuth
+│   ├── courses/                  # Course UI components
+│   ├── editor/                   # Tiptap editor (see editor/README.md)
+│   ├── studio/                   # Studio components (StudioTabs)
+│   └── transactions/             # Transaction components (10+)
 │
 ├── hooks/
-│   └── use-andamio-auth.ts           # Auth state management
+│   ├── use-andamio-auth.ts       # Auth state + authenticatedFetch
+│   ├── use-andamio-fetch.ts      # Standardized data fetching
+│   ├── use-owned-courses.ts      # Course data with module counts
+│   ├── use-success-notification.ts # Auto-dismiss notifications
+│   └── use-pending-tx-watcher.ts # Transaction monitoring
 │
-├── lib/
-│   ├── andamio-auth.ts               # Auth service functions
-│   └── utils.ts                      # Utility functions
-│
-├── server/
-│   └── api/
-│       ├── routers/                  # tRPC routers
-│       ├── root.ts                   # Router configuration
-│       └── trpc.ts                   # tRPC setup
-│
-├── trpc/                             # tRPC client setup
-└── env.js                            # Environment validation
+└── lib/
+    ├── cardano-utils.ts          # ADA/Lovelace utilities
+    ├── constants.ts              # UI timeouts, limits, explorer URLs
+    ├── debug-logger.ts           # Conditional debug logging
+    └── api-utils.ts              # Error handling
 ```
 
-## Authentication Flow
+## Key Features
 
-The authentication flow combines wallet connection and signing into a single seamless step:
-
-1. **Connect Wallet** - User connects Cardano wallet via Mesh SDK
-2. **Auto-Authenticate** - Signing prompt appears automatically after wallet connects
-3. **Sign Message** - User signs the nonce in their wallet (creates session + validates in one flow)
-4. **Store JWT** - JWT saved to localStorage for authenticated requests
-5. **Make Requests** - JWT included in Authorization header automatically
-
-**Logout**: When the user logs out, both the JWT is cleared and the wallet is disconnected, returning them to the initial "Connect Wallet" state.
-
-## Data Sources
-
-This app pulls data from **two main sources**:
-
-| Source | Type | Purpose | Documentation |
-|--------|------|---------|---------------|
-| **Andamio Database API** | Off-chain | Courses, users, assignments, lessons, learning progress | [API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) |
-| **Andamio Indexer API** | On-chain | UTXOs, decoded datums, enrollment states, blockchain-indexed data | [NBA-API-ENDPOINT-REFERENCE.md](./docs/NBA-API-ENDPOINT-REFERENCE.md) |
-
-Additionally, **Koios API** is used for transaction confirmation checking (see `src/lib/cardano-indexer.ts`).
-
-```
-┌────────────────────────────────────────────────────────┐
-│                  T3 App Template                       │
-└─────────────────────────┬──────────────────────────────┘
-                          │
-          ┌───────────────┼───────────────┐
-          │               │               │
-          ▼               ▼               ▼
-   ┌─────────────┐  ┌───────────┐  ┌───────────┐
-   │ Andamio DB  │  │ Andamio   │  │ Koios API │
-   │ API         │  │ Indexer   │  │           │
-   │ (Off-chain) │  │ (On-chain)│  │ (Tx info) │
-   └─────────────┘  └───────────┘  └───────────┘
-```
-
-📖 **Full Documentation**: [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md)
-
----
-
-## API Integration
-
-### Type Safety with `andamio-db-api`
-
-**IMPORTANT**: This template imports types directly from the `andamio-db-api` package to ensure type safety across the entire stack.
-
-**Setup**: The `andamio-db-api` package is linked via symlink. Create it with:
-```bash
-ln -s ../../andamio-db-api node_modules/andamio-db-api
-```
-
-This creates the symlink: `node_modules/andamio-db-api -> ../../andamio-db-api`
-
-This monorepo-style linking provides:
-- Direct access to type definitions from the database API
-- Real-time type updates as the API evolves
-- Zero build step for type synchronization
-
-**Example**:
-```typescript
-import { type ListOwnedCoursesOutput } from "andamio-db-api";
-
-const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
-```
-
-**Benefits**:
-- ✅ Type safety - Types match the API exactly
-- ✅ No type drift - Changes to API types are immediately reflected
-- ✅ Autocomplete - Full IDE support for API response shapes
-- ✅ Compile-time errors - Catch API mismatches before runtime
-- ✅ Monorepo integration - Seamless development across packages
-
-### Andamio Database API Endpoints Used
-
-> **Note**: All Andamio Database API endpoints use POST requests with JSON bodies (except `/pending-transactions` which is GET). See [API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) for complete documentation.
-
-#### Authentication
-- `POST /auth/login/session` - Create login session, get nonce
-- `POST /auth/login/validate` - Validate signature, get JWT
-
-#### Courses
-- `POST /courses/owned` - List courses owned by authenticated user
-  - **Auth Required**: Yes (JWT in Authorization header)
-  - **Request Body**: `{}`
-  - **Response Type**: `ListOwnedCoursesOutput` (from `@andamio/db-api`)
-  - **Response**: Array of Course objects with fields:
-    - `courseCode`, `courseNftPolicyId`, `title`, `description`
-    - `category`, `imageUrl`, `videoUrl`, `live`, `accessTier`
-
-### Making Authenticated Requests
+### Authentication
+Wallet connection + JWT-based auth in a single flow:
 
 ```typescript
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+const { isAuthenticated, authenticatedFetch, logout } = useAndamioAuth();
 
-function MyComponent() {
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
-
-  const fetchData = async () => {
-    const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/your-endpoint`
-    );
-    const data = await response.json();
-    return data;
-  };
-}
+// Auto-authenticates when wallet connects
+// logout() clears JWT AND disconnects wallet
 ```
 
-## App Layout
+### Protected Pages
+Use the `RequireAuth` wrapper for auth-gated content:
 
-The app uses a full-screen layout with sidebar navigation:
+```typescript
+import { RequireAuth } from "~/components/auth/require-auth";
 
-### Layout Structure
-- **Sidebar (left)** - 256px fixed width navigation
-- **Content Area (right)** - Fills remaining screen space
-- **Full Height** - Layout fills entire viewport (100vh)
+<RequireAuth title="Studio" description="Connect to access">
+  <StudioContent />
+</RequireAuth>
+```
 
-### Navigation
-- **Dashboard** (`/dashboard`) - User wallet and token information
-- **Courses** (`/courses`) - Owned courses list
-- **Editor** (`/editor`) - Rich text editor demo
+### Type-Safe API Calls
+Types imported directly from `@andamio/db-api` via npm workspaces:
 
-### Route Groups
-The app uses Next.js route groups `(app)` to apply the sidebar layout only to authenticated pages:
-- `/` - Home page (redirects to dashboard)
-- `/(app)/dashboard` - Dashboard with sidebar layout
-- `/(app)/courses` - Courses with sidebar layout
+```typescript
+import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 
-## Pages
+const { data, isLoading, error } = useAndamioFetch<ListOwnedCoursesOutput>({
+  endpoint: "/courses/owned",
+  authenticated: true,
+});
+```
 
-### Dashboard (`/dashboard`)
-User information and authentication status.
-
-**When Not Authenticated**:
-- Shows authentication button
-- Prompts user to connect wallet
-
-**When Authenticated**:
-- **Wallet Information Card**
-  - Full Cardano wallet address
-  - User ID
-- **Access Token Card**
-  - Token alias (if available)
-  - JWT expiration time
-  - Token status badge
-
-### Courses (`/courses`)
-Course management interface.
-
-**When Not Authenticated**:
-- Shows authentication button
-
-**When Authenticated**:
-- Lists all owned courses
-- Shows course details (title, description, status)
-- Displays badges (Live/Draft, category, access tier)
-
-### Editor (`/editor`)
-Rich text editor demo showcasing the Andamio Editor.
-
-**Features**:
-- **ContentEditor** - Full-featured editing with built-in toolbar
-- **ContentViewer** - Live preview of content as readers will see it
-- **Focus Mode** - Immersive fullscreen editing experience
-- **Word/Character Count** - Real-time document statistics
-- **Markdown Paste** - Paste markdown and auto-convert to rich text
-
-**Toolbar Options**:
-- `minimal` - Undo/Redo + basic formatting
-- `basic` - + headings, lists, blockquote
-- `full` - + alignment, link, image, code block (default)
-
-## Andamio Editor
-
-The Andamio Editor provides exactly **two primary components** for all content editing and viewing needs. For comprehensive documentation, see [`src/components/editor/README.md`](./src/components/editor/README.md).
-
-### Quick Start
+### Rich Text Editor
+Two components for all content needs:
 
 ```typescript
 import { ContentEditor, ContentViewer } from "~/components/editor";
-import type { JSONContent } from "@tiptap/core";
 
-// State management
-const [content, setContent] = useState<JSONContent | null>(null);
-
-// For editing
-<ContentEditor
-  content={content}
-  onContentChange={setContent}
-  placeholder="Start writing..."
-  showWordCount
-/>
-
-// For viewing
+<ContentEditor content={content} onContentChange={setContent} showWordCount />
 <ContentViewer content={content} />
 ```
 
-### ContentEditor
+See [`src/components/editor/README.md`](./src/components/editor/README.md) for full documentation.
 
-Self-contained rich text editor with built-in toolbar, fullscreen mode, and word count.
-
-**Key Props**:
-- `content` - Initial content (JSONContent, HTML string, or null)
-- `onContentChange` - Callback when content changes
-- `showToolbar` - Show formatting toolbar (default: true)
-- `toolbarConfig` - "minimal" | "basic" | "full" (default: "full")
-- `enableFullscreen` - Enable Focus Mode (default: true)
-- `showWordCount` / `showCharacterCount` - Show statistics
-- `minHeight` / `maxHeight` - Control editor dimensions
-- `footer` - Custom footer content (e.g., save button)
-
-**Example**:
-```typescript
-<ContentEditor
-  content={lesson.content_json}
-  onContentChange={(json) => setContent(json)}
-  placeholder="Write your lesson content..."
-  minHeight="500px"
-  showWordCount
-  footer={<SaveButton onClick={handleSave} />}
-/>
-```
-
-### ContentViewer
-
-Read-only display component for Tiptap content.
-
-**Key Props**:
-- `content` - Content to display (JSONContent, HTML, stringified JSON)
-- `size` - "sm" | "default" | "lg"
-- `withBackground` - Show subtle background
-- `emptyContent` - Custom empty state
-
-**Variants**:
-- `ContentViewerSm` - Small text size
-- `ContentViewerLg` - Large text size
-- `ContentViewerCompact` - No padding or background
-
-**Example**:
-```typescript
-<ContentViewer
-  content={lesson.content_json}
-  emptyContent={<p className="text-muted-foreground">No content yet</p>}
-/>
-```
-
-### Toolbar Configuration
-
-| Preset | Features |
-|--------|----------|
-| `minimal` | Undo/Redo, Bold, Italic, Underline, Strikethrough, Code |
-| `basic` | + Headings (H1-H3), Lists, Blockquote |
-| `full` | + Alignment, Link, Image, Code Block, Focus Mode |
-
-### Editor Capabilities
-
-- **Text Formatting**: Bold, Italic, Underline, Strikethrough, Inline Code
-- **Headings**: H1, H2, H3 with keyboard shortcuts
-- **Lists**: Bullet lists, Ordered lists, Nested lists
-- **Blocks**: Blockquotes, Code blocks with syntax highlighting
-- **Media**: Images with alignment options
-- **Links**: Auto-linking URLs, Manual link insertion
-- **Markdown**: Paste markdown and auto-convert to rich text
-- **Focus Mode**: Immersive fullscreen editing
-
-### Keyboard Shortcuts
-
-| Action | Shortcut |
-|--------|----------|
-| Bold | `Ctrl/Cmd + B` |
-| Italic | `Ctrl/Cmd + I` |
-| Underline | `Ctrl/Cmd + U` |
-| Undo | `Ctrl/Cmd + Z` |
-| Redo | `Ctrl/Cmd + Shift + Z` |
-
-### Editor Utilities
+### Cardano Utilities
 
 ```typescript
-import {
-  extractPlainText,
-  proseMirrorToHtml,
-  getWordCount,
-  getCharacterCount,
-  isEditorEmpty
-} from "~/components/editor";
+import { formatLovelace, adaToLovelace, LOVELACE_PER_ADA } from "~/lib/cardano-utils";
+
+formatLovelace(1000000);  // "1 ADA"
+adaToLovelace(5);         // 5000000
 ```
 
-### File Structure
+### Success Notifications
 
-```
-src/components/editor/
-├── index.ts                          # Main exports
-├── README.md                         # Full documentation
-├── components/
-│   ├── ContentEditor/
-│   │   ├── index.tsx                 # Main editor component
-│   │   └── EditorToolbar.tsx         # Configurable toolbar
-│   └── ContentViewer/
-│       └── index.tsx                 # Viewer component
-├── extension-kits/
-│   ├── shared.ts                     # Unified extension config
-│   └── index.ts                      # Exports
-├── extensions/
-│   └── ImageBlock/                   # Custom image extension
-├── hooks/
-│   └── index.ts                      # useContentEditor hook
-└── utils/
-    └── index.ts                      # Utility functions
-```
-
-> **Full Documentation**: See [`src/components/editor/README.md`](./src/components/editor/README.md) for complete API reference, Markdown support details, migration guide, and future roadmap.
-
-## Components
-
-### Layout Components
-
-#### `AppLayout`
-Full-screen wrapper with sidebar and content area.
-
-**Usage**:
 ```typescript
-<AppLayout>
-  {children}
-</AppLayout>
+import { useSuccessNotification, useCopyFeedback } from "~/hooks/use-success-notification";
+
+const { isSuccess, showSuccess } = useSuccessNotification();
+const { isCopied, copy } = useCopyFeedback();
 ```
 
-#### `AppSidebar`
-Left sidebar navigation with user info.
+### Explorer URLs
 
-**Features**:
-- Navigation links to Dashboard and Courses
-- Active route highlighting
-- Connected wallet display (truncated)
-- Disconnect button
+Network-aware Cardano explorer URLs (supports mainnet, preprod, preview):
 
-### Auth Components
-
-#### `AndamioAuthButton`
-Complete authentication interface with streamlined UX.
-
-**Features**:
-- Wallet connection UI (via Mesh CardanoWallet)
-- Auto-authentication after wallet connects (signing prompt appears automatically)
-- Authenticated state display with user info
-- Logout functionality (clears JWT and disconnects wallet)
-
-**States**:
-- Not connected - Shows wallet connection UI
-- Connected, authenticating - Shows loading state while waiting for signature
-- Authentication failed - Shows error with "Try Again" button
-- Authenticated - Shows user info and logout button
-
-### Course Components
-
-#### `OwnedCoursesList`
-Displays courses owned by authenticated user.
-
-**Features**:
-- Automatic fetching when authenticated
-- Loading states with skeleton UI
-- Error handling with alerts
-- Empty state for no courses
-- Course details with badges
-
-**Data Displayed**:
-- Course title and description
-- Course code (monospace)
-- Live/Draft status badge
-- Category and access tier
-
-### Learner Components
-
-#### `MyLearning`
-Displays courses the authenticated learner is enrolled in based on on-chain data.
-
-**Features**:
-- Queries on-chain enrollment data via NBA (Node Backend API)
-- Automatic fetching when authenticated
-- Shows both completed and ongoing courses
-- Displays assignment progress from blockchain
-- Loading states with skeleton UI
-- Error handling with alerts
-- Empty state with call-to-action
-
-**Data Displayed**:
-- Course title, description, and image
-- Course policy ID
-- Number of completed assignments (from on-chain data)
-- Progress percentage
-- Course status (Complete/In Progress)
-
-**Performance**:
-- Single efficient API call to `/learner/my-learning`
-- 50-100x faster than previous implementation
-- Combines on-chain enrollment data with database course details
-
-**Data Flow**:
-1. Frontend calls `/learner/my-learning` with JWT
-2. Backend queries NBA API for enrolled course policy IDs
-3. Backend fetches course details from database
-4. Returns combined data with assignment progress
-
-### Hooks
-
-#### `useAndamioAuth`
-Manages authentication state and provides helpers. Authentication is triggered automatically when wallet connects.
-
-**Returns**:
 ```typescript
-{
-  // State
-  isAuthenticated: boolean;
-  user: AuthUser | null;
-  jwt: string | null;
-  isAuthenticating: boolean;
-  authError: string | null;
-  isWalletConnected: boolean;
+import { getTransactionExplorerUrl, getTokenExplorerUrl } from "~/lib/constants";
 
-  // Actions
-  authenticate: () => Promise<void>;  // Called automatically on wallet connect
-  logout: () => void;                 // Clears JWT AND disconnects wallet
-  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
-}
+getTransactionExplorerUrl(txHash, "preprod");  // https://preprod.cardanoscan.io/transaction/...
+getTokenExplorerUrl(policyId, "mainnet");      // https://cardanoscan.io/token/...
 ```
 
-**Auto-Authentication**: When the wallet connects, `authenticate()` is called automatically. The user only needs to approve the signature in their wallet.
+### Debug Logging
 
-**Logout Behavior**: Calling `logout()` clears the stored JWT, resets all auth state, and disconnects the wallet via Mesh SDK.
+Conditional logging that's suppressed in production:
 
-## Environment Variables
+```typescript
+import { authLogger, pendingTxLogger, learnerLogger } from "~/lib/debug-logger";
 
-```bash
-# Required
-NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api"
-
-# Optional for build
-NODE_ENV="development"
-SKIP_ENV_VALIDATION="false"
+authLogger.info("User authenticated");     // Only logs in development
+authLogger.error("Auth failed:", error);   // Errors always logged
 ```
+
+## Data Sources
+
+| Source | Purpose |
+|--------|---------|
+| **Andamio DB API** | Courses, users, assignments, off-chain data |
+| **Andamio Indexer** | UTXOs, datums, on-chain enrollment |
+| **Koios API** | Transaction confirmation |
+
+See [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md) for architecture details.
+
+## Styling
+
+Use semantic colors only - never hardcoded Tailwind colors:
+
+```typescript
+// ✅ Correct
+<CheckCircle className="text-success" />
+<span className="text-destructive">Error</span>
+<p className="text-muted-foreground">Helper text</p>
+
+// ❌ Never
+<CheckCircle className="text-green-600" />
+```
+
+**Available**: `success`, `warning`, `info`, `destructive`, `primary`, `secondary`, `muted`
+
+See [docs/SEMANTIC-COLORS.md](./docs/SEMANTIC-COLORS.md) for complete guide.
 
 ## Scripts
 
 ```bash
-npm run dev          # Start dev server (with Turbopack)
-npm run build        # Build for production
-npm start            # Start production server
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix ESLint errors
-npm run typecheck    # Run TypeScript compiler check
-npm run check        # Run lint + typecheck
-npm run format:check # Check Prettier formatting
-npm run format:write # Fix Prettier formatting
+npm run dev          # Development server
+npm run build        # Production build
+npm run typecheck    # Type checking
+npm run lint         # Linting
 ```
 
-## Styling Guidelines
+## Adding a New Page
 
-**IMPORTANT**: This template uses shadcn/ui components and semantic colors exclusively.
-
-### Component Guidelines
-- ✅ Use shadcn/ui components from `~/components/ui/`
-- ✅ Compose shadcn components for complex UIs
-- ❌ No custom Tailwind classes (unless absolutely necessary)
-- ❌ No inline styles
-- ❌ No CSS modules
-
-### Semantic Color System
-
-**CRITICAL**: Always use semantic color variables. Never use hardcoded Tailwind colors like `text-blue-600`, `bg-green-500`, etc.
-
-All colors are defined in `src/styles/globals.css` with full light/dark mode support using OKLCH color space.
-
-#### Available Semantic Colors
-
-**Status Colors** (most commonly used):
-- `success` / `success-foreground` - ✅ Success states, completed items (green)
-- `warning` / `warning-foreground` - ⚠️ Warnings, pending states (yellow/amber)
-- `info` / `info-foreground` - ℹ️ Informational states (blue)
-- `destructive` / `destructive-foreground` - ❌ Errors, destructive actions (red)
-
-**Base Colors**:
-- `background` / `foreground` - Main page background and text
-- `card` / `card-foreground` - Card backgrounds and text
-- `popover` / `popover-foreground` - Popover backgrounds and text
-
-**Interactive Colors**:
-- `primary` / `primary-foreground` - Primary actions, links
-- `secondary` / `secondary-foreground` - Secondary actions
-- `muted` / `muted-foreground` - Muted/subtle elements
-- `accent` / `accent-foreground` - Accent/highlight elements
-
-**Utility Colors**:
-- `border`, `input`, `ring` - Borders, inputs, focus rings
-- `chart-1` through `chart-5` - Data visualization
-- `sidebar-*` - Sidebar-specific colors
-
-#### Color Usage Examples
-
-**✅ CORRECT**:
 ```typescript
-// Success state
-<CheckCircle className="h-4 w-4 text-success" />
-<span className="text-success">Success!</span>
-
-// Warning state
-<AlertTriangle className="h-4 w-4 text-warning" />
-
-// Info state
-<Clock className="h-4 w-4 text-info" />
-
-// Error/destructive state
-<XCircle className="h-4 w-4 text-destructive" />
-
-// Links
-<a href="..." className="text-primary hover:underline">Link</a>
-
-// Muted text
-<p className="text-muted-foreground">Helper text</p>
-```
-
-**❌ WRONG - Never do this**:
-```typescript
-// Hardcoded colors - NEVER use these!
-<CheckCircle className="text-green-600" />
-<div className="bg-blue-500">Content</div>
-<span className="text-red-600">Error</span>
-```
-
-#### When to Use Which Color
-
-- **Success** → Completed tasks, successful operations, active states
-- **Warning** → Pending approvals, cautionary info, in-progress states
-- **Info** → Informational messages, neutral status, help text
-- **Destructive** → Errors, delete actions, critical alerts
-- **Primary** → Links, primary CTAs, active navigation
-- **Muted** → Placeholders, helper text, disabled states
-
-See `.claude/CLAUDE.md` for complete semantic color documentation.
-
-## Adding Features
-
-### Adding a New Page
-
-1. Create page in `src/app/(app)/my-page/page.tsx`:
-```typescript
+// src/app/(app)/my-page/page.tsx
 "use client";
 
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import { RequireAuth } from "~/components/auth/require-auth";
 
 export default function MyPage() {
-  const { isAuthenticated } = useAndamioAuth();
-
-  if (!isAuthenticated) {
-    return (
+  return (
+    <RequireAuth title="My Page" description="Connect to view">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">My Page</h1>
-          <p className="text-muted-foreground">
-            Connect your wallet to view this page
-          </p>
-        </div>
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
         <h1 className="text-3xl font-bold">My Page</h1>
-        <p className="text-muted-foreground">Page description</p>
-      </div>
-      {/* Page content */}
-    </div>
-  );
-}
-```
-
-2. Add navigation link to sidebar in `src/components/layout/app-sidebar.tsx`:
-```typescript
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Courses", href: "/courses", icon: BookOpen },
-  { name: "My Page", href: "/my-page", icon: YourIcon }, // Add here
-];
-```
-
-### Adding a New API Endpoint
-
-**IMPORTANT**: Always import types from `andamio-db-api` package instead of defining them locally. This ensures type safety and prevents type drift.
-
-1. Import type from `andamio-db-api`:
-```typescript
-import { type MyDataOutput } from "andamio-db-api";
-```
-
-2. Make authenticated request:
-```typescript
-const { authenticatedFetch } = useAndamioAuth();
-
-const response = await authenticatedFetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/my-endpoint`
-);
-const data = (await response.json()) as MyDataOutput;
-```
-
-**Example** (from `OwnedCoursesList`):
-```typescript
-import { type ListOwnedCoursesOutput } from "andamio-db-api";
-
-const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
-
-const data = (await response.json()) as ListOwnedCoursesOutput;
-setCourses(data ?? []);
-```
-
-3. Create component with shadcn/ui:
-```typescript
-import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
-
-export function MyComponent() {
-  // Component logic
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Data</CardTitle>
-      </CardHeader>
-      <CardContent>
         {/* Content */}
-      </CardContent>
-    </Card>
+      </div>
+    </RequireAuth>
   );
 }
 ```
 
-### Adding a tRPC Route
+Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 
-1. Create router in `src/server/api/routers/`:
-```typescript
-import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+## Documentation
 
-export const myRouter = createTRPCRouter({
-  myQuery: publicProcedure
-    .input(z.object({ id: z.string() }))
-    .query(({ input }) => {
-      return { data: "Hello" };
-    }),
-});
-```
+- [STATUS.md](./STATUS.md) - Implementation status
+- [ROADMAP.md](./ROADMAP.md) - Development roadmap
+- [docs/API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) - API endpoints
+- [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md) - Data architecture
+- [docs/SEMANTIC-COLORS.md](./docs/SEMANTIC-COLORS.md) - Color system
+- [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
+- [.claude/CLAUDE.md](./.claude/CLAUDE.md) - Development guidelines
 
-2. Add to `src/server/api/root.ts`:
-```typescript
-import { myRouter } from "~/server/api/routers/my-router";
+## Resources
 
-export const appRouter = createTRPCRouter({
-  example: exampleRouter,
-  my: myRouter, // Add here
-});
-```
-
-3. Use in component:
-```typescript
-import { api } from "~/trpc/react";
-
-const { data, isLoading } = api.my.myQuery.useQuery({ id: "123" });
-```
-
-## Learn More
-
-### T3 Stack Resources
-- [T3 Stack Documentation](https://create.t3.gg/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [tRPC Documentation](https://trpc.io)
-
-### Andamio Resources
-- [Andamio Platform](https://andamio.io)
-- [Andamio Documentation](https://docs.andamio.io)
-
-### UI & Styling
-- [shadcn/ui Documentation](https://ui.shadcn.com)
-- [Tailwind CSS Documentation](https://tailwindcss.com)
-
-### Cardano
-- [Mesh SDK Documentation](https://meshjs.dev)
-- [Cardano Documentation](https://docs.cardano.org)
+- [Andamio Platform](https://andamio.io) | [Andamio Docs](https://docs.andamio.io)
+- [T3 Stack](https://create.t3.gg/) | [Next.js](https://nextjs.org/docs)
+- [Mesh SDK](https://meshjs.dev) | [shadcn/ui](https://ui.shadcn.com)
 
 ## License
 

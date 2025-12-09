@@ -21,7 +21,8 @@ import {
   AndamioDialogHeader,
   AndamioDialogTitle,
 } from "~/components/andamio/andamio-dialog";
-import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X, Search } from "lucide-react";
+import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X, Search, Link as LinkIcon } from "lucide-react";
+import { HybridSLTStatus } from "~/components/courses/hybrid-slt-status";
 import {
   type CourseModuleOutput,
   type SLTOutput,
@@ -756,6 +757,13 @@ export default function SLTManagementPage() {
           </AndamioCardDescription>
         </AndamioCardHeader>
       </AndamioCard>
+
+      {/* On-Chain SLT Status */}
+      <HybridSLTStatus
+        courseNftPolicyId={courseNftPolicyId}
+        moduleCode={moduleCode}
+        onRefresh={fetchCombinedData}
+      />
 
       {/* SLTs Table */}
       {dataToDisplay.length === 0 ? (

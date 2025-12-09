@@ -2,41 +2,24 @@
 
 import React from "react";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { RequireAuth } from "~/components/auth/require-auth";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { BookOpen, FolderKanban } from "lucide-react";
 
 export default function StudioPage() {
-  const { isAuthenticated } = useAndamioAuth();
-
-  // Not authenticated state
-  if (!isAuthenticated) {
-    return (
+  return (
+    <RequireAuth
+      title="Studio"
+      description="Connect your wallet to access the creator studio"
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Studio</h1>
           <p className="text-muted-foreground">
-            Connect your wallet to access the creator studio
+            Create and manage your courses and projects
           </p>
         </div>
-
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Studio</h1>
-        <p className="text-muted-foreground">
-          Create and manage your courses and projects
-        </p>
-      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/studio/course">
@@ -78,5 +61,6 @@ export default function StudioPage() {
         </Link>
       </div>
     </div>
+    </RequireAuth>
   );
 }

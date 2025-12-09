@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useCopyFeedback } from "~/hooks/use-success-notification";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -15,7 +16,7 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
-import { Tooltip as AndamioTooltip, TooltipContent as AndamioTooltipContent, TooltipProvider as AndamioTooltipProvider, TooltipTrigger as AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
+import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipProvider, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
 import { AndamioDialog, AndamioDialogContent, AndamioDialogDescription, AndamioDialogHeader, AndamioDialogTitle, AndamioDialogTrigger } from "~/components/andamio/andamio-dialog";
 import {
   Palette,
@@ -30,15 +31,9 @@ import {
 
 export default function ComponentsPage() {
   const [progress, setProgress] = useState(60);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const { isCopied, copy } = useCopyFeedback();
 
-  const copyCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code).catch(console.error);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  const CodeBlock = ({ code, id }: { code: string; id: string }) => (
+  const CodeBlock = ({ code }: { code: string }) => (
     <div className="relative group">
       <pre className="text-xs bg-muted p-4 rounded-md overflow-x-auto border">
         <code>{code}</code>
@@ -47,9 +42,9 @@ export default function ComponentsPage() {
         size="sm"
         variant="ghost"
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => copyCode(code, id)}
+        onClick={() => copy(code)}
       >
-        {copiedCode === id ? (
+        {isCopied ? (
           <Check className="h-3 w-3" />
         ) : (
           <Copy className="h-3 w-3" />
@@ -124,7 +119,6 @@ export default function ComponentsPage() {
           </div>
 
           <CodeBlock
-            id="colors"
             code={`// Always use semantic colors
 <CheckCircle className="text-success" />
 <AlertTriangle className="text-warning" />
@@ -186,7 +180,6 @@ export default function ComponentsPage() {
           </div>
 
           <CodeBlock
-            id="buttons"
             code={`import { AndamioButton } from "~/components/andamio/andamio-button";
 
 <AndamioButton variant="default">Default</AndamioButton>
@@ -215,7 +208,6 @@ export default function ComponentsPage() {
           </div>
 
           <CodeBlock
-            id="badges"
             code={`import { AndamioBadge } from "~/components/andamio/andamio-badge";
 
 <AndamioBadge variant="default">Published</AndamioBadge>
@@ -250,7 +242,6 @@ export default function ComponentsPage() {
           </AndamioAlert>
 
           <CodeBlock
-            id="alerts"
             code={`import { AndamioAlert, AndamioAlertTitle, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 
 <AndamioAlert variant="destructive">
@@ -324,7 +315,6 @@ export default function ComponentsPage() {
           </div>
 
           <CodeBlock
-            id="forms"
             code={`import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioSelect, ... } from "~/components/andamio/andamio-select";
@@ -374,7 +364,6 @@ import { AndamioSelect, ... } from "~/components/andamio/andamio-select";
           </div>
 
           <CodeBlock
-            id="progress"
             code={`import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 
@@ -411,7 +400,6 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
           </AndamioTabs>
 
           <CodeBlock
-            id="tabs"
             code={`import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 
 <AndamioTabs defaultValue="overview">
@@ -464,7 +452,6 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
           </div>
 
           <CodeBlock
-            id="dialog"
             code={`import { AndamioDialog, AndamioDialogContent, AndamioDialogTrigger, ... } from "~/components/andamio/andamio-dialog";
 import { AndamioTooltip, AndamioTooltipProvider, ... } from "~/components/andamio/andamio-tooltip";
 
@@ -517,7 +504,6 @@ import { AndamioTooltip, AndamioTooltipProvider, ... } from "~/components/andami
           </div>
 
           <CodeBlock
-            id="cards"
             code={`import { AndamioCard, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription, AndamioCardContent } from "~/components/andamio/andamio-card";
 
 <AndamioCard>

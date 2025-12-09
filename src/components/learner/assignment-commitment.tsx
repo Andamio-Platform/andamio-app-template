@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { env } from "~/env";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -109,12 +110,12 @@ export function AssignmentCommitment({
   moduleCode,
 }: AssignmentCommitmentProps) {
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showSubmitTx, setShowSubmitTx] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -147,92 +148,83 @@ export function AssignmentCommitment({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges, commitment]);
 
-  // Check if commitment exists
-  useEffect(() => {
+  // Refetchable commitment loader
+  const fetchCommitment = useCallback(async () => {
     if (!isAuthenticated) {
       setIsLoading(false);
       return;
     }
 
-    const fetchCommitment = async () => {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // Fetch all commitments for this course (POST /assignment-commitments/list-learner-by-course)
-        const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-learner-by-course`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch commitments");
+    try {
+      // Fetch all commitments for this course (POST /assignment-commitments/list-learner-by-course)
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-learner-by-course`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
         }
+      );
 
-        const commitments = (await response.json()) as Commitment[];
+      if (!response.ok) {
+        throw new Error("Failed to fetch commitments");
+      }
 
-        console.log("[AssignmentCommitment] Searching for assignmentCode:", assignmentCode);
-        console.log("[AssignmentCommitment] Fetched commitments:", commitments);
-        console.log("[AssignmentCommitment] Commitment assignmentCodes:", commitments.map(c => ({
-          assignmentCode: c.assignment.assignmentCode,
-          moduleCode: c.assignment.module.moduleCode
-        })));
+      const commitments = (await response.json()) as Commitment[];
 
-        const existingCommitment = commitments.find((c) => c.assignment.assignmentCode === assignmentCode);
-        console.log("[AssignmentCommitment] Found commitment:", existingCommitment);
+      const existingCommitment = commitments.find((c) => c.assignment.assignmentCode === assignmentCode);
 
-        if (existingCommitment) {
-          console.log("[AssignmentCommitment] Network Evidence:", existingCommitment.networkEvidence);
-          console.log("[AssignmentCommitment] Network Evidence Type:", typeof existingCommitment.networkEvidence);
-          console.log("[AssignmentCommitment] Network Status:", existingCommitment.networkStatus);
-
-          setCommitment(existingCommitment);
-          // Set local UI status based on network status
-          if (existingCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" || existingCommitment.networkStatus === "CREDENTIAL_CLAIMED") {
-            setPrivateStatus("COMPLETE");
-          } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
-            setPrivateStatus("COMMITMENT");
-          }
-          // Set local evidence content if evidence exists
-          if (existingCommitment.networkEvidence) {
-            // Handle different evidence formats
-            let content;
-            if (typeof existingCommitment.networkEvidence === "string") {
-              try {
-                // Try to parse as JSON first
-                const parsed = JSON.parse(existingCommitment.networkEvidence);
-                // If it has a 'type' property, it's likely Tiptap JSON
-                if (parsed && typeof parsed === "object" && "type" in parsed) {
-                  content = parsed;
-                } else {
-                  // Not Tiptap JSON, treat as plain string
-                  content = existingCommitment.networkEvidence;
-                }
-              } catch {
-                // Not valid JSON, treat as plain string (HTML or text)
+      if (existingCommitment) {
+        setCommitment(existingCommitment);
+        // Set local UI status based on network status
+        if (existingCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" || existingCommitment.networkStatus === "CREDENTIAL_CLAIMED") {
+          setPrivateStatus("COMPLETE");
+        } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
+          setPrivateStatus("COMMITMENT");
+        }
+        // Set local evidence content if evidence exists
+        if (existingCommitment.networkEvidence) {
+          // Handle different evidence formats
+          let content;
+          if (typeof existingCommitment.networkEvidence === "string") {
+            try {
+              // Try to parse as JSON first
+              const parsed = JSON.parse(existingCommitment.networkEvidence);
+              // If it has a 'type' property, it's likely Tiptap JSON
+              if (parsed && typeof parsed === "object" && "type" in parsed) {
+                content = parsed;
+              } else {
+                // Not Tiptap JSON, treat as plain string
                 content = existingCommitment.networkEvidence;
               }
-            } else {
-              // Already an object
+            } catch {
+              // Not valid JSON, treat as plain string (HTML or text)
               content = existingCommitment.networkEvidence;
             }
-            setLocalEvidenceContent(content);
+          } else {
+            // Already an object
+            content = existingCommitment.networkEvidence;
           }
+          setLocalEvidenceContent(content);
         }
-      } catch (err) {
-        console.error("Error fetching commitment:", err);
-        setError(err instanceof Error ? err.message : "Failed to load commitment");
-      } finally {
-        setIsLoading(false);
+      } else {
+        setCommitment(null);
       }
-    };
-
-    void fetchCommitment();
+    } catch (err) {
+      console.error("Error fetching commitment:", err);
+      setError(err instanceof Error ? err.message : "Failed to load commitment");
+    } finally {
+      setIsLoading(false);
+    }
   }, [isAuthenticated, authenticatedFetch, assignmentCode, courseNftPolicyId]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    void fetchCommitment();
+  }, [fetchCommitment]);
 
   const handleStartAssignment = () => {
     setHasStarted(true);
@@ -247,8 +239,7 @@ export function AssignmentCommitment({
     setEvidenceContent(localEvidenceContent);
     setIsLocked(true);
     setHasUnsavedChanges(false);
-    setSuccess("Evidence locked! You can now submit to the blockchain.");
-    setTimeout(() => setSuccess(null), 3000);
+    triggerSuccess("Evidence locked! You can now submit to the blockchain.");
   };
 
   const handleUnlockEvidence = () => {
@@ -262,7 +253,6 @@ export function AssignmentCommitment({
 
     setIsSaving(true);
     setError(null);
-    setSuccess(null);
 
     try {
       // Calculate hash from normalized content
@@ -291,8 +281,7 @@ export function AssignmentCommitment({
 
       const updatedCommitment = (await response.json()) as Commitment;
       setCommitment(updatedCommitment);
-      setSuccess("Draft saved successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      triggerSuccess("Draft saved successfully!");
     } catch (err) {
       console.error("Error updating evidence:", err);
       setError(err instanceof Error ? err.message : "Failed to update evidence");
@@ -330,8 +319,7 @@ export function AssignmentCommitment({
       setCommitment(null);
       setPrivateStatus("NOT_STARTED");
       setLocalEvidenceContent(null);
-      setSuccess("Commitment deleted successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      triggerSuccess("Commitment deleted successfully!");
     } catch (err) {
       console.error("Error deleting commitment:", err);
       setError(err instanceof Error ? err.message : "Failed to delete commitment");
@@ -381,10 +369,10 @@ export function AssignmentCommitment({
           </AndamioAlert>
         )}
 
-        {success && (
+        {showSuccess && (
           <AndamioAlert>
             <CheckCircle className="h-4 w-4" />
-            <AndamioAlertDescription>{success}</AndamioAlertDescription>
+            <AndamioAlertDescription>{successMessage}</AndamioAlertDescription>
           </AndamioAlert>
         )}
 
@@ -497,9 +485,9 @@ export function AssignmentCommitment({
                   onSuccess={() => {
                     setShowSubmitTx(false);
                     setHasUnsavedChanges(false);
-                    setSuccess("Assignment submitted to blockchain!");
+                    triggerSuccess("Assignment submitted to blockchain!");
                     // Refresh commitment data
-                    window.location.reload();
+                    void fetchCommitment();
                   }}
                   onError={(err) => {
                     setError(err.message);
@@ -633,9 +621,9 @@ export function AssignmentCommitment({
                   }}
                   onSuccess={() => {
                     setShowSubmitTx(false);
-                    setSuccess("Assignment submitted to blockchain!");
+                    triggerSuccess("Assignment submitted to blockchain!");
                     // Refresh commitment data
-                    window.location.reload();
+                    void fetchCommitment();
                   }}
                   onError={(err) => {
                     setError(err.message);
@@ -665,8 +653,8 @@ export function AssignmentCommitment({
                     }}
                     showCard={false}
                     onSuccess={() => {
-                      setSuccess("Assignment updated on blockchain!");
-                      window.location.reload();
+                      triggerSuccess("Assignment updated on blockchain!");
+                      void fetchCommitment();
                     }}
                     onError={(err) => {
                       setError(err.message);
@@ -695,8 +683,8 @@ export function AssignmentCommitment({
                     }}
                     showCard={false}
                     onSuccess={() => {
-                      setSuccess("You've withdrawn from this assignment.");
-                      window.location.reload();
+                      triggerSuccess("You've withdrawn from this assignment.");
+                      void fetchCommitment();
                     }}
                     onError={(err) => {
                       setError(err.message);

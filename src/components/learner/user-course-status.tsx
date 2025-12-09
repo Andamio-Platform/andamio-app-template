@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
+import { learnerLogger } from "~/lib/debug-logger";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
@@ -84,7 +85,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
         if (!response.ok) {
           // If 404 or other error, assume not enrolled - we'll show enrollment component
-          console.log("Course status not found (likely not enrolled):", response.status);
+          learnerLogger.debug("Course status not found (likely not enrolled):", response.status);
           setStatus(null);
           return;
         }
@@ -119,7 +120,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
         if (!response.ok) {
           // If 404 or other error, assume not enrolled
-          console.log("Course status not found (likely not enrolled):", response.status);
+          learnerLogger.debug("Course status not found (likely not enrolled):", response.status);
           setStatus(null);
           return;
         }

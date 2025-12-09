@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
+import { learnerLogger } from "~/lib/debug-logger";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -43,7 +44,7 @@ export function MyLearning() {
       setError(null);
 
       try {
-        console.log("🔍 Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
+        learnerLogger.debug("Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
 
         // Single API call to get all courses with learner's commitments (POST /learner/my-learning)
         const response = await authenticatedFetch(
@@ -55,28 +56,27 @@ export function MyLearning() {
           }
         );
 
-        console.log("📡 Response status:", response.status);
+        learnerLogger.debug("Response status:", response.status);
 
         // 404 means no learner record exists yet - treat as empty state, not error
         if (response.status === 404) {
-          console.log("📭 No learner record found - user hasn't enrolled in any courses yet");
+          learnerLogger.info("No learner record found - user hasn't enrolled in any courses yet");
           setCourses([]);
           return;
         }
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("❌ Failed to fetch my learning:", response.status, errorText);
+          learnerLogger.error("Failed to fetch my learning:", response.status, errorText);
           throw new Error(`Failed to fetch my learning: ${response.status} ${response.statusText}`);
         }
 
         const data = (await response.json()) as MyLearningData;
-        console.log("✅ My Learning data:", data);
-        console.log("📚 Number of courses:", data.courses.length);
+        learnerLogger.info("My Learning data loaded:", data.courses.length, "courses");
 
         setCourses(data.courses);
       } catch (err) {
-        console.error("💥 Error fetching learning progress:", err);
+        learnerLogger.error("Error fetching learning progress:", err);
         setError(err instanceof Error ? err.message : "Failed to load learning progress");
       } finally {
         setIsLoading(false);

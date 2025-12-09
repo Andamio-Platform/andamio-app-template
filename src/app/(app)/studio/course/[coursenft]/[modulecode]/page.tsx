@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -20,7 +21,8 @@ import {
   AndamioSelectTrigger,
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
-import { AlertCircle, ArrowLeft, Edit2, Save, Trash2, Upload } from "lucide-react";
+import { AlertCircle, ArrowLeft, Edit2, Save, Trash2, Upload, FileText, BookOpen, Blocks, Settings, Target } from "lucide-react";
+import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
   AndamioDialog,
@@ -81,9 +83,22 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 export default function ModuleEditPage() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  // URL-based tab persistence
+  const urlTab = searchParams.get("tab");
+  const validTabs = ["details", "content", "on-chain", "settings"];
+  const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "details";
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [moduleWithSlts, setModuleWithSlts] = useState<ListCourseModulesOutput>([]);
@@ -97,7 +112,7 @@ export default function ModuleEditPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -184,7 +199,6 @@ export default function ModuleEditPage() {
 
     setIsSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
 
     try {
       // Build input object for module update
@@ -255,8 +269,7 @@ export default function ModuleEditPage() {
         }
       }
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      showSuccess();
 
       // Refetch module (POST /course-modules/get)
       const response = await fetch(
@@ -396,8 +409,7 @@ export default function ModuleEditPage() {
       const updatedModule = (await response.json()) as CourseModuleOutput;
       setCourseModule(updatedModule);
       setIsPendingTxDialogOpen(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      showSuccess();
     } catch (err) {
       console.error("Error setting pending transaction:", err);
       setPendingTxError(err instanceof Error ? err.message : "Failed to set pending transaction");
@@ -428,8 +440,7 @@ export default function ModuleEditPage() {
         throw new Error(errorData.message ?? "Failed to publish content");
       }
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      showSuccess();
     } catch (err) {
       console.error("Error publishing content:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to publish content");
@@ -491,7 +502,7 @@ export default function ModuleEditPage() {
 
       <div>
         <h1 className="text-3xl font-bold">Edit Module</h1>
-        <p className="text-muted-foreground">Update module details and status</p>
+        <p className="text-muted-foreground">{courseModule?.title}</p>
       </div>
 
       {/* Success/Error Messages */}
@@ -510,251 +521,442 @@ export default function ModuleEditPage() {
         </AndamioAlert>
       )}
 
-      {/* Edit Form */}
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Module Details</AndamioCardTitle>
-          <AndamioCardDescription>Edit the module title, description, and status</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="title">Title *</AndamioLabel>
-            <AndamioInput
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Module title"
-              maxLength={200}
-            />
-          </div>
+      {/* Tabbed Interface */}
+      <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <AndamioTabsList className="grid w-full grid-cols-4">
+          <AndamioTabsTrigger value="details" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Details</span>
+          </AndamioTabsTrigger>
+          <AndamioTabsTrigger value="content" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Content</span>
+          </AndamioTabsTrigger>
+          <AndamioTabsTrigger value="on-chain" className="flex items-center gap-2">
+            <Blocks className="h-4 w-4" />
+            <span className="hidden sm:inline">On-Chain</span>
+          </AndamioTabsTrigger>
+          <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </AndamioTabsTrigger>
+        </AndamioTabsList>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="description">Description</AndamioLabel>
-            <AndamioTextarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Module description"
-              rows={4}
-            />
-          </div>
-
-          {/* Module Code with Rename */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="moduleCode">Module Code</AndamioLabel>
-            <div className="flex gap-2">
-              <AndamioInput id="moduleCode" value={courseModule?.module_code} disabled className="flex-1" />
-              <AndamioDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-                <AndamioDialogTrigger asChild>
-                  <AndamioButton
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setNewModuleCode(courseModule?.module_code ?? "");
-                      setRenameError(null);
-                    }}
-                  >
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Rename
-                  </AndamioButton>
-                </AndamioDialogTrigger>
-                <AndamioDialogContent>
-                  <AndamioDialogHeader>
-                    <AndamioDialogTitle>Rename Module Code</AndamioDialogTitle>
-                    <AndamioDialogDescription>
-                      Enter a new code for this module. This will update the module identifier.
-                    </AndamioDialogDescription>
-                  </AndamioDialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <AndamioLabel htmlFor="new-module-code">New Module Code</AndamioLabel>
-                      <AndamioInput
-                        id="new-module-code"
-                        value={newModuleCode}
-                        onChange={(e) => setNewModuleCode(e.target.value)}
-                        placeholder="e.g., module-102"
-                        maxLength={50}
-                        disabled={isRenaming}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Current: <code className="font-mono">{courseModule?.module_code}</code>
-                      </p>
-                    </div>
-                    {renameError && (
-                      <AndamioAlert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AndamioAlertDescription>{renameError}</AndamioAlertDescription>
-                      </AndamioAlert>
-                    )}
-                  </div>
-                  <AndamioDialogFooter>
-                    <AndamioButton
-                      variant="outline"
-                      onClick={() => setIsRenameDialogOpen(false)}
-                      disabled={isRenaming}
-                    >
-                      Cancel
-                    </AndamioButton>
-                    <AndamioButton onClick={handleRenameModule} disabled={isRenaming}>
-                      {isRenaming ? "Renaming..." : "Rename Module"}
-                    </AndamioButton>
-                  </AndamioDialogFooter>
-                </AndamioDialogContent>
-              </AndamioDialog>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Use the rename button to change the module code identifier
-            </p>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="status">Status</AndamioLabel>
-            <AndamioSelect
-              value={status}
-              onValueChange={setStatus}
-              disabled={courseModule?.status === "PENDING_TX"}
-            >
-              <AndamioSelectTrigger id="status">
-                <AndamioSelectValue />
-              </AndamioSelectTrigger>
-              <AndamioSelectContent>
-                {availableStatuses.map((s) => (
-                  <AndamioSelectItem key={s} value={s}>
-                    {s}
-                  </AndamioSelectItem>
-                ))}
-              </AndamioSelectContent>
-            </AndamioSelect>
-            {courseModule?.status === "PENDING_TX" ? (
-              <AndamioAlert>
-                <AlertCircle className="h-4 w-4" />
-                <AndamioAlertDescription>
-                  Status is locked while transaction is pending. Only blockchain confirmation can update from PENDING_TX to ON_CHAIN.
-                </AndamioAlertDescription>
-              </AndamioAlert>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Current: {courseModule?.status} • Available transitions shown
-              </p>
-            )}
-          </div>
-
-          {/* Pending Transaction */}
-          <div className="space-y-2">
-            <AndamioLabel>Pending Transaction</AndamioLabel>
-            {courseModule?.pending_tx_hash ? (
-              <div className="flex gap-2">
+        {/* Details Tab */}
+        <AndamioTabsContent value="details" className="mt-6">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Module Details</AndamioCardTitle>
+              <AndamioCardDescription>Edit the module title, description, and status</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-6">
+              {/* Title */}
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="title">Title *</AndamioLabel>
                 <AndamioInput
-                  value={courseModule.pending_tx_hash}
-                  disabled
-                  className="flex-1 font-mono text-xs"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Module title"
+                  maxLength={200}
                 />
-                <AndamioButton
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <a
-                    href={`https://cardanoscan.io/transaction/${courseModule?.pending_tx_hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View on Explorer
-                  </a>
-                </AndamioButton>
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <AndamioInput
-                  value="No pending transaction"
-                  disabled
-                  className="flex-1"
+
+              {/* Description */}
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="description">Description</AndamioLabel>
+                <AndamioTextarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Module description"
+                  rows={4}
                 />
-                {courseModule?.status === "DRAFT" && (
-                  <AndamioDialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
+              </div>
+
+              {/* Module Code with Rename */}
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="moduleCode">Module Code</AndamioLabel>
+                <div className="flex gap-2">
+                  <AndamioInput id="moduleCode" value={courseModule?.module_code} disabled className="flex-1" />
+                  <AndamioDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
                     <AndamioDialogTrigger asChild>
                       <AndamioButton
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setPendingTxHash("");
-                          setPendingTxError(null);
+                          setNewModuleCode(courseModule?.module_code ?? "");
+                          setRenameError(null);
                         }}
                       >
-                        Set Transaction
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Rename
                       </AndamioButton>
                     </AndamioDialogTrigger>
                     <AndamioDialogContent>
                       <AndamioDialogHeader>
-                        <AndamioDialogTitle>Set Pending Transaction</AndamioDialogTitle>
+                        <AndamioDialogTitle>Rename Module Code</AndamioDialogTitle>
                         <AndamioDialogDescription>
-                          Enter the transaction hash for the on-chain operation related to this module.
+                          Enter a new code for this module. This will update the module identifier.
                         </AndamioDialogDescription>
                       </AndamioDialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <AndamioLabel htmlFor="pending-tx-hash">Transaction Hash</AndamioLabel>
+                          <AndamioLabel htmlFor="new-module-code">New Module Code</AndamioLabel>
                           <AndamioInput
-                            id="pending-tx-hash"
-                            value={pendingTxHash}
-                            onChange={(e) => setPendingTxHash(e.target.value)}
-                            placeholder="Enter Cardano transaction hash"
-                            className="font-mono text-xs"
-                            disabled={isSettingPendingTx}
+                            id="new-module-code"
+                            value={newModuleCode}
+                            onChange={(e) => setNewModuleCode(e.target.value)}
+                            placeholder="e.g., module-102"
+                            maxLength={50}
+                            disabled={isRenaming}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Current: <code className="font-mono">{courseModule?.module_code}</code>
+                          </p>
                         </div>
-                        {pendingTxError && (
+                        {renameError && (
                           <AndamioAlert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AndamioAlertDescription>{pendingTxError}</AndamioAlertDescription>
+                            <AndamioAlertDescription>{renameError}</AndamioAlertDescription>
                           </AndamioAlert>
                         )}
                       </div>
                       <AndamioDialogFooter>
                         <AndamioButton
                           variant="outline"
-                          onClick={() => setIsPendingTxDialogOpen(false)}
-                          disabled={isSettingPendingTx}
+                          onClick={() => setIsRenameDialogOpen(false)}
+                          disabled={isRenaming}
                         >
                           Cancel
                         </AndamioButton>
-                        <AndamioButton onClick={handleSetPendingTx} disabled={isSettingPendingTx}>
-                          {isSettingPendingTx ? "Setting..." : "Set Transaction"}
+                        <AndamioButton onClick={handleRenameModule} disabled={isRenaming}>
+                          {isRenaming ? "Renaming..." : "Rename Module"}
                         </AndamioButton>
                       </AndamioDialogFooter>
                     </AndamioDialogContent>
                   </AndamioDialog>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use the rename button to change the module code identifier
+                </p>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="status">Status</AndamioLabel>
+                <AndamioSelect
+                  value={status}
+                  onValueChange={setStatus}
+                  disabled={courseModule?.status === "PENDING_TX"}
+                >
+                  <AndamioSelectTrigger id="status">
+                    <AndamioSelectValue />
+                  </AndamioSelectTrigger>
+                  <AndamioSelectContent>
+                    {availableStatuses.map((s) => (
+                      <AndamioSelectItem key={s} value={s}>
+                        {s}
+                      </AndamioSelectItem>
+                    ))}
+                  </AndamioSelectContent>
+                </AndamioSelect>
+                {courseModule?.status === "PENDING_TX" ? (
+                  <AndamioAlert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AndamioAlertDescription>
+                      Status is locked while transaction is pending. Only blockchain confirmation can update from PENDING_TX to ON_CHAIN.
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Current: {courseModule?.status} • Available transitions shown
+                  </p>
                 )}
               </div>
-            )}
-            <p className="text-sm text-muted-foreground">
-              {courseModule?.status === "DRAFT"
-                ? "Track on-chain transactions for this module (DRAFT only)"
-                : "Pending transactions can only be set for DRAFT modules"}
-            </p>
-          </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end gap-2">
-            <AndamioButton
-              variant="outline"
-              onClick={() => router.push(`/course/${courseNftPolicyId}/${moduleCode}`)}
-            >
-              Cancel
-            </AndamioButton>
-            <AndamioButton onClick={handleSave} disabled={isSaving || !hasChanges}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Changes"}
-            </AndamioButton>
-          </div>
+              {/* Save Button */}
+              <div className="flex justify-end gap-2">
+                <AndamioButton
+                  variant="outline"
+                  onClick={() => router.push(`/course/${courseNftPolicyId}/${moduleCode}`)}
+                >
+                  Cancel
+                </AndamioButton>
+                <AndamioButton onClick={handleSave} disabled={isSaving || !hasChanges}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </AndamioButton>
+              </div>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
 
-          {/* Danger Zone */}
-          <div className="border-t pt-4 mt-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-destructive">Danger Zone</h3>
+        {/* Content Tab */}
+        <AndamioTabsContent value="content" className="mt-6 space-y-4">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Learning Targets
+              </AndamioCardTitle>
+              <AndamioCardDescription>
+                Define what learners will achieve in this module
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
+              <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
+                <AndamioButton variant="outline" className="w-full justify-start">
+                  <Target className="h-4 w-4 mr-2" />
+                  Manage Student Learning Targets
+                </AndamioButton>
+              </Link>
+            </AndamioCardContent>
+          </AndamioCard>
+
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Module Content
+              </AndamioCardTitle>
+              <AndamioCardDescription>
+                Create and edit module introduction and lessons
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-2">
+              <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/introduction`}>
+                <AndamioButton variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Edit Module Introduction
+                </AndamioButton>
+              </Link>
+            </AndamioCardContent>
+          </AndamioCard>
+
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Assignment
+              </AndamioCardTitle>
+              <AndamioCardDescription>
+                Create the module assignment for learner assessment
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
+              <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+                <AndamioButton variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Edit Module Assignment
+                </AndamioButton>
+              </Link>
+            </AndamioCardContent>
+          </AndamioCard>
+
+          {/* Publish Content */}
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Publish Content
+              </AndamioCardTitle>
+              <AndamioCardDescription>
+                Make all content visible to learners
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
+              <AndamioConfirmDialog
+                trigger={
+                  <AndamioButton
+                    variant="default"
+                    className="w-full justify-start"
+                    disabled={isPublishing}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {isPublishing ? "Publishing..." : "Publish All Content"}
+                  </AndamioButton>
+                }
+                title="Publish All Module Content"
+                description={`This will make all content (lessons, introduction, and assignments) for "${courseModule?.title}" live and visible to learners. Are you sure you want to continue?`}
+                confirmText="Publish Content"
+                onConfirm={handlePublishAllContent}
+                isLoading={isPublishing}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Sets all lessons, introduction, and assignments to live status
+              </p>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+
+        {/* On-Chain Tab */}
+        <AndamioTabsContent value="on-chain" className="mt-6 space-y-4">
+          {/* Pending Transaction */}
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Pending Transaction</AndamioCardTitle>
+              <AndamioCardDescription>Track blockchain transactions for this module</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
+              {courseModule?.pending_tx_hash ? (
+                <div className="flex gap-2">
+                  <AndamioInput
+                    value={courseModule.pending_tx_hash}
+                    disabled
+                    className="flex-1 font-mono text-xs"
+                  />
+                  <AndamioButton
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <a
+                      href={`https://cardanoscan.io/transaction/${courseModule?.pending_tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View on Explorer
+                    </a>
+                  </AndamioButton>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <AndamioInput
+                    value="No pending transaction"
+                    disabled
+                    className="flex-1"
+                  />
+                  {courseModule?.status === "DRAFT" && (
+                    <AndamioDialog open={isPendingTxDialogOpen} onOpenChange={setIsPendingTxDialogOpen}>
+                      <AndamioDialogTrigger asChild>
+                        <AndamioButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPendingTxHash("");
+                            setPendingTxError(null);
+                          }}
+                        >
+                          Set Transaction
+                        </AndamioButton>
+                      </AndamioDialogTrigger>
+                      <AndamioDialogContent>
+                        <AndamioDialogHeader>
+                          <AndamioDialogTitle>Set Pending Transaction</AndamioDialogTitle>
+                          <AndamioDialogDescription>
+                            Enter the transaction hash for the on-chain operation related to this module.
+                          </AndamioDialogDescription>
+                        </AndamioDialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <AndamioLabel htmlFor="pending-tx-hash">Transaction Hash</AndamioLabel>
+                            <AndamioInput
+                              id="pending-tx-hash"
+                              value={pendingTxHash}
+                              onChange={(e) => setPendingTxHash(e.target.value)}
+                              placeholder="Enter Cardano transaction hash"
+                              className="font-mono text-xs"
+                              disabled={isSettingPendingTx}
+                            />
+                          </div>
+                          {pendingTxError && (
+                            <AndamioAlert variant="destructive">
+                              <AlertCircle className="h-4 w-4" />
+                              <AndamioAlertDescription>{pendingTxError}</AndamioAlertDescription>
+                            </AndamioAlert>
+                          )}
+                        </div>
+                        <AndamioDialogFooter>
+                          <AndamioButton
+                            variant="outline"
+                            onClick={() => setIsPendingTxDialogOpen(false)}
+                            disabled={isSettingPendingTx}
+                          >
+                            Cancel
+                          </AndamioButton>
+                          <AndamioButton onClick={handleSetPendingTx} disabled={isSettingPendingTx}>
+                            {isSettingPendingTx ? "Setting..." : "Set Transaction"}
+                          </AndamioButton>
+                        </AndamioDialogFooter>
+                      </AndamioDialogContent>
+                    </AndamioDialog>
+                  )}
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {courseModule?.status === "DRAFT"
+                  ? "Track on-chain transactions for this module (DRAFT only)"
+                  : "Pending transactions can only be set for DRAFT modules"}
+              </p>
+            </AndamioCardContent>
+          </AndamioCard>
+
+          {/* Mint Module Tokens - Show when module is APPROVED */}
+          {courseModule?.status === "APPROVED" && moduleWithSlts.length > 0 ? (
+            <MintModuleTokens
+              courseNftPolicyId={courseNftPolicyId}
+              courseModules={moduleWithSlts}
+              onSuccess={async () => {
+                // Refetch module to see updated status (POST /course-modules/get)
+                const response = await fetch(
+                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      course_nft_policy_id: courseNftPolicyId,
+                      module_code: moduleCode,
+                    }),
+                  }
+                );
+                const data = (await response.json()) as CourseModuleOutput;
+                setCourseModule(data);
+                setStatus(data.status ?? "DRAFT");
+              }}
+            />
+          ) : (
+            <AndamioCard>
+              <AndamioCardHeader>
+                <AndamioCardTitle className="flex items-center gap-2">
+                  <Blocks className="h-5 w-5" />
+                  Mint Module Tokens
+                </AndamioCardTitle>
+                <AndamioCardDescription>
+                  Mint this module and its SLTs on the Cardano blockchain
+                </AndamioCardDescription>
+              </AndamioCardHeader>
+              <AndamioCardContent>
+                <AndamioAlert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AndamioAlertDescription>
+                    {courseModule?.status === "PENDING_TX" ? (
+                      "A transaction is pending. Wait for blockchain confirmation."
+                    ) : courseModule?.status === "ON_CHAIN" ? (
+                      "This module is already minted on-chain."
+                    ) : (
+                      <>
+                        Module status must be <strong>APPROVED</strong> to mint tokens.
+                        Current status: <strong>{courseModule?.status}</strong>
+                      </>
+                    )}
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              </AndamioCardContent>
+            </AndamioCard>
+          )}
+        </AndamioTabsContent>
+
+        {/* Settings Tab */}
+        <AndamioTabsContent value="settings" className="mt-6">
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="text-destructive">Danger Zone</AndamioCardTitle>
+              <AndamioCardDescription>
+                Irreversible actions that affect this module
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Permanently delete this module and all its lessons, SLTs, and assignments.
               </p>
@@ -772,84 +974,10 @@ export default function ModuleEditPage() {
                 onConfirm={handleDelete}
                 isLoading={isDeleting}
               />
-            </div>
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Mint Module Tokens - Show when module is APPROVED */}
-      {courseModule?.status === "APPROVED" && moduleWithSlts.length > 0 && (
-        <MintModuleTokens
-          courseNftPolicyId={courseNftPolicyId}
-          courseModules={moduleWithSlts}
-          onSuccess={async () => {
-            // Refetch module to see updated status (POST /course-modules/get)
-            const response = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  course_nft_policy_id: courseNftPolicyId,
-                  module_code: moduleCode,
-                }),
-              }
-            );
-            const data = (await response.json()) as CourseModuleOutput;
-            setCourseModule(data);
-            setStatus(data.status ?? "DRAFT");
-          }}
-        />
-      )}
-
-      {/* Quick Links */}
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Module Management</AndamioCardTitle>
-          <AndamioCardDescription>Manage module content and settings</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-2">
-          <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
-            <AndamioButton variant="outline" className="w-full justify-start">
-              Manage Student Learning Targets
-            </AndamioButton>
-          </Link>
-          <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/introduction`}>
-            <AndamioButton variant="outline" className="w-full justify-start">
-              Edit Module Introduction
-            </AndamioButton>
-          </Link>
-          <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-            <AndamioButton variant="outline" className="w-full justify-start">
-              Edit Module Assignment
-            </AndamioButton>
-          </Link>
-
-          {/* Publish Content */}
-          <div className="border-t pt-4 mt-4">
-            <AndamioConfirmDialog
-              trigger={
-                <AndamioButton
-                  variant="default"
-                  className="w-full justify-start"
-                  disabled={isPublishing}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isPublishing ? "Publishing..." : "Publish All Content"}
-                </AndamioButton>
-              }
-              title="Publish All Module Content"
-              description={`This will make all content (lessons, introduction, and assignments) for "${courseModule?.title}" live and visible to learners. Are you sure you want to continue?`}
-              confirmText="Publish Content"
-              onConfirm={handlePublishAllContent}
-              isLoading={isPublishing}
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Sets all lessons, introduction, and assignments to live status
-            </p>
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
+            </AndamioCardContent>
+          </AndamioCard>
+        </AndamioTabsContent>
+      </AndamioTabs>
     </div>
   );
 }

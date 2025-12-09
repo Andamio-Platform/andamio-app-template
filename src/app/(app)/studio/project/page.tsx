@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { RequireAuth } from "~/components/auth/require-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -14,23 +14,15 @@ import { AlertCircle, FolderKanban, Settings } from "lucide-react";
 import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 
 /**
- * Project Studio Page - Lists projects owned/managed by the authenticated user
- *
- * API Endpoint: POST /projects/list-owned (protected)
- * Type Reference: ListOwnedTreasuriesOutput from @andamio/db-api
+ * Project list content - only rendered when authenticated
  */
-export default function ProjectStudioPage() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+function ProjectListContent() {
+  const { authenticatedFetch } = useAndamioAuth();
   const [projects, setProjects] = useState<ListOwnedTreasuriesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setIsLoading(false);
-      return;
-    }
-
     const fetchOwnedProjects = async () => {
       setIsLoading(true);
       setError(null);
@@ -60,25 +52,7 @@ export default function ProjectStudioPage() {
     };
 
     void fetchOwnedProjects();
-  }, [isAuthenticated, authenticatedFetch]);
-
-  // Not authenticated state
-  if (!isAuthenticated) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Project Studio</h1>
-          <p className="text-muted-foreground">
-            Connect your wallet to manage your projects
-          </p>
-        </div>
-
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
-    );
-  }
+  }, [authenticatedFetch]);
 
   // Loading state
   if (isLoading) {
@@ -204,5 +178,22 @@ export default function ProjectStudioPage() {
         </AndamioTable>
       </div>
     </div>
+  );
+}
+
+/**
+ * Project Studio Page - Lists projects owned/managed by the authenticated user
+ *
+ * API Endpoint: POST /projects/list-owned (protected)
+ * Type Reference: ListOwnedTreasuriesOutput from @andamio/db-api
+ */
+export default function ProjectStudioPage() {
+  return (
+    <RequireAuth
+      title="Project Studio"
+      description="Connect your wallet to manage your projects"
+    >
+      <ProjectListContent />
+    </RequireAuth>
   );
 }

@@ -1,336 +1,271 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
+import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import {
-  AndamioDialog,
-  AndamioDialogContent,
-  AndamioDialogDescription,
-  AndamioDialogFooter,
-  AndamioDialogHeader,
-  AndamioDialogTitle,
-  AndamioDialogTrigger,
-} from "~/components/andamio/andamio-dialog";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
-import { Plus, AlertCircle, Loader2 } from "lucide-react";
-import { type CourseOutput } from "@andamio/db-api";
+import {
+  AndamioAlert,
+  AndamioAlertDescription,
+  AndamioDrawer,
+  AndamioDrawerClose,
+  AndamioDrawerContent,
+  AndamioDrawerDescription,
+  AndamioDrawerFooter,
+  AndamioDrawerHeader,
+  AndamioDrawerTitle,
+  AndamioDrawerTrigger,
+} from "~/components/andamio";
+import { TransactionButton } from "~/components/transactions/transaction-button";
+import { TransactionStatus } from "~/components/transactions/transaction-status";
+import { Plus, Sparkles, BookOpen, ExternalLink, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { v2 } from "@andamio/transactions";
 
 /**
- * Dialog component for creating a new course
+ * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
  *
- * API Endpoints:
- * - POST /courses - Create new course
- * - POST /courses/check-code - Validate course code availability
- *
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
+ * The Course NFT is the foundation of your Andamio app. This component
+ * guides users through the minting process with clear explanation.
  */
 export function CreateCourseDialog() {
   const router = useRouter();
-  const { authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
+  const { wallet, connected } = useWallet();
+  const { state, result, error, execute, reset } = useAndamioTransaction();
+
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [isCheckingCode, setIsCheckingCode] = useState(false);
+  const [title, setTitle] = useState("");
+  const [walletData, setWalletData] = useState<{
+    usedAddresses: string[];
+    changeAddress: string;
+  } | null>(null);
 
-  const [formData, setFormData] = useState({
-    courseCode: "",
-    title: "",
-    description: "",
-    imageUrl: "",
-    videoUrl: "",
-  });
-
-  /**
-   * Check if course code is available
-   */
-  const checkCourseCode = async (code: string) => {
-    if (!code || code.length === 0) {
-      setCodeError(null);
-      return;
-    }
-
-    setIsCheckingCode(true);
-    setCodeError(null);
-
-    try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/check`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ course_code: code }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to check course code");
-      }
-
-      const exists = (await response.json()) as boolean;
-      if (exists) {
-        setCodeError("Course code already exists");
-      }
-    } catch (err) {
-      console.error("Error checking course code:", err);
-      setCodeError("Failed to validate course code");
-    } finally {
-      setIsCheckingCode(false);
-    }
-  };
-
-  /**
-   * Handle course code input with debounced validation
-   */
-  const handleCourseCodeChange = (value: string) => {
-    // Convert to lowercase and remove spaces
-    const sanitized = value.toLowerCase().replace(/\s+/g, "-");
-    setFormData((prev) => ({ ...prev, courseCode: sanitized }));
-    setCodeError(null);
-  };
-
-  /**
-   * Handle course code blur to check availability
-   */
-  const handleCourseCodeBlur = () => {
-    if (formData.courseCode) {
-      void checkCourseCode(formData.courseCode);
-    }
-  };
-
-  /**
-   * Handle form submission
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      // Final check for course code
-      await checkCourseCode(formData.courseCode);
-      if (codeError) {
-        setIsSubmitting(false);
+  // Fetch wallet addresses when wallet is connected
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      if (!wallet || !connected) {
+        setWalletData(null);
         return;
       }
 
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/create`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            course_code: formData.courseCode,
-            title: formData.title,
-            description: formData.description || undefined,
-            image_url: formData.imageUrl || undefined,
-            video_url: formData.videoUrl || undefined,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to create course");
+      try {
+        const usedAddresses = await wallet.getUsedAddresses();
+        const changeAddress = await wallet.getChangeAddress();
+        setWalletData({ usedAddresses, changeAddress });
+      } catch (err) {
+        console.error("Failed to fetch wallet data:", err);
+        setWalletData(null);
       }
+    };
 
-      const newCourse = (await response.json()) as CourseOutput;
+    void fetchWalletData();
+  }, [wallet, connected]);
 
-      // Close dialog and redirect to course edit page
-      setOpen(false);
-
-      // Redirect to course studio page if we have a policy ID
-      if (newCourse.course_nft_policy_id) {
-        router.push(`/studio/course/${newCourse.course_nft_policy_id}`);
-      } else {
-        // Refresh the current page to show the new course
-        router.refresh();
-      }
-
-      // Reset form
-      setFormData({
-        courseCode: "",
-        title: "",
-        description: "",
-        imageUrl: "",
-        videoUrl: "",
-      });
-    } catch (err) {
-      console.error("Error creating course:", err);
-      setError(err instanceof Error ? err.message : "Failed to create course");
-    } finally {
-      setIsSubmitting(false);
+  const handleCreateCourse = async () => {
+    if (!user?.accessTokenAlias || !walletData || !title.trim()) {
+      return;
     }
+
+    await execute({
+      definition: v2.COURSE_ADMIN_CREATE,
+      params: {
+        walletData,
+        alias: user.accessTokenAlias,
+        teachers: [user.accessTokenAlias],
+        title: title.trim(),
+      },
+      onSuccess: async (txResult) => {
+        const courseNftPolicyId = txResult.apiResponse?.courseId as string | undefined;
+
+        toast.success("Course NFT Minted!", {
+          description: `"${title.trim()}" is now on-chain`,
+          action: txResult.blockchainExplorerUrl
+            ? {
+                label: "View Transaction",
+                onClick: () =>
+                  window.open(txResult.blockchainExplorerUrl, "_blank"),
+              }
+            : undefined,
+        });
+
+        // Navigate to the new course
+        if (courseNftPolicyId) {
+          router.push(`/studio/course/${courseNftPolicyId}`);
+        }
+
+        // Close drawer and reset
+        setOpen(false);
+        setTitle("");
+        reset();
+      },
+      onError: (txError) => {
+        console.error("[CreateCourse] Error:", txError);
+        toast.error("Minting Failed", {
+          description: txError.message || "Failed to create course NFT",
+        });
+      },
+    });
   };
 
-  /**
-   * Reset form when dialog closes
-   */
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
-      setFormData({
-        courseCode: "",
-        title: "",
-        description: "",
-        imageUrl: "",
-        videoUrl: "",
-      });
-      setError(null);
-      setCodeError(null);
+      setTitle("");
+      reset();
     }
   };
 
-  const isFormValid =
-    formData.courseCode.length > 0 &&
-    formData.title.length > 0 &&
-    !codeError &&
-    !isCheckingCode;
+  // Requirements
+  const hasAccessToken = !!user?.accessTokenAlias;
+  const hasWalletData = !!walletData;
+  const hasTitle = title.trim().length > 0;
+  const canCreate = hasAccessToken && hasWalletData && hasTitle;
 
   return (
-    <AndamioDialog open={open} onOpenChange={handleOpenChange}>
-      <AndamioDialogTrigger asChild>
+    <AndamioDrawer open={open} onOpenChange={handleOpenChange}>
+      <AndamioDrawerTrigger asChild>
         <AndamioButton>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Create Course
         </AndamioButton>
-      </AndamioDialogTrigger>
-      <AndamioDialogContent className="sm:max-w-[600px]">
-        <form onSubmit={handleSubmit}>
-          <AndamioDialogHeader>
-            <AndamioDialogTitle>Create New Course</AndamioDialogTitle>
-            <AndamioDialogDescription>
-              Create a new Andamio course. Fill in the required fields to get started.
-            </AndamioDialogDescription>
-          </AndamioDialogHeader>
+      </AndamioDrawerTrigger>
+      <AndamioDrawerContent>
+        <div className="mx-auto w-full max-w-lg">
+          <AndamioDrawerHeader className="text-left">
+            <div className="mb-2 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <AndamioDrawerTitle className="text-xl">
+                Mint Your Course NFT
+              </AndamioDrawerTitle>
+            </div>
+            <AndamioDrawerDescription className="text-base leading-relaxed">
+              Your Course NFT is the key to your custom app on Andamio. It
+              establishes your course on the Cardano blockchain and enables you
+              to manage learners, issue credentials, and build your educational
+              experience.
+            </AndamioDrawerDescription>
+          </AndamioDrawerHeader>
 
-          <div className="space-y-4 py-4">
-            {error && (
+          <div className="space-y-6 px-4">
+            {/* Requirements Alert */}
+            {!hasAccessToken && (
               <AndamioAlert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AndamioAlertDescription>{error}</AndamioAlertDescription>
+                <AndamioAlertDescription>
+                  You need an Access Token to create a course. Mint one first!
+                </AndamioAlertDescription>
               </AndamioAlert>
             )}
 
-            {/* Course Code */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="courseCode">
-                Course Code <span className="text-destructive">*</span>
-              </AndamioLabel>
-              <AndamioInput
-                id="courseCode"
-                placeholder="example-101"
-                value={formData.courseCode}
-                onChange={(e) => handleCourseCodeChange(e.target.value)}
-                onBlur={handleCourseCodeBlur}
-                required
-                maxLength={50}
-                disabled={isSubmitting}
-              />
-              {isCheckingCode && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Checking availability...
+            {hasAccessToken && !hasWalletData && (
+              <AndamioAlert>
+                <AlertCircle className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  Loading wallet data... Please ensure your wallet is connected.
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            )}
+
+            {/* Title Input */}
+            {hasAccessToken && hasWalletData && state !== "success" && (
+              <div className="space-y-3">
+                <AndamioLabel htmlFor="course-title" className="text-base">
+                  Course Title
+                </AndamioLabel>
+                <AndamioInput
+                  id="course-title"
+                  placeholder="Introduction to Cardano Development"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={state !== "idle" && state !== "error"}
+                  className="h-12 text-base"
+                  maxLength={200}
+                  autoFocus
+                />
+                <p className="text-sm text-muted-foreground">
+                  Don&apos;t worry, you can change this later. The course is
+                  created on-chain once the transaction succeeds.
                 </p>
-              )}
-              {codeError && (
-                <p className="text-xs text-destructive">{codeError}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Unique identifier for your course (lowercase, no spaces)
+              </div>
+            )}
+
+            {/* Transaction Status */}
+            {state !== "idle" && (
+              <TransactionStatus
+                state={state}
+                result={result}
+                error={error}
+                onRetry={() => reset()}
+                messages={{
+                  success: "Your Course NFT has been minted on-chain!",
+                }}
+              />
+            )}
+
+            {/* Learn More Links */}
+            <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
+              <p className="text-sm font-medium text-foreground">
+                Want to learn more?
               </p>
-            </div>
-
-            {/* Title */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="title">
-                Title <span className="text-destructive">*</span>
-              </AndamioLabel>
-              <AndamioInput
-                id="title"
-                placeholder="Introduction to Cardano Development"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
-                required
-                maxLength={200}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="description">Description</AndamioLabel>
-              <AndamioTextarea
-                id="description"
-                placeholder="Learn the fundamentals of Cardano blockchain development..."
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
-                }
-                rows={3}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Image URL */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="imageUrl">Image URL</AndamioLabel>
-              <AndamioInput
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/course-image.jpg"
-                value={formData.imageUrl}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))
-                }
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Video URL */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="videoUrl">Video URL</AndamioLabel>
-              <AndamioInput
-                id="videoUrl"
-                type="url"
-                placeholder="https://youtube.com/watch?v=..."
-                value={formData.videoUrl}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, videoUrl: e.target.value }))
-                }
-                disabled={isSubmitting}
-              />
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href="https://docs.andamio.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Documentation
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <a
+                  href="https://app.andamio.io/courses/andamio-101"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Andamio 101 Course
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
           </div>
 
-          <AndamioDialogFooter>
-            <AndamioButton
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </AndamioButton>
-            <AndamioButton type="submit" disabled={!isFormValid || isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Course
-            </AndamioButton>
-          </AndamioDialogFooter>
-        </form>
-      </AndamioDialogContent>
-    </AndamioDialog>
+          <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+            <AndamioDrawerClose asChild>
+              <AndamioButton
+                variant="outline"
+                className="flex-1"
+                disabled={state !== "idle" && state !== "error" && state !== "success"}
+              >
+                Cancel
+              </AndamioButton>
+            </AndamioDrawerClose>
+            {state !== "success" && (
+              <TransactionButton
+                txState={state}
+                onClick={handleCreateCourse}
+                disabled={!canCreate}
+                className="flex-1"
+                stateText={{
+                  idle: "Mint Course NFT",
+                  fetching: "Preparing...",
+                  signing: "Sign in Wallet",
+                  submitting: "Minting...",
+                }}
+              />
+            )}
+          </AndamioDrawerFooter>
+        </div>
+      </AndamioDrawerContent>
+    </AndamioDrawer>
   );
 }

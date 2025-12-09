@@ -282,3 +282,22 @@ export async function isModuleOnChain(courseId: string, moduleHash: string): Pro
   if (!course) return false;
   return course.modules.some((m) => m.assignment_id === moduleHash);
 }
+
+/**
+ * Get all courses owned (taught) by a specific user
+ *
+ * A user "owns" a course if their alias appears in the course's teachers array.
+ *
+ * @param alias - User's access token alias
+ * @returns Array of courses where the user is a teacher
+ *
+ * @example
+ * ```typescript
+ * const ownedCourses = await getCoursesOwnedByAlias("alice");
+ * console.log(`Alice owns ${ownedCourses.length} courses on-chain`);
+ * ```
+ */
+export async function getCoursesOwnedByAlias(alias: string): Promise<AndamioscanCourse[]> {
+  const allCourses = await getAllCourses();
+  return allCourses.filter((course) => course.teachers.includes(alias));
+}

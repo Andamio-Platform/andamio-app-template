@@ -1,114 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
+import { useOwnedCourses } from "~/hooks/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AlertCircle, BookOpen, Settings } from "lucide-react";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { AlertCircle, BookOpen } from "lucide-react";
+import { CourseModuleCount, CourseManageButton } from "./course-ui";
 
 /**
  * Component to display courses owned by the authenticated user
  *
- * API Endpoints:
- * - POST /courses/owned (protected, body: { limit? })
- * - POST /course-modules/list-by-courses (public, body: { course_codes })
+ * Uses the useOwnedCourses hook for data fetching.
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
- *
- * @example
- * // The ListOwnedCoursesOutput type is auto-generated from the API
- * const courses: ListOwnedCoursesOutput = [
- *   {
- *     id: "...",
- *     courseCode: "example-101",
- *     title: "Example Course",
- *     // ... more fields
- *   }
- * ];
  */
 export function OwnedCoursesList() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Module counts per course
-  const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setCourses([]);
-      setError(null);
-      return;
-    }
-
-    const fetchOwnedCourses = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch courses: ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as ListOwnedCoursesOutput;
-        setCourses(data ?? []);
-
-        // Fetch module counts for all courses using batch endpoint
-        if (data && data.length > 0) {
-          try {
-            const courseCodes = data.map((c) => c.course_code);
-            const modulesResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list-by-courses`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ course_codes: courseCodes }),
-              }
-            );
-
-            if (modulesResponse.ok) {
-              const modulesData = (await modulesResponse.json()) as Record<
-                string,
-                Array<{ module_code: string; title: string }>
-              >;
-
-              // Convert to counts
-              const counts: Record<string, number> = {};
-              for (const [courseCode, modules] of Object.entries(modulesData)) {
-                counts[courseCode] = modules.length;
-              }
-              setModuleCounts(counts);
-            }
-          } catch (err) {
-            console.error("Error fetching module counts:", err);
-            // Don't set error state, module counts are optional enhancement
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching owned courses:", err);
-        setError(err instanceof Error ? err.message : "Failed to load courses");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchOwnedCourses();
-  }, [isAuthenticated, authenticatedFetch]);
+  const { isAuthenticated } = useAndamioAuth();
+  const { courses, moduleCounts, isLoading, error } = useOwnedCourses();
 
   // Not authenticated state
   if (!isAuthenticated) {
@@ -181,23 +90,16 @@ export function OwnedCoursesList() {
                 {course.description}
               </AndamioTableCell>
               <AndamioTableCell className="text-center">
-                {moduleCounts[course.course_code] !== undefined ? (
-                  <AndamioBadge variant="secondary">
-                    {moduleCounts[course.course_code]}
-                  </AndamioBadge>
-                ) : (
+                <CourseModuleCount count={moduleCounts[course.course_code]} showIcon={false} />
+                {moduleCounts[course.course_code] === undefined && (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
               </AndamioTableCell>
               <AndamioTableCell className="text-right">
-                {course.course_nft_policy_id && (
-                  <Link href={`/studio/course/${course.course_nft_policy_id}`}>
-                    <AndamioButton variant="ghost" size="sm">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Manage
-                    </AndamioButton>
-                  </Link>
-                )}
+                <CourseManageButton
+                  courseNftPolicyId={course.course_nft_policy_id}
+                  variant="ghost"
+                />
               </AndamioTableCell>
             </AndamioTableRow>
           ))}

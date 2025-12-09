@@ -47,6 +47,7 @@ export interface AndamioTransactionConfig<TParams = unknown> {
     txHash: string;
     blockchainExplorerUrl?: string;
     sideEffectsSuccess: boolean;
+    apiResponse?: Record<string, unknown>;
   }) => void | Promise<void>;
   /** Callback fired when transaction fails */
   onError?: (error: Error) => void;
@@ -153,7 +154,22 @@ export function useAndamioTransaction<TParams = unknown>() {
               // Note: For transactions with multiple modules (like MINT_MODULE_TOKENS),
               // we may need to extract moduleCode from module_infos for side effect path resolution
               // Use allParams which includes both txParams AND sideEffectParams
-              const buildInputs = allParams;
+              const buildInputs = { ...allParams };
+
+              // Extract values from API response and add to buildInputs
+              // This allows side effects to reference API response fields
+              const apiResponse = txResult.apiResponse as Record<string, unknown> | undefined;
+              if (apiResponse) {
+                // Map common API response fields to buildInputs
+                // courseId -> courseNftPolicyId (used by COURSE_ADMIN_CREATE)
+                if (apiResponse.courseId && typeof apiResponse.courseId === 'string') {
+                  buildInputs.courseNftPolicyId = apiResponse.courseId;
+                }
+                // Add other API response mappings as needed
+                if (apiResponse.moduleCode && typeof apiResponse.moduleCode === 'string') {
+                  buildInputs.moduleCode = apiResponse.moduleCode;
+                }
+              }
 
               // Try to extract moduleCode from module_infos if present
               if (buildInputs.module_infos && typeof buildInputs.module_infos === 'string') {
@@ -237,6 +253,7 @@ export function useAndamioTransaction<TParams = unknown>() {
             txHash: txResult.txHash!,
             blockchainExplorerUrl: txResult.blockchainExplorerUrl,
             sideEffectsSuccess,
+            apiResponse: txResult.apiResponse as Record<string, unknown> | undefined,
           });
         },
         onError: (error) => {

@@ -15,6 +15,7 @@ import { ContentDisplay } from "~/components/content-display";
 import { AlertCircle, ArrowLeft, CheckCircle, Clock, Coins, ListChecks, Users } from "lucide-react";
 import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
+import { formatLovelace } from "~/lib/cardano-utils";
 
 type TaskListOutput = CreateTaskOutput[];
 
@@ -96,12 +97,6 @@ export default function TaskDetailPage() {
 
     void fetchTaskAndCommitment();
   }, [treasuryNftPolicyId, taskHash, isAuthenticated, authenticatedFetch]);
-
-  // Helper to format lovelace as ADA
-  const formatLovelace = (lovelace: string): string => {
-    const ada = parseInt(lovelace) / 1_000_000;
-    return ada.toLocaleString() + " ADA";
-  };
 
   // Helper to format POSIX timestamp
   const formatTimestamp = (timestamp: string): string => {

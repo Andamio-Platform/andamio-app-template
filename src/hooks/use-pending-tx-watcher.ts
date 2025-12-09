@@ -31,6 +31,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAndamioAuth } from "./use-andamio-auth";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
+import { pendingTxLogger } from "~/lib/debug-logger";
 import {
   checkTransactionsBatch,
   extractOnChainData,
@@ -127,7 +128,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       return [...prev, tx];
     });
     retryCountRef.current.set(tx.id, 0);
-    console.log(`[PendingTx] Added to watch list: ${tx.txHash} (${tx.entityType})`);
+    pendingTxLogger.info(`Added to watch list: ${tx.txHash} (${tx.entityType})`);
   }, []);
 
   /**
@@ -136,7 +137,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
   const removePendingTx = useCallback((id: string) => {
     setPendingTransactions((prev) => prev.filter((tx) => tx.id !== id));
     retryCountRef.current.delete(id);
-    console.log(`[PendingTx] Removed from watch list: ${id}`);
+    pendingTxLogger.info(`Removed from watch list: ${id}`);
   }, []);
 
   /**
@@ -180,7 +181,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       }
 
       const updatedModule = (await response.json()) as CourseModuleOutput;
-      console.log(`[PendingTx] Module status updated to ON_CHAIN:`, updatedModule);
+      pendingTxLogger.info(`Module status updated to ON_CHAIN:`, updatedModule);
 
       return updatedModule;
     },
@@ -226,7 +227,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         learnerId: string;
         networkStatus: string;
       };
-      console.log(`[PendingTx] Assignment commitment status updated:`, updatedCommitment);
+      pendingTxLogger.info(`Assignment commitment status updated:`, updatedCommitment);
 
       return updatedCommitment;
     },
@@ -238,12 +239,12 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
    */
   const processConfirmedTransaction = useCallback(
     async (tx: PendingTransaction, confirmation: TransactionConfirmation) => {
-      console.log(`[PendingTx] Processing confirmed transaction: ${tx.txHash}`);
+      pendingTxLogger.info(`Processing confirmed transaction: ${tx.txHash}`);
 
       try {
         // Extract on-chain data
         const onChainData = await extractOnChainData(tx.txHash);
-        console.log(`[PendingTx] Extracted on-chain data:`, onChainData);
+        pendingTxLogger.debug(`Extracted on-chain data:`, onChainData);
 
         // Process based on entity type
         switch (tx.entityType) {
@@ -289,17 +290,17 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         // Call success callback
         onConfirmation?.(tx, confirmation);
 
-        console.log(`[PendingTx] Successfully processed ${tx.txHash}`);
+        pendingTxLogger.info(`Successfully processed ${tx.txHash}`);
       } catch (error) {
-        console.error(`[PendingTx] Failed to process ${tx.txHash}:`, error);
+        pendingTxLogger.error(`Failed to process ${tx.txHash}:`, error);
 
         // Check retry count
         const retries = retryCountRef.current.get(tx.id) ?? 0;
         if (retries < maxRetries) {
           retryCountRef.current.set(tx.id, retries + 1);
-          console.log(`[PendingTx] Will retry ${tx.id} (attempt ${retries + 1}/${maxRetries})`);
+          pendingTxLogger.info(`Will retry ${tx.id} (attempt ${retries + 1}/${maxRetries})`);
         } else {
-          console.error(`[PendingTx] Max retries reached for ${tx.id}, removing from watch list`);
+          pendingTxLogger.error(`Max retries reached for ${tx.id}, removing from watch list`);
           removePendingTx(tx.id);
           onError?.(tx, error instanceof Error ? error : new Error(String(error)));
         }
@@ -319,7 +320,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
     setIsChecking(true);
 
     try {
-      console.log(`[PendingTx] Checking ${pendingTransactions.length} pending transactions...`);
+      pendingTxLogger.debug(`Checking ${pendingTransactions.length} pending transactions...`);
 
       // Use batch endpoint to check all transactions in a single API call
       const txHashes = pendingTransactions.map((tx) => tx.txHash);
@@ -334,18 +335,18 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
 
         try {
           if (confirmation.confirmed) {
-            console.log(`[PendingTx] Transaction confirmed: ${tx.txHash} (${confirmation.confirmations} confirmations)`);
+            pendingTxLogger.info(`Transaction confirmed: ${tx.txHash} (${confirmation.confirmations} confirmations)`);
             await processConfirmedTransaction(tx, confirmation);
           } else {
-            console.log(`[PendingTx] Transaction not yet confirmed: ${tx.txHash}`);
+            pendingTxLogger.debug(`Transaction not yet confirmed: ${tx.txHash}`);
           }
         } catch (error) {
-          console.error(`[PendingTx] Error processing ${tx.txHash}:`, error);
+          pendingTxLogger.error(`Error processing ${tx.txHash}:`, error);
           // Continue checking other transactions
         }
       }
     } catch (error) {
-      console.error("[PendingTx] Failed to check transactions batch:", error);
+      pendingTxLogger.error("Failed to check transactions batch:", error);
     } finally {
       setIsChecking(false);
     }
@@ -385,7 +386,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
     }
 
     try {
-      console.log("[PendingTx] Loading pending transactions from database...");
+      pendingTxLogger.debug("Loading pending transactions from database...");
 
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
@@ -404,7 +405,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         submittedAt: new Date(tx.submittedAt),
       }));
 
-      console.log(`[PendingTx] Loaded ${transactions.length} pending transactions from database`);
+      pendingTxLogger.info(`Loaded ${transactions.length} pending transactions from database`);
 
       // Merge with existing transactions (database is source of truth)
       setPendingTransactions((prev) => {
@@ -417,7 +418,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         // Combine database transactions with local-only transactions
         const merged = [...transactions, ...localOnly];
 
-        console.log(`[PendingTx] Merged state: ${transactions.length} from DB, ${localOnly.length} local-only`);
+        pendingTxLogger.debug(`Merged state: ${transactions.length} from DB, ${localOnly.length} local-only`);
 
         return merged;
       });
@@ -440,10 +441,10 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
           submittedAt: new Date(tx.submittedAt),
         }));
         setPendingTransactions(transactions);
-        console.log(`[PendingTx] Loaded ${transactions.length} pending transactions from storage`);
+        pendingTxLogger.info(`Loaded ${transactions.length} pending transactions from storage`);
       }
     } catch (error) {
-      console.error("[PendingTx] Failed to load pending transactions from storage:", error);
+      pendingTxLogger.error("Failed to load pending transactions from storage:", error);
     }
   }, []);
 

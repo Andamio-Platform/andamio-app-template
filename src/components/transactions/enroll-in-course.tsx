@@ -9,6 +9,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -96,6 +97,7 @@ export function EnrollInCourse({
   evidence,
   onSuccess,
 }: EnrollInCourseProps) {
+  const router = useRouter();
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
@@ -230,7 +232,7 @@ export function EnrollInCourse({
             </AndamioCardDescription>
           </AndamioCardHeader>
         </AndamioCard>
-        <MintAccessToken onSuccess={() => window.location.reload()} />
+        <MintAccessToken onSuccess={() => router.refresh()} />
       </div>
     );
   }

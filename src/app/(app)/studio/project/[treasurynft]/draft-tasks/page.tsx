@@ -14,6 +14,7 @@ import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, And
 import { AlertCircle, ArrowLeft, CheckSquare, Edit, Plus, Trash2 } from "lucide-react";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { type CreateTaskOutput } from "@andamio/db-api";
+import { formatLovelace } from "~/lib/cardano-utils";
 
 type TaskListOutput = CreateTaskOutput[];
 
@@ -103,12 +104,6 @@ export default function DraftTasksPage() {
     } finally {
       setDeletingTaskIndex(null);
     }
-  };
-
-  // Helper to format lovelace as ADA
-  const formatLovelace = (lovelace: string): string => {
-    const ada = parseInt(lovelace) / 1_000_000;
-    return ada.toLocaleString() + " ADA";
   };
 
   // Helper to get status badge variant

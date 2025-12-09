@@ -11,6 +11,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, ArrowLeft, CheckSquare, FolderKanban } from "lucide-react";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
+import { formatLovelace } from "~/lib/cardano-utils";
 
 type TaskListOutput = CreateTaskOutput[];
 
@@ -102,12 +103,6 @@ export default function ProjectDetailPage() {
 
     void fetchProjectAndTasks();
   }, [treasuryNftPolicyId]);
-
-  // Helper to format lovelace as ADA
-  const formatLovelace = (lovelace: string): string => {
-    const ada = parseInt(lovelace) / 1_000_000;
-    return ada.toLocaleString() + " ADA";
-  };
 
   // Helper to get status badge variant
   const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {

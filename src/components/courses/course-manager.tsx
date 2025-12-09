@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { useOwnedCourses } from "~/hooks/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AlertCircle, BookOpen } from "lucide-react";
@@ -32,83 +31,13 @@ import {
  * - Responsive design
  */
 export function CourseManager() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [allCourses, setAllCourses] = useState<ListOwnedCoursesOutput>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
+  const { isAuthenticated } = useAndamioAuth();
+  const { courses: allCourses, moduleCounts, isLoading, error } = useOwnedCourses();
 
   // Filter, sort, and view state
   const [filter, setFilter] = useState<CourseFilter>(defaultCourseFilter);
   const [sortConfig, setSortConfig] = useState<CourseSortConfig>(defaultCourseSortConfig);
   const [viewMode, setViewMode] = useState<CourseViewMode>("grid");
-
-  // Fetch courses
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setAllCourses([]);
-      setError(null);
-      return;
-    }
-
-    const fetchOwnedCourses = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch courses: ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as ListOwnedCoursesOutput;
-        setAllCourses(data ?? []);
-
-        // Fetch module counts for all courses using batch endpoint
-        if (data && data.length > 0) {
-          try {
-            const courseCodes = data.map((c) => c.course_code);
-            const modulesResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list-by-courses`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ course_codes: courseCodes }),
-            });
-
-            if (modulesResponse.ok) {
-              const modulesData = (await modulesResponse.json()) as Record<
-                string,
-                Array<{ module_code: string; title: string }>
-              >;
-
-              // Convert to counts
-              const counts: Record<string, number> = {};
-              for (const [courseCode, modules] of Object.entries(modulesData)) {
-                counts[courseCode] = modules.length;
-              }
-              setModuleCounts(counts);
-            }
-          } catch (err) {
-            console.error("Error fetching module counts:", err);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching owned courses:", err);
-        setError(err instanceof Error ? err.message : "Failed to load courses");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchOwnedCourses();
-  }, [isAuthenticated, authenticatedFetch]);
 
   // Calculate filtered and sorted courses
   const filteredCourses = filterCourses(allCourses, filter);

@@ -10,8 +10,10 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AlertCircle, BookOpen, Settings, FileText } from "lucide-react";
+import { AlertCircle, BookOpen, Settings, FileText, Blocks, CheckCircle } from "lucide-react";
 import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
+import { useCourse } from "~/hooks/use-andamioscan";
+import { type AndamioscanModule } from "~/lib/andamioscan";
 
 /**
  * Public page displaying module details with SLTs and lessons
@@ -42,9 +44,13 @@ interface SLTLessonTableProps {
   data: CombinedSLTLesson[];
   courseNftPolicyId: string;
   moduleCode: string;
+  onChainModule?: AndamioscanModule | null;
 }
 
-function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableProps) {
+function SLTLessonTable({ data, courseNftPolicyId, moduleCode, onChainModule }: SLTLessonTableProps) {
+  // Build set of on-chain SLT texts for quick lookup
+  const onChainSltTexts = new Set(onChainModule?.slts ?? []);
+
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
@@ -70,58 +76,68 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode }: SLTLessonTableP
           </AndamioTableRow>
         </AndamioTableHeader>
         <AndamioTableBody>
-          {data.map((item) => (
-            <AndamioTableRow key={item.module_index}>
-              <AndamioTableCell className="font-mono text-xs">
-                <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
-              </AndamioTableCell>
-              <AndamioTableCell className="font-medium">
-                {item.slt_text}
-              </AndamioTableCell>
-              <AndamioTableCell className="font-medium">
-                {item.lesson ? (
-                  <Link
-                    href={`/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
-                    className="hover:underline text-primary"
-                  >
-                    {item.lesson.title ?? `Lesson ${item.module_index}`}
-                  </Link>
-                ) : (
-                  <span className="text-muted-foreground italic">No lesson yet</span>
-                )}
-              </AndamioTableCell>
-              <AndamioTableCell>
-                {item.lesson?.description ?? (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </AndamioTableCell>
-              <AndamioTableCell>
-                {item.lesson ? (
-                  <div className="flex gap-1">
-                    {item.lesson.image_url && (
-                      <AndamioBadge variant="outline">Image</AndamioBadge>
-                    )}
-                    {item.lesson.video_url && (
-                      <AndamioBadge variant="outline">Video</AndamioBadge>
+          {data.map((item) => {
+            const isOnChain = onChainSltTexts.has(item.slt_text);
+            return (
+              <AndamioTableRow key={item.module_index}>
+                <AndamioTableCell className="font-mono text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
+                    {isOnChain && (
+                      <span title="Verified on-chain">
+                        <CheckCircle className="h-3.5 w-3.5 text-success" />
+                      </span>
                     )}
                   </div>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </AndamioTableCell>
-              <AndamioTableCell>
-                {item.lesson ? (
-                  item.lesson.live ? (
-                    <AndamioBadge variant="default">Live</AndamioBadge>
+                </AndamioTableCell>
+                <AndamioTableCell className="font-medium">
+                  {item.slt_text}
+                </AndamioTableCell>
+                <AndamioTableCell className="font-medium">
+                  {item.lesson ? (
+                    <Link
+                      href={`/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
+                      className="hover:underline text-primary"
+                    >
+                      {item.lesson.title ?? `Lesson ${item.module_index}`}
+                    </Link>
                   ) : (
-                    <AndamioBadge variant="secondary">Draft</AndamioBadge>
-                  )
-                ) : (
-                  <AndamioBadge variant="outline">No Lesson</AndamioBadge>
-                )}
-              </AndamioTableCell>
-            </AndamioTableRow>
-          ))}
+                    <span className="text-muted-foreground italic">No lesson yet</span>
+                  )}
+                </AndamioTableCell>
+                <AndamioTableCell>
+                  {item.lesson?.description ?? (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </AndamioTableCell>
+                <AndamioTableCell>
+                  {item.lesson ? (
+                    <div className="flex gap-1">
+                      {item.lesson.image_url && (
+                        <AndamioBadge variant="outline">Image</AndamioBadge>
+                      )}
+                      {item.lesson.video_url && (
+                        <AndamioBadge variant="outline">Video</AndamioBadge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </AndamioTableCell>
+                <AndamioTableCell>
+                  {item.lesson ? (
+                    item.lesson.live ? (
+                      <AndamioBadge variant="default">Live</AndamioBadge>
+                    ) : (
+                      <AndamioBadge variant="secondary">Draft</AndamioBadge>
+                    )
+                  ) : (
+                    <AndamioBadge variant="outline">No Lesson</AndamioBadge>
+                  )}
+                </AndamioTableCell>
+              </AndamioTableRow>
+            );
+          })}
         </AndamioTableBody>
       </AndamioTable>
     </div>
@@ -138,6 +154,27 @@ export default function ModuleLessonsPage() {
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch on-chain course data to check SLT status
+  const { data: onChainCourse } = useCourse(courseNftPolicyId);
+
+  // Find matching on-chain module by SLT content overlap
+  const onChainModule = React.useMemo(() => {
+    if (!onChainCourse || combinedData.length === 0) return null;
+
+    const dbSltTexts = new Set(combinedData.map((s) => s.slt_text));
+
+    for (const mod of onChainCourse.modules) {
+      const onChainTexts = new Set(mod.slts);
+      // Check if there's significant overlap
+      const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
+      if (intersection.length > 0 && intersection.length >= mod.slts.length * 0.5) {
+        return mod;
+      }
+    }
+
+    return null;
+  }, [onChainCourse, combinedData]);
 
   useEffect(() => {
     const fetchModuleAndLessons = async () => {
@@ -302,11 +339,23 @@ export default function ModuleLessonsPage() {
 
       {/* Student Learning Targets & Lessons Combined */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Student Learning Targets & Lessons</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-semibold">Student Learning Targets & Lessons</h2>
+          {onChainModule && (
+            <AndamioBadge variant="outline" className="text-success border-success">
+              <Blocks className="h-3 w-3 mr-1" />
+              On-chain
+            </AndamioBadge>
+          )}
+        </div>
+        <p className="text-muted-foreground">
+          The learning targets below define what you will learn in this module. Each target is paired with a lesson to guide your learning journey.
+        </p>
         <SLTLessonTable
           data={combinedData}
           courseNftPolicyId={courseNftPolicyId}
           moduleCode={moduleCode}
+          onChainModule={onChainModule}
         />
       </div>
 

@@ -11,6 +11,7 @@ import {
   type AuthUser,
 } from "~/lib/andamio-auth";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
+import { authLogger } from "~/lib/debug-logger";
 import { env } from "~/env";
 
 /**
@@ -36,7 +37,7 @@ async function syncAccessTokenFromWallet(
     const accessToken = assets.find((asset) => asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID));
 
     if (!accessToken) {
-      console.log("ℹ️ No access token found in wallet");
+      authLogger.info("No access token found in wallet");
       return;
     }
 
@@ -46,12 +47,12 @@ async function syncAccessTokenFromWallet(
     // Check if we need to update the database
     // If user already has this alias in the database, skip
     if (currentUser.accessTokenAlias) {
-      console.log("✅ Access token already synced:", currentUser.accessTokenAlias);
+      authLogger.info("Access token already synced:", currentUser.accessTokenAlias);
       return;
     }
 
-    console.log("🔄 Syncing access token to database:", accessToken.unit);
-    console.log("🔄 Extracted alias:", alias);
+    authLogger.info("Syncing access token to database:", accessToken.unit);
+    authLogger.info("Extracted alias:", alias);
 
     const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-alias`, {
       method: "POST",
@@ -66,7 +67,7 @@ async function syncAccessTokenFromWallet(
 
     if (response.ok) {
       const data = (await response.json()) as { success: boolean; user: AuthUser; jwt: string };
-      console.log("✅ Access token alias synced to database:", alias);
+      authLogger.info("Access token alias synced to database:", alias);
 
       // Store the new JWT
       storeJWT(data.jwt);
@@ -74,10 +75,10 @@ async function syncAccessTokenFromWallet(
       // Update local user state
       updateUser(data.user);
     } else {
-      console.error("Failed to sync access token:", await response.text());
+      authLogger.error("Failed to sync access token:", await response.text());
     }
   } catch (error) {
-    console.error("Error syncing access token:", error);
+    authLogger.error("Error syncing access token:", error);
   }
 }
 
@@ -101,14 +102,14 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
     if (creatorResponse.ok) {
       const creatorData = (await creatorResponse.json()) as { success: boolean; creatorId: string };
-      console.log("✅ Registered as Creator:", creatorData.creatorId);
+      authLogger.info("Registered as Creator:", creatorData.creatorId);
     } else if (creatorResponse.status === 409) {
-      console.log("ℹ️ Already registered as Creator");
+      authLogger.info("Already registered as Creator");
     } else {
-      console.warn("Failed to register as Creator:", await creatorResponse.text());
+      authLogger.warn("Failed to register as Creator:", await creatorResponse.text());
     }
   } catch (error) {
-    console.warn("Error registering as Creator:", error);
+    authLogger.warn("Error registering as Creator:", error);
   }
 
   try {
@@ -121,14 +122,14 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
     if (learnerResponse.ok) {
       const learnerData = (await learnerResponse.json()) as { success: boolean; learnerId: string };
-      console.log("✅ Registered as Learner:", learnerData.learnerId);
+      authLogger.info("Registered as Learner:", learnerData.learnerId);
     } else if (learnerResponse.status === 409) {
-      console.log("ℹ️ Already registered as Learner");
+      authLogger.info("Already registered as Learner");
     } else {
-      console.warn("Failed to register as Learner:", await learnerResponse.text());
+      authLogger.warn("Failed to register as Learner:", await learnerResponse.text());
     }
   } catch (error) {
-    console.warn("Error registering as Learner:", error);
+    authLogger.warn("Error registering as Learner:", error);
   }
 }
 
@@ -179,7 +180,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
           cardanoBech32Addr?: string;
           accessTokenAlias?: string;
         };
-        console.log("🔍 JWT Payload:", payload);
+        authLogger.debug("JWT Payload:", payload);
 
         const userData: AuthUser = {
           id: payload.userId,
@@ -187,15 +188,15 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
           accessTokenAlias: payload.accessTokenAlias ?? null,
         };
         setUser(userData);
-        console.log("✅ User data loaded from stored JWT:", userData);
-        console.log("🔑 Access Token Alias:", userData.accessTokenAlias);
+        authLogger.info("User data loaded from stored JWT:", userData);
+        authLogger.debug("Access Token Alias:", userData.accessTokenAlias);
 
         // If wallet is connected, check for access token in wallet
         if (connected && wallet) {
           void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
         }
       } catch (error) {
-        console.error("Failed to decode JWT:", error);
+        authLogger.error("Failed to decode JWT:", error);
       }
     } else if (storedJWT) {
       // JWT expired, clear it
@@ -255,27 +256,29 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       // Sync access token from wallet to database (in case it wasn't detected during auth)
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
 
-      // Log JWT to console for debugging
-      console.group("🔐 Andamio Authentication Successful");
-      console.log("JWT Token:", authResponse.jwt);
+      // Log JWT to console for debugging (in development only)
+      if (process.env.NODE_ENV === "development") {
+        console.group("🔐 Andamio Authentication Successful");
+        console.log("JWT Token:", authResponse.jwt);
 
-      // Decode and display JWT payload
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!));
-        console.log("JWT Payload:", payload);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
-      } catch {
-        console.log("Could not decode JWT payload");
+        // Decode and display JWT payload
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!));
+          console.log("JWT Payload:", payload);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
+        } catch {
+          console.log("Could not decode JWT payload");
+        }
+
+        console.log("User:", authResponse.user);
+        console.log("\nTo use in API requests:");
+        console.log(`Authorization: Bearer ${authResponse.jwt}`);
+        console.groupEnd();
       }
-
-      console.log("User:", authResponse.user);
-      console.log("\nTo use in API requests:");
-      console.log(`Authorization: Bearer ${authResponse.jwt}`);
-      console.groupEnd();
     } catch (error) {
-      console.error("Authentication failed:", error);
+      authLogger.error("Authentication failed:", error);
       setAuthError(
         error instanceof Error ? error.message : "Authentication failed",
       );
@@ -293,7 +296,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     // 3. Not currently authenticating
     // 4. Haven't already attempted auto-auth for this connection
     if (connected && wallet && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth) {
-      console.log("🔄 Auto-authenticating after wallet connection...");
+      authLogger.info("Auto-authenticating after wallet connection...");
       setHasAttemptedAutoAuth(true);
       void authenticate();
     }

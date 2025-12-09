@@ -25,3 +25,15 @@ export type { MintModuleTokensProps } from "./mint-module-tokens";
 
 export { CreateCourse } from "./create-course";
 export type { CreateCourseProps } from "./create-course";
+
+export { TeachersUpdate } from "./teachers-update";
+export type { TeachersUpdateProps } from "./teachers-update";
+
+export { AssessAssignment } from "./assess-assignment";
+export type { AssessAssignmentProps } from "./assess-assignment";
+
+export { AssignmentUpdate } from "./assignment-update";
+export type { AssignmentUpdateProps } from "./assignment-update";
+
+export { CredentialClaim } from "./credential-claim";
+export type { CredentialClaimProps } from "./credential-claim";

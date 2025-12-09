@@ -1,24 +1,33 @@
 /**
- * EnrollInCourse Component
+ * EnrollInCourse Transaction Component (V2)
  *
- * UI for enrolling in a course (minting local state NFT).
- * This transaction creates the learner's course state on-chain.
+ * Elegant UI for enrolling in a course. Supports two modes:
+ * 1. Simple enrollment - just create the course state token
+ * 2. Combined enrollment with initial commitment (V2 recommended)
  */
 
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useTransaction } from "~/hooks/use-transaction";
+import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { MintAccessToken } from "./mint-access-token";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { GraduationCap } from "lucide-react";
+import {
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+} from "~/components/andamio/andamio-card";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { GraduationCap, BookOpen, Hash } from "lucide-react";
+import { toast } from "sonner";
+import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
 import { env } from "~/env";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
-import { toast } from "sonner";
-import type { EnrollInCourseParams } from "~/types/transaction";
+import type { JSONContent } from "@tiptap/core";
 
 export interface EnrollInCourseProps {
   /**
@@ -32,81 +41,164 @@ export interface EnrollInCourseProps {
   courseTitle?: string;
 
   /**
+   * Module code for initial commitment (optional for V2 combined enroll+commit)
+   */
+  moduleCode?: string;
+
+  /**
+   * Module title for display
+   */
+  moduleTitle?: string;
+
+  /**
+   * Initial evidence content (Tiptap JSON) - required if moduleCode is provided
+   */
+  evidence?: JSONContent;
+
+  /**
    * Callback fired when enrollment is successful
    */
   onSuccess?: () => void | Promise<void>;
 }
 
 /**
- * EnrollInCourse - Transaction UI for enrolling in a course
+ * EnrollInCourse - Transaction UI for enrolling in a course (V2)
+ *
+ * Supports two modes:
+ * 1. Simple enrollment (no moduleCode/evidence): Creates course state token only
+ * 2. Combined enrollment (with moduleCode + evidence): V2 recommended flow that
+ *    combines enrollment with initial assignment submission
  *
  * @example
- * ```tsx
+ * // Simple enrollment
  * <EnrollInCourse
  *   courseNftPolicyId="abc123..."
  *   courseTitle="Introduction to Blockchain"
  *   onSuccess={() => router.refresh()}
  * />
- * ```
+ *
+ * @example
+ * // Combined enrollment with initial commitment (V2)
+ * <EnrollInCourse
+ *   courseNftPolicyId="abc123..."
+ *   courseTitle="Introduction to Blockchain"
+ *   moduleCode="MODULE_1"
+ *   moduleTitle="Getting Started"
+ *   evidence={editorContent}
+ *   onSuccess={() => router.refresh()}
+ * />
  */
 export function EnrollInCourse({
   courseNftPolicyId,
   courseTitle,
+  moduleCode,
+  moduleTitle,
+  evidence,
   onSuccess,
 }: EnrollInCourseProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useTransaction<EnrollInCourseParams>();
+  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+
+  // Determine if we're using combined mode (with initial commitment)
+  const isCombinedMode = Boolean(moduleCode && evidence && Object.keys(evidence).length > 0);
+
+  // Compute evidence hash for display (only in combined mode)
+  const computedHash = useMemo(() => {
+    if (!isCombinedMode || !evidence) return null;
+    try {
+      return computeAssignmentInfoHash(evidence);
+    } catch {
+      return null;
+    }
+  }, [evidence, isCombinedMode]);
 
   const handleEnroll = async () => {
     if (!user?.accessTokenAlias) {
       return;
     }
 
-    // Build the full access token unit (policy ID + hex-encoded name)
-    // The alias is stored in plain text, but Andamioscan expects the full asset unit
+    // Build user access token
     const userAccessToken = buildAccessTokenUnit(
       user.accessTokenAlias,
       env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
     );
 
-    console.log("[EnrollInCourse] User Access Token:", userAccessToken);
-    console.log("[EnrollInCourse] Alias:", user.accessTokenAlias);
+    if (isCombinedMode && evidence && moduleCode) {
+      // V2 Combined mode: Enrollment with initial assignment commitment
+      const hash = computeAssignmentInfoHash(evidence);
+      setEvidenceHash(hash);
 
-    await execute({
-      endpoint: "/tx/student/mint-local-state",
-      method: "GET",
-      params: {
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-      },
-      onSuccess: async (result) => {
-        console.log("[EnrollInCourse] Success!", result);
+      await execute({
+        definition: v2.COURSE_STUDENT_ENROLL,
+        params: {
+          // Transaction API params
+          user_access_token: userAccessToken,
+          policy: courseNftPolicyId,
+          // Side effect params
+          accessTokenAlias: user.accessTokenAlias,
+          moduleCode,
+          networkEvidence: evidence,
+          networkEvidenceHash: hash,
+        },
+        onSuccess: async (txResult) => {
+          console.log("[EnrollInCourse] Combined mode success!", txResult);
 
-        // Show success toast with transaction hash
-        toast.success("Successfully Enrolled!", {
-          description: courseTitle
-            ? `You're now enrolled in ${courseTitle}`
-            : "You're now enrolled in this course",
-          action: result.txHash && result.blockchainExplorerUrl ? {
-            label: "View Transaction",
-            onClick: () => window.open(result.blockchainExplorerUrl, "_blank"),
-          } : undefined,
-        });
+          toast.success("Successfully Enrolled!", {
+            description: `You're now enrolled and your first submission is recorded`,
+            action: txResult.blockchainExplorerUrl
+              ? {
+                  label: "View Transaction",
+                  onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
+                }
+              : undefined,
+          });
 
-        // Call the parent's onSuccess callback
-        await onSuccess?.();
-      },
-      onError: (error) => {
-        console.error("[EnrollInCourse] Error:", error);
+          await onSuccess?.();
+        },
+        onError: (txError) => {
+          console.error("[EnrollInCourse] Error:", txError);
+          toast.error("Enrollment Failed", {
+            description: txError.message || "Failed to enroll in course",
+          });
+        },
+      });
+    } else {
+      // Simple mode: Just enrollment (no initial commitment)
+      await execute({
+        definition: v2.COURSE_STUDENT_ENROLL,
+        params: {
+          user_access_token: userAccessToken,
+          policy: courseNftPolicyId,
+        },
+        onSuccess: async (txResult) => {
+          console.log("[EnrollInCourse] Simple mode success!", txResult);
 
-        // Show error toast
-        toast.error("Enrollment Failed", {
-          description: error.message || "Failed to enroll in course",
-        });
-      },
-    });
+          toast.success("Successfully Enrolled!", {
+            description: courseTitle
+              ? `You're now enrolled in ${courseTitle}`
+              : "You're now enrolled in this course",
+            action: txResult.blockchainExplorerUrl
+              ? {
+                  label: "View Transaction",
+                  onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
+                }
+              : undefined,
+          });
+
+          await onSuccess?.();
+        },
+        onError: (txError) => {
+          console.error("[EnrollInCourse] Error:", txError);
+          toast.error("Enrollment Failed", {
+            description: txError.message || "Failed to enroll in course",
+          });
+        },
+      });
+    }
   };
 
+  // Not authenticated - show connect prompt
   if (!isAuthenticated || !user) {
     return (
       <AndamioCard>
@@ -123,6 +215,7 @@ export function EnrollInCourse({
     );
   }
 
+  // No access token - show mint prompt
   if (!user.accessTokenAlias) {
     return (
       <div className="space-y-4">
@@ -144,55 +237,76 @@ export function EnrollInCourse({
 
   return (
     <AndamioCard>
-      <AndamioCardHeader>
-        <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5" />
-          <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
+      <AndamioCardHeader className="pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <GraduationCap className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
+            <AndamioCardDescription>
+              {courseTitle
+                ? `Begin your learning journey in ${courseTitle}`
+                : "Mint your course state to begin learning"}
+            </AndamioCardDescription>
+          </div>
         </div>
-        <AndamioCardDescription>
-          {courseTitle
-            ? `Begin your learning journey in ${courseTitle}`
-            : "Mint your course local state NFT to begin"}
-        </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Transaction Status - Always show when not idle */}
+        {/* Initial Commitment Info (only in combined mode) */}
+        {isCombinedMode && moduleCode && (
+          <div className="flex flex-wrap items-center gap-2">
+            <AndamioBadge variant="secondary" className="text-xs">
+              <BookOpen className="h-3 w-3 mr-1" />
+              Starting with: {moduleTitle ?? moduleCode}
+            </AndamioBadge>
+          </div>
+        )}
+
+        {/* What Happens */}
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+          <p className="text-sm font-medium">What happens:</p>
+          <p className="text-xs text-muted-foreground">
+            {isCombinedMode
+              ? "A course state token is minted to your wallet and your first submission is recorded on-chain."
+              : "A course state token is minted to your wallet, enabling you to submit assignments and track progress."}
+          </p>
+          {isCombinedMode && computedHash && (
+            <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
+              <Hash className="h-3 w-3 shrink-0" />
+              <code className="font-mono text-primary">{computedHash.slice(0, 24)}...</code>
+            </div>
+          )}
+        </div>
+
+        {/* Transaction Status */}
         {state !== "idle" && (
           <TransactionStatus
             state={state}
             result={result}
             error={error}
-            onRetry={() => {
-              reset();
-            }}
+            onRetry={() => reset()}
             messages={{
-              success: `You are now enrolled in ${courseTitle ?? "this course"}! Your course local state has been created on-chain.`,
+              success: isCombinedMode && evidenceHash
+                ? `Enrolled with submission hash ${evidenceHash.slice(0, 16)}...`
+                : `You are now enrolled in ${courseTitle ?? "this course"}!`,
             }}
           />
         )}
 
-        {/* Enroll Button - Hide after success */}
+        {/* Enroll Button */}
         {state !== "success" && (
           <TransactionButton
             txState={state}
             onClick={handleEnroll}
             stateText={{
-              idle: "Enroll in Course",
+              idle: isCombinedMode ? "Enroll & Submit" : "Enroll in Course",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Enrolling on Blockchain...",
             }}
             className="w-full"
           />
-        )}
-
-        {/* Info Text */}
-        {state === "idle" && (
-          <div className="rounded-md border border-info bg-info/10 p-3">
-            <p className="text-sm text-info">
-              Enrollment mints a course local state NFT to your wallet, tracking your progress on-chain.
-            </p>
-          </div>
         )}
       </AndamioCardContent>
     </AndamioCard>

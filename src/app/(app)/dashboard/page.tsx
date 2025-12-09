@@ -3,13 +3,13 @@
 import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { Wallet, Key, Database, Clock, Shield, Copy, Check } from "lucide-react";
+import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { Wallet, Key, Shield, Copy, Check } from "lucide-react";
 import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessToken, CreateCourse } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
+import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 export default function DashboardPage() {
@@ -160,34 +160,8 @@ export default function DashboardPage() {
           </AndamioCardContent>
         </AndamioCard>
 
-        {/* On-Chain Data Card */}
-        <AndamioCard>
-          <AndamioCardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <AndamioCardTitle className="text-base">On-Chain Data</AndamioCardTitle>
-              </div>
-              <AndamioBadge variant="outline" className="text-xs">
-                <Clock className="mr-1 h-3 w-3" />
-                Coming Soon
-              </AndamioBadge>
-            </div>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
-                <Database className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Blockchain Integration
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                Your on-chain learning achievements will appear here
-              </p>
-            </div>
-          </AndamioCardContent>
-        </AndamioCard>
+        {/* On-Chain Data Card - Live blockchain data from Andamioscan */}
+        <OnChainStatus accessTokenAlias={user.accessTokenAlias} />
       </div>
     </div>
   );

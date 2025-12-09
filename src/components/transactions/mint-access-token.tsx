@@ -16,7 +16,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { Key, Sparkles } from "lucide-react";
+import { Key, Shield } from "lucide-react";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
@@ -135,39 +135,30 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
   }
 
   return (
-    <AndamioCard className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <AndamioCardHeader>
-        <div className="flex items-center gap-2">
+    <AndamioCard>
+      <AndamioCardHeader className="pb-3">
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <Key className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Get Your Access Token</AndamioCardTitle>
             <AndamioCardDescription>
-              Your unique Andamio identity on the Cardano blockchain
+              Mint your unique on-chain identity
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Info Section */}
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">
-                An Andamio Access Token is your on-chain identity. It allows you to enroll in courses,
-                track your learning progress, and earn credentials on the Cardano blockchain.
-              </p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <AndamioBadge variant="secondary" className="text-xs">Unique Alias</AndamioBadge>
-                <AndamioBadge variant="secondary" className="text-xs">On-Chain Identity</AndamioBadge>
-                <AndamioBadge variant="secondary" className="text-xs">Course Enrollment</AndamioBadge>
-              </div>
-            </div>
+        {/* What You're Getting */}
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">On-Chain Identity</p>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Your access token enables course enrollment, progress tracking, and credential earning on Cardano.
+          </p>
         </div>
 
         {/* Alias Input */}

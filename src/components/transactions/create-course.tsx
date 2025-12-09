@@ -1,8 +1,8 @@
 /**
- * CreateCourse Transaction Component
+ * CreateCourse Transaction Component (V2)
  *
  * UI for creating a new Andamio Course on-chain.
- * Creates a Course NFT that represents ownership and enables on-chain course management.
+ * Uses the V2 transaction definition with automatic side effect handling.
  */
 
 "use client";
@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useTransaction } from "~/hooks/use-transaction";
+import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -26,32 +26,35 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { BookOpen, Users, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { env } from "~/env";
-import type { CreateCourseParams } from "~/types/transaction";
+import { v2 } from "@andamio/transactions";
 
 export interface CreateCourseProps {
   /**
    * Callback fired when course is successfully created
+   * @param courseNftPolicyId - The course NFT policy ID returned by the API
    */
-  onSuccess?: (txHash: string) => void | Promise<void>;
+  onSuccess?: (courseNftPolicyId: string) => void | Promise<void>;
 }
 
 /**
- * CreateCourse - Full UI for creating a course on-chain
+ * CreateCourse - Full UI for creating a course on-chain (V2)
+ *
+ * Uses COURSE_ADMIN_CREATE transaction definition with automatic side effects.
  *
  * @example
  * ```tsx
- * <CreateCourse onSuccess={(txHash) => router.push(`/studio/course/${txHash}`)} />
+ * <CreateCourse onSuccess={(policyId) => router.push(`/studio/course/${policyId}`)} />
  * ```
  */
 export function CreateCourse({ onSuccess }: CreateCourseProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useTransaction<CreateCourseParams>();
+  const { state, result, error, execute, reset } = useAndamioTransaction();
 
   const [walletData, setWalletData] = useState<{ usedAddresses: string[]; changeAddress: string } | null>(null);
   const [title, setTitle] = useState("");
   const [additionalTeachers, setAdditionalTeachers] = useState("");
+  const [courseNftPolicyId, setCourseNftPolicyId] = useState<string | null>(null);
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -92,71 +95,40 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
     const allTeachers = [user.accessTokenAlias, ...teachersList.filter((t) => t !== user.accessTokenAlias)];
 
     await execute({
-      endpoint: "/tx/v2/admin/course/create",
-      method: "POST",
+      definition: v2.COURSE_ADMIN_CREATE,
       params: {
+        // Transaction API params
         walletData,
         alias: user.accessTokenAlias,
         teachers: allTeachers,
+        // Side effect params - courseNftPolicyId will be added after API response
+        title: title.trim(),
       },
-      txType: "CREATE_COURSE",
       onSuccess: async (txResult) => {
         console.log("[CreateCourse] Success!", txResult);
 
         // Extract courseId from the API response
-        const courseId = txResult.apiResponse?.courseId as string | undefined;
+        const apiResponse = result?.apiResponse;
+        const extractedCourseId = apiResponse?.courseId as string | undefined;
 
-        if (!courseId) {
-          console.error("[CreateCourse] No courseId in API response:", txResult.apiResponse);
-          toast.warning("Course Created", {
-            description: "Transaction submitted but course ID not received. Please refresh.",
-          });
-          return;
-        }
-
-        console.log("[CreateCourse] Course ID from API:", courseId);
-
-        // Save course to database with the title and courseId (policy ID)
-        try {
-          const response = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/create-on-submit`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                title: title.trim(),
-                course_nft_policy_id: courseId,
-              }),
-            }
-          );
-
-          if (response.ok) {
-            console.log("[CreateCourse] Course saved to database with policy ID:", courseId);
-          } else {
-            console.error("[CreateCourse] Failed to save course to database:", await response.text());
-          }
-        } catch (dbError) {
-          console.error("[CreateCourse] Error saving course to database:", dbError);
-          // Don't fail the transaction if database update fails
+        if (extractedCourseId) {
+          setCourseNftPolicyId(extractedCourseId);
         }
 
         // Show success toast
         toast.success("Course Created!", {
           description: `"${title.trim()}" has been created on-chain`,
-          action:
-            txResult.txHash && txResult.blockchainExplorerUrl
-              ? {
-                  label: "View Transaction",
-                  onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-                }
-              : undefined,
+          action: txResult.blockchainExplorerUrl
+            ? {
+                label: "View Transaction",
+                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
+              }
+            : undefined,
         });
 
-        // Call the parent's onSuccess callback with the courseId (policy ID)
-        if (courseId) {
-          await onSuccess?.(courseId);
+        // Call the parent's onSuccess callback with the courseNftPolicyId
+        if (extractedCourseId) {
+          await onSuccess?.(extractedCourseId);
         }
       },
       onError: (txError) => {
@@ -181,16 +153,16 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   }
 
   return (
-    <AndamioCard className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <AndamioCardHeader>
-        <div className="flex items-center gap-2">
+    <AndamioCard>
+      <AndamioCardHeader className="pb-3">
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Create Course On-Chain</AndamioCardTitle>
             <AndamioCardDescription>
-              Mint a Course NFT to manage your course on the Cardano blockchain
+              Mint a Course NFT to start managing learners on-chain
             </AndamioCardDescription>
           </div>
         </div>
@@ -217,29 +189,12 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
 
         {/* Course Creator Info */}
         {hasAccessToken && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <div className="space-y-1 flex-1">
-                <p className="text-sm font-medium">Course Creator</p>
-                <p className="text-sm text-muted-foreground">
-                  You will be creating this course as{" "}
-                  <code className="rounded bg-muted px-1.5 py-0.5 text-primary font-mono">
-                    {user.accessTokenAlias}
-                  </code>
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <AndamioBadge variant="secondary" className="text-xs">
-                    Course NFT Owner
-                  </AndamioBadge>
-                  <AndamioBadge variant="secondary" className="text-xs">
-                    Primary Teacher
-                  </AndamioBadge>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="h-4 w-4" />
+            <span>Creating as</span>
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
+              {user.accessTokenAlias}
+            </code>
           </div>
         )}
 

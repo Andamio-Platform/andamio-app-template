@@ -8,8 +8,6 @@
  */
 
 import React from "react";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { CheckCircle2, XCircle, ExternalLink, Loader2 } from "lucide-react";
 import type { TransactionResult, TransactionState } from "~/types/transaction";
 
@@ -82,84 +80,66 @@ export function TransactionStatus({
   // Success state
   if (state === "success" && result?.success) {
     return (
-      <AndamioAlert className="border-success bg-success/10">
-        <CheckCircle2 className="h-4 w-4 text-success" />
-        <AndamioAlertTitle className="text-success">Transaction Submitted!</AndamioAlertTitle>
-        <AndamioAlertDescription className="space-y-3">
-          <p className="text-success">{text.success}</p>
-          {result.txHash && (
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Transaction Hash</p>
-                <code className="block rounded-md border bg-muted px-3 py-2 text-xs font-mono break-all text-foreground">
-                  {result.txHash}
-                </code>
-              </div>
-              {result.blockchainExplorerUrl && (
-                <AndamioButton
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="w-full"
-                  rightIcon={<ExternalLink className="h-3 w-3" />}
-                >
+      <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-medium">{text.success}</p>
+            {result.txHash && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <code className="font-mono">{result.txHash.slice(0, 16)}...{result.txHash.slice(-8)}</code>
+                {result.blockchainExplorerUrl && (
                   <a
                     href={result.blockchainExplorerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
                   >
-                    View on Cardano Explorer
+                    View <ExternalLink className="h-3 w-3" />
                   </a>
-                </AndamioButton>
-              )}
-            </div>
-          )}
-        </AndamioAlertDescription>
-      </AndamioAlert>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Error state
   if (state === "error") {
     return (
-      <AndamioAlert variant="destructive">
-        <XCircle className="h-4 w-4" />
-        <AndamioAlertTitle>Transaction Failed</AndamioAlertTitle>
-        <AndamioAlertDescription className="space-y-2">
-          <p>{error ?? text.error}</p>
-          {onRetry && (
-            <AndamioButton
-              variant="outline"
-              size="sm"
-              onClick={onRetry}
-              className="mt-2"
-            >
-              Try Again
-            </AndamioButton>
-          )}
-        </AndamioAlertDescription>
-      </AndamioAlert>
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+        <div className="flex items-start gap-3">
+          <XCircle className="h-5 w-5 text-destructive shrink-0" />
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-medium">{error ?? text.error}</p>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="text-xs text-primary hover:underline"
+              >
+                Try again
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Loading states (fetching, signing, submitting, confirming)
   return (
-    <AndamioAlert className="border-info bg-info/10">
-      <Loader2 className="h-4 w-4 animate-spin text-info" />
-      <AndamioAlertTitle className="text-info">
-        {state === "fetching" && "Preparing Transaction"}
-        {state === "signing" && "Waiting for Signature"}
-        {state === "submitting" && "Submitting Transaction"}
-        {state === "confirming" && "Confirming Transaction"}
-      </AndamioAlertTitle>
-      <AndamioAlertDescription>
-        <p>{text[state]}</p>
-        {state === "signing" && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Check your wallet for a signature request
-          </p>
-        )}
-      </AndamioAlertDescription>
-    </AndamioAlert>
+    <div className="rounded-lg border bg-muted/30 p-4">
+      <div className="flex items-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium">{text[state]}</p>
+          {state === "signing" && (
+            <p className="text-xs text-muted-foreground">Check your wallet</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

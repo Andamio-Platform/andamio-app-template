@@ -29,7 +29,7 @@ export default function Home() {
             {/* Eyebrow */}
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
               <Layers className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-medium text-primary tracking-wide">ANDAMIO PLATFORM</span>
+              <span className="text-xs font-medium text-primary tracking-wide">Andamio App Template</span>
             </div>
 
             {/* Main Headline - MASSIVE */}

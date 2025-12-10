@@ -78,7 +78,7 @@ export function AppSidebar() {
         </div>
         <Link href="/" className="flex flex-col min-w-0">
           <span className="text-base font-semibold text-sidebar-foreground truncate">Andamio</span>
-          <span className="text-[10px] text-muted-foreground truncate">Learning Platform</span>
+          <span className="text-[10px] text-muted-foreground truncate">App Template</span>
         </Link>
       </div>
 

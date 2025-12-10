@@ -106,7 +106,7 @@ export function MobileNav() {
             </div>
             <div className="flex flex-col">
               <SheetTitle>Andamio</SheetTitle>
-              <span className="text-[10px] text-muted-foreground">Learning Platform</span>
+              <span className="text-[10px] text-muted-foreground">App Template</span>
             </div>
           </div>
         </SheetHeader>

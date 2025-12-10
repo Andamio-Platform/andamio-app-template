@@ -85,24 +85,18 @@ export function TeachersUpdate({
       return;
     }
 
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
-
-    // Build teacher tokens array (JSON string of full access token units)
-    const teacherTokens = teacherAliases.map((alias) =>
-      buildAccessTokenUnit(alias, env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID)
-    );
+    // Build params based on action - API uses separate arrays for add/remove
+    const teachersToAdd = action === "add" ? teacherAliases : [];
+    const teachersToRemove = action === "remove" ? teacherAliases : [];
 
     await execute({
       definition: v2.COURSE_ADMIN_TEACHERS_UPDATE,
       params: {
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-        teacher_tokens: JSON.stringify(teacherTokens),
-        action,
+        // Transaction API params
+        alias: user.accessTokenAlias,
+        courseId: courseNftPolicyId,
+        teachersToAdd,
+        teachersToRemove,
       },
       onSuccess: async (txResult) => {
         console.log("[TeachersUpdate] Success!", txResult);

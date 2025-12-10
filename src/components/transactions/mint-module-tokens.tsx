@@ -27,11 +27,8 @@ import { Coins, Hash, BookOpen, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   v2,
-  formatModuleInfosForMintModuleTokens,
   computeSltHash,
 } from "@andamio/transactions";
-import { env } from "~/env";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import type { ListCourseModulesOutput } from "@andamio/db-api";
 
 export interface MintModuleTokensProps {
@@ -110,21 +107,23 @@ export function MintModuleTokens({
       return;
     }
 
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
-
-    // Format module infos for the transaction API
-    const moduleInfos = formatModuleInfosForMintModuleTokens(courseModules);
+    // Format modules for the V2 API - each module needs slts, allowedStudents_V2, prerequisiteAssignments_V2
+    const modulesToMint = courseModules
+      .filter((cm) => cm.slts && cm.slts.length > 0)
+      .map((courseModule) => ({
+        slts: courseModule.slts?.map((slt) => slt.slt_text) ?? [],
+        allowedStudents_V2: [] as string[], // Empty for now - can be configured per module
+        prerequisiteAssignments_V2: [] as string[], // Empty for now - can be configured per module
+      }));
 
     await execute({
       definition: v2.COURSE_TEACHER_MODULES_MANAGE,
       params: {
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-        module_infos: moduleInfos,
+        alias: user.accessTokenAlias,
+        courseId: courseNftPolicyId,
+        modulesToMint,
+        modulesToUpdate: [],
+        modulesToBurn: [],
       },
       onSuccess: async (txResult) => {
         console.log("[MintModuleTokens] Success!", txResult);

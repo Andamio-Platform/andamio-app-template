@@ -52,6 +52,12 @@ export interface EnrollInCourseProps {
   moduleTitle?: string;
 
   /**
+   * Module SLT hash (64-char Blake2b-256 hash) - required if moduleCode is provided
+   * Use computeSltHash() from @andamio/transactions to compute this
+   */
+  sltHash?: string;
+
+  /**
    * Initial evidence content (Tiptap JSON) - required if moduleCode is provided
    */
   evidence?: JSONContent;
@@ -94,6 +100,7 @@ export function EnrollInCourse({
   courseTitle,
   moduleCode,
   moduleTitle,
+  sltHash,
   evidence,
   onSuccess,
 }: EnrollInCourseProps) {
@@ -103,7 +110,8 @@ export function EnrollInCourse({
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
 
   // Determine if we're using combined mode (with initial commitment)
-  const isCombinedMode = Boolean(moduleCode && evidence && Object.keys(evidence).length > 0);
+  // Requires moduleCode, sltHash, and evidence
+  const isCombinedMode = Boolean(moduleCode && sltHash && evidence && Object.keys(evidence).length > 0);
 
   // Compute evidence hash for display (only in combined mode)
   const computedHash = useMemo(() => {
@@ -126,7 +134,7 @@ export function EnrollInCourse({
       env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
     );
 
-    if (isCombinedMode && evidence && moduleCode) {
+    if (isCombinedMode && evidence && moduleCode && sltHash) {
       // V2 Combined mode: Enrollment with initial assignment commitment
       const hash = computeAssignmentInfoHash(evidence);
       setEvidenceHash(hash);
@@ -135,10 +143,13 @@ export function EnrollInCourse({
         definition: v2.COURSE_STUDENT_ENROLL,
         params: {
           // Transaction API params
-          user_access_token: userAccessToken,
-          policy: courseNftPolicyId,
+          alias: user.accessTokenAlias,
+          courseId: courseNftPolicyId,
+          commitData: {
+            sltHash: sltHash,
+            assignmentInfo: hash,
+          },
           // Side effect params
-          accessTokenAlias: user.accessTokenAlias,
           moduleCode,
           networkEvidence: evidence,
           networkEvidenceHash: hash,
@@ -170,8 +181,10 @@ export function EnrollInCourse({
       await execute({
         definition: v2.COURSE_STUDENT_ENROLL,
         params: {
-          user_access_token: userAccessToken,
-          policy: courseNftPolicyId,
+          // Transaction API params
+          alias: user.accessTokenAlias,
+          courseId: courseNftPolicyId,
+          // No commitData for simple enrollment
         },
         onSuccess: async (txResult) => {
           console.log("[EnrollInCourse] Simple mode success!", txResult);

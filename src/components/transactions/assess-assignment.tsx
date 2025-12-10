@@ -51,7 +51,7 @@ export interface AssessAssignmentProps {
   /**
    * Callback fired when assessment is successful
    */
-  onSuccess?: (result: "accept" | "deny") => void | Promise<void>;
+  onSuccess?: (result: "accept" | "refuse") => void | Promise<void>;
 }
 
 /**
@@ -77,29 +77,24 @@ export function AssessAssignment({
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
-  const [assessmentResult, setAssessmentResult] = useState<"accept" | "deny" | null>(null);
+  const [assessmentResult, setAssessmentResult] = useState<"accept" | "refuse" | null>(null);
 
-  const handleAssess = async (decision: "accept" | "deny") => {
+  const handleAssess = async (decision: "accept" | "refuse") => {
     if (!user?.accessTokenAlias) {
       return;
     }
 
     setAssessmentResult(decision);
 
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
-
     await execute({
       definition: v2.COURSE_TEACHER_ASSIGNMENTS_ASSESS,
       params: {
         // Transaction API params
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-        student_alias: studentAlias,
-        assessment_result: decision,
+        alias: user.accessTokenAlias,
+        courseId: courseNftPolicyId,
+        assignmentDecisions: [
+          { alias: studentAlias, outcome: decision },
+        ],
         // Side effect params
         moduleCode,
         studentAccessTokenAlias: studentAlias,
@@ -109,7 +104,7 @@ export function AssessAssignment({
         console.log("[AssessAssignment] Success!", txResult);
 
         // Show success toast
-        const actionText = decision === "accept" ? "accepted" : "denied";
+        const actionText = decision === "accept" ? "accepted" : "refused";
         toast.success(`Assignment ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
           description: `${studentAlias}'s submission has been ${actionText}`,
           action: txResult.blockchainExplorerUrl
@@ -183,7 +178,7 @@ export function AssessAssignment({
               reset();
             }}
             messages={{
-              success: `Assignment ${assessmentResult === "accept" ? "accepted" : "denied"} successfully!`,
+              success: `Assignment ${assessmentResult === "accept" ? "accepted" : "refused"} successfully!`,
             }}
           />
         )}
@@ -202,10 +197,10 @@ export function AssessAssignment({
             <AndamioButton
               variant="destructive"
               className="flex-1"
-              onClick={() => handleAssess("deny")}
+              onClick={() => handleAssess("refuse")}
             >
               <XCircle className="h-4 w-4 mr-2" />
-              Deny
+              Refuse
             </AndamioButton>
           </div>
         )}
@@ -217,7 +212,7 @@ export function AssessAssignment({
             onClick={() => undefined}
             disabled
             stateText={{
-              idle: assessmentResult === "accept" ? "Accept" : "Deny",
+              idle: assessmentResult === "accept" ? "Accept" : "Refuse",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Recording on Blockchain...",

@@ -117,13 +117,13 @@ export function AssignmentUpdate({
       definition: v2.COURSE_STUDENT_ASSIGNMENT_UPDATE,
       params: {
         // Transaction API params
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-        assignment_info: hash,
+        alias: user.accessTokenAlias,
+        courseId: courseNftPolicyId,
+        assignmentInfo: hash,
+        // maybeNewSltHash would be set if committing to a new module
         // Side effect params
         isNewCommitment,
         moduleCode,
-        accessTokenAlias: user.accessTokenAlias,
         networkEvidence: evidence,
         networkEvidenceHash: hash,
       },

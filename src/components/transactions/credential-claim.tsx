@@ -100,9 +100,10 @@ export function CredentialClaim({
     await execute({
       definition: v2.COURSE_STUDENT_CREDENTIAL_CLAIM,
       params: {
-        user_access_token: userAccessToken,
-        policy: courseNftPolicyId,
-        module_code: moduleCode,
+        // Transaction API params
+        alias: user.accessTokenAlias,
+        courseId: courseNftPolicyId,
+        // Note: module_code is no longer in the API - credentials are claimed for the entire course
       },
       onSuccess: async (txResult) => {
         console.log("[CredentialClaim] Success!", txResult);

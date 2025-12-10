@@ -71,6 +71,7 @@ export default function DraftTasksPage() {
 
   useEffect(() => {
     void fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [treasuryNftPolicyId]);
 
   const handleDeleteTask = async (taskIndex: number) => {

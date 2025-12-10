@@ -8,7 +8,6 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
-    ANDAMIO_NBA_API_URL: z.string().url(),
     ANDAMIOSCAN_API_URL: z.string().url(),
     ATLAS_TX_API_URL: z.string().url(),
   },
@@ -30,7 +29,6 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    ANDAMIO_NBA_API_URL: process.env.ANDAMIO_NBA_API_URL,
     ANDAMIOSCAN_API_URL: process.env.ANDAMIOSCAN_API_URL,
     ATLAS_TX_API_URL: process.env.ATLAS_TX_API_URL,
     NEXT_PUBLIC_ANDAMIO_API_URL: process.env.NEXT_PUBLIC_ANDAMIO_API_URL,

@@ -36,7 +36,6 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
   ];
 
   const completedCount = steps.filter((s) => s.completed).length;
-  const allComplete = completedCount === steps.length - 1 && hasAccessToken; // Last step is ongoing
 
   // Don't show if user has completed onboarding (has access token)
   if (hasAccessToken) {

@@ -12,8 +12,6 @@ const isDebugEnabled = (): boolean => {
   return process.env.NEXT_PUBLIC_DEBUG_LOGGING === "true" || process.env.NODE_ENV === "development";
 };
 
-type LogLevel = "info" | "warn" | "error" | "debug";
-
 interface LoggerOptions {
   /** Namespace prefix for logs (e.g., "Auth", "PendingTx") */
   namespace?: string;

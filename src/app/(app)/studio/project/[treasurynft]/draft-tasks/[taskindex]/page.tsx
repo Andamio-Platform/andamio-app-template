@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
@@ -35,7 +35,6 @@ interface ApiError {
  */
 export default function EditTaskPage() {
   const params = useParams();
-  const router = useRouter();
   const treasuryNftPolicyId = params.treasurynft as string;
   const taskIndex = parseInt(params.taskindex as string);
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();

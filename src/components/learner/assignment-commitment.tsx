@@ -11,7 +11,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
-import { ContentEditor, ContentViewer } from "~/components/editor";
+import { ContentEditor } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { ContentDisplay } from "~/components/content-display";
 import {
@@ -103,7 +103,6 @@ interface Commitment {
 }
 
 export function AssignmentCommitment({
-  assignmentId,
   assignmentCode,
   assignmentTitle,
   courseNftPolicyId,
@@ -139,9 +138,11 @@ export function AssignmentCommitment({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges && !commitment) {
         e.preventDefault();
-        e.returnValue = "You have unsaved evidence. Are you sure you want to leave?";
-        return e.returnValue;
+        const message = "You have unsaved evidence. Are you sure you want to leave?";
+        e.returnValue = message;
+        return message;
       }
+      return undefined;
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -188,25 +189,25 @@ export function AssignmentCommitment({
         // Set local evidence content if evidence exists
         if (existingCommitment.networkEvidence) {
           // Handle different evidence formats
-          let content;
+          let content: JSONContent | null = null;
           if (typeof existingCommitment.networkEvidence === "string") {
             try {
               // Try to parse as JSON first
-              const parsed = JSON.parse(existingCommitment.networkEvidence);
+              const parsed = JSON.parse(existingCommitment.networkEvidence) as unknown;
               // If it has a 'type' property, it's likely Tiptap JSON
               if (parsed && typeof parsed === "object" && "type" in parsed) {
-                content = parsed;
+                content = parsed as JSONContent;
               } else {
-                // Not Tiptap JSON, treat as plain string
-                content = existingCommitment.networkEvidence;
+                // Not Tiptap JSON, treat as plain string - wrap in Tiptap structure
+                content = null;
               }
             } catch {
               // Not valid JSON, treat as plain string (HTML or text)
-              content = existingCommitment.networkEvidence;
+              content = null;
             }
           } else {
             // Already an object
-            content = existingCommitment.networkEvidence;
+            content = existingCommitment.networkEvidence as JSONContent;
           }
           setLocalEvidenceContent(content);
         }

@@ -11,8 +11,8 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AlertCircle, BookOpen, CheckCircle, Clock, FileText } from "lucide-react";
-import type { z } from "zod";
-import { getMyLearningOutputSchema } from "@andamio/db-api";
+import { type z } from "zod";
+import { type getMyLearningOutputSchema } from "@andamio/db-api";
 
 /**
  * My Learning component - Shows learner's enrolled courses and assignment progress

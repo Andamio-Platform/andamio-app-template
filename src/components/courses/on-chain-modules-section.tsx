@@ -39,12 +39,9 @@ import {
   RefreshCw,
   Plus,
   Loader2,
-  ExternalLink,
   Settings,
-  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { type AndamioscanModule } from "~/lib/andamioscan";
 import { type ListCourseModulesOutput } from "@andamio/db-api";
 
 // =============================================================================
@@ -430,7 +427,7 @@ function ModuleRow({
  * - Navigate to manage registered modules
  */
 export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSectionProps) {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
   // Fetch on-chain course data
   const {
@@ -508,7 +505,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
 
   const handleRefresh = () => {
     void fetchDbModules();
-    refetchOnChain();
+    void refetchOnChain();
   };
 
   if (!isAuthenticated) {

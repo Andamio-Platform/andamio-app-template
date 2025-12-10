@@ -93,7 +93,7 @@ async function fetchAndamioscan<T>(path: string): Promise<T> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorData = await response.json().catch(() => ({})) as { details?: string };
     throw new Error(
       `Andamioscan API error: ${response.status} ${response.statusText}` +
         (errorData.details ? ` - ${errorData.details}` : "")

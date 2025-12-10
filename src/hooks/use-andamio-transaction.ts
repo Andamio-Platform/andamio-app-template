@@ -97,7 +97,7 @@ export function useAndamioTransaction<TParams = unknown>() {
           // Fallback: if no schema, use all params
           txApiParams = allParams;
         }
-      } catch (error) {
+      } catch {
         // If parsing fails, try to extract keys manually
         // This handles partial matches where not all txApiSchema fields are provided
         const schemaShape = (txApiSchema as unknown as { shape?: Record<string, unknown> })?.shape;
@@ -139,9 +139,9 @@ export function useAndamioTransaction<TParams = unknown>() {
             } else {
               txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, await unconfirmedTxResponse.text());
             }
-          } catch (error) {
+          } catch (unconfirmedTxError) {
             // Non-critical - log but don't fail the transaction
-            txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, error);
+            txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, unconfirmedTxError);
           }
 
           // Execute onSubmit side effects
@@ -158,7 +158,7 @@ export function useAndamioTransaction<TParams = unknown>() {
 
               // Extract values from API response and add to buildInputs
               // This allows side effects to reference API response fields
-              const apiResponse = txResult.apiResponse as Record<string, unknown> | undefined;
+              const apiResponse = txResult.apiResponse;
               if (apiResponse) {
                 // Map common API response fields to buildInputs
                 // courseId -> courseNftPolicyId (used by COURSE_ADMIN_CREATE)
@@ -253,7 +253,7 @@ export function useAndamioTransaction<TParams = unknown>() {
             txHash: txResult.txHash!,
             blockchainExplorerUrl: txResult.blockchainExplorerUrl,
             sideEffectsSuccess,
-            apiResponse: txResult.apiResponse as Record<string, unknown> | undefined,
+            apiResponse: txResult.apiResponse,
           });
         },
         onError: (error) => {

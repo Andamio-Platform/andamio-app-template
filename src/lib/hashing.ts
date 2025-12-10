@@ -21,7 +21,7 @@ function normalizeContentStructure(content: JSONContent): JSONContent {
   const sortedKeys = Object.keys(content).sort();
 
   sortedKeys.forEach((key) => {
-    normalized[key] = normalizeContentStructure(content[key]);
+    normalized[key] = normalizeContentStructure(content[key] as JSONContent);
   });
 
   return normalized;

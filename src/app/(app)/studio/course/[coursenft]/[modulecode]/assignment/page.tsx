@@ -52,7 +52,7 @@ export default function AssignmentEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [assignment, setAssignment] = useState<AssignmentOutput | null>(null);
+  const [, setAssignment] = useState<AssignmentOutput | null>(null);
   const [slts, setSlts] = useState<ListSLTsOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

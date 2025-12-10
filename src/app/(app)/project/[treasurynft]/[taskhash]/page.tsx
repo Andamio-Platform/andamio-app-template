@@ -82,7 +82,7 @@ export default function TaskDetailPage() {
               const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
               setCommitment(commitmentData);
             }
-          } catch (err) {
+          } catch {
             // User might not have a commitment yet - that's OK
             console.log("No commitment found for user");
           }

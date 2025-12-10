@@ -274,7 +274,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             body: JSON.stringify(clearBody),
           });
           if (clearResponse.ok) {
-            const responseData = await clearResponse.json();
+            const responseData = (await clearResponse.json()) as Record<string, unknown>;
             txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", true, responseData);
           } else {
             txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", false, undefined, await clearResponse.text());
@@ -306,7 +306,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         }
       }
     },
-    [processConfirmedModule, processConfirmedAssignmentCommitment, removePendingTx, maxRetries, onConfirmation, onError]
+    [processConfirmedModule, processConfirmedAssignmentCommitment, removePendingTx, maxRetries, onConfirmation, onError, authenticatedFetch]
   );
 
   /**

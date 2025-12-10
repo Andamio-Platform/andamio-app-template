@@ -59,8 +59,7 @@ export default function CourseEditPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const courseNftPolicyId = params.coursenft as string;
-  // Note: user is needed for Andamioscan decoded datum fetching (currently disabled)
-  const { isAuthenticated, authenticatedFetch, user: _user } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");

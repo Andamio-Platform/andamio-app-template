@@ -177,7 +177,7 @@ export function OnChainCoursesSection() {
 
   const handleRefresh = () => {
     void fetchDbCourses();
-    refetchOnChain();
+    void refetchOnChain();
   };
 
   const handleImportSuccess = () => {
@@ -479,7 +479,7 @@ function ImportCourseDrawer({
                   {truncatedId}
                 </code>
                 <a
-                  href={getTokenExplorerUrl(courseId, (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") as CardanoNetwork)}
+                  href={getTokenExplorerUrl(courseId, (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") satisfies CardanoNetwork)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"

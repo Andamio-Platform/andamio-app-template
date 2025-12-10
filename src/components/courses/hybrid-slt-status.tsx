@@ -42,11 +42,9 @@ import {
   RefreshCw,
   Blocks,
   Database,
-  Link as LinkIcon,
   Download,
-  Plus,
   Loader2,
-  ExternalLink,
+  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 

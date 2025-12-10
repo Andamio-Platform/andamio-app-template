@@ -15,7 +15,6 @@ import { TransactionStatus } from "./transaction-status";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { Key, Shield } from "lucide-react";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";

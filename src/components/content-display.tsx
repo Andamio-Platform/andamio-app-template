@@ -22,7 +22,7 @@
  */
 
 import React from "react";
-import { ContentViewer, ContentViewerCompact } from "~/components/editor";
+import { ContentViewerCompact } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { cn } from "~/lib/utils";
 

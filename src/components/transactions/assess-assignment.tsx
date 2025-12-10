@@ -214,7 +214,7 @@ export function AssessAssignment({
         {state !== "idle" && state !== "success" && state !== "error" && (
           <TransactionButton
             txState={state}
-            onClick={() => {}}
+            onClick={() => undefined}
             disabled
             stateText={{
               idle: assessmentResult === "accept" ? "Accept" : "Deny",

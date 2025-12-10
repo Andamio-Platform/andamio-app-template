@@ -34,7 +34,7 @@ import { v2 } from "@andamio/transactions";
  */
 export function CreateCourseDialog() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAndamioAuth();
+  const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 

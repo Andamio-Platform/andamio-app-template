@@ -7,11 +7,10 @@ import { env } from "~/env";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen, Blocks, ChevronRight, CheckCircle, Target } from "lucide-react";
 import { type CourseOutput, type ListCourseModulesOutput } from "@andamio/db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
-import { OnChainSltsViewer, OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
+import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { useCourse } from "~/hooks/use-andamioscan";
 
@@ -32,6 +31,9 @@ export default function CourseDetailPage() {
   const [modules, setModules] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch on-chain course data - must be called unconditionally (React hook rules)
+  const { data: onChainCourse } = useCourse(courseNftPolicyId);
 
   useEffect(() => {
     const fetchCourseAndModules = async () => {
@@ -154,9 +156,6 @@ export default function CourseDetailPage() {
       </div>
     );
   }
-
-  // Fetch on-chain course data
-  const { data: onChainCourse } = useCourse(courseNftPolicyId);
 
   // Build map of on-chain SLTs per module by matching SLT text content
   const getOnChainStatus = (moduleSlts: Array<{ slt_text: string }>) => {

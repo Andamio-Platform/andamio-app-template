@@ -49,7 +49,7 @@ export default function IntroductionEditPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [introduction, setIntroduction] = useState<IntroductionOutput | null>(null);
+  const [, setIntroduction] = useState<IntroductionOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [introductionExists, setIntroductionExists] = useState(false);

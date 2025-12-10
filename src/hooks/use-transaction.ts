@@ -190,6 +190,6 @@ export function useTransaction<TParams = unknown>() {
  * Get Cardano explorer URL for a transaction hash
  */
 function getExplorerUrl(txHash: string): string {
-  const network = (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") as CardanoNetwork;
+  const network = (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") satisfies CardanoNetwork;
   return getTransactionExplorerUrl(txHash, network);
 }

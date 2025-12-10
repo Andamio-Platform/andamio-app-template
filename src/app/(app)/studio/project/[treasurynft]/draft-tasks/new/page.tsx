@@ -14,7 +14,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { ContentEditor } from "~/components/editor";
-import { AlertCircle, ArrowLeft, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
 
 interface ApiError {

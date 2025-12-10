@@ -20,7 +20,6 @@ import {
   CheckCircle,
   AlertCircle,
   Blocks,
-  ExternalLink,
 } from "lucide-react";
 import { type AndamioscanModule } from "~/lib/andamioscan";
 

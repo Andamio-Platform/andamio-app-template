@@ -152,7 +152,6 @@ NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api/v0"
 # Accessed via /api/koios proxy → preprod.koios.rest
 
 # Legacy (kept for reference, no longer used)
-# ANDAMIO_NBA_API_URL="https://indexer-preprod-..." (removed)
 
 # Network configuration
 NEXT_PUBLIC_CARDANO_NETWORK="preprod"
@@ -432,8 +431,9 @@ When the unified Andamio API is ready, follow this checklist:
 
 ```bash
 # Before (3+ URLs)
-NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api/v0"
-ANDAMIO_NBA_API_URL="https://indexer-preprod..."
+NEXT_PUBLIC_ANDAMIO_API_URL="..."
+ANDAMIOSCAN_API_URL="..."
+ATLAS_TX_API_URL="..."
 
 # After (1 URL)
 NEXT_PUBLIC_ANDAMIO_API_URL="https://api.andamio.io/v1"

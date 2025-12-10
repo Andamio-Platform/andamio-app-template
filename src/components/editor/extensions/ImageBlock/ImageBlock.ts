@@ -1,5 +1,5 @@
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { mergeAttributes, type Range, type ChainedCommands, type CommandProps } from "@tiptap/core";
+import { mergeAttributes, type Range, type CommandProps } from "@tiptap/core";
 
 import { ImageBlockView } from "./components/ImageBlockView";
 import { Image } from "../Image";

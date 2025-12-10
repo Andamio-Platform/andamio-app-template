@@ -22,7 +22,6 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { BookOpen, Users, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -54,7 +53,6 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const [walletData, setWalletData] = useState<{ usedAddresses: string[]; changeAddress: string } | null>(null);
   const [title, setTitle] = useState("");
   const [additionalTeachers, setAdditionalTeachers] = useState("");
-  const [courseNftPolicyId, setCourseNftPolicyId] = useState<string | null>(null);
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -110,10 +108,6 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         // Extract courseId from the API response
         const apiResponse = result?.apiResponse;
         const extractedCourseId = apiResponse?.courseId as string | undefined;
-
-        if (extractedCourseId) {
-          setCourseNftPolicyId(extractedCourseId);
-        }
 
         // Show success toast
         toast.success("Course Created!", {

@@ -2,31 +2,20 @@
 
 import React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { type LucideIcon } from "lucide-react";
 import {
   AndamioTabs,
   AndamioTabsContent,
   AndamioTabsList,
   AndamioTabsTrigger,
 } from "~/components/andamio/andamio-tabs";
+import type { TabItem, IconComponent } from "~/types/ui";
 
-/**
- * Tab definition for StudioTabs component
- */
-export interface StudioTab {
-  /** Unique identifier for the tab */
-  value: string;
-  /** Icon component from lucide-react */
-  icon: LucideIcon;
-  /** Display label for the tab */
-  label: string;
-  /** Tab content */
-  content: React.ReactNode;
-}
+// Re-export types for consumers of this component
+export type { IconComponent, TabItem as StudioTab };
 
 interface StudioTabsProps {
   /** Array of tab definitions */
-  tabs: StudioTab[];
+  tabs: TabItem[];
   /** Default tab to show (defaults to first tab) */
   defaultValue?: string;
   /** Whether to persist tab state in URL (default: true) */

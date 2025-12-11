@@ -27,21 +27,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
-
-interface RouteInfo {
-  path: string;
-  label: string;
-  description: string;
-  requiresAuth: boolean;
-  dynamic?: boolean;
-  params?: string[];
-}
-
-interface RouteCategory {
-  category: string;
-  icon: React.ComponentType<{ className?: string }>;
-  routes: RouteInfo[];
-}
+import type { RouteCategory } from "~/types/ui";
 
 const staticRoutes: RouteCategory[] = [
   {

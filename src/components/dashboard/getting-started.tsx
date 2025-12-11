@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "~/lib/utils";
+import type { StepItem } from "~/types/ui";
 
 interface GettingStartedProps {
   isAuthenticated: boolean;
@@ -13,7 +14,7 @@ interface GettingStartedProps {
 
 export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStartedProps) {
   // Only show the essential onboarding steps
-  const steps = [
+  const steps: StepItem[] = [
     {
       id: "connect",
       title: "Connect Wallet",

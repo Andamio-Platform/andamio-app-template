@@ -263,10 +263,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
         // Decode and display JWT payload
         try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!));
+          const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!)) as { exp: number };
           console.log("JWT Payload:", payload);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
         } catch {
           console.log("Could not decode JWT payload");

@@ -15,10 +15,11 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, Inbox, Loader2, RefreshCw, type LucideIcon } from "lucide-react";
+import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "./andamio-alert";
 import { AndamioButton } from "./andamio-button";
 import { AndamioSkeleton } from "./andamio-skeleton";
+import type { IconComponent } from "~/types/ui";
 
 /**
  * LoadingState - Skeleton loading placeholder
@@ -120,7 +121,7 @@ export interface ErrorStateProps {
    * Icon to display
    * @default AlertCircle
    */
-  icon?: LucideIcon;
+  icon?: IconComponent;
 }
 
 export function ErrorState({
@@ -129,8 +130,9 @@ export function ErrorState({
   onRetry,
   retryLabel = "Try Again",
   className,
-  icon: Icon = AlertCircle,
+  icon: IconProp,
 }: ErrorStateProps) {
+  const Icon: IconComponent = IconProp ?? AlertCircle;
   return (
     <div className={`space-y-4 ${className ?? ""}`}>
       <AndamioAlert variant="destructive">
@@ -165,7 +167,7 @@ export interface EmptyStateProps {
    * Icon to display
    * @default Inbox
    */
-  icon?: LucideIcon;
+  icon?: IconComponent;
   /**
    * Action button configuration
    */
@@ -182,10 +184,11 @@ export interface EmptyStateProps {
 export function EmptyState({
   title = "No items found",
   description,
-  icon: Icon = Inbox,
+  icon: IconProp,
   action,
   className,
 }: EmptyStateProps) {
+  const Icon: IconComponent = IconProp ?? Inbox;
   return (
     <div
       className={`flex flex-col items-center justify-center py-12 text-center border rounded-md ${className ?? ""}`}
@@ -229,11 +232,12 @@ export function NotFoundState({
   backAction,
   className,
 }: NotFoundStateProps) {
+  const NotFoundIcon: IconComponent = AlertCircle;
   return (
     <EmptyState
       title={`${itemType} not found`}
       description={`The ${itemType.toLowerCase()} you're looking for doesn't exist or has been removed.`}
-      icon={AlertCircle}
+      icon={NotFoundIcon}
       action={backAction}
       className={className}
     />

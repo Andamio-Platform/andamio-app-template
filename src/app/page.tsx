@@ -15,6 +15,12 @@ import {
   Award,
   Users,
 } from "lucide-react";
+import type { IconListItem, IconComponent } from "~/types/ui";
+
+interface TechItem {
+  name: string;
+  icon: IconComponent;
+}
 
 export default function Home() {
   return (
@@ -68,7 +74,7 @@ export default function Home() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-5xl px-6 lg:px-8">
           <div className="grid gap-12 sm:grid-cols-3">
-            {[
+            {([
               {
                 icon: GraduationCap,
                 title: "Structured Learning",
@@ -84,7 +90,7 @@ export default function Home() {
                 title: "Community Driven",
                 description: "Learn with peers and build your reputation in the ecosystem.",
               },
-            ].map((item) => {
+            ] as IconListItem[]).map((item) => {
               const Icon = item.icon;
               return (
                 <div key={item.title} className="text-center">
@@ -236,19 +242,22 @@ export default function Home() {
             BUILT WITH
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
-            {[
+            {([
               { name: "Next.js 15", icon: Blocks },
               { name: "TypeScript", icon: Blocks },
               { name: "Cardano", icon: Shield },
               { name: "Tailwind", icon: Sparkles },
               { name: "tRPC", icon: Blocks },
               { name: "Mesh SDK", icon: Blocks },
-            ].map((tech) => (
-              <div key={tech.name} className="flex items-center gap-2 text-muted-foreground">
-                <tech.icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{tech.name}</span>
-              </div>
-            ))}
+            ] as TechItem[]).map((tech) => {
+              const TechIcon = tech.icon;
+              return (
+                <div key={tech.name} className="flex items-center gap-2 text-muted-foreground">
+                  <TechIcon className="h-4 w-4" />
+                  <span className="text-sm font-medium">{tech.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -16,11 +16,12 @@ import {
   Palette,
   FolderKanban,
   ChevronRight,
-  Layers
+  Layers,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import type { NavItem } from "~/types/ui";
 
-const navigation = [
+const navigation: NavItem[] = [
   {
     name: "Dashboard",
     href: "/dashboard",

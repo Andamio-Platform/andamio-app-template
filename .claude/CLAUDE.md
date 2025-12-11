@@ -91,6 +91,47 @@ if (!module) {  // Dangerous!
 - Use `assignmentData` instead of `assignment` when appropriate
 - Be explicit to avoid conflicts with type names and reserved words
 
+### Shared UI Types
+
+**CRITICAL: Use shared types from `~/types/ui` for consistent icon and navigation patterns.**
+
+The `src/types/ui.ts` file provides type-safe definitions for common UI patterns involving Lucide icons. Always import from here instead of defining local types.
+
+**Available Types**:
+- `IconComponent` - Type alias for Lucide icon components
+- `NavItem` - Navigation items (sidebar, mobile nav)
+- `IconListItem` - Items with icon, title, description (feature lists, value props)
+- `StepItem` - Onboarding steps with completion state
+- `RouteCategory` / `RouteInfo` - Route documentation (sitemap)
+- `TabItem` - Tab definitions for tabbed interfaces
+
+**Examples**:
+
+```typescript
+// ✅ CORRECT - Import from shared types
+import type { NavItem, IconComponent } from "~/types/ui";
+
+const navigation: NavItem[] = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, description: "Overview" },
+];
+```
+
+```typescript
+// ❌ WRONG - Defining local types for icons
+type IconType = typeof LayoutDashboard;
+
+interface NavItem {
+  icon: IconType;
+  // ...
+}
+```
+
+**When to Add New Types**:
+Add new types to `~/types/ui.ts` when:
+1. The pattern involves Lucide icons
+2. The pattern is used in 2+ files
+3. The pattern represents a common UI concept
+
 ## App Layout Structure
 
 ### Full-Screen Layout
@@ -433,6 +474,9 @@ const data = (await response.json()) as YourOutputType;
 
 **Courses**:
 - `src/components/courses/owned-courses-list.tsx` - Course list component
+
+**Types**:
+- `src/types/ui.ts` - Shared UI types (IconComponent, NavItem, StepItem, TabItem, etc.)
 
 **Responsive Layout** (see `docs/RESPONSIVE-DESIGN.md` for full docs):
 - `src/components/andamio/andamio-page-header.tsx` - Responsive page headers (h1)

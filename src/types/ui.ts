@@ -107,3 +107,17 @@ export interface TabItem {
   /** Tab content (React node) */
   content: React.ReactNode;
 }
+
+/**
+ * Navigation section for grouped sidebar navigation.
+ */
+export interface NavSection {
+  /** Section title (displayed as header) */
+  title: string;
+  /** Items in this section */
+  items: NavItem[];
+  /** Whether this section requires authentication to show */
+  requiresAuth?: boolean;
+  /** Whether to render section in a smaller/muted style (e.g., dev tools) */
+  muted?: boolean;
+}

@@ -10,59 +10,89 @@ import {
   LayoutDashboard,
   LogOut,
   GraduationCap,
-  Sparkles,
   BookOpen,
   Map,
   Palette,
   FolderKanban,
   ChevronRight,
   Layers,
+  PenTool,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
-import type { NavItem } from "~/types/ui";
+import type { NavSection } from "~/types/ui";
 
-const navigation: NavItem[] = [
+/**
+ * Navigation structure organized by user intent:
+ *
+ * - Overview: Personal hub (Dashboard)
+ * - Discover: Public browsing for Learners & Contributors
+ * - Studio: Creator tools for managing owned courses & projects
+ * - Dev Tools: Development utilities (muted styling)
+ */
+const navigationSections: NavSection[] = [
   {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    description: "Overview & status",
+    title: "Overview",
+    items: [
+      {
+        name: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+        description: "Your personal hub",
+      },
+    ],
   },
   {
-    name: "Browse Courses",
-    href: "/course",
-    icon: GraduationCap,
-    description: "Explore catalog",
+    title: "Discover",
+    items: [
+      {
+        name: "Browse Courses",
+        href: "/course",
+        icon: GraduationCap,
+        description: "Learn new skills",
+      },
+      {
+        name: "Browse Projects",
+        href: "/project",
+        icon: FolderKanban,
+        description: "Find opportunities",
+      },
+    ],
   },
   {
-    name: "My Courses",
-    href: "/courses",
-    icon: BookOpen,
-    description: "Your course library",
+    title: "Studio",
+    requiresAuth: true,
+    items: [
+      {
+        name: "Course Studio",
+        href: "/studio/course",
+        icon: BookOpen,
+        description: "Manage your courses",
+      },
+      {
+        name: "Project Studio",
+        href: "/studio/project",
+        icon: PenTool,
+        description: "Manage your projects",
+      },
+    ],
   },
   {
-    name: "Browse Projects",
-    href: "/project",
-    icon: FolderKanban,
-    description: "Find projects",
-  },
-  {
-    name: "Studio",
-    href: "/studio",
-    icon: Sparkles,
-    description: "Creator tools",
-  },
-  {
-    name: "Components",
-    href: "/components",
-    icon: Palette,
-    description: "UI showcase",
-  },
-  {
-    name: "Sitemap",
-    href: "/sitemap",
-    icon: Map,
-    description: "All routes",
+    title: "Dev Tools",
+    muted: true,
+    items: [
+      {
+        name: "Components",
+        href: "/components",
+        icon: Palette,
+        description: "UI showcase",
+      },
+      {
+        name: "Sitemap",
+        href: "/sitemap",
+        icon: Map,
+        description: "All routes",
+      },
+    ],
   },
 ];
 
@@ -85,44 +115,75 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="space-y-1">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            const Icon = item.icon;
+        <div className="space-y-6">
+          {navigationSections.map((section) => {
+            // Hide auth-required sections when not authenticated
+            if (section.requiresAuth && !isAuthenticated) {
+              return null;
+            }
 
             return (
-              <Link key={item.href} href={item.href}>
-                <div
+              <div key={section.title} className="space-y-1">
+                {/* Section Header */}
+                <h3
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer select-none",
-                    "active:scale-95",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    "px-3 text-[10px] font-semibold uppercase tracking-wider",
+                    section.muted
+                      ? "text-muted-foreground/60"
+                      : "text-muted-foreground"
                   )}
                 >
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 flex-shrink-0 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
-                    )}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className={cn(
-                      "block font-medium truncate",
-                      isActive && "text-sidebar-foreground"
-                    )}>
-                      {item.name}
-                    </span>
-                    <span className="hidden sm:block text-[11px] text-muted-foreground truncate">
-                      {item.description}
-                    </span>
-                  </div>
-                  {isActive && (
-                    <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
-                  )}
-                </div>
-              </Link>
+                  {section.title}
+                </h3>
+
+                {/* Section Items */}
+                {section.items.map((item) => {
+                  const isActive =
+                    pathname === item.href || pathname.startsWith(item.href + "/");
+                  const Icon = item.icon;
+
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <div
+                        className={cn(
+                          "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 cursor-pointer select-none",
+                          "active:scale-95",
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                          section.muted && !isActive && "opacity-70"
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 flex-shrink-0 transition-colors",
+                            isActive
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-sidebar-foreground"
+                          )}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span
+                            className={cn(
+                              "block font-medium truncate",
+                              isActive && "text-sidebar-foreground",
+                              section.muted && !isActive && "font-normal"
+                            )}
+                          >
+                            {item.name}
+                          </span>
+                          <span className="hidden sm:block text-[11px] text-muted-foreground truncate">
+                            {item.description}
+                          </span>
+                        </div>
+                        {isActive && (
+                          <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </div>

@@ -1,6 +1,6 @@
 {
   "name": "andamio-t3-app-template",
-  "version": "0.4.0",
+  "version": "0.4.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@andamio/db-api": "^0.4.1",
+    "@andamio/db-api": "^0.4.3",
     "@andamio/transactions": "^0.4.1",
     "@andamiojs/datum-utils": "^0.4.6",
     "@dnd-kit/core": "^6.3.1",

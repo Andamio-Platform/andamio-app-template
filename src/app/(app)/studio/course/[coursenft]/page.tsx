@@ -21,7 +21,7 @@ import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 // TODO: Re-enable when Andamioscan is ready
 // import { AndamioAccordion, AndamioAccordionContent, AndamioAccordionItem, AndamioAccordionTrigger } from "~/components/andamio/andamio-accordion";
 // import { AndamioCode } from "~/components/andamio/andamio-code";
-import { AlertCircle, ArrowLeft, FileText, Link2, Save, Settings, Trash2, Users, BookOpen, Blocks } from "lucide-react";
+import { AlertCircle, FileText, Link2, Save, Settings, Trash2, Users, BookOpen, Blocks } from "lucide-react";
 import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { OnChainModulesSection } from "~/components/courses/on-chain-modules-section";
@@ -32,6 +32,7 @@ import {
   type UpdateCourseInput,
   updateCourseInputSchema,
 } from "@andamio/db-api";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 
 /**
  * Studio page for editing course details
@@ -465,12 +466,10 @@ export default function CourseEditPage() {
   if (error || !course) {
     return (
       <div className="space-y-6">
-        <Link href="/studio/course">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Courses
-          </AndamioButton>
-        </Link>
+        <CourseBreadcrumb
+          mode="studio"
+          currentPage="course"
+        />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -489,14 +488,15 @@ export default function CourseEditPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <CourseBreadcrumb
+        mode="studio"
+        course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Untitled Course" }}
+        currentPage="course"
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link href="/studio/course">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Courses
-          </AndamioButton>
-        </Link>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
             {course.course_code}

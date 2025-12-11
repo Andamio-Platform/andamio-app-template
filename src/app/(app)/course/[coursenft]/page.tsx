@@ -12,6 +12,7 @@ import { AlertCircle, BookOpen, Blocks, ChevronRight, CheckCircle, Target } from
 import { type CourseOutput, type ListCourseModulesOutput } from "@andamio/db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { useCourse } from "~/hooks/use-andamioscan";
 
@@ -177,6 +178,13 @@ export default function CourseDetailPage() {
   // Course and modules display
   return (
     <div className="space-y-8">
+      {/* Breadcrumb Navigation */}
+      <CourseBreadcrumb
+        mode="public"
+        course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+        currentPage="course"
+      />
+
       {/* Course Header */}
       <div>
         <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 mb-2">

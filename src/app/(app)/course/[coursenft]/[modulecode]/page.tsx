@@ -12,9 +12,10 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, BookOpen, Settings, FileText, Blocks, CheckCircle } from "lucide-react";
-import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
+import { type CourseModuleOutput, type CourseOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
 import { useCourse } from "~/hooks/use-andamioscan";
 import { type AndamioscanModule } from "~/lib/andamioscan";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 
 /**
  * Public page displaying module details with SLTs and lessons
@@ -151,7 +152,8 @@ export default function ModuleLessonsPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated } = useAndamioAuth();
 
-  const [module, setModule] = useState<CourseModuleOutput | null>(null);
+  const [course, setCourse] = useState<CourseOutput | null>(null);
+  const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +185,21 @@ export default function ModuleLessonsPage() {
       setError(null);
 
       try {
+        // Fetch course details for breadcrumb (POST with body)
+        const courseResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
+        );
+
+        if (courseResponse.ok) {
+          const courseData = (await courseResponse.json()) as CourseOutput;
+          setCourse(courseData);
+        }
+
         // Fetch course module details (POST with body)
         const moduleResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
@@ -201,7 +218,7 @@ export default function ModuleLessonsPage() {
         }
 
         const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
-        setModule(moduleData);
+        setCourseModule(moduleData);
 
         // Fetch SLTs for the module (POST with body)
         const sltsResponse = await fetch(
@@ -291,7 +308,7 @@ export default function ModuleLessonsPage() {
   }
 
   // Error state
-  if (error || !module) {
+  if (error || !courseModule) {
     return (
       <div className="space-y-6">
         <AndamioPageHeader title="Module Not Found" />
@@ -307,15 +324,21 @@ export default function ModuleLessonsPage() {
     );
   }
 
-  // Module display (with or without SLTs/lessons)
-  // TypeScript type narrowing: module is guaranteed non-null here
-  const moduleData: CourseModuleOutput = module;
-
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      {course && (
+        <CourseBreadcrumb
+          mode="public"
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+          currentPage="module"
+        />
+      )}
+
       <AndamioPageHeader
-        title={moduleData.title}
-        description={moduleData.description ?? undefined}
+        title={courseModule.title}
+        description={courseModule.description ?? undefined}
         action={
           isAuthenticated ? (
             <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
@@ -329,9 +352,9 @@ export default function ModuleLessonsPage() {
       />
       <div className="flex gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {moduleData.module_code}
+          {courseModule.module_code}
         </AndamioBadge>
-        <AndamioBadge variant="outline">{moduleData.status}</AndamioBadge>
+        <AndamioBadge variant="outline">{courseModule.status}</AndamioBadge>
       </div>
 
       {/* Student Learning Targets & Lessons Combined */}

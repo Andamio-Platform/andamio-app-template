@@ -21,10 +21,11 @@ import {
   AndamioDialogHeader,
   AndamioDialogTitle,
 } from "~/components/andamio/andamio-dialog";
-import { AlertCircle, Plus, Pencil, Trash2, ArrowLeft, BookOpen, GripVertical, Save, X, Search } from "lucide-react";
+import { AlertCircle, Plus, Pencil, Trash2, BookOpen, GripVertical, Save, X, Search } from "lucide-react";
 import { HybridSLTStatus } from "~/components/courses/hybrid-slt-status";
 import {
   type CourseModuleOutput,
+  type CourseOutput,
   type SLTOutput,
   type ListSLTsOutput,
   type ListLessonsOutput,
@@ -35,6 +36,7 @@ import {
   updateSLTInputSchema,
   batchUpdateSLTIndexesInputSchema,
 } from "@andamio/db-api";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import Link from "next/link";
 import {
   DndContext,
@@ -202,7 +204,8 @@ export default function SLTManagementPage() {
   const moduleCode = params.modulecode as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [module, setModule] = useState<CourseModuleOutput | null>(null);
+  const [course, setCourse] = useState<CourseOutput | null>(null);
+  const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [combinedData, setCombinedData] = useState<CombinedSLTLesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -307,6 +310,21 @@ export default function SLTManagementPage() {
       setError(null);
 
       try {
+        // Fetch course details for breadcrumb (POST /courses/get)
+        const courseResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
+        );
+
+        if (courseResponse.ok) {
+          const courseData = (await courseResponse.json()) as CourseOutput;
+          setCourse(courseData);
+        }
+
         // Fetch course module details (POST /course-modules/get)
         const moduleResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
@@ -325,7 +343,7 @@ export default function SLTManagementPage() {
         }
 
         const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
-        setModule(moduleData);
+        setCourseModule(moduleData);
 
         // Fetch combined SLT and lesson data
         await fetchCombinedData();
@@ -657,9 +675,18 @@ export default function SLTManagementPage() {
   }
 
   // Error state
-  if (error || !module) {
+  if (error || !courseModule) {
     return (
       <div className="space-y-6">
+        {/* Breadcrumb Navigation */}
+        {course && (
+          <CourseBreadcrumb
+            mode="studio"
+            course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+            currentPage="slts"
+          />
+        )}
+
         <AndamioPageHeader title="Module Not Found" />
 
         <AndamioAlert variant="destructive">
@@ -675,20 +702,20 @@ export default function SLTManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Module
-          </AndamioButton>
-        </Link>
-      </div>
+      {/* Breadcrumb Navigation */}
+      {course && (
+        <CourseBreadcrumb
+          mode="studio"
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+          currentPage="slts"
+        />
+      )}
 
       <div className="flex items-center justify-between">
         <AndamioPageHeader
-          title={`Manage SLTs: ${module.title}`}
-          description={`Student Learning Targets for ${module.module_code}`}
+          title={`Manage SLTs: ${courseModule.title}`}
+          description={`Student Learning Targets for ${courseModule.module_code}`}
         />
         <div className="flex gap-2 self-start mt-2">
           {isReorderMode ? (

@@ -2,18 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { env } from "~/env";
 import { ContentViewer } from "~/components/editor";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioPageHeader } from "~/components/andamio";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
+import { type CourseOutput, type CourseModuleOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -50,6 +50,8 @@ export default function LearnerAssignmentPage() {
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
 
+  const [course, setCourse] = useState<CourseOutput | null>(null);
+  const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,40 @@ export default function LearnerAssignmentPage() {
       setError(null);
 
       try {
+        // Fetch course details for breadcrumb
+        const courseResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
+        );
+
+        if (courseResponse.ok) {
+          const courseData = (await courseResponse.json()) as CourseOutput;
+          setCourse(courseData);
+        }
+
+        // Fetch module details for breadcrumb
+        const moduleResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+            }),
+          }
+        );
+
+        if (moduleResponse.ok) {
+          const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
+          setCourseModule(moduleData);
+        }
+
+        // Fetch assignment details
         const response = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/get`,
           {
@@ -108,12 +144,15 @@ export default function LearnerAssignmentPage() {
   if (error || !assignment) {
     return (
       <div className="space-y-6">
-        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Module
-          </AndamioButton>
-        </Link>
+        {/* Breadcrumb Navigation */}
+        {course && courseModule && (
+          <CourseBreadcrumb
+            mode="public"
+            course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+            courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+            currentPage="assignment"
+          />
+        )}
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -126,13 +165,15 @@ export default function LearnerAssignmentPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-        <AndamioButton variant="ghost" size="sm">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Module
-        </AndamioButton>
-      </Link>
+      {/* Breadcrumb Navigation */}
+      {course && courseModule && (
+        <CourseBreadcrumb
+          mode="public"
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+          currentPage="assignment"
+        />
+      )}
 
       <AndamioPageHeader
         title={assignment.title}

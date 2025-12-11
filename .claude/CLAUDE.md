@@ -474,6 +474,7 @@ const data = (await response.json()) as YourOutputType;
 
 **Courses**:
 - `src/components/courses/owned-courses-list.tsx` - Course list component
+- `src/components/courses/course-breadcrumb.tsx` - Navigation breadcrumbs for course/studio routes
 
 **Types**:
 - `src/types/ui.ts` - Shared UI types (IconComponent, NavItem, StepItem, TabItem, etc.)

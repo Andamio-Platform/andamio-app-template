@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
@@ -34,11 +33,12 @@ import {
 } from "~/components/andamio/andamio-select";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AlertCircle, ArrowLeft, Users, CheckCircle, Clock, XCircle, Search, X } from "lucide-react";
+import { AlertCircle, Users, CheckCircle, Clock, XCircle, Search, X } from "lucide-react";
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
 } from "@andamio/db-api";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { ACCEPT_ASSIGNMENT, DENY_ASSIGNMENT } from "@andamio/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
@@ -226,6 +226,11 @@ export default function InstructorDashboardPage() {
   if (error || !course) {
     return (
       <div className="space-y-6">
+        <CourseBreadcrumb
+          mode="studio"
+          currentPage="instructor"
+        />
+
         <AndamioPageHeader title="Instructor Dashboard" />
 
         <AndamioAlert variant="destructive">
@@ -239,15 +244,12 @@ export default function InstructorDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Link href={`/studio/course/${courseNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Course
-          </AndamioButton>
-        </Link>
-      </div>
+      {/* Breadcrumb Navigation */}
+      <CourseBreadcrumb
+        mode="studio"
+        course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+        currentPage="instructor"
+      />
 
       <AndamioPageHeader
         title="Instructor Dashboard"

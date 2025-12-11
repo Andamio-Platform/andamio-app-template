@@ -22,7 +22,7 @@ import {
   AndamioSelectTrigger,
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
-import { AlertCircle, ArrowLeft, Edit2, Save, Trash2, Upload, FileText, BookOpen, Blocks, Settings, Target } from "lucide-react";
+import { AlertCircle, Edit2, Save, Trash2, Upload, FileText, BookOpen, Blocks, Settings, Target } from "lucide-react";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import {
@@ -36,6 +36,7 @@ import {
 } from "~/components/andamio/andamio-dialog";
 import {
   type CourseModuleOutput,
+  type CourseOutput,
   type ListCourseModulesOutput,
   type UpdateCourseModuleInput,
   type UpdateModuleStatusInput,
@@ -43,6 +44,7 @@ import {
   updateModuleStatusInputSchema,
 } from "@andamio/db-api";
 import { MintModuleTokens } from "~/components/transactions";
+import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 
 /**
  * Studio page for editing course module details and status
@@ -101,6 +103,7 @@ export default function ModuleEditPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const [course, setCourse] = useState<CourseOutput | null>(null);
   const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
   const [moduleWithSlts, setModuleWithSlts] = useState<ListCourseModulesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,6 +141,21 @@ export default function ModuleEditPage() {
       setError(null);
 
       try {
+        // Fetch course details for breadcrumb (POST with body)
+        const courseResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
+        );
+
+        if (courseResponse.ok) {
+          const courseData = (await courseResponse.json()) as CourseOutput;
+          setCourse(courseData);
+        }
+
         // Fetch single module details (POST with body)
         const moduleResponse = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
@@ -464,12 +482,11 @@ export default function ModuleEditPage() {
   if (error || !courseModule) {
     return (
       <div className="space-y-6">
-        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Module
-          </AndamioButton>
-        </Link>
+        <CourseBreadcrumb
+          mode="studio"
+          course={course ? { nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" } : undefined}
+          currentPage="module"
+        />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -488,14 +505,16 @@ export default function ModuleEditPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <CourseBreadcrumb
+        mode="studio"
+        course={course ? { nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" } : undefined}
+        courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+        currentPage="module"
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Module
-          </AndamioButton>
-        </Link>
+      <div className="flex items-center justify-end">
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {courseModule?.module_code}
         </AndamioBadge>

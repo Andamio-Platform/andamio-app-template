@@ -394,7 +394,7 @@ export default function SLTManagementPage() {
       const validation = batchUpdateSLTIndexesInputSchema.safeParse(batchInput);
 
       if (!validation.success) {
-        const errors = validation.error.errors
+        const errors = validation.error.issues
           .map((err) => `${err.path.join(".")}: ${err.message}`)
           .join(", ");
         throw new Error(`Validation failed: ${errors}`);
@@ -456,7 +456,7 @@ export default function SLTManagementPage() {
       const createValidation = createSLTInputSchema.safeParse(createInput);
 
       if (!createValidation.success) {
-        const errors = createValidation.error.errors
+        const errors = createValidation.error.issues
           .map((err) => `${err.path.join(".")}: ${err.message}`)
           .join(", ");
         throw new Error(`Validation failed: ${errors}`);
@@ -515,7 +515,7 @@ export default function SLTManagementPage() {
       const updateValidation = updateSLTInputSchema.safeParse(updateInput);
 
       if (!updateValidation.success) {
-        const errors = updateValidation.error.errors
+        const errors = updateValidation.error.issues
           .map((err) => `${err.path.join(".")}: ${err.message}`)
           .join(", ");
         throw new Error(`Validation failed: ${errors}`);

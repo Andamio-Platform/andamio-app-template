@@ -232,7 +232,7 @@ export default function ModuleEditPage() {
       const updateValidation = updateCourseModuleInputSchema.safeParse(updateInput);
 
       if (!updateValidation.success) {
-        const errors = updateValidation.error.errors
+        const errors = updateValidation.error.issues
           .map((err) => `${err.path.join(".")}: ${err.message}`)
           .join(", ");
         throw new Error(`Validation failed: ${errors}`);
@@ -266,7 +266,7 @@ export default function ModuleEditPage() {
         const statusValidation = updateModuleStatusInputSchema.safeParse(statusInput);
 
         if (!statusValidation.success) {
-          const errors = statusValidation.error.errors
+          const errors = statusValidation.error.issues
             .map((err) => `${err.path.join(".")}: ${err.message}`)
             .join(", ");
           throw new Error(`Status validation failed: ${errors}`);

@@ -375,7 +375,7 @@ export default function CourseEditPage() {
 
       if (!validationResult.success) {
         // Extract validation errors
-        const errors = validationResult.error.errors
+        const errors = validationResult.error.issues
           .map((err) => `${err.path.join(".")}: ${err.message}`)
           .join(", ");
         throw new Error(`Validation failed: ${errors}`);

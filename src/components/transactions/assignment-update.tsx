@@ -23,8 +23,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { Send, FileEdit, Shield, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
-import { env } from "~/env";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import type { JSONContent } from "@tiptap/core";
 
 export interface AssignmentUpdateProps {
@@ -106,12 +104,6 @@ export function AssignmentUpdate({
     // Compute evidence hash
     const hash = computeAssignmentInfoHash(evidence);
     setEvidenceHash(hash);
-
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
 
     await execute({
       definition: v2.COURSE_STUDENT_ASSIGNMENT_UPDATE,

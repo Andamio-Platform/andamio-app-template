@@ -17,6 +17,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { ContentEditor } from "~/components/editor";
 import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
+import { AndamioPageHeader } from "~/components/andamio";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
@@ -198,10 +199,10 @@ export default function EditTaskPage() {
           </AndamioButton>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold">Edit Task</h1>
-          <p className="text-muted-foreground">Connect your wallet to edit tasks</p>
-        </div>
+        <AndamioPageHeader
+          title="Edit Task"
+          description="Connect your wallet to edit tasks"
+        />
 
         <div className="max-w-md">
           <AndamioAuthButton />
@@ -258,10 +259,10 @@ export default function EditTaskPage() {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Edit Task</h1>
-        <p className="text-muted-foreground">Update task details</p>
-      </div>
+      <AndamioPageHeader
+        title="Edit Task"
+        description="Update task details"
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

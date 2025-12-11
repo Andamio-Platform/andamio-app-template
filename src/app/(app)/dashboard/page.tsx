@@ -13,6 +13,7 @@ import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioPageHeader } from "~/components/andamio";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,12 +24,11 @@ export default function DashboardPage() {
   if (!isAuthenticated || !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Welcome to Andamio</h1>
-          <p className="text-muted-foreground max-w-md">
-            Connect your Cardano wallet to access your personalized learning dashboard
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Welcome to Andamio"
+          description="Connect your Cardano wallet to access your personalized learning dashboard"
+          centered
+        />
         <div className="w-full max-w-md">
           <AndamioAuthButton />
         </div>

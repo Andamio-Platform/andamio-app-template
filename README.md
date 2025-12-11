@@ -1,8 +1,14 @@
 # Andamio T3 App Template
 
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-0.4.0-green.svg)](./CHANGELOG.md)
+
 A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
 
-**Version**: 0.4.0 | **Last Updated**: December 2024
+**Version**: 0.4.0 | **Last Updated**: December 11, 2025 | [CHANGELOG](./CHANGELOG.md)
 
 ## Current Status
 
@@ -12,7 +18,7 @@ A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadc
 | **Creator Studio** | ✅ Complete | Course/module editing, on-chain sync, rich text |
 | **Project System** | 🚧 In Progress | Treasury, tasks, commitments |
 
-📊 **Detailed Status**: [STATUS.md](./STATUS.md) | [ROADMAP.md](./ROADMAP.md)
+📊 **Detailed Status**: [STATUS.md](./docs/project/STATUS.md) | [ROADMAP.md](./docs/project/ROADMAP.md)
 
 ## Tech Stack
 
@@ -168,7 +174,7 @@ authLogger.error("Auth failed:", error);   // Errors always logged
 | **Andamio Indexer** | UTXOs, datums, on-chain enrollment |
 | **Koios API** | Transaction confirmation |
 
-See [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md) for architecture details.
+See [docs/architecture/DATA-SOURCES.md](./docs/architecture/DATA-SOURCES.md) for architecture details.
 
 ## Styling
 
@@ -186,16 +192,22 @@ Use semantic colors only - never hardcoded Tailwind colors:
 
 **Available**: `success`, `warning`, `info`, `destructive`, `primary`, `secondary`, `muted`
 
-See [docs/SEMANTIC-COLORS.md](./docs/SEMANTIC-COLORS.md) for complete guide.
+See [docs/styling/SEMANTIC-COLORS.md](./docs/styling/SEMANTIC-COLORS.md) for complete guide.
 
 ## Scripts
 
-```bash
-npm run dev          # Development server
-npm run build        # Production build
-npm run typecheck    # Type checking
-npm run lint         # Linting
-```
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Start development server with Turbopack hot reload |
+| `npm run build` | Create optimized production build |
+| `npm run start` | Run production server (after build) |
+| `npm run check` | Run lint + typecheck together (use before commits) |
+| `npm run typecheck` | TypeScript type checking only |
+| `npm run lint` | ESLint code quality check |
+| `npm run lint:fix` | Auto-fix ESLint issues |
+| `npm run format:write` | Format code with Prettier |
+| `npm run format:check` | Check formatting without changes |
+| `npm run preview` | Build and start production locally |
 
 ## Adding a New Page
 
@@ -221,13 +233,20 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 
 ## Documentation
 
-- [STATUS.md](./STATUS.md) - Implementation status
-- [ROADMAP.md](./ROADMAP.md) - Development roadmap
-- [docs/API-ENDPOINT-REFERENCE.md](./docs/API-ENDPOINT-REFERENCE.md) - API endpoints
-- [docs/DATA-SOURCES.md](./docs/DATA-SOURCES.md) - Data architecture
-- [docs/SEMANTIC-COLORS.md](./docs/SEMANTIC-COLORS.md) - Color system
+### Getting Started
+- [docs/guides/GETTING-STARTED.md](./docs/guides/GETTING-STARTED.md) - **New? Start here**
+- [docs/README.md](./docs/README.md) - Documentation index (MOC)
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
+- [CHANGELOG.md](./CHANGELOG.md) - Version history
+
+### Reference
+- [docs/project/STATUS.md](./docs/project/STATUS.md) - Implementation status
+- [docs/project/ROADMAP.md](./docs/project/ROADMAP.md) - Development roadmap
+- [docs/api/API-ENDPOINT-REFERENCE.md](./docs/api/API-ENDPOINT-REFERENCE.md) - API endpoints
+- [docs/architecture/DATA-SOURCES.md](./docs/architecture/DATA-SOURCES.md) - Data architecture
+- [docs/styling/SEMANTIC-COLORS.md](./docs/styling/SEMANTIC-COLORS.md) - Color system
 - [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
-- [.claude/CLAUDE.md](./.claude/CLAUDE.md) - Development guidelines
+- [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
 
 ## Resources
 

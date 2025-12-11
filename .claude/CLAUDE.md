@@ -434,6 +434,12 @@ const data = (await response.json()) as YourOutputType;
 **Courses**:
 - `src/components/courses/owned-courses-list.tsx` - Course list component
 
+**Responsive Layout** (see `docs/RESPONSIVE-DESIGN.md` for full docs):
+- `src/components/andamio/andamio-page-header.tsx` - Responsive page headers (h1)
+- `src/components/andamio/andamio-section-header.tsx` - Responsive section headers (h2/h3)
+- `src/components/andamio/andamio-table-container.tsx` - Scrollable table wrapper
+- `src/styles/globals.css` - Breakpoint definitions (xs, sm, md, lg, xl, 2xl)
+
 **Editor** (see `src/components/editor/README.md` for full docs):
 - `src/components/editor/index.ts` - Main exports
 - `src/components/editor/components/ContentEditor/index.tsx` - **Primary editing component**
@@ -467,6 +473,63 @@ const [content, setContent] = useState<JSONContent | null>(initialContent);
 - ❌ `RenderEditor` component
 - ❌ `AndamioFixedToolbar` component
 - ❌ `FullscreenEditorWrapper` component
+
+## Responsive Design
+
+**CRITICAL: Use Andamio layout components for consistent, responsive layouts across all pages.**
+
+See `docs/RESPONSIVE-DESIGN.md` for the complete style guide.
+
+### Key Components
+
+```typescript
+import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
+
+// Page headers (h1)
+<AndamioPageHeader
+  title="Page Title"
+  description="Optional description"
+  action={<Button>Action</Button>}  // Stacks on mobile
+/>
+
+// Section headers (h2)
+<AndamioSectionHeader
+  title="Section Title"
+  icon={<Icon className="h-5 w-5" />}
+  action={<Button>Action</Button>}
+/>
+
+// Responsive tables
+<AndamioTableContainer>
+  <AndamioTable>...</AndamioTable>
+</AndamioTableContainer>
+```
+
+### Breakpoints
+
+Defined in `src/styles/globals.css`:
+- `xs:` 375px - Small phones
+- `sm:` 640px - Large phones, small tablets
+- `md:` 768px - Tablets
+- `lg:` 1024px - Laptops
+- `xl:` 1280px - Desktops
+- `2xl:` 1536px - Large monitors
+
+### Common Patterns
+
+```typescript
+// Flex stacking: vertical on mobile, horizontal on larger
+<div className="flex flex-col sm:flex-row gap-4">
+
+// Responsive text
+<h1 className="text-2xl sm:text-3xl font-bold">
+
+// Hide columns on mobile
+<TableCell className="hidden md:table-cell">
+
+// Full width button on mobile
+<Button className="w-full sm:w-auto">
+```
 
 ## Documentation
 

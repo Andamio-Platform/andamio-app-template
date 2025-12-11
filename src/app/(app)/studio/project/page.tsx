@@ -10,6 +10,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, FolderKanban, Settings } from "lucide-react";
 import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 
@@ -58,12 +59,10 @@ function ProjectListContent() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Project Studio</h1>
-          <p className="text-muted-foreground">
-            Manage and edit your Andamio projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Project Studio"
+          description="Manage and edit your Andamio projects"
+        />
 
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
@@ -78,12 +77,10 @@ function ProjectListContent() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Project Studio</h1>
-          <p className="text-muted-foreground">
-            Manage and edit your Andamio projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Project Studio"
+          description="Manage and edit your Andamio projects"
+        />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -98,12 +95,10 @@ function ProjectListContent() {
   if (projects.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Project Studio</h1>
-          <p className="text-muted-foreground">
-            Manage and edit your Andamio projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Project Studio"
+          description="Manage and edit your Andamio projects"
+        />
 
         <AndamioAlert>
           <FolderKanban className="h-4 w-4" />
@@ -119,16 +114,12 @@ function ProjectListContent() {
   // Projects list
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Project Studio</h1>
-          <p className="text-muted-foreground">
-            Manage and edit your Andamio projects
-          </p>
-        </div>
-      </div>
+      <AndamioPageHeader
+        title="Project Studio"
+        description="Manage and edit your Andamio projects"
+      />
 
-      <div className="border rounded-md">
+      <AndamioTableContainer>
         <AndamioTable>
           <AndamioTableHeader>
             <AndamioTableRow>
@@ -176,7 +167,7 @@ function ProjectListContent() {
             ))}
           </AndamioTableBody>
         </AndamioTable>
-      </div>
+      </AndamioTableContainer>
     </div>
   );
 }

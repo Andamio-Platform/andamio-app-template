@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RequireAuth } from "~/components/auth/require-auth";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioPageHeader } from "~/components/andamio";
 import { BookOpen, FolderKanban } from "lucide-react";
 
 export default function StudioPage() {
@@ -14,12 +15,10 @@ export default function StudioPage() {
       description="Connect your wallet to access the creator studio"
     >
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Studio</h1>
-          <p className="text-muted-foreground">
-            Create and manage your courses and projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Studio"
+          description="Create and manage your courses and projects"
+        />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/studio/course">

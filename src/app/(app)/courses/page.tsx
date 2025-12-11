@@ -3,6 +3,7 @@
 import React from "react";
 import { RequireAuth } from "~/components/auth/require-auth";
 import { CourseManager } from "~/components/courses/course-manager";
+import { AndamioPageHeader } from "~/components/andamio";
 
 export default function CoursesPage() {
   return (
@@ -11,13 +12,10 @@ export default function CoursesPage() {
       description="Connect your wallet to view your courses"
     >
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Course Creator Studio</h1>
-          <p className="text-muted-foreground">
-            Manage and view all your Andamio courses with powerful filtering and sorting
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Course Creator Studio"
+          description="Manage and view all your Andamio courses with powerful filtering and sorting"
+        />
 
         {/* Course Manager with all features */}
         <CourseManager />

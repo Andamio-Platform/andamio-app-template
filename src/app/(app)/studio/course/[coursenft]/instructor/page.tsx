@@ -17,6 +17,7 @@ import {
   AndamioTableHeader,
   AndamioTableRow,
 } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -225,9 +226,7 @@ export default function InstructorDashboardPage() {
   if (error || !course) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
-        </div>
+        <AndamioPageHeader title="Instructor Dashboard" />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -241,20 +240,19 @@ export default function InstructorDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link href={`/studio/course/${courseNftPolicyId}`}>
-              <AndamioButton variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Course
-              </AndamioButton>
-            </Link>
-          </div>
-          <h1 className="text-3xl font-bold">Instructor Dashboard</h1>
-          <p className="text-muted-foreground">{course.title}</p>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <Link href={`/studio/course/${courseNftPolicyId}`}>
+          <AndamioButton variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Course
+          </AndamioButton>
+        </Link>
       </div>
+
+      <AndamioPageHeader
+        title="Instructor Dashboard"
+        description={course.title}
+      />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -401,7 +399,7 @@ export default function InstructorDashboardPage() {
           )}
         </div>
       ) : (
-        <div className="border rounded-md">
+        <AndamioTableContainer>
           <AndamioTable>
             <AndamioTableHeader>
               <AndamioTableRow>
@@ -449,7 +447,7 @@ export default function InstructorDashboardPage() {
               ))}
             </AndamioTableBody>
           </AndamioTable>
-        </div>
+        </AndamioTableContainer>
       )}
 
       {/* Selected Commitment Detail View */}

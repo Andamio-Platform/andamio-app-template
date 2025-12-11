@@ -7,6 +7,7 @@ import { env } from "~/env";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioPageHeader, AndamioSectionHeader } from "~/components/andamio";
 import { AlertCircle, BookOpen, Blocks, ChevronRight, CheckCircle, Target } from "lucide-react";
 import { type CourseOutput, type ListCourseModulesOutput } from "@andamio/db-api";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
@@ -121,9 +122,7 @@ export default function CourseDetailPage() {
   if (error || !course) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Course Not Found</h1>
-        </div>
+        <AndamioPageHeader title="Course Not Found" />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -140,12 +139,10 @@ export default function CourseDetailPage() {
   if (modules.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{course.title}</h1>
-          {course.description && (
-            <p className="text-muted-foreground">{course.description}</p>
-          )}
-        </div>
+        <AndamioPageHeader
+          title={course.title}
+          description={course.description ?? undefined}
+        />
 
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
           <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
@@ -182,21 +179,21 @@ export default function CourseDetailPage() {
     <div className="space-y-8">
       {/* Course Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-bold">{course.title}</h1>
+        <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">{course.title}</h1>
           <OnChainSltsBadge courseNftPolicyId={courseNftPolicyId} />
         </div>
         {course.description && (
-          <p className="text-muted-foreground text-lg">{course.description}</p>
+          <p className="text-muted-foreground text-base sm:text-lg">{course.description}</p>
         )}
-        <div className="flex gap-4 mt-4">
+        <div className="flex flex-wrap gap-3 sm:gap-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <BookOpen className="h-4 w-4" />
-            {modules.length} {modules.length === 1 ? "Module" : "Modules"}
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>{modules.length} {modules.length === 1 ? "Module" : "Modules"}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Target className="h-4 w-4" />
-            {totalSlts} Learning {totalSlts === 1 ? "Target" : "Targets"}
+            <Target className="h-4 w-4 shrink-0" />
+            <span>{totalSlts} Learning {totalSlts === 1 ? "Target" : "Targets"}</span>
           </div>
         </div>
       </div>
@@ -207,8 +204,8 @@ export default function CourseDetailPage() {
       {/* Course Learning Journey - SLTs as the Story */}
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Your Learning Journey</h2>
-          <p className="text-muted-foreground">
+          <AndamioSectionHeader title="Your Learning Journey" />
+          <p className="text-muted-foreground mt-2">
             This course is structured around specific learning targets. Complete each module to master these skills.
           </p>
         </div>
@@ -223,27 +220,27 @@ export default function CourseDetailPage() {
               <AndamioCard key={module.module_code} className="overflow-hidden">
                 <Link href={`/course/${courseNftPolicyId}/${module.module_code}`}>
                   <AndamioCardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm sm:text-base">
                           {moduleIndex + 1}
                         </div>
-                        <div>
-                          <AndamioCardTitle className="text-lg flex items-center gap-2">
-                            {module.title}
+                        <div className="min-w-0 flex-1">
+                          <AndamioCardTitle className="text-base sm:text-lg flex items-center gap-2">
+                            <span className="truncate">{module.title}</span>
                             {hasOnChain && (
-                              <span title="Module on-chain">
+                              <span title="Module on-chain" className="shrink-0">
                                 <Blocks className="h-4 w-4 text-success" />
                               </span>
                             )}
                           </AndamioCardTitle>
-                          <p className="text-sm text-muted-foreground font-mono">
+                          <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
                             {module.module_code}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <AndamioBadge variant="secondary">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        <AndamioBadge variant="secondary" className="text-xs sm:text-sm">
                           {module.slts.length} {module.slts.length === 1 ? "target" : "targets"}
                         </AndamioBadge>
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />

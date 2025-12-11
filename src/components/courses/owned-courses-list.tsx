@@ -66,15 +66,15 @@ export function OwnedCoursesList() {
 
   // Courses list
   return (
-    <div className="border rounded-md">
+    <div className="border rounded-md overflow-x-auto">
       <AndamioTable>
         <AndamioTableHeader>
           <AndamioTableRow>
-            <AndamioTableHead>Course Code</AndamioTableHead>
-            <AndamioTableHead>Title</AndamioTableHead>
-            <AndamioTableHead>Description</AndamioTableHead>
-            <AndamioTableHead className="text-center">Modules</AndamioTableHead>
-            <AndamioTableHead className="text-right">Actions</AndamioTableHead>
+            <AndamioTableHead className="min-w-[120px]">Course Code</AndamioTableHead>
+            <AndamioTableHead className="min-w-[150px]">Title</AndamioTableHead>
+            <AndamioTableHead className="min-w-[200px] hidden sm:table-cell">Description</AndamioTableHead>
+            <AndamioTableHead className="text-center min-w-[80px]">Modules</AndamioTableHead>
+            <AndamioTableHead className="text-right min-w-[100px]">Actions</AndamioTableHead>
           </AndamioTableRow>
         </AndamioTableHeader>
         <AndamioTableBody>
@@ -86,7 +86,7 @@ export function OwnedCoursesList() {
               <AndamioTableCell className="font-medium">
                 {course.title}
               </AndamioTableCell>
-              <AndamioTableCell className="max-w-md truncate">
+              <AndamioTableCell className="max-w-md truncate hidden sm:table-cell">
                 {course.description}
               </AndamioTableCell>
               <AndamioTableCell className="text-center">

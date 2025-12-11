@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioPageHeader } from "~/components/andamio";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 /**
@@ -25,12 +26,10 @@ export default function AppError({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Something went wrong</h1>
-        <p className="text-muted-foreground">
-          An unexpected error occurred while loading this page
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Something went wrong"
+        description="An unexpected error occurred while loading this page"
+      />
 
       <AndamioAlert variant="destructive">
         <AlertCircle className="h-4 w-4" />

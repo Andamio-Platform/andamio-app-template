@@ -29,21 +29,21 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
                   {hasAccessToken ? (
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                    <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
+                      <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight break-all xs:break-normal">
                         {accessTokenAlias}
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1">
+                      <div className="flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 w-fit shrink-0">
                         <CheckCircle2 className="h-4 w-4 text-success" />
                         <span className="text-sm font-medium text-success">Verified</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-muted-foreground">
+                    <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
+                      <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight text-muted-foreground">
                         New Member
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-warning/10 px-3 py-1">
+                      <div className="flex items-center gap-1.5 rounded-full bg-warning/10 px-3 py-1 w-fit shrink-0">
                         <Sparkles className="h-4 w-4 text-warning" />
                         <span className="text-sm font-medium text-warning">Setup Required</span>
                       </div>
@@ -51,15 +51,15 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                   )}
                 </div>
 
-                {/* Access Token Badge - Large display when available */}
+                {/* Access Token Badge - Large display when available, hidden on small screens since shown above */}
                 {hasAccessToken && (
-                  <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <div className="hidden sm:flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
                       <Key className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-medium text-muted-foreground">Access Token</p>
-                      <p className="text-lg font-bold text-primary">{accessTokenAlias}</p>
+                      <p className="text-lg font-bold text-primary truncate max-w-[150px]">{accessTokenAlias}</p>
                     </div>
                   </div>
                 )}

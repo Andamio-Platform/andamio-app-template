@@ -7,6 +7,14 @@
 @theme {
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Responsive Breakpoints - customize as needed */
+  --breakpoint-xs: 375px;   /* Extra small phones (iPhone SE, small Android) */
+  --breakpoint-sm: 640px;   /* Small tablets, large phones landscape */
+  --breakpoint-md: 768px;   /* Tablets, small laptops */
+  --breakpoint-lg: 1024px;  /* Laptops, small desktops */
+  --breakpoint-xl: 1280px;  /* Large desktops */
+  --breakpoint-2xl: 1536px; /* Extra large screens */
 }
 
 @theme inline {

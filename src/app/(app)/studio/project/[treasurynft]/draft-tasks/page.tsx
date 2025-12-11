@@ -13,6 +13,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, ArrowLeft, CheckSquare, Edit, Plus, Trash2 } from "lucide-react";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
+import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -133,10 +134,10 @@ export default function DraftTasksPage() {
           </AndamioButton>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold">Draft Tasks</h1>
-          <p className="text-muted-foreground">Connect your wallet to manage tasks</p>
-        </div>
+        <AndamioPageHeader
+          title="Draft Tasks"
+          description="Connect your wallet to manage tasks"
+        />
 
         <div className="max-w-md">
           <AndamioAuthButton />
@@ -203,19 +204,17 @@ export default function DraftTasksPage() {
         </Link>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Tasks</h1>
-        <p className="text-muted-foreground">
-          Manage tasks for this project - {draftTasks.length} draft, {liveTasks.length} live
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Tasks"
+        description={`Manage tasks for this project - ${draftTasks.length} draft, ${liveTasks.length} live`}
+      />
 
       {/* Draft Tasks Section */}
       {draftTasks.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xl font-semibold">Draft Tasks</h2>
+          <AndamioSectionHeader title="Draft Tasks" />
           <p className="text-sm text-muted-foreground">These tasks are not yet published to the blockchain</p>
-          <div className="border rounded-md">
+          <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
@@ -267,16 +266,16 @@ export default function DraftTasksPage() {
                 ))}
               </AndamioTableBody>
             </AndamioTable>
-          </div>
+          </AndamioTableContainer>
         </div>
       )}
 
       {/* Live Tasks Section */}
       {liveTasks.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xl font-semibold">Live Tasks</h2>
+          <AndamioSectionHeader title="Live Tasks" />
           <p className="text-sm text-muted-foreground">These tasks are published on-chain and cannot be edited</p>
-          <div className="border rounded-md">
+          <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
@@ -312,15 +311,15 @@ export default function DraftTasksPage() {
                 ))}
               </AndamioTableBody>
             </AndamioTable>
-          </div>
+          </AndamioTableContainer>
         </div>
       )}
 
       {/* Other Tasks Section */}
       {otherTasks.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xl font-semibold">Other Tasks</h2>
-          <div className="border rounded-md">
+          <AndamioSectionHeader title="Other Tasks" />
+          <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
@@ -345,7 +344,7 @@ export default function DraftTasksPage() {
                 ))}
               </AndamioTableBody>
             </AndamioTable>
-          </div>
+          </AndamioTableContainer>
         </div>
       )}
 

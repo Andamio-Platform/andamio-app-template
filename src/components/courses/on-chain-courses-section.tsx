@@ -344,28 +344,28 @@ function HybridCourseRow({
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
-      <div className="flex items-center gap-4 min-w-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         {/* Status indicator */}
         {getStatusIcon()}
 
         {/* Course info */}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {course.title ? (
-              <p className="font-medium truncate">{course.title}</p>
+              <p className="font-medium truncate text-sm sm:text-base">{course.title}</p>
             ) : (
-              <p className="font-medium text-muted-foreground italic">
+              <p className="font-medium text-muted-foreground italic text-sm sm:text-base">
                 Untitled Course
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <code className="font-mono">{truncatedId}</code>
             {course.onChain && (
               <>
-                <span className="text-muted-foreground/50">|</span>
-                <span>{course.onChainModuleCount} modules on-chain</span>
+                <span className="hidden xs:inline text-muted-foreground/50">|</span>
+                <span>{course.onChainModuleCount} modules</span>
               </>
             )}
           </div>
@@ -377,12 +377,12 @@ function HybridCourseRow({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
         {course.inDb ? (
           <Link href={`/studio/course/${course.courseId}`}>
             <AndamioButton variant="ghost" size="sm">
-              <Settings className="h-4 w-4 mr-1" />
-              Manage
+              <Settings className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Manage</span>
             </AndamioButton>
           </Link>
         ) : (

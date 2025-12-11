@@ -11,6 +11,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioPageHeader } from "~/components/andamio";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import type { JSONContent } from "@tiptap/core";
@@ -126,29 +127,26 @@ export default function LearnerAssignmentPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Module
-          </AndamioButton>
-        </Link>
-        <div className="flex items-center gap-2">
-          <AndamioBadge variant="outline" className="font-mono text-xs">
-            {assignment.assignmentCode}
-          </AndamioBadge>
-          {assignment.live ? (
-            <AndamioBadge>Live</AndamioBadge>
-          ) : (
-            <AndamioBadge variant="secondary">Draft</AndamioBadge>
-          )}
-        </div>
-      </div>
+      <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
+        <AndamioButton variant="ghost" size="sm">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Module
+        </AndamioButton>
+      </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold">{assignment.title}</h1>
-        {assignment.description && (
-          <p className="text-muted-foreground mt-2">{assignment.description}</p>
+      <AndamioPageHeader
+        title={assignment.title}
+        description={assignment.description ?? undefined}
+      />
+
+      <div className="flex items-center gap-2">
+        <AndamioBadge variant="outline" className="font-mono text-xs">
+          {assignment.assignmentCode}
+        </AndamioBadge>
+        {assignment.live ? (
+          <AndamioBadge>Live</AndamioBadge>
+        ) : (
+          <AndamioBadge variant="secondary">Draft</AndamioBadge>
         )}
       </div>
 

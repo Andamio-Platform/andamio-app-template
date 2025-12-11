@@ -20,6 +20,7 @@ import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { AndamioPageHeader } from "~/components/andamio";
 import {
   type AssignmentOutput,
   type ListSLTsOutput,
@@ -389,12 +390,10 @@ export default function AssignmentEditPage() {
         </AndamioBadge>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">
-          {assignmentExists ? "Edit Assignment" : "Create Assignment"}
-        </h1>
-        <p className="text-muted-foreground">Manage the module assignment and linked SLTs</p>
-      </div>
+      <AndamioPageHeader
+        title={assignmentExists ? "Edit Assignment" : "Create Assignment"}
+        description="Manage the module assignment and linked SLTs"
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

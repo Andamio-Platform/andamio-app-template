@@ -91,8 +91,8 @@ export function useAndamioTransaction<TParams = unknown>() {
       try {
         // Try to parse the params with txApiSchema to get only valid keys
         if (txApiSchema) {
-          const parsed = txApiSchema.parse(allParams);
-          txApiParams = parsed as Record<string, unknown>;
+          const parsed = txApiSchema.parse(allParams) as Record<string, unknown>;
+          txApiParams = parsed;
         } else {
           // Fallback: if no schema, use all params
           txApiParams = allParams;
@@ -134,7 +134,7 @@ export function useAndamioTransaction<TParams = unknown>() {
               body: JSON.stringify(unconfirmedTxBody),
             });
             if (unconfirmedTxResponse.ok) {
-              const responseData = await unconfirmedTxResponse.json();
+              const responseData = (await unconfirmedTxResponse.json()) as Record<string, unknown>;
               txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", true, responseData);
             } else {
               txLogger.sideEffectResult("onSubmit", "Set User Unconfirmed Tx", false, undefined, await unconfirmedTxResponse.text());

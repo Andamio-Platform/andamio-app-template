@@ -11,6 +11,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioPageHeader } from "~/components/andamio";
 import { ContentDisplay } from "~/components/content-display";
 import { AlertCircle, ArrowLeft, CheckCircle, Clock, Coins, ListChecks, Users } from "lucide-react";
 import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
@@ -170,10 +171,10 @@ export default function TaskDetailPage() {
       </div>
 
       {/* Task Title and Description */}
-      <div>
-        <h1 className="text-3xl font-bold">{task.title}</h1>
-        <p className="text-muted-foreground mt-2">{task.description}</p>
-      </div>
+      <AndamioPageHeader
+        title={task.title}
+        description={task.description}
+      />
 
       {/* Task Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

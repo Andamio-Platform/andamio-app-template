@@ -53,6 +53,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 
 /**
  * Studio page for managing Student Learning Targets (SLTs)
@@ -659,9 +660,7 @@ export default function SLTManagementPage() {
   if (error || !module) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Module Not Found</h1>
-        </div>
+        <AndamioPageHeader title="Module Not Found" />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -677,22 +676,21 @@ export default function SLTManagementPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
+        <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
+          <AndamioButton variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Module
+          </AndamioButton>
+        </Link>
+      </div>
+
       <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
-              <AndamioButton variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Module
-              </AndamioButton>
-            </Link>
-          </div>
-          <h1 className="text-3xl font-bold">Manage SLTs: {module.title}</h1>
-          <p className="text-muted-foreground">
-            Student Learning Targets for {module.module_code}
-          </p>
-        </div>
-        <div className="flex gap-2">
+        <AndamioPageHeader
+          title={`Manage SLTs: ${module.title}`}
+          description={`Student Learning Targets for ${module.module_code}`}
+        />
+        <div className="flex gap-2 self-start mt-2">
           {isReorderMode ? (
             <>
               <AndamioButton
@@ -778,7 +776,7 @@ export default function SLTManagementPage() {
           </AndamioButton>
         </div>
       ) : (
-        <div className="border rounded-md">
+        <AndamioTableContainer>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -816,7 +814,7 @@ export default function SLTManagementPage() {
               </AndamioTableBody>
             </AndamioTable>
           </DndContext>
-        </div>
+        </AndamioTableContainer>
       )}
 
       {/* Create SLT Dialog */}

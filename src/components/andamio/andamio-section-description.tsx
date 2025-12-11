@@ -22,9 +22,9 @@ export function AndamioSectionDescription({
   className,
 }: AndamioSectionDescriptionProps) {
   return (
-    <div className="w-full flex justify-center my-10">
+    <div className="w-full flex justify-center my-6 sm:my-10 px-4 sm:px-0">
       <p className={cn(
-        "text-xl text-muted-foreground max-w-2xl text-center",
+        "text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl text-center",
         className
       )}>
         {children}

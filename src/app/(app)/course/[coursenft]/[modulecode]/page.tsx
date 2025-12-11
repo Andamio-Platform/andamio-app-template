@@ -10,6 +10,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, BookOpen, Settings, FileText, Blocks, CheckCircle } from "lucide-react";
 import { type CourseModuleOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
 import { useCourse } from "~/hooks/use-andamioscan";
@@ -63,7 +64,7 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode, onChainModule }: 
   }
 
   return (
-    <div className="border rounded-md">
+    <AndamioTableContainer>
       <AndamioTable>
         <AndamioTableHeader>
           <AndamioTableRow>
@@ -140,7 +141,7 @@ function SLTLessonTable({ data, courseNftPolicyId, moduleCode, onChainModule }: 
           })}
         </AndamioTableBody>
       </AndamioTable>
-    </div>
+    </AndamioTableContainer>
   );
 }
 
@@ -293,9 +294,7 @@ export default function ModuleLessonsPage() {
   if (error || !module) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Module Not Found</h1>
-        </div>
+        <AndamioPageHeader title="Module Not Found" />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -314,33 +313,31 @@ export default function ModuleLessonsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{moduleData.title}</h1>
-          {moduleData.description && (
-            <p className="text-muted-foreground">{moduleData.description}</p>
-          )}
-          <div className="flex gap-2 pt-2">
-            <AndamioBadge variant="outline" className="font-mono text-xs">
-              {moduleData.module_code}
-            </AndamioBadge>
-            <AndamioBadge variant="outline">{moduleData.status}</AndamioBadge>
-          </div>
-        </div>
-        {isAuthenticated && (
-          <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
-            <AndamioButton variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Manage SLTs
-            </AndamioButton>
-          </Link>
-        )}
+      <AndamioPageHeader
+        title={moduleData.title}
+        description={moduleData.description ?? undefined}
+        action={
+          isAuthenticated ? (
+            <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
+              <AndamioButton variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                Manage SLTs
+              </AndamioButton>
+            </Link>
+          ) : undefined
+        }
+      />
+      <div className="flex gap-2">
+        <AndamioBadge variant="outline" className="font-mono text-xs">
+          {moduleData.module_code}
+        </AndamioBadge>
+        <AndamioBadge variant="outline">{moduleData.status}</AndamioBadge>
       </div>
 
       {/* Student Learning Targets & Lessons Combined */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-semibold">Student Learning Targets & Lessons</h2>
+          <AndamioSectionHeader title="Student Learning Targets & Lessons" />
           {onChainModule && (
             <AndamioBadge variant="outline" className="text-success border-success">
               <Blocks className="h-3 w-3 mr-1" />
@@ -361,15 +358,17 @@ export default function ModuleLessonsPage() {
 
       {/* Module Assignment */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Module Assignment</h2>
-          <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-            <AndamioButton>
-              <FileText className="h-4 w-4 mr-2" />
-              View Assignment
-            </AndamioButton>
-          </Link>
-        </div>
+        <AndamioSectionHeader
+          title="Module Assignment"
+          action={
+            <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+              <AndamioButton>
+                <FileText className="h-4 w-4 mr-2" />
+                View Assignment
+              </AndamioButton>
+            </Link>
+          }
+        />
         <p className="text-sm text-muted-foreground">
           Complete the assignment to demonstrate your understanding of this module&apos;s learning targets.
         </p>

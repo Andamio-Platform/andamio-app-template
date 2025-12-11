@@ -17,6 +17,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 // TODO: Re-enable when Andamioscan is ready
 // import { AndamioAccordion, AndamioAccordionContent, AndamioAccordionItem, AndamioAccordionTrigger } from "~/components/andamio/andamio-accordion";
 // import { AndamioCode } from "~/components/andamio/andamio-code";
@@ -506,10 +507,10 @@ export default function CourseEditPage() {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">{course.title ?? "Untitled Course"}</h1>
-        <p className="text-muted-foreground">Manage your course content and settings</p>
-      </div>
+      <AndamioPageHeader
+        title={course.title ?? "Untitled Course"}
+        description="Manage your course content and settings"
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (
@@ -529,22 +530,22 @@ export default function CourseEditPage() {
 
       {/* Tabbed Content */}
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <AndamioTabsList className="grid w-full grid-cols-4">
-          <AndamioTabsTrigger value="modules" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Modules</span>
+        <AndamioTabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 sm:gap-0 sm:h-10">
+          <AndamioTabsTrigger value="modules" className="flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-0">
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span className="text-xs sm:text-sm">Modules</span>
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="on-chain" className="flex items-center gap-2">
-            <Blocks className="h-4 w-4" />
-            <span className="hidden sm:inline">On-Chain</span>
+          <AndamioTabsTrigger value="on-chain" className="flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-0">
+            <Blocks className="h-4 w-4 shrink-0" />
+            <span className="text-xs sm:text-sm">On-Chain</span>
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="assignments" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Assignments</span>
+          <AndamioTabsTrigger value="assignments" className="flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-0">
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="text-xs sm:text-sm">Tasks</span>
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
+          <AndamioTabsTrigger value="settings" className="flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-0">
+            <Settings className="h-4 w-4 shrink-0" />
+            <span className="text-xs sm:text-sm">Settings</span>
           </AndamioTabsTrigger>
         </AndamioTabsList>
 
@@ -583,7 +584,7 @@ export default function CourseEditPage() {
                   <p className="text-sm mt-1">Create a module to get started.</p>
                 </div>
               ) : (
-                <div className="border rounded-md">
+                <AndamioTableContainer>
                   <AndamioTable>
                     <AndamioTableHeader>
                       <AndamioTableRow>
@@ -615,7 +616,7 @@ export default function CourseEditPage() {
                       ))}
                     </AndamioTableBody>
                   </AndamioTable>
-                </div>
+                </AndamioTableContainer>
               )}
             </AndamioCardContent>
           </AndamioCard>

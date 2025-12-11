@@ -19,6 +19,7 @@ import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } 
 import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { AndamioPageHeader } from "~/components/andamio";
 import {
   type LessonWithSLTOutput,
   type CreateLessonInput,
@@ -339,14 +340,10 @@ export default function LessonEditPage() {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">
-          {lessonExists ? "Edit Lesson" : "Create Lesson"}
-        </h1>
-        <p className="text-muted-foreground">
-          {lesson?.slt_text || `Lesson for SLT ${moduleIndex}`}
-        </p>
-      </div>
+      <AndamioPageHeader
+        title={lessonExists ? "Edit Lesson" : "Create Lesson"}
+        description={lesson?.slt_text || `Lesson for SLT ${moduleIndex}`}
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

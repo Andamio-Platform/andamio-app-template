@@ -7,6 +7,7 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, FolderKanban } from "lucide-react";
 import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
 
@@ -63,12 +64,10 @@ export default function ProjectCatalogPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">
-            Browse all published projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Projects"
+          description="Browse all published projects"
+        />
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -83,12 +82,10 @@ export default function ProjectCatalogPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">
-            Browse all published projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Projects"
+          description="Browse all published projects"
+        />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -103,12 +100,10 @@ export default function ProjectCatalogPage() {
   if (projects.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">
-            Browse all published projects
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Projects"
+          description="Browse all published projects"
+        />
 
         <AndamioAlert>
           <FolderKanban className="h-4 w-4" />
@@ -124,14 +119,12 @@ export default function ProjectCatalogPage() {
   // Projects list
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Projects</h1>
-        <p className="text-muted-foreground">
-          Browse all published projects
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Projects"
+        description="Browse all published projects"
+      />
 
-      <div className="border rounded-md">
+      <AndamioTableContainer>
         <AndamioTable>
           <AndamioTableHeader>
             <AndamioTableRow>
@@ -183,7 +176,7 @@ export default function ProjectCatalogPage() {
             })}
           </AndamioTableBody>
         </AndamioTable>
-      </div>
+      </AndamioTableContainer>
     </div>
   );
 }

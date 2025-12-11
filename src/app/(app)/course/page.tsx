@@ -6,6 +6,7 @@ import { env } from "~/env";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { type ListPublishedCoursesOutput } from "@andamio/db-api";
 
@@ -61,12 +62,10 @@ export default function CoursePage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">
-            Browse all published courses
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Courses"
+          description="Browse all published courses"
+        />
 
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -81,12 +80,10 @@ export default function CoursePage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">
-            Browse all published courses
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Courses"
+          description="Browse all published courses"
+        />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -101,12 +98,10 @@ export default function CoursePage() {
   if (courses.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">
-            Browse all published courses
-          </p>
-        </div>
+        <AndamioPageHeader
+          title="Courses"
+          description="Browse all published courses"
+        />
 
         <AndamioAlert>
           <BookOpen className="h-4 w-4" />
@@ -122,14 +117,12 @@ export default function CoursePage() {
   // Courses list
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Courses</h1>
-        <p className="text-muted-foreground">
-          Browse all published courses
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Courses"
+        description="Browse all published courses"
+      />
 
-      <div className="border rounded-md">
+      <AndamioTableContainer>
         <AndamioTable>
           <AndamioTableHeader>
             <AndamioTableRow>
@@ -159,7 +152,7 @@ export default function CoursePage() {
             ))}
           </AndamioTableBody>
         </AndamioTable>
-      </div>
+      </AndamioTableContainer>
     </div>
   );
 }

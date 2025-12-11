@@ -26,8 +26,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { Award, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
-import { env } from "~/env";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 
 export interface CredentialClaimProps {
   /**
@@ -90,12 +88,6 @@ export function CredentialClaim({
     if (!user?.accessTokenAlias) {
       return;
     }
-
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
 
     await execute({
       definition: v2.COURSE_STUDENT_CREDENTIAL_CLAIM,

@@ -288,7 +288,7 @@ export function useHybridSlts(
 
   const refetch = useCallback(() => {
     void fetchDbSlts();
-    refetchOnChain();
+    void refetchOnChain();
   }, [fetchDbSlts, refetchOnChain]);
 
   return {
@@ -488,7 +488,7 @@ export function useHybridModules(
 
   const refetch = useCallback(() => {
     void fetchDbModules();
-    refetchOnChain();
+    void refetchOnChain();
   }, [fetchDbModules, refetchOnChain]);
 
   return {

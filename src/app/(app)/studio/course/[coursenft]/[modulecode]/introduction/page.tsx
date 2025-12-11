@@ -19,6 +19,7 @@ import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } 
 import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, ArrowLeft, Save } from "lucide-react";
+import { AndamioPageHeader } from "~/components/andamio";
 import {
   type IntroductionOutput,
   type CreateIntroductionInput,
@@ -306,14 +307,10 @@ export default function IntroductionEditPage() {
         </AndamioBadge>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">
-          {introductionExists ? "Edit Module Introduction" : "Create Module Introduction"}
-        </h1>
-        <p className="text-muted-foreground">
-          The introduction provides an overview of the module for students
-        </p>
-      </div>
+      <AndamioPageHeader
+        title={introductionExists ? "Edit Module Introduction" : "Create Module Introduction"}
+        description="The introduction provides an overview of the module for students"
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

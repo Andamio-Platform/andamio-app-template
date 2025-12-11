@@ -16,6 +16,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { ContentEditor } from "~/components/editor";
 import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
+import { AndamioPageHeader } from "~/components/andamio";
 
 interface ApiError {
   message?: string;
@@ -133,10 +134,10 @@ export default function NewTaskPage() {
           </AndamioButton>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold">Create Task</h1>
-          <p className="text-muted-foreground">Connect your wallet to create tasks</p>
-        </div>
+        <AndamioPageHeader
+          title="Create Task"
+          description="Connect your wallet to create tasks"
+        />
 
         <div className="max-w-md">
           <AndamioAuthButton />
@@ -158,10 +159,10 @@ export default function NewTaskPage() {
         <AndamioBadge variant="secondary">Draft</AndamioBadge>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Create New Task</h1>
-        <p className="text-muted-foreground">Define a new task for contributors</p>
-      </div>
+      <AndamioPageHeader
+        title="Create New Task"
+        description="Define a new task for contributors"
+      />
 
       {/* Error Message */}
       {error && (

@@ -349,5 +349,5 @@ All other components currently re-export from base shadcn:
 ## Resources
 
 - [shadcn/ui Documentation](https://ui.shadcn.com)
-- [Andamio Semantic Colors](../../docs/SEMANTIC-COLORS.md)
+- [Andamio Semantic Colors](../../docs/styling/SEMANTIC-COLORS.md)
 - [Component Library Goals](../../README.md#goals)

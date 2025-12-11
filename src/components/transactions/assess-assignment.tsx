@@ -24,8 +24,6 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { CheckCircle, XCircle, ClipboardCheck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
-import { env } from "~/env";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 
 export interface AssessAssignmentProps {
   /**

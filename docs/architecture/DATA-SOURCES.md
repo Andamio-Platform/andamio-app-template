@@ -1,20 +1,19 @@
 # Data Sources Architecture
 
 > **Where does this app get its data?**
-> Last Updated: December 8, 2024
+> Last Updated: December 11, 2025
 
-This document explains the external data sources used by the Andamio T3 App Template, provides a complete endpoint inventory, and outlines the migration roadmap to the unified Andamio API.
+This document explains the external data sources used by the Andamio T3 App Template and provides a complete endpoint inventory.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Migration Status](#migration-status)
-- [Current Architecture](#current-architecture)
+- [Data Sources Summary](#data-sources-summary)
+- [Architecture Details](#architecture-details)
 - [Complete Endpoint Inventory](#complete-endpoint-inventory)
 - [Data Source Details](#data-source-details)
-- [Migration Preparation](#migration-preparation)
 
 ---
 
@@ -23,42 +22,17 @@ This document explains the external data sources used by the Andamio T3 App Temp
 The app pulls data from **two main categories**:
 
 1. **Off-Chain Data** - Stored in PostgreSQL, managed by Andamio Database API
-2. **On-Chain Data** - Will be provided by **Andamioscan** (migration in progress)
-
-**Current State**: Transitioning to Andamioscan
-**Future State**: Unified Andamio API serving both off-chain and on-chain data
+2. **On-Chain Data** - Provided by **Andamioscan** for indexed blockchain data, and **Koios** for transaction confirmations
 
 ---
 
-## Migration Status
+## Data Sources Summary
 
-### Andamioscan Transition (In Progress)
-
-The legacy NBA (Node Backend API) has been removed. On-chain data features are temporarily showing "Coming Soon" UI while the new **Andamioscan** API is being integrated.
-
-#### What's Working
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **Andamio DB API** | ✅ Active | All off-chain CRUD operations |
-| **Authentication** | ✅ Active | Wallet signature + JWT |
-| **Koios API** | ✅ Active | Transaction confirmations |
-| **Course Management** | ✅ Active | Full CRUD via DB API |
-
-#### Coming Soon (Andamioscan)
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **On-Chain Data Display** | 🚧 Coming Soon | UTXOs, decoded datums, course state |
-| **Transaction Building** | 🚧 Coming Soon | Mint tokens, enroll, submit assignments |
-| **User Aggregation** | 🚧 Coming Soon | On-chain user info |
-
-#### Affected UI Components
-
-Components showing "Coming Soon" placeholders:
-- Dashboard → On-Chain Data card
-- Studio Course Page → On-Chain Data accordion
-- Transaction components → Will show error until Andamioscan is ready
+| Source | Purpose | Status |
+|--------|---------|--------|
+| **Andamio DB API** | Off-chain CRUD operations, authentication | ✅ Active |
+| **Andamioscan** | On-chain indexed data, transaction building | ✅ Active |
+| **Koios API** | Transaction confirmations | ✅ Active |
 
 ### Current Architecture
 
@@ -73,14 +47,12 @@ Components showing "Coming Soon" placeholders:
         ▼                   ▼                   ▼
 ┌───────────────┐  ┌────────────────┐  ┌────────────────┐
 │ Andamio DB    │  │ Andamioscan    │  │ Koios API      │
-│ API           │  │ (Coming Soon)  │  │ (Third-party)  │
-│ localhost:4000│  │                │  │ koios.rest     │
-│               │  │ On-chain       │  │                │
-│ Off-chain     │  │ indexed data   │  │ Tx status      │
-│ CRUD          │  │ + tx building  │  │ only           │
+│ API           │  │                │  │ (Third-party)  │
+│ localhost:4000│  │ On-chain       │  │ koios.rest     │
+│               │  │ indexed data   │  │                │
+│ Off-chain     │  │ + tx building  │  │ Tx status      │
+│ CRUD          │  │                │  │ only           │
 └───────────────┘  └────────────────┘  └────────────────┘
-        ✅              🚧                  ✅
-      Active      Coming Soon            Active
 ```
 
 ### Future Architecture (Production)
@@ -112,46 +84,24 @@ Components showing "Coming Soon" placeholders:
    └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
-### Migration Timeline
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **Phase 1** | ✅ Complete | Remove NBA dependency, add placeholders |
-| **Phase 2** | 🚧 In Progress | Integrate Andamioscan endpoints one-by-one |
-| **Phase 3** | 📋 Planned | Unified Andamio API development |
-| **Phase 4** | 📋 Planned | Client migration to unified API |
-| **Phase 5** | 📋 Planned | Deprecate legacy endpoints |
-
-### What Changes for Clients
-
-| Aspect | Current | After Migration |
-|--------|---------|-----------------|
-| **Base URL** | Multiple (`localhost:4000`, Andamioscan, Koios) | Single (`api.andamio.io`) |
-| **Environment Vars** | 3+ URLs | 1 URL |
-| **Proxy Routes** | Required for Andamioscan/Koios (CORS) | Not needed (CORS configured) |
-| **Authentication** | JWT from DB API | JWT from unified API |
-| **Endpoint Paths** | Varies by source | Consistent namespace |
-
 ---
 
-## Current Architecture
+## Architecture Details
 
 ### Environment Variables
 
 ```bash
-# Current configuration (2 active data sources + 1 coming soon)
+# All 3 data sources are active
 
 # 1. Off-chain data - Andamio Database API
 NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api/v0"
 
-# 2. On-chain indexed data - Andamioscan (Coming Soon)
-# Server-side only - will be accessed via /api/andamioscan proxy
-# ANDAMIOSCAN_API_URL="https://..." (TBD)
+# 2. On-chain indexed data - Andamioscan
+# Server-side only - accessed via /api/andamioscan proxy
+ANDAMIOSCAN_API_URL="https://preprod.andamioscan.andamio.space"
 
 # 3. Koios - hardcoded in cardano-indexer.ts
 # Accessed via /api/koios proxy → preprod.koios.rest
-
-# Legacy (kept for reference, no longer used)
 
 # Network configuration
 NEXT_PUBLIC_CARDANO_NETWORK="preprod"
@@ -161,7 +111,7 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 
 | Proxy Route | Upstream | Purpose | Status |
 |-------------|----------|---------|--------|
-| `/api/andamioscan/[...path]` | `ANDAMIOSCAN_API_URL` (TBD) | On-chain data queries + tx building | 🚧 Coming Soon |
+| `/api/andamioscan/[...path]` | `ANDAMIOSCAN_API_URL` | On-chain data queries + tx building | ✅ Active |
 | `/api/koios/[...path]` | `preprod.koios.rest` | Transaction confirmations | ✅ Active |
 
 ---
@@ -174,9 +124,9 @@ This inventory documents every API call made by this application. Use this as th
 
 | Source | Endpoints | Auth Type | Status |
 |--------|-----------|-----------|--------|
-| Andamio DB API | ~70 | JWT | Active |
-| Andamioscan | 8+ | Public | 🚧 Coming Soon |
-| Koios API | 2 | Public | Active (tx confirmations) |
+| Andamio DB API | ~70 | JWT | ✅ Active |
+| Andamioscan | 8+ | Public | ✅ Active |
+| Koios API | 2 | Public | ✅ Active |
 
 ---
 
@@ -321,11 +271,11 @@ This inventory documents every API call made by this application. Use this as th
 
 ### 2. ANDAMIOSCAN API (On-Chain Data)
 
-**Base URL**: Via proxy `/api/andamioscan/` → `env.ANDAMIOSCAN_API_URL` (TBD)
+**Base URL**: Via proxy `/api/andamioscan/` → `env.ANDAMIOSCAN_API_URL`
 
-**Status**: 🚧 Coming Soon - replacing legacy NBA
+**Status**: ✅ Active
 
-**Expected Endpoints** (to be integrated):
+**Endpoints**:
 
 | Endpoint | Method | Auth | Purpose |
 |----------|--------|------|---------|
@@ -338,8 +288,6 @@ This inventory documents every API call made by this application. Use this as th
 | `/module-ref-validator/utxos` | GET | Public | Module ref validator UTXOs |
 | `/module-ref-validator/decoded-datum` | GET | Public | Decoded module ref datum |
 | `/tx/*` | POST | Public | Transaction building |
-
-**Current Status**: Endpoints are stubbed with "Coming Soon" responses in `/api/andamioscan/[...path]/route.ts`.
 
 ---
 
@@ -386,7 +334,7 @@ This inventory documents every API call made by this application. Use this as th
 
 **Purpose**: Indexed on-chain data from Cardano blockchain + transaction building.
 
-**Status**: 🚧 Coming Soon
+**Status**: ✅ Active
 
 | Data Type | Examples |
 |-----------|----------|
@@ -421,110 +369,13 @@ This inventory documents every API call made by this application. Use this as th
 
 ---
 
-## Migration Preparation
-
-### Checklist for Unified Andamio API Migration
-
-When the unified Andamio API is ready, follow this checklist:
-
-#### 1. Environment Variables
-
-```bash
-# Before (3+ URLs)
-NEXT_PUBLIC_ANDAMIO_API_URL="..."
-ANDAMIOSCAN_API_URL="..."
-ATLAS_TX_API_URL="..."
-
-# After (1 URL)
-NEXT_PUBLIC_ANDAMIO_API_URL="https://api.andamio.io/v1"
-```
-
-#### 2. Update Proxy Routes
-
-When unified API supports CORS, delete these files:
-- `src/app/api/andamioscan/[...path]/route.ts` (currently a placeholder)
-- `src/app/api/koios/[...path]/route.ts`
-
-#### 3. Update Endpoint Paths
-
-Create a mapping from old to new endpoints:
-
-```typescript
-// Example mapping (actual paths TBD)
-const ENDPOINT_MIGRATION = {
-  // Andamioscan endpoints → unified API
-  '/api/andamioscan/aggregate/user-info': '/on-chain/user-info',
-  '/api/andamioscan/course-state/utxos': '/on-chain/course/utxos',
-  '/api/andamioscan/course-state/info': '/on-chain/course/info',
-  '/api/andamioscan/tx/*': '/transactions/*',
-
-  // Koios endpoints → unified API
-  '/api/koios/tx_status': '/blockchain/tx-status',
-  '/api/koios/tx_utxos': '/blockchain/tx-utxos',
-
-  // DB API endpoints → may keep same paths
-  '/courses/owned': '/courses/owned',
-  // ...
-};
-```
-
-#### 4. Update API Calls
-
-Files to update (sorted by number of API calls):
-
-| Priority | Files | Status | Notes |
-|----------|-------|--------|-------|
-| High | `studio/course/[coursenft]/page.tsx` | ✅ Stubbed | On-chain data commented out |
-| High | `dashboard/page.tsx` | ✅ Stubbed | On-chain data shows "Coming Soon" |
-| High | `use-transaction.ts` | ✅ Stubbed | Returns error until Andamioscan ready |
-| Medium | All `studio/` pages | ✅ Active | DB API CRUD operations work |
-| Medium | All `course/` pages | ✅ Active | DB API read operations work |
-| Low | `cardano-indexer.ts` | ✅ Active | Koios tx confirmations still work |
-
-#### 5. Update Type Imports
-
-```typescript
-// Before
-import { type CourseOutput } from "andamio-db-api";
-
-// After (TBD - may use same package or new unified types)
-import { type CourseOutput } from "@andamio/api-types";
-```
-
-#### 6. Testing Checklist
-
-- [ ] Authentication flow works
-- [ ] Course CRUD operations work
-- [ ] Module CRUD operations work
-- [ ] Lesson/Assignment CRUD operations work
-- [ ] On-chain data queries work
-- [ ] Transaction confirmation works
-- [ ] Pending transaction monitoring works
-- [ ] Learner enrollment/progress works
-- [ ] Instructor views work
-
-### API Design Principles for Migration
-
-To make migration easier, the unified Andamio API should:
-
-1. **Maintain backward compatibility** where possible
-2. **Use consistent naming conventions** across all endpoints
-3. **Group endpoints by domain** (courses, users, blockchain, etc.)
-4. **Provide type definitions** via published npm package
-5. **Support CORS** for direct browser access
-6. **Consolidate authentication** - single JWT for all operations
-
----
-
 ## Related Documentation
 
-- [API-ENDPOINT-REFERENCE.md](./API-ENDPOINT-REFERENCE.md) - Complete Database API reference
-- [NBA-API-ENDPOINT-REFERENCE.md](./NBA-API-ENDPOINT-REFERENCE.md) - Legacy Indexer API reference (deprecated)
-- [PENDING-TX-WATCHER.md](../PENDING-TX-WATCHER.md) - Transaction monitoring system
-- [src/lib/cardano-indexer.ts](../src/lib/cardano-indexer.ts) - Koios integration code
-- [src/app/api/andamioscan/[...path]/route.ts](../src/app/api/andamioscan/[...path]/route.ts) - Andamioscan proxy (placeholder)
+- [API-ENDPOINT-REFERENCE.md](../api/API-ENDPOINT-REFERENCE.md) - Complete Database API reference
+- [PENDING-TX-WATCHER.md](../features/PENDING-TX-WATCHER.md) - Transaction monitoring system
+- `src/lib/cardano-indexer.ts` - Koios integration code
+- `src/app/api/andamioscan/[...path]/route.ts` - Andamioscan proxy
 
 ---
 
-**Last Updated**: December 8, 2024
-**Maintained By**: Andamio Platform Team
+**Last Updated**: December 11, 2025

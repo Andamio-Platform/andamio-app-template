@@ -26,8 +26,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { GraduationCap, BookOpen, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
-import { env } from "~/env";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import type { JSONContent } from "@tiptap/core";
 
 export interface EnrollInCourseProps {
@@ -127,12 +125,6 @@ export function EnrollInCourse({
     if (!user?.accessTokenAlias) {
       return;
     }
-
-    // Build user access token
-    const userAccessToken = buildAccessTokenUnit(
-      user.accessTokenAlias,
-      env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
-    );
 
     if (isCombinedMode && evidence && moduleCode && sltHash) {
       // V2 Combined mode: Enrollment with initial assignment commitment

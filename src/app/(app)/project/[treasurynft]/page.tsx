@@ -9,6 +9,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, ArrowLeft, CheckSquare } from "lucide-react";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -173,16 +174,14 @@ export default function ProjectDetailPage() {
           </AndamioButton>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold">{project.title}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <AndamioBadge variant="outline" className="font-mono text-xs">
-              {project.treasury_nft_policy_id?.slice(0, 16)}...
-            </AndamioBadge>
-            <AndamioBadge variant="secondary">
-              {project.total_ada?.toLocaleString() ?? 0} ADA
-            </AndamioBadge>
-          </div>
+        <AndamioPageHeader title={project.title} />
+        <div className="flex flex-wrap items-center gap-2">
+          <AndamioBadge variant="outline" className="font-mono text-xs">
+            {project.treasury_nft_policy_id?.slice(0, 16)}...
+          </AndamioBadge>
+          <AndamioBadge variant="secondary">
+            {project.total_ada?.toLocaleString() ?? 0} ADA
+          </AndamioBadge>
         </div>
 
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
@@ -205,29 +204,27 @@ export default function ProjectDetailPage() {
         </AndamioButton>
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold">{project.title}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <AndamioBadge variant="outline" className="font-mono text-xs">
-            {project.treasury_nft_policy_id?.slice(0, 16)}...
-          </AndamioBadge>
-          <AndamioBadge variant="secondary">
-            {project.total_ada?.toLocaleString() ?? 0} ADA
-          </AndamioBadge>
-        </div>
+      <AndamioPageHeader title={project.title} />
+      <div className="flex flex-wrap items-center gap-2">
+        <AndamioBadge variant="outline" className="font-mono text-xs">
+          {project.treasury_nft_policy_id?.slice(0, 16)}...
+        </AndamioBadge>
+        <AndamioBadge variant="secondary">
+          {project.total_ada?.toLocaleString() ?? 0} ADA
+        </AndamioBadge>
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Available Tasks</h2>
-        <div className="border rounded-md">
+        <AndamioSectionHeader title="Available Tasks" />
+        <AndamioTableContainer>
           <AndamioTable>
             <AndamioTableHeader>
               <AndamioTableRow>
-                <AndamioTableHead className="w-16">#</AndamioTableHead>
-                <AndamioTableHead>Title</AndamioTableHead>
-                <AndamioTableHead>Description</AndamioTableHead>
-                <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
-                <AndamioTableHead className="w-32 text-center">Status</AndamioTableHead>
+                <AndamioTableHead className="w-12 sm:w-16">#</AndamioTableHead>
+                <AndamioTableHead className="min-w-[150px]">Title</AndamioTableHead>
+                <AndamioTableHead className="min-w-[200px] hidden md:table-cell">Description</AndamioTableHead>
+                <AndamioTableHead className="w-24 sm:w-32 text-center">Reward</AndamioTableHead>
+                <AndamioTableHead className="w-24 sm:w-32 text-center">Status</AndamioTableHead>
               </AndamioTableRow>
             </AndamioTableHeader>
             <AndamioTableBody>
@@ -248,7 +245,7 @@ export default function ProjectDetailPage() {
                       <span className="font-medium">{task.title}</span>
                     )}
                   </AndamioTableCell>
-                  <AndamioTableCell className="max-w-xs truncate">
+                  <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
                     {task.description}
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
@@ -265,7 +262,7 @@ export default function ProjectDetailPage() {
               ))}
             </AndamioTableBody>
           </AndamioTable>
-        </div>
+        </AndamioTableContainer>
       </div>
     </div>
   );

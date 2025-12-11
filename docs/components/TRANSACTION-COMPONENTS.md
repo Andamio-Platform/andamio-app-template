@@ -1,22 +1,15 @@
 # Andamio Template Transaction Components
 
-> ⚠️ **Migration in Progress**: Transaction building is transitioning from NBA to **Andamioscan**.
-> See [DATA-SOURCES.md](./DATA-SOURCES.md) for current architecture.
->
-> **Current Status**:
-> - `ANDAMIOSCAN_TX_ENABLED = false` in `use-transaction.ts`
-> - Transaction attempts show "Coming Soon" error
-> - Andamioscan endpoints being integrated one-by-one
+> Last Updated: December 11, 2025
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
-In /Users/james/projects/01-current-projects/andamio-platform, we already have a number of great prototypes for transaction interactions.
+This document describes the transaction component architecture for the T3 App Template.
 
-Also, in /Users/james/projects/01-current-projects/andamio-platform/src/components/cardano/tx/andamio-transaction-list.ts, there is a nice list of all current transactions.
-
-We don't want to copy wholesale to this repo. We want to build a pretty raw Tx UX, with as little additional styling as possible. We want to keep using the existing setup of shadcn components and Andamio components.
-
-We have some other concerns: keeping the registry up to date, and pulling in (or keeping a store of) tx cost breakdown info.
+**Design Philosophy**:
+- Minimal, consistent transaction UX using shadcn/ui and Andamio components
+- Type-safe transaction definitions with declarative side effects
+- Automatic pending transaction monitoring
 
 ## Initial Rules
 
@@ -68,8 +61,6 @@ We have some other concerns: keeping the registry up to date, and pulling in (or
 
 ### Andamioscan Transaction Endpoints
 
-> **Status**: 🚧 Coming Soon - being integrated
-
 Transaction endpoints can use different HTTP methods:
 - **GET**: Parameters sent as query string (e.g., mint access token)
 - **POST**: Parameters sent as JSON body (e.g., submit assignment)
@@ -82,11 +73,9 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 
 ## Implemented Transactions
 
-> **Note**: All transactions currently show "Coming Soon" error until Andamioscan is integrated.
-
 ### Mint Access Token
 
-**Status**: 🚧 Awaiting Andamioscan
+**Status**: ✅ Active
 
 **Purpose**: Mint a new Andamio Access Token NFT for the user
 
@@ -121,7 +110,7 @@ The `useTransaction` hook automatically handles both methods based on the `metho
 
 ### Enroll in Course (Mint Local State)
 
-**Status**: 🚧 Awaiting Andamioscan
+**Status**: ✅ Active
 
 **Purpose**: Enroll a learner in a course by minting their course local state NFT
 

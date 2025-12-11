@@ -14,6 +14,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioPageHeader } from "~/components/andamio";
 import {
   AndamioSelect,
   AndamioSelectContent,
@@ -500,10 +501,10 @@ export default function ModuleEditPage() {
         </AndamioBadge>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Edit Module</h1>
-        <p className="text-muted-foreground">{courseModule?.title}</p>
-      </div>
+      <AndamioPageHeader
+        title="Edit Module"
+        description={courseModule?.title ?? ""}
+      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

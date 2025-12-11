@@ -38,7 +38,7 @@ import {
   Minimize2,
   Link,
   Unlink,
-  Image,
+  Image as ImageIcon,
   Code2,
   AlignLeft,
   AlignCenter,
@@ -692,7 +692,7 @@ export function EditorToolbar({
                   pressed={false}
                   onPressedChange={() => setImageDialogOpen(true)}
                 >
-                  <Image className="h-4 w-4" />
+                  <ImageIcon className="h-4 w-4" />
                 </ToolbarButton>
               )}
             </ToolbarGroup>

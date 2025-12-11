@@ -10,7 +10,8 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AlertCircle, ArrowLeft, BookOpen, Image as ImageIcon, Video } from "lucide-react";
+import { AndamioPageHeader, AndamioSectionHeader } from "~/components/andamio";
+import { AlertCircle, ArrowLeft, BookOpen } from "lucide-react";
 import { type LessonWithSLTOutput } from "@andamio/db-api";
 import { ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
@@ -96,9 +97,7 @@ export default function LessonDetailPage() {
           </AndamioButton>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold">Lesson Not Found</h1>
-        </div>
+        <AndamioPageHeader title="Lesson Not Found" />
 
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -157,11 +156,11 @@ export default function LessonDetailPage() {
       {/* Lesson Title and Description */}
       <div className="space-y-4">
         <div>
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
             {lesson.title ?? `Lesson ${lesson.slt_index}`}
           </h1>
           {lesson.description && (
-            <p className="text-xl text-muted-foreground mt-2">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground mt-2">
               {lesson.description}
             </p>
           )}
@@ -175,10 +174,7 @@ export default function LessonDetailPage() {
           {lesson.video_url && (
             <AndamioCard>
               <AndamioCardHeader>
-                <div className="flex items-center gap-2">
-                  <Video className="h-5 w-5" />
-                  <AndamioCardTitle className="text-lg">Video</AndamioCardTitle>
-                </div>
+                <AndamioSectionHeader title="Video" />
               </AndamioCardHeader>
               <AndamioCardContent>
                 <div className="aspect-video w-full">
@@ -197,10 +193,7 @@ export default function LessonDetailPage() {
           {lesson.image_url && (
             <AndamioCard>
               <AndamioCardHeader>
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  <AndamioCardTitle className="text-lg">Image</AndamioCardTitle>
-                </div>
+                <AndamioSectionHeader title="Image" />
               </AndamioCardHeader>
               <AndamioCardContent>
                 <div className="relative w-full aspect-video">

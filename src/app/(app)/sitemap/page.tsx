@@ -13,6 +13,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioPageHeader } from "~/components/andamio";
 import {
   ExternalLink,
   Lock,
@@ -363,12 +364,11 @@ export default function SitemapPage() {
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-4 py-8">
-        <h1 className="text-4xl font-bold">Sitemap</h1>
-        <p className="text-xl text-muted-foreground">
-          Development tool for navigating all routes in the application
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Sitemap"
+        description="Development tool for navigating all routes in the application"
+        centered
+      />
 
       {/* Auth Status */}
       <AndamioCard>

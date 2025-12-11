@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioPageHeader } from "~/components/andamio";
 import type { JSONContent } from "@tiptap/core";
 
 const sampleContent: JSONContent = {
@@ -143,12 +144,10 @@ export default function EditorPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Tiptap Editor Demo</h1>
-        <p className="text-muted-foreground">
-          A rich text editor built with Tiptap and shadcn/ui
-        </p>
-      </div>
+      <AndamioPageHeader
+        title="Tiptap Editor Demo"
+        description="A rich text editor built with Tiptap and shadcn/ui"
+      />
 
       {/* Editor Tabs */}
       <AndamioTabs defaultValue="edit" className="space-y-4">

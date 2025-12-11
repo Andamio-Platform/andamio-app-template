@@ -28,6 +28,11 @@ export * from "./andamio-dropdown-menu";
 export * from "./andamio-section-description";
 export * from "./andamio-states";
 
+// Responsive layout components
+export * from "./andamio-page-header";
+export * from "./andamio-section-header";
+export * from "./andamio-table-container";
+
 // Simple pass-through wrappers (for consistency)
 export * from "./andamio-accordion";
 export * from "./andamio-alert-dialog";

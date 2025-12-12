@@ -548,6 +548,17 @@ model Treasury {
 - **Rationale**: Clear version boundaries, easy to run multiple versions
 - **Status**: Currently on v0 (unstable), will stabilize to v1
 
+**2025-12-12: Task Expiration UI Handling**
+- **Decision**: Tasks with `ON_CHAIN` status that have passed their `expiration_time` show only "Expired" badge (not "Live")
+- **Implementation**: Client-side time comparison in `project/[treasurynft]/page.tsx` (line 108-114)
+- **Rationale**: Clearer UX - expired tasks are visually distinct from active tasks
+- **Open Questions**:
+  - Should expired tasks be filtered out entirely or kept visible?
+  - Should API provide a computed `is_expired` field vs client-side calculation?
+  - How should expiration affect task commitments (can contributors still commit to expired tasks)?
+  - Should there be a grace period after expiration before marking as expired?
+- **Status**: Interim solution - needs product decision on expired task behavior
+
 ### Open Questions
 
 **Access Token System**
@@ -559,6 +570,10 @@ model Treasury {
 - How are milestone rewards determined?
 - What's the dispute resolution process?
 - How do we handle partial completion?
+- **Task Expiration**: Should expired tasks remain claimable? What happens to in-progress commitments when a task expires?
+- **Expiration Grace Period**: Should there be a buffer period between `expiration_time` and hard cutoff?
+- **Expired Task Visibility**: Should expired tasks be hidden, archived, or remain fully visible?
+- **Server vs Client Expiration Logic**: Should expiration status be computed server-side or client-side?
 
 **Treasury Management**
 - Single-sig or multi-sig for initial version?

@@ -10,6 +10,7 @@ import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, And
 import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, FolderKanban } from "lucide-react";
 import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
+import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
  * Public page displaying all published projects (treasuries)
@@ -168,7 +169,7 @@ export default function ProjectCatalogPage() {
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
                     <AndamioBadge variant="outline">
-                      {project.total_ada?.toLocaleString() ?? 0} ADA
+                      {formatLovelace(project.total_ada).toLocaleString() ?? 0} ADA
                     </AndamioBadge>
                   </AndamioTableCell>
                 </AndamioTableRow>

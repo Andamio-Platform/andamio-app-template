@@ -105,6 +105,14 @@ export default function ProjectDetailPage() {
     void fetchProjectAndTasks();
   }, [treasuryNftPolicyId]);
 
+  // Helper to check if a task is expired
+  const isTaskExpired = (expirationTime: string | null): boolean => {
+    if (!expirationTime) return false;
+    const expiryTimestamp = parseInt(expirationTime, 10);
+    const currentTimestamp = Date.now();
+    return currentTimestamp > expiryTimestamp;
+  };
+
   // Helper to get status badge variant
   const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
@@ -180,7 +188,7 @@ export default function ProjectDetailPage() {
             {project.treasury_nft_policy_id?.slice(0, 16)}...
           </AndamioBadge>
           <AndamioBadge variant="secondary">
-            {project.total_ada?.toLocaleString() ?? 0} ADA
+            {formatLovelace(project.total_ada).toLocaleString() ?? 0} ADA
           </AndamioBadge>
         </div>
 
@@ -210,7 +218,7 @@ export default function ProjectDetailPage() {
           {project.treasury_nft_policy_id?.slice(0, 16)}...
         </AndamioBadge>
         <AndamioBadge variant="secondary">
-          {project.total_ada?.toLocaleString() ?? 0} ADA
+          {formatLovelace(project.total_ada).toLocaleString() ?? 0}
         </AndamioBadge>
       </div>
 
@@ -254,9 +262,15 @@ export default function ProjectDetailPage() {
                     </AndamioBadge>
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
-                    <AndamioBadge variant={getStatusVariant(task.status)}>
-                      {task.status === "ON_CHAIN" ? "Live" : task.status}
-                    </AndamioBadge>
+                    {task.status === "ON_CHAIN" && isTaskExpired(task.expiration_time) ? (
+                      <AndamioBadge variant="destructive">
+                        Expired
+                      </AndamioBadge>
+                    ) : (
+                      <AndamioBadge variant={getStatusVariant(task.status)}>
+                        {task.status === "ON_CHAIN" ? "Live" : task.status}
+                      </AndamioBadge>
+                    )}
                   </AndamioTableCell>
                 </AndamioTableRow>
               ))}

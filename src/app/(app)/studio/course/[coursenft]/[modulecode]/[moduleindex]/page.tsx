@@ -15,7 +15,6 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
-import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AlertCircle, Save, Trash2 } from "lucide-react";
 import { AndamioPageHeader } from "~/components/andamio";
@@ -35,9 +34,10 @@ import type { JSONContent } from "@tiptap/core";
  * Studio page for editing or creating lessons (Student Learning Target content)
  *
  * API Endpoints:
- * - POST /lessons (protected) - Create new lesson
- * - PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update lesson
- * - DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete lesson
+ * - POST /lesson/create (protected) - Create new lesson
+ * - POST /lesson/update (protected) - Update lesson content
+ * - POST /lesson/publish (protected) - Toggle lesson live status
+ * - POST /lesson/delete (protected) - Delete lesson
  * Input Validation: Uses createLessonInputSchema and updateLessonInputSchema
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
@@ -71,6 +71,7 @@ export default function LessonEditPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
@@ -169,7 +170,7 @@ export default function LessonEditPage() {
 
     try {
       if (lessonExists) {
-        // Build input object for lesson update
+        // Build input object for lesson update (live status is handled separately via /lesson/publish)
         const updateInput: UpdateLessonInput = {
           course_nft_policy_id: courseNftPolicyId,
           module_code: moduleCode,
@@ -179,7 +180,6 @@ export default function LessonEditPage() {
           content_json: contentJson ?? undefined,
           image_url: imageUrl || undefined,
           video_url: videoUrl || undefined,
-          live,
         };
 
         // Validate update input
@@ -325,6 +325,46 @@ export default function LessonEditPage() {
       setSaveError(err instanceof Error ? err.message : "Failed to delete lesson");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleTogglePublish = async () => {
+    if (!isAuthenticated || !lessonExists) {
+      return;
+    }
+
+    setIsTogglingPublish(true);
+    setSaveError(null);
+
+    try {
+      const newLiveStatus = !live;
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/publish`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            module_index: moduleIndex,
+            live: newLiveStatus,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        throw new Error(errorData.message ?? "Failed to toggle publish status");
+      }
+
+      const data = (await response.json()) as { success: boolean; live: boolean };
+      setLive(data.live);
+      showSuccess();
+    } catch (err) {
+      console.error("Error toggling publish status:", err);
+      setSaveError(err instanceof Error ? err.message : "Failed to toggle publish status");
+    } finally {
+      setIsTogglingPublish(false);
     }
   };
 
@@ -478,8 +518,13 @@ export default function LessonEditPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <AndamioSwitch id="live" checked={live} onCheckedChange={setLive} />
-                <AndamioLabel htmlFor="live">Live (visible to students)</AndamioLabel>
+                <AndamioLabel>Status:</AndamioLabel>
+                <AndamioBadge variant={live ? "default" : "secondary"}>
+                  {live ? "Live" : "Draft"}
+                </AndamioBadge>
+                <span className="text-sm text-muted-foreground">
+                  {live ? "Visible to students" : "Not visible to students"}
+                </span>
               </div>
             </AndamioCardContent>
           </AndamioCard>
@@ -512,6 +557,15 @@ export default function LessonEditPage() {
               )}
             </div>
             <div className="flex gap-2">
+              {lessonExists && (
+                <AndamioButton
+                  variant="outline"
+                  onClick={handleTogglePublish}
+                  disabled={isTogglingPublish}
+                >
+                  {isTogglingPublish ? "Toggling..." : live ? "Unpublish" : "Publish"}
+                </AndamioButton>
+              )}
               <AndamioButton
                 variant="outline"
                 onClick={() => router.push(`/course/${courseNftPolicyId}/${moduleCode}`)}

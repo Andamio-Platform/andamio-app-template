@@ -210,7 +210,7 @@ This inventory documents every API call made by this application. Use this as th
 | `/slt/create` | POST | JWT | `slts/page.tsx` | Create SLT |
 | `/slt/update` | PATCH | JWT | `slts/page.tsx` | Update SLT |
 | `/slt/delete` | DELETE | JWT | `slts/page.tsx` | Delete SLT |
-| `/slt/batch-update-indexes` | PATCH | JWT | `slts/page.tsx` | Reorder SLTs |
+| `/slt/reorder` | POST | JWT | `slts/page.tsx` | Reorder SLTs |
 
 #### Assignment Endpoints
 

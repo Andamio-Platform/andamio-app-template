@@ -65,7 +65,7 @@ import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
  * - POST /slts (protected) - Create new SLT
  * - PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Update SLT
  * - DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex} (protected) - Delete SLT
- * - PATCH /slts/batch-update-indexes (protected) - Batch update SLT indexes
+ * - POST /slt/reorder (protected) - Batch reorder SLTs
  * Input Validation: Uses createSLTInputSchema, updateSLTInputSchema, batchUpdateSLTIndexesInputSchema
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
@@ -400,9 +400,9 @@ export default function SLTManagementPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send batch update request (POST /slts/batch-update-indexes)
+      // Send batch update request (POST /slt/reorder)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/batch-update-indexes`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/reorder`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

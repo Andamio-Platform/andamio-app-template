@@ -39,7 +39,7 @@ This checklist documents all API endpoint updates required in the T3 App Templat
 | `/slts/create` | `/slt/create` | ✅ |
 | `/slts/update` | `/slt/update` | ✅ |
 | `/slts/delete` | `/slt/delete` | ✅ |
-| `/slts/batch-update-indexes` | `/slt/batch-update-indexes` | ✅ |
+| `/slts/batch-update-indexes` | `/slt/reorder` | ✅ |
 | `/lessons/list` | `/lesson/list` | ✅ |
 | `/lessons/get` | `/lesson/get` | ✅ |
 | `/lessons/create` | `/lesson/create` | ✅ |
@@ -220,7 +220,7 @@ These paths still use plural naming in the DB API and should NOT be changed yet:
 - [x] Line 269: `/lessons/list` → `/lesson/list`
 - [x] Line 315: `/courses/get` → `/course/get`
 - [x] Line 330: `/course-modules/get` → `/course-module/get`
-- [x] Line 405: `/slts/batch-update-indexes` → `/slt/batch-update-indexes`
+- [x] Line 405: `/slts/batch-update-indexes` → `/slt/reorder`
 - [x] Line 467: `/slts/create` → `/slt/create`
 - [x] Line 526: `/slts/update` → `/slt/update`
 - [x] Line 564: `/slts/delete` → `/slt/delete`

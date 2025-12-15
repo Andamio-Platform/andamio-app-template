@@ -681,7 +681,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/slt/batch-update-indexes`
+### POST `/api/v0/slt/reorder`
 
 **Purpose**: Reorder multiple SLTs in single operation
 
@@ -1215,7 +1215,7 @@ The following endpoints were removed in API v0.5.0:
 ### Unused Endpoints
 
 1. **`POST /slt/update-index`**
-   - **Reason**: Batch endpoint (`/slt/batch-update-indexes`) is more efficient
+   - **Reason**: Batch endpoint (`/slt/reorder`) is more efficient
    - **Availability**: Remains available for external API consumers
 
 ---

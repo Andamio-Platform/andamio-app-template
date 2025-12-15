@@ -142,7 +142,7 @@ export default function CourseEditPage() {
       try {
         // Fetch course details (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -163,7 +163,7 @@ export default function CourseEditPage() {
 
         // Fetch course modules (POST with body)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -182,7 +182,7 @@ export default function CourseEditPage() {
         setIsLoadingAssignments(true);
         try {
           const assignmentSummaryResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/assignment-summary`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/with-assignments`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -204,7 +204,7 @@ export default function CourseEditPage() {
           setIsLoadingProjects(true);
           try {
             const projectsResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/unpublished-projects`,
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/unpublished-projects`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -381,9 +381,9 @@ export default function CourseEditPage() {
         throw new Error(`Validation failed: ${errors}`);
       }
 
-      // Send validated data to API (POST /courses/update)
+      // Send validated data to API (POST /course/update)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -401,9 +401,9 @@ export default function CourseEditPage() {
 
       showSuccess();
 
-      // Refetch course to get updated data (POST /courses/get)
+      // Refetch course to get updated data (POST /course/get)
       const refetchResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -429,7 +429,7 @@ export default function CourseEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -562,7 +562,7 @@ export default function CourseEditPage() {
                   courseNftPolicyId={courseNftPolicyId}
                   onModuleCreated={() => {
                     void fetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

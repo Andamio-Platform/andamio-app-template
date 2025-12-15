@@ -54,7 +54,7 @@ async function syncAccessTokenFromWallet(
     authLogger.info("Syncing access token to database:", accessToken.unit);
     authLogger.info("Extracted alias:", alias);
 
-    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-alias`, {
+    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-alias`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

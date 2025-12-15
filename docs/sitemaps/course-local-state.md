@@ -41,7 +41,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Links to individual course pages
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/page.tsx`
-- **API Endpoint**: `GET /courses/published`
+- **API Endpoint**: `GET /course/published`
 - **Type**: `ListPublishedCoursesOutput`
 
 #### `/course/[coursenft]`
@@ -59,8 +59,8 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/[coursenft]/page.tsx`
 - **API Endpoints**:
-  - `GET /courses/{courseNftPolicyId}` - Course details
-  - `GET /courses/{courseNftPolicyId}/course-modules` - Module list
+  - `POST /course/get` - Course details
+  - `POST /course-module/list` - Module list
 - **Types**:
   - `CourseOutput`
   - `ListCourseModulesOutput`
@@ -84,9 +84,9 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/[coursenft]/[modulecode]/page.tsx`
 - **API Endpoints**:
-  - `GET /course-modules/{courseNftPolicyId}/{moduleCode}` - Module details
-  - `GET /slts/{courseNftPolicyId}/{moduleCode}` - SLT list
-  - `GET /courses/{courseNftPolicyId}/modules/{moduleCode}/lessons` - Lesson list
+  - `POST /course-module/get` - Module details
+  - `POST /slt/list` - SLT list
+  - `POST /lesson/list` - Lesson list
 - **Types**:
   - `CourseModuleOutput`
   - `ListSLTsOutput`
@@ -112,7 +112,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Empty content state
   - Loading/error states
 - **Component**: `src/app/(app)/course/[coursenft]/[modulecode]/[moduleindex]/page.tsx`
-- **API Endpoint**: `GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}`
+- **API Endpoint**: `POST /lesson/get`
 - **Type**: `LessonWithSLTOutput`
 
 #### `/course/[coursenft]/[modulecode]/assignment`
@@ -135,7 +135,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
     - Track progress
   - Loading/error/empty states
 - **Component**: `src/app/(app)/course/[coursenft]/[modulecode]/assignment/page.tsx`
-- **API Endpoint**: `GET /assignments/{courseNftPolicyId}/{moduleCode}`
+- **API Endpoint**: `POST /assignment/get`
 - **Type**: `AssignmentOutput`
 
 ---
@@ -151,7 +151,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Loading states, error handling, empty states
   - Auth gate (shows login if not authenticated)
 - **Component**: `src/app/(app)/courses/page.tsx`
-- **API Endpoint**: `GET /courses/owned`
+- **API Endpoint**: `POST /course/owned`
 - **Type**: `ListOwnedCoursesOutput`
 - **Note**: This provides the same functionality as `/studio/course` but in the main app area instead of the studio section
 
@@ -183,7 +183,7 @@ These routes are for course creators to manage their courses and require authent
   - Uses `OwnedCoursesList` component
   - Auth gate (shows login if not authenticated)
 - **Component**: `src/app/(app)/studio/course/page.tsx`
-- **API Endpoint**: `GET /courses/owned`
+- **API Endpoint**: `POST /course/owned`
 - **Type**: `ListOwnedCoursesOutput`
 
 #### `/studio/course/[coursenft]`
@@ -201,9 +201,9 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/page.tsx`
 - **API Endpoints**:
-  - `GET /courses/{courseNftPolicyId}` - Get course
-  - `GET /courses/{courseNftPolicyId}/course-modules` - Get modules
-  - `PATCH /courses/{courseCode}` - Update course (authenticated)
+  - `POST /course/get` - Get course
+  - `POST /course-module/list` - Get modules
+  - `PATCH /course/update` - Update course (authenticated)
 - **Types**:
   - `CourseOutput`
   - `ListCourseModulesOutput`
@@ -235,8 +235,8 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/instructor/page.tsx`
 - **API Endpoints**:
-  - `GET /courses/{courseNftPolicyId}` - Get course details
-  - `GET /assignment-commitments/course/{courseNftPolicyId}` - Get all commitments for course (authenticated)
+  - `POST /course/get` - Get course details
+  - `POST /assignment-commitment/list-by-course` - Get all commitments for course (authenticated)
 - **Types**:
   - `CourseOutput`
   - `AssignmentCommitmentWithAssignmentOutput`
@@ -256,9 +256,9 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/[modulecode]/page.tsx`
 - **API Endpoints**:
-  - `GET /course-modules/{courseNftPolicyId}/{moduleCode}` - Get module
-  - `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}` - Update module (authenticated)
-  - `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status` - Update status (authenticated)
+  - `POST /course-module/get` - Get module
+  - `PATCH /course-module/update` - Update module (authenticated)
+  - `PATCH /course-module/update-status` - Update status (authenticated)
 - **Types**:
   - `CourseModuleOutput`
 
@@ -293,12 +293,12 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/[modulecode]/slts/page.tsx`
 - **API Endpoints**:
-  - `GET /course-modules/{courseNftPolicyId}/{moduleCode}` - Module details
-  - `GET /slts/{courseNftPolicyId}/{moduleCode}` - SLT list
-  - `GET /courses/{courseNftPolicyId}/modules/{moduleCode}/lessons` - Lesson list
-  - `POST /slts` - Create SLT (authenticated)
-  - `PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update SLT (authenticated)
-  - `DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete SLT (authenticated)
+  - `POST /course-module/get` - Module details
+  - `POST /slt/list` - SLT list
+  - `POST /lesson/list` - Lesson list
+  - `POST /slt/create` - Create SLT (authenticated)
+  - `PATCH /slt/update` - Update SLT (authenticated)
+  - `DELETE /slt/delete` - Delete SLT (authenticated)
 - **Types**:
   - `CourseModuleOutput`
   - `ListSLTsOutput`
@@ -320,11 +320,11 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/[modulecode]/assignment/page.tsx`
 - **API Endpoints**:
-  - `GET /assignments/{courseNftPolicyId}/{moduleCode}` - Get assignment
-  - `GET /slts/{courseNftPolicyId}/{moduleCode}` - Get SLTs for linking
-  - `POST /assignments` - Create assignment (authenticated)
-  - `PATCH /assignments/{courseNftPolicyId}/{moduleCode}` - Update assignment (authenticated)
-  - `DELETE /assignments/{courseNftPolicyId}/{moduleCode}` - Delete assignment (authenticated)
+  - `POST /assignment/get` - Get assignment
+  - `POST /slt/list` - Get SLTs for linking
+  - `POST /assignment/create` - Create assignment (authenticated)
+  - `PATCH /assignment/update` - Update assignment (authenticated)
+  - `DELETE /assignment/delete` - Delete assignment (authenticated)
 - **Types**:
   - `AssignmentOutput`
   - `ListSLTsOutput`
@@ -346,10 +346,10 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/[modulecode]/[moduleindex]/page.tsx`
 - **API Endpoints**:
-  - `GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Get lesson
-  - `POST /lessons` - Create lesson (authenticated)
-  - `PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update lesson (authenticated)
-  - `DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete lesson (authenticated)
+  - `POST /lesson/get` - Get lesson
+  - `POST /lesson/create` - Create lesson (authenticated)
+  - `PATCH /lesson/update` - Update lesson (authenticated)
+  - `DELETE /lesson/delete` - Delete lesson (authenticated)
 - **Types**:
   - `LessonWithSLTOutput`
 
@@ -368,9 +368,9 @@ These routes are for course creators to manage their courses and require authent
   - Loading/error states
 - **Component**: `src/app/(app)/studio/course/[coursenft]/[modulecode]/introduction/page.tsx`
 - **API Endpoints**:
-  - `GET /introductions/{courseNftPolicyId}/{moduleCode}` - Get introduction
-  - `POST /introductions` - Create introduction (authenticated)
-  - `PATCH /introductions/{courseNftPolicyId}/{moduleCode}` - Update introduction (authenticated)
+  - `POST /introduction/get` - Get introduction
+  - `POST /introduction/create` - Create introduction (authenticated)
+  - `PATCH /introduction/update` - Update introduction (authenticated)
   - **Note**: No DELETE endpoint (introductions cannot be deleted, only updated)
 - **Types**:
   - `IntroductionOutput`
@@ -436,51 +436,51 @@ These routes are for course creators to manage their courses and require authent
 ## API Endpoints Used by Course Routes
 
 ### Public Endpoints (No Auth)
-- `GET /courses/published` - List all published courses
-- `GET /courses/{courseNftPolicyId}` - Get course by policy ID
-- `GET /courses/{courseNftPolicyId}/course-modules` - Get course modules
-- `GET /course-modules/{courseNftPolicyId}/{moduleCode}` - Get module details
-- `GET /slts/{courseNftPolicyId}/{moduleCode}` - Get module SLTs
-- `GET /courses/{courseNftPolicyId}/modules/{moduleCode}/lessons` - Get module lessons
-- `GET /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Get lesson details
-- `GET /assignments/{courseNftPolicyId}/{moduleCode}` - Get assignment for module (used by learner view)
-- `GET /introductions/{courseNftPolicyId}/{moduleCode}` - Get introduction for module
+- `GET /course/published` - List all published courses
+- `POST /course/get` - Get course by policy ID
+- `POST /course-module/list` - Get course modules
+- `POST /course-module/get` - Get module details
+- `POST /slt/list` - Get module SLTs
+- `POST /lesson/list` - Get module lessons
+- `POST /lesson/get` - Get lesson details
+- `POST /assignment/get` - Get assignment for module (used by learner view)
+- `POST /introduction/get` - Get introduction for module
 
 ### Authenticated Endpoints (JWT Required)
 
 **Course Management:**
-- `GET /courses/owned` - List courses owned by authenticated user
-- `PATCH /courses/{courseCode}` - Update course details
+- `POST /course/owned` - List courses owned by authenticated user
+- `PATCH /course/update` - Update course details
 
 **Module Management:**
-- `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}` - Update module details
-- `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status` - Update module status
+- `PATCH /course-module/update` - Update module details
+- `PATCH /course-module/update-status` - Update module status
 
 **SLT Management:**
-- `POST /slts` - Create new SLT
-- `PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update SLT
-- `DELETE /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete SLT
+- `POST /slt/create` - Create new SLT
+- `PATCH /slt/update` - Update SLT
+- `DELETE /slt/delete` - Delete SLT
 
 **Lesson Management:**
-- `POST /lessons` - Create new lesson
-- `PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Update lesson
-- `DELETE /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` - Delete lesson
+- `POST /lesson/create` - Create new lesson
+- `PATCH /lesson/update` - Update lesson
+- `DELETE /lesson/delete` - Delete lesson
 
 **Assignment Management:**
-- `POST /assignments` - Create new assignment
-- `PATCH /assignments/{courseNftPolicyId}/{moduleCode}` - Update assignment
-- `DELETE /assignments/{courseNftPolicyId}/{moduleCode}` - Delete assignment
+- `POST /assignment/create` - Create new assignment
+- `PATCH /assignment/update` - Update assignment
+- `DELETE /assignment/delete` - Delete assignment
 
 **Introduction Management:**
-- `POST /introductions` - Create new introduction
-- `PATCH /introductions/{courseNftPolicyId}/{moduleCode}` - Update introduction
+- `POST /introduction/create` - Create new introduction
+- `PATCH /introduction/update` - Update introduction
 - **Note**: No DELETE endpoint (introductions cannot be deleted)
 
 **Assignment Commitment Management:**
-- `GET /assignment-commitments/course/{courseNftPolicyId}` - Get all assignment commitments for a course (used by instructor dashboard)
-- `POST /assignment-commitments` - Create new assignment commitment (learner creates commitment)
-- `PATCH /assignment-commitments/{commitmentId}` - Update assignment commitment
-- `DELETE /assignment-commitments/{commitmentId}` - Delete assignment commitment
+- `POST /assignment-commitment/list-by-course` - Get all assignment commitments for a course (used by instructor dashboard)
+- `POST /assignment-commitment/create` - Create new assignment commitment (learner creates commitment)
+- `PATCH /assignment-commitment/update` - Update assignment commitment
+- `DELETE /assignment-commitment/delete` - Delete assignment commitment
 
 ---
 

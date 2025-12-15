@@ -71,7 +71,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         // Update the user's access token alias in the database
         try {
           const response = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-alias`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-alias`,
             {
               method: "POST",
               headers: {

@@ -45,7 +45,7 @@ export default function CourseDetailPage() {
       try {
         // Fetch course details (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -59,7 +59,7 @@ export default function CourseDetailPage() {
             status: courseResponse.status,
             statusText: courseResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`
           });
           throw new Error(`Course not found (${courseResponse.status})`);
         }
@@ -69,7 +69,7 @@ export default function CourseDetailPage() {
 
         // Fetch course modules with SLTs (POST with body)
         const modulesResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -83,7 +83,7 @@ export default function CourseDetailPage() {
             status: modulesResponse.status,
             statusText: modulesResponse.statusText,
             body: errorText,
-            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`
+            url: `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`
           });
           throw new Error(`Failed to fetch course modules (${modulesResponse.status})`);
         }

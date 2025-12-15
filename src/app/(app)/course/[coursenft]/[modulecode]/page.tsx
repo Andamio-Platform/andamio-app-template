@@ -187,7 +187,7 @@ export default function ModuleLessonsPage() {
       try {
         // Fetch course details for breadcrumb (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -202,7 +202,7 @@ export default function ModuleLessonsPage() {
 
         // Fetch course module details (POST with body)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ export default function ModuleLessonsPage() {
 
         // Fetch SLTs for the module (POST with body)
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -241,7 +241,7 @@ export default function ModuleLessonsPage() {
 
         // Fetch module lessons (POST with body)
         const lessonsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

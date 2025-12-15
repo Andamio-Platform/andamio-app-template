@@ -1,9 +1,9 @@
 # API Endpoint Reference & UX Mapping
 
 > **Complete mapping of Andamio Database API endpoints to frontend implementation**
-> Last Updated: December 1, 2024
-> API Version: **v0** (Unstable)
-> Coverage: **54/55 endpoints (98.18%)**
+> Last Updated: December 15, 2024
+> API Version: **v0.5.0** (Unstable)
+> Coverage: **51/52 endpoints (98.08%)**
 
 This document provides a comprehensive reference for all API endpoints, their purpose, and where they are used in the T3 App Template. Use this as the alignment document between backend API and frontend UX.
 
@@ -11,13 +11,13 @@ This document provides a comprehensive reference for all API endpoints, their pu
 
 ## API Design Pattern
 
-**All endpoints use POST requests with JSON bodies** (except `/pending-transactions` which is GET).
+**All endpoints use POST requests with JSON bodies** (except `/transaction/pending-transactions` which is GET).
 
 This design pattern provides:
 - Consistent request format across all operations
 - JSON bodies for all parameters (no URL parameters)
 - snake_case field naming convention
-- Action-based endpoint paths (e.g., `/courses/get`, `/courses/create`)
+- Action-based endpoint paths (e.g., `/course/get`, `/course/create`)
 
 ### Request Format
 
@@ -41,7 +41,7 @@ const response = await authenticatedFetch(`${API_URL}/endpoint-name`, {
 
 ## API Versioning
 
-**Current Version**: `v0` (Unstable)
+**Current Version**: `v0.5.0` (Unstable)
 
 The Andamio Database API uses **URL-based versioning**:
 
@@ -67,7 +67,7 @@ The Andamio Database API uses **URL-based versioning**:
 - [API Design Pattern](#api-design-pattern)
 - [API Versioning](#api-versioning)
 - [Authentication](#authentication)
-- [User Management](#user-management)
+- [Access Token Management](#access-token-management)
 - [Courses](#courses)
 - [Course Modules](#course-modules)
 - [Student Learning Targets (SLTs)](#student-learning-targets-slts)
@@ -132,9 +132,9 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-## User Management
+## Access Token Management
 
-### POST `/api/v0/user/update-alias`
+### POST `/api/v0/access-token/update-alias`
 
 **Purpose**: Update user's access token alias
 
@@ -153,7 +153,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/user/update-unconfirmed-tx`
+### POST `/api/v0/access-token/update-unconfirmed-tx`
 
 **Purpose**: Update user's unconfirmed transaction hash
 
@@ -203,7 +203,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/learner/my-learning`
+### POST `/api/v0/my-learning/get`
 
 **Purpose**: Get learner's courses with assignment progress
 
@@ -223,23 +223,18 @@ The Andamio Database API uses **URL-based versioning**:
 
 ## Courses
 
-### POST `/api/v0/courses/published`
+### GET `/api/v0/course/published`
 
 **Purpose**: List all published courses (courses with NFT policy ID)
 
 **Access**: Public
-
-**Request Body**:
-```json
-{}
-```
 
 **Used In**:
 - `src/app/(app)/course/page.tsx` - Public course catalog
 
 ---
 
-### POST `/api/v0/courses/owned`
+### POST `/api/v0/course/list`
 
 **Purpose**: List courses owned by authenticated user
 
@@ -251,12 +246,12 @@ The Andamio Database API uses **URL-based versioning**:
 ```
 
 **Used In**:
-- `src/components/courses/owned-courses-list.tsx` - Creator dashboard
-- `src/components/courses/course-manager.tsx` - Course management
+- `src/hooks/use-owned-courses.ts` - Creator dashboard
+- `src/components/courses/on-chain-courses-section.tsx` - Course management
 
 ---
 
-### POST `/api/v0/courses/check`
+### POST `/api/v0/course/check`
 
 **Purpose**: Check if a course code is already in use
 
@@ -276,7 +271,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/get`
+### POST `/api/v0/course/get`
 
 **Purpose**: Get detailed information about a specific course
 
@@ -296,7 +291,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/create`
+### POST `/api/v0/course/create`
 
 **Purpose**: Create a new course
 
@@ -318,7 +313,20 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/update`
+### POST `/api/v0/course/create-on-submit-minting-tx`
+
+**Purpose**: Create course on submission of minting transaction
+
+**Access**: Protected (Creator role)
+
+**Request Body**: Course data with transaction details
+
+**Used In**:
+- `src/components/courses/on-chain-courses-section.tsx` - On-chain course creation
+
+---
+
+### POST `/api/v0/course/update`
 
 **Purpose**: Update course metadata
 
@@ -327,7 +335,7 @@ The Andamio Database API uses **URL-based versioning**:
 **Request Body**:
 ```json
 {
-  "course_code": "my-course-101",
+  "course_nft_policy_id": "abc123...",
   "data": {
     "title": "Updated Title",
     "description": "Updated description",
@@ -342,7 +350,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/delete`
+### POST `/api/v0/course/delete`
 
 **Purpose**: Delete a course and all its content
 
@@ -351,7 +359,7 @@ The Andamio Database API uses **URL-based versioning**:
 **Request Body**:
 ```json
 {
-  "course_code": "my-course-101"
+  "course_nft_policy_id": "abc123..."
 }
 ```
 
@@ -360,7 +368,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/unpublished-projects`
+### POST `/api/v0/course/unpublished-projects`
 
 **Purpose**: Get unpublished projects requiring this course as prerequisite
 
@@ -369,7 +377,7 @@ The Andamio Database API uses **URL-based versioning**:
 **Request Body**:
 ```json
 {
-  "course_code": "my-course-101"
+  "course_nft_policy_id": "abc123..."
 }
 ```
 
@@ -378,21 +386,9 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/courses/import`
-
-**Purpose**: Import course content from external source
-
-**Access**: Protected (Creator role)
-
-**Request Body**: Course import data structure
-
-**Used In**: Not currently used in T3 App
-
----
-
 ## Course Modules
 
-### POST `/api/v0/course-modules/get`
+### POST `/api/v0/course-module/get`
 
 **Purpose**: Get detailed information about a specific module
 
@@ -412,7 +408,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/course-modules/list`
+### POST `/api/v0/course-module/list`
 
 **Purpose**: List all modules for a course with SLTs included
 
@@ -432,7 +428,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/course-modules/list-by-courses`
+### POST `/api/v0/course-module/map`
 
 **Purpose**: Batch query to get modules for multiple courses
 
@@ -446,12 +442,11 @@ The Andamio Database API uses **URL-based versioning**:
 ```
 
 **Used In**:
-- `src/components/courses/owned-courses-list.tsx` - Module counts
-- `src/components/courses/course-manager.tsx` - Course management
+- `src/hooks/use-owned-courses.ts` - Module counts
 
 ---
 
-### POST `/api/v0/course-modules/assignment-summary`
+### POST `/api/v0/course-module/with-assignments`
 
 **Purpose**: Get modules with assignment summaries and publication status
 
@@ -469,7 +464,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/course-modules/create`
+### POST `/api/v0/course-module/create`
 
 **Purpose**: Create a new course module
 
@@ -488,10 +483,11 @@ The Andamio Database API uses **URL-based versioning**:
 
 **Used In**:
 - `src/components/courses/create-module-dialog.tsx` - Module creation
+- `src/components/courses/on-chain-modules-section.tsx` - On-chain module creation
 
 ---
 
-### POST `/api/v0/course-modules/update`
+### POST `/api/v0/course-module/update`
 
 **Purpose**: Update module title and description
 
@@ -512,7 +508,7 @@ The Andamio Database API uses **URL-based versioning**:
 
 ---
 
-### POST `/api/v0/course-modules/update-status`
+### POST `/api/v0/course-module/update-status`
 
 **Purpose**: Update module status (DRAFT, APPROVED, PENDING_TX, ON_CHAIN, etc.)
 
@@ -539,66 +535,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/course-modules/update-code`
-
-**Purpose**: Rename module code identifier
-
-**Access**: Protected (Creator role, must own course)
-
-**Request Body**:
-```json
-{
-  "course_nft_policy_id": "abc123...",
-  "module_code": "old-code",
-  "new_module_code": "new-code"
-}
-```
-
-**Used In**:
-- `src/app/(app)/studio/course/[coursenft]/[modulecode]/page.tsx` - Rename dialog
-
----
-
-### POST `/api/v0/course-modules/set-pending-tx`
-
-**Purpose**: Set pending transaction hash for blockchain operation
-
-**Access**: Protected (Creator role, must own course)
-
-**Request Body**:
-```json
-{
-  "course_nft_policy_id": "abc123...",
-  "module_code": "module-101",
-  "pending_tx_hash": "txhash123..."
-}
-```
-
-**Used In**:
-- `src/app/(app)/studio/course/[coursenft]/[modulecode]/page.tsx` - TX tracking
-
----
-
-### POST `/api/v0/course-modules/publish`
-
-**Purpose**: Publish all module content (lessons, introduction, assignments)
-
-**Access**: Protected (Creator role, must own course)
-
-**Request Body**:
-```json
-{
-  "course_nft_policy_id": "abc123...",
-  "module_code": "module-101"
-}
-```
-
-**Used In**:
-- `src/app/(app)/studio/course/[coursenft]/[modulecode]/page.tsx` - Publish all
-
----
-
-### POST `/api/v0/course-modules/delete`
+### POST `/api/v0/course-module/delete`
 
 **Purpose**: Delete module and all its content
 
@@ -617,7 +554,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/course-modules/confirm-transaction`
+### POST `/api/v0/course-module/confirm-transaction`
 
 **Purpose**: Confirm blockchain transaction for module
 
@@ -639,7 +576,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Student Learning Targets (SLTs)
 
-### POST `/api/v0/slts/list`
+### POST `/api/v0/slt/list`
 
 **Purpose**: Get all SLTs for a module
 
@@ -656,10 +593,11 @@ BACKLOG  ARCHIVED   DEPRECATED
 **Used In**:
 - `src/app/(app)/course/[coursenft]/[modulecode]/page.tsx` - Public module view
 - `src/app/(app)/studio/course/[coursenft]/[modulecode]/slts/page.tsx` - SLT management
+- `src/hooks/use-hybrid-slts.ts` - Hybrid SLT fetching
 
 ---
 
-### POST `/api/v0/slts/get`
+### POST `/api/v0/slt/get`
 
 **Purpose**: Get a single SLT by module index
 
@@ -679,7 +617,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/slts/create`
+### POST `/api/v0/slt/create`
 
 **Purpose**: Create a new Student Learning Target
 
@@ -697,10 +635,12 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 **Used In**:
 - `src/app/(app)/studio/course/[coursenft]/[modulecode]/slts/page.tsx` - SLT creation
+- `src/components/courses/on-chain-modules-section.tsx` - On-chain SLT creation
+- `src/components/courses/hybrid-slt-status.tsx` - Hybrid SLT creation
 
 ---
 
-### POST `/api/v0/slts/update`
+### POST `/api/v0/slt/update`
 
 **Purpose**: Update SLT text
 
@@ -721,7 +661,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/slts/delete`
+### POST `/api/v0/slt/delete`
 
 **Purpose**: Delete a Student Learning Target
 
@@ -741,7 +681,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/slts/batch-update-indexes`
+### POST `/api/v0/slt/batch-update-indexes`
 
 **Purpose**: Reorder multiple SLTs in single operation
 
@@ -762,29 +702,9 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/slts/update-index`
-
-**Purpose**: Update single SLT's index
-
-**Access**: Protected (Creator role, must own course)
-
-**Request Body**:
-```json
-{
-  "course_nft_policy_id": "abc123...",
-  "module_code": "module-101",
-  "current_module_index": 1,
-  "new_module_index": 2
-}
-```
-
-**Used In**: Not currently used (batch endpoint preferred)
-
----
-
 ## Lessons
 
-### POST `/api/v0/lessons/get`
+### POST `/api/v0/lesson/get`
 
 **Purpose**: Get a specific lesson
 
@@ -805,7 +725,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/lessons/list`
+### POST `/api/v0/lesson/list`
 
 **Purpose**: List all lessons for a module
 
@@ -821,10 +741,11 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 **Used In**:
 - `src/app/(app)/course/[coursenft]/[modulecode]/page.tsx` - Module overview
+- `src/app/(app)/studio/course/[coursenft]/[modulecode]/slts/page.tsx` - Lesson status
 
 ---
 
-### POST `/api/v0/lessons/create`
+### POST `/api/v0/lesson/create`
 
 **Purpose**: Create a new lesson
 
@@ -847,7 +768,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/lessons/update`
+### POST `/api/v0/lesson/update`
 
 **Purpose**: Update lesson content
 
@@ -871,7 +792,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/lessons/delete`
+### POST `/api/v0/lesson/delete`
 
 **Purpose**: Delete a lesson
 
@@ -893,7 +814,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Assignments
 
-### POST `/api/v0/assignments/get`
+### POST `/api/v0/assignment/get`
 
 **Purpose**: Get assignment for a module
 
@@ -913,7 +834,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignments/create`
+### POST `/api/v0/assignment/create`
 
 **Purpose**: Create a new assignment
 
@@ -936,7 +857,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignments/update`
+### POST `/api/v0/assignment/update`
 
 **Purpose**: Update assignment details
 
@@ -959,7 +880,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignments/publish`
+### POST `/api/v0/assignment/publish`
 
 **Purpose**: Publish assignment to make it visible to learners
 
@@ -969,7 +890,8 @@ BACKLOG  ARCHIVED   DEPRECATED
 ```json
 {
   "course_nft_policy_id": "abc123...",
-  "module_code": "module-101"
+  "module_code": "module-101",
+  "live": true
 }
 ```
 
@@ -978,7 +900,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignments/delete`
+### POST `/api/v0/assignment/delete`
 
 **Purpose**: Delete an assignment
 
@@ -999,7 +921,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Module Introductions
 
-### POST `/api/v0/introductions/get`
+### POST `/api/v0/introduction/get`
 
 **Purpose**: Get module introduction content
 
@@ -1018,7 +940,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/introductions/create`
+### POST `/api/v0/introduction/create`
 
 **Purpose**: Create module introduction
 
@@ -1039,7 +961,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/introductions/update`
+### POST `/api/v0/introduction/update`
 
 **Purpose**: Update introduction content
 
@@ -1061,7 +983,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/introductions/publish`
+### POST `/api/v0/introduction/publish`
 
 **Purpose**: Publish introduction to make it visible to learners
 
@@ -1071,7 +993,8 @@ BACKLOG  ARCHIVED   DEPRECATED
 ```json
 {
   "course_nft_policy_id": "abc123...",
-  "module_code": "module-101"
+  "module_code": "module-101",
+  "live": true
 }
 ```
 
@@ -1082,7 +1005,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Assignment Commitments
 
-### POST `/api/v0/assignment-commitments/check`
+### POST `/api/v0/assignment-commitment/check`
 
 **Purpose**: Check if learner has commitment for assignment
 
@@ -1100,7 +1023,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/list-by-course`
+### POST `/api/v0/assignment-commitment/by-course`
 
 **Purpose**: Get all assignment commitments for a course (instructor view)
 
@@ -1118,7 +1041,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/list-learner-by-course`
+### POST `/api/v0/assignment-commitment/list`
 
 **Purpose**: Get authenticated learner's commitments for a course
 
@@ -1136,7 +1059,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/create`
+### POST `/api/v0/assignment-commitment/create`
 
 **Purpose**: Create assignment commitment (learner starts assignment)
 
@@ -1154,7 +1077,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/update-evidence`
+### POST `/api/v0/assignment-commitment/update-evidence`
 
 **Purpose**: Update learner's assignment submission evidence
 
@@ -1177,25 +1100,28 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/update-status`
+### POST `/api/v0/assignment-commitment/update-status`
 
-**Purpose**: Update commitment status
+**Purpose**: Update commitment status (also used for transaction confirmation)
 
 **Access**: Protected (Instructor/System)
 
 **Request Body**:
 ```json
 {
-  "commitment_id": "commitment-uuid",
-  "status": "COMPLETED"
+  "id": "commitment-uuid",
+  "status": "COMPLETED",
+  "tx_hash": "txhash123...",
+  "network_evidence_hash": "hash123..."
 }
 ```
 
-**Used In**: Backend/instructor operations
+**Used In**:
+- `src/hooks/use-pending-tx-watcher.ts` - Transaction confirmation
 
 ---
 
-### POST `/api/v0/assignment-commitments/delete`
+### POST `/api/v0/assignment-commitment/delete`
 
 **Purpose**: Delete assignment commitment (learner withdraws)
 
@@ -1216,29 +1142,9 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ---
 
-### POST `/api/v0/assignment-commitments/confirm-transaction`
-
-**Purpose**: Confirm blockchain transaction for commitment
-
-**Access**: Protected
-
-**Request Body**:
-```json
-{
-  "id": "commitment-uuid",
-  "tx_hash": "txhash123...",
-  "network_evidence_hash": "hash123..."
-}
-```
-
-**Used In**:
-- `src/hooks/use-pending-tx-watcher.ts` - Transaction confirmation
-
----
-
 ## Learner Progress
 
-### POST `/api/v0/user-course-status/get`
+### POST `/api/v0/credential/list`
 
 **Purpose**: Get comprehensive learner progress for a course
 
@@ -1258,7 +1164,7 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 ## Pending Transactions
 
-### GET `/api/v0/pending-transactions`
+### GET `/api/v0/transaction/pending-transactions`
 
 **Purpose**: Get list of pending blockchain transactions
 
@@ -1268,6 +1174,19 @@ BACKLOG  ARCHIVED   DEPRECATED
 
 **Used In**:
 - `src/hooks/use-pending-tx-watcher.ts` - Transaction status monitoring
+- `src/hooks/use-pending-transactions.ts` - Transaction list
+
+---
+
+## Removed Endpoints (v0.5.0)
+
+The following endpoints were removed in API v0.5.0:
+
+| Endpoint | Purpose | Alternative |
+|----------|---------|-------------|
+| `/course-modules/update-code` | Rename module code | Delete and recreate module |
+| `/course-modules/set-pending-tx` | Set pending tx hash | Use `/course-module/update-status` with `pending_tx_hash` |
+| `/course-modules/publish` | Batch publish content | Publish each content type individually |
 
 ---
 
@@ -1278,30 +1197,26 @@ BACKLOG  ARCHIVED   DEPRECATED
 | Router | Endpoints Used | Total Endpoints | Coverage | Status |
 |--------|----------------|-----------------|----------|--------|
 | Auth | 2 | 2 | 100% | Complete |
-| User | 4 | 4 | 100% | Complete |
-| Courses | 8 | 9 | 88.9% | Excellent |
-| Course Modules | 12 | 12 | 100% | Complete |
-| SLTs | 6 | 7 | 85.7% | Excellent |
+| Access Token | 4 | 4 | 100% | Complete |
+| Courses | 8 | 8 | 100% | Complete |
+| Course Modules | 9 | 9 | 100% | Complete |
+| SLTs | 6 | 6 | 100% | Complete |
 | Lessons | 5 | 5 | 100% | Complete |
 | Assignments | 5 | 5 | 100% | Complete |
 | Introductions | 4 | 4 | 100% | Complete |
-| Assignment Commitments | 8 | 8 | 100% | Complete |
-| User Progress | 1 | 1 | 100% | Complete |
+| Assignment Commitments | 7 | 7 | 100% | Complete |
+| Learner Progress | 1 | 1 | 100% | Complete |
 | Pending Transactions | 1 | 1 | 100% | Complete |
 
 ### Overall Coverage
 
-**54 of 55 endpoints used (98.18%)**
+**51 of 52 endpoints used (98.08%)**
 
 ### Unused Endpoints
 
-1. **`POST /slts/update-index`**
-   - **Reason**: Batch endpoint (`/slts/batch-update-indexes`) is more efficient
+1. **`POST /slt/update-index`**
+   - **Reason**: Batch endpoint (`/slt/batch-update-indexes`) is more efficient
    - **Availability**: Remains available for external API consumers
-
-2. **`POST /courses/import`**
-   - **Reason**: Import feature not yet implemented in UI
-   - **Availability**: Available for CLI/script usage
 
 ---
 
@@ -1312,35 +1227,35 @@ BACKLOG  ARCHIVED   DEPRECATED
 1. POST /api/v0/auth/login/session        → Get nonce
 2. User signs nonce with wallet
 3. POST /api/v0/auth/login/validate       → Get JWT token
-4. All subsequent requests use:    Authorization: Bearer {token}
+4. All subsequent requests use:           Authorization: Bearer {token}
 ```
 
 ### Content Publication Workflow
 ```
-DRAFT → Edit content → APPROVED → Set pending tx → PENDING_TX → ON_CHAIN
-                                                                     ↓
-                                                              DEPRECATED
+DRAFT → Edit content → APPROVED → PENDING_TX → ON_CHAIN
+                                                    ↓
+                                               DEPRECATED
 ```
 
 ### Learner Journey
 ```
-1. POST /api/v0/courses/published                      → Browse courses
-2. POST /api/v0/courses/get                            → View course details
-3. POST /api/v0/course-modules/list                    → See modules
-4. POST /api/v0/assignment-commitments/create          → Start assignment
-5. POST /api/v0/assignment-commitments/update-evidence → Submit work
-6. POST /api/v0/user-course-status/get                 → Track progress
+1. GET  /api/v0/course/published                      → Browse courses
+2. POST /api/v0/course/get                            → View course details
+3. POST /api/v0/course-module/list                    → See modules
+4. POST /api/v0/assignment-commitment/create          → Start assignment
+5. POST /api/v0/assignment-commitment/update-evidence → Submit work
+6. POST /api/v0/credential/list                       → Track progress
 ```
 
 ### Creator Journey
 ```
-1. POST /api/v0/courses/create                         → Create course
-2. POST /api/v0/course-modules/create                  → Add modules
-3. POST /api/v0/slts/create                            → Define learning objectives
-4. POST /api/v0/lessons/create                         → Create lessons
-5. POST /api/v0/assignments/create                     → Create assignments
-6. POST /api/v0/course-modules/publish                 → Publish all content
-7. POST /api/v0/assignment-commitments/list-by-course  → Review submissions
+1. POST /api/v0/course/create                         → Create course
+2. POST /api/v0/course-module/create                  → Add modules
+3. POST /api/v0/slt/create                            → Define learning objectives
+4. POST /api/v0/lesson/create                         → Create lessons
+5. POST /api/v0/assignment/create                     → Create assignments
+6. POST /api/v0/assignment/publish                    → Publish assignment
+7. POST /api/v0/assignment-commitment/by-course       → Review submissions
 ```
 
 ---
@@ -1397,5 +1312,5 @@ import {
 
 ---
 
-**Last Updated**: December 1, 2024
+**Last Updated**: December 15, 2024
 **Maintained By**: Andamio Platform Team

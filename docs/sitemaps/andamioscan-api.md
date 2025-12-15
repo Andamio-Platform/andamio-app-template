@@ -58,7 +58,7 @@ type Module = {
 **Notes**:
 - Returns courses that exist on-chain (have been published via transaction)
 - Module `assignment_id` is the SLT hash - matches `computeSltHash(slts)` from `@andamio/transactions`
-- Combine with DB API `/courses/published` to get full metadata (descriptions, categories, etc.)
+- Combine with DB API `/course/published` to get full metadata (descriptions, categories, etc.)
 
 ---
 
@@ -229,7 +229,11 @@ async function getCourseWithMetadata(courseId: string) {
   const onChain = await fetch(`${ANDAMIOSCAN_URL}/v2/courses/${courseId}`);
 
   // Local data: title, description, category, draft content
-  const local = await fetch(`${DB_API_URL}/courses/${courseId}`);
+  const local = await fetch(`${DB_API_URL}/course/get`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ course_nft_policy_id: courseId })
+  });
 
   return {
     ...await local.json(),

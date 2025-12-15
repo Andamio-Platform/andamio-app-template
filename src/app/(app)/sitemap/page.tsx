@@ -276,7 +276,7 @@ export default function SitemapPage() {
       try {
         // Fetch published courses (public) - GET /courses/published
         const pubCourseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`,
           {
             method: "GET",
             headers: { "Accept": "application/json" },
@@ -305,7 +305,7 @@ export default function SitemapPage() {
         if (isAuthenticated) {
           // Owned courses - POST /courses/owned
           const ownedCourseResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

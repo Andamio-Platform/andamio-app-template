@@ -146,7 +146,7 @@ function ImportSLTDrawer({
     setIsSubmitting(true);
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

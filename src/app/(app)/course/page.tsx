@@ -28,7 +28,7 @@ export default function CoursePage() {
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`,
           {
             method: "GET",
             headers: { "Accept": "application/json" },

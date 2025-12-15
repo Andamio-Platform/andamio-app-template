@@ -57,7 +57,7 @@ if (!validationResult.success) {
 
 ```typescript
 const response = await authenticatedFetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseCode}`,
+  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/update`,
   {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -111,7 +111,7 @@ const handleSave = async () => {
 
     // Send validated data to API
     const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${course.courseCode}`,
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/update`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -139,21 +139,21 @@ const handleSave = async () => {
 
 | Endpoint | Input Type | Input Schema |
 |----------|-----------|--------------|
-| `POST /courses` | `CreateCourseInput` | `createCourseInputSchema` |
-| `PATCH /courses/{courseCode}` | `UpdateCourseInput` | `updateCourseInputSchema` |
-| `POST /course-modules` | `CreateCourseModuleInput` | `createCourseModuleInputSchema` |
-| `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}` | `UpdateCourseModuleInput` | `updateCourseModuleInputSchema` |
-| `PATCH /course-modules/{courseNftPolicyId}/{moduleCode}/status` | `UpdateModuleStatusInput` | `updateModuleStatusInputSchema` |
-| `POST /lessons` | `CreateLessonInput` | `createLessonInputSchema` |
-| `PATCH /lessons/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` | `UpdateLessonInput` | `updateLessonInputSchema` |
-| `POST /slts` | `CreateSLTInput` | `createSLTInputSchema` |
-| `PATCH /slts/{courseNftPolicyId}/{moduleCode}/{moduleIndex}` | `UpdateSLTInput` | `updateSLTInputSchema` |
-| `POST /assignments` | `CreateAssignmentInput` | `createAssignmentInputSchema` |
-| `PATCH /assignments/{courseNftPolicyId}/{moduleCode}` | `UpdateAssignmentInput` | `updateAssignmentInputSchema` |
-| `POST /introductions` | `CreateIntroductionInput` | `createIntroductionInputSchema` |
-| `PATCH /introductions/{courseNftPolicyId}/{moduleCode}` | `UpdateIntroductionInput` | `updateIntroductionInputSchema` |
-| `POST /assignment-commitments` | `CreateAssignmentCommitmentInput` | `createAssignmentCommitmentInputSchema` |
-| `PATCH /assignment-commitments/{id}/evidence` | `UpdateAssignmentCommitmentEvidenceInput` | `updateAssignmentCommitmentEvidenceInputSchema` |
+| `POST /course/create` | `CreateCourseInput` | `createCourseInputSchema` |
+| `PATCH /course/update` | `UpdateCourseInput` | `updateCourseInputSchema` |
+| `POST /course-module/create` | `CreateCourseModuleInput` | `createCourseModuleInputSchema` |
+| `PATCH /course-module/update` | `UpdateCourseModuleInput` | `updateCourseModuleInputSchema` |
+| `PATCH /course-module/update-status` | `UpdateModuleStatusInput` | `updateModuleStatusInputSchema` |
+| `POST /lesson/create` | `CreateLessonInput` | `createLessonInputSchema` |
+| `PATCH /lesson/update` | `UpdateLessonInput` | `updateLessonInputSchema` |
+| `POST /slt/create` | `CreateSLTInput` | `createSLTInputSchema` |
+| `PATCH /slt/update` | `UpdateSLTInput` | `updateSLTInputSchema` |
+| `POST /assignment/create` | `CreateAssignmentInput` | `createAssignmentInputSchema` |
+| `PATCH /assignment/update` | `UpdateAssignmentInput` | `updateAssignmentInputSchema` |
+| `POST /introduction/create` | `CreateIntroductionInput` | `createIntroductionInputSchema` |
+| `PATCH /introduction/update` | `UpdateIntroductionInput` | `updateIntroductionInputSchema` |
+| `POST /assignment-commitment/create` | `CreateAssignmentCommitmentInput` | `createAssignmentCommitmentInputSchema` |
+| `PATCH /assignment-commitment/update-evidence` | `UpdateAssignmentCommitmentEvidenceInput` | `updateAssignmentCommitmentEvidenceInputSchema` |
 
 ## Files Updated
 

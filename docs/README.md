@@ -102,6 +102,14 @@ API endpoint documentation and reference.
 |----------|-------------|----------|
 | [API-ENDPOINT-REFERENCE.md](./api/API-ENDPOINT-REFERENCE.md) | Complete API endpoint reference with request/response schemas | Contributors |
 
+### Migration (`docs/migration/`)
+
+Migration guides for API and architecture changes.
+
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [T3-API-MIGRATION-CHECKLIST.md](./migration/T3-API-MIGRATION-CHECKLIST.md) | **NEW** - Checklist for migrating from plural to singular API paths (DB API v0.5.0) | Contributors |
+
 ### Guides (`docs/guides/`)
 
 Step-by-step implementation guides.

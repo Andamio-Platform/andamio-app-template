@@ -64,7 +64,7 @@ export default function LearnerAssignmentPage() {
       try {
         // Fetch course details for breadcrumb
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -79,7 +79,7 @@ export default function LearnerAssignmentPage() {
 
         // Fetch module details for breadcrumb
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ export default function LearnerAssignmentPage() {
 
         // Fetch assignment details
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

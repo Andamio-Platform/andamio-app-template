@@ -83,7 +83,7 @@ export function CreateModuleDialog({ courseNftPolicyId, onModuleCreated }: Creat
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/create`,
         {
           method: "POST",
           headers: {

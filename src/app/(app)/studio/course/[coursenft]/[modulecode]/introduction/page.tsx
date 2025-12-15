@@ -80,7 +80,7 @@ export default function IntroductionEditPage() {
       try {
         // Fetch course details for breadcrumb
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -95,7 +95,7 @@ export default function IntroductionEditPage() {
 
         // Fetch module details for breadcrumb
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -113,7 +113,7 @@ export default function IntroductionEditPage() {
 
         // Fetch introduction details
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -195,7 +195,7 @@ export default function IntroductionEditPage() {
 
         // Send validated update (POST /introductions/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/update`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -234,7 +234,7 @@ export default function IntroductionEditPage() {
 
         // Send validated create (POST /introductions/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -272,7 +272,7 @@ export default function IntroductionEditPage() {
     try {
       const newLiveStatus = !live;
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introductions/publish`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/publish`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

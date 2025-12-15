@@ -82,7 +82,7 @@ export default function LessonEditPage() {
       try {
         // Fetch course details for breadcrumb
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ export default function LessonEditPage() {
 
         // Fetch module details for breadcrumb
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -115,7 +115,7 @@ export default function LessonEditPage() {
 
         // Fetch lesson details
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -194,7 +194,7 @@ export default function LessonEditPage() {
 
         // Send validated update (POST /lessons/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/update`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -209,7 +209,7 @@ export default function LessonEditPage() {
 
         // Refetch lesson (POST /lessons/get)
         const refetchResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -247,7 +247,7 @@ export default function LessonEditPage() {
 
         // Send validated create (POST /lessons/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -262,7 +262,7 @@ export default function LessonEditPage() {
 
         // Refetch lesson (POST /lessons/get)
         const refetchResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -301,7 +301,7 @@ export default function LessonEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -69,7 +69,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -90,7 +90,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
         try {
           const courseCodes = data.map((c) => c.course_code);
           const modulesResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list-by-courses`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/map`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

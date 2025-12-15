@@ -168,7 +168,7 @@ export function useHybridSlts(
 
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -340,7 +340,7 @@ export function useHybridModules(
 
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -10,18 +10,18 @@
  * ```tsx
  * // Simple GET request
  * const { data, isLoading, error } = useAndamioFetch<CourseOutput>({
- *   endpoint: `/courses/${courseId}`,
+ *   endpoint: `/course/get?course_nft_policy_id=${courseId}`,
  * });
  *
  * // With authentication (uses JWT from useAndamioAuth)
  * const { data } = useAndamioFetch<CourseOutput>({
- *   endpoint: `/courses/owned`,
+ *   endpoint: `/course/list`,
  *   authenticated: true,
  * });
  *
  * // POST request with body
  * const { data } = useAndamioFetch<ListCoursesOutput>({
- *   endpoint: `/courses/list`,
+ *   endpoint: `/course/published`,
  *   method: "POST",
  *   body: { courseCodes: ["CS101"] },
  * });
@@ -35,7 +35,7 @@
  *
  * function CoursePage({ courseId }: { courseId: string }) {
  *   const { data: course, isLoading, error, refetch } = useAndamioFetch<CourseOutput>({
- *     endpoint: `/courses/${courseId}`,
+ *     endpoint: `/course/get?course_nft_policy_id=${courseId}`,
  *   });
  *
  *   if (isLoading) return <LoadingState />;
@@ -95,7 +95,7 @@
  *   const fetchData = async () => {
  *     setIsLoading(true);
  *     try {
- *       const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/${id}`);
+ *       const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get?course_nft_policy_id=${id}`);
  *       if (!response.ok) throw new Error("Failed");
  *       setData(await response.json());
  *     } catch (err) {
@@ -111,7 +111,7 @@
  * After (4 lines):
  * ```tsx
  * const { data, isLoading, error } = useAndamioFetch<CourseOutput>({
- *   endpoint: `/courses/${id}`,
+ *   endpoint: `/course/get?course_nft_policy_id=${id}`,
  *   deps: [id],
  * });
  * ```
@@ -345,7 +345,7 @@ export function useAndamioFetch<TData, TBody = unknown>(
  * ```tsx
  * // Fetching owned courses (protected endpoint)
  * const { data: courses, isLoading } = useAuthenticatedFetch<ListOwnedCoursesOutput>({
- *   endpoint: `/courses/owned`,
+ *   endpoint: `/course/list`,
  * });
  * ```
  */

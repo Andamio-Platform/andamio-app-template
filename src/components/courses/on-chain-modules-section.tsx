@@ -108,7 +108,7 @@ function ImportModuleDrawer({
     try {
       // Step 1: Create the course module in the database
       const createModuleResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -129,7 +129,7 @@ function ImportModuleDrawer({
       for (let i = 0; i < module.slts.length; i++) {
         const sltText = module.slts[i];
         const createSltResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -445,7 +445,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
     setIsLoadingDb(true);
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

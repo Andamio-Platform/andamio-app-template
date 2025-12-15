@@ -160,9 +160,9 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Fetch all commitments for this course (POST /assignment-commitments/list-learner-by-course)
+      // Fetch all commitments for this course (POST /assignment-commitment/list)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-learner-by-course`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -260,7 +260,7 @@ export function AssignmentCommitment({
       const evidenceHash = hashNormalizedContent(localEvidenceContent);
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/update-evidence`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/update-evidence`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -299,7 +299,7 @@ export function AssignmentCommitment({
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

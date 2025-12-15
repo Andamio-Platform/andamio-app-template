@@ -162,7 +162,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update module status to ON_CHAIN
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/confirm-transaction`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/confirm-transaction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -204,7 +204,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update assignment commitment status
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/confirm-transaction`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -264,7 +264,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         }
 
         // Clear user's unconfirmedTx now that it's confirmed
-        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/update-unconfirmed-tx`;
+        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-unconfirmed-tx`;
         const clearBody = { tx_hash: null };
         txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "POST", clearUrl, clearBody);
         try {
@@ -389,7 +389,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       pendingTxLogger.debug("Loading pending transactions from database...");
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/transaction/pending-transactions`
       );
 
       if (!response.ok) {

@@ -97,7 +97,7 @@ export function OnChainCoursesSection() {
     setIsLoadingDb(true);
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -417,7 +417,7 @@ function ImportCourseDrawer({
     setIsSubmitting(true);
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/create-on-submit`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/create-on-submit-minting-tx`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

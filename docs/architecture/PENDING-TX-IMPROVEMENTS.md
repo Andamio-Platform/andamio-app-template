@@ -218,7 +218,7 @@ MINT_MODULE_TOKENS = {
     {
       def: "Update Module Status",
       method: "PATCH",
-      endpoint: "/course-modules/{...}/status",
+      endpoint: "/course-module/update-status",
       body: {
         status: { source: "literal", value: "PENDING_TX" },
         pendingTxHash: { source: "context", path: "txHash" },
@@ -229,7 +229,7 @@ MINT_MODULE_TOKENS = {
     {
       def: "Update Module Status",
       method: "PATCH",
-      endpoint: "/course-modules/{...}/status",
+      endpoint: "/course-module/update-status",
       body: {
         status: { source: "literal", value: "ON_CHAIN" },
         moduleHash: { source: "onChainData", path: "mints[0].assetName" },
@@ -460,7 +460,7 @@ onConfirmation: [
   {
     def: "Update Module Status",
     method: "PATCH",
-    endpoint: "/course-modules/{courseNftPolicyId}/{moduleCode}/status",
+    endpoint: "/course-module/update-status",
     body: {
       status: { source: "literal", value: "ON_CHAIN" },
       moduleHash: { source: "onChainData", path: "mints[0].assetName" },

@@ -143,7 +143,7 @@ export default function ModuleEditPage() {
       try {
         // Fetch course details for breadcrumb (POST with body)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -158,7 +158,7 @@ export default function ModuleEditPage() {
 
         // Fetch single module details (POST with body)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -182,7 +182,7 @@ export default function ModuleEditPage() {
         // Fetch all modules with SLTs for transaction (only if APPROVED)
         if (moduleData.status === "APPROVED") {
           const modulesResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -240,7 +240,7 @@ export default function ModuleEditPage() {
 
       // Send validated module update (POST /course-modules/update)
       const updateResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -274,7 +274,7 @@ export default function ModuleEditPage() {
 
         // Send validated status update (POST /course-modules/update-status)
         const statusResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update-status`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update-status`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -292,7 +292,7 @@ export default function ModuleEditPage() {
 
       // Refetch module (POST /course-modules/get)
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -321,7 +321,7 @@ export default function ModuleEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -365,36 +365,10 @@ export default function ModuleEditPage() {
       return;
     }
 
-    setIsRenaming(true);
-    setRenameError(null);
-
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/update-code`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            new_module_code: newModuleCode.trim(),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to rename module");
-      }
-
-      // Redirect to the new module code URL
-      router.push(`/studio/course/${courseNftPolicyId}/${newModuleCode.trim()}`);
-    } catch (err) {
-      console.error("Error renaming module:", err);
-      setRenameError(err instanceof Error ? err.message : "Failed to rename module");
-    } finally {
-      setIsRenaming(false);
-    }
+    // TODO: The /course-modules/update-code endpoint has been removed from API v0.5.0
+    // This feature is temporarily unavailable pending API updates
+    setRenameError("Module renaming is temporarily unavailable. This feature will be restored in a future update.");
+    return;
   };
 
   const handleSetPendingTx = async () => {
@@ -403,69 +377,16 @@ export default function ModuleEditPage() {
       return;
     }
 
-    setIsSettingPendingTx(true);
-    setPendingTxError(null);
-
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/set-pending-tx`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            pending_tx_hash: pendingTxHash.trim(),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to set pending transaction");
-      }
-
-      const updatedModule = (await response.json()) as CourseModuleOutput;
-      setCourseModule(updatedModule);
-      setIsPendingTxDialogOpen(false);
-      showSuccess();
-    } catch (err) {
-      console.error("Error setting pending transaction:", err);
-      setPendingTxError(err instanceof Error ? err.message : "Failed to set pending transaction");
-    } finally {
-      setIsSettingPendingTx(false);
-    }
+    // TODO: The /course-modules/set-pending-tx endpoint has been removed from API v0.5.0
+    // This functionality may be integrated into update-status in a future update
+    setPendingTxError("Setting pending transaction manually is temporarily unavailable. This feature will be restored in a future update.");
+    return;
   };
 
-  const handlePublishAllContent = async () => {
-    setIsPublishing(true);
-    setSaveError(null);
-
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/publish`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to publish content");
-      }
-
-      showSuccess();
-    } catch (err) {
-      console.error("Error publishing content:", err);
-      setSaveError(err instanceof Error ? err.message : "Failed to publish content");
-    } finally {
-      setIsPublishing(false);
-    }
+  const handlePublishAllContent = () => {
+    // TODO: The /course-modules/publish endpoint has been removed from API v0.5.0
+    // This feature may require batch updates in a future API version
+    setSaveError("Batch publish is temporarily unavailable. Please publish individual content items (introduction, SLTs, lessons, assignment) separately.");
   };
 
   // Loading state
@@ -920,7 +841,7 @@ export default function ModuleEditPage() {
               onSuccess={async () => {
                 // Refetch module to see updated status (POST /course-modules/get)
                 const response = await fetch(
-                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+                  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

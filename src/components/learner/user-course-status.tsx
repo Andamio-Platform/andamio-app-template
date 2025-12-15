@@ -75,7 +75,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/credential/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -110,7 +110,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user-course-status/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/credential/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -1,7 +1,7 @@
 # Data Sources Architecture
 
 > **Where does this app get its data?**
-> Last Updated: December 11, 2025
+> Last Updated: December 15, 2025 (v0.5.0 - Singular endpoint paths)
 
 This document explains the external data sources used by the Andamio T3 App Template and provides a complete endpoint inventory.
 
@@ -145,8 +145,8 @@ This inventory documents every API call made by this application. Use this as th
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/user/update-alias` | POST | JWT | `andamio-auth-context.tsx`, `mint-access-token.tsx` | Sync access token alias |
-| `/user/update-unconfirmed-tx` | PATCH | JWT | `use-pending-tx-watcher.ts`, `use-andamio-transaction.ts` | Update pending tx hash |
+| `/access-token/update-alias` | POST | JWT | `andamio-auth-context.tsx`, `mint-access-token.tsx` | Sync access token alias |
+| `/access-token/update-unconfirmed-tx` | PATCH | JWT | `use-pending-tx-watcher.ts`, `use-andamio-transaction.ts` | Update pending tx hash |
 | `/creator/create` | POST | JWT | `andamio-auth-context.tsx` | Auto-register as Creator |
 | `/learner/create` | POST | JWT | `andamio-auth-context.tsx` | Auto-register as Learner |
 
@@ -154,81 +154,83 @@ This inventory documents every API call made by this application. Use this as th
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/courses/published` | GET | Public | `course/page.tsx` | List all published courses |
-| `/courses/owned` | POST | JWT | `owned-courses-list.tsx`, `course-manager.tsx`, `sitemap/page.tsx`, `studio/project/page.tsx` | List owned courses |
-| `/courses/get` | GET | Public | `course/[coursenft]/page.tsx`, `studio/course/[coursenft]/page.tsx`, `instructor/page.tsx` | Fetch course by NFT policy ID |
-| `/courses/create` | POST | JWT | `create-course-dialog.tsx` | Create new course |
-| `/courses/check` | GET | Public | `create-course-dialog.tsx` | Check if course code exists |
-| `/courses/update` | PATCH | JWT | `studio/course/[coursenft]/page.tsx` | Update course metadata |
-| `/courses/delete` | DELETE | JWT | `studio/course/[coursenft]/page.tsx` | Delete course |
-| `/courses/unpublished-projects` | GET | JWT | `studio/course/[coursenft]/page.tsx` | Get unpublished projects |
+| `/course/published` | GET | Public | `course/page.tsx` | List all published courses |
+| `/course/owned` | POST | JWT | `owned-courses-list.tsx`, `course-manager.tsx`, `sitemap/page.tsx`, `studio/project/page.tsx` | List owned courses |
+| `/course/get` | POST | Public | `course/[coursenft]/page.tsx`, `studio/course/[coursenft]/page.tsx`, `instructor/page.tsx` | Fetch course by NFT policy ID |
+| `/course/create` | POST | JWT | `create-course-dialog.tsx` | Create new course |
+| `/course/check` | POST | Public | `create-course-dialog.tsx` | Check if course code exists |
+| `/course/update` | PATCH | JWT | `studio/course/[coursenft]/page.tsx` | Update course metadata |
+| `/course/delete` | DELETE | JWT | `studio/course/[coursenft]/page.tsx` | Delete course |
+| `/course/unpublished-projects` | POST | JWT | `studio/course/[coursenft]/page.tsx` | Get unpublished projects |
 
 #### Course Module Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/course-modules/list` | GET | Public | `course/[coursenft]/page.tsx`, `studio/.../[modulecode]/page.tsx` | List modules for course |
-| `/course-modules/get` | GET | Public | `course/.../[modulecode]/page.tsx`, `studio/.../[modulecode]/page.tsx` | Fetch single module |
-| `/course-modules/list-by-courses` | POST | Public | `owned-courses-list.tsx`, `course-manager.tsx` | Batch fetch modules |
-| `/course-modules/create` | POST | JWT | `create-module-dialog.tsx` | Create module |
-| `/course-modules/update` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Update module |
-| `/course-modules/update-status` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Update status (DRAFT/PUBLISHED) |
-| `/course-modules/update-code` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Rename module code |
-| `/course-modules/delete` | DELETE | JWT | `studio/.../[modulecode]/page.tsx` | Delete module |
-| `/course-modules/publish` | POST | JWT | `studio/.../[modulecode]/page.tsx` | Publish to blockchain |
-| `/course-modules/set-pending-tx` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Set pending tx hash |
-| `/course-modules/confirm-transaction` | POST | JWT | `use-pending-tx-watcher.ts` | Confirm blockchain tx |
-| `/course-modules/assignment-summary` | GET | Public | `studio/course/[coursenft]/page.tsx` | Get assignment summary |
+| `/course-module/list` | POST | Public | `course/[coursenft]/page.tsx`, `studio/.../[modulecode]/page.tsx` | List modules for course |
+| `/course-module/get` | POST | Public | `course/.../[modulecode]/page.tsx`, `studio/.../[modulecode]/page.tsx` | Fetch single module |
+| `/course-module/list-by-courses` | POST | Public | `owned-courses-list.tsx`, `course-manager.tsx` | Batch fetch modules |
+| `/course-module/create` | POST | JWT | `create-module-dialog.tsx` | Create module |
+| `/course-module/update` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Update module |
+| `/course-module/update-status` | PATCH | JWT | `studio/.../[modulecode]/page.tsx` | Update status (DRAFT/PUBLISHED) |
+| `/course-module/delete` | DELETE | JWT | `studio/.../[modulecode]/page.tsx` | Delete module |
+| `/course-module/confirm-transaction` | POST | JWT | `use-pending-tx-watcher.ts` | Confirm blockchain tx |
+| `/course-module/assignment-summary` | POST | Public | `studio/course/[coursenft]/page.tsx` | Get assignment summary |
+
+**Note:** The following endpoints were removed in v0.5.0:
+- `/course-module/update-code` - Module code renaming
+- `/course-module/set-pending-tx` - Manual pending tx setting
+- `/course-module/publish` - Batch publishing
 
 #### Lesson Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/lessons/list` | GET | Public | `course/.../[modulecode]/page.tsx`, `slts/page.tsx` | List lessons for module |
-| `/lessons/get` | GET | Public | `course/.../[moduleindex]/page.tsx`, `studio/.../[moduleindex]/page.tsx` | Fetch single lesson |
-| `/lessons/create` | POST | JWT | `studio/.../[moduleindex]/page.tsx` | Create lesson |
-| `/lessons/update` | PATCH | JWT | `studio/.../[moduleindex]/page.tsx` | Update lesson |
-| `/lessons/delete` | DELETE | JWT | `studio/.../[moduleindex]/page.tsx` | Delete lesson |
+| `/lesson/list` | POST | Public | `course/.../[modulecode]/page.tsx`, `slts/page.tsx` | List lessons for module |
+| `/lesson/get` | POST | Public | `course/.../[moduleindex]/page.tsx`, `studio/.../[moduleindex]/page.tsx` | Fetch single lesson |
+| `/lesson/create` | POST | JWT | `studio/.../[moduleindex]/page.tsx` | Create lesson |
+| `/lesson/update` | PATCH | JWT | `studio/.../[moduleindex]/page.tsx` | Update lesson |
+| `/lesson/delete` | DELETE | JWT | `studio/.../[moduleindex]/page.tsx` | Delete lesson |
 
 #### Introduction Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/introductions/get` | GET | Public | `studio/.../introduction/page.tsx` | Fetch introduction |
-| `/introductions/create` | POST | JWT | `studio/.../introduction/page.tsx` | Create introduction |
-| `/introductions/update` | PATCH | JWT | `studio/.../introduction/page.tsx` | Update introduction |
-| `/introductions/publish` | POST | JWT | `studio/.../introduction/page.tsx` | Publish introduction |
+| `/introduction/get` | POST | Public | `studio/.../introduction/page.tsx` | Fetch introduction |
+| `/introduction/create` | POST | JWT | `studio/.../introduction/page.tsx` | Create introduction |
+| `/introduction/update` | PATCH | JWT | `studio/.../introduction/page.tsx` | Update introduction |
+| `/introduction/publish` | POST | JWT | `studio/.../introduction/page.tsx` | Publish introduction |
 
 #### SLT (Student Learning Target) Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/slts/list` | GET | Public | `course/.../[modulecode]/page.tsx`, `assignment/page.tsx`, `slts/page.tsx` | List SLTs |
-| `/slts/get` | GET | Public | `slts/page.tsx` | Fetch single SLT |
-| `/slts/create` | POST | JWT | `slts/page.tsx` | Create SLT |
-| `/slts/update` | PATCH | JWT | `slts/page.tsx` | Update SLT |
-| `/slts/delete` | DELETE | JWT | `slts/page.tsx` | Delete SLT |
-| `/slts/batch-update-indexes` | PATCH | JWT | `slts/page.tsx` | Reorder SLTs |
+| `/slt/list` | POST | Public | `course/.../[modulecode]/page.tsx`, `assignment/page.tsx`, `slts/page.tsx` | List SLTs |
+| `/slt/get` | POST | Public | `slts/page.tsx` | Fetch single SLT |
+| `/slt/create` | POST | JWT | `slts/page.tsx` | Create SLT |
+| `/slt/update` | PATCH | JWT | `slts/page.tsx` | Update SLT |
+| `/slt/delete` | DELETE | JWT | `slts/page.tsx` | Delete SLT |
+| `/slt/batch-update-indexes` | PATCH | JWT | `slts/page.tsx` | Reorder SLTs |
 
 #### Assignment Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/assignments/get` | GET | Public | `course/.../assignment/page.tsx`, `studio/.../assignment/page.tsx` | Fetch assignment |
-| `/assignments/create` | POST | JWT | `studio/.../assignment/page.tsx` | Create assignment |
-| `/assignments/update` | PATCH | JWT | `studio/.../assignment/page.tsx` | Update assignment |
-| `/assignments/delete` | DELETE | JWT | `studio/.../assignment/page.tsx` | Delete assignment |
-| `/assignments/publish` | POST | JWT | `studio/.../assignment/page.tsx` | Publish assignment |
+| `/assignment/get` | POST | Public | `course/.../assignment/page.tsx`, `studio/.../assignment/page.tsx` | Fetch assignment |
+| `/assignment/create` | POST | JWT | `studio/.../assignment/page.tsx` | Create assignment |
+| `/assignment/update` | PATCH | JWT | `studio/.../assignment/page.tsx` | Update assignment |
+| `/assignment/delete` | DELETE | JWT | `studio/.../assignment/page.tsx` | Delete assignment |
+| `/assignment/publish` | POST | JWT | `studio/.../assignment/page.tsx` | Publish assignment |
 
 #### Assignment Commitment Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/assignment-commitments/list-learner-by-course` | GET | JWT | `assignment-commitment.tsx` | Learner's commitments |
-| `/assignment-commitments/list-by-course` | GET | JWT | `instructor/page.tsx` | All commitments (instructor) |
-| `/assignment-commitments/update-evidence` | PATCH | JWT | `assignment-commitment.tsx` | Submit evidence |
-| `/assignment-commitments/delete` | DELETE | JWT | `assignment-commitment.tsx` | Delete commitment |
-| `/assignment-commitments/confirm-transaction` | POST | JWT | `use-pending-tx-watcher.ts` | Confirm blockchain tx |
+| `/assignment-commitment/list-learner-by-course` | POST | JWT | `assignment-commitment.tsx` | Learner's commitments |
+| `/assignment-commitment/list-by-course` | POST | JWT | `instructor/page.tsx` | All commitments (instructor) |
+| `/assignment-commitment/update-evidence` | PATCH | JWT | `assignment-commitment.tsx` | Submit evidence |
+| `/assignment-commitment/delete` | DELETE | JWT | `assignment-commitment.tsx` | Delete commitment |
+| `/assignment-commitment/confirm-transaction` | POST | JWT | `use-pending-tx-watcher.ts` | Confirm blockchain tx |
 
 #### Project Endpoints
 
@@ -258,14 +260,14 @@ This inventory documents every API call made by this application. Use this as th
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/learner/my-learning` | POST | JWT | `my-learning.tsx` | Get enrolled courses with progress |
-| `/user-course-status/get` | GET | JWT | `user-course-status.tsx` | Learner's course status |
+| `/my-learning/get` | POST | JWT | `my-learning.tsx` | Get enrolled courses with progress |
+| `/credential/list` | POST | JWT | `user-course-status.tsx` | Learner's course status |
 
 #### Transaction Endpoints
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
-| `/pending-transactions` | POST | JWT | `use-pending-tx-watcher.ts` | Get pending transactions |
+| `/transaction/pending-transactions` | POST | JWT | `use-pending-tx-watcher.ts` | Get pending transactions |
 
 ---
 

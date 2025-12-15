@@ -13,24 +13,24 @@ This document tracks the implementation status of Andamio platform features in t
 ### Database API Coverage
 
 **Course Management**
-- ✅ GET `/courses/owned` - List owned courses
-- ✅ GET `/courses/{courseNftPolicyId}` - Get course details
-- ✅ GET `/courses/{courseNftPolicyId}/course-modules` - List course modules with SLTs
-- ✅ POST `/courses` - Create course
-- ✅ PATCH `/courses/{courseNftPolicyId}` - Update course
-- ✅ PATCH `/course-modules/{courseNftPolicyId}/{moduleCode}/status` - Update module status
+- ✅ POST `/course/owned` - List owned courses
+- ✅ POST `/course/get` - Get course details
+- ✅ POST `/course-module/list` - List course modules with SLTs
+- ✅ POST `/course/create` - Create course
+- ✅ PATCH `/course/update` - Update course
+- ✅ PATCH `/course-module/update-status` - Update module status
 
 **Student Progress**
-- ✅ GET `/user-course-status/{courseNftPolicyId}` - Get learner's course progress
-- ✅ GET `/assignment-commitments/learner/course/{courseNftPolicyId}` - List learner's commitments
-- ✅ POST `/assignment-commitments/{courseNftPolicyId}/{moduleCode}` - Create commitment
-- ✅ PATCH `/assignment-commitments/.../status` - Update commitment status
-- ✅ PATCH `/assignment-commitments/.../confirm-transaction` - Confirm blockchain transaction
-- ✅ PATCH `/assignment-commitments/.../evidence` - Update evidence (off-chain)
-- ✅ DELETE `/assignment-commitments/...` - Delete commitment
+- ✅ POST `/credential/list` - Get learner's course progress
+- ✅ POST `/assignment-commitment/list-learner-by-course` - List learner's commitments
+- ✅ POST `/assignment-commitment/create` - Create commitment
+- ✅ PATCH `/assignment-commitment/update-status` - Update commitment status
+- ✅ POST `/assignment-commitment/confirm-transaction` - Confirm blockchain transaction
+- ✅ PATCH `/assignment-commitment/update-evidence` - Update evidence (off-chain)
+- ✅ DELETE `/assignment-commitment/delete` - Delete commitment
 
 **Instructor Management**
-- ✅ GET `/assignment-commitments/course/{courseNftPolicyId}` - List all course commitments
+- ✅ POST `/assignment-commitment/list-by-course` - List all course commitments
 - ✅ Filter by status, assignment, search
 
 ### Transaction Coverage (8/8 Implemented)

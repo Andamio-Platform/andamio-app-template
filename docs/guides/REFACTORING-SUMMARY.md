@@ -64,8 +64,8 @@ Each refactored file should include a JSDoc comment at the top explaining:
  * Public page displaying course details and module list
  *
  * API Endpoints:
- * - GET /courses/{courseNftPolicyId} (public)
- * - GET /course-modules/{courseNftPolicyId} (public)
+ * - POST /course/get (public)
+ * - POST /course-module/list (public)
  * Type Reference: See API-TYPE-REFERENCE.md in andamio-db-api
  */
 export default function CourseDetailPage() {

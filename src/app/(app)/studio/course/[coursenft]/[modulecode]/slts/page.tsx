@@ -247,7 +247,7 @@ export default function SLTManagementPage() {
   const fetchCombinedData = async () => {
     // Fetch SLTs for the module (POST /slts/list)
     const sltsResponse = await fetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -266,7 +266,7 @@ export default function SLTManagementPage() {
 
     // Fetch module lessons (POST /lessons/list)
     const lessonsResponse = await fetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/list`,
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/list`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -312,7 +312,7 @@ export default function SLTManagementPage() {
       try {
         // Fetch course details for breadcrumb (POST /courses/get)
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -327,7 +327,7 @@ export default function SLTManagementPage() {
 
         // Fetch course module details (POST /course-modules/get)
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -402,7 +402,7 @@ export default function SLTManagementPage() {
 
       // Send batch update request (POST /slts/batch-update-indexes)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/batch-update-indexes`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/batch-update-indexes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -464,7 +464,7 @@ export default function SLTManagementPage() {
 
       // Send validated create (POST /slts/create)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -523,7 +523,7 @@ export default function SLTManagementPage() {
 
       // Send validated update (POST /slts/update)
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -561,7 +561,7 @@ export default function SLTManagementPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -627,7 +627,7 @@ export default function SLTManagementPage() {
 
     try {
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/get`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -12,7 +12,7 @@ Here is an example from `src/app/(app)/studio/course/[coursenft]/[modulecode]/[m
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lessons/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`
         );
 
         if (response.ok) {
@@ -52,7 +52,7 @@ Or for the list of published courses in `src/app/(app)/course/page.tsx`
 
       try {
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/published`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`
         );
 
         if (!response.ok) {
@@ -183,7 +183,7 @@ export function useAndamioQuery<T>(
 
 // Usage:
 const { data, isLoading, error } = useAndamioQuery<ListCoursesOutput>(
-  "/courses/published"
+  "/course/published"
 );
 ```
 
@@ -499,7 +499,7 @@ export { listOwnedCoursesInputSchema, listOwnedCoursesOutputSchema } from '../ro
 import { type ListOwnedCoursesOutput } from "andamio-db-api";
 
 const fetchCourses = async () => {
-  const response = await authenticatedFetch(`${API_URL}/courses/owned`);
+  const response = await authenticatedFetch(`${API_URL}/course/owned`);
   const data = (await response.json()) as ListOwnedCoursesOutput;
   setCourses(data);
 };

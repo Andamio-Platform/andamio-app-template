@@ -99,7 +99,7 @@ For `MINT_MODULE_TOKENS`:
 {
   def: "Update Course Module Status",
   method: "PATCH",
-  endpoint: "/course-modules/{courseNftPolicyId}/{moduleCode}/status",
+  endpoint: "/course-module/update-status",
   pathParams: {
     courseNftPolicyId: "buildInputs.policy",
     moduleCode: "buildInputs.moduleCode",
@@ -115,7 +115,7 @@ For `MINT_MODULE_TOKENS`:
 1. Hook extracts `moduleCode` from `module_infos` JSON
 2. Creates `SubmissionContext` with txHash and buildInputs
 3. Calls `executeOnSubmit(definition.onSubmit, context, options)`
-4. Side effect resolves path: `/course-modules/policy123/MODULE_1/status`
+4. Side effect resolves endpoint: `/course-module/update-status`
 5. Constructs body: `{ status: "PENDING_TX", pendingTxHash: "tx_abc..." }`
 6. Makes PATCH request to API
 7. Module status updated in database
@@ -236,7 +236,7 @@ To test side effects in development:
 
 3. **Check API calls** (Network tab):
    ```
-   PATCH /api/v0/course-modules/{policy}/{moduleCode}/status
+   PATCH /api/v0/course-module/update-status
    Request: { status: "PENDING_TX", pendingTxHash: "..." }
    Response: { success: true, ... }
    ```
@@ -255,7 +255,7 @@ The backend monitoring service will handle `onConfirmation` side effects:
 {
   def: "Update Course Module Status",
   method: "PATCH",
-  endpoint: "/course-modules/{courseNftPolicyId}/{moduleCode}/status",
+  endpoint: "/course-module/update-status",
   body: {
     status: { source: "literal", value: "ON_CHAIN" },
     moduleHash: { source: "onChainData", path: "mints[0].assetName" },

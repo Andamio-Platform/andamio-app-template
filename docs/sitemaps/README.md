@@ -50,10 +50,10 @@ This directory contains documentation mapping API endpoints and routes for the A
 | Action | API | Endpoint Example |
 |--------|-----|------------------|
 | List published courses | Andamioscan | `GET /v2/courses` |
-| Get course metadata | DB API | `GET /courses/{id}` |
-| Edit course draft | DB API | `PUT /courses/{id}` |
+| Get course metadata | DB API | `POST /course/get` |
+| Edit course draft | DB API | `PATCH /course/update` |
 | Check if user enrolled | Andamioscan | `GET /v2/user/global-state/{alias}` |
-| Get student commitments | DB API | `GET /assignment-commitments/...` |
+| Get student commitments | DB API | `POST /assignment-commitment/list-learner-by-course` |
 | View on-chain students | Andamioscan | `GET /v2/courses/{id}/students` |
 | Publish course | Atlas Tx API | `POST /tx/v2/admin/course/create` |
 | Mint modules | Atlas Tx API | `POST /tx/v2/teacher/course/modules/manage` |

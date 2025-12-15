@@ -92,7 +92,7 @@ export default function AssignmentEditPage() {
       try {
         // Fetch course details for breadcrumb
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -107,7 +107,7 @@ export default function AssignmentEditPage() {
 
         // Fetch module details for breadcrumb
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/get`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -125,7 +125,7 @@ export default function AssignmentEditPage() {
 
         // Fetch SLTs first (always available) - POST /slts/list
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slts/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -146,7 +146,7 @@ export default function AssignmentEditPage() {
         // Try to fetch assignment (may not exist yet) - POST /assignments/get
         try {
           const assignmentResponse = await fetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/get`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/get`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -229,7 +229,7 @@ export default function AssignmentEditPage() {
 
         // Send validated update (POST /assignments/update)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/update`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -270,7 +270,7 @@ export default function AssignmentEditPage() {
 
         // Send validated create (POST /assignments/create)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -311,7 +311,7 @@ export default function AssignmentEditPage() {
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -348,7 +348,7 @@ export default function AssignmentEditPage() {
     try {
       const newLiveStatus = !live;
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignments/publish`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/publish`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

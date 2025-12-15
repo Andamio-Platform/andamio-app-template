@@ -122,7 +122,7 @@ export default function InstructorDashboardPage() {
     try {
       // Fetch course details (POST /courses/get)
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/get`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -143,7 +143,7 @@ export default function InstructorDashboardPage() {
       }
 
       const commitmentsResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitments/list-by-course`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/by-course`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

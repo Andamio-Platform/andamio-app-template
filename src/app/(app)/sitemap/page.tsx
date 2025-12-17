@@ -25,9 +25,45 @@ import {
   GraduationCap,
   Users,
   FolderKanban,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Server,
 } from "lucide-react";
 import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 import type { RouteCategory } from "~/types/ui";
+
+// API Coverage data - tracks implementation status
+interface ApiCoverageCategory {
+  category: string;
+  available: number;
+  implemented: number;
+  status: "complete" | "partial" | "minimal" | "not-started";
+}
+
+const apiCoverage: ApiCoverageCategory[] = [
+  { category: "Authentication", available: 2, implemented: 2, status: "complete" },
+  { category: "Access Token", available: 3, implemented: 2, status: "partial" },
+  { category: "Course", available: 9, implemented: 7, status: "partial" },
+  { category: "Course Module", available: 11, implemented: 10, status: "complete" },
+  { category: "SLT", available: 7, implemented: 6, status: "complete" },
+  { category: "Introduction", available: 4, implemented: 4, status: "complete" },
+  { category: "Lesson", available: 6, implemented: 6, status: "complete" },
+  { category: "Assignment", available: 5, implemented: 5, status: "complete" },
+  { category: "Assignment Commitment", available: 8, implemented: 5, status: "partial" },
+  { category: "Projects/Treasury", available: 3, implemented: 3, status: "complete" },
+  { category: "Task Management", available: 4, implemented: 4, status: "complete" },
+  { category: "Task Commitments", available: 7, implemented: 1, status: "minimal" },
+  { category: "Contributor", available: 1, implemented: 0, status: "not-started" },
+  { category: "Prerequisites", available: 1, implemented: 0, status: "not-started" },
+  { category: "Credentials", available: 1, implemented: 1, status: "complete" },
+  { category: "My Learning", available: 1, implemented: 1, status: "complete" },
+  { category: "Transaction", available: 1, implemented: 1, status: "complete" },
+];
+
+const totalAvailable = apiCoverage.reduce((sum, cat) => sum + cat.available, 0);
+const totalImplemented = apiCoverage.reduce((sum, cat) => sum + cat.implemented, 0);
+const overallCoverage = Math.round((totalImplemented / totalAvailable) * 100);
 
 const staticRoutes: RouteCategory[] = [
   {
@@ -682,6 +718,108 @@ export default function SitemapPage() {
               <code className="text-xs font-mono text-primary">
                 {env.NEXT_PUBLIC_ANDAMIO_API_URL.replace("/api/v0", "/swagger/index.html")}
               </code>
+            </div>
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
+
+      {/* API Coverage Status */}
+      <AndamioCard>
+        <AndamioCardHeader className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Server className="h-5 w-5" />
+            <AndamioCardTitle>API Coverage Status</AndamioCardTitle>
+          </div>
+          <AndamioCardDescription className="text-base">
+            Implementation status of Database API endpoints in this application
+          </AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent className="pt-4">
+          {/* Overall Progress */}
+          <div className="mb-6 p-4 rounded-lg bg-muted">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Overall Coverage</span>
+              <AndamioBadge variant={overallCoverage >= 80 ? "default" : overallCoverage >= 50 ? "secondary" : "outline"}>
+                {totalImplemented}/{totalAvailable} endpoints ({overallCoverage}%)
+              </AndamioBadge>
+            </div>
+            <div className="w-full bg-background rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${overallCoverage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-4 text-sm mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <span>Complete (90%+)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <span>Partial (50-89%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-destructive" />
+              <span>Minimal/Not Started</span>
+            </div>
+          </div>
+
+          {/* Category Breakdown */}
+          <div className="space-y-2">
+            {apiCoverage.map((cat) => {
+              const coverage = Math.round((cat.implemented / cat.available) * 100);
+              return (
+                <div
+                  key={cat.category}
+                  className="flex items-center justify-between rounded-md border p-3"
+                >
+                  <div className="flex items-center gap-2">
+                    {cat.status === "complete" && (
+                      <CheckCircle className="h-4 w-4 text-success" />
+                    )}
+                    {cat.status === "partial" && (
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    )}
+                    {(cat.status === "minimal" || cat.status === "not-started") && (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <span className="text-sm font-medium">{cat.category}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {cat.implemented}/{cat.available}
+                    </span>
+                    <AndamioBadge
+                      variant={
+                        coverage >= 90 ? "default" : coverage >= 50 ? "secondary" : "outline"
+                      }
+                      className="text-xs"
+                    >
+                      {coverage}%
+                    </AndamioBadge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Documentation Links */}
+          <div className="mt-6 pt-4 border-t">
+            <p className="text-sm font-medium mb-2">Documentation</p>
+            <div className="flex flex-wrap gap-2">
+              <AndamioButton variant="outline" size="sm" asChild>
+                <a href="/docs/api/API-COVERAGE.md" target="_blank" rel="noopener noreferrer">
+                  API Coverage Details
+                </a>
+              </AndamioButton>
+              <AndamioButton variant="outline" size="sm" asChild>
+                <a href="/docs/SITEMAP.md" target="_blank" rel="noopener noreferrer">
+                  Route Documentation
+                </a>
+              </AndamioButton>
             </div>
           </div>
         </AndamioCardContent>

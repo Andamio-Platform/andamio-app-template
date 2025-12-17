@@ -1,0 +1,328 @@
+# Application Sitemap
+
+> **Complete route and page mapping for Andamio T3 App Template**
+> Last Updated: December 17, 2024
+
+This document provides a comprehensive overview of all routes, their purpose, authentication requirements, and API dependencies.
+
+---
+
+## Route Overview
+
+### Route Groups
+
+| Group | Path Prefix | Layout | Purpose |
+|-------|-------------|--------|---------|
+| (app) | `/` | AppLayout with Sidebar | Main application pages |
+| Root | `/` | None | Redirects to /dashboard |
+
+---
+
+## Static Routes
+
+### Main Navigation
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/` | `app/page.tsx` | No | Redirects to `/dashboard` |
+| `/dashboard` | `app/(app)/dashboard/page.tsx` | Yes | User dashboard with wallet info, My Learning |
+| `/course` | `app/(app)/course/page.tsx` | No | Public course catalog (Learner browse) |
+| `/project` | `app/(app)/project/page.tsx` | No | Public project catalog (Contributor browse) |
+| `/courses` | `app/(app)/courses/page.tsx` | Yes | Legacy course management page |
+| `/studio` | `app/(app)/studio/page.tsx` | Yes | Studio hub with links to Course/Project Studio |
+| `/sitemap` | `app/(app)/sitemap/page.tsx` | No | Development sitemap tool |
+| `/editor` | `app/(app)/editor/page.tsx` | No | Standalone editor demo |
+| `/components` | `app/(app)/components/page.tsx` | No | Component library showcase |
+
+### Studio Pages
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/studio/course` | `app/(app)/studio/course/page.tsx` | Yes | Course Studio - manage owned courses |
+| `/studio/project` | `app/(app)/studio/project/page.tsx` | Yes | Project Studio - manage owned projects |
+
+---
+
+## Dynamic Routes
+
+### Learner Course Routes
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/course/[coursenft]` | `app/(app)/course/[coursenft]/page.tsx` | No | Course detail view |
+| `/course/[coursenft]/[modulecode]` | `app/(app)/course/[coursenft]/[modulecode]/page.tsx` | No | Module detail with SLTs and lessons |
+| `/course/[coursenft]/[modulecode]/[moduleindex]` | `app/(app)/course/[coursenft]/[modulecode]/[moduleindex]/page.tsx` | No | Lesson viewer |
+| `/course/[coursenft]/[modulecode]/assignment` | `app/(app)/course/[coursenft]/[modulecode]/assignment/page.tsx` | No | Assignment viewer and commitment |
+
+### Contributor Project Routes
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/project/[treasurynft]` | `app/(app)/project/[treasurynft]/page.tsx` | No | Project detail with tasks |
+| `/project/[treasurynft]/[taskhash]` | `app/(app)/project/[treasurynft]/[taskhash]/page.tsx` | No | Task detail and commitment |
+
+### Creator Studio - Course Routes
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/studio/course/[coursenft]` | `app/(app)/studio/course/[coursenft]/page.tsx` | Yes | Course editor dashboard |
+| `/studio/course/[coursenft]/instructor` | `app/(app)/studio/course/[coursenft]/instructor/page.tsx` | Yes | Instructor view - student submissions |
+| `/studio/course/[coursenft]/[modulecode]` | `app/(app)/studio/course/[coursenft]/[modulecode]/page.tsx` | Yes | Module editor |
+| `/studio/course/[coursenft]/[modulecode]/introduction` | `app/(app)/studio/course/.../introduction/page.tsx` | Yes | Introduction content editor |
+| `/studio/course/[coursenft]/[modulecode]/slts` | `app/(app)/studio/course/.../slts/page.tsx` | Yes | SLT management |
+| `/studio/course/[coursenft]/[modulecode]/assignment` | `app/(app)/studio/course/.../assignment/page.tsx` | Yes | Assignment editor |
+| `/studio/course/[coursenft]/[modulecode]/[moduleindex]` | `app/(app)/studio/course/.../[moduleindex]/page.tsx` | Yes | Lesson editor |
+
+### Creator Studio - Project Routes
+
+| Route | Page | Auth | Description |
+|-------|------|------|-------------|
+| `/studio/project/[treasurynft]` | `app/(app)/studio/project/[treasurynft]/page.tsx` | Yes | Project dashboard |
+| `/studio/project/[treasurynft]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
+| `/studio/project/[treasurynft]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
+| `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
+
+---
+
+## API Dependencies by Route
+
+### Public Routes (No Auth)
+
+#### `/course` - Course Catalog
+```
+GET  /course/published           List all published courses
+```
+
+#### `/course/[coursenft]` - Course Detail
+```
+POST /course/get                 Get course by policy ID
+POST /course-module/list         Get modules for course
+```
+
+#### `/course/[coursenft]/[modulecode]` - Module Detail
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module details
+POST /slt/list                   Get SLTs for module
+POST /lesson/list                Get lessons for module
+```
+
+#### `/course/[coursenft]/[modulecode]/[moduleindex]` - Lesson Viewer
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /lesson/get                 Get lesson content
+```
+
+#### `/course/[coursenft]/[modulecode]/assignment` - Assignment Viewer
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /assignment/get             Get assignment content
+POST /assignment-commitment/list Get learner's commitments (if auth)
+```
+
+#### `/project` - Project Catalog
+```
+POST /projects/list              List all published projects
+```
+
+#### `/project/[treasurynft]` - Project Detail
+```
+POST /projects/list              Filter to specific project
+POST /tasks/list                 Get tasks for project
+```
+
+#### `/project/[treasurynft]/[taskhash]` - Task Detail
+```
+POST /tasks/list                 Filter to specific task
+POST /task-commitments/get       Get commitment if exists (if auth)
+```
+
+### Protected Routes (Requires Auth)
+
+#### `/dashboard` - User Dashboard
+```
+POST /my-learning/get            Get learner's enrolled courses
+POST /credential/list            Get learner's credentials (per course)
+```
+
+#### `/studio/course` - Course Studio
+```
+POST /course/list                Get owned courses
+POST /course-module/map          Get module counts
+```
+
+#### `/studio/course/[coursenft]` - Course Editor
+```
+POST /course/get                 Get course details
+POST /course-module/list         Get modules
+POST /course-module/with-assignments  Get modules with assignment status
+GET  /course/unpublished-projects Get linked projects
+PATCH /course/update             Save course changes
+DELETE /course/delete            Delete course
+```
+
+#### `/studio/course/[coursenft]/instructor` - Instructor View
+```
+POST /course/get                 Get course details
+POST /assignment-commitment/by-course  Get all student submissions
+```
+
+#### `/studio/course/[coursenft]/[modulecode]` - Module Editor
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module details
+POST /course-module/list         Get sibling modules for nav
+PATCH /course-module/update      Save module changes
+PATCH /course-module/update-status  Update publication status
+DELETE /course-module/delete     Delete module
+```
+
+#### `/studio/course/.../introduction` - Introduction Editor
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /introduction/get           Get introduction content
+POST /introduction/create        Create new introduction
+POST /introduction/update        Update introduction
+POST /introduction/publish       Toggle live status
+```
+
+#### `/studio/course/.../slts` - SLT Management
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /slt/list                   Get all SLTs
+POST /lesson/list                Get lessons for status
+POST /slt/create                 Create new SLT
+PATCH /slt/update                Update SLT text
+DELETE /slt/delete               Delete SLT
+POST /slt/reorder                Reorder SLTs
+POST /slt/get                    Quick jump to SLT
+```
+
+#### `/studio/course/.../assignment` - Assignment Editor
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /slt/list                   Get SLTs for linking
+POST /assignment/get             Get assignment content
+POST /assignment/create          Create new assignment
+PATCH /assignment/update         Update assignment
+DELETE /assignment/delete        Delete assignment
+POST /assignment/publish         Toggle live status
+```
+
+#### `/studio/course/.../[moduleindex]` - Lesson Editor
+```
+POST /course/get                 Get course info
+POST /course-module/get          Get module info
+POST /lesson/get                 Get lesson content
+POST /lesson/create              Create new lesson
+POST /lesson/update              Update lesson
+POST /lesson/delete              Delete lesson
+POST /lesson/publish             Toggle live status
+```
+
+#### `/studio/project` - Project Studio
+```
+POST /projects/list-owned        Get owned projects
+```
+
+#### `/studio/project/[treasurynft]` - Project Dashboard
+```
+POST /projects/list-owned        Filter to specific project
+POST /tasks/list                 Get tasks for project
+POST /projects/update            Update project metadata
+```
+
+#### `/studio/project/.../draft-tasks` - Task Management
+```
+POST /tasks/list                 Get all tasks
+DELETE /tasks/delete             Delete draft task
+```
+
+#### `/studio/project/.../draft-tasks/new` - Create Task
+```
+POST /tasks/create               Create new task
+```
+
+#### `/studio/project/.../draft-tasks/[taskindex]` - Edit Task
+```
+POST /tasks/list                 Filter to specific task
+POST /tasks/update               Update task
+```
+
+---
+
+## Route Parameter Reference
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `coursenft` | string | Course NFT policy ID | `abc123def456...` |
+| `modulecode` | string | Module code slug | `module-101` |
+| `moduleindex` | number | SLT/Lesson index (0-24) | `0`, `5`, `24` |
+| `treasurynft` | string | Treasury NFT policy ID | `xyz789ghi012...` |
+| `taskhash` | string | Task hash identifier | `task-abc123` |
+| `taskindex` | number | Draft task index | `1`, `2`, `3` |
+
+---
+
+## Breadcrumb Navigation
+
+### Course Routes (Public)
+```
+Browse Courses → Course Title → Module Title → Lesson/Assignment
+/course        → [coursenft]  → [modulecode] → [moduleindex] or assignment
+```
+
+### Studio Course Routes (Protected)
+```
+Studio → Courses → Course Title → Module Title → Content Type
+/studio/course → [coursenft] → [modulecode] → introduction/slts/assignment/[moduleindex]
+```
+
+### Studio Project Routes (Protected)
+```
+Studio → Projects → Project Title → Tasks
+/studio/project → [treasurynft] → draft-tasks → new/[taskindex]
+```
+
+---
+
+## Layout Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    App Layout (app/(app))                    │
+├────────────────┬────────────────────────────────────────────┤
+│   Sidebar      │              Content Area                   │
+│   (256px)      │                                            │
+│                │   ┌────────────────────────────────────┐   │
+│   Navigation   │   │  Page Header (Breadcrumb + Title)  │   │
+│   - Dashboard  │   ├────────────────────────────────────┤   │
+│   - Courses    │   │                                    │   │
+│   - Projects   │   │         Page Content               │   │
+│   - Studio     │   │         (Scrollable)               │   │
+│                │   │                                    │   │
+│   User Info    │   │                                    │   │
+│   - Wallet     │   │                                    │   │
+│   - Auth       │   └────────────────────────────────────┘   │
+└────────────────┴────────────────────────────────────────────┘
+```
+
+---
+
+## Related Documentation
+
+- [API-COVERAGE.md](./api/API-COVERAGE.md) - API endpoint implementation status
+- [API-ENDPOINT-REFERENCE.md](./api/API-ENDPOINT-REFERENCE.md) - Full endpoint documentation
+- [sitemaps/README.md](./sitemaps/README.md) - API systems overview
+- [sitemaps/course-local-state.md](./sitemaps/course-local-state.md) - Course API mapping
+- [sitemaps/project-local-state.md](./sitemaps/project-local-state.md) - Project API mapping
+
+---
+
+**Last Updated**: December 17, 2024
+**Maintained By**: Andamio Platform Team

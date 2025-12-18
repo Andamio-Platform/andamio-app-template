@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useWallet } from "@meshsdk/react";
 import {
   authenticateWithWallet,
@@ -165,22 +165,94 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   const [authError, setAuthError] = useState<string | null>(null);
   // Track if we've attempted auto-auth for this wallet connection
   const [hasAttemptedAutoAuth, setHasAttemptedAutoAuth] = useState(false);
+  // Track if JWT validation is in progress (to prevent race condition with auto-auth)
+  // Use BOTH ref (for immediate sync check) and state (for re-renders)
+  const isValidatingJWTRef = useRef(false);
+  const [isValidatingJWT, setIsValidatingJWT] = useState(false);
 
-  // Check for stored JWT on mount
+  // Helper to update both ref and state
+  const setValidatingJWT = useCallback((value: boolean) => {
+    isValidatingJWTRef.current = value;
+    setIsValidatingJWT(value);
+  }, []);
+
+  // Validate stored JWT against connected wallet
+  // Only authenticate if wallet is connected AND JWT matches the wallet
   useEffect(() => {
+    // Check synchronously if there's a stored JWT to validate
+    // This prevents auto-auth race condition by setting flag before async work
     const storedJWT = getStoredJWT();
-    if (storedJWT && !isJWTExpired(storedJWT)) {
-      setJwt(storedJWT);
-      setIsAuthenticated(true);
+    if (!storedJWT) {
+      setValidatingJWT(false);
+      return;
+    }
 
-      // Decode JWT and set user data
+    // Mark validation in progress SYNCHRONOUSLY via ref to prevent auto-auth race condition
+    // The ref updates immediately (same tick), unlike state which batches
+    isValidatingJWTRef.current = true;
+    setValidatingJWT(true);
+
+    const validateStoredJWT = async () => {
+
+      // JWT expired - clear it silently
+      if (isJWTExpired(storedJWT)) {
+        authLogger.info("Stored JWT expired, clearing");
+        clearStoredJWT();
+        setValidatingJWT(false);
+        return;
+      }
+
+      // Wallet not connected - don't authenticate, but keep JWT for later validation
+      if (!connected || !wallet) {
+        authLogger.debug("Wallet not connected, not restoring session from stored JWT");
+        setValidatingJWT(false);
+        return;
+      }
+
+      // Wallet is connected - validate JWT against wallet
       try {
         const payload = JSON.parse(atob(storedJWT.split(".")[1]!)) as {
           userId: string;
           cardanoBech32Addr?: string;
           accessTokenAlias?: string;
         };
-        authLogger.debug("JWT Payload:", payload);
+        authLogger.debug("Validating stored JWT against connected wallet");
+
+        // Get wallet address
+        const walletAddress = await wallet.getChangeAddress();
+
+        // Check address match
+        if (payload.cardanoBech32Addr && payload.cardanoBech32Addr !== walletAddress) {
+          authLogger.info("Stored JWT address doesn't match connected wallet, clearing JWT");
+          clearStoredJWT();
+          setValidatingJWT(false);
+          return;
+        }
+
+        // Check access token alias match (if JWT has one)
+        if (payload.accessTokenAlias) {
+          const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
+          const assets = await wallet.getAssets();
+          const walletAccessToken = assets.find((asset) =>
+            asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID)
+          );
+
+          if (walletAccessToken) {
+            const walletAlias = extractAliasFromUnit(walletAccessToken.unit, ACCESS_TOKEN_POLICY_ID);
+            if (walletAlias !== payload.accessTokenAlias) {
+              authLogger.info("Stored JWT access token alias doesn't match wallet, clearing JWT");
+              clearStoredJWT();
+              setValidatingJWT(false);
+              return;
+            }
+          }
+          // If wallet doesn't have an access token but JWT does, that's okay - token might have been transferred
+        }
+
+        // JWT matches wallet - restore session
+        authLogger.info("Stored JWT matches connected wallet, restoring session");
+        setJwt(storedJWT);
+        setIsAuthenticated(true);
 
         const userData: AuthUser = {
           id: payload.userId,
@@ -189,27 +261,37 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         };
         setUser(userData);
         authLogger.info("User data loaded from stored JWT:", userData);
-        authLogger.debug("Access Token Alias:", userData.accessTokenAlias);
 
-        // If wallet is connected, check for access token in wallet
-        if (connected && wallet) {
-          void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
-        }
+        // Sync access token from wallet (in case wallet has a new one)
+        void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
+
+        // Mark as having attempted auto-auth since we restored from JWT
+        setHasAttemptedAutoAuth(true);
+        setValidatingJWT(false);
       } catch (error) {
-        authLogger.error("Failed to decode JWT:", error);
+        authLogger.error("Failed to validate stored JWT:", error);
+        clearStoredJWT();
+        setValidatingJWT(false);
       }
-    } else if (storedJWT) {
-      // JWT expired, clear it
-      clearStoredJWT();
-    }
-  }, [connected, wallet]);
+    };
 
-  // Reset auto-auth attempt tracking when wallet disconnects
+    void validateStoredJWT();
+  }, [connected, wallet, setValidatingJWT]);
+
+  // Clear authenticated state when wallet disconnects
+  // Keep JWT in storage for potential reconnection with same wallet
   useEffect(() => {
     if (!connected) {
       setHasAttemptedAutoAuth(false);
+      // Clear auth state but keep JWT for reconnection validation
+      if (isAuthenticated) {
+        authLogger.info("Wallet disconnected, clearing authenticated state (JWT kept for reconnection)");
+        setIsAuthenticated(false);
+        setUser(null);
+        setJwt(null);
+      }
     }
-  }, [connected]);
+  }, [connected, isAuthenticated]);
 
   /**
    * Authenticate with connected wallet
@@ -293,12 +375,14 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     // 2. Not already authenticated
     // 3. Not currently authenticating
     // 4. Haven't already attempted auto-auth for this connection
-    if (connected && wallet && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth) {
+    // 5. JWT validation is not in progress (check REF for immediate sync value, not state)
+    //    The ref is critical - state updates are batched and may not be visible in same render
+    if (connected && wallet && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth && !isValidatingJWTRef.current) {
       authLogger.info("Auto-authenticating after wallet connection...");
       setHasAttemptedAutoAuth(true);
       void authenticate();
     }
-  }, [connected, wallet, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, authenticate]);
+  }, [connected, wallet, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, isValidatingJWT, authenticate]);
 
   /**
    * Logout and clear auth state

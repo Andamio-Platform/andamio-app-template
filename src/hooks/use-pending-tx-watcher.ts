@@ -47,18 +47,21 @@ export interface PendingTransaction {
   id: string;
   /** Transaction hash on the blockchain */
   txHash: string;
-  /** Type of entity (module, assignment, task, etc.) */
-  entityType: "module" | "assignment" | "task" | "assignment-commitment" | "task-commitment";
-  /** Entity identifier (e.g., moduleCode) */
+  /** Type of entity (module, assignment, task, course, project, etc.) */
+  entityType: "module" | "assignment" | "task" | "assignment-commitment" | "task-commitment" | "course" | "project";
+  /** Entity identifier (e.g., moduleCode, courseNftPolicyId, treasuryNftPolicyId) */
   entityId: string;
   /** Additional context needed for updates */
   context: {
     courseNftPolicyId?: string;
+    treasuryNftPolicyId?: string;
     moduleCode?: string;
     assignmentId?: string;
     taskId?: string;
     learnerId?: string;
     contributorId?: string;
+    /** Title for display purposes (courses, projects) */
+    title?: string;
   };
   /** Timestamp when transaction was submitted */
   submittedAt: Date;
@@ -254,6 +257,18 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
 
           case "assignment-commitment":
             await processConfirmedAssignmentCommitment(tx, onChainData);
+            break;
+
+          case "course":
+            // Course entities are created via side effect when tx is submitted.
+            // Confirmation just triggers UI update and redirect (handled by useProvisioningState).
+            pendingTxLogger.info(`Course confirmed: ${tx.entityId} (${tx.context.title ?? "Untitled"})`);
+            break;
+
+          case "project":
+            // Project entities are created via side effect when tx is submitted.
+            // Confirmation just triggers UI update and redirect (handled by useProvisioningState).
+            pendingTxLogger.info(`Project confirmed: ${tx.entityId} (${tx.context.title ?? "Untitled"})`);
             break;
 
           // TODO: Add handlers for other entity types

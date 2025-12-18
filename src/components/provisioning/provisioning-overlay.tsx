@@ -1,0 +1,132 @@
+"use client";
+
+import React from "react";
+import { ExternalLink, Sparkles, PartyPopper } from "lucide-react";
+import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
+import type { ProvisioningConfig, ProvisioningStep } from "./types";
+import { PROVISIONING_DISPLAY } from "./types";
+import { ProvisioningStepIndicator } from "./provisioning-step-indicator";
+
+interface ProvisioningOverlayProps extends ProvisioningConfig {
+  /** Current step in the provisioning process */
+  currentStep: ProvisioningStep;
+  /** Error message if step is "error" */
+  errorMessage?: string;
+  /** Callback for retry on error */
+  onRetry?: () => void;
+  /** Callback for navigating to success path */
+  onNavigate?: () => void;
+  className?: string;
+}
+
+/**
+ * ProvisioningOverlay
+ *
+ * Full-content overlay shown during blockchain entity provisioning.
+ * Displays progress steps and handles success/error states.
+ *
+ * Usage:
+ * - Rendered inside a drawer/dialog after transaction submission
+ * - Shows progress through provisioning steps
+ * - Auto-redirects on success (configurable)
+ */
+export function ProvisioningOverlay({
+  entityType,
+  title,
+  txHash,
+  currentStep,
+  errorMessage,
+  explorerUrl,
+  onRetry,
+  onNavigate,
+  className,
+}: ProvisioningOverlayProps) {
+  const display = PROVISIONING_DISPLAY[entityType];
+  const isReady = currentStep === "ready";
+  const isError = currentStep === "error";
+
+  // Truncate tx hash for display
+  const truncatedTxHash = txHash
+    ? `${txHash.slice(0, 8)}...${txHash.slice(-8)}`
+    : "";
+
+  return (
+    <div className={cn("flex flex-col items-center py-12 px-4", className)}>
+      {/* Header with icon */}
+      <div className="mb-8">
+        {isReady ? (
+          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+            <PartyPopper className="h-8 w-8 text-success" />
+          </div>
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+        )}
+      </div>
+
+      {/* Title */}
+      <h2 className="text-xl font-semibold text-center mb-2">
+        {isReady ? display.successTitle : display.provisioningTitle}
+      </h2>
+
+      {/* Entity title */}
+      <p className="text-muted-foreground text-center mb-10">
+        {title}
+      </p>
+
+      {/* Step indicator */}
+      <div className="w-full max-w-xs mb-10">
+        <ProvisioningStepIndicator
+          entityType={entityType}
+          currentStep={currentStep}
+        />
+      </div>
+
+      {/* Error message */}
+      {isError && errorMessage && (
+        <div className="w-full max-w-xs mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+          <p className="text-sm text-destructive text-center">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* Timing note */}
+      {!isReady && !isError && (
+        <p className="text-sm text-muted-foreground text-center mb-8">
+          This typically takes 20-60 seconds.
+        </p>
+      )}
+
+      {/* Transaction link */}
+      {txHash && explorerUrl && (
+        <div className="mb-8">
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+          >
+            <span className="font-mono text-xs">{truncatedTxHash}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="w-full max-w-xs">
+        {isReady && onNavigate && (
+          <Button onClick={onNavigate} className="w-full" size="lg">
+            {display.ctaLabel}
+          </Button>
+        )}
+
+        {isError && onRetry && (
+          <Button onClick={onRetry} variant="outline" className="w-full">
+            Try Again
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

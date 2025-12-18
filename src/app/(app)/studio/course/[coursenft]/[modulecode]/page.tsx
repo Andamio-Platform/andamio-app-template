@@ -45,6 +45,7 @@ import {
 } from "@andamio/db-api";
 import { MintModuleTokens } from "~/components/transactions";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
+import { ModuleWizard } from "~/components/studio/wizard";
 
 /**
  * Studio page for editing course module details and status
@@ -90,9 +91,11 @@ export default function ModuleEditPage() {
   const searchParams = useSearchParams();
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
+  const isNewModule = moduleCode === "new";
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  // URL-based tab persistence
+  // URL-based view mode: wizard (step param) vs advanced (tab param)
+  const urlStep = searchParams.get("step");
   const urlTab = searchParams.get("tab");
   const validTabs = ["details", "content", "on-chain", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "details";
@@ -135,8 +138,56 @@ export default function ModuleEditPage() {
   // Publish content state
   const [isPublishing, setIsPublishing] = useState(false);
 
+  // Wizard mode state - Show wizard for DRAFT modules, unless user explicitly chose tabs via URL
+  // If step param exists -> wizard mode; if tab param exists -> advanced mode
+  const [showWizard, setShowWizard] = useState<boolean | null>(null); // null = not yet determined
+
+  // Determine view mode once module loads (or immediately for new modules)
   useEffect(() => {
-    const fetchModule = async () => {
+    // New modules always show wizard
+    if (isNewModule && showWizard === null) {
+      setShowWizard(true);
+      return;
+    }
+
+    if (courseModule && showWizard === null) {
+      // If URL has tab param, user wants advanced mode
+      if (urlTab) {
+        setShowWizard(false);
+      }
+      // If URL has step param, user wants wizard mode
+      else if (urlStep) {
+        setShowWizard(true);
+      }
+      // Default: show wizard for DRAFT, advanced for other statuses
+      else {
+        setShowWizard(courseModule.status === "DRAFT");
+      }
+    }
+  }, [courseModule, showWizard, urlTab, urlStep, isNewModule]);
+
+  // Switch to advanced mode (tabs)
+  const handleExitWizard = () => {
+    setShowWizard(false);
+    // Update URL to remove step param and add tab param
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("step");
+    params.set("tab", "details");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Switch to wizard mode (available for future use, e.g., from Advanced Mode back to Wizard)
+  const _handleEnterWizard = () => {
+    setShowWizard(true);
+    // Update URL to remove tab param and add step param
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("tab");
+    params.set("step", "blueprint");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const fetchModule = async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
 
@@ -154,6 +205,12 @@ export default function ModuleEditPage() {
         if (courseResponse.ok) {
           const courseData = (await courseResponse.json()) as CourseOutput;
           setCourse(courseData);
+        }
+
+        // For new modules, skip fetching module data
+        if (isNewModule) {
+          setIsLoading(false);
+          return;
         }
 
         // Fetch single module details (POST with body)
@@ -208,7 +265,8 @@ export default function ModuleEditPage() {
     };
 
     void fetchModule();
-  }, [courseNftPolicyId, moduleCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseNftPolicyId, moduleCode, isNewModule]);
 
   const handleSave = async () => {
     if (!isAuthenticated) {
@@ -304,6 +362,35 @@ export default function ModuleEditPage() {
       );
       const data = (await response.json()) as CourseModuleOutput;
       setCourseModule(data);
+
+      // Sync local form state with fetched data to keep all tabs in sync
+      setTitle(data.title ?? "");
+      setDescription(data.description ?? "");
+      setStatus(data.status ?? "DRAFT");
+
+      // If status changed to APPROVED, fetch modules with SLTs for on-chain tab
+      // If status changed away from APPROVED, clear moduleWithSlts
+      if (data.status === "APPROVED") {
+        const modulesResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          }
+        );
+
+        if (modulesResponse.ok) {
+          const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
+          const thisModuleWithSlts = modulesData.filter(
+            (m) => m.module_code === moduleCode
+          );
+          setModuleWithSlts(thisModuleWithSlts);
+        }
+      } else {
+        // Clear moduleWithSlts if status is no longer APPROVED
+        setModuleWithSlts([]);
+      }
     } catch (err) {
       console.error("Error saving module:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
@@ -399,8 +486,8 @@ export default function ModuleEditPage() {
     );
   }
 
-  // Error state
-  if (error || !courseModule) {
+  // Error state (but not for new modules where courseModule is expected to be null)
+  if (error || (!isNewModule && !courseModule)) {
     return (
       <div className="space-y-6">
         <CourseBreadcrumb
@@ -426,35 +513,39 @@ export default function ModuleEditPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
+      {/* Breadcrumb Navigation - Always visible for context */}
       <CourseBreadcrumb
         mode="studio"
         course={course ? { nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" } : undefined}
-        courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+        courseModule={isNewModule ? { code: "new", title: "New Module" } : courseModule ? { code: courseModule.module_code, title: courseModule.title } : undefined}
         currentPage="module"
       />
 
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <AndamioBadge variant="outline" className="font-mono text-xs">
-          {courseModule?.module_code}
-        </AndamioBadge>
-      </div>
+      {/* Header - Only show in Advanced Mode (wizard has its own header) */}
+      {!showWizard && !isNewModule && courseModule && (
+        <>
+          <div className="flex items-center justify-end">
+            <AndamioBadge variant="outline" className="font-mono text-xs">
+              {courseModule.module_code}
+            </AndamioBadge>
+          </div>
 
-      <AndamioPageHeader
-        title="Edit Module"
-        description={courseModule?.title ?? ""}
-      />
+          <AndamioPageHeader
+            title="Edit Module"
+            description={courseModule.title ?? ""}
+          />
+        </>
+      )}
 
       {/* Success/Error Messages */}
-      {saveSuccess && (
+      {saveSuccess && !showWizard && (
         <AndamioAlert>
           <AndamioAlertTitle>Success</AndamioAlertTitle>
           <AndamioAlertDescription>Module updated successfully</AndamioAlertDescription>
         </AndamioAlert>
       )}
 
-      {saveError && (
+      {saveError && !showWizard && (
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
@@ -462,6 +553,21 @@ export default function ModuleEditPage() {
         </AndamioAlert>
       )}
 
+      {/* Wizard Mode - For new modules or DRAFT modules */}
+      {showWizard && (isNewModule || courseModule?.status === "DRAFT") && (
+        <ModuleWizard
+          courseNftPolicyId={courseNftPolicyId}
+          moduleCode={moduleCode}
+          course={course}
+          courseModule={courseModule}
+          onExitWizard={handleExitWizard}
+          isNewModule={isNewModule}
+        />
+      )}
+
+      {/* Advanced Mode (Tabs) - For non-DRAFT or when user exits wizard */}
+      {!showWizard && (
+      <>
       {/* Tabbed Interface */}
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <AndamioTabsList className="grid w-full grid-cols-4">
@@ -919,6 +1025,8 @@ export default function ModuleEditPage() {
           </AndamioCard>
         </AndamioTabsContent>
       </AndamioTabs>
+      </>
+      )}
     </div>
   );
 }

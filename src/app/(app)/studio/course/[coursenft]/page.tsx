@@ -21,8 +21,7 @@ import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
 // TODO: Re-enable when Andamioscan is ready
 // import { AndamioAccordion, AndamioAccordionContent, AndamioAccordionItem, AndamioAccordionTrigger } from "~/components/andamio/andamio-accordion";
 // import { AndamioCode } from "~/components/andamio/andamio-code";
-import { AlertCircle, FileText, Link2, Save, Settings, Trash2, Users, BookOpen, Blocks } from "lucide-react";
-import { CreateModuleDialog } from "~/components/courses/create-module-dialog";
+import { AlertCircle, FileText, Link2, Save, Settings, Trash2, Users, BookOpen, Blocks, Plus } from "lucide-react";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { OnChainModulesSection } from "~/components/courses/on-chain-modules-section";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
@@ -133,6 +132,16 @@ export default function CourseEditPage() {
   const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  /**
+   * Navigate to new module wizard
+   * Module creation happens when user submits Step 1 (title)
+   */
+  const handleCreateModule = () => {
+    if (!isAuthenticated) return;
+    // Navigate to "new" wizard - module will be created on first step submission
+    router.push(`/studio/course/${courseNftPolicyId}/new?step=blueprint`);
+  };
 
   useEffect(() => {
     const fetchCourseAndModules = async () => {
@@ -558,22 +567,13 @@ export default function CourseEditPage() {
                   <AndamioCardTitle>Course Modules ({modules.length})</AndamioCardTitle>
                   <AndamioCardDescription>Manage the modules in this course</AndamioCardDescription>
                 </div>
-                <CreateModuleDialog
-                  courseNftPolicyId={courseNftPolicyId}
-                  onModuleCreated={() => {
-                    void fetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-                      }
-                    )
-                      .then((res) => res.json())
-                      .then((data) => setModules(data as ListCourseModulesOutput))
-                      .catch(console.error);
-                  }}
-                />
+                <AndamioButton
+                  size="sm"
+                  onClick={handleCreateModule}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Module
+                </AndamioButton>
               </div>
             </AndamioCardHeader>
             <AndamioCardContent>

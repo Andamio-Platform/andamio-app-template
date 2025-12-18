@@ -27,7 +27,18 @@ function RadioGroupItem({
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
       className={cn(
-        "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        // Base styles with visible border
+        "aspect-square size-4 shrink-0 rounded-full border border-input bg-background shadow-sm transition-colors duration-150 outline-none",
+        // Selected state
+        "text-primary data-[state=checked]:border-primary",
+        // Focus state
+        "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+        // Error state
+        "aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20",
+        // Disabled state
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        // Dark mode
+        "dark:bg-background/50",
         className
       )}
       {...props}

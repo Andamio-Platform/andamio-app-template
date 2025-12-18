@@ -100,9 +100,9 @@
   --info: oklch(0.55 0.18 250);
   --info-foreground: oklch(0.99 0 0);
 
-  /* Borders - Subtle definition */
-  --border: oklch(0.92 0.005 260);
-  --input: oklch(0.90 0.005 260);
+  /* Borders - Clear definition */
+  --border: oklch(0.88 0.008 260);
+  --input: oklch(0.82 0.012 260);
   --ring: oklch(0.48 0.17 265);
 
   /* Charts - Vibrant but professional */
@@ -161,9 +161,9 @@
   --info: oklch(0.62 0.18 250);
   --info-foreground: oklch(0.99 0 0);
 
-  /* Borders - Subtle definition in dark mode */
-  --border: oklch(0.28 0.015 265);
-  --input: oklch(0.25 0.015 265);
+  /* Borders - Clear definition in dark mode */
+  --border: oklch(0.32 0.015 265);
+  --input: oklch(0.38 0.018 265);
   --ring: oklch(0.65 0.18 265);
 
   /* Charts */

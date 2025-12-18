@@ -1,0 +1,124 @@
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+import { cn } from "~/lib/utils";
+import { stepVariants, stepTransition } from "./types";
+import type { WizardStepConfig } from "./types";
+
+interface WizardStepProps {
+  config: WizardStepConfig;
+  direction: number;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * WizardStep - Animated wrapper for step content
+ *
+ * Provides consistent layout and entrance/exit animations
+ */
+export function WizardStep({
+  config,
+  direction,
+  children,
+  className,
+}: WizardStepProps) {
+  const Icon = config.icon;
+
+  return (
+    <motion.div
+      custom={direction}
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={stepTransition}
+      className={cn("space-y-6", className)}
+    >
+      {/* Step header */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+              {config.subtitle}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {config.description}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Step content */}
+      <div className="min-h-[400px]">
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * WizardStepContent - Container for step-specific content
+ */
+export function WizardStepContent({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("space-y-6", className)}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * WizardStepTip - Helpful tip displayed in step content
+ */
+export function WizardStepTip({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 p-4 rounded-lg bg-muted/50 border",
+        className
+      )}
+    >
+      <span className="text-base">💡</span>
+      <p className="text-sm text-muted-foreground leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+/**
+ * WizardStepHighlight - Emphasized content block
+ */
+export function WizardStepHighlight({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "p-6 rounded-xl bg-primary/5 border border-primary/10",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}

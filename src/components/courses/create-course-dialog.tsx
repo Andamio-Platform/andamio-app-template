@@ -22,6 +22,11 @@ import {
 } from "~/components/andamio";
 import { TransactionButton } from "~/components/transactions/transaction-button";
 import { TransactionStatus } from "~/components/transactions/transaction-status";
+import {
+  ProvisioningOverlay,
+  useProvisioningState,
+  type ProvisioningConfig,
+} from "~/components/provisioning";
 import { Plus, Sparkles, BookOpen, ExternalLink, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -31,6 +36,9 @@ import { v2 } from "@andamio/transactions";
  *
  * The Course NFT is the foundation of your Andamio app. This component
  * guides users through the minting process with clear explanation.
+ *
+ * After transaction submission, transforms to show a provisioning overlay
+ * that tracks blockchain confirmation and redirects to Course Studio.
  */
 export function CreateCourseDialog() {
   const router = useRouter();
@@ -44,6 +52,35 @@ export function CreateCourseDialog() {
     usedAddresses: string[];
     changeAddress: string;
   } | null>(null);
+
+  // Provisioning state for tracking blockchain confirmation
+  const [provisioningConfig, setProvisioningConfig] = useState<ProvisioningConfig | null>(null);
+
+  const {
+    currentStep,
+    errorMessage: provisioningError,
+    startProvisioning,
+    navigateToEntity,
+    isProvisioning,
+  } = useProvisioningState(
+    provisioningConfig
+      ? {
+          ...provisioningConfig,
+          onReady: () => {
+            toast.success("Course Ready!", {
+              description: `"${provisioningConfig.title}" has been confirmed on-chain`,
+            });
+          },
+        }
+      : null
+  );
+
+  // Start provisioning when config is set
+  useEffect(() => {
+    if (provisioningConfig && !isProvisioning) {
+      startProvisioning();
+    }
+  }, [provisioningConfig, isProvisioning, startProvisioning]);
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -81,27 +118,36 @@ export function CreateCourseDialog() {
       },
       onSuccess: async (txResult) => {
         const courseNftPolicyId = txResult.apiResponse?.courseId as string | undefined;
+        const txHash = txResult.txHash;
 
-        toast.success("Course NFT Minted!", {
-          description: `"${title.trim()}" is now on-chain`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () =>
-                  window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Navigate to the new course
-        if (courseNftPolicyId) {
-          router.push(`/studio/course/${courseNftPolicyId}`);
+        if (courseNftPolicyId && txHash) {
+          // Set up provisioning config to show the overlay
+          setProvisioningConfig({
+            entityType: "course",
+            entityId: courseNftPolicyId,
+            txHash,
+            title: title.trim(),
+            successRedirectPath: `/studio/course/${courseNftPolicyId}`,
+            explorerUrl: txResult.blockchainExplorerUrl,
+            autoRedirect: true,
+            autoRedirectDelay: 2000,
+          });
+        } else {
+          // Fallback: If no courseNftPolicyId, show success and close
+          toast.success("Course NFT Minted!", {
+            description: `"${title.trim()}" is now on-chain`,
+            action: txResult.blockchainExplorerUrl
+              ? {
+                  label: "View Transaction",
+                  onClick: () =>
+                    window.open(txResult.blockchainExplorerUrl, "_blank"),
+                }
+              : undefined,
+          });
+          setOpen(false);
+          setTitle("");
+          reset();
         }
-
-        // Close drawer and reset
-        setOpen(false);
-        setTitle("");
-        reset();
       },
       onError: (txError) => {
         console.error("[CreateCourse] Error:", txError);
@@ -113,9 +159,15 @@ export function CreateCourseDialog() {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
+    // Don't allow closing during provisioning
+    if (isProvisioning && !newOpen) {
+      return;
+    }
+
     setOpen(newOpen);
     if (!newOpen) {
       setTitle("");
+      setProvisioningConfig(null);
       reset();
     }
   };
@@ -136,134 +188,147 @@ export function CreateCourseDialog() {
       </AndamioDrawerTrigger>
       <AndamioDrawerContent>
         <div className="mx-auto w-full max-w-lg">
-          <AndamioDrawerHeader className="text-left">
-            <div className="mb-2 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                <Sparkles className="h-5 w-5 text-primary" />
+          {/* Show provisioning overlay when in provisioning state */}
+          {isProvisioning && provisioningConfig ? (
+            <ProvisioningOverlay
+              {...provisioningConfig}
+              currentStep={currentStep}
+              errorMessage={provisioningError ?? undefined}
+              onNavigate={navigateToEntity}
+            />
+          ) : (
+            /* Normal form state */
+            <>
+              <AndamioDrawerHeader className="text-left">
+                <div className="mb-2 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <AndamioDrawerTitle className="text-xl">
+                    Mint Your Course NFT
+                  </AndamioDrawerTitle>
+                </div>
+                <AndamioDrawerDescription className="text-base leading-relaxed">
+                  Your Course NFT is the key to your custom app on Andamio. It
+                  establishes your course on the Cardano blockchain and enables you
+                  to manage learners, issue credentials, and build your educational
+                  experience.
+                </AndamioDrawerDescription>
+              </AndamioDrawerHeader>
+
+              <div className="space-y-6 px-4">
+                {/* Requirements Alert */}
+                {!hasAccessToken && (
+                  <AndamioAlert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AndamioAlertDescription>
+                      You need an Access Token to create a course. Mint one first!
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+                )}
+
+                {hasAccessToken && !hasWalletData && (
+                  <AndamioAlert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AndamioAlertDescription>
+                      Loading wallet data... Please ensure your wallet is connected.
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+                )}
+
+                {/* Title Input */}
+                {hasAccessToken && hasWalletData && state !== "success" && (
+                  <div className="space-y-3">
+                    <AndamioLabel htmlFor="course-title" className="text-base">
+                      Course Title
+                    </AndamioLabel>
+                    <AndamioInput
+                      id="course-title"
+                      placeholder="Introduction to Cardano Development"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      disabled={state !== "idle" && state !== "error"}
+                      className="h-12 text-base"
+                      maxLength={200}
+                      autoFocus
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Don&apos;t worry, you can change this later. The course is
+                      created on-chain once the transaction succeeds.
+                    </p>
+                  </div>
+                )}
+
+                {/* Transaction Status */}
+                {state !== "idle" && (
+                  <TransactionStatus
+                    state={state}
+                    result={result}
+                    error={error}
+                    onRetry={() => reset()}
+                    messages={{
+                      success: "Your Course NFT has been minted on-chain!",
+                    }}
+                  />
+                )}
+
+                {/* Learn More Links */}
+                <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
+                  <p className="text-sm font-medium text-foreground">
+                    Want to learn more?
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="https://docs.andamio.io"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Documentation
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a
+                      href="https://app.andamio.io/courses/andamio-101"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Andamio 101 Course
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
               </div>
-              <AndamioDrawerTitle className="text-xl">
-                Mint Your Course NFT
-              </AndamioDrawerTitle>
-            </div>
-            <AndamioDrawerDescription className="text-base leading-relaxed">
-              Your Course NFT is the key to your custom app on Andamio. It
-              establishes your course on the Cardano blockchain and enables you
-              to manage learners, issue credentials, and build your educational
-              experience.
-            </AndamioDrawerDescription>
-          </AndamioDrawerHeader>
 
-          <div className="space-y-6 px-4">
-            {/* Requirements Alert */}
-            {!hasAccessToken && (
-              <AndamioAlert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AndamioAlertDescription>
-                  You need an Access Token to create a course. Mint one first!
-                </AndamioAlertDescription>
-              </AndamioAlert>
-            )}
-
-            {hasAccessToken && !hasWalletData && (
-              <AndamioAlert>
-                <AlertCircle className="h-4 w-4" />
-                <AndamioAlertDescription>
-                  Loading wallet data... Please ensure your wallet is connected.
-                </AndamioAlertDescription>
-              </AndamioAlert>
-            )}
-
-            {/* Title Input */}
-            {hasAccessToken && hasWalletData && state !== "success" && (
-              <div className="space-y-3">
-                <AndamioLabel htmlFor="course-title" className="text-base">
-                  Course Title
-                </AndamioLabel>
-                <AndamioInput
-                  id="course-title"
-                  placeholder="Introduction to Cardano Development"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  disabled={state !== "idle" && state !== "error"}
-                  className="h-12 text-base"
-                  maxLength={200}
-                  autoFocus
-                />
-                <p className="text-sm text-muted-foreground">
-                  Don&apos;t worry, you can change this later. The course is
-                  created on-chain once the transaction succeeds.
-                </p>
-              </div>
-            )}
-
-            {/* Transaction Status */}
-            {state !== "idle" && (
-              <TransactionStatus
-                state={state}
-                result={result}
-                error={error}
-                onRetry={() => reset()}
-                messages={{
-                  success: "Your Course NFT has been minted on-chain!",
-                }}
-              />
-            )}
-
-            {/* Learn More Links */}
-            <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
-              <p className="text-sm font-medium text-foreground">
-                Want to learn more?
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href="https://docs.andamio.io"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Documentation
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-                <a
-                  href="https://app.andamio.io/courses/andamio-101"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Andamio 101 Course
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <AndamioDrawerFooter className="flex-row gap-3 pt-6">
-            <AndamioDrawerClose asChild>
-              <AndamioButton
-                variant="outline"
-                className="flex-1"
-                disabled={state !== "idle" && state !== "error" && state !== "success"}
-              >
-                Cancel
-              </AndamioButton>
-            </AndamioDrawerClose>
-            {state !== "success" && (
-              <TransactionButton
-                txState={state}
-                onClick={handleCreateCourse}
-                disabled={!canCreate}
-                className="flex-1"
-                stateText={{
-                  idle: "Mint Course NFT",
-                  fetching: "Preparing...",
-                  signing: "Sign in Wallet",
-                  submitting: "Minting...",
-                }}
-              />
-            )}
-          </AndamioDrawerFooter>
+              <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+                <AndamioDrawerClose asChild>
+                  <AndamioButton
+                    variant="outline"
+                    className="flex-1"
+                    disabled={state !== "idle" && state !== "error" && state !== "success"}
+                  >
+                    Cancel
+                  </AndamioButton>
+                </AndamioDrawerClose>
+                {state !== "success" && (
+                  <TransactionButton
+                    txState={state}
+                    onClick={handleCreateCourse}
+                    disabled={!canCreate}
+                    className="flex-1"
+                    stateText={{
+                      idle: "Mint Course NFT",
+                      fetching: "Preparing...",
+                      signing: "Sign in Wallet",
+                      submitting: "Minting...",
+                    }}
+                  />
+                )}
+              </AndamioDrawerFooter>
+            </>
+          )}
         </div>
       </AndamioDrawerContent>
     </AndamioDrawer>

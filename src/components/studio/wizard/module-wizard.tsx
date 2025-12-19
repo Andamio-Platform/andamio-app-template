@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import React, { useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { env } from "~/env";
@@ -8,12 +8,13 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { WizardStepper, WIZARD_STEPS } from "./wizard-stepper";
 import { WizardHeader } from "./wizard-navigation";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import type {
-  WizardStepId,
-  StepStatus,
-  StepCompletion,
-  WizardData,
-  WizardContextValue,
+import {
+  WizardContext,
+  type WizardStepId,
+  type StepStatus,
+  type StepCompletion,
+  type WizardData,
+  type WizardContextValue,
 } from "./types";
 import type {
   CourseModuleOutput,
@@ -33,14 +34,12 @@ import { StepIntroduction } from "./steps/step-introduction";
 import { StepReview } from "./steps/step-review";
 
 /**
- * Wizard Context
+ * Hook to access wizard context
  */
-const WizardContext = createContext<WizardContextValue | null>(null);
-
 export function useWizard() {
   const context = useContext(WizardContext);
   if (!context) {
-    throw new Error("useWizard must be used within ModuleWizard");
+    throw new Error("useWizard must be used within ModuleWizard or WizardContext.Provider");
   }
   return context;
 }

@@ -14,6 +14,9 @@
 // Re-export everything from the base component
 export * from "~/components/ui/scroll-area";
 
+// Alias exports for Andamio naming convention
+export { ScrollArea as AndamioScrollArea, ScrollBar as AndamioScrollBar } from "~/components/ui/scroll-area";
+
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the ScrollArea component.
 //

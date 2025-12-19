@@ -1,3 +1,4 @@
+import { createContext } from "react";
 import type { IconComponent } from "~/types/ui";
 import type { CourseModuleOutput, CourseOutput, ListSLTsOutput, AssignmentOutput, IntroductionOutput, ListLessonsOutput } from "@andamio/db-api";
 
@@ -83,6 +84,11 @@ export interface WizardContextValue {
   // Creation mode
   isNewModule: boolean;
 }
+
+/**
+ * Wizard Context - shared between ModuleWizard and StudioModuleEditPage
+ */
+export const WizardContext = createContext<WizardContextValue | null>(null);
 
 /**
  * Props for step components

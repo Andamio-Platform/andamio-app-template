@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { BookOpen, FileText, Layers } from "lucide-react";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import { calculateCourseStats } from "~/lib/course-filters";
@@ -29,9 +30,9 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold">{stats.total}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <AndamioText variant="small" className="text-xs mt-1">
             {stats.published} published, {stats.draft} draft
-          </p>
+          </AndamioText>
         </AndamioCardContent>
       </AndamioCard>
 
@@ -43,9 +44,9 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold text-success">{stats.published}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <AndamioText variant="small" className="text-xs mt-1">
             {stats.total > 0 ? Math.round((stats.published / stats.total) * 100) : 0}% of total
-          </p>
+          </AndamioText>
         </AndamioCardContent>
       </AndamioCard>
 
@@ -57,9 +58,9 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold">{stats.totalModules}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <AndamioText variant="small" className="text-xs mt-1">
             {stats.total > 0 ? (stats.totalModules / stats.total).toFixed(1) : 0} avg per course
-          </p>
+          </AndamioText>
         </AndamioCardContent>
       </AndamioCard>
     </div>

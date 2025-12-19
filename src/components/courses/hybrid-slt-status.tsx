@@ -35,6 +35,7 @@ import {
   AndamioDrawerTrigger,
   AndamioInput,
   AndamioLabel,
+  AndamioText,
 } from "~/components/andamio";
 import {
   CheckCircle,
@@ -201,8 +202,8 @@ function ImportSLTDrawer({
           <div className="space-y-4 px-4">
             {/* SLT Text Preview */}
             <div className="rounded-lg border bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Learning Target</p>
-              <p className="text-sm">{slt.text}</p>
+              <AndamioText variant="small" className="text-xs mb-1">Learning Target</AndamioText>
+              <AndamioText className="text-sm">{slt.text}</AndamioText>
             </div>
 
             {/* Module Index Input */}
@@ -217,9 +218,9 @@ function ImportSLTDrawer({
                 onChange={(e) => setModuleIndex(parseInt(e.target.value) || 0)}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 The index determines the order of SLTs in the module (0-25).
-              </p>
+              </AndamioText>
             </div>
           </div>
 
@@ -406,19 +407,19 @@ export function HybridSLTStatus({
           <div className="mb-4 rounded-lg border bg-muted/30 p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">On-Chain Module Hash</p>
+                <AndamioText variant="small" className="text-xs mb-1">On-Chain Module Hash</AndamioText>
                 <code className="text-xs font-mono">
                   {onChainModule.assignment_id.slice(0, 16)}...
                 </code>
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground mb-1">Created By</p>
+                <AndamioText variant="small" className="text-xs mb-1">Created By</AndamioText>
                 <span className="text-sm">{onChainModule.created_by}</span>
               </div>
             </div>
             {onChainModule.prerequisites.length > 0 && (
               <div className="mt-2 pt-2 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Prerequisites</p>
+                <AndamioText variant="small" className="text-xs mb-1">Prerequisites</AndamioText>
                 <div className="flex flex-wrap gap-1">
                   {onChainModule.prerequisites.map((prereq, i) => (
                     <code key={i} className="text-xs bg-muted px-1 rounded">
@@ -445,12 +446,12 @@ export function HybridSLTStatus({
         {!isLoading && hybridSlts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <LinkIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               No SLTs found in database or on-chain.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mt-1">
               Add SLTs in the database to get started.
-            </p>
+            </AndamioText>
           </div>
         )}
 

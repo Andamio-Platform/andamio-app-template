@@ -1,18 +1,12 @@
 /**
  * Andamio wrapper for shadcn/ui Slider
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
  * import { AndamioSlider } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioSlider } from "@andamio/ui";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/slider";
+// Re-export with Andamio prefix
+export { Slider as AndamioSlider } from "~/components/ui/slider";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Slider component.

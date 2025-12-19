@@ -7,9 +7,8 @@ import { env } from "~/env";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, ArrowLeft, CheckSquare } from "lucide-react";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -130,20 +129,7 @@ export default function ProjectDetailPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <AndamioSkeleton className="h-9 w-64 mb-2" />
-          <AndamioSkeleton className="h-5 w-96" />
-        </div>
-
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="detail" />;
   }
 
   // Error state
@@ -192,12 +178,11 @@ export default function ProjectDetailPage() {
           </AndamioBadge>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground">
-            No tasks available for this project yet.
-          </p>
-        </div>
+        <AndamioEmptyState
+          icon={CheckSquare}
+          title="No tasks available"
+          description="This project doesn't have any tasks yet. Check back later."
+        />
       </div>
     );
   }

@@ -9,6 +9,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { EnrollInCourse } from "~/components/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { BURN_LOCAL_STATE } from "@andamio/transactions";
@@ -197,9 +198,9 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             </span>
           </div>
           <AndamioProgress value={progress} className="h-2" />
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             {Math.round(progress)}% complete
-          </p>
+          </AndamioText>
         </div>
 
         <AndamioSeparator />
@@ -208,14 +209,14 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {status.awaitingApproval && (
           <>
             <div className="space-y-2">
-              <p className="text-sm font-medium">Pending Review</p>
+              <AndamioText className="text-sm font-medium">Pending Review</AndamioText>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-info" />
                 <AndamioBadge variant="outline">{status.awaitingApproval}</AndamioBadge>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 Assignment waiting for approval
-              </p>
+              </AndamioText>
             </div>
             <AndamioSeparator />
           </>
@@ -226,7 +227,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-warning" />
-              <p className="text-sm font-medium">Completed Assignments</p>
+              <AndamioText className="text-sm font-medium">Completed Assignments</AndamioText>
             </div>
             <div className="space-y-2">
               {status.completedAssignments.map((assignment) => (
@@ -235,10 +236,10 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
                   className="flex items-center justify-between p-2 border rounded-md bg-muted/50"
                 >
                   <div>
-                    <p className="text-sm font-medium">{assignment.assignmentCode}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <AndamioText className="text-sm font-medium">{assignment.assignmentCode}</AndamioText>
+                    <AndamioText variant="small" className="text-xs">
                       Module: {assignment.moduleCode}
-                    </p>
+                    </AndamioText>
                   </div>
                   <AndamioBadge variant="default" className="text-xs">
                     {assignment.networkStatus}
@@ -252,7 +253,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {/* Required Modules */}
         {status.requiredModules.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm font-medium">Required Modules</p>
+            <AndamioText className="text-sm font-medium">Required Modules</AndamioText>
             <div className="space-y-1">
               {status.requiredModules.map((module) => {
                 const isCompleted = status.completedAssignments.some(
@@ -275,9 +276,9 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Note: Required modules feature requires treasury integration
-            </p>
+            </AndamioText>
           </div>
         )}
 
@@ -297,9 +298,9 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
               </AndamioBadge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <AndamioText variant="small" className="text-xs mt-1">
             Full sync requires indexer integration for on-chain validation
-          </p>
+          </AndamioText>
         </div>
 
         {/* Exit Course */}

@@ -6,6 +6,7 @@ import {
   AndamioTooltip,
   AndamioTooltipContent,
   AndamioTooltipTrigger,
+  AndamioText,
 } from "~/components/andamio";
 import { Loader2 } from "lucide-react";
 import { cn } from "~/lib/utils";
@@ -68,10 +69,10 @@ export function PendingTxIndicator() {
         </AndamioTooltipTrigger>
         <AndamioTooltipContent side="bottom" className="max-w-xs">
           <div className="space-y-1">
-            <p className="font-medium">{getSummary()}</p>
-            <p className="text-xs text-muted-foreground">
+            <AndamioText className="font-medium">{getSummary()}</AndamioText>
+            <AndamioText variant="small" className="text-xs">
               Awaiting blockchain confirmation. This usually takes 20-60 seconds.
-            </p>
+            </AndamioText>
           </div>
         </AndamioTooltipContent>
       </AndamioTooltip>

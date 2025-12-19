@@ -1,18 +1,16 @@
 /**
  * Andamio wrapper for shadcn/ui Avatar
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioAvatar } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioAvatar } from "@andamio/ui";
+ * import { AndamioAvatar, AndamioAvatarImage } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/avatar";
+// Re-export with Andamio prefix
+export {
+  Avatar as AndamioAvatar,
+  AvatarFallback as AndamioAvatarFallback,
+  AvatarImage as AndamioAvatarImage,
+} from "~/components/ui/avatar";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Avatar component.

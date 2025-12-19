@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 import type { RouteCategory } from "~/types/ui";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 // API Coverage data - tracks implementation status
 interface ApiCoverageCategory {
@@ -87,12 +88,6 @@ const staticRoutes: RouteCategory[] = [
         label: "Browse Projects",
         description: "Public catalog of all published projects (Contributor view)",
         requiresAuth: false,
-      },
-      {
-        path: "/courses",
-        label: "My Courses (Course Creator Studio)",
-        description: "Advanced course management with filtering, sorting, and multiple views",
-        requiresAuth: true,
       },
       {
         path: "/studio",
@@ -397,12 +392,12 @@ export default function SitemapPage() {
         <AndamioCardContent className="p-8">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <p className="text-sm font-medium">Authentication Status</p>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="font-medium">Authentication Status</AndamioText>
+              <AndamioText variant="small" className="text-xs">
                 {isAuthenticated
                   ? "You can access all routes"
                   : "Connect wallet to access protected routes"}
-              </p>
+              </AndamioText>
             </div>
             <AndamioBadge variant={isAuthenticated ? "default" : "secondary"}>
               {isAuthenticated ? "Authenticated" : "Not Authenticated"}
@@ -464,7 +459,7 @@ export default function SitemapPage() {
                           <Globe className="h-3 w-3 text-success" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{route.description}</p>
+                      <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
                       <code className="text-xs font-mono text-muted-foreground">
                         {route.path}
                       </code>
@@ -588,7 +583,7 @@ export default function SitemapPage() {
                           )}
                           <ExternalLink className="h-3 w-3 text-info" />
                         </div>
-                        <p className="text-xs text-muted-foreground">{route.description}</p>
+                        <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
                         <code className="text-xs font-mono text-muted-foreground">
                           {route.path}
                         </code>
@@ -603,9 +598,9 @@ export default function SitemapPage() {
                         )}
                         {exampleUrl && (
                           <div className="pt-2">
-                            <p className="text-xs font-medium text-muted-foreground mb-1">
+                            <AndamioText variant="small" className="text-xs font-medium mb-1">
                               Example:
-                            </p>
+                            </AndamioText>
                             <code className="text-xs font-mono text-primary">{exampleUrl}</code>
                           </div>
                         )}
@@ -644,42 +639,42 @@ export default function SitemapPage() {
         </AndamioCardHeader>
         <AndamioCardContent className="pt-4">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading data...</p>
+            <AndamioText variant="small">Loading data...</AndamioText>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Published Courses</p>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="font-medium">Published Courses</AndamioText>
+                  <AndamioText variant="small" className="text-xs">
                     Available for learner route examples
-                  </p>
+                  </AndamioText>
                 </div>
                 <AndamioBadge variant="outline">{publishedCourses.length} courses</AndamioBadge>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Owned Courses</p>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="font-medium">Owned Courses</AndamioText>
+                  <AndamioText variant="small" className="text-xs">
                     Available for creator route examples
-                  </p>
+                  </AndamioText>
                 </div>
                 <AndamioBadge variant="outline">{ownedCourses.length} courses</AndamioBadge>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Published Projects</p>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="font-medium">Published Projects</AndamioText>
+                  <AndamioText variant="small" className="text-xs">
                     Available for contributor route examples
-                  </p>
+                  </AndamioText>
                 </div>
                 <AndamioBadge variant="outline">{publishedProjects.length} projects</AndamioBadge>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Owned Projects</p>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="font-medium">Owned Projects</AndamioText>
+                  <AndamioText variant="small" className="text-xs">
                     Available for project studio route examples
-                  </p>
+                  </AndamioText>
                 </div>
                 <AndamioBadge variant="outline">{ownedProjects.length} projects</AndamioBadge>
               </div>
@@ -702,19 +697,19 @@ export default function SitemapPage() {
         <AndamioCardContent className="pt-4">
           <div className="space-y-2">
             <div className="rounded-md border p-3">
-              <p className="text-sm font-medium mb-1">API Base URL</p>
+              <AndamioText variant="small" className="font-medium mb-1">API Base URL</AndamioText>
               <code className="text-xs font-mono text-primary">
                 {env.NEXT_PUBLIC_ANDAMIO_API_URL}
               </code>
             </div>
             <div className="rounded-md border p-3">
-              <p className="text-sm font-medium mb-1">OpenAPI Documentation</p>
+              <AndamioText variant="small" className="font-medium mb-1">OpenAPI Documentation</AndamioText>
               <code className="text-xs font-mono text-primary">
                 {env.NEXT_PUBLIC_ANDAMIO_API_URL.replace("/api/v0", "/openapi/v0.json")}
               </code>
             </div>
             <div className="rounded-md border p-3">
-              <p className="text-sm font-medium mb-1">Swagger UI</p>
+              <AndamioText variant="small" className="font-medium mb-1">Swagger UI</AndamioText>
               <code className="text-xs font-mono text-primary">
                 {env.NEXT_PUBLIC_ANDAMIO_API_URL.replace("/api/v0", "/swagger/index.html")}
               </code>
@@ -808,7 +803,7 @@ export default function SitemapPage() {
 
           {/* Documentation Links */}
           <div className="mt-6 pt-4 border-t">
-            <p className="text-sm font-medium mb-2">Documentation</p>
+            <AndamioText variant="small" className="font-medium mb-2">Documentation</AndamioText>
             <div className="flex flex-wrap gap-2">
               <AndamioButton variant="outline" size="sm" asChild>
                 <a href="/docs/api/API-COVERAGE.md" target="_blank" rel="noopener noreferrer">

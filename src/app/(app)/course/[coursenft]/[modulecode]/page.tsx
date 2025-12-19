@@ -5,17 +5,20 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
-import { AlertCircle, BookOpen, Settings, FileText, Blocks, CheckCircle } from "lucide-react";
+import {
+  AndamioPageHeader,
+  AndamioSectionHeader,
+  AndamioPageLoading,
+  AndamioNotFoundCard,
+} from "~/components/andamio";
+import { Settings, FileText, Blocks } from "lucide-react";
 import { type CourseModuleOutput, type CourseOutput, type ListSLTsOutput, type ListLessonsOutput } from "@andamio/db-api";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse } from "~/hooks/use-andamioscan";
-import { type AndamioscanModule } from "~/lib/andamioscan";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
+import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
 
 /**
  * Public page displaying module details with SLTs and lessons
@@ -26,125 +29,6 @@ import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
  * - POST /lessons/list (body: { course_nft_policy_id, module_code })
  * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
  */
-
-
-// Combined SLT + Lesson type
-type CombinedSLTLesson = {
-  module_index: number;
-  slt_text: string;
-  slt_id: string;
-  lesson?: {
-    title: string | null;
-    description: string | null;
-    image_url: string | null;
-    video_url: string | null;
-    live: boolean | null;
-  };
-};
-
-interface SLTLessonTableProps {
-  data: CombinedSLTLesson[];
-  courseNftPolicyId: string;
-  moduleCode: string;
-  onChainModule?: AndamioscanModule | null;
-}
-
-function SLTLessonTable({ data, courseNftPolicyId, moduleCode, onChainModule }: SLTLessonTableProps) {
-  // Build set of on-chain SLT texts for quick lookup
-  const onChainSltTexts = new Set(onChainModule?.slts ?? []);
-
-  if (data.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-sm text-muted-foreground">
-          No learning targets defined for this module.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <AndamioTableContainer>
-      <AndamioTable>
-        <AndamioTableHeader>
-          <AndamioTableRow>
-            <AndamioTableHead className="w-20">Index</AndamioTableHead>
-            <AndamioTableHead>Learning Target</AndamioTableHead>
-            <AndamioTableHead>Lesson Title</AndamioTableHead>
-            <AndamioTableHead>Description</AndamioTableHead>
-            <AndamioTableHead className="w-32">Media</AndamioTableHead>
-            <AndamioTableHead className="w-24">Status</AndamioTableHead>
-          </AndamioTableRow>
-        </AndamioTableHeader>
-        <AndamioTableBody>
-          {data.map((item) => {
-            const isOnChain = onChainSltTexts.has(item.slt_text);
-            return (
-              <AndamioTableRow key={item.module_index}>
-                <AndamioTableCell className="font-mono text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
-                    {isOnChain && (
-                      <span title="Verified on-chain">
-                        <CheckCircle className="h-3.5 w-3.5 text-success" />
-                      </span>
-                    )}
-                  </div>
-                </AndamioTableCell>
-                <AndamioTableCell className="font-medium">
-                  {item.slt_text}
-                </AndamioTableCell>
-                <AndamioTableCell className="font-medium">
-                  {item.lesson ? (
-                    <Link
-                      href={`/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
-                      className="hover:underline text-primary"
-                    >
-                      {item.lesson.title ?? `Lesson ${item.module_index}`}
-                    </Link>
-                  ) : (
-                    <span className="text-muted-foreground italic">No lesson yet</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson?.description ?? (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson ? (
-                    <div className="flex gap-1">
-                      {item.lesson.image_url && (
-                        <AndamioBadge variant="outline">Image</AndamioBadge>
-                      )}
-                      {item.lesson.video_url && (
-                        <AndamioBadge variant="outline">Video</AndamioBadge>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson ? (
-                    item.lesson.live ? (
-                      <AndamioBadge variant="default">Live</AndamioBadge>
-                    ) : (
-                      <AndamioBadge variant="secondary">Draft</AndamioBadge>
-                    )
-                  ) : (
-                    <AndamioBadge variant="outline">No Lesson</AndamioBadge>
-                  )}
-                </AndamioTableCell>
-              </AndamioTableRow>
-            );
-          })}
-        </AndamioTableBody>
-      </AndamioTable>
-    </AndamioTableContainer>
-  );
-}
 
 export default function ModuleLessonsPage() {
   const params = useParams();
@@ -291,36 +175,16 @@ export default function ModuleLessonsPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <AndamioSkeleton className="h-9 w-64 mb-2" />
-          <AndamioSkeleton className="h-5 w-96" />
-        </div>
-
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="detail" />;
   }
 
   // Error state
   if (error || !courseModule) {
     return (
-      <div className="space-y-6">
-        <AndamioPageHeader title="Module Not Found" />
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            {error ?? "Module not found"}
-          </AndamioAlertDescription>
-        </AndamioAlert>
-      </div>
+      <AndamioNotFoundCard
+        title="Module Not Found"
+        message={error ?? "Module not found"}
+      />
     );
   }
 
@@ -368,9 +232,9 @@ export default function ModuleLessonsPage() {
             </AndamioBadge>
           )}
         </div>
-        <p className="text-muted-foreground">
+        <AndamioText variant="muted">
           The learning targets below define what you will learn in this module. Each target is paired with a lesson to guide your learning journey.
-        </p>
+        </AndamioText>
         <SLTLessonTable
           data={combinedData}
           courseNftPolicyId={courseNftPolicyId}
@@ -392,9 +256,9 @@ export default function ModuleLessonsPage() {
             </Link>
           }
         />
-        <p className="text-sm text-muted-foreground">
+        <AndamioText variant="small">
           Complete the assignment to demonstrate your understanding of this module&apos;s learning targets.
-        </p>
+        </AndamioText>
       </div>
     </div>
   );

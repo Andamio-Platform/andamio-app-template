@@ -1,18 +1,16 @@
 /**
  * Andamio wrapper for shadcn/ui HoverCard
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioHoverCard } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioHoverCard } from "@andamio/ui";
+ * import { AndamioHoverCard, AndamioHoverCardContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/hover-card";
+// Re-export with Andamio prefix
+export {
+  HoverCard as AndamioHoverCard,
+  HoverCardContent as AndamioHoverCardContent,
+  HoverCardTrigger as AndamioHoverCardTrigger,
+} from "~/components/ui/hover-card";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the HoverCard component.

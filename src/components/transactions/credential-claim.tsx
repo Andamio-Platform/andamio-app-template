@@ -23,6 +23,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Award, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -161,11 +162,11 @@ export function CredentialClaim({
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium">On-Chain Credential</p>
+            <AndamioText className="font-medium">On-Chain Credential</AndamioText>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             A native Cardano token that serves as permanent, verifiable proof of your achievement.
-          </p>
+          </AndamioText>
         </div>
 
         {/* Transaction Status */}

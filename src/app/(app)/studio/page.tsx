@@ -1,11 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { RequireAuth } from "~/components/auth/require-auth";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioPageHeader } from "~/components/andamio";
+import { StudioHubCard } from "~/components/studio/studio-hub-card";
 import { BookOpen, FolderKanban } from "lucide-react";
 
 export default function StudioPage() {
@@ -20,46 +18,24 @@ export default function StudioPage() {
           description="Create and manage your courses and projects"
         />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Link href="/studio/course">
-          <AndamioCard className="hover:bg-accent transition-colors cursor-pointer h-full">
-            <AndamioCardHeader>
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <AndamioCardTitle>Course Studio</AndamioCardTitle>
-              </div>
-              <AndamioCardDescription>
-                Create and manage your Andamio courses
-              </AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent>
-              <AndamioButton variant="outline" className="w-full">
-                Manage Courses
-              </AndamioButton>
-            </AndamioCardContent>
-          </AndamioCard>
-        </Link>
+        <div className="grid gap-4 md:grid-cols-2">
+          <StudioHubCard
+            title="Course Studio"
+            description="Create and manage your Andamio courses"
+            href="/studio/course"
+            icon={BookOpen}
+            buttonLabel="Manage Courses"
+          />
 
-        <Link href="/studio/project">
-          <AndamioCard className="hover:bg-accent transition-colors cursor-pointer h-full">
-            <AndamioCardHeader>
-              <div className="flex items-center gap-2">
-                <FolderKanban className="h-5 w-5" />
-                <AndamioCardTitle>Project Studio</AndamioCardTitle>
-              </div>
-              <AndamioCardDescription>
-                Create and manage your Andamio projects
-              </AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent>
-              <AndamioButton variant="outline" className="w-full">
-                Manage Projects
-              </AndamioButton>
-            </AndamioCardContent>
-          </AndamioCard>
-        </Link>
+          <StudioHubCard
+            title="Project Studio"
+            description="Create and manage your Andamio projects"
+            href="/studio/project"
+            icon={FolderKanban}
+            buttonLabel="Manage Projects"
+          />
+        </div>
       </div>
-    </div>
     </RequireAuth>
   );
 }

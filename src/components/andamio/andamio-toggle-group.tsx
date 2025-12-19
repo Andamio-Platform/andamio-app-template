@@ -1,18 +1,15 @@
 /**
  * Andamio wrapper for shadcn/ui ToggleGroup
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioToggleGroup } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioToggleGroup } from "@andamio/ui";
+ * import { AndamioToggleGroup, AndamioToggleGroupItem } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/toggle-group";
+// Re-export with Andamio prefix
+export {
+  ToggleGroup as AndamioToggleGroup,
+  ToggleGroupItem as AndamioToggleGroupItem,
+} from "~/components/ui/toggle-group";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the ToggleGroup component.

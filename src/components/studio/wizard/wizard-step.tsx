@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "~/lib/utils";
+import { AndamioText } from "~/components/andamio";
 import { stepVariants, stepTransition } from "./types";
 import type { WizardStepConfig } from "./types";
 
@@ -46,9 +47,9 @@ export function WizardStep({
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
               {config.subtitle}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               {config.description}
-            </p>
+            </AndamioText>
           </div>
         </div>
       </div>
@@ -96,7 +97,7 @@ export function WizardStepTip({
       )}
     >
       <span className="text-base">💡</span>
-      <p className="text-sm text-muted-foreground leading-relaxed">{children}</p>
+      <AndamioText variant="small" className="leading-relaxed">{children}</AndamioText>
     </div>
   );
 }

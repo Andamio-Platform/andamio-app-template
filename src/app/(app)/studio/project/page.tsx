@@ -8,9 +8,8 @@ import { RequireAuth } from "~/components/auth/require-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
 import { AlertCircle, FolderKanban, Settings } from "lucide-react";
 import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 
@@ -57,20 +56,7 @@ function ProjectListContent() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioPageHeader
-          title="Project Studio"
-          description="Manage and edit your Andamio projects"
-        />
-
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
@@ -100,13 +86,11 @@ function ProjectListContent() {
           description="Manage and edit your Andamio projects"
         />
 
-        <AndamioAlert>
-          <FolderKanban className="h-4 w-4" />
-          <AndamioAlertTitle>No Projects Found</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            You don&apos;t have any projects yet. Projects are created through the Andamio treasury system.
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioEmptyState
+          icon={FolderKanban}
+          title="No Projects Found"
+          description="You don't have any projects yet. Projects are created through the Andamio treasury system."
+        />
       </div>
     );
   }

@@ -1,18 +1,20 @@
 /**
  * Andamio wrapper for shadcn/ui Popover
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioPopover } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioPopover } from "@andamio/ui";
+ * import { AndamioPopover, AndamioPopoverContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
+// Re-export base components (for backwards compatibility)
 export * from "~/components/ui/popover";
+
+// Re-export with Andamio prefix
+export {
+  Popover as AndamioPopover,
+  PopoverAnchor as AndamioPopoverAnchor,
+  PopoverContent as AndamioPopoverContent,
+  PopoverTrigger as AndamioPopoverTrigger,
+} from "~/components/ui/popover";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Popover component.

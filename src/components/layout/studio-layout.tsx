@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { AuthStatusBar } from "./auth-status-bar";
+import { StudioSidebar } from "./studio-sidebar";
 import {
   StudioHeader,
   StudioHeaderContext,
@@ -32,10 +34,17 @@ interface StudioLayoutProps {
 
 /**
  * Focused full-screen layout for studio/content creation
- * - No global sidebar - maximum content density
- * - Compact header with context and actions
- * - Fills entire viewport with scrollable content area
+ *
+ * Structure (matches main app layout):
+ * - AuthStatusBar at top (same as main app)
+ * - StudioSidebar on left (context-aware for studio workflows)
+ * - Full-height content area with StudioHeader
+ *
+ * Features:
  * - Context provider allows child pages to update header
+ * - Responsive: sidebar hidden on mobile
+ * - Full-height content for editor panels
+ * - Pages control their own centering/max-width
  */
 export function StudioLayout({
   children,
@@ -78,19 +87,33 @@ export function StudioLayout({
   return (
     <StudioHeaderContext.Provider value={contextValue}>
       <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
-        {/* Compact Studio Header */}
-        <StudioHeader
-          breadcrumbs={breadcrumbs}
-          title={title}
-          status={status}
-          statusVariant={statusVariant}
-          actions={actions}
-          backUrl={backUrl}
-          backLabel={backLabel}
-        />
+        {/* Status Bar - Same as main app */}
+        <AuthStatusBar />
 
-        {/* Content Area - Full width, no max-width constraint */}
-        <main className="flex-1 overflow-hidden">{children}</main>
+        {/* Main Container */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Studio Sidebar - Hidden on mobile, visible on desktop (md+) */}
+          <div className="hidden md:block">
+            <StudioSidebar />
+          </div>
+
+          {/* Content Area - Full height for editor panels */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Studio Header - Breadcrumbs, title, actions */}
+            <StudioHeader
+              breadcrumbs={breadcrumbs}
+              title={title}
+              status={status}
+              statusVariant={statusVariant}
+              actions={actions}
+              backUrl={backUrl}
+              backLabel={backLabel}
+            />
+
+            {/* Main Content - Full height, pages control their own layout */}
+            <main className="flex-1 overflow-hidden">{children}</main>
+          </div>
+        </div>
       </div>
     </StudioHeaderContext.Provider>
   );

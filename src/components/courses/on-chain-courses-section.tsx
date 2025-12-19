@@ -30,6 +30,7 @@ import {
   AndamioTooltip,
   AndamioTooltipContent,
   AndamioTooltipTrigger,
+  AndamioText,
 } from "~/components/andamio";
 import {
   CheckCircle,
@@ -262,12 +263,12 @@ export function OnChainCoursesSection() {
         {!isLoading && hybridCourses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               No courses found.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mt-1">
               Mint a Course NFT to get started!
-            </p>
+            </AndamioText>
           </div>
         )}
 
@@ -353,11 +354,11 @@ function HybridCourseRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {course.title ? (
-              <p className="font-medium truncate text-sm sm:text-base">{course.title}</p>
+              <AndamioText className="font-medium truncate text-sm sm:text-base">{course.title}</AndamioText>
             ) : (
-              <p className="font-medium text-muted-foreground italic text-sm sm:text-base">
+              <AndamioText className="font-medium text-muted-foreground italic text-sm sm:text-base">
                 Untitled Course
-              </p>
+              </AndamioText>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -473,7 +474,7 @@ function ImportCourseDrawer({
           <div className="space-y-4 px-4">
             {/* Course ID display */}
             <div className="rounded-lg border bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground mb-1">Course NFT Policy ID</p>
+              <AndamioText variant="small" className="text-xs mb-1">Course NFT Policy ID</AndamioText>
               <div className="flex items-center gap-2">
                 <code className="text-sm font-mono flex-1 truncate">
                   {truncatedId}
@@ -500,9 +501,9 @@ function ImportCourseDrawer({
                 disabled={isSubmitting}
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 You can change this later. This just gets your course registered.
-              </p>
+              </AndamioText>
             </div>
           </div>
 

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
 
 interface StudioEditorPaneProps {
@@ -83,7 +84,7 @@ export function StudioFormSection({
             <h3 className="text-sm font-medium leading-none">{title}</h3>
           )}
           {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <AndamioText variant="small" className="text-xs">{description}</AndamioText>
           )}
         </div>
       )}

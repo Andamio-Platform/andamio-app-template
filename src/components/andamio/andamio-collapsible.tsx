@@ -1,18 +1,16 @@
 /**
  * Andamio wrapper for shadcn/ui Collapsible
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioCollapsible } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioCollapsible } from "@andamio/ui";
+ * import { AndamioCollapsible, AndamioCollapsibleContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/collapsible";
+// Re-export with Andamio prefix
+export {
+  Collapsible as AndamioCollapsible,
+  CollapsibleContent as AndamioCollapsibleContent,
+  CollapsibleTrigger as AndamioCollapsibleTrigger,
+} from "~/components/ui/collapsible";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Collapsible component.

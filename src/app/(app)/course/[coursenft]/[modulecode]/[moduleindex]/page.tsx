@@ -2,17 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { env } from "~/env";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioPageHeader, AndamioSectionHeader } from "~/components/andamio";
-import { AlertCircle, BookOpen } from "lucide-react";
+import {
+  AndamioPageLoading,
+  AndamioNotFoundCard,
+  AndamioEmptyState,
+} from "~/components/andamio";
+import { BookOpen } from "lucide-react";
 import { type LessonWithSLTOutput, type CourseOutput, type CourseModuleOutput } from "@andamio/db-api";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
+import { LessonMediaSection } from "~/components/courses/lesson-media-section";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -112,13 +115,7 @@ export default function LessonDetailPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <AndamioSkeleton className="h-12 w-full" />
-        <AndamioSkeleton className="h-64 w-full" />
-      </div>
-    );
+    return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
@@ -136,25 +133,18 @@ export default function LessonDetailPage() {
           />
         )}
 
-        <AndamioPageHeader title="Lesson Not Found" />
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            {error ?? "Lesson not found"}
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioNotFoundCard
+          title="Lesson Not Found"
+          message={error ?? "Lesson not found"}
+        />
 
         {!error && (
           <AndamioCard>
             <AndamioCardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">
-                  This learning target doesn&apos;t have a lesson yet.
-                </p>
-              </div>
+              <AndamioEmptyState
+                icon={BookOpen}
+                title="This learning target doesn't have a lesson yet"
+              />
             </AndamioCardContent>
           </AndamioCard>
         )}
@@ -204,55 +194,19 @@ export default function LessonDetailPage() {
             {lesson.title ?? `Lesson ${lesson.slt_index}`}
           </h1>
           {lesson.description && (
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground mt-2">
+            <AndamioText variant="lead" className="mt-2">
               {lesson.description}
-            </p>
+            </AndamioText>
           )}
         </div>
       </div>
 
       {/* Media Section */}
-      {(lesson.image_url || lesson.video_url) && (
-        <div className="space-y-4">
-          {/* Video */}
-          {lesson.video_url && (
-            <AndamioCard>
-              <AndamioCardHeader>
-                <AndamioSectionHeader title="Video" />
-              </AndamioCardHeader>
-              <AndamioCardContent>
-                <div className="aspect-video w-full">
-                  <iframe
-                    src={lesson.video_url}
-                    className="w-full h-full rounded-md"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </AndamioCardContent>
-            </AndamioCard>
-          )}
-
-          {/* Image */}
-          {lesson.image_url && (
-            <AndamioCard>
-              <AndamioCardHeader>
-                <AndamioSectionHeader title="Image" />
-              </AndamioCardHeader>
-              <AndamioCardContent>
-                <div className="relative w-full aspect-video">
-                  <Image
-                    src={lesson.image_url}
-                    alt={lesson.title ?? "Lesson image"}
-                    fill
-                    className="object-cover rounded-md"
-                  />
-                </div>
-              </AndamioCardContent>
-            </AndamioCard>
-          )}
-        </div>
-      )}
+      <LessonMediaSection
+        videoUrl={lesson.video_url}
+        imageUrl={lesson.image_url}
+        imageAlt={lesson.title ?? "Lesson image"}
+      />
 
       {/* Lesson Content */}
       {lesson.content_json && (
@@ -264,7 +218,7 @@ export default function LessonDetailPage() {
             <ContentViewer
               content={lesson.content_json as JSONContent}
               emptyContent={
-                <p className="text-muted-foreground italic">Unable to parse lesson content</p>
+                <AndamioText variant="muted" className="italic">Unable to parse lesson content</AndamioText>
               }
             />
           </AndamioCardContent>
@@ -275,12 +229,10 @@ export default function LessonDetailPage() {
       {!lesson.content_json && !lesson.image_url && !lesson.video_url && (
         <AndamioCard>
           <AndamioCardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">
-                No content has been added to this lesson yet.
-              </p>
-            </div>
+            <AndamioEmptyState
+              icon={BookOpen}
+              title="No content has been added to this lesson yet"
+            />
           </AndamioCardContent>
         </AndamioCard>
       )}

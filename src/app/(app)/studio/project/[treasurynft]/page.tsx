@@ -9,14 +9,14 @@ import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioPageHeader } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
 import { AlertCircle, ArrowLeft, CheckSquare, ClipboardList, History, Save, Users, Wallet, FileText, BarChart3, Settings } from "lucide-react";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { type ListOwnedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 
 type TaskListOutput = CreateTaskOutput[];
@@ -198,12 +198,7 @@ export default function ProjectDashboardPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <AndamioSkeleton className="h-64 w-full" />
-      </div>
-    );
+    return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
@@ -436,7 +431,7 @@ export default function ProjectDashboardPage() {
               <div className="space-y-2">
                 <AndamioLabel htmlFor="treasuryNft">Treasury NFT Policy ID</AndamioLabel>
                 <AndamioInput id="treasuryNft" value={treasuryNftPolicyId} disabled />
-                <p className="text-sm text-muted-foreground">Policy ID cannot be changed</p>
+                <AndamioText variant="small">Policy ID cannot be changed</AndamioText>
               </div>
 
               {/* Title */}

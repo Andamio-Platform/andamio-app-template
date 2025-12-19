@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 /**
  * Root error boundary for the application
@@ -31,14 +32,14 @@ export default function GlobalError({
               <h1 className="text-xl font-bold">Something went wrong</h1>
             </div>
 
-            <p className="text-gray-600">
+            <AndamioText variant="muted">
               {error.message || "An unexpected error occurred"}
-            </p>
+            </AndamioText>
 
             {error.digest && (
-              <p className="text-xs text-gray-400">
+              <AndamioText variant="small" className="text-xs text-gray-400">
                 Error ID: {error.digest}
-              </p>
+              </AndamioText>
             )}
 
             <button

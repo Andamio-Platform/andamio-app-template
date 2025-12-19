@@ -38,6 +38,7 @@ import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
 } from "@andamio/db-api";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { ACCEPT_ASSIGNMENT, DENY_ASSIGNMENT } from "@andamio/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
@@ -381,11 +382,11 @@ export default function InstructorDashboardPage() {
       {filteredCommitments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
           <Users className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground mb-2">
+          <AndamioText variant="small" className="mb-2">
             {commitments.length === 0
               ? "No assignment commitments yet."
               : "No commitments match your filters."}
-          </p>
+          </AndamioText>
           {commitments.length > 0 && (
             <AndamioButton
               variant="outline"
@@ -477,14 +478,14 @@ export default function InstructorDashboardPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <AndamioLabel>Learner Access Token</AndamioLabel>
-                <p className="text-sm font-mono mt-1">
+                <AndamioText variant="small" className="font-mono mt-1 text-foreground">
                   {selectedCommitment.learner_access_token_alias ?? "No access token"}
-                </p>
+                </AndamioText>
               </div>
               <div>
                 <AndamioLabel>Assignment</AndamioLabel>
-                <p className="text-sm font-medium mt-1">{selectedCommitment.assignment.title}</p>
-                <p className="text-xs text-muted-foreground">{selectedCommitment.assignment.assignment_code}</p>
+                <AndamioText variant="small" className="font-medium mt-1 text-foreground">{selectedCommitment.assignment.title}</AndamioText>
+                <AndamioText variant="small" className="text-xs">{selectedCommitment.assignment.assignment_code}</AndamioText>
               </div>
               <div>
                 <AndamioLabel>Current Status</AndamioLabel>
@@ -496,7 +497,7 @@ export default function InstructorDashboardPage() {
               </div>
               <div>
                 <AndamioLabel>Evidence</AndamioLabel>
-                <p className="text-sm mt-1 max-w-md break-words">
+                <AndamioText variant="small" className="mt-1 max-w-md break-words text-foreground">
                   {selectedCommitment.network_evidence ? (
                     typeof selectedCommitment.network_evidence === "string"
                       ? selectedCommitment.network_evidence
@@ -504,7 +505,7 @@ export default function InstructorDashboardPage() {
                   ) : (
                     <span className="text-muted-foreground italic">No evidence submitted</span>
                   )}
-                </p>
+                </AndamioText>
               </div>
             </div>
 

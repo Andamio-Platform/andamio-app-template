@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useWallet } from "@meshsdk/react";
+import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -15,7 +16,9 @@ import {
   LogOut,
   User,
   ShieldAlert,
-  Circle
+  Circle,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { getStoredJWT } from "~/lib/andamio-auth";
 import { cn } from "~/lib/utils";
@@ -30,6 +33,7 @@ interface JWTPayload {
  */
 export function AuthStatusBar() {
   const { name: walletName } = useWallet();
+  const { theme, setTheme } = useTheme();
   const {
     isWalletConnected,
     isAuthenticated,
@@ -38,8 +42,14 @@ export function AuthStatusBar() {
     authError
   } = useAndamioAuth();
 
+  const [mounted, setMounted] = useState(false);
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<string | null>(null);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+
+  // Avoid hydration mismatch for theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Update JWT expiration countdown
   useEffect(() => {
@@ -99,7 +109,7 @@ export function AuthStatusBar() {
   }, [isAuthenticated]);
 
   return (
-    <div className="h-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="h-10 border-b border-primary-foreground/10 bg-primary text-primary-foreground">
       <div className="flex h-full items-center justify-between px-3 sm:px-4">
         {/* Left: Mobile Menu + Status Indicators */}
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -108,40 +118,40 @@ export function AuthStatusBar() {
 
           {/* Wallet Status - Hidden on very small screens */}
           <div className="hidden xs:flex items-center gap-2">
-            <Wallet className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <Wallet className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
             <div className="flex items-center gap-1.5 min-w-0">
               <Circle
                 className={cn(
                   "h-1.5 w-1.5 fill-current flex-shrink-0",
-                  isWalletConnected ? "text-success" : "text-muted-foreground"
+                  isWalletConnected ? "text-green-300" : "text-primary-foreground/50"
                 )}
               />
-              <span className="text-xs text-muted-foreground truncate">
+              <span className="text-xs text-primary-foreground/80 truncate">
                 {isWalletConnected ? walletName ?? "Wallet" : "Not connected"}
               </span>
             </div>
           </div>
 
           {/* Divider - Hidden on small screens */}
-          <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
+          <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
 
           {/* Auth Status - Hidden on very small screens */}
           <div className="hidden xs:flex items-center gap-2">
             {isAuthenticated ? (
-              <ShieldCheck className="h-3.5 w-3.5 text-success flex-shrink-0" />
+              <ShieldCheck className="h-3.5 w-3.5 text-green-300 flex-shrink-0" />
             ) : authError ? (
-              <ShieldAlert className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+              <ShieldAlert className="h-3.5 w-3.5 text-red-300 flex-shrink-0" />
             ) : (
-              <Shield className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <Shield className="h-3.5 w-3.5 text-primary-foreground/50 flex-shrink-0" />
             )}
             <span
               className={cn(
                 "text-xs whitespace-nowrap",
                 isAuthenticated
-                  ? "text-success"
+                  ? "text-green-300"
                   : authError
-                  ? "text-destructive"
-                  : "text-muted-foreground"
+                  ? "text-red-300"
+                  : "text-primary-foreground/50"
               )}
             >
               {isAuthenticated
@@ -158,22 +168,22 @@ export function AuthStatusBar() {
           {/* JWT Timer - Only show when authenticated, hidden on small screens */}
           {isAuthenticated && timeUntilExpiry && (
             <>
-              <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
+              <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
               <div className="hidden sm:flex items-center gap-1.5">
                 <Clock
                   className={cn(
                     "h-3.5 w-3.5 flex-shrink-0",
-                    isExpiringSoon ? "text-warning" : "text-muted-foreground"
+                    isExpiringSoon ? "text-amber-300" : "text-primary-foreground/70"
                   )}
                 />
                 <span
                   className={cn(
                     "text-xs font-mono",
                     timeUntilExpiry === "Expired"
-                      ? "text-destructive"
+                      ? "text-red-300"
                       : isExpiringSoon
-                      ? "text-warning"
-                      : "text-muted-foreground"
+                      ? "text-amber-300"
+                      : "text-primary-foreground/70"
                   )}
                 >
                   {timeUntilExpiry === "Expired" ? "Exp" : timeUntilExpiry}
@@ -185,12 +195,12 @@ export function AuthStatusBar() {
           {/* User Alias - Only show when authenticated, hidden on very small screens */}
           {isAuthenticated && user?.accessTokenAlias && (
             <>
-              <div className="hidden sm:block h-4 w-px bg-border flex-shrink-0" />
+              <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
               <div className="hidden sm:flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                <AndamioBadge variant="secondary" className="h-5 text-[10px] font-mono px-1.5">
+                <User className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
+                <span className="h-5 text-[10px] font-mono px-1.5 bg-primary-foreground/15 text-primary-foreground rounded">
                   {user.accessTokenAlias}
-                </AndamioBadge>
+                </span>
               </div>
             </>
           )}
@@ -198,12 +208,29 @@ export function AuthStatusBar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          {/* Theme Toggle */}
+          {mounted && (
+            <AndamioButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-6 w-6 p-0 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-3.5 w-3.5" />
+              ) : (
+                <Moon className="h-3.5 w-3.5" />
+              )}
+            </AndamioButton>
+          )}
+
           {isAuthenticated && (
             <AndamioButton
               variant="ghost"
               size="sm"
               onClick={logout}
-              className="hidden sm:flex h-6 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="hidden sm:flex h-6 px-2 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
             >
               <LogOut className="mr-1.5 h-3 w-3" />
               Logout

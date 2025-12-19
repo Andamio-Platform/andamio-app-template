@@ -10,6 +10,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
@@ -142,11 +143,11 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
           </motion.div>
           <div>
             <h3 className="font-semibold mb-1">The Backwards Design Payoff</h3>
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               Now that you know exactly what learners will achieve ({slts.length} SLTs)
               and how they&apos;ll prove it (the assignment), writing the introduction
               is easy. You already know the whole story!
-            </p>
+            </AndamioText>
           </div>
         </div>
       </WizardStepHighlight>
@@ -202,9 +203,9 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-muted/50 rounded-lg border border-dashed"
         >
-          <p className="text-xs font-medium text-muted-foreground mb-2">
+          <AndamioText variant="small" className="text-xs font-medium mb-2">
             Not sure where to start? Here&apos;s a template:
-          </p>
+          </AndamioText>
           <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
             {suggestion}
           </pre>

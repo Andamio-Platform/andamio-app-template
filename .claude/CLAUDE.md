@@ -228,6 +228,32 @@ The authentication flow combines wallet connection and signing into a single sea
 - scroll-area, select, separator, sheet, skeleton, slider, sonner, switch
 - table, tabs, textarea, toggle, toggle-group, tooltip
 
+### Text Styling with AndamioText
+
+**CRITICAL: Use `AndamioText` component for all paragraph text instead of raw `<p>` tags with className.**
+
+```typescript
+import { AndamioText } from "~/components/andamio";
+
+// ✅ CORRECT - Using AndamioText
+<AndamioText variant="muted">Helper text description</AndamioText>
+<AndamioText variant="small">Small helper text</AndamioText>
+<AndamioText variant="lead">Large intro paragraph</AndamioText>
+
+// ❌ WRONG - Raw p tags with className
+<p className="text-muted-foreground">Helper text</p>
+<p className="text-sm text-muted-foreground">Small text</p>
+```
+
+**Variants**:
+| Variant | Use Case |
+|---------|----------|
+| `default` | Regular body text |
+| `muted` | Descriptions, helper text |
+| `small` | Small helper/secondary text |
+| `lead` | Large intro paragraphs |
+| `overline` | Uppercase labels/categories |
+
 ## Semantic Color System
 
 **CRITICAL: Always use semantic color variables. Never use hardcoded Tailwind colors.**
@@ -479,7 +505,7 @@ const data = (await response.json()) as YourOutputType;
 **Types**:
 - `src/types/ui.ts` - Shared UI types (IconComponent, NavItem, StepItem, TabItem, etc.)
 
-**Responsive Layout** (see `docs/RESPONSIVE-DESIGN.md` for full docs):
+**Responsive Layout** (see `.claude/skills/review-styling/responsive-design.md` for full docs):
 - `src/components/andamio/andamio-page-header.tsx` - Responsive page headers (h1)
 - `src/components/andamio/andamio-section-header.tsx` - Responsive section headers (h2/h3)
 - `src/components/andamio/andamio-table-container.tsx` - Scrollable table wrapper
@@ -523,7 +549,7 @@ const [content, setContent] = useState<JSONContent | null>(initialContent);
 
 **CRITICAL: Use Andamio layout components for consistent, responsive layouts across all pages.**
 
-See `docs/RESPONSIVE-DESIGN.md` for the complete style guide.
+See `.claude/skills/review-styling/responsive-design.md` for the complete style guide.
 
 ### Key Components
 
@@ -580,15 +606,31 @@ Defined in `src/styles/globals.css`:
 
 **CRITICAL: Always update docs with every commit.**
 
-Main documentation file: `README.md`
+Main documentation is now stored in `.claude/skills/` directories for AI-assisted development.
 
-Update sections when you:
-- Add new pages or components
-- Add new API endpoints
-- Change architecture or patterns
-- Update dependencies
+**Documentation Locations**:
+- `.claude/CLAUDE.md` - This file, main project guidance
+- `.claude/skills/review-styling/` - Style rules and extracted components
+- `.claude/skills/project-manager/` - Project status and roadmap
+- `.claude/skills/audit-api-coverage/` - API coverage tracking
+- `.claude/skills/documentarian/` - Documentation maintenance workflow
+- `README.md` - Public-facing project overview
+- `CHANGELOG.md` - Version history
 
-The README should always reflect the current state of the project.
+**After making changes**, run the `documentarian` skill to update related documentation.
+
+## Claude Skills
+
+This project uses Claude Skills for AI-assisted development workflows:
+
+| Skill | Purpose |
+|-------|---------|
+| `review-styling` | Validate routes against style guidelines |
+| `documentarian` | Review changes and update documentation |
+| `audit-api-coverage` | Track API endpoint coverage |
+| `project-manager` | Track project status and roadmap |
+
+Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
 
 ## Tech Stack
 

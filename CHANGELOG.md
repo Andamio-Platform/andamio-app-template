@@ -8,16 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Documentation reorganization with organized `docs/` folder structure
-- Map of Content (MOC) at `docs/README.md` for easy navigation
-- CONTRIBUTING.md with development guidelines
-- This CHANGELOG.md
+- **AndamioText Component**: Standardized text component with 5 variants (default, muted, small, lead, overline) replacing loose `<p className=...>` patterns throughout the codebase
+- **Claude Skills System**: Migrated documentation from `docs/` to `.claude/skills/` for better AI-assisted development
+  - `documentarian` skill for documentation maintenance
+  - `review-styling` skill for style guide enforcement
+  - `audit-api-coverage` skill for API coverage tracking
+  - `project-manager` skill for project status tracking
+- **New Andamio Components**: `AndamioEmptyState`, `AndamioNotFoundCard`, `AndamioPageLoading`, `AndamioStatCard`
+- **New Course Components**: `CourseModuleCard`, `LessonMediaSection`, `SLTLessonTable`
+- **New Studio Components**: `StudioCourseCard`, `StudioHubCard`
+- **New Hooks**: `useModuleWizardData`, `useWizardNavigation`
+- **Authorization Component**: `RequireCourseAccess` for course-level access control
+- Global heading styles in `globals.css` with `!important` to override Tailwind preflight
 
 ### Changed
-- Moved all documentation to organized subdirectories
-- Updated all internal documentation links
+- Migrated all documentation from `docs/` folder to `.claude/skills/` directories
+- All Andamio wrapper components now consistently export with `Andamio` prefix
+- Updated all `<p className=...>` patterns to use `AndamioText` component (232+ occurrences)
 
 ### Removed
+- `docs/` folder contents (migrated to `.claude/skills/`)
 - Deprecated TODO-TRANSACTION-CONFIRMATION.md (superseded by PENDING-TX-WATCHER.md)
 - NBA (Node Backend API) references throughout documentation
 

@@ -22,6 +22,7 @@ import {
   Blocks,
 } from "lucide-react";
 import { type AndamioscanModule } from "~/lib/andamioscan";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 // =============================================================================
 // Types
@@ -113,7 +114,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
                 {index + 1}
               </div>
               <div className="flex-1 pt-1">
-                <p className="text-sm">{slt}</p>
+                <AndamioText className="text-sm">{slt}</AndamioText>
               </div>
               <CheckCircle className="h-4 w-4 shrink-0 text-success mt-1" />
             </div>

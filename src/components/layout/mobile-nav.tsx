@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   Sheet,
   SheetContent,
@@ -45,10 +46,10 @@ const navigation: NavItem[] = [
     description: "Explore catalog",
   },
   {
-    name: "My Courses",
-    href: "/courses",
+    name: "Course Studio",
+    href: "/studio/course",
     icon: BookOpen,
-    description: "Your course library",
+    description: "Manage your courses",
   },
   {
     name: "Browse Projects",
@@ -164,9 +165,9 @@ export function MobileNav() {
             <>
               {/* Wallet Info */}
               <div className="rounded-lg bg-sidebar-accent/50 p-3 w-full">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+                <AndamioText variant="overline" className="text-[10px] mb-1.5">
                   Connected Wallet
-                </p>
+                </AndamioText>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-success animate-pulse flex-shrink-0" />
                   <code className="text-xs text-sidebar-foreground truncate">
@@ -175,9 +176,9 @@ export function MobileNav() {
                 </div>
                 {user.accessTokenAlias && (
                   <div className="mt-2 pt-2 border-t border-sidebar-border">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                    <AndamioText variant="overline" className="text-[10px] mb-1">
                       Token
-                    </p>
+                    </AndamioText>
                     <AndamioBadge variant="secondary" className="text-[10px]">
                       {user.accessTokenAlias}
                     </AndamioBadge>
@@ -201,9 +202,9 @@ export function MobileNav() {
             </>
           ) : (
             <div className="rounded-lg bg-sidebar-accent/50 p-3 text-center w-full">
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 Connect wallet to get started
-              </p>
+              </AndamioText>
             </div>
           )}
         </SheetFooter>

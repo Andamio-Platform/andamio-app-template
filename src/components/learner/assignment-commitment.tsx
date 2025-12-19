@@ -11,6 +11,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { ContentDisplay } from "~/components/content-display";
@@ -382,9 +383,9 @@ export function AssignmentCommitment({
           <div className="space-y-4">
             <div className="text-center py-8 border-2 border-dashed rounded-lg">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground mb-4">
+              <AndamioText variant="small" className="mb-4">
                 You haven&apos;t started this assignment yet
-              </p>
+              </AndamioText>
               <AndamioButton onClick={handleStartAssignment}>
                 <Plus className="h-4 w-4 mr-2" />
                 Start Assignment
@@ -408,9 +409,9 @@ export function AssignmentCommitment({
             {!isLocked ? (
               <div className="space-y-2">
                 <AndamioLabel>Your Evidence</AndamioLabel>
-                <p className="text-xs text-muted-foreground mb-2">
+                <AndamioText variant="small" className="text-xs mb-2">
                   Write your evidence below. When finished, lock it to generate a hash for submission.
-                </p>
+                </AndamioText>
                 <ContentEditor
                   content={localEvidenceContent}
                   onContentChange={handleEvidenceContentChange}
@@ -503,7 +504,7 @@ export function AssignmentCommitment({
             {/* Status Display */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Status</p>
+                <AndamioText variant="small" className="font-medium text-foreground">Status</AndamioText>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
@@ -535,9 +536,9 @@ export function AssignmentCommitment({
               <AndamioLabel>Your Submitted Evidence</AndamioLabel>
               {commitment?.networkEvidence ? (
                 <>
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <AndamioText variant="small" className="text-xs mb-2">
                     This is the evidence you submitted on-chain for review.
-                  </p>
+                  </AndamioText>
                   <ContentDisplay
                     content={commitment.networkEvidence as string | JSONContent}
                     variant="muted"
@@ -564,9 +565,9 @@ export function AssignmentCommitment({
             {/* Update Evidence Section */}
             <div className="space-y-2">
               <AndamioLabel>Update Your Evidence</AndamioLabel>
-              <p className="text-xs text-muted-foreground mb-2">
+              <AndamioText variant="small" className="text-xs mb-2">
                 Edit your evidence below and save as a draft, or submit updates to the blockchain.
-              </p>
+              </AndamioText>
               <ContentEditor
                 content={localEvidenceContent}
                 onContentChange={handleEvidenceContentChange}
@@ -640,11 +641,11 @@ export function AssignmentCommitment({
                 <AndamioSeparator />
                 <div className="space-y-2">
                   <AndamioLabel className="text-sm font-medium">Update Your Submission</AndamioLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="text-xs">
                     {commitment.networkStatus === "ASSIGNMENT_DENIED"
                       ? "Your assignment was denied. You can update your evidence and resubmit for review."
                       : "Your assignment is pending review. You can update your evidence if needed."}
-                  </p>
+                  </AndamioText>
                   <AndamioTransaction
                     definition={UPDATE_ASSIGNMENT}
                     inputs={{
@@ -671,9 +672,9 @@ export function AssignmentCommitment({
                 <AndamioSeparator />
                 <div className="space-y-2">
                   <AndamioLabel className="text-sm font-medium text-destructive">Withdraw from Assignment</AndamioLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <AndamioText variant="small" className="text-xs">
                     Remove your commitment to this assignment. You can recommit later if needed.
-                  </p>
+                  </AndamioText>
                   <AndamioTransaction
                     definition={LEAVE_ASSIGNMENT}
                     inputs={{

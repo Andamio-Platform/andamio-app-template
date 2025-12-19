@@ -20,6 +20,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Send, FileEdit, Shield, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
@@ -192,11 +193,11 @@ export function AssignmentUpdate({
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-success" />
-            <p className="text-sm font-medium">Tamper-Evident Record</p>
+            <AndamioText className="font-medium">Tamper-Evident Record</AndamioText>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             Your submission is hashed and recorded on-chain, creating a permanent, verifiable record.
-          </p>
+          </AndamioText>
           {computedHash && (
             <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
               <Hash className="h-3 w-3 shrink-0" />

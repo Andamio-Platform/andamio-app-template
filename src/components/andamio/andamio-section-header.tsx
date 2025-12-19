@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
+import { AndamioText } from "./andamio-text";
 
 interface AndamioSectionHeaderProps {
   /**
@@ -97,9 +98,9 @@ export function AndamioSectionHeader({
             {badge}
           </div>
           {description && (
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               {description}
-            </p>
+            </AndamioText>
           )}
         </div>
         <div className="shrink-0">
@@ -120,9 +121,9 @@ export function AndamioSectionHeader({
         {badge}
       </div>
       {description && (
-        <p className="text-sm text-muted-foreground">
+        <AndamioText variant="small">
           {description}
-        </p>
+        </AndamioText>
       )}
     </div>
   );

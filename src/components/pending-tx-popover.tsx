@@ -24,6 +24,7 @@ import {
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Clock, ExternalLink, RefreshCw, X } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -158,11 +159,11 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                   </AndamioButton>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 {isChecking
                   ? "Checking blockchain for confirmations..."
                   : `Monitoring ${pendingTransactions.length} transaction${pendingTransactions.length !== 1 ? "s" : ""}`}
-              </p>
+              </AndamioText>
             </AndamioCardHeader>
 
             <AndamioCardContent className="max-h-96 overflow-y-auto p-0">
@@ -184,11 +185,11 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
 
                     {/* Entity ID */}
                     <div className="mb-2">
-                      <p className="text-sm font-medium">{tx.entityId}</p>
+                      <AndamioText variant="small" className="font-medium text-foreground">{tx.entityId}</AndamioText>
                       {tx.context.courseNftPolicyId && (
-                        <p className="text-xs text-muted-foreground">
+                        <AndamioText variant="small" className="text-xs">
                           Course: {truncateTxHash(tx.context.courseNftPolicyId, 16)}
-                        </p>
+                        </AndamioText>
                       )}
                     </div>
 

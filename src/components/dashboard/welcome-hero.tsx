@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { BookOpen, ArrowRight, Key, CheckCircle2, Sparkles } from "lucide-react";
 
 interface WelcomeHeroProps {
@@ -27,7 +28,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
               {/* Identity Section */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
+                  <AndamioText variant="small" className="font-medium">Welcome back</AndamioText>
                   {hasAccessToken ? (
                     <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
                       <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight break-all xs:break-normal">
@@ -58,20 +59,20 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                       <Key className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Access Token</p>
-                      <p className="text-lg font-bold text-primary truncate max-w-[150px]">{accessTokenAlias}</p>
+                      <AndamioText variant="small" className="text-xs font-medium">Access Token</AndamioText>
+                      <AndamioText className="text-lg font-bold text-primary truncate max-w-[150px]">{accessTokenAlias}</AndamioText>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Description based on state */}
-              <p className="text-muted-foreground max-w-2xl">
+              <AndamioText variant="muted" className="max-w-2xl">
                 {hasAccessToken
                   ? "Your on-chain identity is active. Track your learning progress, manage your courses, and explore new opportunities."
                   : "Complete your setup by minting an Access Token to unlock the full Andamio experience."
                 }
-              </p>
+              </AndamioText>
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
@@ -84,9 +85,9 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                         <ArrowRight className="h-4 w-4" />
                       </AndamioButton>
                     </Link>
-                    <Link href="/courses">
+                    <Link href="/studio/course">
                       <AndamioButton variant="outline" size="lg">
-                        My Courses
+                        Course Studio
                       </AndamioButton>
                     </Link>
                   </>

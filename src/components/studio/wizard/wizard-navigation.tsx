@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, SkipForward, Settings } from "lucide-react";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
 
 interface WizardNavigationProps {
@@ -109,7 +110,7 @@ export function WizardHeader({
       <div>
         <h1 className="text-lg font-semibold">Module Design Wizard</h1>
         {moduleTitle && (
-          <p className="text-sm text-muted-foreground">{moduleTitle}</p>
+          <AndamioText variant="small">{moduleTitle}</AndamioText>
         )}
       </div>
 

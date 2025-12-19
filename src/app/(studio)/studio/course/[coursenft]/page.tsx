@@ -7,10 +7,10 @@ import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { useStudioHeader } from "~/components/layout/studio-header";
+import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
   StudioEditorPane,
   StudioFormSection,
-  StudioActionBar,
 } from "~/components/studio/studio-editor-pane";
 import {
   ResizablePanelGroup,
@@ -50,23 +50,21 @@ import {
   type UpdateCourseInput,
   updateCourseInputSchema,
 } from "@andamio/db-api";
-import { cn } from "~/lib/utils";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 interface ApiError {
   message?: string;
 }
 
 /**
- * Studio Course Edit Page - Dense split-pane layout
- * Left: Module outline
- * Right: Course details / settings
+ * Course Editor Content - The main editing UI
+ *
+ * Rendered only after RequireCourseAccess verifies the user has access.
  */
-export default function StudioCourseEditPage() {
-  const params = useParams();
+function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const courseNftPolicyId = params.coursenft as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   // URL-based tab persistence
@@ -324,7 +322,7 @@ export default function StudioCourseEditPage() {
               {modules.length === 0 ? (
                 <div className="px-3 py-6 text-center">
                   <BookOpen className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground">No modules yet</p>
+                  <AndamioText variant="small" className="text-xs">No modules yet</AndamioText>
                   <AndamioButton
                     variant="outline"
                     size="sm"
@@ -357,12 +355,12 @@ export default function StudioCourseEditPage() {
 
                     {/* Module info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+                      <AndamioText variant="small" className="font-medium truncate text-foreground">
                         {courseModule.title ?? "Untitled"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      </AndamioText>
+                      <AndamioText variant="small" className="text-[10px] font-mono truncate">
                         {courseModule.module_code}
-                      </p>
+                      </AndamioText>
                     </div>
 
                     {/* Arrow */}
@@ -522,14 +520,14 @@ export default function StudioCourseEditPage() {
 
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <div className="rounded-lg border p-2 text-center">
-                    <p className="text-lg font-bold">{modules.length}</p>
-                    <p className="text-[10px] text-muted-foreground">Total Modules</p>
+                    <AndamioText className="text-lg font-bold">{modules.length}</AndamioText>
+                    <AndamioText variant="small" className="text-[10px]">Total Modules</AndamioText>
                   </div>
                   <div className="rounded-lg border p-2 text-center">
-                    <p className="text-lg font-bold text-success">
+                    <AndamioText className="text-lg font-bold text-success">
                       {modules.filter((m) => m.status === "ON_CHAIN").length}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">On-Chain</p>
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
                   </div>
                 </div>
               </StudioFormSection>
@@ -544,17 +542,17 @@ export default function StudioCourseEditPage() {
                     disabled
                     className="h-8 text-sm font-mono"
                   />
-                  <p className="text-[10px] text-muted-foreground">
+                  <AndamioText variant="small" className="text-[10px]">
                     Course code cannot be changed
-                  </p>
+                  </AndamioText>
                 </div>
               </StudioFormSection>
 
               <StudioFormSection title="Danger Zone" className="mt-4">
                 <div className="rounded-lg border border-destructive/50 p-3">
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <AndamioText variant="small" className="text-xs mb-2">
                     Permanently delete this course and all its content.
-                  </p>
+                  </AndamioText>
                   <AndamioConfirmDialog
                     trigger={
                       <AndamioButton
@@ -581,5 +579,29 @@ export default function StudioCourseEditPage() {
         </StudioEditorPane>
       </ResizablePanel>
     </ResizablePanelGroup>
+  );
+}
+
+/**
+ * Studio Course Edit Page
+ *
+ * Dense split-pane layout for editing course details and managing modules.
+ *
+ * Authorization: Only accessible to users who are:
+ * - Course owner (created the course)
+ * - Course teacher (listed as contributor)
+ */
+export default function StudioCourseEditPage() {
+  const params = useParams();
+  const courseNftPolicyId = params.coursenft as string;
+
+  return (
+    <RequireCourseAccess
+      courseNftPolicyId={courseNftPolicyId}
+      title="Edit Course"
+      description="Connect your wallet to edit this course"
+    >
+      <CourseEditorContent courseNftPolicyId={courseNftPolicyId} />
+    </RequireCourseAccess>
   );
 }

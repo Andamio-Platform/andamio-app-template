@@ -5,6 +5,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useOwnedCourses } from "~/hooks/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { CourseStatsDashboard } from "./course-stats-dashboard";
 import { CourseFilterToolbar } from "./course-filter-toolbar";
@@ -53,7 +54,7 @@ export function CourseManager() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center border">
-        <p className="text-sm text-muted-foreground">Connect and authenticate to view your courses</p>
+        <AndamioText variant="small">Connect and authenticate to view your courses</AndamioText>
       </div>
     );
   }
@@ -94,7 +95,7 @@ export function CourseManager() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border">
         <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-sm text-muted-foreground">No courses found. Create your first course to get started.</p>
+        <AndamioText variant="small">No courses found. Create your first course to get started.</AndamioText>
       </div>
     );
   }
@@ -117,16 +118,16 @@ export function CourseManager() {
 
       {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <AndamioText variant="small">
           Showing {displayedCourses.length} of {allCourses.length} courses
-        </p>
+        </AndamioText>
       </div>
 
       {/* View Mode Content */}
       {displayedCourses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border">
           <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground">No courses match your filters.</p>
+          <AndamioText variant="small">No courses match your filters.</AndamioText>
         </div>
       ) : (
         <>

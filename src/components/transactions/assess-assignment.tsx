@@ -21,6 +21,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { CheckCircle, XCircle, ClipboardCheck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -160,9 +161,9 @@ export function AssessAssignment({
         {/* Warning about irreversibility */}
         <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-          <p className="text-xs text-warning-foreground">
+          <AndamioText variant="small" className="text-xs text-warning-foreground">
             Assessment decisions are recorded on-chain and cannot be undone.
-          </p>
+          </AndamioText>
         </div>
 
         {/* Transaction Status */}

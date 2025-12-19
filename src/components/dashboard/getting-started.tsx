@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "~/lib/utils";
 import type { StepItem } from "~/types/ui";
@@ -53,10 +54,10 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
               <GraduationCap className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <p className="text-sm font-semibold">Getting Started</p>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="font-semibold text-foreground">Getting Started</AndamioText>
+              <AndamioText variant="small" className="text-xs">
                 {completedCount} of {steps.length} steps complete
-              </p>
+              </AndamioText>
             </div>
           </div>
 

@@ -4,13 +4,15 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { env } from "~/env";
 import { ContentViewer } from "~/components/editor";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioPageHeader } from "~/components/andamio";
-import { AlertCircle } from "lucide-react";
+import {
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioNotFoundCard,
+} from "~/components/andamio";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { type CourseOutput, type CourseModuleOutput } from "@andamio/db-api";
@@ -132,12 +134,7 @@ export default function LearnerAssignmentPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <AndamioSkeleton className="h-96 w-full" />
-      </div>
-    );
+    return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
@@ -154,11 +151,10 @@ export default function LearnerAssignmentPage() {
           />
         )}
 
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error ?? "Assignment not found"}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioNotFoundCard
+          title="Assignment Not Found"
+          message={error ?? "Assignment not found"}
+        />
       </div>
     );
   }
@@ -207,7 +203,7 @@ export default function LearnerAssignmentPage() {
                   <AndamioBadge variant="outline" className="mt-0.5">
                     {slt.moduleIndex}
                   </AndamioBadge>
-                  <p className="text-sm flex-1">{slt.sltText}</p>
+                  <AndamioText variant="small" className="flex-1 text-foreground">{slt.sltText}</AndamioText>
                 </div>
               ))}
             </div>
@@ -237,7 +233,7 @@ export default function LearnerAssignmentPage() {
           <AndamioCardContent className="space-y-4">
             {assignment.imageUrl && (
               <div>
-                <p className="text-sm font-medium mb-2">Image</p>
+                <AndamioText variant="small" className="font-medium text-foreground mb-2">Image</AndamioText>
                 <a
                   href={assignment.imageUrl}
                   target="_blank"
@@ -250,7 +246,7 @@ export default function LearnerAssignmentPage() {
             )}
             {assignment.videoUrl && (
               <div>
-                <p className="text-sm font-medium mb-2">Video</p>
+                <AndamioText variant="small" className="font-medium text-foreground mb-2">Video</AndamioText>
                 <a
                   href={assignment.videoUrl}
                   target="_blank"

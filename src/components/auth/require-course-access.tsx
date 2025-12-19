@@ -1,0 +1,187 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { env } from "~/env";
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { AndamioPageLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
+import { AlertCircle, ArrowLeft, ShieldAlert } from "lucide-react";
+
+interface CourseAccessCheck {
+  hasAccess: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface RequireCourseAccessProps {
+  /** Course NFT Policy ID to check access for */
+  courseNftPolicyId: string;
+  /** Title shown when not authenticated */
+  title?: string;
+  /** Description shown when not authenticated */
+  description?: string;
+  /** Content to render when user has access */
+  children: React.ReactNode;
+}
+
+/**
+ * Wrapper component that verifies the user has Owner or Teacher access to a course.
+ *
+ * Authorization logic:
+ * - First checks if user is authenticated
+ * - Then calls /course/list endpoint to check if user owns or contributes to the course
+ * - Course ownership = created the course
+ * - Teacher access = listed as contributor
+ *
+ * @example
+ * ```tsx
+ * <RequireCourseAccess
+ *   courseNftPolicyId={courseId}
+ *   title="Edit Module"
+ *   description="You need access to this course to edit modules"
+ * >
+ *   <ModuleWizard />
+ * </RequireCourseAccess>
+ * ```
+ */
+export function RequireCourseAccess({
+  courseNftPolicyId,
+  title = "Course Access Required",
+  description = "Connect your wallet to access this course",
+  children,
+}: RequireCourseAccessProps) {
+  const router = useRouter();
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const [accessCheck, setAccessCheck] = useState<CourseAccessCheck>({
+    hasAccess: false,
+    isLoading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    const checkCourseAccess = async () => {
+      if (!isAuthenticated) {
+        setAccessCheck({ hasAccess: false, isLoading: false, error: null });
+        return;
+      }
+
+      setAccessCheck((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      try {
+        // Fetch user's owned courses to check access
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to verify course access");
+        }
+
+        interface OwnedCourse {
+          course_nft_policy_id: string | null;
+        }
+
+        const ownedCourses = (await response.json()) as OwnedCourse[];
+
+        // Check if user has access to this specific course
+        const hasAccess = ownedCourses.some(
+          (course) => course.course_nft_policy_id === courseNftPolicyId
+        );
+
+        setAccessCheck({
+          hasAccess,
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.error("Error checking course access:", err);
+        setAccessCheck({
+          hasAccess: false,
+          isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to verify access",
+        });
+      }
+    };
+
+    void checkCourseAccess();
+  }, [isAuthenticated, authenticatedFetch, courseNftPolicyId]);
+
+  // Not authenticated - show login prompt
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+        <ShieldAlert className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h1>{title}</h1>
+        <AndamioText variant="muted" className="text-center mb-6 max-w-md">
+          {description}
+        </AndamioText>
+        <AndamioAuthButton />
+      </div>
+    );
+  }
+
+  // Loading - show skeleton
+  if (accessCheck.isLoading) {
+    return <AndamioPageLoading variant="detail" />;
+  }
+
+  // Error - show error state
+  if (accessCheck.error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+        <AndamioAlert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AndamioAlertDescription>
+            {accessCheck.error}
+          </AndamioAlertDescription>
+        </AndamioAlert>
+        <AndamioButton
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Go Back
+        </AndamioButton>
+      </div>
+    );
+  }
+
+  // No access - show access denied
+  if (!accessCheck.hasAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+        <ShieldAlert className="h-12 w-12 text-destructive/70 mb-4" />
+        <h1>Access Denied</h1>
+        <AndamioText variant="muted" className="text-center mb-6 max-w-md">
+          You don&apos;t have permission to edit this course. Only course owners
+          and teachers can access this page.
+        </AndamioText>
+        <div className="flex gap-3">
+          <AndamioButton
+            variant="outline"
+            onClick={() => router.push("/studio/course")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Course Studio
+          </AndamioButton>
+          <AndamioButton
+            variant="secondary"
+            onClick={() => router.push(`/course/${courseNftPolicyId}`)}
+          >
+            View Course
+          </AndamioButton>
+        </div>
+      </div>
+    );
+  }
+
+  // Has access - render children
+  return <>{children}</>;
+}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import {
   CourseStatusBadge,
@@ -41,7 +42,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
 
               {/* Description */}
               {courseData.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{courseData.description}</p>
+                <AndamioText variant="small" className="line-clamp-2">{courseData.description}</AndamioText>
               )}
 
               {/* Badges */}

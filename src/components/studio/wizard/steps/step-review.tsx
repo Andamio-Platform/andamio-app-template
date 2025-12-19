@@ -20,6 +20,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
@@ -153,9 +154,9 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
               <div>
                 <h3 className="text-xl font-bold">Module Approved!</h3>
-                <p className="text-muted-foreground mt-1">
+                <AndamioText variant="muted" className="mt-1">
                   &quot;{moduleTitle}&quot; is ready for the blockchain.
-                </p>
+                </AndamioText>
               </div>
 
               <div className="flex items-center justify-center gap-2 text-sm">
@@ -166,10 +167,10 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 <AndamioBadge variant="outline">Ready to Mint</AndamioBadge>
               </div>
 
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              <AndamioText variant="small" className="max-w-md mx-auto">
                 Head to the <strong>On-Chain</strong> tab in Advanced Mode to mint
                 your module tokens on Cardano.
-              </p>
+              </AndamioText>
             </div>
           </WizardStepHighlight>
         </motion.div>
@@ -183,9 +184,9 @@ export function StepReview({ config, direction }: StepReviewProps) {
               </div>
               <div>
                 <h3 className="font-semibold">Almost There!</h3>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText variant="small">
                   Review your module and approve it for blockchain minting.
-                </p>
+                </AndamioText>
               </div>
             </div>
           </WizardStepHighlight>

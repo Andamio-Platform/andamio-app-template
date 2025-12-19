@@ -13,11 +13,11 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { ContentEditor } from "~/components/editor";
 import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
-import { AndamioPageHeader } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
@@ -213,12 +213,7 @@ export default function EditTaskPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <AndamioSkeleton className="h-64 w-full" />
-      </div>
-    );
+    return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
@@ -299,7 +294,7 @@ export default function EditTaskPage() {
               placeholder="Enter task title"
               maxLength={100}
             />
-            <p className="text-xs text-muted-foreground">{title.length}/100 characters</p>
+            <AndamioText variant="small" className="text-xs">{title.length}/100 characters</AndamioText>
           </div>
 
           {/* Description */}
@@ -313,15 +308,15 @@ export default function EditTaskPage() {
               maxLength={360}
               rows={3}
             />
-            <p className="text-xs text-muted-foreground">{description.length}/360 characters</p>
+            <AndamioText variant="small" className="text-xs">{description.length}/360 characters</AndamioText>
           </div>
 
           {/* Rich Content */}
           <div className="space-y-2">
             <AndamioLabel>Detailed Content (Optional)</AndamioLabel>
-            <p className="text-xs text-muted-foreground mb-2">
+            <AndamioText variant="small" className="text-xs mb-2">
               Add detailed instructions, examples, or resources for the task
-            </p>
+            </AndamioText>
             <ContentEditor
               content={contentJson}
               onContentChange={handleContentChange}
@@ -345,11 +340,11 @@ export default function EditTaskPage() {
                 min={1}
                 step={0.1}
               />
-              <span className="text-sm text-muted-foreground">ADA</span>
+              <AndamioText variant="small">ADA</AndamioText>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Minimum 1 ADA ({lovelace} lovelace)
-            </p>
+            </AndamioText>
           </div>
 
           {/* Expiration Time */}
@@ -361,9 +356,9 @@ export default function EditTaskPage() {
               onChange={(e) => setExpirationTime(e.target.value)}
               placeholder="e.g., 1735689600000"
             />
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               POSIX timestamp in milliseconds. Current time: {Date.now()}
-            </p>
+            </AndamioText>
           </div>
 
           {/* Number of Commitments */}
@@ -376,9 +371,9 @@ export default function EditTaskPage() {
               onChange={(e) => setNumAllowedCommitments(parseInt(e.target.value) || 1)}
               min={1}
             />
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               How many contributors can commit to this task
-            </p>
+            </AndamioText>
           </div>
 
           {/* Acceptance Criteria */}
@@ -390,9 +385,9 @@ export default function EditTaskPage() {
                 Add
               </AndamioButton>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">
+            <AndamioText variant="small" className="text-xs mb-2">
               Define what contributors must deliver to complete the task
-            </p>
+            </AndamioText>
             <div className="space-y-2">
               {acceptanceCriteria.map((criterion, index) => (
                 <div key={index} className="flex items-center gap-2">

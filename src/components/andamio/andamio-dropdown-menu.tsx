@@ -1,18 +1,28 @@
 /**
  * Andamio wrapper for shadcn/ui DropdownMenu
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioDropdownMenu } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioDropdownMenu } from "@andamio/ui";
+ * import { AndamioDropdownMenu, AndamioDropdownMenuContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/dropdown-menu";
+// Re-export with Andamio prefix
+export {
+  DropdownMenu as AndamioDropdownMenu,
+  DropdownMenuCheckboxItem as AndamioDropdownMenuCheckboxItem,
+  DropdownMenuContent as AndamioDropdownMenuContent,
+  DropdownMenuGroup as AndamioDropdownMenuGroup,
+  DropdownMenuItem as AndamioDropdownMenuItem,
+  DropdownMenuLabel as AndamioDropdownMenuLabel,
+  DropdownMenuPortal as AndamioDropdownMenuPortal,
+  DropdownMenuRadioGroup as AndamioDropdownMenuRadioGroup,
+  DropdownMenuRadioItem as AndamioDropdownMenuRadioItem,
+  DropdownMenuSeparator as AndamioDropdownMenuSeparator,
+  DropdownMenuShortcut as AndamioDropdownMenuShortcut,
+  DropdownMenuSub as AndamioDropdownMenuSub,
+  DropdownMenuSubContent as AndamioDropdownMenuSubContent,
+  DropdownMenuSubTrigger as AndamioDropdownMenuSubTrigger,
+  DropdownMenuTrigger as AndamioDropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the DropdownMenu component.

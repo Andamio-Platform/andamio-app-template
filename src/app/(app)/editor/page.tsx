@@ -5,6 +5,7 @@ import { ContentEditor, ContentViewer } from "~/components/editor";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
 import { AndamioPageHeader } from "~/components/andamio";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import type { JSONContent } from "@tiptap/core";
 
 const sampleContent: JSONContent = {
@@ -212,27 +213,27 @@ export default function EditorPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border p-4">
                 <h4 className="font-medium mb-1">BaseExtensionKit</h4>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText variant="small">
                   Core extensions for basic text editing
-                </p>
+                </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
                 <h4 className="font-medium mb-1">BasicEditorKit</h4>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText variant="small">
                   Text formatting with lists and links
-                </p>
+                </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
                 <h4 className="font-medium mb-1">ReadOnlyExtensionKit</h4>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText variant="small">
                   For displaying content without editing
-                </p>
+                </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
                 <h4 className="font-medium mb-1">FullEditorKit</h4>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText variant="small">
                   All features including images and menus
-                </p>
+                </AndamioText>
               </div>
             </div>
           </div>

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "~/components/ui/breadcrumb";
+  AndamioBreadcrumb,
+  AndamioBreadcrumbItem,
+  AndamioBreadcrumbLink,
+  AndamioBreadcrumbList,
+  AndamioBreadcrumbPage,
+  AndamioBreadcrumbSeparator,
+} from "~/components/andamio";
 
 /**
  * Breadcrumb navigation for course pages (public and studio views)
@@ -78,121 +78,121 @@ export function CourseBreadcrumb({
   currentPage = "course",
 }: CourseBreadcrumbProps) {
   const basePath = mode === "studio" ? "/studio/course" : "/course";
-  const coursesLabel = mode === "studio" ? "Course Studio" : "Courses";
-  const coursesPath = mode === "studio" ? "/studio/course" : "/courses";
+  const coursesLabel = mode === "studio" ? "Course Studio" : "Course Catalog";
+  const coursesPath = mode === "studio" ? "/studio/course" : "/course";
 
   return (
-    <Breadcrumb className="mb-4">
-      <BreadcrumbList>
+    <AndamioBreadcrumb className="mb-4">
+      <AndamioBreadcrumbList>
         {/* Courses / Course Studio link */}
-        <BreadcrumbItem>
+        <AndamioBreadcrumbItem>
           {currentPage === "courses" ? (
-            <BreadcrumbPage>{coursesLabel}</BreadcrumbPage>
+            <AndamioBreadcrumbPage>{coursesLabel}</AndamioBreadcrumbPage>
           ) : (
-            <BreadcrumbLink asChild>
+            <AndamioBreadcrumbLink asChild>
               <Link href={coursesPath}>{coursesLabel}</Link>
-            </BreadcrumbLink>
+            </AndamioBreadcrumbLink>
           )}
-        </BreadcrumbItem>
+        </AndamioBreadcrumbItem>
 
         {/* Course link (if course is provided) */}
         {course && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
               {currentPage === "course" ? (
-                <BreadcrumbPage className="max-w-[200px] truncate">
+                <AndamioBreadcrumbPage className="max-w-[200px] truncate">
                   {truncate(course.title, 40)}
-                </BreadcrumbPage>
+                </AndamioBreadcrumbPage>
               ) : (
-                <BreadcrumbLink asChild>
+                <AndamioBreadcrumbLink asChild>
                   <Link
                     href={`${basePath}/${course.nftPolicyId}`}
                     className="max-w-[200px] truncate inline-block"
                   >
                     {truncate(course.title, 40)}
                   </Link>
-                </BreadcrumbLink>
+                </AndamioBreadcrumbLink>
               )}
-            </BreadcrumbItem>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* Module link (if module is provided) */}
         {course && courseModule && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
               {currentPage === "module" ? (
-                <BreadcrumbPage className="max-w-[200px] truncate">
+                <AndamioBreadcrumbPage className="max-w-[200px] truncate">
                   {truncate(courseModule.title, 30)}
-                </BreadcrumbPage>
+                </AndamioBreadcrumbPage>
               ) : (
-                <BreadcrumbLink asChild>
+                <AndamioBreadcrumbLink asChild>
                   <Link
                     href={`${basePath}/${course.nftPolicyId}/${courseModule.code}`}
                     className="max-w-[200px] truncate inline-block"
                   >
                     {truncate(courseModule.title, 30)}
                   </Link>
-                </BreadcrumbLink>
+                </AndamioBreadcrumbLink>
               )}
-            </BreadcrumbItem>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* Lesson (current page indicator) */}
         {course && courseModule && lesson && currentPage === "lesson" && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage className="max-w-[200px] truncate">
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
+              <AndamioBreadcrumbPage className="max-w-[200px] truncate">
                 {lesson.title ? truncate(lesson.title, 30) : `Lesson ${lesson.index}`}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
+              </AndamioBreadcrumbPage>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* Assignment (current page indicator) */}
         {course && courseModule && currentPage === "assignment" && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Assignment</BreadcrumbPage>
-            </BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
+              <AndamioBreadcrumbPage>Assignment</AndamioBreadcrumbPage>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* Introduction (current page indicator - studio only) */}
         {course && courseModule && currentPage === "introduction" && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Introduction</BreadcrumbPage>
-            </BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
+              <AndamioBreadcrumbPage>Introduction</AndamioBreadcrumbPage>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* SLTs (current page indicator - studio only) */}
         {course && courseModule && currentPage === "slts" && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Learning Targets</BreadcrumbPage>
-            </BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
+              <AndamioBreadcrumbPage>Learning Targets</AndamioBreadcrumbPage>
+            </AndamioBreadcrumbItem>
           </>
         )}
 
         {/* Instructor Dashboard (current page indicator - studio only) */}
         {course && currentPage === "instructor" && (
           <>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Instructor</BreadcrumbPage>
-            </BreadcrumbItem>
+            <AndamioBreadcrumbSeparator />
+            <AndamioBreadcrumbItem>
+              <AndamioBreadcrumbPage>Instructor</AndamioBreadcrumbPage>
+            </AndamioBreadcrumbItem>
           </>
         )}
-      </BreadcrumbList>
-    </Breadcrumb>
+      </AndamioBreadcrumbList>
+    </AndamioBreadcrumb>
   );
 }

@@ -23,6 +23,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Users, Plus, Minus, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -153,9 +154,9 @@ export function TeachersUpdate({
         {/* Current Teachers */}
         {currentTeachers.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
               Current Teachers
-            </p>
+            </AndamioText>
             <div className="flex flex-wrap gap-2">
               {currentTeachers.map((teacher) => (
                 <AndamioBadge key={teacher} variant="secondary" className="text-xs font-mono">
@@ -201,18 +202,18 @@ export function TeachersUpdate({
             onChange={(e) => setTeacherInput(e.target.value)}
             disabled={state !== "idle" && state !== "error"}
           />
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             Enter access token aliases, separated by commas
-          </p>
+          </AndamioText>
         </div>
 
         {/* Warning for remove */}
         {action === "remove" && (
           <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-            <p className="text-xs text-warning-foreground">
+            <AndamioText variant="small" className="text-xs text-warning-foreground">
               Removing teachers will revoke their ability to manage modules and assess assignments.
-            </p>
+            </AndamioText>
           </div>
         )}
 

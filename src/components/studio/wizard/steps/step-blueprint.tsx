@@ -11,6 +11,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
@@ -183,7 +184,7 @@ export function StepBlueprint({ config, direction }: StepBlueprintProps) {
             <h3 className="text-lg font-semibold">
               One Module = One Verifiable Credential
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <AndamioText variant="small" className="leading-relaxed">
               Each module you create becomes a{" "}
               <span className="font-medium text-foreground">
                 blockchain-verified credential
@@ -191,7 +192,7 @@ export function StepBlueprint({ config, direction }: StepBlueprintProps) {
               that learners can earn and prove. The credential&apos;s value comes from
               its <span className="font-medium text-foreground">Student Learning Targets (SLTs)</span> —
               the specific skills and knowledge learners will demonstrate.
-            </p>
+            </AndamioText>
             <div className="flex items-center gap-2 text-sm">
               <Target className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">
@@ -217,9 +218,9 @@ export function StepBlueprint({ config, direction }: StepBlueprintProps) {
               maxLength={200}
               className="text-lg"
             />
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Choose a title that captures what learners will achieve
-            </p>
+            </AndamioText>
           </div>
 
           <div className="space-y-2">

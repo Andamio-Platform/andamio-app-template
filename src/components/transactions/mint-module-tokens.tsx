@@ -23,6 +23,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Coins, Hash, BookOpen, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -183,9 +184,9 @@ export function MintModuleTokens({
         {/* Modules to Mint */}
         {hasModules && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
               Modules to Mint ({courseModules.length})
-            </p>
+            </AndamioText>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {moduleHashes.map(({ moduleCode, hash, sltCount }) => (
                 <div
@@ -216,10 +217,10 @@ export function MintModuleTokens({
           <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
             <div className="text-xs">
-              <p className="font-medium text-warning-foreground">Some modules have no SLTs</p>
-              <p className="text-muted-foreground">
+              <AndamioText variant="small" className="font-medium text-warning-foreground">Some modules have no SLTs</AndamioText>
+              <AndamioText variant="small">
                 {modulesWithoutSlts.map((m) => m.module_code).join(", ")} need Student Learning Targets before minting.
-              </p>
+              </AndamioText>
             </div>
           </div>
         )}
@@ -228,11 +229,11 @@ export function MintModuleTokens({
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Hash className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium">Tamper-Evident Design</p>
+            <AndamioText className="font-medium">Tamper-Evident Design</AndamioText>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             Token names are hashes of SLT content, cryptographically proving the learning outcomes.
-          </p>
+          </AndamioText>
         </div>
 
         {/* Transaction Status */}
@@ -266,9 +267,9 @@ export function MintModuleTokens({
 
         {/* Requirement check */}
         {!hasAccessToken && (
-          <p className="text-xs text-muted-foreground text-center">
+          <AndamioText variant="small" className="text-xs text-center">
             You need an access token to mint module tokens.
-          </p>
+          </AndamioText>
         )}
       </AndamioCardContent>
     </AndamioCard>

@@ -5,6 +5,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useOwnedCourses } from "~/hooks/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { CourseModuleCount, CourseManageButton } from "./course-ui";
@@ -23,9 +24,9 @@ export function OwnedCoursesList() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center border rounded-md">
-        <p className="text-sm text-muted-foreground">
+        <AndamioText variant="small">
           Connect and authenticate to view your courses
-        </p>
+        </AndamioText>
       </div>
     );
   }
@@ -57,9 +58,9 @@ export function OwnedCoursesList() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
         <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-sm text-muted-foreground">
+        <AndamioText variant="small">
           No courses found. Create your first course to get started.
-        </p>
+        </AndamioText>
       </div>
     );
   }

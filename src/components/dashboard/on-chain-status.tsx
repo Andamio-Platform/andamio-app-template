@@ -9,6 +9,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   Database,
   BookOpen,
@@ -54,12 +55,12 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
               <Database className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">
+            <AndamioText variant="small" className="font-medium">
               Mint Access Token
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mt-1 max-w-[200px]">
               Mint your access token to view your on-chain learning data
-            </p>
+            </AndamioText>
           </div>
         </AndamioCardContent>
       </AndamioCard>
@@ -79,9 +80,9 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-6">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mt-2">
+            <AndamioText variant="small" className="mt-2">
               Loading blockchain data...
-            </p>
+            </AndamioText>
           </div>
         </AndamioCardContent>
       </AndamioCard>
@@ -108,12 +109,12 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-3">
               <AlertCircle className="h-6 w-6 text-destructive" />
             </div>
-            <p className="text-sm font-medium text-destructive">
+            <AndamioText variant="small" className="font-medium text-destructive">
               Failed to load data
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mt-1 max-w-[200px]">
               {error.message}
-            </p>
+            </AndamioText>
           </div>
         </AndamioCardContent>
       </AndamioCard>
@@ -152,19 +153,19 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
           <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
             <BookOpen className="h-4 w-4 text-info" />
             <div>
-              <p className="text-lg font-semibold">{enrolledCourses.length}</p>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText className="text-lg font-semibold">{enrolledCourses.length}</AndamioText>
+              <AndamioText variant="small" className="text-xs">
                 {enrolledCourses.length === 1 ? "Course" : "Courses"}
-              </p>
+              </AndamioText>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
             <Award className="h-4 w-4 text-warning" />
             <div>
-              <p className="text-lg font-semibold">{totalCredentials}</p>
-              <p className="text-xs text-muted-foreground">
+              <AndamioText className="text-lg font-semibold">{totalCredentials}</AndamioText>
+              <AndamioText variant="small" className="text-xs">
                 {totalCredentials === 1 ? "Credential" : "Credentials"}
-              </p>
+              </AndamioText>
             </div>
           </div>
         </div>
@@ -172,9 +173,9 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         {/* Enrolled Courses List */}
         {enrolledCourses.length > 0 ? (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <AndamioText variant="overline">
               Active Enrollments
-            </p>
+            </AndamioText>
             <div className="space-y-1.5">
               {enrolledCourses.slice(0, 3).map((course) => (
                 <Link
@@ -200,17 +201,17 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
                 </Link>
               ))}
               {enrolledCourses.length > 3 && (
-                <p className="text-xs text-muted-foreground text-center pt-1">
+                <AndamioText variant="small" className="text-xs text-center pt-1">
                   +{enrolledCourses.length - 3} more courses
-                </p>
+                </AndamioText>
               )}
             </div>
           </div>
         ) : (
           <div className="text-center py-3">
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               No course enrollments yet
-            </p>
+            </AndamioText>
             <Link
               href="/course"
               className="text-xs text-primary hover:underline mt-1 inline-block"
@@ -224,9 +225,9 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         {totalCredentials > 0 && (
           <div className="pt-2 border-t">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 {totalCredentials} credential{totalCredentials !== 1 ? "s" : ""} earned on-chain
-              </p>
+              </AndamioText>
               <AndamioBadge variant="outline" className="text-xs text-success">
                 <CheckCircle2 className="mr-1 h-3 w-3" />
                 Verified

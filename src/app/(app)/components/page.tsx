@@ -1,25 +1,70 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useCopyFeedback } from "~/hooks/use-success-notification";
+import { toast } from "sonner";
+
+// Layout Components
 import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
+import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
+import { AndamioNotFoundCard } from "~/components/andamio/andamio-not-found-card";
+import { AndamioStatCard } from "~/components/andamio/andamio-stat-card";
+import { AndamioPageLoading } from "~/components/andamio/andamio-page-loading";
+
+// Core Components
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle, AndamioCardFooter } from "~/components/andamio/andamio-card";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioProgress } from "~/components/andamio/andamio-progress";
+
+// Form Components
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { RadioGroup as AndamioRadioGroup, RadioGroupItem as AndamioRadioGroupItem } from "~/components/andamio/andamio-radio-group";
 import { AndamioSelect, AndamioSelectContent, AndamioSelectItem, AndamioSelectTrigger, AndamioSelectValue } from "~/components/andamio/andamio-select";
-import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import { AndamioProgress } from "~/components/andamio/andamio-progress";
+import { AndamioSlider } from "~/components/andamio/andamio-slider";
+
+// Navigation & Overlay Components
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
+import { AndamioDialog, AndamioDialogContent, AndamioDialogDescription, AndamioDialogHeader, AndamioDialogTitle, AndamioDialogTrigger, AndamioDialogFooter } from "~/components/andamio/andamio-dialog";
+import { AndamioSheet, AndamioSheetContent, AndamioSheetDescription, AndamioSheetHeader, AndamioSheetTitle, AndamioSheetTrigger, AndamioSheetFooter } from "~/components/andamio/andamio-sheet";
+import { AndamioDrawer, AndamioDrawerContent, AndamioDrawerDescription, AndamioDrawerHeader, AndamioDrawerTitle, AndamioDrawerTrigger, AndamioDrawerFooter } from "~/components/andamio/andamio-drawer";
+import { AndamioPopover, AndamioPopoverContent, AndamioPopoverTrigger } from "~/components/andamio/andamio-popover";
 import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipProvider, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
-import { AndamioDialog, AndamioDialogContent, AndamioDialogDescription, AndamioDialogHeader, AndamioDialogTitle, AndamioDialogTrigger } from "~/components/andamio/andamio-dialog";
+import { AndamioHoverCard, AndamioHoverCardContent, AndamioHoverCardTrigger } from "~/components/andamio/andamio-hover-card";
+import { AndamioDropdownMenu, AndamioDropdownMenuContent, AndamioDropdownMenuItem, AndamioDropdownMenuLabel, AndamioDropdownMenuSeparator, AndamioDropdownMenuTrigger } from "~/components/andamio/andamio-dropdown-menu";
+import { AndamioContextMenu, AndamioContextMenuContent, AndamioContextMenuItem, AndamioContextMenuTrigger } from "~/components/andamio/andamio-context-menu";
+
+// Data Display Components
+import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
+import { AndamioAccordion, AndamioAccordionContent, AndamioAccordionItem, AndamioAccordionTrigger } from "~/components/andamio/andamio-accordion";
+import { AndamioAvatar, AndamioAvatarFallback, AndamioAvatarImage } from "~/components/andamio/andamio-avatar";
+import { AndamioBreadcrumb, AndamioBreadcrumbItem, AndamioBreadcrumbLink, AndamioBreadcrumbList, AndamioBreadcrumbPage, AndamioBreadcrumbSeparator } from "~/components/andamio/andamio-breadcrumb";
+import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
+import { AndamioCollapsible, AndamioCollapsibleContent, AndamioCollapsibleTrigger } from "~/components/andamio/andamio-collapsible";
+
+// Toggle & Action Components
+import { AndamioToggle } from "~/components/andamio/andamio-toggle";
+import { AndamioToggleGroup, AndamioToggleGroupItem } from "~/components/andamio/andamio-toggle-group";
+
+// Confirmation Components
+import { AndamioAlertDialog, AndamioAlertDialogAction, AndamioAlertDialogCancel, AndamioAlertDialogContent, AndamioAlertDialogDescription, AndamioAlertDialogFooter, AndamioAlertDialogHeader, AndamioAlertDialogTitle, AndamioAlertDialogTrigger } from "~/components/andamio/andamio-alert-dialog";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
+
+// Pagination
+import { AndamioPagination, AndamioPaginationContent, AndamioPaginationItem, AndamioPaginationLink, AndamioPaginationNext, AndamioPaginationPrevious, AndamioPaginationEllipsis } from "~/components/andamio/andamio-pagination";
+
+// Resizable
+import { AndamioResizablePanelGroup, AndamioResizablePanel, AndamioResizableHandle } from "~/components/andamio/andamio-resizable";
+
+// Icons
 import {
   Palette,
   CheckCircle2,
@@ -34,10 +79,50 @@ import {
   Smartphone,
   Plus,
   Blocks,
+  ChevronDown,
+  ChevronRight,
+  User,
+  Settings,
+  LogOut,
+  MoreHorizontal,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Menu,
+  Search,
+  Bell,
+  Mail,
+  Calendar,
+  CreditCard,
+  Users,
+  BookOpen,
+  GripVertical,
+  FileText,
+  FolderOpen,
+  Trash2,
+  Edit,
+  Eye,
+  Download,
+  Share,
+  Heart,
+  MessageSquare,
+  Star,
+  Clock,
+  MapPin,
+  Phone,
+  Globe,
+  Link as LinkIcon,
 } from "lucide-react";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 export default function ComponentsPage() {
   const [progress, setProgress] = useState(60);
+  const [sliderValue, setSliderValue] = useState([50]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLoading, setShowLoading] = useState(false);
   const { isCopied, copy } = useCopyFeedback();
 
   const CodeBlock = ({ code }: { code: string }) => (
@@ -65,18 +150,64 @@ export default function ComponentsPage() {
       {/* Header */}
       <div className="py-8">
         <AndamioPageHeader
-          title="Component Showcase"
-          description="Explore the 45+ shadcn/ui components available in this template"
+          title="Andamio Component Showcase"
+          description="Complete reference for all 55+ Andamio UI components with placeholder data"
           centered
         />
       </div>
+
+      {/* Table of Contents */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Quick Navigation</AndamioCardTitle>
+          <AndamioCardDescription>Jump to any component section</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+            {[
+              "Semantic Colors",
+              "Layout Components",
+              "Buttons",
+              "Badges",
+              "Cards",
+              "Alerts",
+              "Form Components",
+              "Progress & Loading",
+              "Tabs",
+              "Accordions",
+              "Dialogs & Sheets",
+              "Dropdowns & Menus",
+              "Tooltips & Popovers",
+              "Tables",
+              "Avatars",
+              "Breadcrumbs",
+              "Pagination",
+              "Toggles",
+              "Sliders",
+              "Scroll Areas",
+              "Collapsibles",
+              "Resizable Panels",
+              "State Components",
+              "Confirmation Dialogs",
+            ].map((item) => (
+              <Link
+                key={item}
+                href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
+                className="text-primary hover:underline"
+              >
+                {item}
+              </Link>
+            ))}
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Responsive Testing Tip */}
       <AndamioAlert>
         <Monitor className="h-4 w-4" />
         <AndamioAlertTitle>Responsive Testing</AndamioAlertTitle>
         <AndamioAlertDescription>
-          <span className="hidden xs:inline">Resize your browser window or use DevTools to see how these components adapt. </span>
+          <span className="hidden xs:inline">Resize your browser window to see responsive behavior. </span>
           <span className="font-medium">Current breakpoint: </span>
           <span className="xs:hidden">mobile (&lt;375px)</span>
           <span className="hidden xs:inline sm:hidden">xs (375px+)</span>
@@ -88,442 +219,438 @@ export default function ComponentsPage() {
         </AndamioAlertDescription>
       </AndamioAlert>
 
-      {/* Responsive Layout Components */}
-      <AndamioCard className="border-2 border-primary/30">
-        <AndamioCardHeader className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Layout className="h-5 w-5 text-primary" />
-            <AndamioCardTitle>Responsive Layout Components</AndamioCardTitle>
-          </div>
-          <AndamioCardDescription className="text-base">
-            Andamio layout components that automatically adapt to different screen sizes. Resize your browser to see them in action.
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-10">
-          {/* AndamioPageHeader Examples */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">AndamioPageHeader</h3>
-            <p className="text-sm text-muted-foreground">
-              Page titles with optional description, badge, and action. Actions stack below on mobile.
-            </p>
+      {/* ============================================= */}
+      {/* TYPOGRAPHY */}
+      {/* ============================================= */}
+      <div id="typography">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Blocks className="h-5 w-5 text-primary" />
+              <AndamioCardTitle>Typography Scale</AndamioCardTitle>
+            </div>
+            <AndamioCardDescription className="text-base">
+              Global heading styles defined in <code className="text-xs">src/styles/globals.css</code>.
+              Never add custom size/margin/padding to headings—only color classes are allowed.
+            </AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-8">
+            {/* Heading Examples */}
+            <div className="space-y-6 border rounded-lg p-6 bg-background">
+              <div className="border-b pb-4">
+                <h1>Heading 1 — Hero Title</h1>
+                <code className="text-xs text-muted-foreground">&lt;h1&gt; — Page titles, hero sections</code>
+              </div>
+              <div className="border-b pb-4">
+                <h2>Heading 2 — Section Title</h2>
+                <code className="text-xs text-muted-foreground">&lt;h2&gt; — Major sections</code>
+              </div>
+              <div className="border-b pb-4">
+                <h3>Heading 3 — Subsection Title</h3>
+                <code className="text-xs text-muted-foreground">&lt;h3&gt; — Subsections, card headers</code>
+              </div>
+              <div className="border-b pb-4">
+                <h4>Heading 4 — Helper Label</h4>
+                <code className="text-xs text-muted-foreground">&lt;h4&gt; — Labels, minor headers</code>
+              </div>
+              <div className="border-b pb-4">
+                <h5>Heading 5 — Small Label</h5>
+                <code className="text-xs text-muted-foreground">&lt;h5&gt; — Small labels</code>
+              </div>
+              <div>
+                <h6>Heading 6 — Overline</h6>
+                <code className="text-xs text-muted-foreground">&lt;h6&gt; — Overlines, categories</code>
+              </div>
+            </div>
 
-            <div className="space-y-6 border-l-2 border-primary/20 pl-4">
-              {/* Basic */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">Basic</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioPageHeader
-                    title="Page Title"
-                    description="A short description of what this page does"
-                  />
+            {/* Color Variants */}
+            <div>
+              <h4>Color Variants (allowed)</h4>
+              <div className="grid sm:grid-cols-2 gap-4 mt-3">
+                <div className="p-4 border rounded-lg">
+                  <h3>Default Foreground</h3>
+                  <code className="text-xs text-muted-foreground">&lt;h3&gt;...&lt;/h3&gt;</code>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h3 className="text-muted-foreground">Muted Foreground</h3>
+                  <code className="text-xs text-muted-foreground">&lt;h3 className=&quot;text-muted-foreground&quot;&gt;</code>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h3 className="text-primary">Primary Color</h3>
+                  <code className="text-xs text-muted-foreground">&lt;h3 className=&quot;text-primary&quot;&gt;</code>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h3 className="text-destructive">Destructive Color</h3>
+                  <code className="text-xs text-muted-foreground">&lt;h3 className=&quot;text-destructive&quot;&gt;</code>
                 </div>
               </div>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-              {/* With Action */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">With Action Button</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioPageHeader
-                    title="Courses"
-                    description="Manage your course content"
-                    action={
-                      <AndamioButton>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Course
-                      </AndamioButton>
-                    }
-                  />
+      {/* ============================================= */}
+      {/* SEMANTIC COLORS */}
+      {/* ============================================= */}
+      <div id="semantic-colors">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-primary" />
+              <AndamioCardTitle>Semantic Color System</AndamioCardTitle>
+            </div>
+            <AndamioCardDescription className="text-base">
+              All colors defined in <code className="text-xs">src/styles/globals.css</code>. Customize these to theme your app.
+            </AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-8">
+            {/* Base Colors */}
+            <div>
+              <h3>Base Colors</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-background border flex items-center justify-center">
+                    <span className="text-foreground text-sm font-medium">Background</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-background / text-foreground</code>
                 </div>
-              </div>
-
-              {/* With Badge */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">With Badge</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioPageHeader
-                    title="Module Details"
-                    badge={<AndamioBadge variant="default">Published</AndamioBadge>}
-                  />
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-card border flex items-center justify-center">
+                    <span className="text-card-foreground text-sm font-medium">Card</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-card / text-card-foreground</code>
                 </div>
-              </div>
-
-              {/* Centered */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">Centered (Landing Pages)</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioPageHeader
-                    title="Welcome to Andamio"
-                    description="Connect your wallet to start your learning journey"
-                    centered
-                  />
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-popover border flex items-center justify-center">
+                    <span className="text-popover-foreground text-sm font-medium">Popover</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-popover / text-popover-foreground</code>
                 </div>
               </div>
             </div>
 
-            <CodeBlock
-              code={`import { AndamioPageHeader } from "~/components/andamio";
+            <AndamioSeparator />
 
-// Basic
-<AndamioPageHeader
-  title="Page Title"
-  description="Description text"
-/>
-
-// With action (stacks on mobile)
-<AndamioPageHeader
-  title="Courses"
-  action={<Button>Create</Button>}
-/>
-
-// Centered (for landing/auth pages)
-<AndamioPageHeader
-  title="Welcome"
-  description="Get started"
-  centered
-/>`}
-            />
-          </div>
-
-          <AndamioSeparator />
-
-          {/* AndamioSectionHeader Examples */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">AndamioSectionHeader</h3>
-            <p className="text-sm text-muted-foreground">
-              Section headers (h2/h3) with optional icon, badge, description, and action.
-            </p>
-
-            <div className="space-y-6 border-l-2 border-primary/20 pl-4">
-              {/* Basic */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">Basic</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioSectionHeader title="Student Learning Targets" />
+            {/* Interactive Colors */}
+            <div>
+              <h3>Interactive Colors</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-primary flex items-center justify-center">
+                    <span className="text-primary-foreground text-sm font-medium">Primary</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-primary</code>
                 </div>
-              </div>
-
-              {/* With Icon and Badge */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">With Icon and Badge</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioSectionHeader
-                    title="On-Chain Status"
-                    icon={<Blocks className="h-5 w-5 text-success" />}
-                    badge={<AndamioBadge variant="outline" className="text-success border-success">Verified</AndamioBadge>}
-                  />
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-secondary flex items-center justify-center">
+                    <span className="text-secondary-foreground text-sm font-medium">Secondary</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-secondary</code>
                 </div>
-              </div>
-
-              {/* With Action */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">With Action Button</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioSectionHeader
-                    title="Available Tasks"
-                    action={
-                      <AndamioButton size="sm" variant="outline">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Task
-                      </AndamioButton>
-                    }
-                  />
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-muted flex items-center justify-center">
+                    <span className="text-muted-foreground text-sm font-medium">Muted</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-muted</code>
                 </div>
-              </div>
-
-              {/* With Description */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase">With Description</p>
-                <div className="bg-muted/30 p-4 rounded-md">
-                  <AndamioSectionHeader
-                    title="Module Assignment"
-                    description="Complete this assignment to demonstrate your understanding of the learning targets."
-                  />
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-accent flex items-center justify-center">
+                    <span className="text-accent-foreground text-sm font-medium">Accent</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-accent</code>
                 </div>
               </div>
             </div>
 
-            <CodeBlock
-              code={`import { AndamioSectionHeader } from "~/components/andamio";
+            <AndamioSeparator />
 
-// Basic
-<AndamioSectionHeader title="Section Title" />
-
-// With icon and badge
-<AndamioSectionHeader
-  title="On-Chain Status"
-  icon={<Blocks className="h-5 w-5" />}
-  badge={<Badge>Verified</Badge>}
-/>
-
-// With action (stacks on mobile)
-<AndamioSectionHeader
-  title="Tasks"
-  action={<Button size="sm">Add</Button>}
-/>`}
-            />
-          </div>
-
-          <AndamioSeparator />
-
-          {/* AndamioTableContainer Example */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">AndamioTableContainer</h3>
-            <p className="text-sm text-muted-foreground">
-              Responsive table wrapper with horizontal scrolling on mobile. Try making your browser narrower to see the scroll behavior.
-            </p>
-
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                <Smartphone className="h-3 w-3 inline mr-1" />
-                Scrollable Table (resize to test)
-              </p>
-              <AndamioTableContainer>
-                <AndamioTable>
-                  <AndamioTableHeader>
-                    <AndamioTableRow>
-                      <AndamioTableHead>Title</AndamioTableHead>
-                      <AndamioTableHead>Status</AndamioTableHead>
-                      <AndamioTableHead className="hidden sm:table-cell">Category</AndamioTableHead>
-                      <AndamioTableHead className="hidden md:table-cell">Description</AndamioTableHead>
-                      <AndamioTableHead className="hidden lg:table-cell">Created</AndamioTableHead>
-                      <AndamioTableHead>Actions</AndamioTableHead>
-                    </AndamioTableRow>
-                  </AndamioTableHeader>
-                  <AndamioTableBody>
-                    {[
-                      { title: "Introduction to Cardano", status: "Published", category: "Blockchain", desc: "Learn the basics of Cardano", date: "Dec 1, 2024" },
-                      { title: "Smart Contracts 101", status: "Draft", category: "Development", desc: "Build your first Plutus contract", date: "Dec 5, 2024" },
-                      { title: "Governance Fundamentals", status: "Published", category: "Community", desc: "Understand CIP voting process", date: "Dec 8, 2024" },
-                    ].map((item, i) => (
-                      <AndamioTableRow key={i}>
-                        <AndamioTableCell className="font-medium">{item.title}</AndamioTableCell>
-                        <AndamioTableCell>
-                          <AndamioBadge variant={item.status === "Published" ? "default" : "secondary"}>
-                            {item.status}
-                          </AndamioBadge>
-                        </AndamioTableCell>
-                        <AndamioTableCell className="hidden sm:table-cell">{item.category}</AndamioTableCell>
-                        <AndamioTableCell className="hidden md:table-cell max-w-xs truncate">{item.desc}</AndamioTableCell>
-                        <AndamioTableCell className="hidden lg:table-cell text-muted-foreground">{item.date}</AndamioTableCell>
-                        <AndamioTableCell>
-                          <AndamioButton variant="ghost" size="sm">Edit</AndamioButton>
-                        </AndamioTableCell>
-                      </AndamioTableRow>
-                    ))}
-                  </AndamioTableBody>
-                </AndamioTable>
-              </AndamioTableContainer>
-              <p className="text-xs text-muted-foreground">
-                Notice: &quot;Category&quot; hidden below sm, &quot;Description&quot; hidden below md, &quot;Created&quot; hidden below lg
-              </p>
-            </div>
-
-            <CodeBlock
-              code={`import { AndamioTableContainer } from "~/components/andamio";
-import { AndamioTable, ... } from "~/components/andamio/andamio-table";
-
-<AndamioTableContainer>
-  <AndamioTable>
-    <AndamioTableHeader>
-      <AndamioTableRow>
-        <AndamioTableHead>Title</AndamioTableHead>
-        {/* Hide on mobile */}
-        <AndamioTableHead className="hidden sm:table-cell">
-          Category
-        </AndamioTableHead>
-      </AndamioTableRow>
-    </AndamioTableHeader>
-    <AndamioTableBody>...</AndamioTableBody>
-  </AndamioTable>
-</AndamioTableContainer>`}
-            />
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Responsive Patterns */}
-      <AndamioCard className="border-2 border-primary/30">
-        <AndamioCardHeader className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5 text-primary" />
-            <AndamioCardTitle>Responsive Patterns</AndamioCardTitle>
-          </div>
-          <AndamioCardDescription className="text-base">
-            Common patterns for building responsive layouts. Resize to see them adapt.
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          {/* Flex Stacking */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Flex Stacking</h3>
-            <p className="text-sm text-muted-foreground">
-              Elements stack vertically on mobile, horizontal on larger screens.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 bg-primary/10 p-4 rounded-md text-center">
-                <p className="text-sm font-medium">Item 1</p>
-                <p className="text-xs text-muted-foreground">Stacks on mobile</p>
-              </div>
-              <div className="flex-1 bg-primary/10 p-4 rounded-md text-center">
-                <p className="text-sm font-medium">Item 2</p>
-                <p className="text-xs text-muted-foreground">Side-by-side on sm+</p>
-              </div>
-              <div className="flex-1 bg-primary/10 p-4 rounded-md text-center">
-                <p className="text-sm font-medium">Item 3</p>
-                <p className="text-xs text-muted-foreground">Flexible layout</p>
-              </div>
-            </div>
-            <CodeBlock code={`<div className="flex flex-col sm:flex-row gap-4">
-  <div className="flex-1">Item 1</div>
-  <div className="flex-1">Item 2</div>
-</div>`} />
-          </div>
-
-          <AndamioSeparator />
-
-          {/* Grid Columns */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Responsive Grid</h3>
-            <p className="text-sm text-muted-foreground">
-              Grid columns that adapt: 1 on mobile, 2 on sm, 3 on lg.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div key={n} className="bg-muted p-4 rounded-md text-center">
-                  <p className="font-medium">Card {n}</p>
-                </div>
-              ))}
-            </div>
-            <CodeBlock code={`<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-  {items.map(item => <Card key={item.id} />)}
-</div>`} />
-          </div>
-
-          <AndamioSeparator />
-
-          {/* Text Sizing */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Responsive Text Sizing</h3>
-            <p className="text-sm text-muted-foreground">
-              Text scales up on larger screens for better readability.
-            </p>
-            <div className="space-y-2">
-              <p className="text-2xl sm:text-3xl font-bold">Page Title (text-2xl sm:text-3xl)</p>
-              <p className="text-xl sm:text-2xl font-semibold">Section Title (text-xl sm:text-2xl)</p>
-              <p className="text-sm sm:text-base">Body text (text-sm sm:text-base)</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">Helper text (text-xs sm:text-sm)</p>
-            </div>
-            <CodeBlock code={`<h1 className="text-2xl sm:text-3xl font-bold">Title</h1>
-<p className="text-sm sm:text-base">Body text</p>
-<span className="text-xs sm:text-sm text-muted-foreground">Helper</span>`} />
-          </div>
-
-          <AndamioSeparator />
-
-          {/* Hide/Show Elements */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Conditional Visibility</h3>
-            <p className="text-sm text-muted-foreground">
-              Show or hide elements at different breakpoints.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <AndamioBadge className="sm:hidden">Mobile only</AndamioBadge>
-              <AndamioBadge className="hidden sm:inline-flex md:hidden">sm only</AndamioBadge>
-              <AndamioBadge className="hidden md:inline-flex lg:hidden">md only</AndamioBadge>
-              <AndamioBadge className="hidden lg:inline-flex">lg+ only</AndamioBadge>
-              <AndamioBadge variant="outline" className="hidden sm:inline-flex">Hidden on mobile</AndamioBadge>
-            </div>
-            <CodeBlock code={`{/* Only visible on mobile */}
-<div className="sm:hidden">Mobile content</div>
-
-{/* Hidden on mobile, visible on larger screens */}
-<div className="hidden sm:block">Desktop content</div>
-
-{/* Table cell hidden on mobile */}
-<TableCell className="hidden md:table-cell">...</TableCell>`} />
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Semantic Colors Section */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-primary" />
-            <AndamioCardTitle>Semantic Color System</AndamioCardTitle>
-          </div>
-          <AndamioCardDescription className="text-base">
-            Use semantic colors for consistent theming across light and dark modes
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          {/* Status Colors */}
-          <div>
-            <h3 className="font-semibold mb-3">Status Colors</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <div className="h-20 rounded-md bg-success flex items-center justify-center">
-                  <CheckCircle2 className="h-8 w-8 text-success-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Success</p>
+            {/* Status Colors */}
+            <div>
+              <h3>Status Colors</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-success flex items-center justify-center">
+                    <CheckCircle2 className="h-6 w-6 text-success-foreground" />
+                  </div>
+                  <AndamioText variant="small" className="font-medium text-foreground">Success</AndamioText>
                   <code className="text-xs text-muted-foreground">text-success</code>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="h-20 rounded-md bg-warning flex items-center justify-center">
-                  <AlertTriangle className="h-8 w-8 text-warning-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Warning</p>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-warning flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 text-warning-foreground" />
+                  </div>
+                  <AndamioText variant="small" className="font-medium text-foreground">Warning</AndamioText>
                   <code className="text-xs text-muted-foreground">text-warning</code>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="h-20 rounded-md bg-destructive flex items-center justify-center">
-                  <AlertCircle className="h-8 w-8 text-destructive-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Destructive</p>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-destructive flex items-center justify-center">
+                    <AlertCircle className="h-6 w-6 text-destructive-foreground" />
+                  </div>
+                  <AndamioText variant="small" className="font-medium text-foreground">Destructive</AndamioText>
                   <code className="text-xs text-muted-foreground">text-destructive</code>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="h-20 rounded-md bg-info flex items-center justify-center">
-                  <Info className="h-8 w-8 text-info-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Info</p>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-info flex items-center justify-center">
+                    <Info className="h-6 w-6 text-info-foreground" />
+                  </div>
+                  <AndamioText variant="small" className="font-medium text-foreground">Info</AndamioText>
                   <code className="text-xs text-muted-foreground">text-info</code>
                 </div>
               </div>
             </div>
-          </div>
 
-          <CodeBlock
-            code={`// Always use semantic colors
-<CheckCircle className="text-success" />
-<AlertTriangle className="text-warning" />
-<AlertCircle className="text-destructive" />
-<Info className="text-info" />
+            <AndamioSeparator />
 
-// Never use hardcoded colors like text-green-600`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Buttons */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Buttons</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Different button variants and sizes for various use cases
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="space-y-4">
+            {/* Utility Colors */}
             <div>
-              <h3 className="font-semibold mb-3 text-sm">Variants</h3>
+              <h3>Utility Colors</h3>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md border-4 border-border flex items-center justify-center">
+                    <span className="text-sm font-medium">Border</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">border-border</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md border-4 border-input flex items-center justify-center">
+                    <span className="text-sm font-medium">Input</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">border-input</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md ring-4 ring-ring flex items-center justify-center">
+                    <span className="text-sm font-medium">Ring</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">ring-ring</code>
+                </div>
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* Chart Colors */}
+            <div>
+              <h3>Chart Colors</h3>
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <div key={n} className="space-y-2">
+                    <div className={`h-12 rounded-md bg-chart-${n}`} />
+                    <code className="text-xs text-muted-foreground block text-center">chart-{n}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* Sidebar Colors */}
+            <div>
+              <h3>Sidebar Colors</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-sidebar border border-sidebar-border flex items-center justify-center">
+                    <span className="text-sidebar-foreground text-sm font-medium">Sidebar</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-sidebar</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-sidebar-primary flex items-center justify-center">
+                    <span className="text-sidebar-primary-foreground text-sm font-medium">Primary</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-sidebar-primary</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md bg-sidebar-accent flex items-center justify-center">
+                    <span className="text-sidebar-accent-foreground text-sm font-medium">Accent</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">bg-sidebar-accent</code>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-md border-4 border-sidebar-border flex items-center justify-center ring-2 ring-sidebar-ring ring-offset-2">
+                    <span className="text-sm font-medium">Border/Ring</span>
+                  </div>
+                  <code className="text-xs text-muted-foreground block">sidebar-border</code>
+                </div>
+              </div>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* LAYOUT COMPONENTS */}
+      {/* ============================================= */}
+      <div id="layout-components">
+        <AndamioCard className="border-2 border-primary/30">
+          <AndamioCardHeader className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Layout className="h-5 w-5 text-primary" />
+              <AndamioCardTitle>Layout Components</AndamioCardTitle>
+            </div>
+            <AndamioCardDescription className="text-base">
+              Responsive layout helpers for consistent page structure
+            </AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-8">
+            {/* AndamioPageHeader */}
+            <div className="space-y-4">
+              <h3>AndamioPageHeader</h3>
+              <div className="space-y-4 border-l-2 border-primary/20 pl-4">
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioPageHeader title="Page Title" description="A description of this page" />
+                </div>
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioPageHeader
+                    title="With Action"
+                    description="Page with action button"
+                    action={<AndamioButton><Plus className="h-4 w-4 mr-2" />Create</AndamioButton>}
+                  />
+                </div>
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioPageHeader
+                    title="With Badge"
+                    badge={<AndamioBadge variant="default">Published</AndamioBadge>}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* AndamioSectionHeader */}
+            <div className="space-y-4">
+              <h3>AndamioSectionHeader</h3>
+              <div className="space-y-4 border-l-2 border-primary/20 pl-4">
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioSectionHeader title="Section Title" />
+                </div>
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioSectionHeader
+                    title="With Icon"
+                    icon={<Blocks className="h-5 w-5 text-primary" />}
+                  />
+                </div>
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <AndamioSectionHeader
+                    title="With Action"
+                    action={<AndamioButton size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Add</AndamioButton>}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* State Components */}
+            <div className="space-y-4">
+              <h3>State Components</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <AndamioText variant="small" className="font-medium">AndamioEmptyState</AndamioText>
+                  <div className="border rounded-md p-4">
+                    <AndamioEmptyState
+                      icon={FolderOpen}
+                      title="No items found"
+                      description="Get started by creating your first item"
+                      action={<AndamioButton size="sm"><Plus className="h-4 w-4 mr-1" />Create</AndamioButton>}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <AndamioText variant="small" className="font-medium">AndamioNotFoundCard</AndamioText>
+                  <div className="border rounded-md p-4">
+                    <AndamioNotFoundCard
+                      title="Page Not Found"
+                      message="The page you're looking for doesn't exist"
+                      action={<AndamioButton variant="outline" size="sm">Go Back</AndamioButton>}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* Stat Cards */}
+            <div className="space-y-4">
+              <h3>AndamioStatCard</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <AndamioStatCard
+                  label="Total Users"
+                  value="1,234"
+                  icon={Users}
+                  iconColor="info"
+                />
+                <AndamioStatCard
+                  label="Revenue"
+                  value="$45,678"
+                  icon={CreditCard}
+                  iconColor="success"
+                />
+                <AndamioStatCard
+                  label="Courses"
+                  value="89"
+                  icon={BookOpen}
+                  iconColor="warning"
+                />
+                <AndamioStatCard
+                  label="Messages"
+                  value="456"
+                  icon={Mail}
+                  iconColor="destructive"
+                />
+              </div>
+            </div>
+
+            <AndamioSeparator />
+
+            {/* Page Loading */}
+            <div className="space-y-4">
+              <h3>AndamioPageLoading</h3>
+              <div className="flex gap-2 mb-4">
+                <AndamioButton size="sm" onClick={() => setShowLoading(!showLoading)}>
+                  {showLoading ? "Hide" : "Show"} Loading States
+                </AndamioButton>
+              </div>
+              {showLoading && (
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <AndamioText variant="small" className="text-xs">variant=&quot;list&quot;</AndamioText>
+                    <div className="border rounded-md p-4 h-48 overflow-hidden">
+                      <AndamioPageLoading variant="list" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <AndamioText variant="small" className="text-xs">variant=&quot;detail&quot;</AndamioText>
+                    <div className="border rounded-md p-4 h-48 overflow-hidden">
+                      <AndamioPageLoading variant="detail" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <AndamioText variant="small" className="text-xs">variant=&quot;content&quot;</AndamioText>
+                    <div className="border rounded-md p-4 h-48 overflow-hidden">
+                      <AndamioPageLoading variant="content" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* BUTTONS */}
+      {/* ============================================= */}
+      <div id="buttons">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Buttons</AndamioCardTitle>
+            <AndamioCardDescription>Different button variants and sizes</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-6">
+            <div>
+              <h3>Variants</h3>
               <div className="flex flex-wrap gap-2">
                 <AndamioButton variant="default">Default</AndamioButton>
                 <AndamioButton variant="secondary">Secondary</AndamioButton>
@@ -535,198 +662,219 @@ import { AndamioTable, ... } from "~/components/andamio/andamio-table";
             </div>
 
             <div>
-              <h3 className="font-semibold mb-3 text-sm">Sizes</h3>
+              <h3>Sizes</h3>
               <div className="flex flex-wrap items-center gap-2">
                 <AndamioButton size="sm">Small</AndamioButton>
                 <AndamioButton size="default">Default</AndamioButton>
                 <AndamioButton size="lg">Large</AndamioButton>
-                <AndamioButton size="icon">
-                  <Sparkles className="h-4 w-4" />
-                </AndamioButton>
+                <AndamioButton size="icon"><Sparkles className="h-4 w-4" /></AndamioButton>
               </div>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-3 text-sm">With Icons</h3>
+              <h3>With Icons</h3>
               <div className="flex flex-wrap gap-2">
-                <AndamioButton>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Left Icon
-                </AndamioButton>
-                <AndamioButton>
-                  Right Icon
-                  <Sparkles className="ml-2 h-4 w-4" />
-                </AndamioButton>
+                <AndamioButton><Plus className="mr-2 h-4 w-4" />Create New</AndamioButton>
+                <AndamioButton variant="outline"><Download className="mr-2 h-4 w-4" />Download</AndamioButton>
+                <AndamioButton variant="secondary">Share<Share className="ml-2 h-4 w-4" /></AndamioButton>
               </div>
             </div>
-          </div>
 
-          <CodeBlock
-            code={`import { AndamioButton } from "~/components/andamio/andamio-button";
-
-<AndamioButton variant="default">Default</AndamioButton>
-<AndamioButton variant="outline" size="lg">
-  <Icon className="mr-2 h-4 w-4" />
-  With Icon
-</AndamioButton>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Badges */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Badges</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Status indicators and labels
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="flex flex-wrap gap-2">
-            <AndamioBadge variant="default">Default</AndamioBadge>
-            <AndamioBadge variant="secondary">Secondary</AndamioBadge>
-            <AndamioBadge variant="destructive">Destructive</AndamioBadge>
-            <AndamioBadge variant="outline">Outline</AndamioBadge>
-          </div>
-
-          <CodeBlock
-            code={`import { AndamioBadge } from "~/components/andamio/andamio-badge";
-
-<AndamioBadge variant="default">Published</AndamioBadge>
-<AndamioBadge variant="outline">Draft</AndamioBadge>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Alerts */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Alerts</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Important messages and notifications
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-6">
-          <AndamioAlert>
-            <Info className="h-4 w-4" />
-            <AndamioAlertTitle>Default Alert</AndamioAlertTitle>
-            <AndamioAlertDescription>
-              This is a default informational alert message.
-            </AndamioAlertDescription>
-          </AndamioAlert>
-
-          <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AndamioAlertTitle>Error Alert</AndamioAlertTitle>
-            <AndamioAlertDescription>
-              This is a destructive alert for errors and critical issues.
-            </AndamioAlertDescription>
-          </AndamioAlert>
-
-          <CodeBlock
-            code={`import { AndamioAlert, AndamioAlertTitle, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
-
-<AndamioAlert variant="destructive">
-  <AlertCircle className="h-4 w-4" />
-  <AndamioAlertTitle>Error</AndamioAlertTitle>
-  <AndamioAlertDescription>Message here</AndamioAlertDescription>
-</AndamioAlert>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Form Components */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Form Components</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Input fields, selects, checkboxes, and more
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="grid gap-6 max-w-md">
-            {/* Input */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="email">Email</AndamioLabel>
-              <AndamioInput id="email" type="email" placeholder="you@example.com" />
+            <div>
+              <h3>States</h3>
+              <div className="flex flex-wrap gap-2">
+                <AndamioButton disabled>Disabled</AndamioButton>
+                <AndamioButton variant="outline" disabled>Disabled Outline</AndamioButton>
+              </div>
             </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-            {/* Select */}
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="select">Select Option</AndamioLabel>
-              <AndamioSelect>
-                <AndamioSelectTrigger id="select">
-                  <AndamioSelectValue placeholder="Choose an option" />
-                </AndamioSelectTrigger>
-                <AndamioSelectContent>
-                  <AndamioSelectItem value="option1">Option 1</AndamioSelectItem>
-                  <AndamioSelectItem value="option2">Option 2</AndamioSelectItem>
-                  <AndamioSelectItem value="option3">Option 3</AndamioSelectItem>
-                </AndamioSelectContent>
-              </AndamioSelect>
+      {/* ============================================= */}
+      {/* BADGES */}
+      {/* ============================================= */}
+      <div id="badges">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Badges</AndamioCardTitle>
+            <AndamioCardDescription>Status indicators and labels</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <AndamioBadge variant="default">Default</AndamioBadge>
+              <AndamioBadge variant="secondary">Secondary</AndamioBadge>
+              <AndamioBadge variant="destructive">Destructive</AndamioBadge>
+              <AndamioBadge variant="outline">Outline</AndamioBadge>
             </div>
-
-            {/* Checkbox */}
-            <div className="flex items-center space-x-2">
-              <AndamioCheckbox id="terms" />
-              <AndamioLabel htmlFor="terms" className="cursor-pointer">
-                Accept terms and conditions
-              </AndamioLabel>
+            <div className="flex flex-wrap gap-2">
+              <AndamioBadge variant="default"><CheckCircle2 className="h-3 w-3 mr-1" />Published</AndamioBadge>
+              <AndamioBadge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</AndamioBadge>
+              <AndamioBadge variant="outline"><Star className="h-3 w-3 mr-1" />Featured</AndamioBadge>
             </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-            {/* Switch */}
-            <div className="flex items-center justify-between">
-              <AndamioLabel htmlFor="notifications">Enable notifications</AndamioLabel>
-              <AndamioSwitch id="notifications" />
+      {/* ============================================= */}
+      {/* CARDS */}
+      {/* ============================================= */}
+      <div id="cards">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Cards</AndamioCardTitle>
+            <AndamioCardDescription>Container components for content</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              <AndamioCard>
+                <AndamioCardHeader>
+                  <AndamioCardTitle>Basic Card</AndamioCardTitle>
+                  <AndamioCardDescription>A simple card with header</AndamioCardDescription>
+                </AndamioCardHeader>
+                <AndamioCardContent>
+                  <AndamioText variant="small" className="text-foreground">Card content goes here. This is placeholder text.</AndamioText>
+                </AndamioCardContent>
+              </AndamioCard>
+
+              <AndamioCard>
+                <AndamioCardHeader>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <AndamioCardTitle>With Icon</AndamioCardTitle>
+                  </div>
+                  <AndamioCardDescription>Card with icon in header</AndamioCardDescription>
+                </AndamioCardHeader>
+                <AndamioCardContent>
+                  <AndamioText variant="small" className="text-foreground">More placeholder content for this card.</AndamioText>
+                </AndamioCardContent>
+                <AndamioCardFooter>
+                  <AndamioButton size="sm">Action</AndamioButton>
+                </AndamioCardFooter>
+              </AndamioCard>
             </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-            {/* Radio Group */}
-            <div className="space-y-2">
-              <AndamioLabel>Choose a plan</AndamioLabel>
-              <AndamioRadioGroup defaultValue="free">
-                <div className="flex items-center space-x-2">
-                  <AndamioRadioGroupItem value="free" id="free" />
-                  <AndamioLabel htmlFor="free" className="cursor-pointer">Free</AndamioLabel>
+      {/* ============================================= */}
+      {/* ALERTS */}
+      {/* ============================================= */}
+      <div id="alerts">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Alerts</AndamioCardTitle>
+            <AndamioCardDescription>Important messages and notifications</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-4">
+            <AndamioAlert>
+              <Info className="h-4 w-4" />
+              <AndamioAlertTitle>Information</AndamioAlertTitle>
+              <AndamioAlertDescription>This is an informational alert message.</AndamioAlertDescription>
+            </AndamioAlert>
+
+            <AndamioAlert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AndamioAlertTitle>Error</AndamioAlertTitle>
+              <AndamioAlertDescription>Something went wrong. Please try again.</AndamioAlertDescription>
+            </AndamioAlert>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* FORM COMPONENTS */}
+      {/* ============================================= */}
+      <div id="form-components">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Form Components</AndamioCardTitle>
+            <AndamioCardDescription>Input fields, selects, checkboxes, and more</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                {/* Input */}
+                <div className="space-y-2">
+                  <AndamioLabel htmlFor="demo-input">Text Input</AndamioLabel>
+                  <AndamioInput id="demo-input" placeholder="Enter text..." />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <AndamioRadioGroupItem value="pro" id="pro" />
-                  <AndamioLabel htmlFor="pro" className="cursor-pointer">Pro</AndamioLabel>
+
+                {/* Textarea */}
+                <div className="space-y-2">
+                  <AndamioLabel htmlFor="demo-textarea">Textarea</AndamioLabel>
+                  <AndamioTextarea id="demo-textarea" placeholder="Enter longer text..." />
                 </div>
-              </AndamioRadioGroup>
+
+                {/* Select */}
+                <div className="space-y-2">
+                  <AndamioLabel>Select</AndamioLabel>
+                  <AndamioSelect>
+                    <AndamioSelectTrigger>
+                      <AndamioSelectValue placeholder="Choose option" />
+                    </AndamioSelectTrigger>
+                    <AndamioSelectContent>
+                      <AndamioSelectItem value="option1">Option 1</AndamioSelectItem>
+                      <AndamioSelectItem value="option2">Option 2</AndamioSelectItem>
+                      <AndamioSelectItem value="option3">Option 3</AndamioSelectItem>
+                    </AndamioSelectContent>
+                  </AndamioSelect>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Checkbox */}
+                <div className="flex items-center space-x-2">
+                  <AndamioCheckbox id="demo-checkbox" />
+                  <AndamioLabel htmlFor="demo-checkbox" className="cursor-pointer">
+                    Accept terms and conditions
+                  </AndamioLabel>
+                </div>
+
+                {/* Switch */}
+                <div className="flex items-center justify-between">
+                  <AndamioLabel htmlFor="demo-switch">Enable notifications</AndamioLabel>
+                  <AndamioSwitch id="demo-switch" />
+                </div>
+
+                {/* Radio Group */}
+                <div className="space-y-2">
+                  <AndamioLabel>Choose Plan</AndamioLabel>
+                  <AndamioRadioGroup defaultValue="free">
+                    <div className="flex items-center space-x-2">
+                      <AndamioRadioGroupItem value="free" id="free" />
+                      <AndamioLabel htmlFor="free" className="cursor-pointer">Free</AndamioLabel>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <AndamioRadioGroupItem value="pro" id="pro" />
+                      <AndamioLabel htmlFor="pro" className="cursor-pointer">Pro ($10/mo)</AndamioLabel>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <AndamioRadioGroupItem value="enterprise" id="enterprise" />
+                      <AndamioLabel htmlFor="enterprise" className="cursor-pointer">Enterprise</AndamioLabel>
+                    </div>
+                  </AndamioRadioGroup>
+                </div>
+              </div>
             </div>
-          </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-          <CodeBlock
-            code={`import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioSelect, ... } from "~/components/andamio/andamio-select";
-
-<div className="space-y-2">
-  <AndamioLabel htmlFor="email">Email</AndamioLabel>
-  <AndamioInput id="email" type="email" />
-</div>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Progress & Loading */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Progress & Loading States</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Show progress and loading indicators
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="space-y-4">
+      {/* ============================================= */}
+      {/* PROGRESS & LOADING */}
+      {/* ============================================= */}
+      <div id="progress-loading">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Progress & Loading</AndamioCardTitle>
+            <AndamioCardDescription>Progress bars and skeleton loaders</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Progress: {progress}%</span>
-                <AndamioButton
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setProgress((p) => (p >= 100 ? 0 : p + 10))}
-                >
+                <AndamioButton size="sm" variant="outline" onClick={() => setProgress((p) => (p >= 100 ? 0 : p + 10))}>
                   +10%
                 </AndamioButton>
               </div>
@@ -736,189 +884,710 @@ import { AndamioSelect, ... } from "~/components/andamio/andamio-select";
             <AndamioSeparator />
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Skeleton Loaders</h3>
+              <h3>Skeleton Loaders</h3>
               <div className="space-y-2">
                 <AndamioSkeleton className="h-4 w-full" />
                 <AndamioSkeleton className="h-4 w-3/4" />
                 <AndamioSkeleton className="h-4 w-1/2" />
               </div>
             </div>
-          </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-          <CodeBlock
-            code={`import { AndamioProgress } from "~/components/andamio/andamio-progress";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+      {/* ============================================= */}
+      {/* TABS */}
+      {/* ============================================= */}
+      <div id="tabs">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Tabs</AndamioCardTitle>
+            <AndamioCardDescription>Tabbed content navigation</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioTabs defaultValue="overview">
+              <AndamioTabsList>
+                <AndamioTabsTrigger value="overview">Overview</AndamioTabsTrigger>
+                <AndamioTabsTrigger value="analytics">Analytics</AndamioTabsTrigger>
+                <AndamioTabsTrigger value="settings">Settings</AndamioTabsTrigger>
+              </AndamioTabsList>
+              <AndamioTabsContent value="overview" className="p-4 border rounded-md mt-2">
+                <AndamioText variant="small" className="text-foreground">This is the overview tab content with general information.</AndamioText>
+              </AndamioTabsContent>
+              <AndamioTabsContent value="analytics" className="p-4 border rounded-md mt-2">
+                <AndamioText variant="small" className="text-foreground">Analytics data and charts would go here.</AndamioText>
+              </AndamioTabsContent>
+              <AndamioTabsContent value="settings" className="p-4 border rounded-md mt-2">
+                <AndamioText variant="small" className="text-foreground">Settings and configuration options here.</AndamioText>
+              </AndamioTabsContent>
+            </AndamioTabs>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-<AndamioProgress value={60} />
-<AndamioSkeleton className="h-4 w-full" />`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
+      {/* ============================================= */}
+      {/* ACCORDIONS */}
+      {/* ============================================= */}
+      <div id="accordions">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Accordions</AndamioCardTitle>
+            <AndamioCardDescription>Collapsible content sections</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioAccordion type="single" collapsible className="w-full">
+              <AndamioAccordionItem value="item-1">
+                <AndamioAccordionTrigger>What is Andamio?</AndamioAccordionTrigger>
+                <AndamioAccordionContent>
+                  Andamio is a platform for contribution-centered learning on Cardano. It enables creators to build courses and projects that reward participants.
+                </AndamioAccordionContent>
+              </AndamioAccordionItem>
+              <AndamioAccordionItem value="item-2">
+                <AndamioAccordionTrigger>How do I get started?</AndamioAccordionTrigger>
+                <AndamioAccordionContent>
+                  Connect your Cardano wallet, browse available courses or projects, and start your learning journey. You can also create your own content in the Studio.
+                </AndamioAccordionContent>
+              </AndamioAccordionItem>
+              <AndamioAccordionItem value="item-3">
+                <AndamioAccordionTrigger>What blockchain is used?</AndamioAccordionTrigger>
+                <AndamioAccordionContent>
+                  Andamio runs on Cardano. This demo uses the Preprod testnet, so all transactions are free and for testing purposes only.
+                </AndamioAccordionContent>
+              </AndamioAccordionItem>
+            </AndamioAccordion>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-      {/* Tabs */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Tabs</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Organize content with tabbed navigation
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <AndamioTabs defaultValue="overview">
-            <AndamioTabsList>
-              <AndamioTabsTrigger value="overview">Overview</AndamioTabsTrigger>
-              <AndamioTabsTrigger value="details">Details</AndamioTabsTrigger>
-              <AndamioTabsTrigger value="settings">Settings</AndamioTabsTrigger>
-            </AndamioTabsList>
-            <AndamioTabsContent value="overview" className="space-y-2">
-              <p className="text-sm">This is the overview tab content.</p>
-            </AndamioTabsContent>
-            <AndamioTabsContent value="details" className="space-y-2">
-              <p className="text-sm">This is the details tab content.</p>
-            </AndamioTabsContent>
-            <AndamioTabsContent value="settings" className="space-y-2">
-              <p className="text-sm">This is the settings tab content.</p>
-            </AndamioTabsContent>
-          </AndamioTabs>
+      {/* ============================================= */}
+      {/* DIALOGS & SHEETS */}
+      {/* ============================================= */}
+      <div id="dialogs-sheets">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Dialogs & Sheets</AndamioCardTitle>
+            <AndamioCardDescription>Modal overlays and side panels</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-4">
+              {/* Dialog */}
+              <AndamioDialog>
+                <AndamioDialogTrigger asChild>
+                  <AndamioButton>Open Dialog</AndamioButton>
+                </AndamioDialogTrigger>
+                <AndamioDialogContent>
+                  <AndamioDialogHeader>
+                    <AndamioDialogTitle>Dialog Title</AndamioDialogTitle>
+                    <AndamioDialogDescription>
+                      This is a modal dialog. It captures focus and blocks interaction with the page behind it.
+                    </AndamioDialogDescription>
+                  </AndamioDialogHeader>
+                  <div className="py-4">
+                    <AndamioText variant="small" className="text-foreground">Dialog content goes here. You can add forms, images, or any content.</AndamioText>
+                  </div>
+                  <AndamioDialogFooter>
+                    <AndamioButton variant="outline">Cancel</AndamioButton>
+                    <AndamioButton>Save</AndamioButton>
+                  </AndamioDialogFooter>
+                </AndamioDialogContent>
+              </AndamioDialog>
 
-          <CodeBlock
-            code={`import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
+              {/* Sheet (Right) */}
+              <AndamioSheet>
+                <AndamioSheetTrigger asChild>
+                  <AndamioButton variant="outline">Open Sheet (Right)</AndamioButton>
+                </AndamioSheetTrigger>
+                <AndamioSheetContent>
+                  <AndamioSheetHeader>
+                    <AndamioSheetTitle>Sheet Title</AndamioSheetTitle>
+                    <AndamioSheetDescription>
+                      Sheets slide in from the edge of the screen.
+                    </AndamioSheetDescription>
+                  </AndamioSheetHeader>
+                  <div className="py-4">
+                    <AndamioText variant="small" className="text-foreground">Sheet content goes here. Great for forms, settings, or navigation.</AndamioText>
+                  </div>
+                  <AndamioSheetFooter>
+                    <AndamioButton>Save Changes</AndamioButton>
+                  </AndamioSheetFooter>
+                </AndamioSheetContent>
+              </AndamioSheet>
 
-<AndamioTabs defaultValue="overview">
-  <AndamioTabsList>
-    <AndamioTabsTrigger value="overview">Overview</AndamioTabsTrigger>
-  </AndamioTabsList>
-  <AndamioTabsContent value="overview">Content</AndamioTabsContent>
-</AndamioTabs>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
+              {/* Drawer (Bottom) */}
+              <AndamioDrawer>
+                <AndamioDrawerTrigger asChild>
+                  <AndamioButton variant="outline">Open Drawer (Bottom)</AndamioButton>
+                </AndamioDrawerTrigger>
+                <AndamioDrawerContent>
+                  <AndamioDrawerHeader>
+                    <AndamioDrawerTitle>Drawer Title</AndamioDrawerTitle>
+                    <AndamioDrawerDescription>
+                      Drawers slide up from the bottom, great for mobile.
+                    </AndamioDrawerDescription>
+                  </AndamioDrawerHeader>
+                  <div className="p-4">
+                    <AndamioText variant="small" className="text-foreground">Drawer content here. Perfect for mobile-friendly interactions.</AndamioText>
+                  </div>
+                  <AndamioDrawerFooter>
+                    <AndamioButton>Confirm</AndamioButton>
+                  </AndamioDrawerFooter>
+                </AndamioDrawerContent>
+              </AndamioDrawer>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-      {/* Dialog & Tooltip */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Dialog & Tooltip</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Modal dialogs and hover tooltips
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="flex flex-wrap gap-4">
-            <AndamioDialog>
-              <AndamioDialogTrigger asChild>
-                <AndamioButton>Open Dialog</AndamioButton>
-              </AndamioDialogTrigger>
-              <AndamioDialogContent>
-                <AndamioDialogHeader>
-                  <AndamioDialogTitle>Dialog Title</AndamioDialogTitle>
-                  <AndamioDialogDescription>
-                    This is a modal dialog with customizable content.
-                  </AndamioDialogDescription>
-                </AndamioDialogHeader>
-                <div className="py-4">
-                  <p className="text-sm">Your dialog content goes here.</p>
+      {/* ============================================= */}
+      {/* DROPDOWNS & MENUS */}
+      {/* ============================================= */}
+      <div id="dropdowns-menus">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Dropdowns & Menus</AndamioCardTitle>
+            <AndamioCardDescription>Dropdown menus and context menus</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-4">
+              {/* Dropdown Menu */}
+              <AndamioDropdownMenu>
+                <AndamioDropdownMenuTrigger asChild>
+                  <AndamioButton variant="outline">
+                    <MoreHorizontal className="h-4 w-4 mr-2" />
+                    Dropdown Menu
+                  </AndamioButton>
+                </AndamioDropdownMenuTrigger>
+                <AndamioDropdownMenuContent>
+                  <AndamioDropdownMenuLabel>My Account</AndamioDropdownMenuLabel>
+                  <AndamioDropdownMenuSeparator />
+                  <AndamioDropdownMenuItem>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </AndamioDropdownMenuItem>
+                  <AndamioDropdownMenuItem>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </AndamioDropdownMenuItem>
+                  <AndamioDropdownMenuSeparator />
+                  <AndamioDropdownMenuItem className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Log out
+                  </AndamioDropdownMenuItem>
+                </AndamioDropdownMenuContent>
+              </AndamioDropdownMenu>
+
+              {/* Context Menu */}
+              <AndamioContextMenu>
+                <AndamioContextMenuTrigger className="flex h-24 w-48 items-center justify-center rounded-md border border-dashed text-sm">
+                  Right click here
+                </AndamioContextMenuTrigger>
+                <AndamioContextMenuContent>
+                  <AndamioContextMenuItem>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </AndamioContextMenuItem>
+                  <AndamioContextMenuItem>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </AndamioContextMenuItem>
+                  <AndamioContextMenuItem>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </AndamioContextMenuItem>
+                  <AndamioContextMenuItem className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </AndamioContextMenuItem>
+                </AndamioContextMenuContent>
+              </AndamioContextMenu>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* TOOLTIPS & POPOVERS */}
+      {/* ============================================= */}
+      <div id="tooltips-popovers">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Tooltips & Popovers</AndamioCardTitle>
+            <AndamioCardDescription>Hover and click-triggered overlays</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-4">
+              {/* Tooltip */}
+              <AndamioTooltipProvider>
+                <AndamioTooltip>
+                  <AndamioTooltipTrigger asChild>
+                    <AndamioButton variant="outline">Hover for Tooltip</AndamioButton>
+                  </AndamioTooltipTrigger>
+                  <AndamioTooltipContent>
+                    <p>This is a helpful tooltip!</p>
+                  </AndamioTooltipContent>
+                </AndamioTooltip>
+              </AndamioTooltipProvider>
+
+              {/* Popover */}
+              <AndamioPopover>
+                <AndamioPopoverTrigger asChild>
+                  <AndamioButton variant="outline">Click for Popover</AndamioButton>
+                </AndamioPopoverTrigger>
+                <AndamioPopoverContent className="w-80">
+                  <div className="space-y-2">
+                    <h4>Popover Title</h4>
+                    <AndamioText variant="small">
+                      Popovers can contain more complex content like forms or detailed information.
+                    </AndamioText>
+                  </div>
+                </AndamioPopoverContent>
+              </AndamioPopover>
+
+              {/* Hover Card */}
+              <AndamioHoverCard>
+                <AndamioHoverCardTrigger asChild>
+                  <AndamioButton variant="link">@andamio</AndamioButton>
+                </AndamioHoverCardTrigger>
+                <AndamioHoverCardContent className="w-80">
+                  <div className="flex gap-4">
+                    <AndamioAvatar>
+                      <AndamioAvatarImage src="https://github.com/andamio.png" />
+                      <AndamioAvatarFallback>AN</AndamioAvatarFallback>
+                    </AndamioAvatar>
+                    <div className="space-y-1">
+                      <h4>@andamio</h4>
+                      <AndamioText variant="small">
+                        Contribution-centered learning on Cardano
+                      </AndamioText>
+                      <div className="flex items-center pt-2">
+                        <Calendar className="mr-2 h-4 w-4 opacity-70" />
+                        <span className="text-xs text-muted-foreground">Joined 2021</span>
+                      </div>
+                    </div>
+                  </div>
+                </AndamioHoverCardContent>
+              </AndamioHoverCard>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* TABLES */}
+      {/* ============================================= */}
+      <div id="tables">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Tables</AndamioCardTitle>
+            <AndamioCardDescription>Data tables with responsive container</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioTableContainer>
+              <AndamioTable>
+                <AndamioTableHeader>
+                  <AndamioTableRow>
+                    <AndamioTableHead>Name</AndamioTableHead>
+                    <AndamioTableHead>Status</AndamioTableHead>
+                    <AndamioTableHead className="hidden sm:table-cell">Email</AndamioTableHead>
+                    <AndamioTableHead className="hidden md:table-cell">Role</AndamioTableHead>
+                    <AndamioTableHead>Actions</AndamioTableHead>
+                  </AndamioTableRow>
+                </AndamioTableHeader>
+                <AndamioTableBody>
+                  {[
+                    { name: "John Doe", status: "Active", email: "john@example.com", role: "Admin" },
+                    { name: "Jane Smith", status: "Pending", email: "jane@example.com", role: "Editor" },
+                    { name: "Bob Wilson", status: "Active", email: "bob@example.com", role: "Viewer" },
+                  ].map((user) => (
+                    <AndamioTableRow key={user.name}>
+                      <AndamioTableCell className="font-medium">{user.name}</AndamioTableCell>
+                      <AndamioTableCell>
+                        <AndamioBadge variant={user.status === "Active" ? "default" : "secondary"}>
+                          {user.status}
+                        </AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="hidden sm:table-cell">{user.email}</AndamioTableCell>
+                      <AndamioTableCell className="hidden md:table-cell">{user.role}</AndamioTableCell>
+                      <AndamioTableCell>
+                        <AndamioButton variant="ghost" size="sm">Edit</AndamioButton>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  ))}
+                </AndamioTableBody>
+              </AndamioTable>
+            </AndamioTableContainer>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* AVATARS */}
+      {/* ============================================= */}
+      <div id="avatars">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Avatars</AndamioCardTitle>
+            <AndamioCardDescription>User profile images with fallbacks</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-4 items-center">
+              <AndamioAvatar>
+                <AndamioAvatarImage src="https://github.com/shadcn.png" alt="User" />
+                <AndamioAvatarFallback>CN</AndamioAvatarFallback>
+              </AndamioAvatar>
+              <AndamioAvatar>
+                <AndamioAvatarImage src="https://github.com/andamio.png" alt="Andamio" />
+                <AndamioAvatarFallback>AN</AndamioAvatarFallback>
+              </AndamioAvatar>
+              <AndamioAvatar>
+                <AndamioAvatarFallback>JD</AndamioAvatarFallback>
+              </AndamioAvatar>
+              <AndamioAvatar>
+                <AndamioAvatarFallback className="bg-primary text-primary-foreground">AB</AndamioAvatarFallback>
+              </AndamioAvatar>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* BREADCRUMBS */}
+      {/* ============================================= */}
+      <div id="breadcrumbs">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Breadcrumbs</AndamioCardTitle>
+            <AndamioCardDescription>Navigation path indicators</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioBreadcrumb>
+              <AndamioBreadcrumbList>
+                <AndamioBreadcrumbItem>
+                  <AndamioBreadcrumbLink href="/">Home</AndamioBreadcrumbLink>
+                </AndamioBreadcrumbItem>
+                <AndamioBreadcrumbSeparator />
+                <AndamioBreadcrumbItem>
+                  <AndamioBreadcrumbLink href="/course">Courses</AndamioBreadcrumbLink>
+                </AndamioBreadcrumbItem>
+                <AndamioBreadcrumbSeparator />
+                <AndamioBreadcrumbItem>
+                  <AndamioBreadcrumbLink href="/course/intro">Introduction</AndamioBreadcrumbLink>
+                </AndamioBreadcrumbItem>
+                <AndamioBreadcrumbSeparator />
+                <AndamioBreadcrumbItem>
+                  <AndamioBreadcrumbPage>Module 1</AndamioBreadcrumbPage>
+                </AndamioBreadcrumbItem>
+              </AndamioBreadcrumbList>
+            </AndamioBreadcrumb>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* PAGINATION */}
+      {/* ============================================= */}
+      <div id="pagination">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Pagination</AndamioCardTitle>
+            <AndamioCardDescription>Page navigation controls</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioPagination>
+              <AndamioPaginationContent>
+                <AndamioPaginationItem>
+                  <AndamioPaginationPrevious href="#" />
+                </AndamioPaginationItem>
+                <AndamioPaginationItem>
+                  <AndamioPaginationLink href="#">1</AndamioPaginationLink>
+                </AndamioPaginationItem>
+                <AndamioPaginationItem>
+                  <AndamioPaginationLink href="#" isActive>2</AndamioPaginationLink>
+                </AndamioPaginationItem>
+                <AndamioPaginationItem>
+                  <AndamioPaginationLink href="#">3</AndamioPaginationLink>
+                </AndamioPaginationItem>
+                <AndamioPaginationItem>
+                  <AndamioPaginationEllipsis />
+                </AndamioPaginationItem>
+                <AndamioPaginationItem>
+                  <AndamioPaginationNext href="#" />
+                </AndamioPaginationItem>
+              </AndamioPaginationContent>
+            </AndamioPagination>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* TOGGLES */}
+      {/* ============================================= */}
+      <div id="toggles">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Toggles</AndamioCardTitle>
+            <AndamioCardDescription>Toggle buttons and groups</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-6">
+            <div className="space-y-2">
+              <h3>Single Toggle</h3>
+              <div className="flex gap-2">
+                <AndamioToggle aria-label="Toggle bold">
+                  <Bold className="h-4 w-4" />
+                </AndamioToggle>
+                <AndamioToggle aria-label="Toggle italic">
+                  <Italic className="h-4 w-4" />
+                </AndamioToggle>
+                <AndamioToggle aria-label="Toggle underline">
+                  <Underline className="h-4 w-4" />
+                </AndamioToggle>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3>Toggle Group (Single)</h3>
+              <AndamioToggleGroup type="single" defaultValue="left">
+                <AndamioToggleGroupItem value="left" aria-label="Align left">
+                  <AlignLeft className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+                <AndamioToggleGroupItem value="center" aria-label="Align center">
+                  <AlignCenter className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+                <AndamioToggleGroupItem value="right" aria-label="Align right">
+                  <AlignRight className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+              </AndamioToggleGroup>
+            </div>
+
+            <div className="space-y-2">
+              <h3>Toggle Group (Multiple)</h3>
+              <AndamioToggleGroup type="multiple">
+                <AndamioToggleGroupItem value="bold" aria-label="Toggle bold">
+                  <Bold className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+                <AndamioToggleGroupItem value="italic" aria-label="Toggle italic">
+                  <Italic className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+                <AndamioToggleGroupItem value="underline" aria-label="Toggle underline">
+                  <Underline className="h-4 w-4" />
+                </AndamioToggleGroupItem>
+              </AndamioToggleGroup>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* SLIDERS */}
+      {/* ============================================= */}
+      <div id="sliders">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Sliders</AndamioCardTitle>
+            <AndamioCardDescription>Range input controls</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Value</span>
+                <span className="text-muted-foreground">{sliderValue[0]}</span>
+              </div>
+              <AndamioSlider
+                value={sliderValue}
+                onValueChange={setSliderValue}
+                max={100}
+                step={1}
+              />
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* SCROLL AREAS */}
+      {/* ============================================= */}
+      <div id="scroll-areas">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Scroll Areas</AndamioCardTitle>
+            <AndamioCardDescription>Custom scrollable containers</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioScrollArea className="h-48 w-full rounded-md border p-4">
+              <div className="space-y-4">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 text-sm">
+                    <span className="font-medium">Item {i + 1}</span>
+                    <span className="text-muted-foreground">Description for item {i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </AndamioScrollArea>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* COLLAPSIBLES */}
+      {/* ============================================= */}
+      <div id="collapsibles">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Collapsibles</AndamioCardTitle>
+            <AndamioCardDescription>Expand/collapse content sections</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioCollapsible open={isCollapsed} onOpenChange={setIsCollapsed}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">@johndoe starred 3 repositories</span>
+                <AndamioCollapsibleTrigger asChild>
+                  <AndamioButton variant="ghost" size="sm">
+                    {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <span className="sr-only">Toggle</span>
+                  </AndamioButton>
+                </AndamioCollapsibleTrigger>
+              </div>
+              <div className="rounded-md border px-4 py-2 font-mono text-sm shadow-sm mt-2">
+                @andamio/platform
+              </div>
+              <AndamioCollapsibleContent className="space-y-2 mt-2">
+                <div className="rounded-md border px-4 py-2 font-mono text-sm shadow-sm">
+                  @andamio/db-api
                 </div>
-              </AndamioDialogContent>
-            </AndamioDialog>
-
-            <AndamioTooltipProvider>
-              <AndamioTooltip>
-                <AndamioTooltipTrigger asChild>
-                  <AndamioButton variant="outline">Hover for Tooltip</AndamioButton>
-                </AndamioTooltipTrigger>
-                <AndamioTooltipContent>
-                  <p>This is a helpful tooltip!</p>
-                </AndamioTooltipContent>
-              </AndamioTooltip>
-            </AndamioTooltipProvider>
-          </div>
-
-          <CodeBlock
-            code={`import { AndamioDialog, AndamioDialogContent, AndamioDialogTrigger, ... } from "~/components/andamio/andamio-dialog";
-import { AndamioTooltip, AndamioTooltipProvider, ... } from "~/components/andamio/andamio-tooltip";
-
-<AndamioDialog>
-  <AndamioDialogTrigger asChild>
-    <AndamioButton>Open</AndamioButton>
-  </AndamioDialogTrigger>
-  <AndamioDialogContent>Content here</AndamioDialogContent>
-</AndamioDialog>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Cards */}
-      <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
-          <AndamioCardTitle>Cards</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Container components for grouping content
-          </AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-8">
-          <div className="grid md:grid-cols-2 gap-4">
-            <AndamioCard>
-              <AndamioCardHeader>
-                <AndamioCardTitle>Simple Card</AndamioCardTitle>
-                <AndamioCardDescription>
-                  A basic card with header and content
-                </AndamioCardDescription>
-              </AndamioCardHeader>
-              <AndamioCardContent>
-                <p className="text-sm">Card content goes here.</p>
-              </AndamioCardContent>
-            </AndamioCard>
-
-            <AndamioCard className="border-2 border-primary/50">
-              <AndamioCardHeader>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <AndamioCardTitle>Styled Card</AndamioCardTitle>
+                <div className="rounded-md border px-4 py-2 font-mono text-sm shadow-sm">
+                  @andamio/mesh-sdk
                 </div>
-                <AndamioCardDescription>
-                  With custom border and icon
-                </AndamioCardDescription>
-              </AndamioCardHeader>
-              <AndamioCardContent>
-                <p className="text-sm">Enhanced card styling.</p>
-              </AndamioCardContent>
-            </AndamioCard>
-          </div>
+              </AndamioCollapsibleContent>
+            </AndamioCollapsible>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-          <CodeBlock
-            code={`import { AndamioCard, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription, AndamioCardContent } from "~/components/andamio/andamio-card";
+      {/* ============================================= */}
+      {/* RESIZABLE PANELS */}
+      {/* ============================================= */}
+      <div id="resizable-panels">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Resizable Panels</AndamioCardTitle>
+            <AndamioCardDescription>Drag to resize panel sections</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioResizablePanelGroup direction="horizontal" className="min-h-[200px] max-w-md rounded-lg border">
+              <AndamioResizablePanel defaultSize={50}>
+                <div className="flex h-full items-center justify-center p-6">
+                  <span className="font-semibold">Panel One</span>
+                </div>
+              </AndamioResizablePanel>
+              <AndamioResizableHandle withHandle />
+              <AndamioResizablePanel defaultSize={50}>
+                <div className="flex h-full items-center justify-center p-6">
+                  <span className="font-semibold">Panel Two</span>
+                </div>
+              </AndamioResizablePanel>
+            </AndamioResizablePanelGroup>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
 
-<AndamioCard>
-  <AndamioCardHeader>
-    <AndamioCardTitle>Title</AndamioCardTitle>
-    <AndamioCardDescription>Description</AndamioCardDescription>
-  </AndamioCardHeader>
-  <AndamioCardContent>Content here</AndamioCardContent>
-</AndamioCard>`}
-          />
-        </AndamioCardContent>
-      </AndamioCard>
+      {/* ============================================= */}
+      {/* CONFIRMATION DIALOGS */}
+      {/* ============================================= */}
+      <div id="confirmation-dialogs">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Confirmation Dialogs</AndamioCardTitle>
+            <AndamioCardDescription>Alert dialogs for destructive actions</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-4">
+              {/* Alert Dialog */}
+              <AndamioAlertDialog>
+                <AndamioAlertDialogTrigger asChild>
+                  <AndamioButton variant="destructive">Delete Account</AndamioButton>
+                </AndamioAlertDialogTrigger>
+                <AndamioAlertDialogContent>
+                  <AndamioAlertDialogHeader>
+                    <AndamioAlertDialogTitle>Are you absolutely sure?</AndamioAlertDialogTitle>
+                    <AndamioAlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                    </AndamioAlertDialogDescription>
+                  </AndamioAlertDialogHeader>
+                  <AndamioAlertDialogFooter>
+                    <AndamioAlertDialogCancel>Cancel</AndamioAlertDialogCancel>
+                    <AndamioAlertDialogAction>Delete</AndamioAlertDialogAction>
+                  </AndamioAlertDialogFooter>
+                </AndamioAlertDialogContent>
+              </AndamioAlertDialog>
 
-      {/* Component List */}
+              {/* Confirm Dialog (Custom) */}
+              <AndamioConfirmDialog
+                trigger={<AndamioButton variant="outline">Confirm Action</AndamioButton>}
+                title="Confirm this action?"
+                description="This action requires confirmation before proceeding."
+                confirmText="Confirm"
+                cancelText="Cancel"
+                onConfirm={() => { toast.success("Action confirmed!"); }}
+              />
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* TOASTS (Sonner) */}
+      {/* ============================================= */}
+      <div id="toasts">
+        <AndamioCard className="border-2">
+          <AndamioCardHeader>
+            <AndamioCardTitle>Toasts (Sonner)</AndamioCardTitle>
+            <AndamioCardDescription>Notification toasts</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <div className="flex flex-wrap gap-2">
+              <AndamioButton variant="outline" onClick={() => toast("Default toast message")}>
+                Default Toast
+              </AndamioButton>
+              <AndamioButton variant="outline" onClick={() => toast.success("Operation completed!")}>
+                Success Toast
+              </AndamioButton>
+              <AndamioButton variant="outline" onClick={() => toast.error("Something went wrong")}>
+                Error Toast
+              </AndamioButton>
+              <AndamioButton variant="outline" onClick={() => toast.warning("Please be careful")}>
+                Warning Toast
+              </AndamioButton>
+              <AndamioButton variant="outline" onClick={() => toast.info("Here is some info")}>
+                Info Toast
+              </AndamioButton>
+            </div>
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+
+      {/* ============================================= */}
+      {/* ALL COMPONENTS LIST */}
+      {/* ============================================= */}
       <AndamioCard className="border-2">
-        <AndamioCardHeader className="space-y-4">
+        <AndamioCardHeader>
           <AndamioCardTitle>All Available Components</AndamioCardTitle>
-          <AndamioCardDescription className="text-base">
-            Complete list of 45+ shadcn/ui components installed in this template
-          </AndamioCardDescription>
+          <AndamioCardDescription>Complete list of 55+ Andamio UI components</AndamioCardDescription>
         </AndamioCardHeader>
-        <AndamioCardContent className="pt-4">
+        <AndamioCardContent>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {[
               "Accordion", "Alert", "Alert Dialog", "Aspect Ratio", "Avatar",
               "Badge", "Breadcrumb", "Button", "Calendar", "Card",
-              "Carousel", "Chart", "Checkbox", "Collapsible", "Command",
-              "Context Menu", "Dialog", "Drawer", "Dropdown Menu", "Form",
-              "Hover Card", "Input", "Input OTP", "Label", "Menubar",
-              "Navigation Menu", "Pagination", "Popover", "Progress", "Radio Group",
-              "Resizable", "Scroll Area", "Select", "Separator", "Sheet",
-              "Skeleton", "Slider", "Sonner", "Switch", "Table",
-              "Tabs", "Textarea", "Toggle", "Toggle Group", "Tooltip",
+              "Carousel", "Chart", "Checkbox", "Code", "Collapsible",
+              "Command", "Confirm Dialog", "Context Menu", "Dialog", "Drawer",
+              "Dropdown Menu", "Empty State", "Form", "Hover Card", "Input",
+              "Input OTP", "Label", "Menubar", "Navigation Menu", "Not Found Card",
+              "Page Header", "Page Loading", "Pagination", "Popover", "Progress",
+              "Radio Group", "Resizable", "Scroll Area", "Section Description",
+              "Section Header", "Select", "Separator", "Sheet", "Skeleton",
+              "Slider", "Sonner", "Stat Card", "States", "Switch",
+              "Table", "Table Container", "Tabs", "Textarea", "Toggle",
+              "Toggle Group", "Tooltip",
             ].map((component) => (
               <AndamioBadge key={component} variant="outline" className="justify-center">
                 {component}

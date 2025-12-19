@@ -1,18 +1,19 @@
 /**
  * Andamio wrapper for shadcn/ui Resizable
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioResizable } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioResizable } from "@andamio/ui";
+ * import { AndamioResizablePanelGroup, AndamioResizablePanel } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
+// Re-export base components (for backwards compatibility)
 export * from "~/components/ui/resizable";
+
+// Re-export with Andamio prefix
+export {
+  ResizableHandle as AndamioResizableHandle,
+  ResizablePanel as AndamioResizablePanel,
+  ResizablePanelGroup as AndamioResizablePanelGroup,
+} from "~/components/ui/resizable";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Resizable component.

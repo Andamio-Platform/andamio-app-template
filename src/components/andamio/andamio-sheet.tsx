@@ -1,18 +1,21 @@
 /**
  * Andamio wrapper for shadcn/ui Sheet
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioSheet } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioSheet } from "@andamio/ui";
+ * import { AndamioSheet, AndamioSheetContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/sheet";
+// Re-export with Andamio prefix
+export {
+  Sheet as AndamioSheet,
+  SheetClose as AndamioSheetClose,
+  SheetContent as AndamioSheetContent,
+  SheetDescription as AndamioSheetDescription,
+  SheetFooter as AndamioSheetFooter,
+  SheetHeader as AndamioSheetHeader,
+  SheetTitle as AndamioSheetTitle,
+  SheetTrigger as AndamioSheetTrigger,
+} from "~/components/ui/sheet";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Sheet component.

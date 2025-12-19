@@ -10,6 +10,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { AlertCircle, BookOpen, CheckCircle, Clock, FileText } from "lucide-react";
 import { type z } from "zod";
 import { type getMyLearningOutputSchema } from "@andamio/db-api";
@@ -140,12 +141,12 @@ export function MyLearning() {
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-sm text-muted-foreground mb-2">
+            <AndamioText variant="small" className="mb-2">
               You haven&apos;t started any courses yet.
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mb-4">
               Browse courses and commit to assignments to see them here.
-            </p>
+            </AndamioText>
             <Link href="/course">
               <AndamioButton>Browse Courses</AndamioButton>
             </Link>
@@ -192,9 +193,9 @@ export function MyLearning() {
                       <h3 className="font-semibold mb-1">{course.title}</h3>
                     </Link>
                     {course.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      <AndamioText variant="small" className="line-clamp-2 mb-2">
                         {course.description}
-                      </p>
+                      </AndamioText>
                     )}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">

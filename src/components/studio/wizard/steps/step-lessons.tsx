@@ -11,6 +11,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
@@ -87,9 +88,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       {/* Progress indicator */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">
+          <AndamioText variant="small">
             {lessonsCreated} of {totalSLTs} lessons created
-          </p>
+          </AndamioText>
         </div>
         <AndamioBadge variant="outline">Optional Step</AndamioBadge>
       </div>
@@ -128,9 +129,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         {/* SLT text */}
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <AndamioText variant="small" className="mb-2">
                           {slt.slt_text}
-                        </p>
+                        </AndamioText>
 
                         {/* Lesson info or create */}
                         {lesson ? (

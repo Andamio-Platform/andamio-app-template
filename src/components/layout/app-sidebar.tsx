@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   LayoutDashboard,
   LogOut,
@@ -81,10 +82,10 @@ const navigationSections: NavSection[] = [
     muted: true,
     items: [
       {
-        name: "Components",
+        name: "Component Library",
         href: "/components",
         icon: Palette,
-        description: "UI showcase",
+        description: "Andamio UI reference",
       },
       {
         name: "Sitemap",
@@ -101,21 +102,21 @@ export function AppSidebar() {
   const { isAuthenticated, user, logout } = useAndamioAuth();
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
+    <div className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand Header */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4 sm:px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground flex-shrink-0">
-          <Layers className="h-4 w-4" />
+      <div className="flex h-12 items-center gap-2.5 border-b border-sidebar-border px-3">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0">
+          <Layers className="h-3.5 w-3.5" />
         </div>
         <Link href="/" className="flex flex-col min-w-0">
-          <span className="text-base font-semibold text-sidebar-foreground truncate">Andamio</span>
-          <span className="text-[10px] text-muted-foreground truncate">App Template</span>
+          <span className="text-sm font-semibold text-sidebar-foreground truncate">Andamio</span>
+          <span className="text-[9px] text-muted-foreground truncate leading-tight">App Template</span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="space-y-6">
+      <nav className="flex-1 overflow-y-auto px-2 py-3">
+        <div className="space-y-4">
           {navigationSections.map((section) => {
             // Hide auth-required sections when not authenticated
             if (section.requiresAuth && !isAuthenticated) {
@@ -123,14 +124,14 @@ export function AppSidebar() {
             }
 
             return (
-              <div key={section.title} className="space-y-1">
+              <div key={section.title} className="space-y-0.5">
                 {/* Section Header */}
                 <h3
                   className={cn(
-                    "px-3 text-[10px] font-semibold uppercase tracking-wider",
+                    "px-2 text-[9px] font-medium uppercase tracking-wider mb-1",
                     section.muted
-                      ? "text-muted-foreground/60"
-                      : "text-muted-foreground"
+                      ? "text-muted-foreground/50"
+                      : "text-muted-foreground/70"
                   )}
                 >
                   {section.title}
@@ -146,38 +147,32 @@ export function AppSidebar() {
                     <Link key={item.href} href={item.href}>
                       <div
                         className={cn(
-                          "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 cursor-pointer select-none",
-                          "active:scale-95",
+                          "group flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors cursor-pointer select-none",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                          section.muted && !isActive && "opacity-70"
+                          section.muted && !isActive && "opacity-60"
                         )}
                       >
                         <Icon
                           className={cn(
-                            "h-4 w-4 flex-shrink-0 transition-colors",
+                            "h-3.5 w-3.5 flex-shrink-0",
                             isActive
                               ? "text-primary"
                               : "text-muted-foreground group-hover:text-sidebar-foreground"
                           )}
                         />
-                        <div className="flex-1 min-w-0">
-                          <span
-                            className={cn(
-                              "block font-medium truncate",
-                              isActive && "text-sidebar-foreground",
-                              section.muted && !isActive && "font-normal"
-                            )}
-                          >
-                            {item.name}
-                          </span>
-                          <span className="hidden sm:block text-[11px] text-muted-foreground truncate">
-                            {item.description}
-                          </span>
-                        </div>
+                        <span
+                          className={cn(
+                            "truncate",
+                            isActive && "font-medium text-sidebar-foreground",
+                            section.muted && !isActive && "font-normal"
+                          )}
+                        >
+                          {item.name}
+                        </span>
                         {isActive && (
-                          <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
+                          <ChevronRight className="h-3 w-3 text-primary flex-shrink-0 ml-auto" />
                         )}
                       </div>
                     </Link>
@@ -190,26 +185,20 @@ export function AppSidebar() {
       </nav>
 
       {/* User Section */}
-      <div className="border-t border-sidebar-border p-3 sm:p-4">
+      <div className="border-t border-sidebar-border p-2">
         {isAuthenticated && user ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Wallet Info */}
-            <div className="rounded-lg bg-sidebar-accent/50 p-3">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
-                Connected Wallet
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-success animate-pulse flex-shrink-0" />
-                <code className="text-xs text-sidebar-foreground truncate break-all">
-                  {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-6)}
+            <div className="rounded-md bg-sidebar-accent/50 p-2">
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
+                <code className="text-[10px] text-sidebar-foreground truncate">
+                  {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
                 </code>
               </div>
               {user.accessTokenAlias && (
-                <div className="mt-2 pt-2 border-t border-sidebar-border">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">
-                    Token
-                  </p>
-                  <AndamioBadge variant="secondary" className="text-xs">
+                <div className="mt-1.5 pt-1.5 border-t border-sidebar-border">
+                  <AndamioBadge variant="secondary" className="text-[10px] h-5">
                     {user.accessTokenAlias}
                   </AndamioBadge>
                 </div>
@@ -221,17 +210,17 @@ export function AppSidebar() {
               variant="ghost"
               size="sm"
               onClick={logout}
-              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-sm"
+              className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-[11px] h-7 px-2"
             >
-              <LogOut className="mr-2 h-4 w-4 flex-shrink-0" />
+              <LogOut className="mr-1.5 h-3 w-3 flex-shrink-0" />
               Disconnect
             </AndamioButton>
           </div>
         ) : (
-          <div className="rounded-lg bg-sidebar-accent/50 p-3 text-center">
-            <p className="text-xs text-muted-foreground">
-              Connect wallet to get started
-            </p>
+          <div className="rounded-md bg-sidebar-accent/50 p-2 text-center">
+            <AndamioText variant="small" className="text-[10px]">
+              Connect wallet to start
+            </AndamioText>
           </div>
         )}
       </div>

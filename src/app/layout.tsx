@@ -3,6 +3,7 @@ import "@meshsdk/react/styles.css";
 
 import { type Metadata, type Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
@@ -33,18 +34,25 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={spaceGrotesk.variable}>
+    <html lang="en" className={spaceGrotesk.variable} suppressHydrationWarning>
       <body className="font-sans">
-        <MeshProvider>
-          <AndamioAuthProvider>
-            <TRPCReactProvider>
-              <PendingTxWatcher>
-                {children}
-              </PendingTxWatcher>
-            </TRPCReactProvider>
-            <Toaster position="top-right" richColors closeButton />
-          </AndamioAuthProvider>
-        </MeshProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <MeshProvider>
+            <AndamioAuthProvider>
+              <TRPCReactProvider>
+                <PendingTxWatcher>
+                  {children}
+                </PendingTxWatcher>
+              </TRPCReactProvider>
+              <Toaster position="top-right" richColors closeButton />
+            </AndamioAuthProvider>
+          </MeshProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

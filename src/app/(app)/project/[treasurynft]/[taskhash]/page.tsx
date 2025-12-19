@@ -8,10 +8,10 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioPageHeader } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
 import { AlertCircle, ArrowLeft, CheckCircle, Clock, Coins, ListChecks, Users } from "lucide-react";
 import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
@@ -122,12 +122,7 @@ export default function TaskDetailPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <AndamioSkeleton className="h-64 w-full" />
-      </div>
-    );
+    return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
@@ -181,42 +176,42 @@ export default function TaskDetailPage() {
         <div className="flex items-center gap-2 p-4 border rounded-lg">
           <Coins className="h-5 w-5 text-muted-foreground" />
           <div>
-            <p className="text-sm text-muted-foreground">Reward</p>
-            <p className="font-semibold">{formatLovelace(task.lovelace)}</p>
+            <AndamioText variant="small">Reward</AndamioText>
+            <AndamioText className="font-semibold">{formatLovelace(task.lovelace)}</AndamioText>
           </div>
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
           <Clock className="h-5 w-5 text-muted-foreground" />
           <div>
-            <p className="text-sm text-muted-foreground">Expires</p>
-            <p className="font-semibold text-sm">{formatTimestamp(task.expiration_time)}</p>
+            <AndamioText variant="small">Expires</AndamioText>
+            <AndamioText className="font-semibold text-sm">{formatTimestamp(task.expiration_time)}</AndamioText>
           </div>
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
           <Users className="h-5 w-5 text-muted-foreground" />
           <div>
-            <p className="text-sm text-muted-foreground">Commitments</p>
-            <p className="font-semibold">
+            <AndamioText variant="small">Commitments</AndamioText>
+            <AndamioText className="font-semibold">
               {task.num_allocated_commitments} / {task.num_allowed_commitments}
-            </p>
+            </AndamioText>
           </div>
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
           <ListChecks className="h-5 w-5 text-muted-foreground" />
           <div>
-            <p className="text-sm text-muted-foreground">Criteria</p>
-            <p className="font-semibold">{task.acceptance_criteria.length} items</p>
+            <AndamioText variant="small">Criteria</AndamioText>
+            <AndamioText className="font-semibold">{task.acceptance_criteria.length} items</AndamioText>
           </div>
         </div>
       </div>
 
       {/* Task Hash */}
       <div className="p-3 bg-muted rounded-lg">
-        <p className="text-xs text-muted-foreground mb-1">Task Hash (On-Chain ID)</p>
-        <p className="font-mono text-sm break-all">{task.task_hash}</p>
+        <AndamioText variant="small" className="text-xs mb-1">Task Hash (On-Chain ID)</AndamioText>
+        <AndamioText className="font-mono text-sm break-all">{task.task_hash}</AndamioText>
       </div>
 
       {/* Task Content */}
@@ -262,11 +257,11 @@ export default function TaskDetailPage() {
               {task.tokens.map((token) => (
                 <div key={token.subject} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <p className="font-medium">
+                    <AndamioText className="font-medium">
                       {token.name ?? token.asset_name_decoded ?? token.asset_name}
-                    </p>
+                    </AndamioText>
                     {token.ticker && (
-                      <p className="text-sm text-muted-foreground">{token.ticker}</p>
+                      <AndamioText variant="small">{token.ticker}</AndamioText>
                     )}
                   </div>
                   <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
@@ -292,7 +287,7 @@ export default function TaskDetailPage() {
         <AndamioCardContent>
           {!isAuthenticated ? (
             <div className="text-center py-6">
-              <p className="text-muted-foreground mb-4">Connect your wallet to commit to this task</p>
+              <AndamioText variant="muted" className="mb-4">Connect your wallet to commit to this task</AndamioText>
             </div>
           ) : commitment ? (
             <div className="space-y-4">
@@ -307,8 +302,8 @@ export default function TaskDetailPage() {
                 <>
                   <AndamioSeparator />
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Pending Transaction</p>
-                    <p className="font-mono text-xs break-all">{commitment.pending_tx_hash}</p>
+                    <AndamioText variant="small" className="mb-1">Pending Transaction</AndamioText>
+                    <AndamioText className="font-mono text-xs break-all">{commitment.pending_tx_hash}</AndamioText>
                   </div>
                 </>
               )}
@@ -317,7 +312,7 @@ export default function TaskDetailPage() {
                 <>
                   <AndamioSeparator />
                   <div>
-                    <p className="text-sm font-medium mb-2">Your Evidence</p>
+                    <AndamioText variant="small" className="font-medium mb-2">Your Evidence</AndamioText>
                     <ContentDisplay
                       content={commitment.evidence as JSONContent}
                       variant="muted"
@@ -328,16 +323,16 @@ export default function TaskDetailPage() {
 
               <AndamioSeparator />
 
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Started: {new Date(commitment.created).toLocaleDateString()}</span>
-                <span>Updated: {new Date(commitment.updated).toLocaleDateString()}</span>
+              <div className="flex justify-between">
+                <AndamioText variant="small">Started: {new Date(commitment.created).toLocaleDateString()}</AndamioText>
+                <AndamioText variant="small">Updated: {new Date(commitment.updated).toLocaleDateString()}</AndamioText>
               </div>
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-muted-foreground mb-4">
+              <AndamioText variant="muted" className="mb-4">
                 You haven&apos;t committed to this task yet
-              </p>
+              </AndamioText>
               <AndamioAlert>
                 <AlertCircle className="h-4 w-4" />
                 <AndamioAlertDescription>

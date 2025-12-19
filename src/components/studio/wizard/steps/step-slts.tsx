@@ -7,6 +7,7 @@ import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
@@ -224,12 +225,12 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       <div className="space-y-8">
         {/* Introduction */}
         <div className="space-y-2">
-          <p className="text-lg text-muted-foreground">
+          <AndamioText variant="lead">
             Define what learners will be able to do after completing this module.
-          </p>
-          <p className="text-sm text-muted-foreground">
+          </AndamioText>
+          <AndamioText variant="small">
             Each learning target becomes a credential that learners can earn.
-          </p>
+          </AndamioText>
         </div>
 
         {/* Input section */}
@@ -277,10 +278,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
           {localSlts.length === 0 ? (
             <div className="py-16 text-center border-2 border-dashed rounded-xl">
-              <p className="text-muted-foreground">No learning targets yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
+              <AndamioText variant="muted">No learning targets yet</AndamioText>
+              <AndamioText variant="small" className="text-muted-foreground/70 mt-1">
                 Add your first &quot;I can...&quot; statement above
-              </p>
+              </AndamioText>
             </div>
           ) : (
             <div className="space-y-2">
@@ -339,13 +340,13 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                     ) : (
                       <>
                         <div className="flex-1 min-w-0 py-1">
-                          <p className={cn(
-                            "text-base leading-relaxed",
+                          <AndamioText className={cn(
+                            "leading-relaxed",
                             isUpdating && "opacity-50"
                           )}>
                             <span className="text-muted-foreground">I can </span>
                             {slt.slt_text}
-                          </p>
+                          </AndamioText>
                         </div>
                         <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                           <Button
@@ -382,7 +383,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         {error && (
           <div className="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <p>{error}</p>
+            <AndamioText variant="small" className="text-destructive">{error}</AndamioText>
           </div>
         )}
       </div>

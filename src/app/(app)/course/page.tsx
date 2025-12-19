@@ -3,11 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { env } from "~/env";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
-import { AlertCircle, BookOpen } from "lucide-react";
+import {
+  AndamioPageHeader,
+  AndamioTableContainer,
+  AndamioPageLoading,
+  AndamioNotFoundCard,
+  AndamioEmptyState,
+} from "~/components/andamio";
+import { BookOpen } from "lucide-react";
 import { type ListPublishedCoursesOutput } from "@andamio/db-api";
 
 /**
@@ -60,37 +64,16 @@ export default function CoursePage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioPageHeader
-          title="Courses"
-          description="Browse all published courses"
-        />
-
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
-        <AndamioPageHeader
-          title="Courses"
-          description="Browse all published courses"
-        />
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
-        </AndamioAlert>
-      </div>
+      <AndamioNotFoundCard
+        title="Courses"
+        message={error}
+      />
     );
   }
 
@@ -102,14 +85,11 @@ export default function CoursePage() {
           title="Courses"
           description="Browse all published courses"
         />
-
-        <AndamioAlert>
-          <BookOpen className="h-4 w-4" />
-          <AndamioAlertTitle>No Published Courses</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            There are currently no published courses available. Check back later or create your own course.
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioEmptyState
+          icon={BookOpen}
+          title="No Published Courses"
+          description="There are currently no published courses available. Check back later or create your own course."
+        />
       </div>
     );
   }

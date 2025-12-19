@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
+import { AndamioText } from "./andamio-text";
 
 interface AndamioPageHeaderProps {
   /**
@@ -69,13 +70,11 @@ export function AndamioPageHeader({
   if (centered) {
     return (
       <div className={cn("text-center max-w-3xl mx-auto space-y-2 sm:space-y-4 px-4 sm:px-0", className)}>
-        <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight">
-          {title}
-        </h1>
+        <h1>{title}</h1>
         {description && (
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
+          <AndamioText variant="lead">
             {description}
-          </p>
+          </AndamioText>
         )}
         {action && (
           <div className="pt-2 sm:pt-4">
@@ -92,15 +91,13 @@ export function AndamioPageHeader({
       <div className={cn("flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4", className)}>
         <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {title}
-            </h1>
+            <h1>{title}</h1>
             {badge}
           </div>
           {description && (
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <AndamioText variant="small">
               {description}
-            </p>
+            </AndamioText>
           )}
         </div>
         <div className="shrink-0">
@@ -114,15 +111,13 @@ export function AndamioPageHeader({
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {title}
-        </h1>
+        <h1>{title}</h1>
         {badge}
       </div>
       {description && (
-        <p className="text-sm sm:text-base text-muted-foreground">
+        <AndamioText variant="small">
           {description}
-        </p>
+        </AndamioText>
       )}
     </div>
   );

@@ -27,6 +27,7 @@ import {
   useProvisioningState,
   type ProvisioningConfig,
 } from "~/components/provisioning";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Plus, Sparkles, BookOpen, ExternalLink, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -252,10 +253,10 @@ export function CreateCourseDialog() {
                       maxLength={200}
                       autoFocus
                     />
-                    <p className="text-sm text-muted-foreground">
+                    <AndamioText variant="small">
                       Don&apos;t worry, you can change this later. The course is
                       created on-chain once the transaction succeeds.
-                    </p>
+                    </AndamioText>
                   </div>
                 )}
 
@@ -274,9 +275,9 @@ export function CreateCourseDialog() {
 
                 {/* Learn More Links */}
                 <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
-                  <p className="text-sm font-medium text-foreground">
+                  <AndamioText variant="small" className="font-medium text-foreground">
                     Want to learn more?
-                  </p>
+                  </AndamioText>
                   <div className="flex flex-wrap gap-3">
                     <a
                       href="https://docs.andamio.io"

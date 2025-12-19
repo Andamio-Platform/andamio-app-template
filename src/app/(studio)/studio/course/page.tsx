@@ -19,22 +19,13 @@ import {
   Plus,
   Search,
   Blocks,
-  CheckCircle,
-  Clock,
-  Settings,
   RefreshCw,
   BookOpen,
+  Clock,
 } from "lucide-react";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
-
-interface HybridCourseStatus {
-  courseId: string;
-  title: string | null;
-  inDb: boolean;
-  onChain: boolean;
-  onChainModuleCount: number;
-  dbCourse?: ListOwnedCoursesOutput[number];
-}
+import { StudioCourseCard, type HybridCourseStatus } from "~/components/studio/studio-course-card";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 /**
  * Studio Course List Page
@@ -164,10 +155,10 @@ export default function StudioCourseListPage() {
       <StudioEditorPane padding="normal">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-lg font-medium">Connect your wallet</p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <AndamioText className="text-lg font-medium">Connect your wallet</AndamioText>
+          <AndamioText variant="small" className="mt-1">
             Sign in to access Course Studio
-          </p>
+          </AndamioText>
         </div>
       </StudioEditorPane>
     );
@@ -229,9 +220,9 @@ export default function StudioCourseListPage() {
             <BookOpen className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-medium">No courses yet</h3>
-          <p className="text-sm text-muted-foreground mt-1 mb-4 max-w-sm">
+          <AndamioText variant="small" className="mt-1 mb-4 max-w-sm">
             Create your first course to start building learning content on Andamio
-          </p>
+          </AndamioText>
           <CreateCourseDialog />
         </div>
       )}
@@ -240,7 +231,7 @@ export default function StudioCourseListPage() {
       {filteredCourses.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filteredCourses.map((course) => (
-            <CourseCard
+            <StudioCourseCard
               key={course.courseId}
               course={course}
               onClick={() => {
@@ -257,73 +248,11 @@ export default function StudioCourseListPage() {
       {!isLoading && hybridCourses.length > 0 && filteredCourses.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="h-8 w-8 text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">
+          <AndamioText variant="small">
             No courses match &quot;{searchQuery}&quot;
-          </p>
+          </AndamioText>
         </div>
       )}
     </StudioEditorPane>
-  );
-}
-
-/**
- * Compact course card for grid layout
- */
-function CourseCard({
-  course,
-  onClick,
-}: {
-  course: HybridCourseStatus;
-  onClick: () => void;
-}) {
-  const truncatedId = `${course.courseId.slice(0, 6)}...${course.courseId.slice(-4)}`;
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={!course.inDb}
-      className="group relative flex flex-col rounded-lg border bg-card p-3 text-left transition-all hover:border-primary/50 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      {/* Status indicator */}
-      <div className="absolute top-2 right-2">
-        {course.inDb && course.onChain ? (
-          <CheckCircle className="h-4 w-4 text-success" />
-        ) : course.inDb ? (
-          <Clock className="h-4 w-4 text-info animate-pulse" />
-        ) : (
-          <Plus className="h-4 w-4 text-warning" />
-        )}
-      </div>
-
-      {/* Title */}
-      <h3 className="font-medium text-sm truncate pr-6">
-        {course.title ?? "Untitled Course"}
-      </h3>
-
-      {/* ID */}
-      <code className="text-[10px] text-muted-foreground font-mono mt-0.5">
-        {truncatedId}
-      </code>
-
-      {/* Stats row */}
-      <div className="flex items-center gap-2 mt-2">
-        {course.onChain && course.onChainModuleCount > 0 && (
-          <AndamioBadge variant="secondary" className="text-[10px] h-5">
-            <Blocks className="h-2.5 w-2.5 mr-0.5" />
-            {course.onChainModuleCount} modules
-          </AndamioBadge>
-        )}
-      </div>
-
-      {/* Hover action hint */}
-      {course.inDb && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-          <div className="flex items-center gap-1 text-xs font-medium text-primary">
-            <Settings className="h-3.5 w-3.5" />
-            Open
-          </div>
-        </div>
-      )}
-    </button>
   );
 }

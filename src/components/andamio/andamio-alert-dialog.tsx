@@ -1,18 +1,24 @@
 /**
  * Andamio wrapper for shadcn/ui AlertDialog
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioAlertDialog } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioAlertDialog } from "@andamio/ui";
+ * import { AndamioAlertDialog, AndamioAlertDialogContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/alert-dialog";
+// Re-export with Andamio prefix
+export {
+  AlertDialog as AndamioAlertDialog,
+  AlertDialogAction as AndamioAlertDialogAction,
+  AlertDialogCancel as AndamioAlertDialogCancel,
+  AlertDialogContent as AndamioAlertDialogContent,
+  AlertDialogDescription as AndamioAlertDialogDescription,
+  AlertDialogFooter as AndamioAlertDialogFooter,
+  AlertDialogHeader as AndamioAlertDialogHeader,
+  AlertDialogOverlay as AndamioAlertDialogOverlay,
+  AlertDialogPortal as AndamioAlertDialogPortal,
+  AlertDialogTitle as AndamioAlertDialogTitle,
+  AlertDialogTrigger as AndamioAlertDialogTrigger,
+} from "~/components/ui/alert-dialog";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the AlertDialog component.

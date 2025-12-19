@@ -24,6 +24,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -242,12 +243,12 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
       {/* Cost Estimation - Show when idle */}
       {state === "idle" && definition.buildTxConfig.estimatedCost && (
         <div className="rounded-md border border-muted bg-muted/30 p-3">
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             <strong>Estimated Cost:</strong>{" "}
             {(definition.buildTxConfig.estimatedCost.txFee / 1_000_000).toFixed(2)} ADA
             {definition.buildTxConfig.estimatedCost.minDeposit &&
               ` + ${(definition.buildTxConfig.estimatedCost.minDeposit / 1_000_000).toFixed(2)} ADA deposit`}
-          </p>
+          </AndamioText>
         </div>
       )}
     </>
@@ -296,9 +297,9 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
         <AndamioCardTitle>{displayTitle}</AndamioCardTitle>
         <AndamioCardDescription>
           {displayDescription.map((desc, idx) => (
-            <p key={idx} className={idx > 0 ? "mt-2" : ""}>
+            <AndamioText key={idx} variant="small" className={idx > 0 ? "mt-2" : ""}>
               {desc}
-            </p>
+            </AndamioText>
           ))}
         </AndamioCardDescription>
       </AndamioCardHeader>

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
+import React, { useEffect, useCallback, useMemo } from "react";
+import { useParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { env } from "~/env";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useStudioHeader } from "~/components/layout/studio-header";
+import { useModuleWizardData } from "~/hooks/use-module-wizard-data";
+import { useWizardNavigation, STEP_ORDER } from "~/hooks/use-wizard-navigation";
+import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
   StudioOutlinePanel,
   MODULE_WIZARD_STEPS,
@@ -26,19 +27,11 @@ import {
 } from "~/components/andamio";
 import {
   AlertCircle,
-  Save,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
-import type {
-  CourseModuleOutput,
-  CourseOutput,
-  ListSLTsOutput,
-  AssignmentOutput,
-  IntroductionOutput,
-  ListLessonsOutput,
-} from "@andamio/db-api";
+import type { CourseModuleOutput, CourseOutput } from "@andamio/db-api";
 
 // Import wizard step components
 import { StepBlueprint } from "~/components/studio/wizard/steps/step-blueprint";
@@ -52,361 +45,124 @@ import {
   WizardContext,
   type WizardStepId,
   type WizardContextValue,
-  type WizardData,
-  type StepCompletion,
 } from "~/components/studio/wizard/types";
-
-const STEP_ORDER: WizardStepId[] = [
-  "blueprint",
-  "slts",
-  "assignment",
-  "lessons",
-  "introduction",
-  "review",
-];
+import { useState } from "react";
 
 /**
- * Studio Module Edit Page - Dense split-pane layout with wizard
- * Left: Step outline with completion status
- * Right: Step content editor
+ * Module Wizard Content - The main wizard UI
+ *
+ * This component is rendered only after RequireCourseAccess
+ * verifies the user has owner or teacher access to the course.
  */
-export default function StudioModuleEditPage() {
-  const params = useParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const courseNftPolicyId = params.coursenft as string;
-  const moduleCode = params.modulecode as string;
-  const isNewModule = moduleCode === "new";
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-
-  // Update studio header
+function ModuleWizardContent({
+  courseNftPolicyId,
+  moduleCode,
+  isNewModule,
+}: {
+  courseNftPolicyId: string;
+  moduleCode: string;
+  isNewModule: boolean;
+}) {
   const { setBreadcrumbs, setTitle, setStatus, setActions } = useStudioHeader();
-
-  // Current step from URL
-  const urlStep = searchParams.get("step") as WizardStepId | null;
-  const [currentStep, setCurrentStep] = useState<WizardStepId>(
-    urlStep && STEP_ORDER.includes(urlStep) ? urlStep : "blueprint"
-  );
-  const [direction, setDirection] = useState(0);
-
-  // Panel state
   const [isOutlineCollapsed, setIsOutlineCollapsed] = useState(false);
 
-  // Data state
-  const [data, setData] = useState<WizardData>({
-    course: null,
-    courseModule: null,
-    slts: [],
-    assignment: null,
-    introduction: null,
-    lessons: [],
-    isLoading: true,
-    error: null,
-  });
-
-  /**
-   * Fetch all wizard data
-   */
-  const fetchWizardData = useCallback(async () => {
-    if (isNewModule) {
-      // For new modules, just fetch course info
-      try {
-        const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-          }
-        );
-        const course = courseResponse.ok
-          ? ((await courseResponse.json()) as CourseOutput)
-          : null;
-
-        setData({
-          course,
-          courseModule: null,
-          slts: [],
-          assignment: null,
-          introduction: null,
-          lessons: [],
-          isLoading: false,
-          error: null,
-        });
-
-        // Update header
+  // Handle header updates when data loads
+  const handleDataLoaded = useCallback(
+    (course: CourseOutput | null, courseModule: CourseModuleOutput | null) => {
+      if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
           { label: course?.title ?? "Course", href: `/studio/course/${courseNftPolicyId}` },
           { label: "New Module" },
         ]);
         setTitle("New Module");
-      } catch (err) {
-        console.error("Error fetching course:", err);
-        setData((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: err instanceof Error ? err.message : "Failed to load",
-        }));
-      }
-      return;
-    }
-
-    setData((prev) => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      // Fetch course
-      const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+      } else {
+        setBreadcrumbs([
+          { label: "Course Studio", href: "/studio/course" },
+          { label: course?.title ?? "Course", href: `/studio/course/${courseNftPolicyId}` },
+          { label: courseModule?.title ?? moduleCode },
+        ]);
+        setTitle(courseModule?.title ?? "Module");
+        if (courseModule?.status) {
+          setStatus(courseModule.status, courseModule.status === "ON_CHAIN" ? "default" : "secondary");
         }
-      );
-      const course = courseResponse.ok
-        ? ((await courseResponse.json()) as CourseOutput)
-        : null;
-
-      // Fetch module
-      const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
-      );
-      const courseModule = moduleResponse.ok
-        ? ((await moduleResponse.json()) as CourseModuleOutput)
-        : null;
-
-      // Fetch SLTs
-      const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
-      );
-      const slts = sltsResponse.ok
-        ? ((await sltsResponse.json()) as ListSLTsOutput)
-        : [];
-
-      // Fetch assignment
-      const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            assignment_code: `${moduleCode}-ASSIGNMENT`,
-          }),
-        }
-      );
-      const assignment = assignmentResponse.ok
-        ? ((await assignmentResponse.json()) as AssignmentOutput)
-        : null;
-
-      // Fetch introduction
-      const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
-      );
-      const introduction = introResponse.ok
-        ? ((await introResponse.json()) as IntroductionOutput)
-        : null;
-
-      // Fetch lessons
-      const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
-      );
-      const lessons = lessonsResponse.ok
-        ? ((await lessonsResponse.json()) as ListLessonsOutput)
-        : [];
-
-      setData({
-        course,
-        courseModule,
-        slts,
-        assignment,
-        introduction,
-        lessons,
-        isLoading: false,
-        error: null,
-      });
-
-      // Update header
-      setBreadcrumbs([
-        { label: "Course Studio", href: "/studio/course" },
-        { label: course?.title ?? "Course", href: `/studio/course/${courseNftPolicyId}` },
-        { label: courseModule?.title ?? moduleCode },
-      ]);
-      setTitle(courseModule?.title ?? "Module");
-      if (courseModule?.status) {
-        setStatus(courseModule.status, courseModule.status === "ON_CHAIN" ? "default" : "secondary");
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setData((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to load",
-      }));
-    }
-  }, [courseNftPolicyId, moduleCode, isNewModule, setBreadcrumbs, setTitle, setStatus]);
-
-  useEffect(() => {
-    void fetchWizardData();
-  }, [fetchWizardData]);
-
-  /**
-   * Calculate step completion
-   */
-  const completion = useMemo<StepCompletion>(() => {
-    const hasTitle = !!data.courseModule?.title?.trim();
-    const hasSLTs = data.slts.length > 0;
-    const hasAssignment = !!data.assignment;
-    const hasIntroduction = !!data.introduction;
-
-    return {
-      blueprint: hasTitle,
-      slts: hasSLTs,
-      assignment: hasAssignment,
-      lessons: true,
-      introduction: hasIntroduction,
-      review: hasTitle && hasSLTs && hasAssignment && hasIntroduction,
-    };
-  }, [data]);
-
-  /**
-   * Check if step is unlocked
-   */
-  const isStepUnlocked = useCallback(
-    (step: WizardStepId): boolean => {
-      switch (step) {
-        case "blueprint":
-          return true;
-        case "slts":
-          return completion.blueprint;
-        case "assignment":
-          return completion.slts;
-        case "lessons":
-          return completion.slts;
-        case "introduction":
-          return completion.assignment;
-        case "review":
-          return completion.introduction;
-        default:
-          return false;
       }
     },
-    [completion]
+    [courseNftPolicyId, isNewModule, moduleCode, setBreadcrumbs, setTitle, setStatus]
   );
 
-  /**
-   * Navigate to step
-   */
-  const goToStep = useCallback(
-    (step: WizardStepId) => {
-      if (!isStepUnlocked(step)) return;
-
-      const currentIndex = STEP_ORDER.indexOf(currentStep);
-      const targetIndex = STEP_ORDER.indexOf(step);
-      setDirection(targetIndex > currentIndex ? 1 : -1);
-      setCurrentStep(step);
-
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("step", step);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [currentStep, isStepUnlocked, pathname, router, searchParams]
-  );
-
-  const goNext = useCallback(() => {
-    const currentIndex = STEP_ORDER.indexOf(currentStep);
-    if (currentIndex < STEP_ORDER.length - 1) {
-      const nextStep = STEP_ORDER[currentIndex + 1]!;
-      if (isStepUnlocked(nextStep)) {
-        goToStep(nextStep);
-      }
-    }
-  }, [currentStep, goToStep, isStepUnlocked]);
-
-  const goPrevious = useCallback(() => {
-    const currentIndex = STEP_ORDER.indexOf(currentStep);
-    if (currentIndex > 0) {
-      goToStep(STEP_ORDER[currentIndex - 1]!);
-    }
-  }, [currentStep, goToStep]);
-
-  const getStepStatus = useCallback(
-    (step: WizardStepId) => {
-      if (step === currentStep) return "current";
-      if (completion[step]) return "completed";
-      if (isStepUnlocked(step)) return "available";
-      return "locked";
-    },
-    [currentStep, completion, isStepUnlocked]
-  );
-
-  const currentIndex = STEP_ORDER.indexOf(currentStep);
-  const canGoNext = currentIndex < STEP_ORDER.length - 1 && isStepUnlocked(STEP_ORDER[currentIndex + 1]!);
-  const canGoPrevious = currentIndex > 0;
-
-  // Build outline steps
-  const outlineSteps: OutlineStep[] = MODULE_WIZARD_STEPS.map((step) => ({
-    ...step,
-    isComplete: completion[step.id as WizardStepId],
-    isActive: currentStep === step.id,
-    isLocked: !isStepUnlocked(step.id as WizardStepId),
-    count: step.id === "slts" ? data.slts.length : step.id === "lessons" ? data.lessons.length : undefined,
-  }));
-
-  // Wizard context
-  const contextValue: WizardContextValue = {
-    currentStep,
-    goToStep,
-    goNext,
-    goPrevious,
-    canGoNext,
-    canGoPrevious,
-    getStepStatus,
-    isStepUnlocked,
-    completion,
-    data,
-    refetchData: fetchWizardData,
+  // Data fetching hook
+  const { data, completion, refetchData } = useModuleWizardData({
     courseNftPolicyId,
     moduleCode,
     isNewModule,
-  };
+    onDataLoaded: handleDataLoaded,
+  });
 
-  // Update header actions
+  // Navigation hook
+  const {
+    currentStep,
+    direction,
+    currentIndex,
+    canGoNext,
+    canGoPrevious,
+    goToStep,
+    goNext,
+    goPrevious,
+    getStepStatus,
+    isStepUnlocked,
+  } = useWizardNavigation({ completion });
+
+  // Build outline steps for the panel
+  const outlineSteps: OutlineStep[] = useMemo(
+    () =>
+      MODULE_WIZARD_STEPS.map((step) => ({
+        ...step,
+        isComplete: completion[step.id as WizardStepId],
+        isActive: currentStep === step.id,
+        isLocked: !isStepUnlocked(step.id as WizardStepId),
+        count: step.id === "slts" ? data.slts.length : step.id === "lessons" ? data.lessons.length : undefined,
+      })),
+    [completion, currentStep, isStepUnlocked, data.slts.length, data.lessons.length]
+  );
+
+  // Build wizard context
+  const contextValue: WizardContextValue = useMemo(
+    () => ({
+      currentStep,
+      goToStep,
+      goNext,
+      goPrevious,
+      canGoNext,
+      canGoPrevious,
+      getStepStatus,
+      isStepUnlocked,
+      completion,
+      data,
+      refetchData,
+      courseNftPolicyId,
+      moduleCode,
+      isNewModule,
+    }),
+    [
+      currentStep,
+      goToStep,
+      goNext,
+      goPrevious,
+      canGoNext,
+      canGoPrevious,
+      getStepStatus,
+      isStepUnlocked,
+      completion,
+      data,
+      refetchData,
+      courseNftPolicyId,
+      moduleCode,
+      isNewModule,
+    ]
+  );
+
+  // Update header actions when module data changes
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-2">
@@ -568,5 +324,35 @@ export default function StudioModuleEditPage() {
         </ResizablePanel>
       </ResizablePanelGroup>
     </WizardContext.Provider>
+  );
+}
+
+/**
+ * Studio Module Edit Page
+ *
+ * Dense split-pane layout with wizard for editing course modules.
+ *
+ * Authorization: Only accessible to users who are:
+ * - Course owner (created the course)
+ * - Course teacher (listed as contributor)
+ */
+export default function StudioModuleEditPage() {
+  const params = useParams();
+  const courseNftPolicyId = params.coursenft as string;
+  const moduleCode = params.modulecode as string;
+  const isNewModule = moduleCode === "new";
+
+  return (
+    <RequireCourseAccess
+      courseNftPolicyId={courseNftPolicyId}
+      title="Edit Module"
+      description="Connect your wallet to edit this course module"
+    >
+      <ModuleWizardContent
+        courseNftPolicyId={courseNftPolicyId}
+        moduleCode={moduleCode}
+        isNewModule={isNewModule}
+      />
+    </RequireCourseAccess>
   );
 }

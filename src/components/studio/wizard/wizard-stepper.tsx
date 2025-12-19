@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Check, Lock, Sparkles, Target, FileText, BookOpen, FileEdit, CheckCircle2 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { AndamioText } from "~/components/andamio";
 import type { WizardStepId, StepStatus, WizardStepConfig } from "./types";
 import { checkmarkVariants } from "./types";
 
@@ -174,10 +175,10 @@ function MobileStepIndicator({
         </div>
 
         <div className="text-right">
-          <p className="text-sm font-medium">{currentConfig?.title}</p>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="font-medium text-foreground">{currentConfig?.title}</AndamioText>
+          <AndamioText variant="small" className="text-xs">
             Step {currentIndex + 1} of {steps.length}
-          </p>
+          </AndamioText>
         </div>
       </div>
     </div>
@@ -257,7 +258,8 @@ function DesktopStepper({
               {/* Step content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p
+                  <AndamioText
+                    as="span"
                     className={cn(
                       "font-medium",
                       status === "current" && "text-primary",
@@ -267,22 +269,22 @@ function DesktopStepper({
                     )}
                   >
                     {step.title}
-                  </p>
+                  </AndamioText>
                   {step.optional && (
                     <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                       Optional
                     </span>
                   )}
                 </div>
-                <p
+                <AndamioText
+                  variant="small"
                   className={cn(
-                    "text-sm",
                     status === "current" && "text-muted-foreground",
                     status !== "current" && "text-muted-foreground/70"
                   )}
                 >
                   {step.subtitle}
-                </p>
+                </AndamioText>
               </div>
             </button>
           </div>

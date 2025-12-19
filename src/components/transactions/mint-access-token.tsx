@@ -15,6 +15,7 @@ import { TransactionStatus } from "./transaction-status";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { Key, Shield } from "lucide-react";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";
@@ -153,11 +154,11 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium">On-Chain Identity</p>
+            <AndamioText className="font-medium">On-Chain Identity</AndamioText>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText variant="small" className="text-xs">
             Your access token enables course enrollment, progress tracking, and credential earning on Cardano.
-          </p>
+          </AndamioText>
         </div>
 
         {/* Alias Input */}
@@ -173,11 +174,11 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
             className={`font-mono ${aliasError ? "border-destructive" : ""}`}
           />
           {aliasError ? (
-            <p className="text-xs text-destructive">{aliasError}</p>
+            <AndamioText variant="small" className="text-xs text-destructive">{aliasError}</AndamioText>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Letters, numbers, and underscores only. This will be your unique identifier on Andamio.
-            </p>
+            </AndamioText>
           )}
         </div>
 

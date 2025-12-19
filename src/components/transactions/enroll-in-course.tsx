@@ -23,6 +23,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { GraduationCap, BookOpen, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
@@ -272,12 +273,12 @@ export function EnrollInCourse({
 
         {/* What Happens */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-          <p className="text-sm font-medium">What happens:</p>
-          <p className="text-xs text-muted-foreground">
+          <AndamioText className="font-medium">What happens:</AndamioText>
+          <AndamioText variant="small" className="text-xs">
             {isCombinedMode
               ? "A course state token is minted to your wallet and your first submission is recorded on-chain."
               : "A course state token is minted to your wallet, enabling you to submit assignments and track progress."}
-          </p>
+          </AndamioText>
           {isCombinedMode && computedHash && (
             <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
               <Hash className="h-3 w-3 shrink-0" />

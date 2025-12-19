@@ -1,18 +1,20 @@
 /**
  * Andamio wrapper for shadcn/ui Pagination
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioPagination } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioPagination } from "@andamio/ui";
+ * import { AndamioPagination, AndamioPaginationContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/pagination";
+// Re-export with Andamio prefix
+export {
+  Pagination as AndamioPagination,
+  PaginationContent as AndamioPaginationContent,
+  PaginationEllipsis as AndamioPaginationEllipsis,
+  PaginationItem as AndamioPaginationItem,
+  PaginationLink as AndamioPaginationLink,
+  PaginationNext as AndamioPaginationNext,
+  PaginationPrevious as AndamioPaginationPrevious,
+} from "~/components/ui/pagination";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the Pagination component.

@@ -23,6 +23,7 @@ import {
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { BookOpen, Users, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
@@ -207,9 +208,9 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
               disabled={state !== "idle" && state !== "error"}
               maxLength={200}
             />
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Give your course a descriptive title. You can update this later.
-            </p>
+            </AndamioText>
           </div>
         )}
 
@@ -225,9 +226,9 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
               onChange={(e) => setAdditionalTeachers(e.target.value)}
               disabled={state !== "idle" && state !== "error"}
             />
-            <p className="text-xs text-muted-foreground">
+            <AndamioText variant="small" className="text-xs">
               Enter access token aliases of additional teachers, separated by commas. You are automatically included.
-            </p>
+            </AndamioText>
           </div>
         )}
 

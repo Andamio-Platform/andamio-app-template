@@ -19,6 +19,7 @@ import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "./andamio-alert";
 import { AndamioButton } from "./andamio-button";
 import { AndamioSkeleton } from "./andamio-skeleton";
+import { AndamioText } from "./andamio-text";
 import type { IconComponent } from "~/types/ui";
 
 /**
@@ -196,7 +197,7 @@ export function EmptyState({
       <Icon className="h-12 w-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-medium mb-1">{title}</h3>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-sm mb-4">{description}</p>
+        <AndamioText variant="small" className="max-w-sm mb-4">{description}</AndamioText>
       )}
       {action && (
         <AndamioButton onClick={action.onClick}>{action.label}</AndamioButton>
@@ -273,9 +274,9 @@ export function AuthRequiredState({
     >
       <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-medium mb-1">Authentication Required</h3>
-      <p className="text-sm text-muted-foreground max-w-sm mb-4">
+      <AndamioText variant="small" className="max-w-sm mb-4">
         Connect your wallet to access {feature}.
-      </p>
+      </AndamioText>
       {children}
     </div>
   );

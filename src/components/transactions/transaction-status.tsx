@@ -9,6 +9,8 @@
 
 import React from "react";
 import { CheckCircle2, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import type { TransactionResult, TransactionState } from "~/types/transaction";
 
 export interface TransactionStatusProps {
@@ -84,7 +86,7 @@ export function TransactionStatus({
         <div className="flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
           <div className="flex-1 space-y-2">
-            <p className="text-sm font-medium">{text.success}</p>
+            <AndamioText variant="small" className="font-medium text-foreground">{text.success}</AndamioText>
             {result.txHash && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <code className="font-mono">{result.txHash.slice(0, 16)}...{result.txHash.slice(-8)}</code>
@@ -113,14 +115,16 @@ export function TransactionStatus({
         <div className="flex items-start gap-3">
           <XCircle className="h-5 w-5 text-destructive shrink-0" />
           <div className="flex-1 space-y-2">
-            <p className="text-sm font-medium">{error ?? text.error}</p>
+            <AndamioText variant="small" className="font-medium text-foreground">{error ?? text.error}</AndamioText>
             {onRetry && (
-              <button
+              <AndamioButton
+                variant="link"
+                size="sm"
                 onClick={onRetry}
-                className="text-xs text-primary hover:underline"
+                className="h-auto p-0 text-xs"
               >
                 Try again
-              </button>
+              </AndamioButton>
             )}
           </div>
         </div>
@@ -134,9 +138,9 @@ export function TransactionStatus({
       <div className="flex items-center gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         <div>
-          <p className="text-sm font-medium">{text[state]}</p>
+          <AndamioText variant="small" className="font-medium text-foreground">{text[state]}</AndamioText>
           {state === "signing" && (
-            <p className="text-xs text-muted-foreground">Check your wallet</p>
+            <AndamioText variant="small" className="text-xs">Check your wallet</AndamioText>
           )}
         </div>
       </div>

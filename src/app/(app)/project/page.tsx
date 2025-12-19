@@ -5,9 +5,8 @@ import Link from "next/link";
 import { env } from "~/env";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer } from "~/components/andamio";
 import { AlertCircle, FolderKanban } from "lucide-react";
 import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -63,20 +62,7 @@ export default function ProjectCatalogPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioPageHeader
-          title="Projects"
-          description="Browse all published projects"
-        />
-
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
@@ -105,14 +91,11 @@ export default function ProjectCatalogPage() {
           title="Projects"
           description="Browse all published projects"
         />
-
-        <AndamioAlert>
-          <FolderKanban className="h-4 w-4" />
-          <AndamioAlertTitle>No Published Projects</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            There are currently no published projects available. Check back later.
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioEmptyState
+          icon={FolderKanban}
+          title="No Published Projects"
+          description="There are currently no published projects available. Check back later."
+        />
       </div>
     );
   }

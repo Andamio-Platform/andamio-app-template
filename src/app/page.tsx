@@ -9,7 +9,8 @@ import {
   Compass,
   Pencil,
 } from "lucide-react";
-import { AndamioAlert } from "~/components/andamio";
+import { AndamioAlert, AndamioAlertDescription, AndamioText } from "~/components/andamio";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 
 export default function Home() {
   return (
@@ -19,49 +20,57 @@ export default function Home() {
           ============================================= */}
       <section className="flex min-h-[90vh] flex-col justify-center px-6">
         <div className="mx-auto w-full max-w-3xl">
-          <AndamioAlert className="flex w-full my-5" variant="default">
-            An LLM wrote all the copy on this page, but the sentiments are true.<br />Thank you for being here and please pardon any confusion.
-          </AndamioAlert>
+          <div className="my-5">
+            <AndamioAlert variant="default">
+              <AndamioAlertDescription>
+                An LLM wrote all the copy on this page, but the sentiments are true. Thank you for being here and please pardon any confusion.
+              </AndamioAlertDescription>
+            </AndamioAlert>
+          </div>
 
-          <p className="text-sm font-medium uppercase tracking-widest text-primary">
+          <AndamioText variant="overline" className="text-primary">
             Andamio Pioneers Preview
-          </p>
+          </AndamioText>
 
-          <h1 className="!mt-6 !mb-0 !text-5xl !leading-tight sm:!text-6xl md:!text-7xl">
-            <span className="text-muted-foreground">
-              Help us build <br /> Andamio V2.
-            </span>
+          <h1 className="text-muted-foreground">
+            Help us build Andamio V2.
           </h1>
 
-          <p className="mt-8 max-w-xl text-lg text-muted-foreground">
+          <AndamioText variant="lead" className="mt-8 max-w-xl">
             You&apos;re early. This is a preview of the next generation of Andamio — contribution-centered
             learning on Cardano. Explore, experiment, break things. Your feedback
             shapes what we ship.
-          </p>
+          </AndamioText>
 
 
           <div className="mt-10 flex flex-wrap gap-4">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              Enter the App
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-            <Link
-              href="https://docs.andamio.io/docs/pioneers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-md border px-6 py-3 text-sm font-medium transition-colors hover:bg-accent"
-            >
-              What is Pioneers?
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Link>
+            <AndamioButton asChild size="lg">
+              <Link href="/dashboard" className="inline-flex items-center">
+                <span>Enter the App</span>
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </AndamioButton>
+            <AndamioButton asChild variant="outline" size="lg">
+              <Link
+                href="https://docs.andamio.io/docs/pioneers"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center"
+              >
+                <span>What is Pioneers?</span>
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </Link>
+            </AndamioButton>
           </div>
 
           <div className="mt-16 flex items-center gap-3 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>Mainnet launch: January 2026</span>
+            <span>Preprod launch: January 2026</span>
+          </div>
+
+          <div className="my-4 flex items-center gap-3 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>Mainnet launch: February 2026</span>
           </div>
         </div>
       </section>
@@ -71,14 +80,12 @@ export default function Home() {
           ============================================= */}
       <section className="border-t px-6 py-24">
         <div className="mx-auto max-w-3xl">
-          <h2 className="!mt-0 !mb-0 !text-3xl sm:!text-4xl">
-            This is a playground
-          </h2>
-          <p className="mt-4 text-muted-foreground">
+          <h2>This is a playground</h2>
+          <AndamioText variant="muted" className="mt-4">
             We&apos;re building in public. This demo connects to Cardano Preprod
             so you can test real features without real stakes. Nothing here costs
             ADA. Data may reset. That&apos;s the point.
-          </p>
+          </AndamioText>
         </div>
       </section>
 
@@ -87,19 +94,17 @@ export default function Home() {
           ============================================= */}
       <section className="border-t px-6 py-24">
         <div className="mx-auto max-w-3xl">
-          <h2 className="!mt-0 !mb-0 !text-3xl sm:!text-4xl">
-            Two ways to explore
-          </h2>
+          <h2>Two ways to explore</h2>
 
           <div className="mt-12 grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
             {/* Discover */}
             <div className="bg-card p-8">
               <Compass className="h-8 w-8 text-primary" />
-              <h3 className="mt-6 text-lg font-semibold">Discover</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <h3>Discover</h3>
+              <AndamioText variant="small" className="mt-2">
                 Browse courses and projects. See how Andamio structures learning
                 and contribution.
-              </p>
+              </AndamioText>
               <div className="mt-6 flex flex-col gap-2">
                 <Link
                   href="/course"
@@ -119,11 +124,11 @@ export default function Home() {
             {/* Create */}
             <div className="bg-card p-8">
               <Pencil className="h-8 w-8 text-primary" />
-              <h3 className="mt-6 text-lg font-semibold">Create</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <h3>Create</h3>
+              <AndamioText variant="small" className="mt-2">
                 Try the creator tools. Build a course, define modules, publish
                 tasks to a project.
-              </p>
+              </AndamioText>
               <div className="mt-6 flex flex-col gap-2">
                 <Link
                   href="/studio/course"
@@ -148,18 +153,16 @@ export default function Home() {
           ============================================= */}
       <section className="border-t px-6 py-24">
         <div className="mx-auto max-w-3xl">
-          <h2 className="!mt-0 !mb-0 !text-3xl sm:!text-4xl">
-            What are Pioneers?
-          </h2>
-          <p className="mt-4 text-muted-foreground">
+          <h2>What are Pioneers?</h2>
+          <AndamioText variant="muted" className="mt-4">
             Following patterns from Gimbalabs in 2021, we&apos;re inviting early
             adopters to shape Andamio V2 before mainnet. This isn&apos;t just
             beta testing — it&apos;s co-creation.
-          </p>
-          <p className="mt-4 text-muted-foreground">
+          </AndamioText>
+          <AndamioText variant="muted" className="mt-4">
             Your questions become documentation. Your bugs become fixes. Your
             ideas become features.
-          </p>
+          </AndamioText>
           <Link
             href="https://docs.andamio.io/docs/pioneers"
             target="_blank"
@@ -179,11 +182,11 @@ export default function Home() {
         <div className="mx-auto flex max-w-3xl items-start gap-4">
           <Beaker className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
           <div>
-            <p className="font-medium">This is Cardano Preprod</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <AndamioText className="font-medium">This is Cardano Preprod</AndamioText>
+            <AndamioText variant="small" className="mt-1">
               Use a preprod wallet. Transactions are free. Data may be wiped
               during development.
-            </p>
+            </AndamioText>
           </div>
         </div>
       </section>
@@ -193,19 +196,18 @@ export default function Home() {
           ============================================= */}
       <section className="border-t px-6 py-24">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="!mt-0 !mb-0 !text-3xl sm:!text-4xl">
-            Ready?
-          </h2>
-          <p className="mt-4 text-muted-foreground">
+          <h2>Ready?</h2>
+          <AndamioText variant="muted" className="mt-4">
             Connect a preprod wallet and start exploring.
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-8 inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-          >
-            Go to Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
+          </AndamioText>
+          <div className="mt-8">
+            <AndamioButton asChild size="lg">
+              <Link href="/dashboard">
+                Go to Dashboard
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </AndamioButton>
+          </div>
         </div>
       </section>
 
@@ -214,7 +216,7 @@ export default function Home() {
           ============================================= */}
       <footer className="border-t px-6 py-8">
         <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 text-sm sm:flex-row">
-          <p className="font-medium">Andamio Pioneer Preview</p>
+          <AndamioText className="font-medium">Andamio Pioneer Preview</AndamioText>
           <div className="flex gap-6 text-muted-foreground">
             <Link
               href="https://docs.andamio.io/docs/pioneers"

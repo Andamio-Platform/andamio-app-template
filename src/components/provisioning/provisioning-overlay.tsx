@@ -3,6 +3,7 @@
 import React from "react";
 import { ExternalLink, Sparkles, PartyPopper } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { AndamioText } from "~/components/andamio";
 import { cn } from "~/lib/utils";
 import type { ProvisioningConfig, ProvisioningStep } from "./types";
 import { PROVISIONING_DISPLAY } from "./types";
@@ -72,9 +73,9 @@ export function ProvisioningOverlay({
       </h2>
 
       {/* Entity title */}
-      <p className="text-muted-foreground text-center mb-10">
+      <AndamioText variant="muted" className="text-center mb-10">
         {title}
-      </p>
+      </AndamioText>
 
       {/* Step indicator */}
       <div className="w-full max-w-xs mb-10">
@@ -87,15 +88,15 @@ export function ProvisioningOverlay({
       {/* Error message */}
       {isError && errorMessage && (
         <div className="w-full max-w-xs mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-          <p className="text-sm text-destructive text-center">{errorMessage}</p>
+          <AndamioText variant="small" className="text-destructive text-center">{errorMessage}</AndamioText>
         </div>
       )}
 
       {/* Timing note */}
       {!isReady && !isError && (
-        <p className="text-sm text-muted-foreground text-center mb-8">
+        <AndamioText variant="small" className="text-center mb-8">
           This typically takes 20-60 seconds.
-        </p>
+        </AndamioText>
       )}
 
       {/* Transaction link */}

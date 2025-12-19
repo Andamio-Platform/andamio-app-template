@@ -1,18 +1,28 @@
 /**
  * Andamio wrapper for shadcn/ui ContextMenu
  *
- * This is a wrapper around the base shadcn component that allows
- * for Andamio-specific customizations without modifying the original.
- *
  * Usage:
- * import { AndamioContextMenu } from "~/components/andamio";
- *
- * Future (after extraction to @andamio/ui):
- * import { AndamioContextMenu } from "@andamio/ui";
+ * import { AndamioContextMenu, AndamioContextMenuContent } from "~/components/andamio";
  */
 
-// Re-export everything from the base component
-export * from "~/components/ui/context-menu";
+// Re-export with Andamio prefix
+export {
+  ContextMenu as AndamioContextMenu,
+  ContextMenuCheckboxItem as AndamioContextMenuCheckboxItem,
+  ContextMenuContent as AndamioContextMenuContent,
+  ContextMenuGroup as AndamioContextMenuGroup,
+  ContextMenuItem as AndamioContextMenuItem,
+  ContextMenuLabel as AndamioContextMenuLabel,
+  ContextMenuPortal as AndamioContextMenuPortal,
+  ContextMenuRadioGroup as AndamioContextMenuRadioGroup,
+  ContextMenuRadioItem as AndamioContextMenuRadioItem,
+  ContextMenuSeparator as AndamioContextMenuSeparator,
+  ContextMenuShortcut as AndamioContextMenuShortcut,
+  ContextMenuSub as AndamioContextMenuSub,
+  ContextMenuSubContent as AndamioContextMenuSubContent,
+  ContextMenuSubTrigger as AndamioContextMenuSubTrigger,
+  ContextMenuTrigger as AndamioContextMenuTrigger,
+} from "~/components/ui/context-menu";
 
 // This file serves as a placeholder for future Andamio-specific
 // customizations to the ContextMenu component.

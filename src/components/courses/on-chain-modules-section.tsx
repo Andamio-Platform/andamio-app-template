@@ -31,6 +31,7 @@ import {
   AndamioTooltipContent,
   AndamioTooltipTrigger,
   AndamioCheckbox,
+  AndamioText,
 } from "~/components/andamio";
 import {
   Blocks,
@@ -202,24 +203,24 @@ function ImportModuleDrawer({
             {/* On-chain info */}
             <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Module Hash</p>
+                <AndamioText variant="small" className="text-xs">Module Hash</AndamioText>
                 <code className="text-xs font-mono">{truncatedHash}</code>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Created By</p>
+                <AndamioText variant="small" className="text-xs">Created By</AndamioText>
                 <span className="text-sm">{module.createdBy}</span>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Learning Targets</p>
+                <AndamioText variant="small" className="text-xs">Learning Targets</AndamioText>
                 <AndamioBadge variant="secondary">{module.slts.length}</AndamioBadge>
               </div>
             </div>
 
             {/* SLTs Preview */}
             <div className="rounded-lg border p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide mb-2">
                 On-Chain Learning Targets
-              </p>
+              </AndamioText>
               <ul className="space-y-1.5">
                 {module.slts.map((slt, index) => (
                   <li key={index} className="flex items-start gap-2 text-sm">
@@ -242,9 +243,9 @@ function ImportModuleDrawer({
                 onChange={(e) => setModuleCode(e.target.value)}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground">
+              <AndamioText variant="small" className="text-xs">
                 A unique identifier for ordering modules. Use lowercase with hyphens.
-              </p>
+              </AndamioText>
             </div>
 
             {/* Title Input */}
@@ -394,9 +395,9 @@ function ModuleRow({
 
       {/* SLTs */}
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+        <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide mb-2">
           Learning Targets ({module.slts.length})
-        </p>
+        </AndamioText>
         <ul className="space-y-1">
           {module.slts.map((slt, index) => (
             <li key={index} className="flex items-start gap-2 text-sm">
@@ -588,12 +589,12 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
         {!isLoading && hybridModules.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-sm text-muted-foreground">
+            <AndamioText variant="small">
               No modules minted on-chain yet.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            </AndamioText>
+            <AndamioText variant="small" className="text-xs mt-1">
               Mint module tokens to see them here.
-            </p>
+            </AndamioText>
           </div>
         )}
 

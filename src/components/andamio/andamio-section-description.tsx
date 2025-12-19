@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
+import { AndamioText } from "./andamio-text";
 
 interface AndamioSectionDescriptionProps {
   children: React.ReactNode;
@@ -23,12 +24,12 @@ export function AndamioSectionDescription({
 }: AndamioSectionDescriptionProps) {
   return (
     <div className="w-full flex justify-center my-6 sm:my-10 px-4 sm:px-0">
-      <p className={cn(
-        "text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl text-center",
+      <AndamioText variant="lead" className={cn(
+        "max-w-2xl text-center",
         className
       )}>
         {children}
-      </p>
+      </AndamioText>
     </div>
   );
 }

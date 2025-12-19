@@ -9,11 +9,11 @@ import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AlertCircle, ArrowLeft, CheckSquare, Edit, Plus, Trash2 } from "lucide-react";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
-import { AndamioPageHeader, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -148,16 +148,7 @@ export default function DraftTasksPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-8 w-32" />
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <AndamioSkeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
@@ -213,7 +204,7 @@ export default function DraftTasksPage() {
       {draftTasks.length > 0 && (
         <div className="space-y-3">
           <AndamioSectionHeader title="Draft Tasks" />
-          <p className="text-sm text-muted-foreground">These tasks are not yet published to the blockchain</p>
+          <AndamioText variant="small">These tasks are not yet published to the blockchain</AndamioText>
           <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
@@ -274,7 +265,7 @@ export default function DraftTasksPage() {
       {liveTasks.length > 0 && (
         <div className="space-y-3">
           <AndamioSectionHeader title="Live Tasks" />
-          <p className="text-sm text-muted-foreground">These tasks are published on-chain and cannot be edited</p>
+          <AndamioText variant="small">These tasks are published on-chain and cannot be edited</AndamioText>
           <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
@@ -350,19 +341,19 @@ export default function DraftTasksPage() {
 
       {/* Empty State */}
       {tasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create your first task to get started
-          </p>
-          <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
-            <AndamioButton>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Task
-            </AndamioButton>
-          </Link>
-        </div>
+        <AndamioEmptyState
+          icon={CheckSquare}
+          title="No tasks yet"
+          description="Create your first task to get started"
+          action={
+            <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
+              <AndamioButton>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Task
+              </AndamioButton>
+            </Link>
+          }
+        />
       )}
     </div>
   );

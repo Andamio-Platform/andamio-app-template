@@ -12,8 +12,8 @@ import {
   AndamioButton,
   AndamioBadge,
   AndamioSkeleton,
-  AndamioInput,
 } from "~/components/andamio";
+import { Input } from "~/components/ui/input";
 import { CreateCourseDialog } from "~/components/courses/create-course-dialog";
 import {
   Plus,
@@ -22,10 +22,14 @@ import {
   RefreshCw,
   BookOpen,
   Clock,
+  Grid,
+  List,
 } from "lucide-react";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import { StudioCourseCard, type HybridCourseStatus } from "~/components/studio/studio-course-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { cn } from "~/lib/utils";
+import { CheckCircle, ChevronRight } from "lucide-react";
 
 /**
  * Studio Course List Page
@@ -55,6 +59,7 @@ export default function StudioCourseListPage() {
   const [dbCourses, setDbCourses] = useState<ListOwnedCoursesOutput>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const fetchDbCourses = useCallback(async () => {
     if (!isAuthenticated) {
@@ -166,17 +171,17 @@ export default function StudioCourseListPage() {
 
   return (
     <StudioEditorPane
-      padding="tight"
+      padding="none"
       header={
-        <div className="flex items-center justify-between gap-4 px-3 py-2">
+        <div className="flex items-center justify-between gap-4 px-6 py-2.5">
           {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <AndamioInput
+          <div className="relative w-52">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               placeholder="Search courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-sm"
+              className="pl-8 h-8 text-sm"
             />
           </div>
 
@@ -191,6 +196,27 @@ export default function StudioCourseListPage() {
                 {pendingCount} syncing
               </AndamioBadge>
             )}
+
+            {/* View Toggle */}
+            <div className="flex items-center border rounded-md">
+              <AndamioButton
+                variant={viewMode === "list" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="h-8 w-8 p-0 rounded-r-none"
+              >
+                <List className="h-4 w-4" />
+              </AndamioButton>
+              <AndamioButton
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="h-8 w-8 p-0 rounded-l-none"
+              >
+                <Grid className="h-4 w-4" />
+              </AndamioButton>
+            </div>
+
             <AndamioButton
               variant="ghost"
               size="sm"
@@ -204,55 +230,140 @@ export default function StudioCourseListPage() {
         </div>
       }
     >
-      {/* Loading */}
-      {isLoading && hybridCourses.length === 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <AndamioSkeleton key={i} className="h-28" />
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && hybridCourses.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="rounded-full bg-muted p-4 mb-4">
-            <BookOpen className="h-8 w-8 text-muted-foreground" />
+      <div className="px-6 py-4">
+        {/* Loading */}
+        {isLoading && hybridCourses.length === 0 && (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <AndamioSkeleton key={i} className="h-16 rounded-lg" />
+            ))}
           </div>
-          <h3 className="text-lg font-medium">No courses yet</h3>
-          <AndamioText variant="small" className="mt-1 mb-4 max-w-sm">
-            Create your first course to start building learning content on Andamio
-          </AndamioText>
-          <CreateCourseDialog />
-        </div>
-      )}
+        )}
 
-      {/* Course Grid */}
-      {filteredCourses.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filteredCourses.map((course) => (
-            <StudioCourseCard
-              key={course.courseId}
-              course={course}
-              onClick={() => {
-                if (course.inDb) {
-                  router.push(`/studio/course/${course.courseId}`);
-                }
-              }}
-            />
-          ))}
-        </div>
-      )}
+        {/* Empty state */}
+        {!isLoading && hybridCourses.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium">No courses yet</h3>
+            <AndamioText variant="small" className="mt-1 mb-4 max-w-sm">
+              Create your first course to start building learning content on Andamio
+            </AndamioText>
+            <CreateCourseDialog />
+          </div>
+        )}
 
-      {/* No results */}
-      {!isLoading && hybridCourses.length > 0 && filteredCourses.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Search className="h-8 w-8 text-muted-foreground/50 mb-2" />
-          <AndamioText variant="small">
-            No courses match &quot;{searchQuery}&quot;
-          </AndamioText>
-        </div>
-      )}
+        {/* Course List View */}
+        {filteredCourses.length > 0 && viewMode === "list" && (
+          <div className="space-y-2">
+            {filteredCourses.map((course) => (
+              <CourseListItem
+                key={course.courseId}
+                course={course}
+                onClick={() => {
+                  if (course.inDb) {
+                    router.push(`/studio/course/${course.courseId}`);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Course Grid View */}
+        {filteredCourses.length > 0 && viewMode === "grid" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {filteredCourses.map((course) => (
+              <StudioCourseCard
+                key={course.courseId}
+                course={course}
+                onClick={() => {
+                  if (course.inDb) {
+                    router.push(`/studio/course/${course.courseId}`);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* No results */}
+        {!isLoading && hybridCourses.length > 0 && filteredCourses.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Search className="h-8 w-8 text-muted-foreground/50 mb-2" />
+            <AndamioText variant="small">
+              No courses match &quot;{searchQuery}&quot;
+            </AndamioText>
+          </div>
+        )}
+      </div>
     </StudioEditorPane>
+  );
+}
+
+/**
+ * List item view for courses - cleaner overview
+ */
+function CourseListItem({
+  course,
+  onClick,
+}: {
+  course: HybridCourseStatus;
+  onClick: () => void;
+}) {
+  const truncatedId = `${course.courseId.slice(0, 8)}...${course.courseId.slice(-6)}`;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={!course.inDb}
+      className={cn(
+        "group flex items-center gap-4 w-full px-4 py-3 text-left rounded-lg border bg-card",
+        "transition-all hover:border-primary/50 hover:bg-accent/50",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        course.inDb && "cursor-pointer"
+      )}
+    >
+      {/* Status indicator */}
+      <div className="flex-shrink-0">
+        {course.inDb && course.onChain ? (
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
+            <CheckCircle className="h-5 w-5 text-success" />
+          </div>
+        ) : course.inDb ? (
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
+            <Clock className="h-5 w-5 text-info animate-pulse" />
+          </div>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">
+            <Plus className="h-5 w-5 text-warning" />
+          </div>
+        )}
+      </div>
+
+      {/* Course info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium truncate">
+            {course.title ?? "Untitled Course"}
+          </span>
+          {course.onChain && course.onChainModuleCount > 0 && (
+            <AndamioBadge variant="secondary" className="text-xs flex-shrink-0">
+              <Blocks className="h-3 w-3 mr-1" />
+              {course.onChainModuleCount} module{course.onChainModuleCount !== 1 ? "s" : ""}
+            </AndamioBadge>
+          )}
+        </div>
+        <code className="text-xs text-muted-foreground font-mono">
+          {truncatedId}
+        </code>
+      </div>
+
+      {/* Action hint */}
+      {course.inDb && (
+        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+      )}
+    </button>
   );
 }

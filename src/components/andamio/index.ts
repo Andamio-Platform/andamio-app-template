@@ -38,7 +38,10 @@ export * from "./andamio-table-container";
 export * from "./andamio-not-found-card";
 export * from "./andamio-empty-state";
 export * from "./andamio-stat-card";
-export * from "./andamio-page-loading";
+export * from "./andamio-status-icon";
+
+// Loading components (unified loading system)
+export * from "./andamio-loading";
 
 // Simple pass-through wrappers (for consistency)
 export * from "./andamio-accordion";

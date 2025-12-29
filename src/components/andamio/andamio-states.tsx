@@ -6,7 +6,11 @@
  *
  * @example
  * ```tsx
- * if (isLoading) return <LoadingState />;
+ * // Use unified loading components from andamio-loading.tsx
+ * if (isLoading) return <AndamioPageLoading variant="list" />;
+ * if (isLoading) return <AndamioCardLoading title="Loading" />;
+ *
+ * // Error and empty states
  * if (error) return <ErrorState message={error} onRetry={refetch} />;
  * if (items.length === 0) return <EmptyState title="No items" />;
  * ```
@@ -15,81 +19,59 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "./andamio-alert";
 import { AndamioButton } from "./andamio-button";
-import { AndamioSkeleton } from "./andamio-skeleton";
 import { AndamioText } from "./andamio-text";
 import type { IconComponent } from "~/types/ui";
+import {
+  AndamioPageLoading,
+  AndamioStudioLoading,
+  AndamioCardLoading,
+  AndamioListLoading,
+  AndamioSectionLoading,
+  AndamioInlineLoading,
+} from "./andamio-loading";
+
+// Re-export loading components from unified loading system
+export {
+  AndamioPageLoading,
+  AndamioStudioLoading,
+  AndamioCardLoading,
+  AndamioListLoading,
+  AndamioSectionLoading,
+  AndamioInlineLoading,
+};
 
 /**
- * LoadingState - Skeleton loading placeholder
+ * @deprecated Use AndamioPageLoading or AndamioInlineLoading from andamio-loading.tsx instead
  */
 export interface LoadingStateProps {
-  /**
-   * Number of skeleton rows to show
-   * @default 5
-   */
   rows?: number;
-  /**
-   * Show a header skeleton
-   * @default true
-   */
   showHeader?: boolean;
-  /**
-   * Custom className for the container
-   */
   className?: string;
-  /**
-   * Variant: "card" shows card-like skeletons, "list" shows list items
-   * @default "list"
-   */
   variant?: "list" | "card" | "minimal";
 }
 
+/**
+ * @deprecated Use AndamioPageLoading or AndamioInlineLoading from andamio-loading.tsx instead
+ *
+ * Migration guide:
+ * - LoadingState variant="list" → AndamioPageLoading variant="list"
+ * - LoadingState variant="card" → AndamioPageLoading variant="cards"
+ * - LoadingState variant="minimal" → AndamioInlineLoading
+ */
 export function LoadingState({
   rows = 5,
-  showHeader = true,
   className,
   variant = "list",
 }: LoadingStateProps) {
   if (variant === "minimal") {
-    return (
-      <div className={`flex items-center justify-center py-8 ${className ?? ""}`}>
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <AndamioInlineLoading className={className} />;
   }
 
-  if (variant === "card") {
-    return (
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${className ?? ""}`}>
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="border rounded-lg p-4 space-y-3">
-            <AndamioSkeleton className="h-5 w-3/4" />
-            <AndamioSkeleton className="h-4 w-full" />
-            <AndamioSkeleton className="h-4 w-1/2" />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className={`space-y-6 ${className ?? ""}`}>
-      {showHeader && (
-        <>
-          <AndamioSkeleton className="h-9 w-64 mb-2" />
-          <AndamioSkeleton className="h-5 w-96" />
-        </>
-      )}
-      <div className="space-y-2">
-        {Array.from({ length: rows }).map((_, i) => (
-          <AndamioSkeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
-    </div>
-  );
+  const mappedVariant = variant === "card" ? "cards" : "list";
+  return <AndamioPageLoading variant={mappedVariant} itemCount={rows} className={className} />;
 }
 
 /**

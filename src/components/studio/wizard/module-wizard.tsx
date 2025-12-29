@@ -7,7 +7,7 @@ import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { WizardStepper, WIZARD_STEPS } from "./wizard-stepper";
 import { WizardHeader } from "./wizard-navigation";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioStudioLoading } from "~/components/andamio/andamio-loading";
 import {
   WizardContext,
   type WizardStepId,
@@ -367,15 +367,7 @@ export function ModuleWizard({
 
   // Loading state
   if (data.isLoading) {
-    return (
-      <div className="space-y-6">
-        <AndamioSkeleton className="h-12 w-full" />
-        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-          <AndamioSkeleton className="h-[400px] hidden lg:block" />
-          <AndamioSkeleton className="h-[400px]" />
-        </div>
-      </div>
-    );
+    return <AndamioStudioLoading variant="split-pane" />;
   }
 
   const currentConfig = WIZARD_STEPS.find((s) => s.id === currentStep)!;

@@ -1,13 +1,29 @@
 "use client";
 
 import React, { useState, useCallback, useId } from "react";
-import { Trash2, Pencil, Check, X, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, Pencil, Check, X, AlertCircle, Loader2, Plus, Target, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useWizard } from "../module-wizard";
-import { WizardStep, WizardStepTip } from "../wizard-step";
+import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
@@ -218,173 +234,142 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     }
   };
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  /**
+   * Handle drag end - reorder SLTs
+   */
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localSlts.findIndex((s) => s.id === active.id);
+    const newIndex = localSlts.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Optimistic update
+    const reorderedSlts = arrayMove(localSlts, oldIndex, newIndex);
+    setLocalSlts(reorderedSlts);
+
+    // Build the new order mapping
+    const reorderData = reorderedSlts.map((slt, idx) => ({
+      id: slt.id,
+      module_index: idx + 1,
+    }));
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/reorder`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            order: reorderData,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to reorder");
+
+      await refetchData();
+    } catch (err) {
+      // Rollback on error
+      setLocalSlts(localSlts);
+      setError(err instanceof Error ? err.message : "Failed to reorder");
+    }
+  }, [localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, refetchData]);
+
   const isPending = pendingOps.size > 0;
 
   return (
     <WizardStep config={config} direction={direction}>
-      <div className="space-y-8">
-        {/* Introduction */}
-        <div className="space-y-2">
-          <AndamioText variant="lead">
-            Define what learners will be able to do after completing this module.
-          </AndamioText>
-          <AndamioText variant="small">
-            Each learning target becomes a credential that learners can earn.
-          </AndamioText>
-        </div>
-
-        {/* Input section */}
-        <div className="space-y-4">
-          <label htmlFor={inputId} className="block text-sm font-medium">
-            Add a Learning Target
-          </label>
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                I can
-              </span>
-              <Input
-                id={inputId}
-                value={newSltText}
-                onChange={(e) => setNewSltText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="explain how blockchain validates transactions..."
-                className="h-14 pl-16 text-base"
-                disabled={isPending}
-              />
-            </div>
+      <div className="space-y-6">
+        {/* Input Section */}
+        <div className="rounded-lg border-2 border-border p-4">
+          <div className="flex items-center gap-3">
+            <Input
+              id={inputId}
+              value={newSltText}
+              onChange={(e) => setNewSltText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g., Explain how smart contracts execute on-chain"
+              className="h-11 flex-1 text-base px-4"
+              disabled={isPending}
+            />
             <Button
               onClick={() => void handleCreate()}
               disabled={!newSltText.trim() || isPending}
-              className="h-14 px-6"
+              className="h-11 px-5"
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </>
+              )}
             </Button>
           </div>
         </div>
 
-        {/* SLT List */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Learning Targets
-            </h3>
-            {localSlts.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {localSlts.length} target{localSlts.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-
-          {localSlts.length === 0 ? (
-            <div className="py-16 text-center border-2 border-dashed rounded-xl">
-              <AndamioText variant="muted">No learning targets yet</AndamioText>
-              <AndamioText variant="small" className="text-muted-foreground/70 mt-1">
-                Add your first &quot;I can...&quot; statement above
-              </AndamioText>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {localSlts.map((slt, index) => {
-                const isEditing = editingIndex === slt.module_index;
-                const opId = `update-${slt.module_index}`;
-                const isUpdating = pendingOps.has(opId);
-
-                return (
-                  <div
-                    key={slt.module_index}
-                    className={cn(
-                      "group flex items-start gap-4 p-4 rounded-xl border bg-card transition-colors duration-150",
-                      isEditing && "ring-2 ring-primary/20 border-primary/30"
-                    )}
-                  >
-                    {/* Index badge */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center">
-                      {index + 1}
-                    </div>
-
-                    {/* Content */}
-                    {isEditing ? (
-                      <div className="flex-1 flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                            I can
-                          </span>
-                          <Input
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            className="pl-14"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleUpdate(slt);
-                              if (e.key === "Escape") cancelEditing();
-                            }}
-                          />
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => void handleUpdate(slt)}
-                          disabled={!editingText.trim()}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={cancelEditing}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex-1 min-w-0 py-1">
-                          <AndamioText className={cn(
-                            "leading-relaxed",
-                            isUpdating && "opacity-50"
-                          )}>
-                            <span className="text-muted-foreground">I can </span>
-                            {slt.slt_text}
-                          </AndamioText>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => startEditing(slt)}
-                            className="h-8 w-8"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => void handleDelete(slt)}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <WizardStepTip>
-          <strong>Good learning targets are specific and measurable.</strong>{" "}
-          Focus on observable actions: &quot;explain&quot;, &quot;build&quot;, &quot;analyze&quot;, or &quot;demonstrate&quot;.
-        </WizardStepTip>
-
+        {/* Error display */}
         {error && (
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <AndamioText variant="small" className="text-destructive">{error}</AndamioText>
+            {error}
           </div>
+        )}
+
+        {/* SLT List */}
+        {localSlts.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Target className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">
+              Add your first learning target above
+            </p>
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(e: DragEndEvent) => void handleDragEnd(e)}
+          >
+            <SortableContext
+              items={localSlts.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {localSlts.map((slt, index) => (
+                  <SortableSltItem
+                    key={slt.id}
+                    slt={slt}
+                    index={index}
+                    isEditing={editingIndex === slt.module_index}
+                    isUpdating={pendingOps.has(`update-${slt.module_index}`)}
+                    editingText={editingText}
+                    onEditingTextChange={setEditingText}
+                    onStartEditing={() => startEditing(slt)}
+                    onCancelEditing={cancelEditing}
+                    onUpdate={() => void handleUpdate(slt)}
+                    onDelete={() => void handleDelete(slt)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -396,5 +381,141 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         nextLabel="Design the Assignment"
       />
     </WizardStep>
+  );
+}
+
+/**
+ * Sortable SLT Item Component
+ */
+interface SortableSltItemProps {
+  slt: SLT;
+  index: number;
+  isEditing: boolean;
+  isUpdating: boolean;
+  editingText: string;
+  onEditingTextChange: (text: string) => void;
+  onStartEditing: () => void;
+  onCancelEditing: () => void;
+  onUpdate: () => void;
+  onDelete: () => void;
+}
+
+function SortableSltItem({
+  slt,
+  index,
+  isEditing,
+  isUpdating,
+  editingText,
+  onEditingTextChange,
+  onStartEditing,
+  onCancelEditing,
+  onUpdate,
+  onDelete,
+}: SortableSltItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slt.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-150",
+        isDragging
+          ? "border-primary bg-primary/5 shadow-lg z-50"
+          : isEditing
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+      )}
+    >
+      {/* Drag handle */}
+      <button
+        type="button"
+        className={cn(
+          "flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors",
+          isDragging && "cursor-grabbing"
+        )}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* Index badge */}
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+        {index + 1}
+      </span>
+
+      {/* Content */}
+      {isEditing ? (
+        <div className="flex-1 flex items-center gap-2">
+          <Input
+            value={editingText}
+            onChange={(e) => onEditingTextChange(e.target.value)}
+            className="h-9 flex-1"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onUpdate();
+              if (e.key === "Escape") onCancelEditing();
+            }}
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onUpdate}
+            disabled={!editingText.trim()}
+            className="h-8 w-8 text-primary hover:text-primary"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onCancelEditing}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <>
+          <span className={cn(
+            "flex-1 text-sm",
+            isUpdating && "opacity-50"
+          )}>
+            {slt.slt_text}
+          </span>
+          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onStartEditing}
+              className="h-7 w-7"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onDelete}
+              className="h-7 w-7 hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

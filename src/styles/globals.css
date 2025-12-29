@@ -62,130 +62,130 @@
 }
 
 :root {
-  /* Andamio Light Theme - Logo-inspired, Clean, Professional */
+  /* Andamio Light Theme - Sharp, Clean, High Contrast */
   --radius: 0.625rem;
 
-  /* Base - Soft neutral off-white (subtle warmth, not yellow) */
-  --background: oklch(0.965 0.005 100);
-  --foreground: oklch(0.18 0.02 245);
+  /* Base - Clean white main area */
+  --background: oklch(0.995 0 0);
+  --foreground: oklch(0.15 0.02 250);
 
-  /* Cards - Clean white (clear elevation) */
-  --card: oklch(0.988 0.003 100);
-  --card-foreground: oklch(0.18 0.02 245);
+  /* Cards - Subtle elevation on white */
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.15 0.02 250);
 
-  /* Popover - Pure white (highest elevation) */
-  --popover: oklch(0.997 0.001 100);
-  --popover-foreground: oklch(0.18 0.02 245);
+  /* Popover - Pure white */
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.15 0.02 250);
 
-  /* Primary - Deep navy-teal (from logo) */
-  --primary: oklch(0.38 0.08 230);
-  --primary-foreground: oklch(0.99 0 0);
+  /* Primary - Vibrant sky blue (fresh, modern) */
+  --primary: oklch(0.55 0.18 250);
+  --primary-foreground: oklch(1.0 0 0);
 
-  /* Secondary - Soft cool gray */
-  --secondary: oklch(0.94 0.005 240);
-  --secondary-foreground: oklch(0.28 0.02 245);
+  /* Secondary - Light cool gray */
+  --secondary: oklch(0.94 0.006 250);
+  --secondary-foreground: oklch(0.25 0.02 250);
 
   /* Muted - Neutral gray */
-  --muted: oklch(0.95 0.004 240);
-  --muted-foreground: oklch(0.45 0.015 245);
+  --muted: oklch(0.95 0.005 250);
+  --muted-foreground: oklch(0.42 0.015 250);
 
-  /* Accent - Soft teal tint (logo cyan) */
-  --accent: oklch(0.94 0.025 195);
-  --accent-foreground: oklch(0.18 0.02 245);
+  /* Accent - Soft blue tint */
+  --accent: oklch(0.96 0.02 250);
+  --accent-foreground: oklch(0.15 0.02 250);
 
-  /* Status colors - Logo-inspired palette */
-  --destructive: oklch(0.55 0.20 25);
-  --success: oklch(0.48 0.13 175);
-  --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.72 0.15 55);
-  --warning-foreground: oklch(0.25 0.03 55);
-  --info: oklch(0.52 0.12 230);
-  --info-foreground: oklch(0.99 0 0);
+  /* Status colors - Vivid and clear */
+  --destructive: oklch(0.55 0.22 25);
+  --success: oklch(0.52 0.15 160);
+  --success-foreground: oklch(1.0 0 0);
+  --warning: oklch(0.75 0.16 70);
+  --warning-foreground: oklch(0.22 0.04 70);
+  --info: oklch(0.55 0.15 250);
+  --info-foreground: oklch(1.0 0 0);
 
-  /* Borders - Clean definition */
-  --border: oklch(0.90 0.006 240);
-  --input: oklch(0.85 0.008 240);
-  --ring: oklch(0.38 0.08 230);
+  /* Borders - Strong, visible definition */
+  --border: oklch(0.85 0.008 250);
+  --input: oklch(0.82 0.01 250);
+  --ring: oklch(0.55 0.18 250);
 
-  /* Charts - Logo palette (teal, coral, amber, navy, cyan) */
-  --chart-1: oklch(0.50 0.12 195);
-  --chart-2: oklch(0.62 0.18 25);
-  --chart-3: oklch(0.72 0.15 55);
-  --chart-4: oklch(0.38 0.08 230);
-  --chart-5: oklch(0.55 0.14 175);
+  /* Charts - Vibrant palette */
+  --chart-1: oklch(0.55 0.18 250);
+  --chart-2: oklch(0.60 0.20 25);
+  --chart-3: oklch(0.75 0.16 70);
+  --chart-4: oklch(0.52 0.15 160);
+  --chart-5: oklch(0.58 0.16 310);
 
-  /* Sidebar - Subtle panel distinction */
-  --sidebar: oklch(0.96 0.006 240);
-  --sidebar-foreground: oklch(0.18 0.02 245);
-  --sidebar-primary: oklch(0.38 0.08 230);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.93 0.015 200);
-  --sidebar-accent-foreground: oklch(0.18 0.02 245);
-  --sidebar-border: oklch(0.90 0.006 240);
-  --sidebar-ring: oklch(0.38 0.08 230);
+  /* Sidebar - Gray panel for contrast */
+  --sidebar: oklch(0.94 0.008 250);
+  --sidebar-foreground: oklch(0.15 0.02 250);
+  --sidebar-primary: oklch(0.55 0.18 250);
+  --sidebar-primary-foreground: oklch(1.0 0 0);
+  --sidebar-accent: oklch(0.90 0.012 250);
+  --sidebar-accent-foreground: oklch(0.15 0.02 250);
+  --sidebar-border: oklch(0.82 0.01 250);
+  --sidebar-ring: oklch(0.55 0.18 250);
 }
 
 .dark {
-  /* Andamio Dark Theme - Logo-inspired, Deep, Professional */
+  /* Andamio Dark Theme - Sharp, Clean, High Contrast */
 
-  /* Base - Deep slate with blue undertone */
-  --background: oklch(0.14 0.015 245);
-  --foreground: oklch(0.94 0.005 240);
+  /* Base - Main content area (lighter) */
+  --background: oklch(0.16 0.018 250);
+  --foreground: oklch(0.95 0.005 250);
 
-  /* Cards - Elevated surface (clearly lifted) */
-  --card: oklch(0.19 0.015 245);
-  --card-foreground: oklch(0.94 0.005 240);
+  /* Cards - Elevated surface */
+  --card: oklch(0.19 0.016 250);
+  --card-foreground: oklch(0.95 0.005 250);
 
   /* Popover - Highest elevation */
-  --popover: oklch(0.24 0.015 245);
-  --popover-foreground: oklch(0.94 0.005 240);
+  --popover: oklch(0.22 0.016 250);
+  --popover-foreground: oklch(0.95 0.005 250);
 
-  /* Primary - Bright teal (logo-inspired, accessible) */
-  --primary: oklch(0.62 0.12 195);
-  --primary-foreground: oklch(0.14 0.015 245);
+  /* Primary - Bright sky blue (matches light mode hue) */
+  --primary: oklch(0.68 0.16 250);
+  --primary-foreground: oklch(0.12 0.02 250);
 
   /* Secondary - Elevated slate */
-  --secondary: oklch(0.22 0.015 245);
-  --secondary-foreground: oklch(0.90 0.005 240);
+  --secondary: oklch(0.22 0.015 250);
+  --secondary-foreground: oklch(0.90 0.005 250);
 
   /* Muted - Subtle backgrounds */
-  --muted: oklch(0.20 0.015 245);
-  --muted-foreground: oklch(0.58 0.012 240);
+  --muted: oklch(0.20 0.015 250);
+  --muted-foreground: oklch(0.60 0.01 250);
 
-  /* Accent - Teal tint highlight */
-  --accent: oklch(0.25 0.025 200);
-  --accent-foreground: oklch(0.94 0.005 240);
+  /* Accent - Blue tint highlight */
+  --accent: oklch(0.24 0.025 250);
+  --accent-foreground: oklch(0.95 0.005 250);
 
   /* Status colors - Vivid and clear */
-  --destructive: oklch(0.62 0.18 25);
-  --success: oklch(0.58 0.13 175);
-  --success-foreground: oklch(0.14 0.02 175);
-  --warning: oklch(0.78 0.14 55);
-  --warning-foreground: oklch(0.18 0.03 55);
-  --info: oklch(0.60 0.12 230);
-  --info-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.62 0.20 25);
+  --success: oklch(0.62 0.16 160);
+  --success-foreground: oklch(0.12 0.02 160);
+  --warning: oklch(0.80 0.15 70);
+  --warning-foreground: oklch(0.18 0.04 70);
+  --info: oklch(0.65 0.14 250);
+  --info-foreground: oklch(0.12 0.02 250);
 
-  /* Borders - Clear definition */
-  --border: oklch(0.30 0.015 245);
-  --input: oklch(0.35 0.015 245);
-  --ring: oklch(0.62 0.12 195);
+  /* Borders - Strong, visible definition */
+  --border: oklch(0.30 0.018 250);
+  --input: oklch(0.35 0.018 250);
+  --ring: oklch(0.68 0.16 250);
 
-  /* Charts - Logo palette (brighter for dark mode) */
-  --chart-1: oklch(0.58 0.12 195);
-  --chart-2: oklch(0.68 0.17 25);
-  --chart-3: oklch(0.78 0.14 55);
-  --chart-4: oklch(0.50 0.10 230);
-  --chart-5: oklch(0.62 0.13 175);
+  /* Charts - Vibrant palette for dark */
+  --chart-1: oklch(0.68 0.16 250);
+  --chart-2: oklch(0.65 0.18 25);
+  --chart-3: oklch(0.80 0.15 70);
+  --chart-4: oklch(0.62 0.16 160);
+  --chart-5: oklch(0.65 0.16 310);
 
-  /* Sidebar - Deeper navigation panel */
-  --sidebar: oklch(0.12 0.015 245);
-  --sidebar-foreground: oklch(0.94 0.005 240);
-  --sidebar-primary: oklch(0.62 0.12 195);
-  --sidebar-primary-foreground: oklch(0.14 0.015 245);
-  --sidebar-accent: oklch(0.22 0.020 200);
-  --sidebar-accent-foreground: oklch(0.94 0.005 240);
-  --sidebar-border: oklch(0.25 0.015 245);
-  --sidebar-ring: oklch(0.62 0.12 195);
+  /* Sidebar - Darker navigation panel */
+  --sidebar: oklch(0.11 0.02 250);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.68 0.16 250);
+  --sidebar-primary-foreground: oklch(0.12 0.02 250);
+  --sidebar-accent: oklch(0.18 0.022 250);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(0.25 0.018 250);
+  --sidebar-ring: oklch(0.68 0.16 250);
 }
 
 @layer base {
@@ -678,11 +678,8 @@ h6:first-child {
     @apply px-3 py-2 w-full text-sm;
   }
 
-  /* Button styling */
-  button,
-  [role="button"] {
-    @apply px-4 py-2 font-medium text-sm transition-colors;
-  }
+  /* Button styling - Only for standalone buttons without explicit padding */
+  /* Removed: This was overriding component-level padding and breaking flex gap layouts */
 
   /* Table styling */
   [data-slot="table-head"] {

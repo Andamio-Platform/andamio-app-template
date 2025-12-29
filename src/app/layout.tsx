@@ -34,8 +34,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={spaceGrotesk.variable} suppressHydrationWarning>
-      <body className="font-sans">
+    <html lang="en" className={`${spaceGrotesk.variable} overflow-hidden overscroll-none`} suppressHydrationWarning>
+      <body className="font-sans overflow-hidden overscroll-none">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

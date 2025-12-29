@@ -76,7 +76,6 @@ import {
   Check,
   Layout,
   Monitor,
-  Smartphone,
   Plus,
   Blocks,
   ChevronDown,
@@ -91,30 +90,19 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Menu,
-  Search,
-  Bell,
   Mail,
   Calendar,
   CreditCard,
   Users,
   BookOpen,
-  GripVertical,
-  FileText,
   FolderOpen,
   Trash2,
   Edit,
   Eye,
   Download,
   Share,
-  Heart,
-  MessageSquare,
   Star,
   Clock,
-  MapPin,
-  Phone,
-  Globe,
-  Link as LinkIcon,
 } from "lucide-react";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -125,7 +113,7 @@ export default function ComponentsPage() {
   const [showLoading, setShowLoading] = useState(false);
   const { isCopied, copy } = useCopyFeedback();
 
-  const CodeBlock = ({ code }: { code: string }) => (
+  const _CodeBlock = ({ code }: { code: string }) => (
     <div className="relative group">
       <pre className="text-xs bg-muted p-4 rounded-md overflow-x-auto border">
         <code>{code}</code>

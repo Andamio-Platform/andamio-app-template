@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { CheckCircle, Clock, Plus, Settings, Blocks } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Blocks } from "lucide-react";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import { cn } from "~/lib/utils";
 
@@ -20,64 +19,98 @@ interface StudioCourseCardProps {
   onClick: () => void;
 }
 
+type CourseStatus = "synced" | "syncing" | "onchain-only";
+
+function getStatus(course: HybridCourseStatus): CourseStatus {
+  if (course.inDb && course.onChain) return "synced";
+  if (course.inDb && !course.onChain) return "syncing";
+  return "onchain-only";
+}
+
 /**
- * Compact course card for the Course Studio grid layout
- * Shows course status with on-chain verification indicators
+ * Compact course card for grid layout
+ * Matches CourseList styling for consistency
  */
 export function StudioCourseCard({ course, onClick }: StudioCourseCardProps) {
-  const truncatedId = `${course.courseId.slice(0, 6)}...${course.courseId.slice(-4)}`;
+  const truncatedId = `${course.courseId.slice(0, 8)}…${course.courseId.slice(-6)}`;
+  const status = getStatus(course);
+  const isClickable = course.inDb;
 
   return (
     <button
+      type="button"
       onClick={onClick}
-      disabled={!course.inDb}
+      disabled={!isClickable}
       className={cn(
-        "group relative flex flex-col p-3 text-left w-full rounded-lg border bg-card text-card-foreground shadow-sm",
-        "transition-all hover:border-primary/50 hover:shadow-sm",
-        "disabled:opacity-60 disabled:cursor-not-allowed",
-        course.inDb && "cursor-pointer"
+        "flex flex-col p-3 text-left rounded-lg border bg-card transition-colors",
+        isClickable && "hover:bg-muted/50 cursor-pointer",
+        !isClickable && "opacity-60 cursor-not-allowed"
       )}
     >
-        {/* Status indicator */}
-        <div className="absolute top-2 right-2">
-          {course.inDb && course.onChain ? (
-            <CheckCircle className="h-4 w-4 text-success" />
-          ) : course.inDb ? (
-            <Clock className="h-4 w-4 text-info animate-pulse" />
-          ) : (
-            <Plus className="h-4 w-4 text-warning" />
-          )}
-        </div>
-
-        {/* Title */}
-        <h3 className="font-medium text-sm truncate pr-6">
-          {course.title ?? "Untitled Course"}
-        </h3>
-
-        {/* ID */}
-        <code className="text-[10px] text-muted-foreground font-mono mt-0.5">
-          {truncatedId}
-        </code>
-
-        {/* Stats row */}
-        <div className="flex items-center gap-2 mt-2">
-          {course.onChain && course.onChainModuleCount > 0 && (
-            <AndamioBadge variant="secondary" className="text-[10px] h-5">
-              <Blocks className="h-2.5 w-2.5 mr-0.5" />
-              {course.onChainModuleCount} modules
-            </AndamioBadge>
-          )}
-        </div>
-
-        {/* Hover action hint */}
-        {course.inDb && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-            <div className="flex items-center gap-1 text-xs font-medium text-primary">
-              <Settings className="h-3.5 w-3.5" />
-              Open
-            </div>
+      {/* Header: Status + Title */}
+      <div className="flex items-start gap-2">
+        <StatusIcon status={status} />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium truncate">
+            {course.title ?? "Untitled Course"}
           </div>
+          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
+            {truncatedId}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer: Stats + Status label */}
+      <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+        {course.onChain && course.onChainModuleCount > 0 ? (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Blocks className="h-3 w-3" />
+            {course.onChainModuleCount} module{course.onChainModuleCount !== 1 ? "s" : ""}
+          </span>
+        ) : (
+          <span />
         )}
+        <StatusLabel status={status} />
+      </div>
     </button>
   );
+}
+
+function StatusIcon({ status }: { status: CourseStatus }) {
+  const baseClass = "h-6 w-6 flex items-center justify-center rounded-md flex-shrink-0";
+  const iconClass = "h-3.5 w-3.5";
+
+  switch (status) {
+    case "synced":
+      return (
+        <div className={cn(baseClass, "bg-success/10")}>
+          <CheckCircle className={cn(iconClass, "text-success")} />
+        </div>
+      );
+    case "syncing":
+      return (
+        <div className={cn(baseClass, "bg-info/10")}>
+          <Clock className={cn(iconClass, "text-info")} />
+        </div>
+      );
+    case "onchain-only":
+      return (
+        <div className={cn(baseClass, "bg-muted")}>
+          <AlertCircle className={cn(iconClass, "text-muted-foreground")} />
+        </div>
+      );
+  }
+}
+
+function StatusLabel({ status }: { status: CourseStatus }) {
+  const baseClass = "text-[10px] font-medium uppercase tracking-wide";
+
+  switch (status) {
+    case "synced":
+      return <span className={cn(baseClass, "text-success")}>Live</span>;
+    case "syncing":
+      return <span className={cn(baseClass, "text-info")}>Syncing</span>;
+    case "onchain-only":
+      return <span className={cn(baseClass, "text-muted-foreground")}>Import</span>;
+  }
 }

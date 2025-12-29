@@ -626,6 +626,7 @@ This project uses Claude Skills for AI-assisted development workflows:
 | Skill | Purpose |
 |-------|---------|
 | `review-styling` | Validate routes against style guidelines |
+| `theme-expert` | Comprehensive design system knowledge (layouts, colors, spacing, rules) |
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API endpoint coverage |
 | `project-manager` | Track project status and roadmap |

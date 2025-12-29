@@ -10,6 +10,7 @@ import {
   AndamioCardTitle,
   AndamioBadge,
   AndamioSkeleton,
+  AndamioCardLoading,
   AndamioAlert,
   AndamioAlertDescription,
   AndamioTooltip,
@@ -157,14 +158,10 @@ export function OnChainSltsViewer({
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {compact ? (
-          <AndamioSkeleton className="h-24 w-full" />
-        ) : (
-          <AndamioSkeleton className="h-48 w-full" />
-        )}
-      </div>
+    return compact ? (
+      <AndamioSkeleton className="h-24 w-full rounded-lg" />
+    ) : (
+      <AndamioCardLoading title="On-Chain Learning Targets" lines={3} />
     );
   }
 

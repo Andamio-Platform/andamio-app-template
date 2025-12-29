@@ -37,21 +37,14 @@ export function WizardStep({
       transition={stepTransition}
       className={cn("space-y-6", className)}
     >
-      {/* Step header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-              {config.subtitle}
-            </h2>
-            <AndamioText variant="small">
-              {config.description}
-            </AndamioText>
-          </div>
+      {/* Step header - minimal */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+          {config.subtitle}
+        </h2>
       </div>
 
       {/* Step content */}

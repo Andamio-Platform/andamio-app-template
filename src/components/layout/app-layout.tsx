@@ -17,19 +17,19 @@ interface AppLayoutProps {
  */
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
+    <div className="flex h-screen w-full flex-col overflow-hidden overscroll-none bg-background">
       {/* Status Bar - Minimal height */}
       <AuthStatusBar />
 
       {/* Main Container */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Sidebar - Hidden on mobile, visible on desktop (md+) */}
-        <div className="hidden md:block">
+        <div className="hidden md:flex md:flex-shrink-0">
           <AppSidebar />
         </div>
 
         {/* Content Area - Scrollable, full width on mobile */}
-        <main className="flex-1 overflow-y-auto bg-muted/30">
+        <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30">
           <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             {children}
           </div>

@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSuccessNotification } from "~/hooks/use-success-notification";
+import Image from "next/image";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
@@ -13,20 +11,20 @@ import {
   StudioFormSection,
 } from "~/components/studio/studio-editor-pane";
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
+  AndamioResizablePanelGroup,
+  AndamioResizablePanel,
+  AndamioResizableHandle,
 } from "~/components/andamio/andamio-resizable";
 import {
   AndamioButton,
   AndamioBadge,
-  AndamioSkeleton,
   AndamioInput,
   AndamioLabel,
   AndamioTextarea,
   AndamioAlert,
   AndamioAlertDescription,
   AndamioScrollArea,
+  AndamioStudioLoading,
 } from "~/components/andamio";
 import {
   AlertCircle,
@@ -41,31 +39,176 @@ import {
   CheckCircle,
   Clock,
   Circle,
+  ExternalLink,
+  ImageIcon,
+  Video,
+  Copy,
+  Check,
+  GripVertical,
+  Eye,
 } from "lucide-react";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
-import {
-  type CourseOutput,
-  type ListCourseModulesOutput,
-  type UpdateCourseInput,
-  updateCourseInputSchema,
-} from "@andamio/db-api";
+import { type CourseModuleOutput } from "@andamio/db-api";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/use-course";
+import { useCourseModules } from "~/hooks/api/use-course-module";
+import { cn } from "~/lib/utils";
+import { toast } from "sonner";
 
-interface ApiError {
-  message?: string;
+// =============================================================================
+// Helper Components
+// =============================================================================
+
+/**
+ * Compact address display with copy functionality
+ */
+function CopyableAddress({ address, label }: { address: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    toast.success("Copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {label && <AndamioText as="span" variant="small">{label}</AndamioText>}
+      <code className="text-[10px] text-muted-foreground font-mono flex-1 truncate">
+        {address}
+      </code>
+      <AndamioButton
+        variant="ghost"
+        size="sm"
+        className="h-6 w-6 p-0 flex-shrink-0"
+        onClick={handleCopy}
+      >
+        {copied ? (
+          <Check className="h-3 w-3 text-success" />
+        ) : (
+          <Copy className="h-3 w-3" />
+        )}
+      </AndamioButton>
+    </div>
+  );
 }
+
+/**
+ * Image preview with fallback
+ */
+function ImagePreview({ url, alt }: { url: string; alt: string }) {
+  const [error, setError] = useState(false);
+
+  if (!url || error) {
+    return (
+      <div className="flex h-24 items-center justify-center rounded-lg border border-dashed bg-muted/30">
+        <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-24 overflow-hidden rounded-lg border bg-muted/30">
+      <Image
+        src={url}
+        alt={alt}
+        fill
+        className="object-cover"
+        onError={() => setError(true)}
+        unoptimized
+      />
+    </div>
+  );
+}
+
+/**
+ * Video embed preview
+ */
+function VideoPreview({ url }: { url: string }) {
+  const embedUrl = useMemo(() => {
+    if (!url) return null;
+    // YouTube
+    const ytRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/;
+    const ytMatch = ytRegex.exec(url);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    // Vimeo
+    const vimeoRegex = /vimeo\.com\/(\d+)/;
+    const vimeoMatch = vimeoRegex.exec(url);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return null;
+  }, [url]);
+
+  if (!url) {
+    return (
+      <div className="flex h-24 items-center justify-center rounded-lg border border-dashed bg-muted/30">
+        <Video className="h-6 w-6 text-muted-foreground/50" />
+      </div>
+    );
+  }
+
+  if (!embedUrl) {
+    return (
+      <div className="flex h-24 items-center justify-center rounded-lg border bg-muted/30">
+        <div className="text-center">
+          <Video className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
+          <AndamioText variant="small" className="text-[10px]">Video URL set</AndamioText>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-24 overflow-hidden rounded-lg border bg-black">
+      <iframe
+        src={embedUrl}
+        className="absolute inset-0 h-full w-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+
+/**
+ * Module status badge component
+ */
+function ModuleStatusBadge({ status }: { status: CourseModuleOutput["status"] }) {
+  const statusConfig: Record<string, { icon: typeof CheckCircle; color: string; bg: string; label: string; animate?: boolean }> = {
+    ON_CHAIN: { icon: CheckCircle, color: "text-success", bg: "bg-success/10", label: "On-Chain" },
+    PENDING_TX: { icon: Clock, color: "text-info", bg: "bg-info/10", label: "Pending", animate: true },
+    APPROVED: { icon: Circle, color: "text-warning fill-warning", bg: "bg-warning/10", label: "Ready" },
+    DRAFT: { icon: Circle, color: "text-muted-foreground", bg: "bg-muted", label: "Draft" },
+    ARCHIVED: { icon: Circle, color: "text-muted-foreground/50", bg: "bg-muted/50", label: "Archived" },
+    BACKLOG: { icon: Circle, color: "text-muted-foreground", bg: "bg-muted", label: "Backlog" },
+    DEPRECATED: { icon: Circle, color: "text-destructive/50", bg: "bg-destructive/5", label: "Deprecated" },
+  };
+
+  const config = statusConfig[status] ?? { icon: Circle, color: "text-muted-foreground", bg: "bg-muted", label: status };
+  const Icon = config.icon;
+
+  return (
+    <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", config.bg)}>
+      <Icon className={cn("h-4 w-4", config.color, config.animate && "animate-pulse")} />
+    </div>
+  );
+}
+
+// =============================================================================
+// Main Component
+// =============================================================================
 
 /**
  * Course Editor Content - The main editing UI
  *
  * Rendered only after RequireCourseAccess verifies the user has access.
+ * Uses React Query for data fetching and caching.
  */
 function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
@@ -73,27 +216,74 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "details";
 
   // Update studio header
-  const { setBreadcrumbs, setTitle, setStatus, setActions } = useStudioHeader();
+  const { setBreadcrumbs, setTitle, setActions } = useStudioHeader();
 
-  const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [modules, setModules] = useState<ListCourseModulesOutput>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const { data: course, isLoading: isLoadingCourse, error: courseError } = useCourse(courseNftPolicyId);
+  const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(courseNftPolicyId);
 
-  // Form state
-  const [title, setTitleState] = useState("");
-  const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  // Mutations
+  const updateCourseMutation = useUpdateCourse();
+  const deleteCourseMutation = useDeleteCourse();
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
-
-  const [isDeleting, setIsDeleting] = useState(false);
+  // Form state (local, synced from course data)
+  const [formTitle, setFormTitle] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [formVideoUrl, setFormVideoUrl] = useState("");
+  const [formInitialized, setFormInitialized] = useState(false);
 
   // Panel collapse state
-  const [isOutlineCollapsed, setIsOutlineCollapsed] = useState(false);
+  const [, setIsOutlineCollapsed] = useState(false);
+
+  // Sync form state when course data loads
+  useEffect(() => {
+    if (course && !formInitialized) {
+      setFormTitle(course.title ?? "");
+      setFormDescription(course.description ?? "");
+      setFormImageUrl(course.image_url ?? "");
+      setFormVideoUrl(course.video_url ?? "");
+      setFormInitialized(true);
+    }
+  }, [course, formInitialized]);
+
+  // Update header when course loads
+  useEffect(() => {
+    if (course) {
+      setTitle(course.title ?? "Untitled Course");
+      setBreadcrumbs([
+        { label: "Course Studio", href: "/studio/course" },
+        { label: course.title ?? "Course" },
+      ]);
+    }
+  }, [course, setBreadcrumbs, setTitle]);
+
+  // Update header actions
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-2">
+        <AndamioButton
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          asChild
+        >
+          <Link href={`/course/${courseNftPolicyId}`}>
+            <Eye className="h-3.5 w-3.5 mr-1" />
+            Preview
+          </Link>
+        </AndamioButton>
+        <AndamioButton
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=blueprint`)}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          <span className="hidden sm:inline">Add Module</span>
+        </AndamioButton>
+      </div>
+    );
+  }, [setActions, courseNftPolicyId, router]);
 
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -101,199 +291,85 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handleCreateModule = () => {
-    router.push(`/studio/course/${courseNftPolicyId}/new?step=blueprint`);
-  };
-
-  // Fetch data
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Fetch course
-      const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
-      );
-
-      if (!courseResponse.ok) {
-        throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
-      }
-
-      const courseData = (await courseResponse.json()) as CourseOutput;
-      setCourse(courseData);
-      setTitleState(courseData.title ?? "");
-      setDescription(courseData.description ?? "");
-      setImageUrl(courseData.image_url ?? "");
-      setVideoUrl(courseData.video_url ?? "");
-
-      // Update header
-      setTitle(courseData.title ?? "Untitled Course");
-      setBreadcrumbs([
-        { label: "Course Studio", href: "/studio/course" },
-        { label: courseData.title ?? "Course" },
-      ]);
-
-      // Fetch modules
-      const modulesResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
-      );
-
-      if (modulesResponse.ok) {
-        const modulesData = (await modulesResponse.json()) as ListCourseModulesOutput;
-        setModules(modulesData ?? []);
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError(err instanceof Error ? err.message : "Failed to load course");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [courseNftPolicyId, setBreadcrumbs, setTitle]);
-
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
-
-  // Update header actions
-  useEffect(() => {
-    setActions(
-      <AndamioButton size="sm" onClick={handleCreateModule}>
-        <Plus className="h-4 w-4 mr-1" />
-        <span className="hidden sm:inline">Add Module</span>
-      </AndamioButton>
-    );
-  }, [setActions]);
-
   const handleSave = async () => {
-    if (!isAuthenticated || !course) {
-      setSaveError("You must be authenticated to edit courses");
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveError(null);
+    if (!course) return;
 
     try {
-      const input: UpdateCourseInput = {
-        course_code: course.course_code,
+      await updateCourseMutation.mutateAsync({
+        courseNftPolicyId,
         data: {
-          title: title || undefined,
-          description: description || undefined,
-          image_url: imageUrl || undefined,
-          video_url: videoUrl || undefined,
+          course_code: course.course_code,
+          data: {
+            title: formTitle || undefined,
+            description: formDescription || undefined,
+            image_url: formImageUrl || undefined,
+            video_url: formVideoUrl || undefined,
+          },
         },
-      };
-
-      const validationResult = updateCourseInputSchema.safeParse(input);
-      if (!validationResult.success) {
-        const errors = validationResult.error.issues
-          .map((err) => `${err.path.join(".")}: ${err.message}`)
-          .join(", ");
-        throw new Error(`Validation failed: ${errors}`);
-      }
-
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_code: course.course_code,
-            data: validationResult.data,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to update course");
-      }
-
-      showSuccess();
-      await fetchData();
+      });
+      toast.success("Course updated");
     } catch (err) {
-      console.error("Error saving course:", err);
-      setSaveError(err instanceof Error ? err.message : "Failed to save changes");
-    } finally {
-      setIsSaving(false);
+      toast.error("Failed to save", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   };
 
   const handleDelete = async () => {
-    if (!isAuthenticated || !course) return;
-
-    setIsDeleting(true);
     try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_code: course.course_code }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to delete course");
-      }
-
+      await deleteCourseMutation.mutateAsync(courseNftPolicyId);
+      toast.success("Course deleted");
       router.push("/studio/course");
     } catch (err) {
-      console.error("Error deleting course:", err);
-      setSaveError(err instanceof Error ? err.message : "Failed to delete course");
-    } finally {
-      setIsDeleting(false);
+      toast.error("Failed to delete", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   };
 
+  // Computed values
+  const isLoading = isLoadingCourse || isLoadingModules;
+  const hasChanges = course && (
+    formTitle !== (course.title ?? "") ||
+    formDescription !== (course.description ?? "") ||
+    formImageUrl !== (course.image_url ?? "") ||
+    formVideoUrl !== (course.video_url ?? "")
+  );
+
+  // Module stats
+  const moduleStats = useMemo(() => ({
+    total: modules.length,
+    onChain: modules.filter((m) => m.status === "ON_CHAIN").length,
+    pending: modules.filter((m) => m.status === "PENDING_TX").length,
+    approved: modules.filter((m) => m.status === "APPROVED").length,
+    draft: modules.filter((m) => m.status === "DRAFT").length,
+  }), [modules]);
+
   // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="space-y-3">
-          <AndamioSkeleton className="h-8 w-48" />
-          <AndamioSkeleton className="h-64 w-96" />
-        </div>
-      </div>
-    );
+  if (isLoading && !course) {
+    return <AndamioStudioLoading variant="split-pane" />;
   }
 
   // Error state
-  if (error || !course) {
+  if (courseError || !course) {
     return (
       <StudioEditorPane padding="normal">
         <AndamioAlert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AndamioAlertDescription>{error ?? "Course not found"}</AndamioAlertDescription>
+          <AndamioAlertDescription>
+            {courseError instanceof Error ? courseError.message : "Course not found"}
+          </AndamioAlertDescription>
         </AndamioAlert>
       </StudioEditorPane>
     );
   }
 
-  const hasChanges =
-    title !== (course.title ?? "") ||
-    description !== (course.description ?? "") ||
-    imageUrl !== (course.image_url ?? "") ||
-    videoUrl !== (course.video_url ?? "");
-
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-full">
+    <AndamioResizablePanelGroup direction="horizontal" className="h-full">
       {/* Left Panel: Module Outline */}
-      <ResizablePanel
-        defaultSize={25}
-        minSize={15}
+      <AndamioResizablePanel
+        defaultSize={28}
+        minSize={18}
         maxSize={40}
         collapsible
         collapsedSize={0}
@@ -303,14 +379,19 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         <div className="flex h-full flex-col border-r border-border bg-muted/30">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Modules ({modules.length})
-            </span>
+            <div className="flex items-center gap-2">
+              <AndamioText as="span" variant="overline">
+                Modules
+              </AndamioText>
+              <AndamioBadge variant="secondary" className="text-[10px] h-4 px-1">
+                {moduleStats.total}
+              </AndamioBadge>
+            </div>
             <AndamioButton
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0"
-              onClick={handleCreateModule}
+              onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=blueprint`)}
             >
               <Plus className="h-3.5 w-3.5" />
             </AndamioButton>
@@ -320,17 +401,20 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
           <AndamioScrollArea className="flex-1">
             <div className="py-1">
               {modules.length === 0 ? (
-                <div className="px-3 py-6 text-center">
-                  <BookOpen className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                  <AndamioText variant="small" className="text-xs">No modules yet</AndamioText>
+                <div className="px-3 py-8 text-center">
+                  <BookOpen className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <AndamioText className="text-sm font-medium">No modules yet</AndamioText>
+                  <AndamioText variant="small" className="mt-1 mb-3">
+                    Create your first module to get started
+                  </AndamioText>
                   <AndamioButton
                     variant="outline"
                     size="sm"
-                    className="mt-2 text-xs h-7"
-                    onClick={handleCreateModule}
+                    className="text-xs"
+                    onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=blueprint`)}
                   >
                     <Plus className="h-3 w-3 mr-1" />
-                    Create First Module
+                    Create Module
                   </AndamioButton>
                 </div>
               ) : (
@@ -338,27 +422,27 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <Link
                     key={courseModule.module_code}
                     href={`/studio/course/${courseNftPolicyId}/${courseModule.module_code}`}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-accent transition-colors group"
+                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors group border-b border-border/50 last:border-0"
                   >
+                    {/* Drag handle (visual only for now) */}
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+
                     {/* Status indicator */}
-                    <div className="flex-shrink-0">
-                      {courseModule.status === "ON_CHAIN" ? (
-                        <CheckCircle className="h-3.5 w-3.5 text-success" />
-                      ) : courseModule.status === "PENDING_TX" ? (
-                        <Clock className="h-3.5 w-3.5 text-info animate-pulse" />
-                      ) : courseModule.status === "APPROVED" ? (
-                        <Circle className="h-3.5 w-3.5 fill-warning text-warning" />
-                      ) : (
-                        <Circle className="h-3.5 w-3.5 text-muted-foreground" />
-                      )}
-                    </div>
+                    <ModuleStatusBadge status={courseModule.status} />
 
                     {/* Module info */}
                     <div className="flex-1 min-w-0">
-                      <AndamioText variant="small" className="font-medium truncate text-foreground">
-                        {courseModule.title ?? "Untitled"}
-                      </AndamioText>
-                      <AndamioText variant="small" className="text-[10px] font-mono truncate">
+                      <div className="flex items-center gap-2">
+                        <AndamioText variant="small" className="font-medium truncate text-foreground">
+                          {courseModule.title ?? "Untitled"}
+                        </AndamioText>
+                        {courseModule.slts?.length > 0 && (
+                          <AndamioBadge variant="outline" className="text-[9px] h-4 px-1">
+                            {courseModule.slts.length} SLT{courseModule.slts.length !== 1 ? "s" : ""}
+                          </AndamioBadge>
+                        )}
+                      </div>
+                      <AndamioText variant="small" className="text-[10px] font-mono truncate text-muted-foreground">
                         {courseModule.module_code}
                       </AndamioText>
                     </div>
@@ -372,19 +456,38 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
           </AndamioScrollArea>
 
           {/* Footer with stats */}
-          <div className="border-t border-border px-3 py-2">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{modules.filter((m) => m.status === "ON_CHAIN").length} on-chain</span>
-              <span>{modules.filter((m) => m.status === "DRAFT").length} drafts</span>
+          {modules.length > 0 && (
+            <div className="border-t border-border px-3 py-2 bg-background/50">
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-success" />
+                    {moduleStats.onChain}
+                  </span>
+                  {moduleStats.pending > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-info" />
+                      {moduleStats.pending}
+                    </span>
+                  )}
+                  {moduleStats.approved > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Circle className="h-3 w-3 fill-warning text-warning" />
+                      {moduleStats.approved}
+                    </span>
+                  )}
+                </div>
+                <AndamioText as="span" variant="small">{moduleStats.draft} draft</AndamioText>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      </ResizablePanel>
+      </AndamioResizablePanel>
 
-      <ResizableHandle withHandle />
+      <AndamioResizableHandle withHandle />
 
       {/* Right Panel: Course Details */}
-      <ResizablePanel defaultSize={75}>
+      <AndamioResizablePanel defaultSize={72}>
         <StudioEditorPane
           padding="tight"
           header={
@@ -403,28 +506,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <AndamioButton
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving || !hasChanges}
+                disabled={updateCourseMutation.isPending || !hasChanges}
                 className="h-7 text-xs"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
-                {isSaving ? "Saving..." : "Save"}
+                {updateCourseMutation.isPending ? "Saving..." : "Save"}
               </AndamioButton>
             </div>
           }
         >
-          {/* Messages */}
-          {saveSuccess && (
-            <AndamioAlert className="mb-3">
-              <AndamioAlertDescription>Course updated successfully</AndamioAlertDescription>
-            </AndamioAlert>
-          )}
-          {saveError && (
-            <AndamioAlert variant="destructive" className="mb-3">
-              <AlertCircle className="h-4 w-4" />
-              <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
-            </AndamioAlert>
-          )}
-
           {/* Tabs */}
           <AndamioTabs value={activeTab} onValueChange={handleTabChange}>
             <AndamioTabsList className="grid w-full grid-cols-3 h-8">
@@ -452,8 +542,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </AndamioLabel>
                     <AndamioInput
                       id="title"
-                      value={title}
-                      onChange={(e) => setTitleState(e.target.value)}
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
                       placeholder="Course title"
                       className="h-8 text-sm"
                     />
@@ -465,8 +555,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </AndamioLabel>
                     <AndamioTextarea
                       id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Course description"
                       rows={3}
                       className="text-sm resize-none"
@@ -476,29 +566,36 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               </StudioFormSection>
 
               <StudioFormSection title="Media">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <AndamioLabel htmlFor="imageUrl" className="text-xs">
-                      Image URL
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Image */}
+                  <div className="space-y-2">
+                    <AndamioLabel htmlFor="imageUrl" className="text-xs flex items-center gap-1">
+                      <ImageIcon className="h-3 w-3" />
+                      Cover Image
                     </AndamioLabel>
+                    <ImagePreview url={formImageUrl} alt={formTitle || "Course cover"} />
                     <AndamioInput
                       id="imageUrl"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      value={formImageUrl}
+                      onChange={(e) => setFormImageUrl(e.target.value)}
                       placeholder="https://..."
-                      className="h-8 text-sm"
+                      className="h-7 text-xs"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <AndamioLabel htmlFor="videoUrl" className="text-xs">
-                      Video URL
+
+                  {/* Video */}
+                  <div className="space-y-2">
+                    <AndamioLabel htmlFor="videoUrl" className="text-xs flex items-center gap-1">
+                      <Video className="h-3 w-3" />
+                      Intro Video
                     </AndamioLabel>
+                    <VideoPreview url={formVideoUrl} />
                     <AndamioInput
                       id="videoUrl"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="h-8 text-sm"
+                      value={formVideoUrl}
+                      onChange={(e) => setFormVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/... or vimeo.com/..."
+                      className="h-7 text-xs"
                     />
                   </div>
                 </div>
@@ -506,35 +603,92 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
             </AndamioTabsContent>
 
             {/* On-Chain Tab */}
-            <AndamioTabsContent value="on-chain" className="mt-3">
-              <StudioFormSection title="Blockchain Status">
-                <div className="rounded-lg border p-3 bg-muted/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Blocks className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Course NFT</span>
+            <AndamioTabsContent value="on-chain" className="mt-3 space-y-4">
+              <StudioFormSection title="Course NFT">
+                <div className="rounded-lg border p-3 bg-muted/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Blocks className="h-4 w-4 text-primary" />
+                      <AndamioText as="span" className="text-sm font-medium">Policy ID</AndamioText>
+                    </div>
+                    <AndamioButton
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-[10px]"
+                      asChild
+                    >
+                      <a
+                        href={`https://preprod.cardanoscan.io/token/${courseNftPolicyId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        View
+                      </a>
+                    </AndamioButton>
                   </div>
-                  <code className="text-[10px] text-muted-foreground font-mono break-all">
-                    {courseNftPolicyId}
-                  </code>
+                  <CopyableAddress address={courseNftPolicyId} />
                 </div>
+              </StudioFormSection>
 
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border p-2 text-center">
-                    <AndamioText className="text-lg font-bold">{modules.length}</AndamioText>
-                    <AndamioText variant="small" className="text-[10px]">Total Modules</AndamioText>
+              <StudioFormSection title="Module Status">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="rounded-lg border p-3 text-center">
+                    <AndamioText className="text-2xl font-bold">{moduleStats.total}</AndamioText>
+                    <AndamioText variant="small" className="text-[10px]">Total</AndamioText>
                   </div>
-                  <div className="rounded-lg border p-2 text-center">
-                    <AndamioText className="text-lg font-bold text-success">
-                      {modules.filter((m) => m.status === "ON_CHAIN").length}
-                    </AndamioText>
+                  <div className="rounded-lg border p-3 text-center bg-success/5">
+                    <AndamioText className="text-2xl font-bold text-success">{moduleStats.onChain}</AndamioText>
                     <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
                   </div>
+                  <div className="rounded-lg border p-3 text-center bg-warning/5">
+                    <AndamioText className="text-2xl font-bold text-warning">{moduleStats.approved}</AndamioText>
+                    <AndamioText variant="small" className="text-[10px]">Ready to Mint</AndamioText>
+                  </div>
+                  <div className="rounded-lg border p-3 text-center">
+                    <AndamioText className="text-2xl font-bold text-muted-foreground">{moduleStats.draft}</AndamioText>
+                    <AndamioText variant="small" className="text-[10px]">Draft</AndamioText>
+                  </div>
+                </div>
+
+                {moduleStats.pending > 0 && (
+                  <AndamioAlert className="mt-3">
+                    <Clock className="h-4 w-4 text-info animate-pulse" />
+                    <AndamioAlertDescription>
+                      {moduleStats.pending} module{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+                )}
+              </StudioFormSection>
+
+              <StudioFormSection title="Blockchain Links">
+                <div className="flex flex-wrap gap-2">
+                  <AndamioButton variant="outline" size="sm" className="h-7 text-xs" asChild>
+                    <a
+                      href={`https://preprod.cardanoscan.io/token/${courseNftPolicyId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      CardanoScan
+                    </a>
+                  </AndamioButton>
+                  <AndamioButton variant="outline" size="sm" className="h-7 text-xs" asChild>
+                    <a
+                      href={`https://preprod.cexplorer.io/policy/${courseNftPolicyId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Cexplorer
+                    </a>
+                  </AndamioButton>
                 </div>
               </StudioFormSection>
             </AndamioTabsContent>
 
             {/* Settings Tab */}
-            <AndamioTabsContent value="settings" className="mt-3">
+            <AndamioTabsContent value="settings" className="mt-3 space-y-4">
               <StudioFormSection title="Course Code">
                 <div className="space-y-1.5">
                   <AndamioInput
@@ -543,15 +697,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     className="h-8 text-sm font-mono"
                   />
                   <AndamioText variant="small" className="text-[10px]">
-                    Course code cannot be changed
+                    Course code cannot be changed after creation
                   </AndamioText>
                 </div>
               </StudioFormSection>
 
-              <StudioFormSection title="Danger Zone" className="mt-4">
-                <div className="rounded-lg border border-destructive/50 p-3">
-                  <AndamioText variant="small" className="text-xs mb-2">
-                    Permanently delete this course and all its content.
+              <StudioFormSection title="Danger Zone">
+                <div className="rounded-lg border border-destructive/50 p-3 space-y-2">
+                  <AndamioText variant="small" className="text-xs">
+                    Permanently delete this course and all its content. This action cannot be undone.
                   </AndamioText>
                   <AndamioConfirmDialog
                     trigger={
@@ -559,26 +713,26 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         variant="destructive"
                         size="sm"
                         className="h-7 text-xs"
-                        disabled={isDeleting}
+                        disabled={deleteCourseMutation.isPending}
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-1" />
                         Delete Course
                       </AndamioButton>
                     }
                     title="Delete Course"
-                    description={`Are you sure you want to delete "${course.title}"? This action cannot be undone.`}
+                    description={`Are you sure you want to delete "${course.title}"? This will remove all modules, lessons, and assignments.`}
                     confirmText="Delete Course"
                     variant="destructive"
                     onConfirm={handleDelete}
-                    isLoading={isDeleting}
+                    isLoading={deleteCourseMutation.isPending}
                   />
                 </div>
               </StudioFormSection>
             </AndamioTabsContent>
           </AndamioTabs>
         </StudioEditorPane>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      </AndamioResizablePanel>
+    </AndamioResizablePanelGroup>
   );
 }
 

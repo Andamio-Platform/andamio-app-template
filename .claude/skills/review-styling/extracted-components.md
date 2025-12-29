@@ -630,6 +630,8 @@ import { RequireCourseAccess } from "~/components/auth/require-course-access";
 | 2025-12 | `/components` | Complete component showcase page with all Andamio components |
 | 2025-12 | Wrapper Updates | All wrapper components updated to export with `Andamio` prefix (Rule 3) |
 | 2025-12 | Codebase-wide | `AndamioText` - Standardized all `<p className=...>` patterns to use semantic text component |
+| 2025-12 | `/studio/course` | Master-detail layout, selectable list items, status icons, welcome panel - Documented as reusable patterns |
+| 2025-12 | `/studio/course/[coursenft]/[modulecode]` | SLT drag-and-drop reordering with @dnd-kit |
 
 ---
 
@@ -687,6 +689,530 @@ import { AndamioText } from "~/components/andamio";
 | `small` | `text-sm text-muted-foreground` |
 | `lead` | `text-lg text-muted-foreground` |
 | `overline` | `text-xs font-medium uppercase tracking-wider text-muted-foreground` |
+
+---
+
+### AndamioStatusIcon
+
+**File**: `src/components/andamio/andamio-status-icon.tsx`
+
+**Extracted From**: Style review of `/studio/course` route (2025-12)
+
+**Purpose**: Consistent status indicator with icon and semantic color background. Replaces 5+ duplicate implementations.
+
+**Pattern Replaced**:
+```tsx
+// This pattern appeared in 17+ files:
+<div className="flex h-8 w-8 items-center justify-center rounded-md bg-success/10">
+  <CheckCircle className="h-4 w-4 text-success" />
+</div>
+```
+
+**Usage**:
+```tsx
+import { AndamioStatusIcon, getCourseStatus, getModuleStatus } from "~/components/andamio";
+
+// Using presets (recommended)
+<AndamioStatusIcon status="on-chain" />
+<AndamioStatusIcon status="pending" />
+<AndamioStatusIcon status="draft" />
+<AndamioStatusIcon status="syncing" />
+<AndamioStatusIcon status="needs-import" />
+
+// With helper functions
+<AndamioStatusIcon status={getCourseStatus(course)} />
+<AndamioStatusIcon status={getModuleStatus(module.status)} />
+
+// Custom configuration
+<AndamioStatusIcon variant="success" icon={Star} />
+<AndamioStatusIcon variant="warning" animate />
+
+// Size and shape variants
+<AndamioStatusIcon status="synced" size="sm" />
+<AndamioStatusIcon status="synced" size="lg" shape="circle" />
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `status` | `StatusPreset` | - | Preset status: "on-chain", "synced", "pending", "syncing", "draft", "ready", "needs-import", "error", "archived" |
+| `variant` | `StatusVariant` | - | Manual variant: "success", "warning", "info", "muted", "destructive" |
+| `icon` | `LucideIcon` | - | Custom icon (overrides preset) |
+| `animate` | `boolean` | false | Whether to animate (pulse) |
+| `size` | `"sm" \| "md" \| "lg"` | `"md"` | Size variant |
+| `shape` | `"rounded" \| "circle"` | `"rounded"` | Shape variant |
+
+**Helper Functions**:
+| Function | Input | Output | Use For |
+|----------|-------|--------|---------|
+| `getCourseStatus` | `{ inDb, onChain }` | StatusPreset | HybridCourseStatus objects |
+| `getModuleStatus` | `string` | StatusPreset | Module status strings (ON_CHAIN, DRAFT, etc.) |
+
+---
+
+## UI Patterns (Not Yet Extracted)
+
+These patterns are documented for consistency but remain in their original files. Extract them when they're needed in 2+ locations.
+
+### Master-Detail Split Pane Layout
+
+**Location**: `src/app/(studio)/studio/course/page.tsx`
+
+**Pattern**: Split-pane layout with list on left (35%) and preview/detail panel on right (65%).
+
+**Structure**:
+```tsx
+import {
+  AndamioResizablePanelGroup,
+  AndamioResizablePanel,
+  AndamioResizableHandle,
+} from "~/components/andamio/andamio-resizable";
+
+<AndamioResizablePanelGroup direction="horizontal" className="h-full">
+  {/* Left Panel: List */}
+  <AndamioResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+    <div className="flex h-full flex-col border-r border-border">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+        {/* Icon + title */}
+      </div>
+
+      {/* Scrollable list */}
+      <AndamioScrollArea className="flex-1">
+        <div className="flex flex-col gap-3 p-3">
+          {/* List items */}
+        </div>
+      </AndamioScrollArea>
+
+      {/* Footer (search, filters) */}
+      <div className="border-t border-border px-3 py-2 bg-muted/30">
+        {/* Search input */}
+      </div>
+    </div>
+  </AndamioResizablePanel>
+
+  <AndamioResizableHandle withHandle />
+
+  {/* Right Panel: Preview/Detail */}
+  <AndamioResizablePanel defaultSize={65}>
+    {selectedItem ? <DetailPanel item={selectedItem} /> : <WelcomePanel />}
+  </AndamioResizablePanel>
+</AndamioResizablePanelGroup>
+```
+
+**Use For**:
+- Studio landing pages with item selection
+- Email/messaging interfaces
+- File browser patterns
+
+---
+
+### Selectable List Item
+
+**Location**: `src/app/(studio)/studio/course/page.tsx` (CourseListItem)
+
+**Pattern**: List item with hover/selection states, animated chevron indicator.
+
+**Structure**:
+```tsx
+import { cn } from "~/lib/utils";
+import { ChevronRight } from "lucide-react";
+
+interface SelectableListItemProps {
+  isSelected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}
+
+function SelectableListItem({ isSelected, onClick, disabled, children }: SelectableListItemProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg border transition-all duration-150",
+        isSelected
+          ? "bg-primary/10 border-primary/30 shadow-sm"
+          : "bg-transparent border-transparent hover:bg-muted/50 hover:border-border active:bg-muted/70",
+        disabled && "opacity-60 cursor-not-allowed"
+      )}
+    >
+      {/* Status icon slot */}
+      <StatusIcon />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <span className={cn(
+          "text-sm font-medium truncate transition-colors",
+          isSelected ? "text-primary" : "group-hover:text-foreground"
+        )}>
+          {title}
+        </span>
+        <span className="text-[10px] text-muted-foreground">{subtitle}</span>
+      </div>
+
+      {/* Selection indicator - slides in on hover/select */}
+      <ChevronRight className={cn(
+        "h-4 w-4 flex-shrink-0 transition-all duration-150",
+        isSelected
+          ? "text-primary opacity-100 translate-x-0"
+          : "text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-70 group-hover:translate-x-0"
+      )} />
+    </button>
+  );
+}
+```
+
+**Key Features**:
+- `group` class enables child hover states
+- Border transitions from transparent → visible
+- Chevron slides in with opacity + translate animation
+- Selected state uses primary color tint
+
+---
+
+### Status Icon Badge
+
+**Location**: `src/app/(studio)/studio/course/page.tsx` (StatusIcon, ModuleStatusIcon)
+
+**Pattern**: Small icon with colored background indicating status.
+
+**Structure**:
+```tsx
+type Status = "success" | "warning" | "info" | "muted";
+
+function StatusIcon({ status }: { status: Status }) {
+  const iconClass = "h-4 w-4";
+  const containerBase = "flex h-8 w-8 items-center justify-center rounded-md";
+
+  switch (status) {
+    case "success":
+      return (
+        <div className={cn(containerBase, "bg-success/10")}>
+          <CheckCircle className={cn(iconClass, "text-success")} />
+        </div>
+      );
+    case "warning":
+      return (
+        <div className={cn(containerBase, "bg-warning/10")}>
+          <Clock className={cn(iconClass, "text-warning")} />
+        </div>
+      );
+    case "info":
+      return (
+        <div className={cn(containerBase, "bg-info/10")}>
+          <Info className={cn(iconClass, "text-info")} />
+        </div>
+      );
+    default:
+      return (
+        <div className={cn(containerBase, "bg-muted")}>
+          <AlertCircle className={cn(iconClass, "text-muted-foreground")} />
+        </div>
+      );
+  }
+}
+```
+
+**Variants**:
+| Status | Background | Icon Color |
+|--------|------------|------------|
+| success | `bg-success/10` | `text-success` |
+| warning | `bg-warning/10` | `text-warning` |
+| info | `bg-info/10` | `text-info` |
+| muted | `bg-muted` | `text-muted-foreground` |
+
+**Enhanced version** with gradient and ring (ModuleStatusIcon):
+```tsx
+<div className="flex h-8 w-8 items-center justify-center rounded-lg ring-1 bg-gradient-to-br from-success/20 to-success/5 ring-success/20">
+  <CheckCircle className="h-4 w-4 text-success" />
+</div>
+```
+
+---
+
+### Welcome Panel (Studio Landing)
+
+**Location**: `src/app/(studio)/studio/course/page.tsx` (WelcomePanel)
+
+**Pattern**: Centered hero section with icon, title, action, and feature cards for studio landing pages.
+
+**Structure**:
+```tsx
+function WelcomePanel({ itemCount }: { itemCount: number }) {
+  return (
+    <div className="flex h-full flex-col bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Hero Section */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="max-w-lg text-center">
+          {/* Large Icon */}
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto mb-6 shadow-lg shadow-primary/10">
+            <BookOpen className="h-10 w-10 text-primary" />
+          </div>
+
+          {/* Title */}
+          <h1>Studio Name</h1>
+          <AndamioText variant="muted" className="text-base mb-8">
+            Tagline describing what this studio does
+          </AndamioText>
+
+          {/* Quick Actions */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <AndamioButton>Create New</AndamioButton>
+            {itemCount > 0 && (
+              <AndamioText variant="small">or select from the list</AndamioText>
+            )}
+          </div>
+
+          {/* Feature Cards Grid */}
+          <div className="grid grid-cols-3 gap-3 text-left">
+            <FeatureCard
+              icon={CheckCircle}
+              iconColor="success"
+              title="Feature 1"
+              description="Brief description"
+            />
+            {/* More feature cards */}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer hint */}
+      {itemCount > 0 && (
+        <div className="border-t border-border/50 px-6 py-3 bg-muted/20">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            <AndamioText variant="small">Select an item to view details</AndamioText>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Feature Card Sub-pattern**:
+```tsx
+<div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
+  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 mb-2">
+    <CheckCircle className="h-4 w-4 text-success" />
+  </div>
+  <AndamioText className="text-xs font-medium mb-1">Feature Title</AndamioText>
+  <AndamioText variant="small" className="text-[10px] leading-relaxed">
+    Feature description text
+  </AndamioText>
+</div>
+```
+
+---
+
+### Stats Grid
+
+**Location**: `src/app/(studio)/studio/course/page.tsx` (CoursePreviewPanel)
+
+**Pattern**: Grid of colorful stat cards with semantic colors.
+
+**Structure**:
+```tsx
+<div className="grid grid-cols-4 gap-3">
+  {/* Default stat */}
+  <div className="rounded-xl border p-3 text-center bg-gradient-to-br from-background to-muted/20 shadow-sm">
+    <div className="text-2xl font-bold">{stats.total}</div>
+    <AndamioText variant="small" className="text-[10px]">Total</AndamioText>
+  </div>
+
+  {/* Success stat */}
+  <div className="rounded-xl border border-success/20 p-3 text-center bg-gradient-to-br from-success/10 to-success/5 shadow-sm">
+    <div className="text-2xl font-bold text-success">{stats.success}</div>
+    <AndamioText variant="small" className="text-[10px] text-success/70">Label</AndamioText>
+  </div>
+
+  {/* Warning stat */}
+  <div className="rounded-xl border border-warning/20 p-3 text-center bg-gradient-to-br from-warning/10 to-warning/5 shadow-sm">
+    <div className="text-2xl font-bold text-warning">{stats.warning}</div>
+    <AndamioText variant="small" className="text-[10px] text-warning/70">Label</AndamioText>
+  </div>
+
+  {/* Muted stat */}
+  <div className="rounded-xl border p-3 text-center bg-gradient-to-br from-muted/50 to-muted/20 shadow-sm">
+    <div className="text-2xl font-bold text-muted-foreground">{stats.muted}</div>
+    <AndamioText variant="small" className="text-[10px]">Label</AndamioText>
+  </div>
+</div>
+```
+
+**Key Features**:
+- Semantic color borders (`border-success/20`)
+- Gradient backgrounds (`from-success/10 to-success/5`)
+- Matching text colors
+- Compact sizing (`text-[10px]` labels)
+
+---
+
+### Linked Item List (Outline)
+
+**Location**: `src/app/(studio)/studio/course/page.tsx` (module outline)
+
+**Pattern**: Compact linked list with hover effects and status indicators.
+
+**Structure**:
+```tsx
+<div className="rounded-xl border overflow-hidden bg-gradient-to-b from-background to-muted/10">
+  {items.map((item, index) => (
+    <Link
+      key={item.id}
+      href={`/path/${item.id}`}
+      className={cn(
+        "flex items-center gap-3 p-3 hover:bg-primary/5 transition-all group",
+        index !== 0 && "border-t border-border/50"
+      )}
+    >
+      <StatusIcon status={item.status} />
+      <div className="flex-1 min-w-0">
+        <AndamioText variant="small" className="font-medium truncate group-hover:text-primary transition-colors">
+          {item.title}
+        </AndamioText>
+        <AndamioText variant="small" className="text-[10px] font-mono text-muted-foreground">
+          {item.code}
+        </AndamioText>
+      </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all group-hover:translate-x-0.5" />
+    </Link>
+  ))}
+
+  {/* "View all" footer if truncated */}
+  {items.length > MAX_VISIBLE && (
+    <div className="p-3 text-center border-t border-border/50 bg-muted/30">
+      <AndamioButton variant="ghost" size="sm" className="h-7 text-xs">
+        View all {items.length} items
+        <ChevronRight className="h-3.5 w-3.5 ml-1" />
+      </AndamioButton>
+    </div>
+  )}
+</div>
+```
+
+**Key Features**:
+- `group` class for coordinated hover effects
+- Chevron slides in with opacity + translate
+- First item has no top border (use `index !== 0`)
+- Truncated list shows "View all" footer
+
+---
+
+### Sortable List with Drag and Drop
+
+**Location**: `src/components/studio/wizard/steps/step-slts.tsx`
+
+**Dependencies**: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
+**Pattern**: Reorderable list items with drag handles using @dnd-kit library.
+
+**Structure**:
+```tsx
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
+
+// Configure sensors
+const sensors = useSensors(
+  useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+);
+
+// Handle reorder with optimistic update
+const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (!over || active.id === over.id) return;
+
+  const oldIndex = items.findIndex((i) => i.id === active.id);
+  const newIndex = items.findIndex((i) => i.id === over.id);
+
+  // Optimistic update
+  const reordered = arrayMove(items, oldIndex, newIndex);
+  setItems(reordered);
+
+  // API call to persist
+  try {
+    await api.reorder(reordered.map((item, idx) => ({ id: item.id, index: idx + 1 })));
+  } catch {
+    setItems(items); // Rollback on error
+  }
+}, [items]);
+
+// Wrapper component
+<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+  <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+    {items.map((item) => (
+      <SortableItem key={item.id} item={item} />
+    ))}
+  </SortableContext>
+</DndContext>
+
+// Sortable item component
+function SortableItem({ item }: { item: Item }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 rounded-lg border transition-all",
+        isDragging ? "border-primary bg-primary/5 shadow-lg z-50" : "border-border hover:border-muted-foreground/30"
+      )}
+    >
+      {/* Drag handle */}
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* Content */}
+      <span className="flex-1">{item.text}</span>
+    </div>
+  );
+}
+```
+
+**Key Features**:
+- `distance: 8` activation constraint prevents accidental drags
+- Keyboard accessibility via `KeyboardSensor`
+- Visual feedback during drag (`isDragging` state)
+- Optimistic updates with rollback on error
+- Drag handle isolated from item content
+
+**Use For**:
+- Reorderable SLT lists
+- Lesson ordering
+- Module ordering
+- Any sortable content lists
 
 ---
 

@@ -6,7 +6,7 @@ import { env } from "~/env";
 import { learnerLogger } from "~/lib/debug-logger";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioCardLoading } from "~/components/andamio/andamio-loading";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -143,17 +143,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
   }
 
   if (isLoading) {
-    return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Your Progress</AndamioCardTitle>
-          <AndamioCardDescription>Loading your course progress...</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <AndamioSkeleton className="h-32 w-full" />
-        </AndamioCardContent>
-      </AndamioCard>
-    );
+    return <AndamioCardLoading title="Your Progress" lines={4} />;
   }
 
   // If no status data (likely not enrolled), show enrollment component

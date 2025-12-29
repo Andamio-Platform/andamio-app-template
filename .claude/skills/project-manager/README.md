@@ -64,7 +64,8 @@ See `ROADMAP.md` for current priorities.
 | Skill | Purpose |
 |-------|---------|
 | `audit-api-coverage` | API endpoint tracking, React Query hooks |
-| `review-styling` | Style guidelines, semantic colors |
+| `review-styling` | Style rules validation, extracted components |
+| `theme-expert` | Design system: layouts, colors, spacing, components |
 | `documentarian` | Documentation updates, skill backlog |
 
 ---

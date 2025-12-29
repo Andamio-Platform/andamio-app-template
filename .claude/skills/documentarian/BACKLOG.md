@@ -14,8 +14,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `type-auditor` | Verify all API types are imported from andamio-db-api, not locally defined | High | Critical for maintaining type safety across the stack |
 | `route-creator` | Scaffold new app routes with proper auth gates, loading states, breadcrumbs | Medium | All routes follow consistent patterns |
 | `wizard-step-generator` | Add new steps to the module wizard following existing patterns | Low | Useful as app grows, but wizard is fairly stable |
+| `color-system` | Manage and update the semantic color palette in globals.css | Low | Useful for theme iterations; the theme-expert skill covers usage but not modification |
 
 **Added**: 2025-12-19 (first documentarian run)
+**Updated**: 2025-12-29 (added color-system skill suggestion)
 
 ---
 
@@ -25,7 +27,8 @@ Ideas for improving existing documentation.
 
 | Idea | Location | Priority | Notes |
 |------|----------|----------|-------|
-| - | - | - | No items yet |
+| Add @dnd-kit to dependencies list in CLAUDE.md | `.claude/CLAUDE.md` | Low | Now used for SLT reordering, should be documented as a core dependency |
+| Document color system design decisions | `.claude/skills/theme-expert/` | Low | Current values use oklch with hue 250 (sky blue); rationale could be documented |
 
 ---
 

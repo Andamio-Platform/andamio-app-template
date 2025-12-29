@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: December 19, 2025
+> **Last Updated**: December 29, 2025
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -145,18 +145,23 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 ### Status: Stable
 
-**Semantic Colors** (light/dark mode):
+**Color System** (light/dark mode):
+- Primary: Sky blue (hue 250) - fresh, modern
 - Base: `background`, `foreground`, `card`, `popover`
 - Interactive: `primary`, `secondary`, `muted`, `accent`
 - Status: `success`, `warning`, `info`, `destructive`
-- Chart: `chart-1` through `chart-5`
+- Sidebar: Gray panel contrasting with white content area
 
 **Components**:
 - 45+ shadcn/ui components installed
 - `AndamioText` for consistent text styling
+- `AndamioStatusIcon` for status indicators with presets
+- `AndamioPageLoading` / `AndamioStudioLoading` unified loading system
 - Responsive breakpoints: xs (375px) → 2xl (1536px)
 
-**Guidelines**: See `.claude/skills/review-styling/`
+**Guidelines**:
+- `.claude/skills/review-styling/` - Style rules, extracted components
+- `.claude/skills/theme-expert/` - Layouts, colors, spacing, components
 
 ---
 
@@ -197,12 +202,22 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 | @tanstack/react-query | ^5.x | Data fetching |
 | @meshsdk/core | ^2.x | Cardano wallet |
 | @tiptap/react | ^2.x | Rich text editor |
+| @dnd-kit/core | ^6.x | Drag and drop |
 | @andamio/db-api | ^0.5.x | API types & schemas |
 | @andamio/transactions | ^0.1.x | Transaction definitions |
 
 ---
 
 ## Recent Changes
+
+### December 29, 2025
+
+- **Color System Overhaul**: New sky blue primary (hue 250), swapped sidebar/background for better contrast
+- **Unified Loading System**: `AndamioPageLoading`, `AndamioStudioLoading`, `AndamioCardLoading`, etc.
+- **AndamioStatusIcon**: Reusable status indicator with presets (`on-chain`, `pending`, `draft`, etc.)
+- **SLT Drag & Drop**: Added @dnd-kit for reordering SLTs in module wizard
+- **theme-expert Skill**: New comprehensive design system skill with layouts, colors, spacing docs
+- **Wizard Step Simplification**: Removed redundant description from step headers
 
 ### December 19, 2025
 

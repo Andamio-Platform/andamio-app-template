@@ -26,10 +26,6 @@ interface StudioLayoutProps {
   initialStatusVariant?: "default" | "secondary" | "destructive" | "outline";
   /** Initial actions (can be updated by child pages) */
   initialActions?: React.ReactNode;
-  /** Custom back URL */
-  backUrl?: string;
-  /** Custom back label */
-  backLabel?: string;
 }
 
 /**
@@ -53,8 +49,6 @@ export function StudioLayout({
   initialStatus,
   initialStatusVariant = "secondary",
   initialActions,
-  backUrl,
-  backLabel,
 }: StudioLayoutProps) {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[] | undefined>(
     initialBreadcrumbs
@@ -86,14 +80,14 @@ export function StudioLayout({
 
   return (
     <StudioHeaderContext.Provider value={contextValue}>
-      <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
+      <div className="flex h-screen w-full flex-col overflow-hidden overscroll-none bg-background">
         {/* Status Bar - Same as main app */}
         <AuthStatusBar />
 
         {/* Main Container */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Studio Sidebar - Hidden on mobile, visible on desktop (md+) */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex md:flex-shrink-0">
             <StudioSidebar />
           </div>
 
@@ -106,8 +100,6 @@ export function StudioLayout({
               status={status}
               statusVariant={statusVariant}
               actions={actions}
-              backUrl={backUrl}
-              backLabel={backLabel}
             />
 
             {/* Main Content - Full height, pages control their own layout */}

@@ -78,6 +78,75 @@ import { AndamioSheet, AndamioSheetContent } from "~/components/andamio/andamio-
 
 **Available variants**: `default`, `muted`, `small`, `lead`, `overline`
 
+6. **Content Max-Width**: Content pages (not studio/editor pages) should constrain width for readability on large screens. The `(app)` layout already applies `max-w-6xl mx-auto` (1152px) via `app-layout.tsx`. Studio pages with dense layouts remain full-width.
+
+7. **Vertical Spacing Scale**: Use consistent spacing between elements:
+
+| Context | Spacing | Tailwind | Use For |
+|---------|---------|----------|---------|
+| Tight | 8px | `space-y-2`, `gap-2` | Studio panels, compact UI |
+| Default | 12px | `space-y-3`, `gap-3` | List items, form fields |
+| Comfortable | 16px | `space-y-4`, `gap-4` | Cards, content sections |
+| Sections | 24px | `space-y-6`, `gap-6` | Page sections |
+| Major sections | 32px | `space-y-8`, `gap-8` | Top-level page divisions |
+
+## Examples
+
+### Rule 6 - Content Max-Width
+
+The `(app)` route group layout (`app-layout.tsx`) already applies `max-w-6xl mx-auto` to all content pages. No additional max-width needed on individual pages.
+
+```tsx
+// ✅ CORRECT - (app) layout handles max-width automatically
+// In src/app/(app)/dashboard/page.tsx
+export default function DashboardPage() {
+  return (
+    <div className="space-y-6">
+      {/* Content - max-width applied by layout */}
+    </div>
+  );
+}
+
+// ✅ CORRECT - Studio pages stay full-width (different layout)
+// In src/app/(studio)/studio/course/page.tsx
+<StudioEditorPane>
+  <div className="px-6 py-4">
+    <DenseStudioContent />
+  </div>
+</StudioEditorPane>
+```
+
+**How max-width is applied:**
+- ✅ `(app)` route group: `max-w-6xl mx-auto` via `app-layout.tsx`
+- ✅ Landing pages: Apply `max-w-6xl mx-auto` manually if not in `(app)` group
+- ❌ `(studio)` route group: Full-width (dense layouts benefit from full width)
+- ❌ Editor panels, resizable layouts: Full-width
+
+### Rule 7 - Vertical Spacing
+
+```tsx
+// ❌ WRONG - Inconsistent spacing
+<div className="space-y-2">  {/* Too tight for list items */}
+  {courses.map(c => <CourseCard />)}
+</div>
+
+// ✅ CORRECT - Default spacing for lists
+<div className="space-y-3">
+  {courses.map(c => <CourseCard />)}
+</div>
+
+// ✅ CORRECT - Comfortable spacing for card grids
+<div className="grid gap-4">
+  {items.map(i => <Card />)}
+</div>
+
+// ✅ CORRECT - Section spacing
+<div className="space-y-6">
+  <Section title="Overview" />
+  <Section title="Details" />
+</div>
+```
+
 ## Wrapper Convention
 
 Every Andamio wrapper file in `src/components/andamio/` must:

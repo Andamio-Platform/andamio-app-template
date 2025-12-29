@@ -12,7 +12,7 @@ import {
   MODULE_WIZARD_STEPS,
   type OutlineStep,
 } from "~/components/studio/studio-outline-panel";
-import { StudioEditorPane, StudioActionBar } from "~/components/studio/studio-editor-pane";
+import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -20,10 +20,10 @@ import {
 } from "~/components/andamio/andamio-resizable";
 import {
   AndamioButton,
-  AndamioBadge,
-  AndamioSkeleton,
   AndamioAlert,
   AndamioAlertDescription,
+  AndamioScrollArea,
+  AndamioStudioLoading,
 } from "~/components/andamio";
 import {
   AlertCircle,
@@ -162,10 +162,37 @@ function ModuleWizardContent({
     ]
   );
 
-  // Update header actions when module data changes
+  // Update header with contextual navigation actions
   useEffect(() => {
+    const currentConfig = WIZARD_STEPS.find((s) => s.id === currentStep);
     setActions(
       <div className="flex items-center gap-2">
+        {/* Step Navigation */}
+        <div className="flex items-center gap-1 mr-2">
+          <AndamioButton
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={goPrevious}
+            disabled={!canGoPrevious}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </AndamioButton>
+          <span className="text-xs text-muted-foreground min-w-[60px] text-center">
+            {currentConfig?.title ?? "Step"} ({currentIndex + 1}/{STEP_ORDER.length})
+          </span>
+          <AndamioButton
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={goNext}
+            disabled={!canGoNext}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </AndamioButton>
+        </div>
+
+        {/* On-Chain Link */}
         {data.courseModule?.status === "ON_CHAIN" && (
           <AndamioButton
             variant="outline"
@@ -185,18 +212,11 @@ function ModuleWizardContent({
         )}
       </div>
     );
-  }, [setActions, data.courseModule, courseNftPolicyId]);
+  }, [setActions, data.courseModule, courseNftPolicyId, currentStep, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext]);
 
   // Loading state
   if (data.isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="space-y-3">
-          <AndamioSkeleton className="h-8 w-48" />
-          <AndamioSkeleton className="h-64 w-[600px]" />
-        </div>
-      </div>
-    );
+    return <AndamioStudioLoading variant="split-pane" />;
   }
 
   // Error state
@@ -239,68 +259,9 @@ function ModuleWizardContent({
 
         {/* Right Panel: Step Content */}
         <ResizablePanel defaultSize={80}>
-          <StudioEditorPane
-            padding="tight"
-            header={
-              <div className="flex items-center justify-between px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{currentConfig.title}</span>
-                  {data.courseModule?.module_code && (
-                    <AndamioBadge variant="outline" className="text-[10px] font-mono">
-                      {data.courseModule.module_code}
-                    </AndamioBadge>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <AndamioButton
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={goPrevious}
-                    disabled={!canGoPrevious}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </AndamioButton>
-                  <span className="text-xs text-muted-foreground min-w-[40px] text-center">
-                    {currentIndex + 1}/{STEP_ORDER.length}
-                  </span>
-                  <AndamioButton
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={goNext}
-                    disabled={!canGoNext}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </AndamioButton>
-                </div>
-              </div>
-            }
-            footer={
-              <StudioActionBar align="between">
-                <AndamioButton
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={goPrevious}
-                  disabled={!canGoPrevious}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                  Previous
-                </AndamioButton>
-                <AndamioButton
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={goNext}
-                  disabled={!canGoNext}
-                >
-                  Next
-                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </AndamioButton>
-              </StudioActionBar>
-            }
-          >
-            <AnimatePresence mode="wait" custom={direction}>
+          <AndamioScrollArea className="h-full">
+            <div className="p-4">
+              <AnimatePresence mode="wait" custom={direction}>
               {currentStep === "blueprint" && (
                 <StepBlueprint key="blueprint" config={currentConfig} direction={direction} />
               )}
@@ -319,8 +280,9 @@ function ModuleWizardContent({
               {currentStep === "review" && (
                 <StepReview key="review" config={currentConfig} direction={direction} />
               )}
-            </AnimatePresence>
-          </StudioEditorPane>
+              </AnimatePresence>
+            </div>
+          </AndamioScrollArea>
         </ResizablePanel>
       </ResizablePanelGroup>
     </WizardContext.Provider>

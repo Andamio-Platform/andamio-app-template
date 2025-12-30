@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { env } from "~/env";
 import type {
   CourseModuleOutput,
@@ -23,6 +23,7 @@ interface UseModuleWizardDataReturn {
   data: WizardData;
   completion: StepCompletion;
   refetchData: () => Promise<void>;
+  updateSlts: (slts: WizardData["slts"]) => void;
 }
 
 /**
@@ -49,6 +50,9 @@ export function useModuleWizardData({
     isLoading: true,
     error: null,
   });
+
+  // Track if initial load has completed to avoid showing loading screen on refetch
+  const hasLoadedRef = useRef(false);
 
   /**
    * Fetch all wizard data
@@ -80,6 +84,7 @@ export function useModuleWizardData({
           error: null,
         });
 
+        hasLoadedRef.current = true;
         onDataLoaded?.(course, null);
       } catch (err) {
         console.error("Error fetching course:", err);
@@ -92,7 +97,10 @@ export function useModuleWizardData({
       return;
     }
 
-    setData((prev) => ({ ...prev, isLoading: true, error: null }));
+    // Only show loading state on initial load, not on refetch
+    if (!hasLoadedRef.current) {
+      setData((prev) => ({ ...prev, isLoading: true, error: null }));
+    }
 
     try {
       // Fetch course
@@ -200,6 +208,7 @@ export function useModuleWizardData({
         error: null,
       });
 
+      hasLoadedRef.current = true;
       onDataLoaded?.(course, courseModule);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -217,6 +226,14 @@ export function useModuleWizardData({
   }, [fetchWizardData]);
 
   /**
+   * Update SLTs without triggering loading state
+   * Used for optimistic updates from step-slts
+   */
+  const updateSlts = useCallback((slts: WizardData["slts"]) => {
+    setData((prev) => ({ ...prev, slts }));
+  }, []);
+
+  /**
    * Calculate step completion based on data
    */
   const completion = useMemo<StepCompletion>(() => {
@@ -226,7 +243,7 @@ export function useModuleWizardData({
     const hasIntroduction = !!data.introduction;
 
     return {
-      blueprint: hasTitle,
+      credential: hasTitle,
       slts: hasSLTs,
       assignment: hasAssignment,
       lessons: true, // Optional step
@@ -239,5 +256,6 @@ export function useModuleWizardData({
     data,
     completion,
     refetchData: fetchWizardData,
+    updateSlts,
   };
 }

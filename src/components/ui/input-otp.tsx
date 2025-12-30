@@ -52,7 +52,7 @@ function InputOTPSlot({
       data-active={isActive}
       className={cn(
         // Base styles with visible border
-        "relative flex h-9 w-9 items-center justify-center border-y border-r border-input bg-background text-sm shadow-sm transition-colors duration-150 outline-none",
+        "relative flex h-9 w-9 items-center justify-center border-y border-r border-border bg-background text-sm shadow-sm transition-colors duration-150 outline-none",
         // First and last slot borders
         "first:rounded-l-md first:border-l last:rounded-r-md",
         // Active state

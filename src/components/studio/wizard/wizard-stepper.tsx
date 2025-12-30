@@ -13,8 +13,8 @@ import { checkmarkVariants } from "./types";
  */
 export const WIZARD_STEPS: WizardStepConfig[] = [
   {
-    id: "blueprint",
-    title: "Blueprint",
+    id: "credential",
+    title: "Credential",
     subtitle: "One Module = One Credential",
     description: "Define your module's identity and understand the backwards design approach",
     icon: Sparkles,

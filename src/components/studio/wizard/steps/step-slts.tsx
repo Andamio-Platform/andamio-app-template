@@ -23,12 +23,12 @@ import { useWizard } from "../module-wizard";
 import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { ListSLTsOutput } from "@andamio/db-api";
+import { AndamioInput } from "~/components/andamio";
 
 interface StepSLTsProps {
   config: WizardStepConfig;
@@ -49,9 +49,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     goNext,
     goPrevious,
     canGoPrevious,
-    refetchData,
     courseNftPolicyId,
     moduleCode,
+    updateSlts,
   } = useWizard();
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
   const inputId = useId();
@@ -87,13 +87,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       : 1;
     const opId = `create-${nextIndex}`;
 
-    // Optimistic update
+    // Optimistic update - compute the list we'll set
     const optimisticSlt: SLT = {
       id: `temp-${nextIndex}`,
       module_index: nextIndex,
       slt_text: text,
     };
-    setLocalSlts((prev) => [...prev, optimisticSlt]);
+    const optimisticList = [...localSlts, optimisticSlt];
+    setLocalSlts(optimisticList);
     setNewSltText("");
     setError(null);
     addPendingOp(opId);
@@ -118,8 +119,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         throw new Error(errorData.message ?? "Failed to create");
       }
 
-      // Sync with server
-      await refetchData();
+      // Update optimistic item with real ID from server and sync to context
+      const result = await response.json() as { id: string };
+      const finalList = optimisticList.map((s) => s.id === optimisticSlt.id ? { ...s, id: result.id } : s);
+      setLocalSlts(finalList);
+      updateSlts(finalList);
     } catch (err) {
       // Rollback optimistic update
       setLocalSlts((prev) => prev.filter((s) => s.id !== optimisticSlt.id));
@@ -127,7 +131,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, newSltText, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, refetchData]);
+  }, [isAuthenticated, newSltText, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
 
   /**
    * Update SLT with optimistic update
@@ -138,10 +142,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     const text = editingText.trim();
     const opId = `update-${slt.module_index}`;
 
-    // Optimistic update
-    setLocalSlts((prev) =>
-      prev.map((s) => s.module_index === slt.module_index ? { ...s, slt_text: text } : s)
-    );
+    // Compute the optimistic list and set it
+    const updatedList = localSlts.map((s) => s.module_index === slt.module_index ? { ...s, slt_text: text } : s);
+    setLocalSlts(updatedList);
     setEditingIndex(null);
     setEditingText("");
     setError(null);
@@ -163,8 +166,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       );
 
       if (!response.ok) throw new Error("Failed to update");
-
-      await refetchData();
+      // Sync to context so sidebar count updates
+      updateSlts(updatedList);
     } catch (err) {
       // Rollback
       setLocalSlts((prev) =>
@@ -174,7 +177,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, editingText, authenticatedFetch, courseNftPolicyId, moduleCode, refetchData]);
+  }, [isAuthenticated, editingText, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
 
   /**
    * Delete SLT with optimistic update
@@ -184,8 +187,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     const opId = `delete-${slt.module_index}`;
 
-    // Optimistic update
-    setLocalSlts((prev) => prev.filter((s) => s.module_index !== slt.module_index));
+    // Compute the optimistic list and set it
+    const filteredList = localSlts.filter((s) => s.module_index !== slt.module_index);
+    setLocalSlts(filteredList);
     setError(null);
     addPendingOp(opId);
 
@@ -204,8 +208,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       );
 
       if (!response.ok) throw new Error("Failed to delete");
-
-      await refetchData();
+      // Sync to context so sidebar count updates
+      updateSlts(filteredList);
     } catch (err) {
       // Rollback
       setLocalSlts((prev) => {
@@ -216,7 +220,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, authenticatedFetch, courseNftPolicyId, moduleCode, refetchData]);
+  }, [isAuthenticated, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
 
   const startEditing = (slt: SLT) => {
     setEditingIndex(slt.module_index);
@@ -280,14 +284,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       );
 
       if (!response.ok) throw new Error("Failed to reorder");
-
-      await refetchData();
+      // Sync to context
+      updateSlts(reorderedSlts);
     } catch (err) {
       // Rollback on error
       setLocalSlts(localSlts);
       setError(err instanceof Error ? err.message : "Failed to reorder");
     }
-  }, [localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, refetchData]);
+  }, [localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
 
   const isPending = pendingOps.size > 0;
 
@@ -297,13 +301,13 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         {/* Input Section */}
         <div className="rounded-lg border-2 border-border p-4">
           <div className="flex items-center gap-3">
-            <Input
+            <AndamioInput
               id={inputId}
               value={newSltText}
               onChange={(e) => setNewSltText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="e.g., Explain how smart contracts execute on-chain"
-              className="h-11 flex-1 text-base px-4"
+              className="h-12 flex-1 text-base px-4"
               disabled={isPending}
             />
             <Button
@@ -352,11 +356,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {localSlts.map((slt, index) => (
+                {localSlts.map((slt) => (
                   <SortableSltItem
                     key={slt.id}
                     slt={slt}
-                    index={index}
+                    moduleCode={moduleCode}
                     isEditing={editingIndex === slt.module_index}
                     isUpdating={pendingOps.has(`update-${slt.module_index}`)}
                     editingText={editingText}
@@ -389,7 +393,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
  */
 interface SortableSltItemProps {
   slt: SLT;
-  index: number;
+  moduleCode: string;
   isEditing: boolean;
   isUpdating: boolean;
   editingText: string;
@@ -402,7 +406,7 @@ interface SortableSltItemProps {
 
 function SortableSltItem({
   slt,
-  index,
+  moduleCode,
   isEditing,
   isUpdating,
   editingText,
@@ -452,15 +456,15 @@ function SortableSltItem({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      {/* Index badge */}
-      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
-        {index + 1}
+      {/* SLT Reference: <module-code>.<module-index> */}
+      <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
+        {moduleCode}.{slt.module_index}
       </span>
 
       {/* Content */}
       {isEditing ? (
         <div className="flex-1 flex items-center gap-2">
-          <Input
+          <AndamioInput
             value={editingText}
             onChange={(e) => onEditingTextChange(e.target.value)}
             className="h-9 flex-1"

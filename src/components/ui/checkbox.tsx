@@ -15,7 +15,7 @@ function Checkbox({
       data-slot="checkbox"
       className={cn(
         // Base styles with visible border
-        "peer size-4 shrink-0 rounded-[4px] border border-input bg-background shadow-sm transition-colors duration-150 outline-none",
+        "peer size-4 shrink-0 rounded-[4px] border border-border bg-background shadow-sm transition-colors duration-150 outline-none",
         // Checked state
         "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary",
         // Focus state

@@ -91,6 +91,34 @@ if (!module) {  // Dangerous!
 - Use `assignmentData` instead of `assignment` when appropriate
 - Be explicit to avoid conflicts with type names and reserved words
 
+### Course Module and SLT References
+
+**CRITICAL: Always use canonical identifiers when referencing Course Modules and SLTs.**
+
+**Course Modules**: Always reference by **Module Code** (e.g., `101`, `MODULE-A`), not by title or index.
+
+**SLTs (Student Learning Targets)**: Always reference using the format `<module-code>.<module-index>` (e.g., `101.3`, `MODULE-A.5`).
+
+**Examples**:
+
+```typescript
+// ✅ CORRECT - Module referenced by code
+<span className="font-mono">{courseModule.module_code}</span>
+
+// ✅ CORRECT - SLT reference format
+<span className="font-mono">{moduleCode}.{slt.module_index}</span>
+// Displays: "101.3" or "MODULE-A.5"
+
+// ❌ WRONG - Using sequential index
+<span>{index + 1}. {slt.slt_text}</span>
+```
+
+**Where this applies**:
+- Module wizard step-slts component
+- Course preview panels
+- SLT lists and tables
+- Any UI displaying module or SLT identifiers
+
 ### Shared UI Types
 
 **CRITICAL: Use shared types from `~/types/ui` for consistent icon and navigation patterns.**
@@ -280,8 +308,7 @@ All colors are defined in `src/styles/globals.css` with full light/dark mode sup
 - `info` / `info-foreground` - Informational states, neutral actions (blue)
 
 **Utility Colors**:
-- `border` - Borders and dividers
-- `input` - Input field borders
+- `border` - Borders and dividers (use for ALL borders including inputs)
 - `ring` - Focus rings
 
 **Chart Colors**:
@@ -390,6 +417,22 @@ If you need a new semantic color:
 
 4. Document the new color in this section
 5. Update relevant components to use it
+
+### Tailwind v4 Reserved Color Names
+
+**CRITICAL: Do NOT use HTML element names as color names in Tailwind v4.**
+
+Tailwind v4 silently ignores color definitions that conflict with HTML element names. These colors will NOT work:
+
+- ❌ `--color-input` → use `--color-input-field` or just use `border`
+- ❌ `--color-button` → use `--color-button-bg` or similar
+- ❌ `--color-form` → use `--color-form-field` or similar
+- ❌ `--color-select` → use `--color-select-bg` or similar
+- ❌ `--color-table` → use `--color-table-bg` or similar
+
+**Why this matters**: If you define `--color-input` in `@theme inline`, Tailwind will generate the `.border-input` utility class, but the color resolution silently fails. The border appears invisible with no error message.
+
+**Recommended approach**: Use `border-border` for all form element borders. This is simple, consistent, and works reliably.
 
 ## API Integration
 

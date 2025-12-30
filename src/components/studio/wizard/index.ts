@@ -2,7 +2,7 @@
  * Course Module Design Wizard
  *
  * A backwards design wizard that guides creators through:
- * Blueprint → SLTs → Assignment → Lessons → Introduction → Review
+ * Credential → SLTs → Assignment → Lessons → Introduction → Review
  */
 
 export { ModuleWizard, useWizard } from "./module-wizard";

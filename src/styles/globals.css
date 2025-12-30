@@ -44,7 +44,6 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
-  --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -103,8 +102,7 @@
   --info-foreground: oklch(1.0 0 0);
 
   /* Borders - Strong, visible definition */
-  --border: oklch(0.85 0.008 250);
-  --input: oklch(0.82 0.01 250);
+  --border: oklch(0.50 0.008 250);
   --ring: oklch(0.55 0.18 250);
 
   /* Charts - Vibrant palette */
@@ -167,7 +165,6 @@
 
   /* Borders - Strong, visible definition */
   --border: oklch(0.30 0.018 250);
-  --input: oklch(0.35 0.018 250);
   --ring: oklch(0.68 0.16 250);
 
   /* Charts - Vibrant palette for dark */
@@ -671,11 +668,11 @@ h6:first-child {
     @apply block font-medium text-sm text-foreground mb-1.5;
   }
 
-  /* Input styling */
+  /* Input styling - padding and sizing */
   input,
   textarea,
   select {
-    @apply px-3 py-2 w-full text-sm;
+    @apply px-3 py-2 w-full text-sm rounded-md bg-background;
   }
 
   /* Button styling - Only for standalone buttons without explicit padding */
@@ -745,4 +742,17 @@ h6:first-child {
   .touch-target {
     @apply min-h-[2.75rem] min-w-[2.75rem] sm:min-h-auto sm:min-w-auto;
   }
+}
+
+/* ==========================================================================
+   Input Borders - Outside @layer for Maximum Specificity
+   ==========================================================================
+   This rule is intentionally OUTSIDE of @layer to ensure it always applies.
+   In CSS Cascade Layers, unlayered styles have highest priority.
+   ========================================================================== */
+input,
+textarea,
+select {
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
+  padding-inline: 1rem !important;
 }

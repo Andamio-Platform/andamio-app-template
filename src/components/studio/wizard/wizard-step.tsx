@@ -39,10 +39,10 @@ export function WizardStep({
     >
       {/* Step header - minimal */}
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
+        <div className="p-2 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+        <h2 className="!m-0 text-xl sm:text-2xl font-bold tracking-tight">
           {config.subtitle}
         </h2>
       </div>

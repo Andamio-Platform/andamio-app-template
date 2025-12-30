@@ -210,7 +210,25 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 ## Recent Changes
 
-### December 29, 2025
+### December 29, 2025 (Session 3)
+
+- **StudioModuleCard Extracted**: New reusable component with 6-step progress indicator, status icons
+- **RequireCourseAccess loadingVariant**: Added `loadingVariant` prop to prevent loading screen "flash" during navigation
+- **Silent Refetch on Save**: `useModuleWizardData` no longer shows full loading screen when saving (assignment/lesson)
+- **Inline Lesson Editing**: Lessons now edited inline in wizard (like assignments), removed broken external link
+- **Documentation Updates**: Updated extracted-components.md, api-coverage.md, STATUS.md
+
+### December 29, 2025 (Session 2)
+
+- **Blueprint → Credential Rename**: Renamed wizard step from "Blueprint" to "Credential" across all files
+- **Course Preview Panel Redesign**: New hero section with stat grid (Modules, On-Chain, SLTs), centered CTA, module code list
+- **SLT Reference Format**: Now uses `<module-code>.<module-index>` (e.g., "101.3") instead of sequential numbers
+- **Input Border Fix**: Fixed invisible borders on form inputs via `border-border` in globals.css
+- **Error Boundary Fix**: Removed duplicate html/body tags from error.tsx
+- **Optimistic SLT Updates**: Fixed React render error with updateSlts calls
+- **New Coding Convention**: Documented Course Module/SLT reference rules in CLAUDE.md
+
+### December 29, 2025 (Session 1)
 
 - **Color System Overhaul**: New sky blue primary (hue 250), swapped sidebar/background for better contrast
 - **Unified Loading System**: `AndamioPageLoading`, `AndamioStudioLoading`, `AndamioCardLoading`, etc.

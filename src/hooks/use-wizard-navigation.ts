@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { WizardStepId, StepCompletion, StepStatus } from "~/components/studio/wizard/types";
 
 const STEP_ORDER: WizardStepId[] = [
-  "blueprint",
+  "credential",
   "slts",
   "assignment",
   "lessons",
@@ -34,7 +34,7 @@ interface UseWizardNavigationReturn {
  * Hook for managing wizard step navigation with URL sync
  *
  * Features:
- * - URL-based step persistence (?step=blueprint)
+ * - URL-based step persistence (?step=credential)
  * - Step unlock logic based on completion state
  * - Direction tracking for animations
  */
@@ -45,10 +45,10 @@ export function useWizardNavigation({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Get current step from URL or default to blueprint
+  // Get current step from URL or default to credential
   const urlStep = searchParams.get("step") as WizardStepId | null;
   const [currentStep, setCurrentStep] = useState<WizardStepId>(
-    urlStep && STEP_ORDER.includes(urlStep) ? urlStep : "blueprint"
+    urlStep && STEP_ORDER.includes(urlStep) ? urlStep : "credential"
   );
   const [direction, setDirection] = useState(0);
 
@@ -58,10 +58,10 @@ export function useWizardNavigation({
   const isStepUnlocked = useCallback(
     (step: WizardStepId): boolean => {
       switch (step) {
-        case "blueprint":
+        case "credential":
           return true;
         case "slts":
-          return completion.blueprint;
+          return completion.credential;
         case "assignment":
           return completion.slts;
         case "lessons":

@@ -16,7 +16,7 @@ function Switch({
         // Base styles
         "peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border shadow-sm transition-colors duration-150 outline-none",
         // Unchecked state - visible border
-        "data-[state=unchecked]:bg-muted data-[state=unchecked]:border-input",
+        "data-[state=unchecked]:bg-muted data-[state=unchecked]:border-border",
         // Checked state
         "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
         // Focus state

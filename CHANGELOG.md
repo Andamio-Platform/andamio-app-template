@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **StudioModuleCard Component**: New extracted component for displaying course modules in studio with 6-step progress indicator, status icons, and configurable display options
+- **Inline Lesson Editing**: Lessons now edited inline in the wizard (like assignments) with expandable/collapsible editors, title input, and full ContentEditor
+- **RequireCourseAccess loadingVariant**: New prop to match loading skeleton style to page layout (`page`, `studio-centered`, `studio-split`), prevents loading screen "flash" during navigation
+- **Course Module/SLT Reference Convention**: New naming rule requiring Course Modules to be referenced by Module Code and SLTs by `<module-code>.<module-index>` format (e.g., "101.3")
+- **Course Preview Panel**: Redesigned `/studio/course` landing page with hero section, stat grid (Modules, On-Chain, SLTs), centered CTA, and module code list
 - **AndamioText Component**: Standardized text component with 5 variants (default, muted, small, lead, overline) replacing loose `<p className=...>` patterns throughout the codebase
 - **Claude Skills System**: Migrated documentation from `docs/` to `.claude/skills/` for better AI-assisted development
   - `documentarian` skill for documentation maintenance
@@ -22,9 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global heading styles in `globals.css` with `!important` to override Tailwind preflight
 
 ### Changed
+- **Blueprint → Credential Rename**: Renamed wizard step from "Blueprint" to "Credential" across all files (`step-blueprint.tsx` → `step-credential.tsx`, `WizardStepId` type, step order, completion state)
+- **SLT Display Format**: SLT items now show `<module-code>.<module-index>` reference badge instead of sequential numbers
+- **Input Border Fix**: Fixed invisible borders on form inputs by using `border-border` class consistently in globals.css
 - Migrated all documentation from `docs/` folder to `.claude/skills/` directories
 - All Andamio wrapper components now consistently export with `Andamio` prefix
 - Updated all `<p className=...>` patterns to use `AndamioText` component (232+ occurrences)
+
+### Fixed
+- **Silent Refetch on Save**: `useModuleWizardData` no longer shows full loading screen when saving assignment/lesson content, uses `hasLoadedRef` to distinguish initial load from refetch
+- **Error Boundary Hydration**: Removed duplicate `<html>` and `<body>` tags from `error.tsx` (only `global-error.tsx` should have these)
+- **Optimistic SLT Updates**: Fixed React render error by moving `updateSlts` calls outside of state setter callbacks
 
 ### Removed
 - `docs/` folder contents (migrated to `.claude/skills/`)

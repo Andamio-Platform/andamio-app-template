@@ -34,7 +34,7 @@ import {
 import type { CourseModuleOutput, CourseOutput } from "@andamio/db-api";
 
 // Import wizard step components
-import { StepBlueprint } from "~/components/studio/wizard/steps/step-blueprint";
+import { StepCredential } from "~/components/studio/wizard/steps/step-credential";
 import { StepSLTs } from "~/components/studio/wizard/steps/step-slts";
 import { StepAssignment } from "~/components/studio/wizard/steps/step-assignment";
 import { StepLessons } from "~/components/studio/wizard/steps/step-lessons";
@@ -92,7 +92,7 @@ function ModuleWizardContent({
   );
 
   // Data fetching hook
-  const { data, completion, refetchData } = useModuleWizardData({
+  const { data, completion, refetchData, updateSlts } = useModuleWizardData({
     courseNftPolicyId,
     moduleCode,
     isNewModule,
@@ -140,6 +140,7 @@ function ModuleWizardContent({
       completion,
       data,
       refetchData,
+      updateSlts,
       courseNftPolicyId,
       moduleCode,
       isNewModule,
@@ -156,6 +157,7 @@ function ModuleWizardContent({
       completion,
       data,
       refetchData,
+      updateSlts,
       courseNftPolicyId,
       moduleCode,
       isNewModule,
@@ -262,8 +264,8 @@ function ModuleWizardContent({
           <AndamioScrollArea className="h-full">
             <div className="p-4">
               <AnimatePresence mode="wait" custom={direction}>
-              {currentStep === "blueprint" && (
-                <StepBlueprint key="blueprint" config={currentConfig} direction={direction} />
+              {currentStep === "credential" && (
+                <StepCredential key="credential" config={currentConfig} direction={direction} />
               )}
               {currentStep === "slts" && (
                 <StepSLTs key="slts" config={currentConfig} direction={direction} />
@@ -309,6 +311,7 @@ export default function StudioModuleEditPage() {
       courseNftPolicyId={courseNftPolicyId}
       title="Edit Module"
       description="Connect your wallet to edit this course module"
+      loadingVariant="studio-split"
     >
       <ModuleWizardContent
         courseNftPolicyId={courseNftPolicyId}

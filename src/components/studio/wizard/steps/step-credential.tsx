@@ -17,12 +17,12 @@ import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { ListCourseModulesOutput } from "@andamio/db-api";
 
-interface StepBlueprintProps {
+interface StepCredentialProps {
   config: WizardStepConfig;
   direction: number;
 }
 
-export function StepBlueprint({ config, direction }: StepBlueprintProps) {
+export function StepCredential({ config, direction }: StepCredentialProps) {
   const router = useRouter();
   const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule } = useWizard();
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();

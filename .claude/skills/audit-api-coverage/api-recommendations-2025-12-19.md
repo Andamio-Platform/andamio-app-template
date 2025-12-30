@@ -72,7 +72,7 @@ Located in `src/hooks/api/`:
 - `studio/course/[coursenft]/page.tsx`
 - `hooks/use-hybrid-slts.ts`
 - `components/courses/on-chain-modules-section.tsx`
-- `components/studio/wizard/steps/step-blueprint.tsx`
+- `components/studio/wizard/steps/step-credential.tsx`
 
 **Solution**: Use `useCourseModules()` hook - single cached fetch.
 
@@ -165,7 +165,7 @@ Response: 304 Not Modified (no body)
 
 | Component | Endpoints | Target Hooks |
 |-----------|-----------|--------------|
-| `step-blueprint.tsx` | module list/create | `useCourseModules`, `useCreateCourseModule` |
+| `step-credential.tsx` | module list/create | `useCourseModules`, `useCreateCourseModule` |
 | `step-slts.tsx` | slt CRUD | `useSLTs`, `useCreateSLT`, `useUpdateSLT` |
 | `step-lessons.tsx` | lesson create | `useCreateLesson` |
 | `step-assignment.tsx` | assignment CRUD | (create hooks) |

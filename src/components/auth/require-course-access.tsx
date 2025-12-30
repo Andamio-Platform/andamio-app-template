@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioPageLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
+import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
 import { AlertCircle, ArrowLeft, ShieldAlert } from "lucide-react";
 
 interface CourseAccessCheck {
@@ -21,6 +21,8 @@ interface RequireCourseAccessProps {
   title?: string;
   /** Description shown when not authenticated */
   description?: string;
+  /** Loading variant - "page" for app pages, "studio-centered" or "studio-split" for studio pages */
+  loadingVariant?: "page" | "studio-centered" | "studio-split";
   /** Content to render when user has access */
   children: React.ReactNode;
 }
@@ -49,6 +51,7 @@ export function RequireCourseAccess({
   courseNftPolicyId,
   title = "Course Access Required",
   description = "Connect your wallet to access this course",
+  loadingVariant = "page",
   children,
 }: RequireCourseAccessProps) {
   const router = useRouter();
@@ -126,8 +129,14 @@ export function RequireCourseAccess({
     );
   }
 
-  // Loading - show skeleton
+  // Loading - show skeleton matching the page type
   if (accessCheck.isLoading) {
+    if (loadingVariant === "studio-split") {
+      return <AndamioStudioLoading variant="split-pane" />;
+    }
+    if (loadingVariant === "studio-centered") {
+      return <AndamioStudioLoading variant="centered" />;
+    }
     return <AndamioPageLoading variant="detail" />;
   }
 

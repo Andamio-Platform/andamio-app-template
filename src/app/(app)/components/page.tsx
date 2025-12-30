@@ -392,18 +392,12 @@ export default function ComponentsPage() {
             {/* Utility Colors */}
             <div>
               <h3>Utility Colors</h3>
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="h-16 rounded-md border-4 border-border flex items-center justify-center">
                     <span className="text-sm font-medium">Border</span>
                   </div>
                   <code className="text-xs text-muted-foreground block">border-border</code>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-16 rounded-md border-4 border-input flex items-center justify-center">
-                    <span className="text-sm font-medium">Input</span>
-                  </div>
-                  <code className="text-xs text-muted-foreground block">border-input</code>
                 </div>
                 <div className="space-y-2">
                   <div className="h-16 rounded-md ring-4 ring-ring flex items-center justify-center">

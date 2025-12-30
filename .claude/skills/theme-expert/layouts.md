@@ -207,7 +207,7 @@ Navigation outline on left, step content on right.
 
 **Key Components**:
 - `StudioOutlinePanel` - Step list with completion indicators
-- Step components (`StepBlueprint`, `StepSLTs`, etc.)
+- Step components (`StepCredential`, `StepSLTs`, etc.)
 - `WizardContext` - Shared state for navigation
 
 **Example**: `src/app/(studio)/studio/course/[coursenft]/[modulecode]/page.tsx`

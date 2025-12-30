@@ -28,7 +28,7 @@ function RadioGroupItem({
       data-slot="radio-group-item"
       className={cn(
         // Base styles with visible border
-        "aspect-square size-4 shrink-0 rounded-full border border-input bg-background shadow-sm transition-colors duration-150 outline-none",
+        "aspect-square size-4 shrink-0 rounded-full border border-border bg-background shadow-sm transition-colors duration-150 outline-none",
         // Selected state
         "text-primary data-[state=checked]:border-primary",
         // Focus state

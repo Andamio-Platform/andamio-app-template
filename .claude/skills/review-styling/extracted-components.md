@@ -565,7 +565,7 @@ const {
 ```
 
 **Features**:
-- URL-based step persistence (`?step=blueprint`)
+- URL-based step persistence (`?step=credential`)
 - Step unlock logic based on completion state
 - Direction tracking for animations
 - Navigation guards
@@ -607,14 +607,68 @@ import { RequireCourseAccess } from "~/components/auth/require-course-access";
 | `courseNftPolicyId` | `string` | required | Course NFT Policy ID to check access for |
 | `title` | `string` | "Course Access Required" | Title shown when not authenticated |
 | `description` | `string` | "Connect your wallet..." | Description shown when not authenticated |
+| `loadingVariant` | `"page" \| "studio-centered" \| "studio-split"` | `"page"` | Loading skeleton style to match page layout |
 | `children` | `ReactNode` | required | Content to render when user has access |
 
 **States Rendered**:
 - Not authenticated → Login prompt with `AndamioAuthButton`
-- Loading → `AndamioPageLoading` skeleton
+- Loading → Loading skeleton matching `loadingVariant`
+  - `"page"` → `AndamioPageLoading variant="detail"`
+  - `"studio-centered"` → `AndamioStudioLoading variant="centered"`
+  - `"studio-split"` → `AndamioStudioLoading variant="split-pane"`
 - Error → Error alert with back button
 - Access denied → Access denied message with navigation options
 - Has access → Renders children
+
+**Why loadingVariant matters**: Prevents loading screen "flash" when navigating between pages with different layouts. The authorization check loading state should match the page's actual layout.
+
+---
+
+## Studio Components
+
+### StudioModuleCard
+
+**File**: `src/components/studio/studio-module-card.tsx`
+
+**Extracted From**: Course Editor module list (`/studio/course/[coursenft]/page.tsx`) (2025-12)
+
+**Purpose**: Displays a course module with status, progress indicator, and metadata in studio context.
+
+**Usage**:
+```tsx
+import { StudioModuleCard } from "~/components/studio/studio-module-card";
+
+<StudioModuleCard
+  courseModule={courseModule}
+  courseNftPolicyId={courseNftPolicyId}
+  showProgress={true}
+  showDescription={true}
+  showSltCount={true}
+/>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `courseModule` | `CourseModuleOutput` | required | Module data from API |
+| `courseNftPolicyId` | `string` | required | Course identifier for link building |
+| `showProgress` | `boolean` | `true` | Show 6-step wizard progress indicator |
+| `showDescription` | `boolean` | `true` | Show module description |
+| `showSltCount` | `boolean` | `true` | Show SLT count badge |
+
+**Sub-components Exported**:
+- `ModuleStatusIcon` - Status indicator (ON_CHAIN, PENDING_TX, APPROVED, DRAFT, etc.)
+- `ModuleProgressIndicator` - 6-step wizard progress dots
+- `WIZARD_STEPS` - Step configuration array
+
+**Progress Indicator**:
+Shows completion status for 6 wizard steps:
+1. Credential (required)
+2. SLTs (required)
+3. Assignment (required)
+4. Lessons (optional)
+5. Introduction (required)
+6. Review (required)
 
 ---
 
@@ -632,6 +686,8 @@ import { RequireCourseAccess } from "~/components/auth/require-course-access";
 | 2025-12 | Codebase-wide | `AndamioText` - Standardized all `<p className=...>` patterns to use semantic text component |
 | 2025-12 | `/studio/course` | Master-detail layout, selectable list items, status icons, welcome panel - Documented as reusable patterns |
 | 2025-12 | `/studio/course/[coursenft]/[modulecode]` | SLT drag-and-drop reordering with @dnd-kit |
+| 2025-12 | `/studio/course/[coursenft]` | `StudioModuleCard` with progress indicator, `RequireCourseAccess` loadingVariant |
+| 2025-12 | Module Wizard | Inline lesson editing, Blueprint→Credential rename, silent refetch on save |
 
 ---
 

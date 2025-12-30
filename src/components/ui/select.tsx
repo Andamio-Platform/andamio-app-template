@@ -38,7 +38,7 @@ function SelectTrigger({
       data-size={size}
       className={cn(
         // Base styles with visible border
-        "flex w-fit items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-nowrap shadow-sm transition-colors duration-150 outline-none",
+        "flex w-fit items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm whitespace-nowrap shadow-sm transition-colors duration-150 outline-none",
         // Placeholder and icon colors
         "data-[placeholder]:text-muted-foreground/60 [&_svg:not([class*='text-'])]:text-muted-foreground",
         // Focus state

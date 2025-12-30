@@ -74,8 +74,8 @@ This document tracks which API endpoints are implemented in the T3 App Template 
 | `/course-module/list` | POST | Implemented | Partial | `hooks/use-hybrid-slts.ts`, multiple pages |
 | `/course-module/map` | POST | Implemented | **Yes** | `hooks/use-owned-courses.ts` |
 | `/course-module/get` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, multiple pages |
-| `/course-module/create` | POST | Implemented | No | `components/courses/on-chain-modules-section.tsx`, `step-blueprint.tsx` |
-| `/course-module/update` | PATCH | Implemented | No | `components/studio/wizard/steps/step-blueprint.tsx` |
+| `/course-module/create` | POST | Implemented | No | `components/courses/on-chain-modules-section.tsx`, `step-credential.tsx` |
+| `/course-module/update` | PATCH | Implemented | No | `components/studio/wizard/steps/step-credential.tsx` |
 | `/course-module/update-status` | PATCH | Implemented | No | `components/studio/wizard/steps/step-review.tsx` |
 | `/course-module/confirm-transaction` | POST | Implemented | Partial | `hooks/use-pending-tx-watcher.ts` |
 | `/course-module/delete` | DELETE | **NOT USED** | - | Module deletion |

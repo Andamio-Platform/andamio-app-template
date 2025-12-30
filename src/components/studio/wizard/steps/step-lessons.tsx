@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { Plus, ExternalLink, Check, BookOpen, Sparkles } from "lucide-react";
+import { Plus, Check, BookOpen, Sparkles, Save, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
@@ -12,9 +11,12 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
+import type { JSONContent } from "@tiptap/core";
+import type { LessonWithSLTOutput } from "@andamio/db-api";
 
 interface StepLessonsProps {
   config: WizardStepConfig;
@@ -34,6 +36,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
   const [creatingForSlt, setCreatingForSlt] = useState<number | null>(null);
+  const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -73,6 +76,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       setNewLessonTitle("");
       setCreatingForSlt(null);
       await refetchData();
+      // Auto-expand the newly created lesson for editing
+      setEditingLessonIndex(sltIndex);
     } catch (err) {
       console.error("Error creating lesson:", err);
     } finally {
@@ -101,6 +106,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
           {slts.map((slt, index) => {
             const lesson = lessonBySltIndex[slt.module_index];
             const isCreatingThis = creatingForSlt === slt.module_index;
+            const isEditingThis = editingLessonIndex === slt.module_index;
 
             return (
               <motion.div
@@ -135,19 +141,49 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 
                         {/* Lesson info or create */}
                         {lesson ? (
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-success" />
-                              <span className="font-medium">{lesson.title}</span>
-                            </div>
-                            <Link
-                              href={`/studio/course/${courseNftPolicyId}/${moduleCode}/${slt.module_index}`}
-                            >
-                              <AndamioButton size="sm" variant="ghost">
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                Edit Full Lesson
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-success" />
+                                <span className="font-medium">{lesson.title}</span>
+                              </div>
+                              <AndamioButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setEditingLessonIndex(isEditingThis ? null : slt.module_index)}
+                              >
+                                {isEditingThis ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    Collapse
+                                  </>
+                                ) : (
+                                  <>
+                                    <Pencil className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </>
+                                )}
                               </AndamioButton>
-                            </Link>
+                            </div>
+
+                            {/* Inline Editor */}
+                            <AnimatePresence>
+                              {isEditingThis && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <LessonEditor
+                                    lesson={lesson}
+                                    courseNftPolicyId={courseNftPolicyId}
+                                    moduleCode={moduleCode}
+                                    onSave={refetchData}
+                                  />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         ) : isCreatingThis ? (
                           <div className="flex gap-2">
@@ -240,5 +276,100 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         onSkip={goNext}
       />
     </WizardStep>
+  );
+}
+
+// =============================================================================
+// Lesson Editor Component
+// =============================================================================
+
+interface LessonEditorProps {
+  lesson: LessonWithSLTOutput;
+  courseNftPolicyId: string;
+  moduleCode: string;
+  onSave: () => Promise<void>;
+}
+
+function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonEditorProps) {
+  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
+
+  const [title, setTitle] = useState(lesson.title ?? "");
+  const [content, setContent] = useState<JSONContent | null>(
+    lesson.content_json ? (lesson.content_json as JSONContent) : null
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const titleChanged = title !== (lesson.title ?? "");
+    const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.content_json ?? null);
+    setHasUnsavedChanges(titleChanged || contentChanged);
+  }, [title, content, lesson]);
+
+  const handleSave = async () => {
+    if (!isAuthenticated) return;
+
+    setIsSaving(true);
+
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/update`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_nft_policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            module_index: lesson.slt_index,
+            title,
+            content_json: content,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update lesson");
+      }
+
+      await onSave();
+      setHasUnsavedChanges(false);
+    } catch (err) {
+      console.error("Error saving lesson:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 pt-3 border-t border-border/50">
+      <div className="flex items-center justify-between">
+        <AndamioInput
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Lesson title"
+          className="font-medium flex-1 mr-3"
+        />
+        {hasUnsavedChanges && (
+          <AndamioButton
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            isLoading={isSaving}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            Save
+          </AndamioButton>
+        )}
+      </div>
+
+      <div className="min-h-[200px] border rounded-lg overflow-hidden bg-background">
+        <ContentEditor
+          content={content}
+          onContentChange={setContent}
+          minHeight="200px"
+        />
+      </div>
+    </div>
   );
 }

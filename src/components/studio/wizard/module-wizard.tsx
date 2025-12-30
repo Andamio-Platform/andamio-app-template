@@ -26,7 +26,7 @@ import type {
 } from "@andamio/db-api";
 
 // Step components (will be created next)
-import { StepBlueprint } from "./steps/step-blueprint";
+import { StepCredential } from "./steps/step-credential";
 import { StepSLTs } from "./steps/step-slts";
 import { StepAssignment } from "./steps/step-assignment";
 import { StepLessons } from "./steps/step-lessons";
@@ -48,7 +48,7 @@ export function useWizard() {
  * Step order for navigation
  */
 const STEP_ORDER: WizardStepId[] = [
-  "blueprint",
+  "credential",
   "slts",
   "assignment",
   "lessons",
@@ -69,7 +69,7 @@ interface ModuleWizardProps {
  * ModuleWizard - Main wizard container
  *
  * Orchestrates the backwards design flow:
- * Blueprint → SLTs → Assignment → Lessons → Introduction → Review
+ * Credential → SLTs → Assignment → Lessons → Introduction → Review
  */
 export function ModuleWizard({
   courseNftPolicyId,
@@ -87,7 +87,7 @@ export function ModuleWizard({
   // Current step from URL or default
   const urlStep = searchParams.get("step") as WizardStepId | null;
   const [currentStep, setCurrentStep] = useState<WizardStepId>(
-    urlStep && STEP_ORDER.includes(urlStep) ? urlStep : "blueprint"
+    urlStep && STEP_ORDER.includes(urlStep) ? urlStep : "credential"
   );
   const [direction, setDirection] = useState(0);
 
@@ -232,7 +232,7 @@ export function ModuleWizard({
     const hasIntroduction = !!data.introduction;
 
     return {
-      blueprint: hasTitle,
+      credential: hasTitle,
       slts: hasSLTs,
       assignment: hasAssignment,
       lessons: true, // Always optional/completable
@@ -247,10 +247,10 @@ export function ModuleWizard({
   const isStepUnlocked = useCallback(
     (step: WizardStepId): boolean => {
       switch (step) {
-        case "blueprint":
+        case "credential":
           return true;
         case "slts":
-          return completion.blueprint;
+          return completion.credential;
         case "assignment":
           return completion.slts;
         case "lessons":
@@ -328,6 +328,14 @@ export function ModuleWizard({
   const canGoPrevious = currentIndex > 0;
 
   /**
+   * Update SLTs without triggering loading state
+   * Used for optimistic updates from StepSLTs
+   */
+  const updateSlts = useCallback((slts: WizardData["slts"]) => {
+    setData((prev) => ({ ...prev, slts }));
+  }, []);
+
+  /**
    * Context value
    */
   const contextValue = useMemo<WizardContextValue>(
@@ -343,6 +351,7 @@ export function ModuleWizard({
       completion,
       data,
       refetchData: fetchWizardData,
+      updateSlts,
       courseNftPolicyId,
       moduleCode,
       isNewModule,
@@ -359,6 +368,7 @@ export function ModuleWizard({
       completion,
       data,
       fetchWizardData,
+      updateSlts,
       courseNftPolicyId,
       moduleCode,
       isNewModule,
@@ -393,8 +403,8 @@ export function ModuleWizard({
           {/* Step content */}
           <div className="min-h-[500px]">
             <AnimatePresence mode="wait" custom={direction}>
-              {currentStep === "blueprint" && (
-                <StepBlueprint key="blueprint" config={currentConfig} direction={direction} />
+              {currentStep === "credential" && (
+                <StepCredential key="credential" config={currentConfig} direction={direction} />
               )}
               {currentStep === "slts" && (
                 <StepSLTs key="slts" config={currentConfig} direction={direction} />

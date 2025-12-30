@@ -6,7 +6,7 @@ import type { CourseModuleOutput, CourseOutput, ListSLTsOutput, AssignmentOutput
  * Wizard step identifiers
  */
 export type WizardStepId =
-  | "blueprint"
+  | "credential"
   | "slts"
   | "assignment"
   | "lessons"
@@ -34,7 +34,7 @@ export interface WizardStepConfig {
  * Step completion state
  */
 export interface StepCompletion {
-  blueprint: boolean;
+  credential: boolean;
   slts: boolean;
   assignment: boolean;
   lessons: boolean;
@@ -76,6 +76,7 @@ export interface WizardContextValue {
   // Data
   data: WizardData;
   refetchData: () => Promise<void>;
+  updateSlts: (slts: WizardData["slts"]) => void;
 
   // Course identifiers
   courseNftPolicyId: string;

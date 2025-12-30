@@ -51,7 +51,7 @@ interface StudioOutlinePanelProps {
  * Default wizard steps for module editing
  */
 export const MODULE_WIZARD_STEPS: Omit<OutlineStep, "isComplete" | "count" | "isActive">[] = [
-  { id: "blueprint", label: "Blueprint", icon: FileText },
+  { id: "credential", label: "credential", icon: FileText },
   { id: "slts", label: "Learning Targets", icon: Target },
   { id: "assignment", label: "Assignment", icon: ClipboardCheck },
   { id: "lessons", label: "Lessons", icon: BookOpen },

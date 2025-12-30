@@ -53,12 +53,12 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
   const reviewItems = [
     {
-      id: "blueprint",
+      id: "credential",
       icon: Award,
       label: "Module Title",
       value: moduleTitle,
-      completed: completion.blueprint,
-      step: "blueprint" as const,
+      completed: completion.credential,
+      step: "credential" as const,
     },
     {
       id: "slts",
@@ -95,7 +95,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
   ];
 
-  const allRequiredComplete = completion.blueprint && completion.slts && completion.assignment && completion.introduction;
+  const allRequiredComplete = completion.credential && completion.slts && completion.assignment && completion.introduction;
 
   const handleApprove = async () => {
     if (!isAuthenticated || !allRequiredComplete) return;

@@ -16,7 +16,7 @@
 import * as React from "react";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 
 // Re-export variants
 export { buttonVariants } from "~/components/ui/button";
@@ -66,7 +66,7 @@ export const AndamioButton = React.forwardRef<
       >
         {isLoading ? (
           <span className="flex items-center">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />
             Loading...
           </span>
         ) : (

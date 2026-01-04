@@ -10,7 +10,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
-import { AlertCircle, FolderKanban, Settings } from "lucide-react";
+import { AlertIcon, ProjectIcon, SettingsIcon } from "~/components/icons";
 import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 
 /**
@@ -69,7 +69,7 @@ function ProjectListContent() {
         />
 
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
           <AndamioAlertDescription>{error}</AndamioAlertDescription>
         </AndamioAlert>
@@ -87,7 +87,7 @@ function ProjectListContent() {
         />
 
         <AndamioEmptyState
-          icon={FolderKanban}
+          icon={ProjectIcon}
           title="No Projects Found"
           description="You don't have any projects yet. Projects are created through the Andamio treasury system."
         />
@@ -141,7 +141,7 @@ function ProjectListContent() {
                   {project.treasury_nft_policy_id && (
                     <Link href={`/studio/project/${project.treasury_nft_policy_id}`}>
                       <AndamioButton variant="ghost" size="sm">
-                        <Settings className="h-4 w-4 mr-1" />
+                        <SettingsIcon className="h-4 w-4 mr-1" />
                         Manage
                       </AndamioButton>
                     </Link>

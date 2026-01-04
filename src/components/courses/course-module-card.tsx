@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Blocks, ChevronRight, CheckCircle } from "lucide-react";
+import { OnChainIcon, NextIcon, SuccessIcon } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
@@ -65,7 +65,7 @@ export function CourseModuleCard({
                   <span className="truncate">{title}</span>
                   {isOnChain && (
                     <span title="Module on-chain" className="shrink-0">
-                      <Blocks className="h-4 w-4 text-success" />
+                      <OnChainIcon className="h-4 w-4 text-success" />
                     </span>
                   )}
                 </AndamioCardTitle>
@@ -78,7 +78,7 @@ export function CourseModuleCard({
               <AndamioBadge variant="secondary" className="text-xs sm:text-sm">
                 {slts.length} {slts.length === 1 ? "target" : "targets"}
               </AndamioBadge>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <NextIcon className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         </AndamioCardHeader>
@@ -101,7 +101,7 @@ export function CourseModuleCard({
                     }`}
                   >
                     {isOnChainSlt ? (
-                      <CheckCircle className="h-3.5 w-3.5" />
+                      <SuccessIcon className="h-3.5 w-3.5" />
                     ) : (
                       sltIndex + 1
                     )}

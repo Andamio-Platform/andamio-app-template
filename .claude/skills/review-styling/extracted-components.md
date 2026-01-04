@@ -688,6 +688,8 @@ Shows completion status for 6 wizard steps:
 | 2025-12 | `/studio/course/[coursenft]/[modulecode]` | SLT drag-and-drop reordering with @dnd-kit |
 | 2025-12 | `/studio/course/[coursenft]` | `StudioModuleCard` with progress indicator, `RequireCourseAccess` loadingVariant |
 | 2025-12 | Module Wizard | Inline lesson editing, Blueprint→Credential rename, silent refetch on save |
+| 2025-12 | `/studio/course` | `RegisterCourseDrawer` for on-chain-only course registration |
+| 2025-12 | `/studio/course/[coursenft]` | Credential-focused empty state, conditional tabs |
 
 ---
 
@@ -1269,6 +1271,596 @@ function SortableItem({ item }: { item: Item }) {
 - Lesson ordering
 - Module ordering
 - Any sortable content lists
+
+---
+
+### AndamioSaveButton
+
+**File**: `src/components/andamio/andamio-save-button.tsx`
+
+**Extracted From**: Codebase-wide save button standardization (2025-12)
+
+**Purpose**: Standardized save button with consistent styling, loading states, and icon. Replaces 10+ duplicate save button implementations.
+
+**Pattern Replaced**:
+```tsx
+<AndamioButton onClick={handleSave} disabled={isSaving}>
+  {isSaving ? (
+    <>
+      <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
+      Saving...
+    </>
+  ) : (
+    <>
+      <SaveIcon className="h-4 w-4 mr-2" />
+      Save Changes
+    </>
+  )}
+</AndamioButton>
+```
+
+**Usage**:
+```tsx
+import { AndamioSaveButton } from "~/components/andamio";
+
+// Default full save button
+<AndamioSaveButton onClick={handleSave} isSaving={isPending} />
+// Shows: [SaveIcon] Save Changes → [Spinner] Saving...
+
+// Compact mode (for tight spaces like wizard steps)
+<AndamioSaveButton onClick={handleSave} isSaving={isPending} compact />
+// Shows: [SaveIcon] Save → [Spinner] Saving...
+
+// Custom labels
+<AndamioSaveButton
+  onClick={handleSave}
+  isSaving={isPending}
+  label="Save Draft"
+  savingLabel="Saving Draft..."
+/>
+
+// With variant and disabled state
+<AndamioSaveButton
+  variant="outline"
+  onClick={handleSave}
+  isSaving={isPending}
+  disabled={!hasChanges}
+/>
+
+// Conditionally show only when there are unsaved changes
+{hasUnsavedChanges && (
+  <AndamioSaveButton onClick={handleSave} isSaving={isPending} compact />
+)}
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `isSaving` | `boolean` | `false` | Whether save operation is in progress |
+| `compact` | `boolean` | `false` | Use compact mode (smaller, just "Save") |
+| `label` | `string` | "Save Changes" / "Save" | Custom button label |
+| `savingLabel` | `string` | "Saving..." | Custom label while saving |
+| `...buttonProps` | `AndamioButtonProps` | - | All AndamioButton props (variant, size, disabled, onClick, etc.) |
+
+**Features**:
+- Automatic SaveIcon / LoadingIcon swap based on `isSaving` state
+- Loading spinner animates with `animate-spin`
+- Inherits all AndamioButton props for flexibility
+- Compact mode uses `size="sm"` automatically
+
+---
+
+### AndamioBackButton
+
+**File**: `src/components/andamio/andamio-back-button.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 29 occurrences
+
+**Purpose**: Standardized back navigation button with consistent styling. Always ghost variant, small size, with BackIcon.
+
+**Pattern Replaced**:
+```tsx
+<Link href="/some-path">
+  <AndamioButton variant="ghost" size="sm">
+    <BackIcon className="h-4 w-4 mr-1" />
+    Back to Something
+  </AndamioButton>
+</Link>
+```
+
+**Usage**:
+```tsx
+import { AndamioBackButton } from "~/components/andamio";
+
+// Basic (default label "Back")
+<AndamioBackButton href="/courses" />
+
+// Custom label
+<AndamioBackButton href="/studio/project/abc/tasks" label="Back to Tasks" />
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `href` | `string` | required | The URL to navigate to |
+| `label` | `string` | "Back" | The button label text |
+| `className` | `string` | - | Optional className for styling |
+
+**Features**:
+- Automatically wraps in Next.js Link
+- Ghost variant, small size (consistent across app)
+- BackIcon with proper spacing
+
+---
+
+### AndamioAddButton
+
+**File**: `src/components/andamio/andamio-add-button.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 20+ occurrences
+
+**Purpose**: Standardized add/create button with built-in loading state.
+
+**Pattern Replaced**:
+```tsx
+<AndamioButton onClick={handleCreate} disabled={isCreating}>
+  {isCreating ? (
+    <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
+  ) : (
+    <AddIcon className="h-4 w-4 mr-2" />
+  )}
+  {isCreating ? "Creating..." : "Create Task"}
+</AndamioButton>
+```
+
+**Usage**:
+```tsx
+import { AndamioAddButton } from "~/components/andamio";
+
+// Default "Create" button
+<AndamioAddButton onClick={handleCreate} isLoading={isCreating} />
+
+// Custom label
+<AndamioAddButton onClick={handleCreate} label="Create Task" isLoading={isCreating} />
+
+// Compact for toolbars
+<AndamioAddButton onClick={handleAdd} compact />
+// Shows: [AddIcon] Add
+
+// Inside a Link (for navigation)
+<Link href="/new-item">
+  <AndamioAddButton label="New Task" />
+</Link>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `isLoading` | `boolean` | `false` | Show loading state |
+| `compact` | `boolean` | `false` | Use compact mode (smaller, "Add" label) |
+| `label` | `string` | "Create" / "Add" | Custom button label |
+| `loadingLabel` | `string` | "Creating..." | Custom label while loading |
+| `...buttonProps` | `AndamioButtonProps` | - | All AndamioButton props |
+
+**Features**:
+- Automatic AddIcon / LoadingIcon swap based on `isLoading` state
+- Loading spinner animates with `animate-spin`
+- Compact mode for toolbars and tight spaces
+
+---
+
+### AndamioDeleteButton
+
+**File**: `src/components/andamio/andamio-delete-button.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 10 occurrences
+
+**Purpose**: Standardized delete button with built-in confirmation dialog.
+
+**Pattern Replaced**:
+```tsx
+<AndamioConfirmDialog
+  trigger={
+    <AndamioButton variant="ghost" size="sm" disabled={isDeleting}>
+      <DeleteIcon className="h-4 w-4 text-destructive" />
+    </AndamioButton>
+  }
+  title="Delete Task"
+  description="Are you sure you want to delete this task?"
+  confirmText="Delete"
+  variant="destructive"
+  onConfirm={handleDelete}
+  isLoading={isDeleting}
+/>
+```
+
+**Usage**:
+```tsx
+import { AndamioDeleteButton } from "~/components/andamio";
+
+// Basic (auto-generates title and description)
+<AndamioDeleteButton
+  onConfirm={() => handleDelete(item.id)}
+  itemName="task"
+  isLoading={isDeleting}
+/>
+// Dialog shows: "Delete task?" / "Are you sure you want to delete this task?"
+
+// Custom confirmation text
+<AndamioDeleteButton
+  onConfirm={handleDelete}
+  title="Remove Module"
+  description="This will permanently delete the module and all its lessons."
+  isLoading={isDeleting}
+/>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onConfirm` | `() => void \| Promise<void>` | required | Callback when deletion is confirmed |
+| `itemName` | `string` | "item" | Name of item (for auto-generated text) |
+| `title` | `string` | `Delete {itemName}?` | Custom dialog title |
+| `description` | `string` | Auto-generated | Custom confirmation description |
+| `isLoading` | `boolean` | `false` | Show loading state in dialog |
+| `disabled` | `boolean` | `false` | Disable the trigger button |
+| `className` | `string` | - | Optional className for trigger button |
+
+**Features**:
+- Built-in confirmation dialog (AndamioConfirmDialog)
+- Destructive variant by default
+- DeleteIcon with destructive color
+- Auto-generates sensible confirmation text
+
+---
+
+### AndamioErrorAlert
+
+**File**: `src/components/andamio/andamio-error-alert.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 10+ occurrences
+
+**Purpose**: Standardized error alert with consistent styling.
+
+**Pattern Replaced**:
+```tsx
+<AndamioAlert variant="destructive">
+  <AlertIcon className="h-4 w-4" />
+  <AndamioAlertTitle>Error</AndamioAlertTitle>
+  <AndamioAlertDescription>{error}</AndamioAlertDescription>
+</AndamioAlert>
+```
+
+**Usage**:
+```tsx
+import { AndamioErrorAlert } from "~/components/andamio";
+
+// Basic usage
+{error && <AndamioErrorAlert error={error} />}
+
+// Custom title
+<AndamioErrorAlert error="Failed to save" title="Save Error" />
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `error` | `string` | required | The error message to display |
+| `title` | `string` | "Error" | Optional custom title |
+| `className` | `string` | - | Optional className for the alert |
+
+**Features**:
+- Destructive variant (red styling)
+- AlertIcon included automatically
+- Consistent structure across all error displays
+
+---
+
+### AndamioEditButton
+
+**File**: `src/components/andamio/andamio-edit-button.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 16 occurrences
+
+**Purpose**: Standardized edit button with integrated Next.js Link for navigation.
+
+**Pattern Replaced**:
+```tsx
+<Link href={`/studio/project/${id}/edit`}>
+  <AndamioButton variant="ghost" size="sm">
+    <EditIcon className="h-4 w-4" />
+  </AndamioButton>
+</Link>
+```
+
+**Usage**:
+```tsx
+import { AndamioEditButton } from "~/components/andamio";
+
+// Icon only (default, for table rows)
+<AndamioEditButton href={`/studio/project/${id}/edit`} />
+
+// With label (for standalone buttons)
+<AndamioEditButton href={`/studio/project/${id}/edit`} label="Edit Project" iconOnly={false} />
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `href` | `string` | required | The URL to navigate to |
+| `label` | `string` | "Edit" | Button label (when not icon-only) |
+| `iconOnly` | `boolean` | `true` | Show only icon (no label) |
+| `...buttonProps` | `AndamioButtonProps` | - | All AndamioButton props |
+
+**Features**:
+- Automatically wraps in Next.js Link
+- Ghost variant, small size by default
+- Icon-only mode for table rows (default)
+- Full label mode for standalone buttons
+
+---
+
+### AndamioRemoveButton
+
+**File**: `src/components/andamio/andamio-remove-button.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 17 occurrences
+
+**Purpose**: Standardized remove/close button for list items (acceptance criteria, tags, etc.).
+
+**Pattern Replaced**:
+```tsx
+<AndamioButton
+  variant="ghost"
+  size="sm"
+  onClick={() => removeCriterion(index)}
+  className="text-muted-foreground hover:text-destructive"
+>
+  <CloseIcon className="h-4 w-4" />
+</AndamioButton>
+```
+
+**Usage**:
+```tsx
+import { AndamioRemoveButton } from "~/components/andamio";
+
+// Basic usage (for list items)
+<AndamioRemoveButton
+  onClick={() => removeCriterion(index)}
+  ariaLabel={`Remove criterion ${index + 1}`}
+/>
+
+// With visible label
+<AndamioRemoveButton
+  onClick={() => removeItem(id)}
+  label="Remove"
+/>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onClick` | `() => void` | required | Callback when button is clicked |
+| `label` | `string` | - | Optional visible label |
+| `ariaLabel` | `string` | "Remove" | Accessibility label |
+| `...buttonProps` | `AndamioButtonProps` | - | All AndamioButton props |
+
+**Features**:
+- Ghost variant with muted color by default
+- Hover state transitions to destructive color
+- Compact size for inline list usage
+- CloseIcon included automatically
+
+---
+
+### AndamioRowActions
+
+**File**: `src/components/andamio/andamio-row-actions.tsx`
+
+**Extracted From**: Style review session (2024-12) - Composite pattern
+
+**Purpose**: Composite component combining edit and delete actions for table rows.
+
+**Pattern Replaced**:
+```tsx
+<AndamioTableCell className="text-right">
+  <div className="flex items-center justify-end gap-1">
+    <Link href={`/edit/${id}`}>
+      <AndamioButton variant="ghost" size="sm">
+        <EditIcon className="h-4 w-4" />
+      </AndamioButton>
+    </Link>
+    <AndamioConfirmDialog
+      trigger={
+        <AndamioButton variant="ghost" size="sm">
+          <DeleteIcon className="h-4 w-4 text-destructive" />
+        </AndamioButton>
+      }
+      onConfirm={() => handleDelete(id)}
+      ...
+    />
+  </div>
+</AndamioTableCell>
+```
+
+**Usage**:
+```tsx
+import { AndamioRowActions } from "~/components/andamio";
+
+// Both edit and delete
+<AndamioRowActions
+  editHref={`/studio/project/${id}/draft-tasks/${task.index}`}
+  onDelete={() => handleDelete(task.index)}
+  itemName="task"
+  deleteDescription={`Are you sure you want to delete "${task.title}"?`}
+  isDeleting={deletingTaskIndex === task.index}
+/>
+
+// Edit only
+<AndamioRowActions
+  editHref={`/studio/course/${id}/edit`}
+/>
+
+// Delete only
+<AndamioRowActions
+  onDelete={() => handleDelete(id)}
+  itemName="module"
+  isDeleting={isDeleting}
+/>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `editHref` | `string` | - | URL for edit button (shows edit button if provided) |
+| `onDelete` | `() => void \| Promise<void>` | - | Delete callback (shows delete button if provided) |
+| `itemName` | `string` | "item" | Name of item (for delete confirmation) |
+| `deleteTitle` | `string` | `Delete {itemName}?` | Custom delete dialog title |
+| `deleteDescription` | `string` | Auto-generated | Custom delete confirmation text |
+| `isDeleting` | `boolean` | `false` | Show loading state in delete dialog |
+| `disabled` | `boolean` | `false` | Disable both buttons |
+| `className` | `string` | - | Additional className for container |
+
+**Features**:
+- Combines AndamioEditButton and AndamioDeleteButton
+- Consistent horizontal gap between buttons
+- Shows only the actions that are provided
+- Built-in confirmation dialog for delete
+
+---
+
+### AndamioCardIconHeader
+
+**File**: `src/components/andamio/andamio-card-icon-header.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 20+ occurrences
+
+**Purpose**: Standardized icon + title combination for card headers.
+
+**Pattern Replaced**:
+```tsx
+<div className="flex items-center gap-2">
+  <DatabaseIcon className="h-5 w-5 text-muted-foreground" />
+  <AndamioCardTitle className="text-base">On-Chain Data</AndamioCardTitle>
+</div>
+```
+
+**Usage**:
+```tsx
+import { AndamioCardIconHeader } from "~/components/andamio";
+
+// Basic usage
+<AndamioCardHeader>
+  <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
+</AndamioCardHeader>
+
+// With description
+<AndamioCardHeader>
+  <AndamioCardIconHeader
+    icon={CourseIcon}
+    title="Course Progress"
+    description="Track your learning journey"
+  />
+</AndamioCardHeader>
+
+// Custom icon color
+<AndamioCardIconHeader
+  icon={SuccessIcon}
+  title="Completed"
+  iconColor="text-success"
+/>
+
+// With right-aligned actions (wrap in flex justify-between)
+<AndamioCardHeader>
+  <div className="flex items-center justify-between">
+    <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
+    <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+      <RefreshIcon className="h-4 w-4" />
+    </AndamioButton>
+  </div>
+</AndamioCardHeader>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `icon` | `IconComponent` | required | Icon component from ~/components/icons |
+| `title` | `string` | required | Card title text |
+| `description` | `string` | - | Optional description text |
+| `iconColor` | `string` | "text-muted-foreground" | Icon color class |
+| `className` | `string` | - | Additional className for container |
+
+**Features**:
+- Consistent icon sizing (h-5 w-5)
+- Automatic gap spacing
+- Supports title-only or title + description layouts
+- Works inside AndamioCardHeader
+
+---
+
+### AndamioActionFooter
+
+**File**: `src/components/andamio/andamio-action-footer.tsx`
+
+**Extracted From**: Style review session (2024-12) - Found 12+ occurrences
+
+**Purpose**: Standardized footer for action buttons in cards/forms.
+
+**Pattern Replaced**:
+```tsx
+<div className="flex justify-end gap-2 pt-4 border-t">
+  <AndamioButton variant="outline">Cancel</AndamioButton>
+  <AndamioSaveButton onClick={handleSave} isSaving={isSaving} />
+</div>
+```
+
+**Usage**:
+```tsx
+import { AndamioActionFooter } from "~/components/andamio";
+
+// Basic right-aligned buttons
+<AndamioActionFooter>
+  <AndamioButton variant="outline">Cancel</AndamioButton>
+  <AndamioSaveButton onClick={handleSave} isSaving={isSaving} />
+</AndamioActionFooter>
+
+// With border divider (inside card content)
+<AndamioCardContent>
+  {/* form fields */}
+  <AndamioActionFooter showBorder>
+    <AndamioButton variant="outline">Cancel</AndamioButton>
+    <AndamioButton>Submit</AndamioButton>
+  </AndamioActionFooter>
+</AndamioCardContent>
+
+// Split layout (destructive left, confirm right)
+<AndamioActionFooter align="between">
+  <AndamioDeleteButton onConfirm={handleDelete} itemName="item" />
+  <div className="flex gap-2">
+    <AndamioButton variant="outline">Cancel</AndamioButton>
+    <AndamioButton>Confirm</AndamioButton>
+  </div>
+</AndamioActionFooter>
+
+// Left-aligned buttons
+<AndamioActionFooter align="start">
+  <AndamioButton>Action</AndamioButton>
+</AndamioActionFooter>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | required | Content (buttons) |
+| `align` | `"start" \| "end" \| "between" \| "center"` | "end" | Alignment of children |
+| `showBorder` | `boolean` | `false` | Show top border as divider |
+| `className` | `string` | - | Additional className |
+
+**Features**:
+- Consistent gap-2 spacing between buttons
+- Optional border-t divider with pt-4 padding
+- Multiple alignment options
+- Works inside cards, dialogs, or standalone
 
 ---
 

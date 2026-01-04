@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, SkipForward, Settings } from "lucide-react";
+import { BackIcon, ForwardIcon, SkipIcon, SettingsIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
@@ -54,7 +54,7 @@ export function WizardNavigation({
         disabled={!canGoPrevious || isLoading}
         className="w-full sm:w-auto"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <BackIcon className="h-4 w-4 mr-2" />
         {previousLabel}
       </AndamioButton>
 
@@ -67,7 +67,7 @@ export function WizardNavigation({
             disabled={isLoading}
             className="text-muted-foreground"
           >
-            <SkipForward className="h-4 w-4 mr-2" />
+            <SkipIcon className="h-4 w-4 mr-2" />
             {skipLabel}
           </AndamioButton>
         )}
@@ -79,7 +79,7 @@ export function WizardNavigation({
           className="w-full sm:w-auto"
         >
           {nextLabel}
-          {!isLoading && <ArrowRight className="h-4 w-4 ml-2" />}
+          {!isLoading && <ForwardIcon className="h-4 w-4 ml-2" />}
         </AndamioButton>
       </div>
     </motion.div>
@@ -120,7 +120,7 @@ export function WizardHeader({
         onClick={onExitWizard}
         className="text-muted-foreground"
       >
-        <Settings className="h-4 w-4 mr-2" />
+        <SettingsIcon className="h-4 w-4 mr-2" />
         <span className="hidden sm:inline">Advanced Mode</span>
         <span className="sm:hidden">Advanced</span>
       </AndamioButton>

@@ -38,15 +38,15 @@ import {
   AndamioText,
 } from "~/components/andamio";
 import {
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-  Blocks,
-  Database,
-  Download,
-  Loader2,
-  Link as LinkIcon,
-} from "lucide-react";
+  SuccessIcon,
+  AlertIcon,
+  RefreshIcon,
+  OnChainIcon,
+  LoadingIcon,
+  DatabaseIcon,
+  DownloadIcon,
+  LinkIcon,
+} from "~/components/icons";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -80,7 +80,7 @@ function SLTStatusIcon({ slt }: { slt: HybridSLT }) {
       <AndamioTooltip>
         <AndamioTooltipTrigger asChild>
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-            <CheckCircle className="h-3.5 w-3.5 text-success" />
+            <SuccessIcon className="h-3.5 w-3.5 text-success" />
           </div>
         </AndamioTooltipTrigger>
         <AndamioTooltipContent>
@@ -95,7 +95,7 @@ function SLTStatusIcon({ slt }: { slt: HybridSLT }) {
       <AndamioTooltip>
         <AndamioTooltipTrigger asChild>
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-info/10">
-            <Database className="h-3.5 w-3.5 text-info" />
+            <DatabaseIcon className="h-3.5 w-3.5 text-info" />
           </div>
         </AndamioTooltipTrigger>
         <AndamioTooltipContent>
@@ -109,7 +109,7 @@ function SLTStatusIcon({ slt }: { slt: HybridSLT }) {
     <AndamioTooltip>
       <AndamioTooltipTrigger asChild>
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/10">
-          <Blocks className="h-3.5 w-3.5 text-warning" />
+          <OnChainIcon className="h-3.5 w-3.5 text-warning" />
         </div>
       </AndamioTooltipTrigger>
       <AndamioTooltipContent>
@@ -185,7 +185,7 @@ function ImportSLTDrawer({
     <AndamioDrawer open={open} onOpenChange={setOpen}>
       <AndamioDrawerTrigger asChild>
         <AndamioButton variant="outline" size="sm">
-          <Download className="h-3 w-3 mr-1" />
+          <DownloadIcon className="h-3 w-3 mr-1" />
           Import
         </AndamioButton>
       </AndamioDrawerTrigger>
@@ -237,12 +237,12 @@ function ImportSLTDrawer({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
                   Importing...
                 </>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
+                  <DownloadIcon className="h-4 w-4 mr-2" />
                   Import SLT
                 </>
               )}
@@ -346,7 +346,7 @@ export function HybridSLTStatus({
                   <AndamioTooltip>
                     <AndamioTooltipTrigger asChild>
                       <AndamioBadge variant="outline" className="text-info border-info">
-                        <Database className="h-3 w-3 mr-1" />
+                        <DatabaseIcon className="h-3 w-3 mr-1" />
                         {dbOnlyCount} DB only
                       </AndamioBadge>
                     </AndamioTooltipTrigger>
@@ -359,7 +359,7 @@ export function HybridSLTStatus({
                   <AndamioTooltip>
                     <AndamioTooltipTrigger asChild>
                       <AndamioBadge variant="outline" className="text-warning border-warning">
-                        <Blocks className="h-3 w-3 mr-1" />
+                        <OnChainIcon className="h-3 w-3 mr-1" />
                         {onChainOnlyCount} on-chain only
                       </AndamioBadge>
                     </AndamioTooltipTrigger>
@@ -376,7 +376,7 @@ export function HybridSLTStatus({
               onClick={handleRefresh}
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshIcon className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </AndamioButton>
           </div>
         </div>
@@ -395,7 +395,7 @@ export function HybridSLTStatus({
         {/* Error state */}
         {error && (
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               Failed to fetch data: {error.message}
             </AndamioAlertDescription>
@@ -435,7 +435,7 @@ export function HybridSLTStatus({
         {/* No on-chain data message */}
         {!isLoading && !hasOnChainData && hybridSlts.length > 0 && (
           <AndamioAlert className="mb-4">
-            <Blocks className="h-4 w-4" />
+            <OnChainIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               No matching on-chain module found. SLTs will appear on-chain after minting.
             </AndamioAlertDescription>
@@ -486,19 +486,19 @@ export function HybridSLTStatus({
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle className="h-3 w-3 text-success" />
+              <SuccessIcon className="h-3 w-3 text-success" />
             </div>
             <span>Synced (DB + On-chain)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-info/10">
-              <Database className="h-3 w-3 text-info" />
+              <DatabaseIcon className="h-3 w-3 text-info" />
             </div>
             <span>DB Only</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-warning/10">
-              <Blocks className="h-3 w-3 text-warning" />
+              <OnChainIcon className="h-3 w-3 text-warning" />
             </div>
             <span>On-chain Only</span>
           </div>

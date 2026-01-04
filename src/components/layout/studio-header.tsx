@@ -3,9 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { NextIcon } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { cn } from "~/lib/utils";
 
 interface BreadcrumbItem {
   label: string;
@@ -54,7 +53,7 @@ export function StudioHeader({
                 {displayBreadcrumbs.map((crumb, index) => (
                   <React.Fragment key={index}>
                     {index > 0 && (
-                      <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <NextIcon className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                     )}
                     {crumb.href ? (
                       <Link

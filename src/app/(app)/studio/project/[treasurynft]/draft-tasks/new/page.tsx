@@ -6,18 +6,28 @@ import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import {
+  AndamioBadge,
+  AndamioButton,
+  AndamioInput,
+  AndamioLabel,
+  AndamioTextarea,
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+  AndamioPageHeader,
+  AndamioText,
+  AndamioBackButton,
+  AndamioAddButton,
+  AndamioRemoveButton,
+  AndamioErrorAlert,
+  AndamioActionFooter,
+} from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
+import { AddIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
-import { AndamioPageHeader } from "~/components/andamio";
-import { AndamioText } from "~/components/andamio/andamio-text";
 
 interface ApiError {
   message?: string;
@@ -128,12 +138,10 @@ export default function NewTaskPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Tasks
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          label="Back to Tasks"
+        />
 
         <AndamioPageHeader
           title="Create Task"
@@ -151,12 +159,10 @@ export default function NewTaskPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Tasks
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          label="Back to Tasks"
+        />
         <AndamioBadge variant="secondary">Draft</AndamioBadge>
       </div>
 
@@ -166,13 +172,7 @@ export default function NewTaskPage() {
       />
 
       {/* Error Message */}
-      {error && (
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
-        </AndamioAlert>
-      )}
+      {error && <AndamioErrorAlert error={error} />}
 
       {/* Task Form */}
       <AndamioCard>
@@ -280,7 +280,7 @@ export default function NewTaskPage() {
             <div className="flex items-center justify-between">
               <AndamioLabel>Acceptance Criteria *</AndamioLabel>
               <AndamioButton variant="outline" size="sm" onClick={addCriterion}>
-                <Plus className="h-4 w-4 mr-1" />
+                <AddIcon className="h-4 w-4 mr-1" />
                 Add
               </AndamioButton>
             </div>
@@ -296,13 +296,10 @@ export default function NewTaskPage() {
                     placeholder={`Criterion ${index + 1}`}
                   />
                   {acceptanceCriteria.length > 1 && (
-                    <AndamioButton
-                      variant="ghost"
-                      size="sm"
+                    <AndamioRemoveButton
                       onClick={() => removeCriterion(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </AndamioButton>
+                      ariaLabel={`Remove criterion ${index + 1}`}
+                    />
                   )}
                 </div>
               ))}
@@ -310,15 +307,17 @@ export default function NewTaskPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <AndamioActionFooter showBorder>
             <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
               <AndamioButton variant="outline">Cancel</AndamioButton>
             </Link>
-            <AndamioButton onClick={handleCreate} disabled={isSaving || !isValid}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Creating..." : "Create Task"}
-            </AndamioButton>
-          </div>
+            <AndamioAddButton
+              onClick={handleCreate}
+              isLoading={isSaving}
+              disabled={!isValid}
+              label="Create Task"
+            />
+          </AndamioActionFooter>
         </AndamioCardContent>
       </AndamioCard>
     </div>

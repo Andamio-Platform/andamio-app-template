@@ -3,14 +3,14 @@
 import React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
-  FileText,
-  Target,
-  ClipboardCheck,
-  BookOpen,
-  Presentation,
-  CheckCircle2,
-  CheckCircle,
-} from "lucide-react";
+  CredentialIcon,
+  SLTIcon,
+  AssessIcon,
+  LessonIcon,
+  IntroductionIcon,
+  VerifiedIcon,
+  SuccessIcon,
+} from "~/components/icons";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
 import { cn } from "~/lib/utils";
 import type { IconComponent } from "~/types/ui";
@@ -51,12 +51,12 @@ interface StudioOutlinePanelProps {
  * Default wizard steps for module editing
  */
 export const MODULE_WIZARD_STEPS: Omit<OutlineStep, "isComplete" | "count" | "isActive">[] = [
-  { id: "credential", label: "Credential Title", icon: FileText },
-  { id: "slts", label: "Learning Targets", icon: Target },
-  { id: "assignment", label: "Assignment", icon: ClipboardCheck },
-  { id: "lessons", label: "Lessons", icon: BookOpen },
-  { id: "introduction", label: "Introduction", icon: Presentation },
-  { id: "review", label: "Review", icon: CheckCircle2 },
+  { id: "credential", label: "Credential Title", icon: CredentialIcon },
+  { id: "slts", label: "Learning Targets", icon: SLTIcon },
+  { id: "assignment", label: "Assignment", icon: AssessIcon },
+  { id: "lessons", label: "Lessons", icon: LessonIcon },
+  { id: "introduction", label: "Introduction", icon: IntroductionIcon },
+  { id: "review", label: "Review", icon: VerifiedIcon },
 ];
 
 /**
@@ -116,7 +116,7 @@ export function StudioOutlinePanel({
                   step.isComplete ? "bg-success/10" : isActive ? "bg-primary/10" : "bg-muted"
                 )}>
                   {step.isComplete ? (
-                    <CheckCircle className="h-4 w-4 text-success" />
+                    <SuccessIcon className="h-4 w-4 text-success" />
                   ) : (
                     <Icon className={cn(
                       "h-4 w-4",
@@ -144,7 +144,7 @@ export function StudioOutlinePanel({
 
                 {/* Completion indicator on right */}
                 {step.isComplete && (
-                  <CheckCircle className={cn(
+                  <SuccessIcon className={cn(
                     "h-4 w-4 flex-shrink-0 text-success"
                   )} />
                 )}

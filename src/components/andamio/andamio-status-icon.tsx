@@ -1,12 +1,12 @@
 import React from "react";
 import { cn } from "~/lib/utils";
 import {
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Circle,
+  SuccessIcon,
+  PendingIcon,
+  AlertIcon,
+  NeutralIcon,
   type LucideIcon,
-} from "lucide-react";
+} from "~/components/icons";
 
 /**
  * Status variants for AndamioStatusIcon
@@ -41,15 +41,15 @@ interface StatusConfig {
 }
 
 const presetConfig: Record<StatusPreset, StatusConfig> = {
-  "on-chain": { icon: CheckCircle, variant: "success" },
-  synced: { icon: CheckCircle, variant: "success" },
-  pending: { icon: Clock, variant: "info", animate: true },
-  syncing: { icon: Clock, variant: "info", animate: true },
-  draft: { icon: Circle, variant: "muted" },
-  ready: { icon: Circle, variant: "warning" },
-  "needs-import": { icon: AlertCircle, variant: "warning" },
-  error: { icon: AlertCircle, variant: "destructive" },
-  archived: { icon: Circle, variant: "muted" },
+  "on-chain": { icon: SuccessIcon, variant: "success" },
+  synced: { icon: SuccessIcon, variant: "success" },
+  pending: { icon: PendingIcon, variant: "info", animate: true },
+  syncing: { icon: PendingIcon, variant: "info", animate: true },
+  draft: { icon: NeutralIcon, variant: "muted" },
+  ready: { icon: NeutralIcon, variant: "warning" },
+  "needs-import": { icon: AlertIcon, variant: "warning" },
+  error: { icon: AlertIcon, variant: "destructive" },
+  archived: { icon: NeutralIcon, variant: "muted" },
 };
 
 const variantStyles: Record<StatusVariant, { bg: string; text: string }> = {
@@ -130,7 +130,7 @@ export function AndamioStatusIcon({
   // Resolve configuration
   const preset = status ? presetConfig[status] : null;
   const resolvedVariant = variant ?? preset?.variant ?? "muted";
-  const resolvedIcon = icon ?? preset?.icon ?? Circle;
+  const resolvedIcon = icon ?? preset?.icon ?? NeutralIcon;
   const shouldAnimate = animate ?? preset?.animate ?? false;
 
   const styles = variantStyles[resolvedVariant];

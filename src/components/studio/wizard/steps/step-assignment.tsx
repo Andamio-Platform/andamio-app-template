@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { VerifiedIcon, AlertIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
-import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
@@ -26,6 +26,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     data,
     goNext,
     goPrevious,
+    goToStep,
     canGoPrevious,
     refetchData,
     courseNftPolicyId,
@@ -140,7 +141,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
               >
-                <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                <VerifiedIcon className="h-4 w-4 text-success mt-0.5 shrink-0" />
                 <span className="text-sm">{slt.slt_text}</span>
               </motion.div>
             ))}
@@ -159,16 +160,12 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
               </AndamioCardDescription>
             </div>
             {hasUnsavedChanges && (
-              <AndamioButton
-                size="sm"
+              <AndamioSaveButton
                 variant="outline"
                 onClick={handleSave}
-                disabled={isSaving}
-                isLoading={isSaving}
-              >
-                <Save className="h-4 w-4 mr-1" />
-                Save
-              </AndamioButton>
+                isSaving={isSaving}
+                compact
+              />
             )}
           </div>
         </AndamioCardHeader>
@@ -182,7 +179,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
             />
           </div>
 
-          <div className="min-h-[300px] border rounded-lg overflow-hidden">
+          <div className="min-h-[300px] border rounded-lg overflow-hidden w-full min-w-0">
             <ContentEditor
               content={content}
               onContentChange={setContent}
@@ -201,7 +198,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
 
       {error && (
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertDescription>{error}</AndamioAlertDescription>
         </AndamioAlert>
       )}
@@ -215,11 +212,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         nextLabel="Add Lessons"
         canSkip={!!data.assignment}
         skipLabel="Skip to Introduction"
-        onSkip={() => {
-          // Skip directly to introduction
-          goNext();
-          goNext();
-        }}
+        onSkip={() => goToStep("introduction")}
         isLoading={isSaving}
       />
     </WizardStep>

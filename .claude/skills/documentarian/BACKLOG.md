@@ -17,9 +17,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `color-system` | Manage and update the semantic color palette in globals.css | Low | Useful for theme iterations; the theme-expert skill covers usage but not modification |
 | `naming-convention-checker` | Validate naming conventions (module codes, SLT references) across components | Medium | New convention for `<module-code>.<module-index>` should be consistently applied |
 | `loading-state-auditor` | Verify loading states match page layouts (loadingVariant patterns) | Low | Prevents loading screen "flash" issues; check RequireCourseAccess usage, React Query patterns |
+| `transaction-auditor` | Verify transaction definitions match API endpoints | High | Caught endpoint path mismatch in COURSE_ADMIN_CREATE; side effects depend on exact paths |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2025-12-29 (added color-system, naming-convention-checker, loading-state-auditor skill suggestions)
+**Updated**: 2025-12-31 (added transaction-auditor skill suggestion)
 
 ---
 
@@ -62,3 +63,16 @@ Items that have been addressed and can be archived.
 | Update ?step=blueprint → ?step=credential in extracted-components.md | 2025-12-29 | Updated URL parameter |
 | Add Course Module/SLT reference convention to CLAUDE.md | 2025-12-29 | Added new coding convention section |
 | Document Course Preview Panel redesign in CHANGELOG | 2025-12-29 | Added to Unreleased section |
+| Document PR Review skill in CLAUDE.md | 2025-12-31 | Added to Claude Skills table |
+| Fix transaction endpoint paths in COURSE_ADMIN_CREATE | 2025-12-31 | Fixed in andamio-transactions package |
+| Document Register Course Drawer in CHANGELOG | 2025-12-31 | Added to Unreleased section |
+| Update SITEMAP.md with correct (studio) route group | 2025-12-31 | Fixed route group references |
+| Update STATUS.md with Session 4 changes | 2025-12-31 | Added new session entry |
+| Document Responsive Editor Toolbar in CHANGELOG | 2025-12-31 | Added to Unreleased section |
+| Document Wizard Navigation fix in CHANGELOG | 2025-12-31 | Added to Fixed section |
+| Document Sidebar User Info redesign in CHANGELOG | 2025-12-31 | Added to Fixed section |
+| Document Code Element Styling fix in CHANGELOG | 2025-12-31 | Added to Fixed section |
+| Add Rule 7 (No `<code>` Elements) to style-rules.md | 2025-12-31 | Added new rule for inline monospace |
+| Fix raw `<input>` elements in studio/course/page.tsx | 2025-12-31 | Changed to AndamioInput |
+| Update STATUS.md with Session 5 changes | 2025-12-31 | Added new session entry |
+| Build `global-style-checker` skill | 2025-12-31 | Created SKILL.md and global-overrides.md reference |

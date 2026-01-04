@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Award, Target } from "lucide-react";
+import { SparkleIcon, CredentialIcon, SLTIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
@@ -166,7 +166,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
           >
             <div className="relative">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-                <Award className="h-12 w-12 text-primary-foreground" />
+                <CredentialIcon className="h-12 w-12 text-primary-foreground" />
               </div>
               <motion.div
                 initial={{ scale: 0 }}
@@ -174,7 +174,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
                 transition={{ delay: 0.5, type: "spring" }}
                 className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-success flex items-center justify-center"
               >
-                <Sparkles className="h-4 w-4 text-success-foreground" />
+                <SparkleIcon className="h-4 w-4 text-success-foreground" />
               </motion.div>
             </div>
           </motion.div>
@@ -194,7 +194,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               the specific skills and knowledge learners will demonstrate.
             </AndamioText>
             <div className="flex items-center gap-2 text-sm">
-              <Target className="h-4 w-4 text-primary" />
+              <SLTIcon className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">
                 We&apos;ll define SLTs in the next step
               </span>

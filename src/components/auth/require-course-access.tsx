@@ -6,7 +6,7 @@ import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
-import { AlertCircle, ArrowLeft, ShieldAlert } from "lucide-react";
+import { AlertIcon, BackIcon, SecurityAlertIcon } from "~/components/icons";
 
 interface CourseAccessCheck {
   hasAccess: boolean;
@@ -119,7 +119,7 @@ export function RequireCourseAccess({
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-        <ShieldAlert className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <SecurityAlertIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
         <h1>{title}</h1>
         <AndamioText variant="muted" className="text-center mb-6 max-w-md">
           {description}
@@ -145,7 +145,7 @@ export function RequireCourseAccess({
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
         <AndamioAlert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertDescription>
             {accessCheck.error}
           </AndamioAlertDescription>
@@ -155,7 +155,7 @@ export function RequireCourseAccess({
           className="mt-4"
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <BackIcon className="h-4 w-4 mr-2" />
           Go Back
         </AndamioButton>
       </div>
@@ -166,7 +166,7 @@ export function RequireCourseAccess({
   if (!accessCheck.hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-        <ShieldAlert className="h-12 w-12 text-destructive/70 mb-4" />
+        <SecurityAlertIcon className="h-12 w-12 text-destructive/70 mb-4" />
         <h1>Access Denied</h1>
         <AndamioText variant="muted" className="text-center mb-6 max-w-md">
           You don&apos;t have permission to edit this course. Only course owners
@@ -177,7 +177,7 @@ export function RequireCourseAccess({
             variant="outline"
             onClick={() => router.push("/studio/course")}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <BackIcon className="h-4 w-4 mr-2" />
             Back to Course Studio
           </AndamioButton>
           <AndamioButton

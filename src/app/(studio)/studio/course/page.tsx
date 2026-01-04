@@ -13,27 +13,42 @@ import {
   AndamioResizableHandle,
 } from "~/components/andamio/andamio-resizable";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
-import { env } from "~/env";
+import { useOwnedCoursesQuery } from "~/hooks/api";
 import {
   AndamioButton,
   AndamioBadge,
   AndamioSkeleton,
   AndamioStatusIcon,
   getCourseStatus,
+  AndamioInput,
+  AndamioLabel,
+  AndamioDrawer,
+  AndamioDrawerClose,
+  AndamioDrawerContent,
+  AndamioDrawerDescription,
+  AndamioDrawerFooter,
+  AndamioDrawerHeader,
+  AndamioDrawerTitle,
+  AndamioDrawerTrigger,
 } from "~/components/andamio";
+import { toast } from "sonner";
 import { CreateCourseDialog } from "~/components/courses/create-course-dialog";
 import {
-  Search,
-  Blocks,
-  RefreshCw,
-  BookOpen,
-  ChevronRight,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+  SearchIcon,
+  OnChainIcon,
+  RefreshIcon,
+  CourseIcon,
+  NextIcon,
+  SuccessIcon,
+  PendingIcon,
+  AlertIcon,
+  PreviewIcon,
+  LoadingIcon,
+  AddIcon,
+  ExternalLinkIcon,
+} from "~/components/icons";
+import { getTokenExplorerUrl } from "~/lib/constants";
+import { env } from "~/env";
 import { type HybridCourseStatus } from "~/components/studio/studio-course-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourseModules } from "~/hooks/api/use-course-module";
@@ -44,16 +59,20 @@ import { cn } from "~/lib/utils";
  * Split-pane layout: courses list on left, preview on right
  */
 export default function StudioCourseListPage() {
-  const router = useRouter();
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const alias = user?.accessTokenAlias ?? undefined;
   const { setActions } = useStudioHeader();
 
-  // Local state
-  const [dbCourses, setDbCourses] = useState<ListOwnedCoursesOutput>([]);
-  const [isLoadingDb, setIsLoadingDb] = useState(false);
+  // Local UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  // React Query: Fetch DB courses (cached, deduplicated)
+  const {
+    data: dbCourses = [],
+    isLoading: isLoadingDb,
+    refetch: refetchDbCourses,
+  } = useOwnedCoursesQuery();
 
   // Fetch on-chain courses
   const {
@@ -61,37 +80,6 @@ export default function StudioCourseListPage() {
     isLoading: isLoadingOnChain,
     refetch: refetchOnChain,
   } = useCoursesOwnedByAlias(alias);
-
-  const fetchDbCourses = useCallback(async () => {
-    if (!isAuthenticated) {
-      setDbCourses([]);
-      return;
-    }
-
-    setIsLoadingDb(true);
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
-      );
-      if (response.ok) {
-        const data = (await response.json()) as ListOwnedCoursesOutput;
-        setDbCourses(data ?? []);
-      }
-    } catch (err) {
-      console.error("Error fetching DB courses:", err);
-    } finally {
-      setIsLoadingDb(false);
-    }
-  }, [isAuthenticated, authenticatedFetch]);
-
-  useEffect(() => {
-    void fetchDbCourses();
-  }, [fetchDbCourses]);
 
   // Merge and dedupe courses
   const hybridCourses = useMemo<HybridCourseStatus[]>(() => {
@@ -151,9 +139,9 @@ export default function StudioCourseListPage() {
   const isLoading = isLoadingOnChain || isLoadingDb;
 
   const handleRefresh = useCallback(() => {
-    void fetchDbCourses();
+    void refetchDbCourses();
     void refetchOnChain();
-  }, [fetchDbCourses, refetchOnChain]);
+  }, [refetchDbCourses, refetchOnChain]);
 
   // Get selected course
   const selectedCourse = useMemo(
@@ -173,7 +161,7 @@ export default function StudioCourseListPage() {
           disabled={isLoading}
           className="h-7 w-7 p-0"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshIcon className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </AndamioButton>
         <CreateCourseDialog />
       </div>
@@ -185,7 +173,7 @@ export default function StudioCourseListPage() {
     return (
       <StudioEditorPane padding="normal">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <OnChainIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <AndamioText className="text-lg font-medium">Connect your wallet</AndamioText>
           <AndamioText variant="small" className="mt-1">
             Sign in to access Course Studio
@@ -217,7 +205,7 @@ export default function StudioCourseListPage() {
 
               {!isLoading && hybridCourses.length === 0 && (
                 <div className="py-8 text-center">
-                  <BookOpen className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <CourseIcon className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
                   <AndamioText className="text-sm font-medium">No courses yet</AndamioText>
                   <AndamioText variant="small" className="mt-1 mb-3">
                     Create your first course
@@ -237,7 +225,7 @@ export default function StudioCourseListPage() {
 
               {!isLoading && hybridCourses.length > 0 && filteredCourses.length === 0 && (
                 <div className="py-8 text-center">
-                  <Search className="h-6 w-6 text-muted-foreground/30 mx-auto mb-2" />
+                  <SearchIcon className="h-6 w-6 text-muted-foreground/30 mx-auto mb-2" />
                   <AndamioText variant="small">No matches</AndamioText>
                 </div>
               )}
@@ -246,14 +234,14 @@ export default function StudioCourseListPage() {
 
           {/* Search - Bottom */}
           <div className="border-t border-border px-3 py-2 bg-muted/30">
-            <div className="flex items-center gap-1.5 h-8 px-3 rounded-lg border bg-background shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all">
-              <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <input
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <AndamioInput
                 type="text"
                 placeholder="Search courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                className="h-8 pl-8 text-xs"
               />
             </div>
           </div>
@@ -265,7 +253,7 @@ export default function StudioCourseListPage() {
       {/* Right Panel: Course Preview or Welcome */}
       <AndamioResizablePanel defaultSize={65}>
         {selectedCourse ? (
-          <CoursePreviewPanel course={selectedCourse} />
+          <CoursePreviewPanel course={selectedCourse} onImportSuccess={handleRefresh} />
         ) : (
           <WelcomePanel courseCount={hybridCourses.length} />
         )}
@@ -316,7 +304,7 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
           </span>
           {course.onChain && course.onChainModuleCount > 0 && (
             <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-background/50">
-              <Blocks className="h-2.5 w-2.5 mr-0.5" />
+              <OnChainIcon className="h-2.5 w-2.5 mr-0.5" />
               {course.onChainModuleCount}
             </AndamioBadge>
           )}
@@ -324,7 +312,7 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
       </div>
 
       {/* Selection indicator */}
-      <ChevronRight className={cn(
+      <NextIcon className={cn(
         "h-4 w-4 flex-shrink-0 transition-all duration-150",
         isSelected
           ? "text-primary opacity-100 translate-x-0"
@@ -348,9 +336,10 @@ function getStatusFromCourse(course: HybridCourseStatus): CourseStatus {
 
 interface CoursePreviewPanelProps {
   course: HybridCourseStatus;
+  onImportSuccess?: () => void;
 }
 
-function CoursePreviewPanel({ course }: CoursePreviewPanelProps) {
+function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps) {
   const router = useRouter();
 
   // Fetch modules for this course
@@ -375,14 +364,17 @@ function CoursePreviewPanel({ course }: CoursePreviewPanelProps) {
     return (
       <StudioEditorPane padding="normal">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <AlertCircle className="h-10 w-10 text-muted-foreground/50 mb-3" />
-          <AndamioText className="font-medium">On-chain Only</AndamioText>
+          <AlertIcon className="h-10 w-10 text-muted-foreground/50 mb-3" />
+          <AndamioText className="font-medium">Unregistered Course</AndamioText>
           <AndamioText variant="small" className="mt-1 max-w-sm">
-            This course exists on-chain but hasn&apos;t been imported to your database yet.
+            You own this Course NFT on-chain. Register it to start building your course content.
           </AndamioText>
-          <AndamioButton variant="outline" size="sm" className="mt-4">
-            Import Course
-          </AndamioButton>
+          <div className="mt-4">
+            <RegisterCourseDrawer
+              courseId={course.courseId}
+              onSuccess={onImportSuccess}
+            />
+          </div>
         </div>
       </StudioEditorPane>
     );
@@ -462,7 +454,7 @@ function CoursePreviewPanel({ course }: CoursePreviewPanelProps) {
             onClick={() => router.push(`/studio/course/${course.courseId}`)}
           >
             Open Course
-            <ChevronRight className="h-5 w-5 ml-2" />
+            <NextIcon className="h-5 w-5 ml-2" />
           </AndamioButton>
 
           {/* Secondary Actions */}
@@ -471,7 +463,7 @@ function CoursePreviewPanel({ course }: CoursePreviewPanelProps) {
               href={`/course/${course.courseId}`}
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Eye className="h-3.5 w-3.5" />
+              <PreviewIcon className="h-3.5 w-3.5" />
               <span>Preview as Learner</span>
             </Link>
             {course.onChain && (
@@ -481,7 +473,7 @@ function CoursePreviewPanel({ course }: CoursePreviewPanelProps) {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Blocks className="h-3.5 w-3.5" />
+                <OnChainIcon className="h-3.5 w-3.5" />
                 <span>View On-Chain</span>
               </a>
             )}
@@ -523,7 +515,7 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
         <div className="max-w-lg text-center">
           {/* Icon */}
           <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto mb-6 shadow-lg shadow-primary/10">
-            <BookOpen className="h-10 w-10 text-primary" />
+            <CourseIcon className="h-10 w-10 text-primary" />
           </div>
 
           {/* Title */}
@@ -546,7 +538,7 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
           <div className="grid grid-cols-3 gap-3 text-left">
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 mb-2">
-                <CheckCircle className="h-4 w-4 text-success" />
+                <SuccessIcon className="h-4 w-4 text-success" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">On-Chain</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">
@@ -555,7 +547,7 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
             </div>
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 mb-2">
-                <Blocks className="h-4 w-4 text-info" />
+                <OnChainIcon className="h-4 w-4 text-info" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">Modular</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">
@@ -564,7 +556,7 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
             </div>
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 mb-2">
-                <Eye className="h-4 w-4 text-warning" />
+                <PreviewIcon className="h-4 w-4 text-warning" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">Preview</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">
@@ -579,7 +571,7 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
       {courseCount > 0 && (
         <div className="border-t border-border/50 px-6 py-3 bg-muted/20">
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
-            <ChevronRight className="h-4 w-4 rotate-180" />
+            <NextIcon className="h-4 w-4 rotate-180" />
             <AndamioText variant="small">
               Select a course to view its modules and content
             </AndamioText>
@@ -595,23 +587,162 @@ function StatusLabel({ status }: { status: CourseStatus }) {
     case "synced":
       return (
         <AndamioBadge variant="default" className="text-[10px] h-5">
-          <CheckCircle className="h-2.5 w-2.5 mr-1" />
+          <SuccessIcon className="h-2.5 w-2.5 mr-1" />
           Live
         </AndamioBadge>
       );
     case "syncing":
       return (
         <AndamioBadge variant="secondary" className="text-[10px] h-5">
-          <Clock className="h-2.5 w-2.5 mr-1" />
+          <PendingIcon className="h-2.5 w-2.5 mr-1" />
           Syncing
         </AndamioBadge>
       );
     case "onchain-only":
       return (
         <AndamioBadge variant="outline" className="text-[10px] h-5">
-          Import Required
+          Unregistered
         </AndamioBadge>
       );
   }
 }
 
+// =============================================================================
+// Register Course Drawer
+// =============================================================================
+
+interface RegisterCourseDrawerProps {
+  courseId: string;
+  onSuccess?: () => void;
+}
+
+function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps) {
+  const { authenticatedFetch } = useAndamioAuth();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRegister = async () => {
+    if (!title.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/create-on-submit-minting-tx`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title.trim(),
+            course_nft_policy_id: courseId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as { message?: string };
+        throw new Error(errorData.message ?? "Failed to register course");
+      }
+
+      toast.success("Course Registered!", {
+        description: `"${title.trim()}" is now ready for content.`,
+      });
+
+      setOpen(false);
+      setTitle("");
+      onSuccess?.();
+    } catch (err) {
+      console.error("Error registering course:", err);
+      toast.error("Registration Failed", {
+        description: err instanceof Error ? err.message : "Failed to register course",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const truncatedId = `${courseId.slice(0, 12)}...${courseId.slice(-12)}`;
+
+  return (
+    <AndamioDrawer open={open} onOpenChange={setOpen}>
+      <AndamioDrawerTrigger asChild>
+        <AndamioButton variant="default" size="sm">
+          <AddIcon className="h-4 w-4 mr-1" />
+          Register Course
+        </AndamioButton>
+      </AndamioDrawerTrigger>
+      <AndamioDrawerContent>
+        <div className="mx-auto w-full max-w-lg">
+          <AndamioDrawerHeader className="text-left">
+            <AndamioDrawerTitle>Register Course</AndamioDrawerTitle>
+            <AndamioDrawerDescription>
+              You own this Course NFT on-chain. Give it a title to register it
+              in your studio and start adding content.
+            </AndamioDrawerDescription>
+          </AndamioDrawerHeader>
+
+          <div className="space-y-4 px-4">
+            {/* Course ID display */}
+            <div className="rounded-lg border bg-muted/50 p-3">
+              <AndamioText variant="small" className="text-xs mb-1">Course NFT Policy ID</AndamioText>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono flex-1 truncate">
+                  {truncatedId}
+                </span>
+                <a
+                  href={getTokenExplorerUrl(courseId, env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  <ExternalLinkIcon className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+
+            {/* Title input */}
+            <div className="space-y-2">
+              <AndamioLabel htmlFor="register-title">Course Title</AndamioLabel>
+              <AndamioInput
+                id="register-title"
+                placeholder="Enter a title for your course"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={isSubmitting}
+                autoFocus
+              />
+              <AndamioText variant="small" className="text-xs">
+                You can change this later. This just gets your course registered.
+              </AndamioText>
+            </div>
+          </div>
+
+          <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+            <AndamioDrawerClose asChild>
+              <AndamioButton variant="outline" className="flex-1" disabled={isSubmitting}>
+                Cancel
+              </AndamioButton>
+            </AndamioDrawerClose>
+            <AndamioButton
+              className="flex-1"
+              onClick={handleRegister}
+              disabled={!title.trim() || isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                <>
+                  <AddIcon className="h-4 w-4 mr-2" />
+                  Register Course
+                </>
+              )}
+            </AndamioButton>
+          </AndamioDrawerFooter>
+        </div>
+      </AndamioDrawerContent>
+    </AndamioDrawer>
+  );
+}

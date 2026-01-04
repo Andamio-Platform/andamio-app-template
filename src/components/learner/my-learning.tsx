@@ -11,7 +11,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AlertCircle, BookOpen, CheckCircle, Clock, FileText } from "lucide-react";
+import { AlertIcon, CourseIcon, SuccessIcon, PendingIcon, LessonIcon } from "~/components/icons";
 import { type z } from "zod";
 import { type getMyLearningOutputSchema } from "@andamio/db-api";
 
@@ -121,7 +121,7 @@ export function MyLearning() {
         </AndamioCardHeader>
         <AndamioCardContent>
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertTitle>Error</AndamioAlertTitle>
             <AndamioAlertDescription>{error}</AndamioAlertDescription>
           </AndamioAlert>
@@ -140,7 +140,7 @@ export function MyLearning() {
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+            <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
             <AndamioText variant="small" className="mb-2">
               You haven&apos;t started any courses yet.
             </AndamioText>
@@ -199,15 +199,15 @@ export function MyLearning() {
                     )}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
+                        <LessonIcon className="h-4 w-4" />
                         <span>{course.commitment_count} assignments</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
+                        <SuccessIcon className="h-4 w-4" />
                         <span>{course.completed_count} completed</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
+                        <PendingIcon className="h-4 w-4" />
                         <span>{progress}% progress</span>
                       </div>
                     </div>

@@ -8,7 +8,7 @@ import {
   AndamioNotFoundCard,
   AndamioEmptyState,
 } from "~/components/andamio";
-import { BookOpen, Blocks, Target } from "lucide-react";
+import { CourseIcon, OnChainIcon, SLTIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
@@ -81,7 +81,7 @@ export default function CourseDetailPage() {
           )}
         </div>
         <AndamioEmptyState
-          icon={BookOpen}
+          icon={CourseIcon}
           title="No modules found for this course"
           className="border rounded-md"
         />
@@ -130,11 +130,11 @@ export default function CourseDetailPage() {
         )}
         <div className="flex flex-wrap gap-3 sm:gap-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <BookOpen className="h-4 w-4 shrink-0" />
+            <CourseIcon className="h-4 w-4 shrink-0" />
             <span>{moduleList.length} {moduleList.length === 1 ? "Module" : "Modules"}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Target className="h-4 w-4 shrink-0" />
+            <SLTIcon className="h-4 w-4 shrink-0" />
             <span>{totalSlts} Learning {totalSlts === 1 ? "Target" : "Targets"}</span>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function CourseDetailPage() {
       {onChainCourse && onChainCourse.modules.length > 0 && (
         <div className="space-y-4 border-t pt-8">
           <div className="flex items-center gap-2">
-            <Blocks className="h-5 w-5 text-success" />
+            <OnChainIcon className="h-5 w-5 text-success" />
             <h2 className="text-xl font-semibold">Blockchain Verification</h2>
           </div>
           <AndamioText variant="small">

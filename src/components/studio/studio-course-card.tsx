@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle, Clock, AlertCircle, Blocks } from "lucide-react";
+import { SuccessIcon, PendingIcon, AlertIcon, OnChainIcon } from "~/components/icons";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import { cn } from "~/lib/utils";
 
@@ -64,7 +64,7 @@ export function StudioCourseCard({ course, onClick }: StudioCourseCardProps) {
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
         {course.onChain && course.onChainModuleCount > 0 ? (
           <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Blocks className="h-3 w-3" />
+            <OnChainIcon className="h-3 w-3" />
             {course.onChainModuleCount} module{course.onChainModuleCount !== 1 ? "s" : ""}
           </span>
         ) : (
@@ -84,19 +84,19 @@ function StatusIcon({ status }: { status: CourseStatus }) {
     case "synced":
       return (
         <div className={cn(baseClass, "bg-success/10")}>
-          <CheckCircle className={cn(iconClass, "text-success")} />
+          <SuccessIcon className={cn(iconClass, "text-success")} />
         </div>
       );
     case "syncing":
       return (
         <div className={cn(baseClass, "bg-info/10")}>
-          <Clock className={cn(iconClass, "text-info")} />
+          <PendingIcon className={cn(iconClass, "text-info")} />
         </div>
       );
     case "onchain-only":
       return (
         <div className={cn(baseClass, "bg-muted")}>
-          <AlertCircle className={cn(iconClass, "text-muted-foreground")} />
+          <AlertIcon className={cn(iconClass, "text-muted-foreground")} />
         </div>
       );
   }

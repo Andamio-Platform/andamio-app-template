@@ -33,7 +33,7 @@ import {
 } from "~/components/andamio/andamio-select";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AlertCircle, Users, CheckCircle, Clock, XCircle, Search, X } from "lucide-react";
+import { AlertIcon, TeacherIcon, SuccessIcon, PendingIcon, ErrorIcon, SearchIcon, CloseIcon } from "~/components/icons";
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
@@ -235,7 +235,7 @@ export default function InstructorDashboardPage() {
         <AndamioPageHeader title="Instructor Dashboard" />
 
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
           <AndamioAlertDescription>{error ?? "Course not found"}</AndamioAlertDescription>
         </AndamioAlert>
@@ -262,7 +262,7 @@ export default function InstructorDashboardPage() {
         <AndamioCard>
           <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <AndamioCardTitle className="text-sm font-medium">Total Commitments</AndamioCardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <TeacherIcon className="h-4 w-4 text-muted-foreground" />
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -272,7 +272,7 @@ export default function InstructorDashboardPage() {
         <AndamioCard>
           <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <AndamioCardTitle className="text-sm font-medium">Pending</AndamioCardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <PendingIcon className="h-4 w-4 text-muted-foreground" />
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
@@ -282,7 +282,7 @@ export default function InstructorDashboardPage() {
         <AndamioCard>
           <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <AndamioCardTitle className="text-sm font-medium">Accepted</AndamioCardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
+            <SuccessIcon className="h-4 w-4 text-success" />
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="text-2xl font-bold text-success">{stats.accepted}</div>
@@ -292,7 +292,7 @@ export default function InstructorDashboardPage() {
         <AndamioCard>
           <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <AndamioCardTitle className="text-sm font-medium">Denied</AndamioCardTitle>
-            <XCircle className="h-4 w-4 text-destructive" />
+            <ErrorIcon className="h-4 w-4 text-destructive" />
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="text-2xl font-bold text-destructive">{stats.denied}</div>
@@ -345,7 +345,7 @@ export default function InstructorDashboardPage() {
             <div className="space-y-2">
               <AndamioLabel htmlFor="search">Search Learner</AndamioLabel>
               <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <AndamioInput
                   id="search"
                   placeholder="Search by access token alias..."
@@ -381,7 +381,7 @@ export default function InstructorDashboardPage() {
       {/* Commitments Table */}
       {filteredCommitments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+          <TeacherIcon className="h-12 w-12 text-muted-foreground mb-4" />
           <AndamioText variant="small" className="mb-2">
             {commitments.length === 0
               ? "No assignment commitments yet."
@@ -469,7 +469,7 @@ export default function InstructorDashboardPage() {
                 size="sm"
                 onClick={() => setSelectedCommitment(null)}
               >
-                <X className="h-4 w-4" />
+                <CloseIcon className="h-4 w-4" />
               </AndamioButton>
             </div>
           </AndamioCardHeader>

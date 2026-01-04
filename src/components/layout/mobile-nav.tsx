@@ -17,18 +17,18 @@ import {
   SheetClose,
 } from "~/components/ui/sheet";
 import {
-  LayoutDashboard,
-  LogOut,
-  GraduationCap,
-  Sparkles,
-  BookOpen,
-  Map,
-  Palette,
-  FolderKanban,
-  ChevronRight,
-  Layers,
-  Menu,
-} from "lucide-react";
+  DashboardIcon,
+  LearnerIcon,
+  SparkleIcon,
+  CourseIcon,
+  ProjectIcon,
+  NextIcon,
+  ModuleIcon,
+  MenuIcon,
+  LogOutIcon,
+  SitemapIcon,
+  ThemeIcon,
+} from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { NavItem } from "~/types/ui";
 
@@ -36,43 +36,43 @@ const navigation: NavItem[] = [
   {
     name: "Dashboard",
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: DashboardIcon,
     description: "Overview & status",
   },
   {
     name: "Browse Courses",
     href: "/course",
-    icon: GraduationCap,
+    icon: LearnerIcon,
     description: "Explore catalog",
   },
   {
     name: "Course Studio",
     href: "/studio/course",
-    icon: BookOpen,
+    icon: CourseIcon,
     description: "Manage your courses",
   },
   {
     name: "Browse Projects",
     href: "/project",
-    icon: FolderKanban,
+    icon: ProjectIcon,
     description: "Find projects",
   },
   {
     name: "Studio",
     href: "/studio",
-    icon: Sparkles,
+    icon: SparkleIcon,
     description: "Creator tools",
   },
   {
     name: "Components",
     href: "/components",
-    icon: Palette,
+    icon: ThemeIcon,
     description: "UI showcase",
   },
   {
     name: "Sitemap",
     href: "/sitemap",
-    icon: Map,
+    icon: SitemapIcon,
     description: "All routes",
   },
 ];
@@ -95,7 +95,7 @@ export function MobileNav() {
           className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground md:hidden"
           aria-label="Open navigation menu"
         >
-          <Menu className="h-4 w-4" />
+          <MenuIcon className="h-4 w-4" />
         </AndamioButton>
       </SheetTrigger>
 
@@ -104,7 +104,7 @@ export function MobileNav() {
         <SheetHeader className="border-b border-border gap-0 py-4">
           <div className="flex items-center gap-3 px-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Layers className="h-4 w-4" />
+              <ModuleIcon className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
               <SheetTitle>Andamio</SheetTitle>
@@ -150,7 +150,7 @@ export function MobileNav() {
                           {item.description}
                         </span>
                       </div>
-                      {isActive && <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />}
+                      {isActive && <NextIcon className="h-4 w-4 text-primary flex-shrink-0" />}
                     </div>
                   </Link>
                 </SheetClose>
@@ -196,7 +196,7 @@ export function MobileNav() {
                 }}
                 className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               >
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOutIcon className="mr-2 h-4 w-4" />
                 Disconnect
               </AndamioButton>
             </>

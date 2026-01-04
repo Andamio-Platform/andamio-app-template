@@ -3,7 +3,7 @@
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { BookOpen, FileText, Layers } from "lucide-react";
+import { CourseIcon, LessonIcon, ModuleIcon } from "~/components/icons";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import { calculateCourseStats } from "~/lib/course-filters";
 
@@ -26,7 +26,7 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
       <AndamioCard>
         <AndamioCardHeader className="flex flex-row items-center justify-between pb-2">
           <AndamioCardTitle className="text-sm font-medium">Total Courses</AndamioCardTitle>
-          <BookOpen className="h-4 w-4 text-muted-foreground" />
+          <CourseIcon className="h-4 w-4 text-muted-foreground" />
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold">{stats.total}</div>
@@ -40,7 +40,7 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
       <AndamioCard>
         <AndamioCardHeader className="flex flex-row items-center justify-between pb-2">
           <AndamioCardTitle className="text-sm font-medium">Published</AndamioCardTitle>
-          <FileText className="h-4 w-4 text-success" />
+          <LessonIcon className="h-4 w-4 text-success" />
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold text-success">{stats.published}</div>
@@ -54,7 +54,7 @@ export function CourseStatsDashboard({ courses, moduleCounts }: CourseStatsDashb
       <AndamioCard className="sm:col-span-2 lg:col-span-1">
         <AndamioCardHeader className="flex flex-row items-center justify-between pb-2">
           <AndamioCardTitle className="text-sm font-medium">Total Modules</AndamioCardTitle>
-          <Layers className="h-4 w-4 text-info" />
+          <ModuleIcon className="h-4 w-4 text-info" />
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="text-2xl font-bold">{stats.totalModules}</div>

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import {
@@ -10,19 +9,21 @@ import {
   AndamioNotFoundCard,
   AndamioEmptyState,
 } from "~/components/andamio";
-import { BookOpen } from "lucide-react";
-import { type LessonWithSLTOutput, type CourseOutput, type CourseModuleOutput } from "@andamio/db-api";
+import { CourseIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { LessonMediaSection } from "~/components/courses/lesson-media-section";
+import { useCourse, useCourseModule, useLesson } from "~/hooks/api";
 import type { JSONContent } from "@tiptap/core";
 
 /**
  * Public page displaying lesson content
  *
- * API Endpoint: POST /lessons/get (body: { course_nft_policy_id, module_code, slt_index })
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
+ * Uses React Query for cached, deduplicated data fetching:
+ * - useCourse: Course details for breadcrumb (cached)
+ * - useCourseModule: Module details for breadcrumb (cached)
+ * - useLesson: Lesson content
  *
  * Note: Lessons are optional content tied to SLTs. If no lesson exists,
  * this page will show "Lesson not found" message.
@@ -34,84 +35,16 @@ export default function LessonDetailPage() {
   const moduleCode = params.modulecode as string;
   const moduleIndex = parseInt(params.moduleindex as string);
 
-  const [course, setCourse] = useState<CourseOutput | null>(null);
-  const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
-  const [lesson, setLesson] = useState<LessonWithSLTOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks - data is cached and shared across components
+  const { data: course } = useCourse(courseNftPolicyId);
+  const { data: courseModule } = useCourseModule(courseNftPolicyId, moduleCode);
+  const {
+    data: lesson,
+    isLoading,
+    error: lessonError,
+  } = useLesson(courseNftPolicyId, moduleCode, moduleIndex);
 
-  useEffect(() => {
-    const fetchLesson = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Fetch course details for breadcrumb
-        const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-          }
-        );
-
-        if (courseResponse.ok) {
-          const courseData = (await courseResponse.json()) as CourseOutput;
-          setCourse(courseData);
-        }
-
-        // Fetch module details for breadcrumb
-        const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_nft_policy_id: courseNftPolicyId,
-              module_code: moduleCode,
-            }),
-          }
-        );
-
-        if (moduleResponse.ok) {
-          const moduleData = (await moduleResponse.json()) as CourseModuleOutput;
-          setCourseModule(moduleData);
-        }
-
-        // Fetch lesson details
-        const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_nft_policy_id: courseNftPolicyId,
-              module_code: moduleCode,
-              module_index: moduleIndex,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Lesson not found");
-          }
-          throw new Error(`Failed to fetch lesson: ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as LessonWithSLTOutput;
-        setLesson(data);
-      } catch (err) {
-        console.error("Error fetching lesson:", err);
-        setError(err instanceof Error ? err.message : "Failed to load lesson");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchLesson();
-  }, [courseNftPolicyId, moduleCode, moduleIndex]);
+  const error = lessonError?.message ?? null;
 
   // Loading state
   if (isLoading) {
@@ -142,7 +75,7 @@ export default function LessonDetailPage() {
           <AndamioCard>
             <AndamioCardContent className="pt-6">
               <AndamioEmptyState
-                icon={BookOpen}
+                icon={CourseIcon}
                 title="This learning target doesn't have a lesson yet"
               />
             </AndamioCardContent>
@@ -230,7 +163,7 @@ export default function LessonDetailPage() {
         <AndamioCard>
           <AndamioCardContent className="pt-6">
             <AndamioEmptyState
-              icon={BookOpen}
+              icon={CourseIcon}
               title="No content has been added to this lesson yet"
             />
           </AndamioCardContent>

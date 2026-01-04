@@ -160,6 +160,62 @@ Add new types to `~/types/ui.ts` when:
 2. The pattern is used in 2+ files
 3. The pattern represents a common UI concept
 
+### Centralized Icon System
+
+**CRITICAL: All icons must be imported from `~/components/icons`, not directly from `lucide-react`.**
+
+Icons use semantic names that describe their purpose in the Andamio domain, not their visual appearance.
+
+**Rules**:
+- ✅ Import icons from `~/components/icons`
+- ✅ Use semantic names (`CredentialIcon`, `SLTIcon`, `CourseIcon`)
+- ❌ Never import directly from `lucide-react` in application code
+- ❌ Never use visual names (`Award`, `Target`, `BookOpen`)
+
+**Examples**:
+
+```typescript
+// ✅ CORRECT - Import from centralized icons with semantic names
+import { CredentialIcon, SLTIcon, CourseIcon, SuccessIcon } from "~/components/icons";
+
+<CredentialIcon className="h-4 w-4" />
+<SLTIcon className="h-4 w-4" />
+<SuccessIcon className="h-4 w-4 text-success" />
+```
+
+```typescript
+// ❌ WRONG - Direct lucide-react import
+import { Award, Target, BookOpen, CheckCircle } from "lucide-react";
+
+<Award className="h-4 w-4" />
+```
+
+**Icon Categories** (see `.claude/skills/review-styling/icon-system.md` for full reference):
+
+| Category | Examples | Use For |
+|----------|----------|---------|
+| Entity | `CourseIcon`, `ModuleIcon`, `CredentialIcon`, `SLTIcon` | Domain objects |
+| Status | `SuccessIcon`, `ErrorIcon`, `LoadingIcon`, `PendingIcon` | State indicators |
+| Action | `AddIcon`, `EditIcon`, `DeleteIcon`, `SaveIcon` | User operations |
+| Navigation | `BackIcon`, `NextIcon`, `ExpandIcon`, `CloseIcon` | Navigation/direction |
+| UI | `SearchIcon`, `SettingsIcon`, `MenuIcon`, `DashboardIcon` | General interface |
+
+**Key Semantic Mappings**:
+- `Award` → `CredentialIcon` (credentials, achievements)
+- `Target` → `SLTIcon` (Student Learning Targets)
+- `BookOpen` → `CourseIcon` (courses)
+- `Blocks` → `OnChainIcon` (blockchain)
+- `CheckCircle` → `SuccessIcon` (success states)
+- `Loader2` → `LoadingIcon` (loading states)
+
+**Adding New Icons**:
+1. Check if a semantic icon already exists
+2. If not, add to the appropriate category file in `src/components/icons/`
+3. Export from `src/components/icons/index.ts`
+4. Use a semantic name that describes the PURPOSE, not the visual
+
+**Exceptions**: Only `src/components/icons/` and `src/components/ui/` may import directly from `lucide-react`.
+
 ## App Layout Structure
 
 ### Full-Screen Layout
@@ -668,7 +724,9 @@ This project uses Claude Skills for AI-assisted development workflows:
 
 | Skill | Purpose |
 |-------|---------|
+| `review-pr` | Comprehensive PR review with automatic skill delegation |
 | `review-styling` | Validate routes against style guidelines |
+| `global-style-checker` | Detect CSS specificity conflicts with globals.css |
 | `theme-expert` | Comprehensive design system knowledge (layouts, colors, spacing, rules) |
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API endpoint coverage |

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Check, BookOpen, Sparkles, Save, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { AddIcon, CompletedIcon, LessonIcon, SparkleIcon, CollapseIcon, EditIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -87,6 +88,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 
   const lessonsCreated = lessons.length;
   const totalSLTs = slts.length;
+  const hasAssignment = !!data.assignment;
 
   return (
     <WizardStep config={config} direction={direction}>
@@ -128,7 +130,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {lesson ? <Check className="h-4 w-4" /> : index + 1}
+                          {lesson ? <CompletedIcon className="h-4 w-4" /> : index + 1}
                         </div>
                       </div>
 
@@ -144,7 +146,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <BookOpen className="h-4 w-4 text-success" />
+                                <LessonIcon className="h-4 w-4 text-success" />
                                 <span className="font-medium">{lesson.title}</span>
                               </div>
                               <AndamioButton
@@ -154,12 +156,12 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                               >
                                 {isEditingThis ? (
                                   <>
-                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    <CollapseIcon className="h-3 w-3 mr-1" />
                                     Collapse
                                   </>
                                 ) : (
                                   <>
-                                    <Pencil className="h-3 w-3 mr-1" />
+                                    <EditIcon className="h-3 w-3 mr-1" />
                                     Edit
                                   </>
                                 )}
@@ -228,7 +230,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                             variant="outline"
                             onClick={() => setCreatingForSlt(slt.module_index)}
                           >
-                            <Plus className="h-3 w-3 mr-1" />
+                            <AddIcon className="h-3 w-3 mr-1" />
                             Add Lesson
                           </AndamioButton>
                         )}
@@ -256,10 +258,23 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg"
         >
-          <Sparkles className="h-4 w-4" />
+          <SparkleIcon className="h-4 w-4" />
           <span>
             You&apos;ve added {lessonsCreated} lesson{lessonsCreated !== 1 ? "s" : ""}.
             Feel free to add more or continue — you can always come back.
+          </span>
+        </motion.div>
+      )}
+
+      {/* Warning if no assignment */}
+      {!hasAssignment && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm text-warning bg-warning/10 p-3 rounded-lg border border-warning/20"
+        >
+          <span>
+            Complete the <strong>Assignment</strong> step before writing the introduction.
           </span>
         </motion.div>
       )}
@@ -269,9 +284,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         onPrevious={goPrevious}
         onNext={goNext}
         canGoPrevious={canGoPrevious}
-        canGoNext={true}
+        canGoNext={hasAssignment}
         nextLabel="Write Introduction"
-        canSkip={true}
+        canSkip={hasAssignment}
         skipLabel="Skip to Introduction"
         onSkip={goNext}
       />
@@ -351,15 +366,11 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           className="font-medium flex-1 mr-3"
         />
         {hasUnsavedChanges && (
-          <AndamioButton
-            size="sm"
+          <AndamioSaveButton
             onClick={handleSave}
-            disabled={isSaving}
-            isLoading={isSaving}
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Save
-          </AndamioButton>
+            isSaving={isSaving}
+            compact
+          />
         )}
       </div>
 

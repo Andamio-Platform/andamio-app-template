@@ -22,7 +22,7 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CheckCircle, XCircle, ClipboardCheck, AlertCircle } from "lucide-react";
+import { SuccessIcon, ErrorIcon, AssessIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
 
@@ -137,7 +137,7 @@ export function AssessAssignment({
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+            <AssessIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Assess Submission</AndamioCardTitle>
@@ -160,7 +160,7 @@ export function AssessAssignment({
 
         {/* Warning about irreversibility */}
         <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+          <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
           <AndamioText variant="small" className="text-xs text-warning-foreground">
             Assessment decisions are recorded on-chain and cannot be undone.
           </AndamioText>
@@ -190,7 +190,7 @@ export function AssessAssignment({
               className="flex-1"
               onClick={() => handleAssess("accept")}
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <SuccessIcon className="h-4 w-4 mr-2" />
               Accept
             </AndamioButton>
             <AndamioButton
@@ -198,7 +198,7 @@ export function AssessAssignment({
               className="flex-1"
               onClick={() => handleAssess("refuse")}
             >
-              <XCircle className="h-4 w-4 mr-2" />
+              <ErrorIcon className="h-4 w-4 mr-2" />
               Refuse
             </AndamioButton>
           </div>

@@ -150,16 +150,18 @@ Response: 304 Not Modified (no body)
 
 ## Migration Priority
 
-### Phase 2a - Complete Hook Migration (Next Sprint)
+### Phase 2a - Complete Hook Migration ✅ COMPLETE
 
-| Component/Page | Current | Target Hook | Priority |
-|----------------|---------|-------------|----------|
-| `course/[id]/page.tsx` | useState + fetch | ✅ Done | - |
-| `course/[id]/[module]/page.tsx` | useState + fetch | `useCourse`, `useCourseModule` | High |
-| `course/[id]/[module]/[lesson]/page.tsx` | useState + fetch | `useCourse`, `useLesson` | High |
-| `studio/course/[id]/page.tsx` | useState + fetch | `useCourse`, `useCourseModules` | High |
-| `studio/course/page.tsx` | useState + fetch | `useOwnedCoursesQuery` | Medium |
-| `course/page.tsx` | useState + fetch | `usePublishedCourses` | Medium |
+| Component/Page | Current | Target Hook | Status |
+|----------------|---------|-------------|--------|
+| `course/page.tsx` | React Query | `usePublishedCourses` | ✅ Done (Jan 1) |
+| `course/[id]/page.tsx` | React Query | `useCourse`, `useCourseModules` | ✅ Done |
+| `course/[id]/[module]/page.tsx` | React Query | `useCourse`, `useCourseModule`, `useSLTs`, `useLessons` | ✅ Done (Dec 31) |
+| `course/[id]/[module]/[lesson]/page.tsx` | React Query | `useCourse`, `useCourseModule`, `useLesson` | ✅ Done (Jan 1) |
+| `studio/course/page.tsx` | React Query | `useOwnedCoursesQuery` | ✅ Done (Dec 31) |
+| `studio/course/[id]/page.tsx` | React Query | `useCourse`, `useCourseModules` | ✅ Done (already migrated) |
+
+**All primary course routes migrated to React Query!**
 
 ### Phase 2b - Migrate Wizard Steps
 

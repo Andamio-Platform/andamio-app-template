@@ -11,7 +11,7 @@ import React from "react";
 import Link from "next/link";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { CheckCircle, FileText, Layers, Settings } from "lucide-react";
+import { SuccessIcon, LessonIcon, ModuleIcon, SettingsIcon } from "~/components/icons";
 
 /**
  * CourseStatusBadge - Shows Published/Draft status
@@ -35,7 +35,7 @@ export function CourseStatusBadge({
   if (isPublished) {
     return (
       <AndamioBadge variant="outline" className={`text-success border-success ${className ?? ""}`}>
-        {showIcon && <CheckCircle className="h-3 w-3 mr-1" />}
+        {showIcon && <SuccessIcon className="h-3 w-3 mr-1" />}
         Published
       </AndamioBadge>
     );
@@ -43,7 +43,7 @@ export function CourseStatusBadge({
 
   return (
     <AndamioBadge variant="outline" className={`text-muted-foreground ${className ?? ""}`}>
-      {showIcon && <FileText className="h-3 w-3 mr-1" />}
+      {showIcon && <LessonIcon className="h-3 w-3 mr-1" />}
       Draft
     </AndamioBadge>
   );
@@ -77,10 +77,10 @@ export function CourseStatusIcon({
   const sizeClass = iconSizes[size];
 
   if (isPublished) {
-    return <CheckCircle className={`${sizeClass} text-success ${className ?? ""}`} />;
+    return <SuccessIcon className={`${sizeClass} text-success ${className ?? ""}`} />;
   }
 
-  return <FileText className={`${sizeClass} text-muted-foreground ${className ?? ""}`} />;
+  return <LessonIcon className={`${sizeClass} text-muted-foreground ${className ?? ""}`} />;
 }
 
 /**
@@ -110,7 +110,7 @@ export function CourseModuleCount({
 
   return (
     <AndamioBadge variant="secondary" className={className}>
-      {showIcon && <Layers className="h-3 w-3 mr-1" />}
+      {showIcon && <ModuleIcon className="h-3 w-3 mr-1" />}
       {count}
       {showLabel && ` module${count !== 1 ? "s" : ""}`}
     </AndamioBadge>
@@ -152,7 +152,7 @@ export function CourseManageButton({
   return (
     <Link href={`/studio/course/${courseNftPolicyId}`}>
       <AndamioButton variant={variant} size={size} className={className}>
-        <Settings className={`h-4 w-4 ${showLabel ? "mr-2" : ""}`} />
+        <SettingsIcon className={`h-4 w-4 ${showLabel ? "mr-2" : ""}`} />
         {showLabel && label}
       </AndamioButton>
     </Link>

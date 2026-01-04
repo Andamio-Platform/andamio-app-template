@@ -4,7 +4,7 @@ import React from "react";
 import { useCopyFeedback } from "~/hooks/use-success-notification";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { Wallet, Key, Shield, Copy, Check } from "lucide-react";
+import { WalletIcon, AccessTokenIcon, ShieldIcon, CopyIcon, CompletedIcon } from "~/components/icons";
 
 interface AccountDetailsProps {
   cardanoBech32Addr: string | null | undefined;
@@ -30,7 +30,7 @@ export function AccountDetailsCard({
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5 text-muted-foreground" />
+          <WalletIcon className="h-5 w-5 text-muted-foreground" />
           <AndamioCardTitle className="text-base">Account Details</AndamioCardTitle>
         </div>
       </AndamioCardHeader>
@@ -50,9 +50,9 @@ export function AccountDetailsCard({
               onClick={() => cardanoBech32Addr && copyAddress(cardanoBech32Addr)}
             >
               {addressCopied ? (
-                <Check className="h-3.5 w-3.5 text-success" />
+                <CompletedIcon className="h-3.5 w-3.5 text-success" />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <CopyIcon className="h-3.5 w-3.5" />
               )}
             </AndamioButton>
           </div>
@@ -66,7 +66,7 @@ export function AccountDetailsCard({
           {hasAccessToken ? (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-success/10 rounded px-2 py-1.5">
-                <Key className="h-3.5 w-3.5 text-success" />
+                <AccessTokenIcon className="h-3.5 w-3.5 text-success" />
                 <code className="text-xs font-mono font-semibold text-success">
                   {accessTokenAlias}
                 </code>
@@ -74,7 +74,7 @@ export function AccountDetailsCard({
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-muted rounded px-2 py-1.5">
-              <Key className="h-3.5 w-3.5 text-muted-foreground" />
+              <AccessTokenIcon className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Not minted</span>
             </div>
           )}
@@ -87,7 +87,7 @@ export function AccountDetailsCard({
           </label>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-success" />
+              <ShieldIcon className="h-3.5 w-3.5 text-success" />
               <span className="text-xs">Active</span>
             </div>
             {jwtExpiration && (

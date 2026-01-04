@@ -18,10 +18,10 @@ import {
   AndamioTooltipTrigger,
 } from "~/components/andamio";
 import {
-  CheckCircle,
-  AlertCircle,
-  Blocks,
-} from "lucide-react";
+  SuccessIcon,
+  AlertIcon,
+  OnChainIcon,
+} from "~/components/icons";
 import { type AndamioscanModule } from "~/lib/andamioscan";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -57,7 +57,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-              <Blocks className="h-3.5 w-3.5 text-success" />
+              <OnChainIcon className="h-3.5 w-3.5 text-success" />
             </div>
             <span className="text-xs text-muted-foreground">On-chain</span>
           </div>
@@ -83,7 +83,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-              <Blocks className="h-5 w-5 text-success" />
+              <OnChainIcon className="h-5 w-5 text-success" />
             </div>
             <div>
               <AndamioCardTitle className="text-base">On-Chain Learning Targets</AndamioCardTitle>
@@ -117,7 +117,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
               <div className="flex-1 pt-1">
                 <AndamioText className="text-sm">{slt}</AndamioText>
               </div>
-              <CheckCircle className="h-4 w-4 shrink-0 text-success mt-1" />
+              <SuccessIcon className="h-4 w-4 shrink-0 text-success mt-1" />
             </div>
           ))}
         </div>
@@ -169,7 +169,7 @@ export function OnChainSltsViewer({
   if (error) {
     return (
       <AndamioAlert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
         <AndamioAlertDescription>
           Failed to load on-chain data: {error.message}
         </AndamioAlertDescription>
@@ -181,7 +181,7 @@ export function OnChainSltsViewer({
   if (!course) {
     return (
       <AndamioAlert>
-        <Blocks className="h-4 w-4" />
+        <OnChainIcon className="h-4 w-4" />
         <AndamioAlertDescription>
           This course is not yet registered on the blockchain.
         </AndamioAlertDescription>
@@ -193,7 +193,7 @@ export function OnChainSltsViewer({
   if (course.modules.length === 0) {
     return (
       <AndamioAlert>
-        <Blocks className="h-4 w-4" />
+        <OnChainIcon className="h-4 w-4" />
         <AndamioAlertDescription>
           No modules have been minted on-chain for this course yet.
         </AndamioAlertDescription>
@@ -209,7 +209,7 @@ export function OnChainSltsViewer({
   if (moduleHash && modulesToShow.length === 0) {
     return (
       <AndamioAlert>
-        <Blocks className="h-4 w-4" />
+        <OnChainIcon className="h-4 w-4" />
         <AndamioAlertDescription>
           Module not found on-chain. The SLTs may not have been minted yet.
         </AndamioAlertDescription>
@@ -254,7 +254,7 @@ export function OnChainSltsBadge({
     <AndamioTooltip>
       <AndamioTooltipTrigger asChild>
         <AndamioBadge variant="outline" className="text-success border-success">
-          <Blocks className="h-3 w-3 mr-1" />
+          <OnChainIcon className="h-3 w-3 mr-1" />
           {totalSlts} on-chain
         </AndamioBadge>
       </AndamioTooltipTrigger>

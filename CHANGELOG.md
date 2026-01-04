@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **React Query Migration Complete**: All primary course routes now use React Query hooks for cached, deduplicated data fetching
+  - `course/page.tsx` - Uses `usePublishedCourses` for course catalog
+  - `course/[coursenft]/[modulecode]/page.tsx` - Uses `useCourse`, `useCourseModule`, `useSLTs`, `useLessons`
+  - `course/[coursenft]/[modulecode]/[moduleindex]/page.tsx` - Uses `useCourse`, `useCourseModule`, `useLesson`
+  - `studio/course/page.tsx` - Uses `useOwnedCoursesQuery` replacing manual fetch pattern
+  - 6 pages migrated total, 18 hooks available
+- **Global Style Checker Skill**: New Claude skill to detect CSS specificity conflicts where globals.css overrides Tailwind utilities
+- **Responsive Editor Toolbar**: Content editor toolbar now always uses compact mode with overflow items in a "More" dropdown menu (alignment, lists, blocks, links, images, tables)
+- **PR Review Skill**: New comprehensive PR review skill using `gh` CLI with automatic delegation to other skills (review-styling, theme-expert)
+- **Register Course Drawer**: New component for registering on-chain-only courses into the database with title input and API integration
+- **Credential-Focused Empty State**: Redesigned empty course detail page with centered hero, credential messaging, wizard vs pro mode options, and "Anatomy of a Credential" section
+- **Conditional Tabs**: Course detail tabs now only appear after the first module/credential exists
 - **StudioModuleCard Component**: New extracted component for displaying course modules in studio with 6-step progress indicator, status icons, and configurable display options
 - **Inline Lesson Editing**: Lessons now edited inline in the wizard (like assignments) with expandable/collapsible editors, title input, and full ContentEditor
 - **RequireCourseAccess loadingVariant**: New prop to match loading skeleton style to page layout (`page`, `studio-centered`, `studio-split`), prevents loading screen "flash" during navigation
@@ -35,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated all `<p className=...>` patterns to use `AndamioText` component (232+ occurrences)
 
 ### Fixed
+- **Wizard Navigation**: Fixed lesson step → introduction navigation by checking assignment completion state and using `goToStep("introduction")` directly instead of calling `goNext()` twice
+- **Sidebar User Info**: Redesigned sidebar footer to show access token alias prominently above wallet address with smaller font size
+- **Code Element Styling**: Changed `<code>` elements to `<span className="font-mono">` to avoid global `text-sm` override from base styles
+- **Raw Input Elements**: Replaced raw `<input>` elements with `AndamioInput` in studio course page search
+- **Transaction Endpoint Paths**: Fixed COURSE_ADMIN_CREATE transaction definition to use correct API endpoints (`/course/create-on-submit-minting-tx` and `/course/confirm-minting-tx`), enabling proper database record creation on course minting
 - **Silent Refetch on Save**: `useModuleWizardData` no longer shows full loading screen when saving assignment/lesson content, uses `hasLoadedRef` to distinguish initial load from refetch
 - **Error Boundary Hydration**: Removed duplicate `<html>` and `<body>` tags from `error.tsx` (only `global-error.tsx` should have these)
 - **Optimistic SLT Updates**: Fixed React render error by moving `updateSlts` calls outside of state setter callbacks

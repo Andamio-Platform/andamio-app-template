@@ -7,7 +7,7 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer } from "~/components/andamio";
-import { AlertCircle, FolderKanban } from "lucide-react";
+import { AlertIcon, ProjectIcon } from "~/components/icons";
 import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -75,7 +75,7 @@ export default function ProjectCatalogPage() {
         />
 
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
           <AndamioAlertDescription>{error}</AndamioAlertDescription>
         </AndamioAlert>
@@ -92,7 +92,7 @@ export default function ProjectCatalogPage() {
           description="Browse all published projects"
         />
         <AndamioEmptyState
-          icon={FolderKanban}
+          icon={ProjectIcon}
           title="No Published Projects"
           description="There are currently no published projects available. Check back later."
         />

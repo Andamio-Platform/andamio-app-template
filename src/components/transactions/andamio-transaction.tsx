@@ -25,7 +25,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ExternalLink } from "lucide-react";
+import { ExternalLinkIcon } from "~/components/icons";
 import { toast } from "sonner";
 
 export interface AndamioTransactionProps<TInput = Record<string, unknown>> {
@@ -231,7 +231,7 @@ export function AndamioTransaction<TInput = Record<string, unknown>>({
                 variant="link"
                 size="sm"
                 onClick={() => window.open(definition.ui.footerLink, "_blank")}
-                rightIcon={<ExternalLink className="h-3 w-3" />}
+                rightIcon={<ExternalLinkIcon className="h-3 w-3" />}
               >
                 {definition.ui.footerLinkText ?? "Documentation"}
               </AndamioButton>

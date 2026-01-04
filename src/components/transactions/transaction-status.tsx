@@ -8,7 +8,7 @@
  */
 
 import React from "react";
-import { CheckCircle2, XCircle, ExternalLink, Loader2 } from "lucide-react";
+import { VerifiedIcon, ErrorIcon, ExternalLinkIcon, LoadingIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import type { TransactionResult, TransactionState } from "~/types/transaction";
@@ -84,7 +84,7 @@ export function TransactionStatus({
     return (
       <div className="rounded-lg border border-success/30 bg-success/5 p-4">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+          <VerifiedIcon className="h-5 w-5 text-success shrink-0" />
           <div className="flex-1 space-y-2">
             <AndamioText variant="small" className="font-medium text-foreground">{text.success}</AndamioText>
             {result.txHash && (
@@ -97,7 +97,7 @@ export function TransactionStatus({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-primary hover:underline"
                   >
-                    View <ExternalLink className="h-3 w-3" />
+                    View <ExternalLinkIcon className="h-3 w-3" />
                   </a>
                 )}
               </div>
@@ -113,7 +113,7 @@ export function TransactionStatus({
     return (
       <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
         <div className="flex items-start gap-3">
-          <XCircle className="h-5 w-5 text-destructive shrink-0" />
+          <ErrorIcon className="h-5 w-5 text-destructive shrink-0" />
           <div className="flex-1 space-y-2">
             <AndamioText variant="small" className="font-medium text-foreground">{error ?? text.error}</AndamioText>
             {onRetry && (
@@ -136,7 +136,7 @@ export function TransactionStatus({
   return (
     <div className="rounded-lg border bg-muted/30 p-4">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <LoadingIcon className="h-5 w-5 animate-spin text-muted-foreground" />
         <div>
           <AndamioText variant="small" className="font-medium text-foreground">{text[state]}</AndamioText>
           {state === "signing" && (

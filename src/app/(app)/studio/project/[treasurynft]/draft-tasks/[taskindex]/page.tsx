@@ -7,17 +7,31 @@ import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import {
+  AndamioAlert,
+  AndamioAlertTitle,
+  AndamioAlertDescription,
+  AndamioBadge,
+  AndamioButton,
+  AndamioInput,
+  AndamioLabel,
+  AndamioTextarea,
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioSaveButton,
+  AndamioText,
+  AndamioBackButton,
+  AndamioRemoveButton,
+  AndamioErrorAlert,
+  AndamioActionFooter,
+} from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { AlertCircle, ArrowLeft, Plus, Save, X } from "lucide-react";
-import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
-import { AndamioText } from "~/components/andamio/andamio-text";
+import { AddIcon } from "~/components/icons";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 
@@ -192,12 +206,10 @@ export default function EditTaskPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Tasks
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          label="Back to Tasks"
+        />
 
         <AndamioPageHeader
           title="Edit Task"
@@ -220,18 +232,12 @@ export default function EditTaskPage() {
   if (loadError || !task) {
     return (
       <div className="space-y-6">
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Tasks
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          label="Back to Tasks"
+        />
 
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{loadError ?? "Task not found"}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioErrorAlert error={loadError ?? "Task not found"} />
       </div>
     );
   }
@@ -240,12 +246,10 @@ export default function EditTaskPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Tasks
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          label="Back to Tasks"
+        />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono">
             #{taskIndex}
@@ -267,13 +271,7 @@ export default function EditTaskPage() {
         </AndamioAlert>
       )}
 
-      {saveError && (
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
-        </AndamioAlert>
-      )}
+      {saveError && <AndamioErrorAlert error={saveError} />}
 
       {/* Task Form */}
       <AndamioCard>
@@ -381,7 +379,7 @@ export default function EditTaskPage() {
             <div className="flex items-center justify-between">
               <AndamioLabel>Acceptance Criteria *</AndamioLabel>
               <AndamioButton variant="outline" size="sm" onClick={addCriterion}>
-                <Plus className="h-4 w-4 mr-1" />
+                <AddIcon className="h-4 w-4 mr-1" />
                 Add
               </AndamioButton>
             </div>
@@ -397,13 +395,10 @@ export default function EditTaskPage() {
                     placeholder={`Criterion ${index + 1}`}
                   />
                   {acceptanceCriteria.length > 1 && (
-                    <AndamioButton
-                      variant="ghost"
-                      size="sm"
+                    <AndamioRemoveButton
                       onClick={() => removeCriterion(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </AndamioButton>
+                      ariaLabel={`Remove criterion ${index + 1}`}
+                    />
                   )}
                 </div>
               ))}
@@ -411,15 +406,16 @@ export default function EditTaskPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          <AndamioActionFooter showBorder>
             <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
               <AndamioButton variant="outline">Cancel</AndamioButton>
             </Link>
-            <AndamioButton onClick={handleSave} disabled={isSaving || !isValid}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Changes"}
-            </AndamioButton>
-          </div>
+            <AndamioSaveButton
+              onClick={handleSave}
+              isSaving={isSaving}
+              disabled={!isValid}
+            />
+          </AndamioActionFooter>
         </AndamioCardContent>
       </AndamioCard>
     </div>

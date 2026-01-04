@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
-  ExternalLink,
-  Beaker,
-  Calendar,
-  Compass,
-  Pencil,
-} from "lucide-react";
+  ForwardIcon,
+  ExternalLinkIcon,
+  EditIcon,
+  TestIcon,
+  CalendarIcon,
+  ExploreIcon,
+} from "~/components/icons";
 import { AndamioAlert, AndamioAlertDescription, AndamioText } from "~/components/andamio";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
@@ -47,7 +47,7 @@ export default function Home() {
             <AndamioButton asChild size="lg">
               <Link href="/dashboard" className="inline-flex items-center">
                 <span>Enter the App</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ForwardIcon className="ml-2 h-4 w-4" />
               </Link>
             </AndamioButton>
             <AndamioButton asChild variant="outline" size="lg">
@@ -58,18 +58,18 @@ export default function Home() {
                 className="inline-flex items-center"
               >
                 <span>What is Pioneers?</span>
-                <ExternalLink className="ml-2 h-4 w-4" />
+                <ExternalLinkIcon className="ml-2 h-4 w-4" />
               </Link>
             </AndamioButton>
           </div>
 
           <div className="mt-16 flex items-center gap-3 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
+            <CalendarIcon className="h-4 w-4" />
             <span>Preprod launch: January 2026</span>
           </div>
 
           <div className="my-4 flex items-center gap-3 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
+            <CalendarIcon className="h-4 w-4" />
             <span>Mainnet launch: February 2026</span>
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function Home() {
           <div className="mt-12 grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
             {/* Discover */}
             <div className="bg-card p-8">
-              <Compass className="h-8 w-8 text-primary" />
+              <ExploreIcon className="h-8 w-8 text-primary" />
               <h3>Discover</h3>
               <AndamioText variant="small" className="mt-2">
                 Browse courses and projects. See how Andamio structures learning
@@ -123,7 +123,7 @@ export default function Home() {
 
             {/* Create */}
             <div className="bg-card p-8">
-              <Pencil className="h-8 w-8 text-primary" />
+              <EditIcon className="h-8 w-8 text-primary" />
               <h3>Create</h3>
               <AndamioText variant="small" className="mt-2">
                 Try the creator tools. Build a course, define modules, publish
@@ -170,7 +170,7 @@ export default function Home() {
             className="mt-6 inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             Read the Pioneers documentation
-            <ExternalLink className="ml-2 h-4 w-4" />
+            <ExternalLinkIcon className="ml-2 h-4 w-4" />
           </Link>
         </div>
       </section>
@@ -180,7 +180,7 @@ export default function Home() {
           ============================================= */}
       <section className="border-t bg-muted/50 px-6 py-12">
         <div className="mx-auto flex max-w-3xl items-start gap-4">
-          <Beaker className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+          <TestIcon className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
           <div>
             <AndamioText className="font-medium">This is Cardano Preprod</AndamioText>
             <AndamioText variant="small" className="mt-1">
@@ -204,7 +204,7 @@ export default function Home() {
             <AndamioButton asChild size="lg">
               <Link href="/dashboard">
                 Go to Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ForwardIcon className="ml-2 h-4 w-4" />
               </Link>
             </AndamioButton>
           </div>

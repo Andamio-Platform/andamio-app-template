@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
@@ -28,7 +27,7 @@ import {
   type ProvisioningConfig,
 } from "~/components/provisioning";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Plus, Sparkles, BookOpen, ExternalLink, AlertCircle } from "lucide-react";
+import { AddIcon, SparkleIcon, CourseIcon, ExternalLinkIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
 
@@ -42,7 +41,6 @@ import { v2 } from "@andamio/transactions";
  * that tracks blockchain confirmation and redirects to Course Studio.
  */
 export function CreateCourseDialog() {
-  const router = useRouter();
   const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useAndamioTransaction();
@@ -183,7 +181,7 @@ export function CreateCourseDialog() {
     <AndamioDrawer open={open} onOpenChange={handleOpenChange}>
       <AndamioDrawerTrigger asChild>
         <AndamioButton>
-          <Plus className="mr-2 h-4 w-4" />
+          <AddIcon className="mr-2 h-4 w-4" />
           Create Course
         </AndamioButton>
       </AndamioDrawerTrigger>
@@ -203,7 +201,7 @@ export function CreateCourseDialog() {
               <AndamioDrawerHeader className="text-left">
                 <div className="mb-2 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <SparkleIcon className="h-5 w-5 text-primary" />
                   </div>
                   <AndamioDrawerTitle className="text-xl">
                     Mint Your Course NFT
@@ -221,7 +219,7 @@ export function CreateCourseDialog() {
                 {/* Requirements Alert */}
                 {!hasAccessToken && (
                   <AndamioAlert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <AlertIcon className="h-4 w-4" />
                     <AndamioAlertDescription>
                       You need an Access Token to create a course. Mint one first!
                     </AndamioAlertDescription>
@@ -230,7 +228,7 @@ export function CreateCourseDialog() {
 
                 {hasAccessToken && !hasWalletData && (
                   <AndamioAlert>
-                    <AlertCircle className="h-4 w-4" />
+                    <AlertIcon className="h-4 w-4" />
                     <AndamioAlertDescription>
                       Loading wallet data... Please ensure your wallet is connected.
                     </AndamioAlertDescription>
@@ -285,9 +283,9 @@ export function CreateCourseDialog() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                     >
-                      <BookOpen className="h-4 w-4" />
+                      <CourseIcon className="h-4 w-4" />
                       Documentation
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLinkIcon className="h-3 w-3" />
                     </a>
                     <a
                       href="https://app.andamio.io/courses/andamio-101"
@@ -295,9 +293,9 @@ export function CreateCourseDialog() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                     >
-                      <Sparkles className="h-4 w-4" />
+                      <SparkleIcon className="h-4 w-4" />
                       Andamio 101 Course
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLinkIcon className="h-3 w-3" />
                     </a>
                   </div>
                 </div>

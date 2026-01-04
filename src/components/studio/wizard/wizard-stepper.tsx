@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Lock, Sparkles, Target, FileText, BookOpen, FileEdit, CheckCircle2 } from "lucide-react";
+import { CompletedIcon, LockedIcon, SparkleIcon, SLTIcon, CredentialIcon, LessonIcon, IntroductionIcon, VerifiedIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import { AndamioText } from "~/components/andamio";
 import type { WizardStepId, StepStatus, WizardStepConfig } from "./types";
@@ -17,28 +17,28 @@ export const WIZARD_STEPS: WizardStepConfig[] = [
     title: "Credential",
     subtitle: "One Module = One Credential",
     description: "Define your module's identity and understand the backwards design approach",
-    icon: Sparkles,
+    icon: SparkleIcon,
   },
   {
     id: "slts",
     title: "Learning Targets",
     subtitle: "What Will Learners Achieve?",
     description: "Define the skills and knowledge learners will demonstrate",
-    icon: Target,
+    icon: SLTIcon,
   },
   {
     id: "assignment",
     title: "Assignment",
     subtitle: "How Will They Prove It?",
     description: "Create the assessment that validates mastery",
-    icon: FileText,
+    icon: CredentialIcon,
   },
   {
     id: "lessons",
     title: "Lessons",
     subtitle: "Help Them Prepare",
     description: "Add supporting content for each learning target",
-    icon: BookOpen,
+    icon: LessonIcon,
     optional: true,
   },
   {
@@ -46,14 +46,14 @@ export const WIZARD_STEPS: WizardStepConfig[] = [
     title: "Introduction",
     subtitle: "Set the Stage",
     description: "Now write the intro that ties it all together",
-    icon: FileEdit,
+    icon: IntroductionIcon,
   },
   {
     id: "review",
     title: "Review",
     subtitle: "Ready for Blockchain?",
     description: "Approve your module for on-chain minting",
-    icon: CheckCircle2,
+    icon: VerifiedIcon,
   },
 ];
 
@@ -162,10 +162,10 @@ function MobileStepIndicator({
                     initial="hidden"
                     animate="visible"
                   >
-                    <Check className="h-4 w-4" />
+                    <CompletedIcon className="h-4 w-4" />
                   </motion.div>
                 ) : status === "locked" ? (
-                  <Lock className="h-3 w-3" />
+                  <LockedIcon className="h-3 w-3" />
                 ) : (
                   index + 1
                 )}
@@ -246,10 +246,10 @@ function DesktopStepper({
                     initial="hidden"
                     animate="visible"
                   >
-                    <Check className="h-5 w-5" />
+                    <CompletedIcon className="h-5 w-5" />
                   </motion.div>
                 ) : status === "locked" ? (
-                  <Lock className="h-4 w-4" />
+                  <LockedIcon className="h-4 w-4" />
                 ) : (
                   <Icon className="h-5 w-5" />
                 )}

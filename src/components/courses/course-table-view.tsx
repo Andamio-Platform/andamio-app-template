@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { Settings } from "lucide-react";
+import { SettingsIcon } from "~/components/icons";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 import {
   CourseStatusIcon,
@@ -73,7 +73,7 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
                 {courseData.course_nft_policy_id && (
                   <Link href={`/studio/course/${courseData.course_nft_policy_id}`}>
                     <AndamioButton variant="ghost" size="sm">
-                      <Settings className="h-4 w-4 md:mr-1" />
+                      <SettingsIcon className="h-4 w-4 md:mr-1" />
                       <span className="hidden md:inline">Manage</span>
                     </AndamioButton>
                   </Link>

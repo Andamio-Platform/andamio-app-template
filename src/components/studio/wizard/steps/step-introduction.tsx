@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Save, Lightbulb } from "lucide-react";
+import { AlertIcon, TipIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
-import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
@@ -139,7 +139,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             animate={{ rotate: 0, scale: 1 }}
             transition={{ type: "spring", damping: 10 }}
           >
-            <Lightbulb className="h-8 w-8 text-warning" />
+            <TipIcon className="h-8 w-8 text-warning" />
           </motion.div>
           <div>
             <h3 className="font-semibold mb-1">The Backwards Design Payoff</h3>
@@ -163,16 +163,12 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
               </AndamioCardDescription>
             </div>
             {hasUnsavedChanges && (
-              <AndamioButton
-                size="sm"
+              <AndamioSaveButton
                 variant="outline"
                 onClick={handleSave}
-                disabled={isSaving}
-                isLoading={isSaving}
-              >
-                <Save className="h-4 w-4 mr-1" />
-                Save
-              </AndamioButton>
+                isSaving={isSaving}
+                compact
+              />
             )}
           </div>
         </AndamioCardHeader>
@@ -220,7 +216,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
       {error && (
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertDescription>{error}</AndamioAlertDescription>
         </AndamioAlert>
       )}

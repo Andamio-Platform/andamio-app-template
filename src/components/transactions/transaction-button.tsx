@@ -9,7 +9,7 @@
 
 import React from "react";
 import { AndamioButton, type AndamioButtonProps } from "~/components/andamio/andamio-button";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 import type { TransactionState } from "~/types/transaction";
 
 export interface TransactionButtonProps extends Omit<AndamioButtonProps, "isLoading"> {
@@ -89,7 +89,7 @@ export function TransactionButton({
       variant={getVariant()}
       disabled={isDisabled || props.disabled}
       isLoading={isLoading}
-      leftIcon={isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : props.leftIcon}
+      leftIcon={isLoading ? <LoadingIcon className="h-4 w-4 animate-spin" /> : props.leftIcon}
     >
       {getButtonText()}
     </AndamioButton>

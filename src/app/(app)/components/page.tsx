@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useCopyFeedback } from "~/hooks/use-success-notification";
 import { toast } from "sonner";
 
 // Layout Components
@@ -14,6 +13,7 @@ import { AndamioPageLoading } from "~/components/andamio/andamio-page-loading";
 
 // Core Components
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle, AndamioCardFooter } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
@@ -64,45 +64,47 @@ import { AndamioPagination, AndamioPaginationContent, AndamioPaginationItem, And
 // Resizable
 import { AndamioResizablePanelGroup, AndamioResizablePanel, AndamioResizableHandle } from "~/components/andamio/andamio-resizable";
 
-// Icons
+// Icons - Semantic icons from centralized system
 import {
-  Palette,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  AlertTriangle,
-  Sparkles,
-  Copy,
-  Check,
-  Layout,
-  Monitor,
-  Plus,
-  Blocks,
-  ChevronDown,
-  ChevronRight,
-  User,
-  Settings,
-  LogOut,
-  MoreHorizontal,
+  VerifiedIcon,
+  AlertIcon,
+  SparkleIcon,
+  AddIcon,
+  OnChainIcon,
+  ExpandIcon,
+  NextIcon,
+  SettingsIcon,
+  MoreIcon,
+  CourseIcon,
+  DeleteIcon,
+  EditIcon,
+  PreviewIcon,
+  PendingIcon,
+  TeacherIcon,
+  EmptyIcon,
+  // Additional semantic icons
+  ThemeIcon,
+  InfoIcon,
+  WarningIcon,
+  LayoutIcon,
+  MonitorIcon,
+  UserIcon,
+  LogOutIcon,
+  MailIcon,
+  CalendarIcon,
+  PaymentIcon,
+  DownloadIcon,
+  ShareIcon,
+  StarIcon,
+} from "~/components/icons";
+// Editor formatting icons remain as direct imports (editor-specific, not Andamio domain)
+import {
   Bold,
   Italic,
   Underline,
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Mail,
-  Calendar,
-  CreditCard,
-  Users,
-  BookOpen,
-  FolderOpen,
-  Trash2,
-  Edit,
-  Eye,
-  Download,
-  Share,
-  Star,
-  Clock,
 } from "lucide-react";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -111,27 +113,27 @@ export default function ComponentsPage() {
   const [sliderValue, setSliderValue] = useState([50]);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
-  const { isCopied, copy } = useCopyFeedback();
 
-  const _CodeBlock = ({ code }: { code: string }) => (
-    <div className="relative group">
-      <pre className="text-xs bg-muted p-4 rounded-md overflow-x-auto border">
-        <code>{code}</code>
-      </pre>
-      <AndamioButton
-        size="sm"
-        variant="ghost"
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => copy(code)}
-      >
-        {isCopied ? (
-          <Check className="h-3 w-3" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </AndamioButton>
-    </div>
-  );
+  // CodeBlock helper - disabled until we add code examples
+  // const CodeBlock = ({ code }: { code: string }) => (
+  //   <div className="relative group">
+  //     <pre className="text-xs bg-muted p-4 rounded-md overflow-x-auto border">
+  //       <code>{code}</code>
+  //     </pre>
+  //     <AndamioButton
+  //       size="sm"
+  //       variant="ghost"
+  //       className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+  //       onClick={() => _copy(code)}
+  //     >
+  //       {_isCopied ? (
+  //         <CompletedIcon className="h-3 w-3" />
+  //       ) : (
+  //         <CopyIcon className="h-3 w-3" />
+  //       )}
+  //     </AndamioButton>
+  //   </div>
+  // );
 
   return (
     <div className="space-y-12 pb-16">
@@ -192,7 +194,7 @@ export default function ComponentsPage() {
 
       {/* Responsive Testing Tip */}
       <AndamioAlert>
-        <Monitor className="h-4 w-4" />
+        <MonitorIcon className="h-4 w-4" />
         <AndamioAlertTitle>Responsive Testing</AndamioAlertTitle>
         <AndamioAlertDescription>
           <span className="hidden xs:inline">Resize your browser window to see responsive behavior. </span>
@@ -214,7 +216,7 @@ export default function ComponentsPage() {
         <AndamioCard className="border-2">
           <AndamioCardHeader className="space-y-4">
             <div className="flex items-center gap-2">
-              <Blocks className="h-5 w-5 text-primary" />
+              <OnChainIcon className="h-5 w-5 text-primary" />
               <AndamioCardTitle>Typography Scale</AndamioCardTitle>
             </div>
             <AndamioCardDescription className="text-base">
@@ -284,7 +286,7 @@ export default function ComponentsPage() {
         <AndamioCard className="border-2">
           <AndamioCardHeader className="space-y-4">
             <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
+              <ThemeIcon className="h-5 w-5 text-primary" />
               <AndamioCardTitle>Semantic Color System</AndamioCardTitle>
             </div>
             <AndamioCardDescription className="text-base">
@@ -358,28 +360,28 @@ export default function ComponentsPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <div className="h-16 rounded-md bg-success flex items-center justify-center">
-                    <CheckCircle2 className="h-6 w-6 text-success-foreground" />
+                    <VerifiedIcon className="h-6 w-6 text-success-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Success</AndamioText>
                   <code className="text-xs text-muted-foreground">text-success</code>
                 </div>
                 <div className="space-y-2">
                   <div className="h-16 rounded-md bg-warning flex items-center justify-center">
-                    <AlertTriangle className="h-6 w-6 text-warning-foreground" />
+                    <WarningIcon className="h-6 w-6 text-warning-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Warning</AndamioText>
                   <code className="text-xs text-muted-foreground">text-warning</code>
                 </div>
                 <div className="space-y-2">
                   <div className="h-16 rounded-md bg-destructive flex items-center justify-center">
-                    <AlertCircle className="h-6 w-6 text-destructive-foreground" />
+                    <AlertIcon className="h-6 w-6 text-destructive-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Destructive</AndamioText>
                   <code className="text-xs text-muted-foreground">text-destructive</code>
                 </div>
                 <div className="space-y-2">
                   <div className="h-16 rounded-md bg-info flex items-center justify-center">
-                    <Info className="h-6 w-6 text-info-foreground" />
+                    <InfoIcon className="h-6 w-6 text-info-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Info</AndamioText>
                   <code className="text-xs text-muted-foreground">text-info</code>
@@ -466,7 +468,7 @@ export default function ComponentsPage() {
         <AndamioCard className="border-2 border-primary/30">
           <AndamioCardHeader className="space-y-4">
             <div className="flex items-center gap-2">
-              <Layout className="h-5 w-5 text-primary" />
+              <LayoutIcon className="h-5 w-5 text-primary" />
               <AndamioCardTitle>Layout Components</AndamioCardTitle>
             </div>
             <AndamioCardDescription className="text-base">
@@ -485,7 +487,7 @@ export default function ComponentsPage() {
                   <AndamioPageHeader
                     title="With Action"
                     description="Page with action button"
-                    action={<AndamioButton><Plus className="h-4 w-4 mr-2" />Create</AndamioButton>}
+                    action={<AndamioButton><AddIcon className="h-4 w-4 mr-2" />Create</AndamioButton>}
                   />
                 </div>
                 <div className="bg-muted/30 p-4 rounded-md">
@@ -509,13 +511,13 @@ export default function ComponentsPage() {
                 <div className="bg-muted/30 p-4 rounded-md">
                   <AndamioSectionHeader
                     title="With Icon"
-                    icon={<Blocks className="h-5 w-5 text-primary" />}
+                    icon={<OnChainIcon className="h-5 w-5 text-primary" />}
                   />
                 </div>
                 <div className="bg-muted/30 p-4 rounded-md">
                   <AndamioSectionHeader
                     title="With Action"
-                    action={<AndamioButton size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Add</AndamioButton>}
+                    action={<AndamioButton size="sm" variant="outline"><AddIcon className="h-4 w-4 mr-1" />Add</AndamioButton>}
                   />
                 </div>
               </div>
@@ -531,10 +533,10 @@ export default function ComponentsPage() {
                   <AndamioText variant="small" className="font-medium">AndamioEmptyState</AndamioText>
                   <div className="border rounded-md p-4">
                     <AndamioEmptyState
-                      icon={FolderOpen}
+                      icon={EmptyIcon}
                       title="No items found"
                       description="Get started by creating your first item"
-                      action={<AndamioButton size="sm"><Plus className="h-4 w-4 mr-1" />Create</AndamioButton>}
+                      action={<AndamioButton size="sm"><AddIcon className="h-4 w-4 mr-1" />Create</AndamioButton>}
                     />
                   </div>
                 </div>
@@ -560,25 +562,25 @@ export default function ComponentsPage() {
                 <AndamioStatCard
                   label="Total Users"
                   value="1,234"
-                  icon={Users}
+                  icon={TeacherIcon}
                   iconColor="info"
                 />
                 <AndamioStatCard
                   label="Revenue"
                   value="$45,678"
-                  icon={CreditCard}
+                  icon={PaymentIcon}
                   iconColor="success"
                 />
                 <AndamioStatCard
                   label="Courses"
                   value="89"
-                  icon={BookOpen}
+                  icon={CourseIcon}
                   iconColor="warning"
                 />
                 <AndamioStatCard
                   label="Messages"
                   value="456"
-                  icon={Mail}
+                  icon={MailIcon}
                   iconColor="destructive"
                 />
               </div>
@@ -649,16 +651,27 @@ export default function ComponentsPage() {
                 <AndamioButton size="sm">Small</AndamioButton>
                 <AndamioButton size="default">Default</AndamioButton>
                 <AndamioButton size="lg">Large</AndamioButton>
-                <AndamioButton size="icon"><Sparkles className="h-4 w-4" /></AndamioButton>
+                <AndamioButton size="icon"><SparkleIcon className="h-4 w-4" /></AndamioButton>
               </div>
             </div>
 
             <div>
               <h3>With Icons</h3>
               <div className="flex flex-wrap gap-2">
-                <AndamioButton><Plus className="mr-2 h-4 w-4" />Create New</AndamioButton>
-                <AndamioButton variant="outline"><Download className="mr-2 h-4 w-4" />Download</AndamioButton>
-                <AndamioButton variant="secondary">Share<Share className="ml-2 h-4 w-4" /></AndamioButton>
+                <AndamioButton><AddIcon className="mr-2 h-4 w-4" />Create New</AndamioButton>
+                <AndamioButton variant="outline"><DownloadIcon className="mr-2 h-4 w-4" />Download</AndamioButton>
+                <AndamioButton variant="secondary">Share<ShareIcon className="ml-2 h-4 w-4" /></AndamioButton>
+              </div>
+            </div>
+
+            <div>
+              <h3>Standardized Save Button</h3>
+              <AndamioText variant="small" className="mb-2">Use AndamioSaveButton for consistent save interactions</AndamioText>
+              <div className="flex flex-wrap gap-2">
+                <AndamioSaveButton onClick={() => toast.info("Save clicked")} />
+                <AndamioSaveButton onClick={() => toast.info("Save clicked")} compact />
+                <AndamioSaveButton onClick={() => toast.info("Save clicked")} variant="outline" label="Save Draft" />
+                <AndamioSaveButton isSaving={true} />
               </div>
             </div>
 
@@ -690,9 +703,9 @@ export default function ComponentsPage() {
               <AndamioBadge variant="outline">Outline</AndamioBadge>
             </div>
             <div className="flex flex-wrap gap-2">
-              <AndamioBadge variant="default"><CheckCircle2 className="h-3 w-3 mr-1" />Published</AndamioBadge>
-              <AndamioBadge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</AndamioBadge>
-              <AndamioBadge variant="outline"><Star className="h-3 w-3 mr-1" />Featured</AndamioBadge>
+              <AndamioBadge variant="default"><VerifiedIcon className="h-3 w-3 mr-1" />Published</AndamioBadge>
+              <AndamioBadge variant="secondary"><PendingIcon className="h-3 w-3 mr-1" />Pending</AndamioBadge>
+              <AndamioBadge variant="outline"><StarIcon className="h-3 w-3 mr-1" />Featured</AndamioBadge>
             </div>
           </AndamioCardContent>
         </AndamioCard>
@@ -722,7 +735,7 @@ export default function ComponentsPage() {
               <AndamioCard>
                 <AndamioCardHeader>
                   <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
+                    <CourseIcon className="h-5 w-5 text-primary" />
                     <AndamioCardTitle>With Icon</AndamioCardTitle>
                   </div>
                   <AndamioCardDescription>Card with icon in header</AndamioCardDescription>
@@ -750,13 +763,13 @@ export default function ComponentsPage() {
           </AndamioCardHeader>
           <AndamioCardContent className="space-y-4">
             <AndamioAlert>
-              <Info className="h-4 w-4" />
+              <InfoIcon className="h-4 w-4" />
               <AndamioAlertTitle>Information</AndamioAlertTitle>
               <AndamioAlertDescription>This is an informational alert message.</AndamioAlertDescription>
             </AndamioAlert>
 
             <AndamioAlert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertIcon className="h-4 w-4" />
               <AndamioAlertTitle>Error</AndamioAlertTitle>
               <AndamioAlertDescription>Something went wrong. Please try again.</AndamioAlertDescription>
             </AndamioAlert>
@@ -1035,7 +1048,7 @@ export default function ComponentsPage() {
               <AndamioDropdownMenu>
                 <AndamioDropdownMenuTrigger asChild>
                   <AndamioButton variant="outline">
-                    <MoreHorizontal className="h-4 w-4 mr-2" />
+                    <MoreIcon className="h-4 w-4 mr-2" />
                     Dropdown Menu
                   </AndamioButton>
                 </AndamioDropdownMenuTrigger>
@@ -1043,16 +1056,16 @@ export default function ComponentsPage() {
                   <AndamioDropdownMenuLabel>My Account</AndamioDropdownMenuLabel>
                   <AndamioDropdownMenuSeparator />
                   <AndamioDropdownMenuItem>
-                    <User className="h-4 w-4 mr-2" />
+                    <UserIcon className="h-4 w-4 mr-2" />
                     Profile
                   </AndamioDropdownMenuItem>
                   <AndamioDropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" />
+                    <SettingsIcon className="h-4 w-4 mr-2" />
                     Settings
                   </AndamioDropdownMenuItem>
                   <AndamioDropdownMenuSeparator />
                   <AndamioDropdownMenuItem className="text-destructive">
-                    <LogOut className="h-4 w-4 mr-2" />
+                    <LogOutIcon className="h-4 w-4 mr-2" />
                     Log out
                   </AndamioDropdownMenuItem>
                 </AndamioDropdownMenuContent>
@@ -1065,19 +1078,19 @@ export default function ComponentsPage() {
                 </AndamioContextMenuTrigger>
                 <AndamioContextMenuContent>
                   <AndamioContextMenuItem>
-                    <Edit className="h-4 w-4 mr-2" />
+                    <EditIcon className="h-4 w-4 mr-2" />
                     Edit
                   </AndamioContextMenuItem>
                   <AndamioContextMenuItem>
-                    <Eye className="h-4 w-4 mr-2" />
+                    <PreviewIcon className="h-4 w-4 mr-2" />
                     View
                   </AndamioContextMenuItem>
                   <AndamioContextMenuItem>
-                    <Download className="h-4 w-4 mr-2" />
+                    <DownloadIcon className="h-4 w-4 mr-2" />
                     Download
                   </AndamioContextMenuItem>
                   <AndamioContextMenuItem className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <DeleteIcon className="h-4 w-4 mr-2" />
                     Delete
                   </AndamioContextMenuItem>
                 </AndamioContextMenuContent>
@@ -1142,7 +1155,7 @@ export default function ComponentsPage() {
                         Contribution-centered learning on Cardano
                       </AndamioText>
                       <div className="flex items-center pt-2">
-                        <Calendar className="mr-2 h-4 w-4 opacity-70" />
+                        <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
                         <span className="text-xs text-muted-foreground">Joined 2021</span>
                       </div>
                     </div>
@@ -1424,7 +1437,7 @@ export default function ComponentsPage() {
                 <span className="text-sm font-semibold">@johndoe starred 3 repositories</span>
                 <AndamioCollapsibleTrigger asChild>
                   <AndamioButton variant="ghost" size="sm">
-                    {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    {isCollapsed ? <ExpandIcon className="h-4 w-4" /> : <NextIcon className="h-4 w-4" />}
                     <span className="sr-only">Toggle</span>
                   </AndamioButton>
                 </AndamioCollapsibleTrigger>

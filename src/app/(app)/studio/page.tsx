@@ -4,7 +4,7 @@ import React from "react";
 import { RequireAuth } from "~/components/auth/require-auth";
 import { AndamioPageHeader } from "~/components/andamio";
 import { StudioHubCard } from "~/components/studio/studio-hub-card";
-import { BookOpen, FolderKanban } from "lucide-react";
+import { CourseIcon, ProjectIcon } from "~/components/icons";
 
 export default function StudioPage() {
   return (
@@ -23,7 +23,7 @@ export default function StudioPage() {
             title="Course Studio"
             description="Create and manage your Andamio courses"
             href="/studio/course"
-            icon={BookOpen}
+            icon={CourseIcon}
             buttonLabel="Manage Courses"
           />
 
@@ -31,7 +31,7 @@ export default function StudioPage() {
             title="Project Studio"
             description="Create and manage your Andamio projects"
             href="/studio/project"
-            icon={FolderKanban}
+            icon={ProjectIcon}
             buttonLabel="Manage Projects"
           />
         </div>

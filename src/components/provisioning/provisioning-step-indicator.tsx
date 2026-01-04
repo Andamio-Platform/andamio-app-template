@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Loader2, Circle, AlertCircle } from "lucide-react";
+import { CompletedIcon, LoadingIcon, NeutralIcon, AlertIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { ProvisioningStep, ProvisioningEntityType } from "./types";
 import { PROVISIONING_DISPLAY } from "./types";
@@ -120,7 +120,7 @@ function StepIcon({
   if (status === "completed") {
     return (
       <div className={cn(baseClasses, "bg-success text-success-foreground")}>
-        <Check className="h-4 w-4" />
+        <CompletedIcon className="h-4 w-4" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ function StepIcon({
   if (status === "current") {
     return (
       <div className={cn(baseClasses, "bg-primary text-primary-foreground")}>
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <LoadingIcon className="h-4 w-4 animate-spin" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ function StepIcon({
   if (status === "error") {
     return (
       <div className={cn(baseClasses, "bg-destructive text-destructive-foreground")}>
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
       </div>
     );
   }
@@ -144,7 +144,7 @@ function StepIcon({
   // pending
   return (
     <div className={cn(baseClasses, "bg-muted text-muted-foreground")}>
-      <Circle className="h-4 w-4" />
+      <NeutralIcon className="h-4 w-4" />
     </div>
   );
 }

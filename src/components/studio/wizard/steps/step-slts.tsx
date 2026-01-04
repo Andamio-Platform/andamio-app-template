@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useId } from "react";
-import { Trash2, Pencil, Check, X, AlertCircle, Loader2, Plus, Target, GripVertical } from "lucide-react";
+import { DeleteIcon, EditIcon, CompletedIcon, CloseIcon, AlertIcon, LoadingIcon, AddIcon, SLTIcon, DragHandleIcon } from "~/components/icons";
 import {
   DndContext,
   closestCenter,
@@ -316,10 +316,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
               className="h-11 px-5"
             >
               {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingIcon className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <AddIcon className="h-4 w-4 mr-2" />
                   Add
                 </>
               )}
@@ -330,7 +330,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         {/* Error display */}
         {error && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <AlertIcon className="h-4 w-4 flex-shrink-0" />
             {error}
           </div>
         )}
@@ -339,7 +339,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         {localSlts.length === 0 ? (
           <div className="py-16 text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Target className="h-6 w-6 text-muted-foreground" />
+              <SLTIcon className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-muted-foreground">
               Add your first learning target above
@@ -453,7 +453,7 @@ function SortableSltItem({
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-4 w-4" />
+        <DragHandleIcon className="h-4 w-4" />
       </button>
 
       {/* SLT Reference: <module-code>.<module-index> */}
@@ -481,7 +481,7 @@ function SortableSltItem({
             disabled={!editingText.trim()}
             className="h-8 w-8 text-primary hover:text-primary"
           >
-            <Check className="h-4 w-4" />
+            <CompletedIcon className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
@@ -489,7 +489,7 @@ function SortableSltItem({
             onClick={onCancelEditing}
             className="h-8 w-8"
           >
-            <X className="h-4 w-4" />
+            <CloseIcon className="h-4 w-4" />
           </Button>
         </div>
       ) : (
@@ -507,7 +507,7 @@ function SortableSltItem({
               onClick={onStartEditing}
               className="h-7 w-7"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <EditIcon className="h-3.5 w-3.5" />
             </Button>
             <Button
               size="icon"
@@ -515,7 +515,7 @@ function SortableSltItem({
               onClick={onDelete}
               className="h-7 w-7 hover:text-destructive"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <DeleteIcon className="h-3.5 w-3.5" />
             </Button>
           </div>
         </>

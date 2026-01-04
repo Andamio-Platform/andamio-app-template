@@ -26,11 +26,11 @@ import {
   AndamioStudioLoading,
 } from "~/components/andamio";
 import {
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-} from "lucide-react";
+  AlertIcon,
+  PreviousIcon,
+  NextIcon,
+  ExternalLinkIcon,
+} from "~/components/icons";
 import type { CourseModuleOutput, CourseOutput } from "@andamio/db-api";
 
 // Import wizard step components
@@ -178,7 +178,7 @@ function ModuleWizardContent({
             onClick={goPrevious}
             disabled={!canGoPrevious}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <PreviousIcon className="h-4 w-4" />
           </AndamioButton>
           <span className="text-xs text-muted-foreground min-w-[60px] text-center">
             {currentConfig?.title ?? "Step"} ({currentIndex + 1}/{STEP_ORDER.length})
@@ -190,7 +190,7 @@ function ModuleWizardContent({
             onClick={goNext}
             disabled={!canGoNext}
           >
-            <ChevronRight className="h-4 w-4" />
+            <NextIcon className="h-4 w-4" />
           </AndamioButton>
         </div>
 
@@ -207,7 +207,7 @@ function ModuleWizardContent({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              <ExternalLinkIcon className="h-3.5 w-3.5 mr-1" />
               View On-Chain
             </a>
           </AndamioButton>
@@ -226,7 +226,7 @@ function ModuleWizardContent({
     return (
       <StudioEditorPane padding="normal">
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertDescription>{data.error}</AndamioAlertDescription>
         </AndamioAlert>
       </StudioEditorPane>

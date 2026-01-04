@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: December 29, 2025
+> **Last Updated**: December 31, 2025
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -25,7 +25,7 @@ Current implementation status of the Andamio T3 App Template.
 |------|--------|----------|
 | Course System | Stable | 15/15 routes, ~66% API coverage |
 | Project System | Planned | 13 routes documented, 0 implemented |
-| React Query Migration | In Progress | 18 hooks created, 1 page migrated |
+| React Query Migration | Complete | 18 hooks created, 6 pages migrated |
 | Transaction System | Stable | Side effects, pending tx monitoring |
 | Styling System | Stable | Full semantic color system |
 
@@ -74,9 +74,9 @@ See `audit-api-coverage/api-coverage.md` for detailed breakdown.
 
 ## React Query Migration
 
-### Status: In Progress
+### Status: Complete ✅
 
-**Target**: Complete before Preprod V2 Release (2026-01-09)
+**Completed**: January 1, 2026 (ahead of Preprod V2 Release 2026-01-09)
 
 New hooks created in `src/hooks/api/`:
 
@@ -90,12 +90,16 @@ New hooks created in `src/hooks/api/`:
 
 ### Migration Status
 
-| Page | Status | Target Hooks |
-|------|--------|--------------|
-| `course/[coursenft]/page.tsx` | Migrated | `useCourse`, `useCourseModules` |
-| `course/[coursenft]/[modulecode]/page.tsx` | Pending | `useCourse`, `useCourseModule` |
-| `studio/course/[coursenft]/page.tsx` | Pending | `useCourse`, `useCourseModules` |
-| All other pages | Pending | See recommendations doc |
+| Page | Status | Hooks Used |
+|------|--------|------------|
+| `course/page.tsx` | ✅ Migrated | `usePublishedCourses` |
+| `course/[coursenft]/page.tsx` | ✅ Migrated | `useCourse`, `useCourseModules` |
+| `course/[coursenft]/[modulecode]/page.tsx` | ✅ Migrated | `useCourse`, `useCourseModule`, `useSLTs`, `useLessons` |
+| `course/[coursenft]/[modulecode]/[moduleindex]/page.tsx` | ✅ Migrated | `useCourse`, `useCourseModule`, `useLesson` |
+| `studio/course/page.tsx` | ✅ Migrated | `useOwnedCoursesQuery`, `useCourseModules` |
+| `studio/course/[coursenft]/page.tsx` | ✅ Migrated | `useCourse`, `useCourseModules`, mutations |
+
+**Migration Complete**: All primary course routes now use React Query hooks.
 
 ### Expected Impact
 
@@ -209,6 +213,38 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 ---
 
 ## Recent Changes
+
+### January 1, 2026
+
+- **React Query Migration Complete**: Finished migrating all primary course routes to React Query hooks
+  - `course/page.tsx` - Now uses `usePublishedCourses` for course catalog
+  - `course/[coursenft]/[modulecode]/[moduleindex]/page.tsx` - Now uses `useCourse`, `useCourseModule`, `useLesson`
+- **Hook Type Fix**: Updated `useLesson` to return `LessonWithSLTOutput` (includes SLT fields)
+- **404 Handling**: Updated `usePublishedCourses` to return empty array on 404 (no courses = empty state, not error)
+- **Migration Summary**: 6 pages migrated, 18 hooks available, all primary course routes now cached
+
+### December 31, 2025 (Session 5)
+
+- **React Query Migration**: Migrated 2 additional pages to React Query hooks
+  - `course/[coursenft]/[modulecode]/page.tsx` - Now uses `useCourse`, `useCourseModule`, `useSLTs`, `useLessons`
+  - `studio/course/page.tsx` - Now uses `useOwnedCoursesQuery` instead of manual fetch
+- **Global Style Checker Skill**: New skill to detect CSS specificity conflicts with globals.css
+- **Responsive Editor Toolbar**: Content editor toolbar now always uses compact mode with "More" dropdown menu for overflow items (alignment, lists, blocks, links, images, tables)
+- **Alignment in Main Toolbar**: Added alignment options back to main toolbar as they fit without overflow
+- **Wizard Navigation Fix**: Fixed lesson step → introduction navigation by checking assignment completion state properly
+- **Sidebar User Info Redesign**: Access token alias now shows prominently above wallet address with smaller font size
+- **Code Element Fix**: Changed `<code>` elements to `<span className="font-mono">` to avoid global style override
+- **Styling Review**: Full review of `/studio/course` and `/studio/course/[coursenft]` routes, fixed raw `<input>` elements
+- **Documentation Updates**: Updated CHANGELOG.md, style-rules.md with `<code>` pattern warning
+
+### December 31, 2025 (Session 4)
+
+- **PR Review Skill**: New comprehensive PR review skill using `gh` CLI with automatic delegation to other skills
+- **Register Course Drawer**: Component for registering on-chain-only courses into database with title input
+- **Credential-Focused Empty State**: Redesigned `/studio/course/[coursenft]` empty state with centered hero, credential messaging, wizard vs pro mode options
+- **Conditional Tabs**: Course detail tabs only appear after first module/credential exists
+- **Transaction Endpoint Fix**: Fixed COURSE_ADMIN_CREATE definition to use correct API paths for database creation
+- **Documentation Updates**: Updated CHANGELOG, STATUS.md, CLAUDE.md with PR review skill
 
 ### December 29, 2025 (Session 3)
 

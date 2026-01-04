@@ -14,7 +14,7 @@
  * ```
  */
 
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "~/components/icons";
 
 /**
  * Type alias for Lucide icon components.

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import { X, FileText } from "lucide-react";
+import { CloseIcon, LessonIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import { EditorExtensionKit } from "../../extension-kits/shared";
 import { EditorToolbar, type ToolbarConfig } from "./EditorToolbar";
@@ -333,7 +333,7 @@ export function ContentEditor({
         <div className="flex items-center justify-between border-b border-border/50 bg-background/95 backdrop-blur-sm px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="h-4 w-4" />
+              <LessonIcon className="h-4 w-4" />
               <span className="text-sm font-medium">Focus Mode</span>
             </div>
             <div className="h-4 w-px bg-border" />
@@ -355,7 +355,7 @@ export function ContentEditor({
             aria-label="Exit full screen (Esc)"
             className="text-muted-foreground hover:text-foreground"
           >
-            <X className="h-4 w-4 mr-2" />
+            <CloseIcon className="h-4 w-4 mr-2" />
             Exit
             <kbd className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">Esc</kbd>
           </AndamioButton>
@@ -396,15 +396,17 @@ export function ContentEditor({
 
   // Normal mode - polished and professional
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Toolbar - refined styling */}
+    <div className={cn("space-y-3 w-full min-w-0 overflow-hidden", className)}>
+      {/* Toolbar - refined styling, contained within parent */}
       {showToolbar && (
-        <EditorToolbar
-          editor={editor}
-          config={toolbarConfig}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={enableFullscreen ? toggleFullscreen : undefined}
-        />
+        <div className="w-full overflow-hidden">
+          <EditorToolbar
+            editor={editor}
+            config={toolbarConfig}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={enableFullscreen ? toggleFullscreen : undefined}
+          />
+        </div>
       )}
 
       {/* Editor content - elegant container */}

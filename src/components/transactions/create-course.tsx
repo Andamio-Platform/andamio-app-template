@@ -24,7 +24,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { BookOpen, Users, AlertCircle } from "lucide-react";
+import { CourseIcon, TeacherIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
 
@@ -152,7 +152,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <BookOpen className="h-5 w-5 text-primary" />
+            <CourseIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Create Course On-Chain</AndamioCardTitle>
@@ -166,7 +166,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         {/* Requirements Check */}
         {!hasAccessToken && (
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               You need an Access Token to create a course. Mint one first!
             </AndamioAlertDescription>
@@ -175,7 +175,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
 
         {hasAccessToken && !hasWalletData && (
           <AndamioAlert>
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               Loading wallet data... Please ensure your wallet is connected.
             </AndamioAlertDescription>
@@ -185,7 +185,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         {/* Course Creator Info */}
         {hasAccessToken && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
+            <TeacherIcon className="h-4 w-4" />
             <span>Creating as</span>
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
               {user.accessTokenAlias}

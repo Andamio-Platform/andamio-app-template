@@ -23,16 +23,16 @@ import {
 import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
 import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  FileText,
-  Loader2,
-  Save,
-  Trash2,
-  Plus,
-  Send
-} from "lucide-react";
+  AlertIcon,
+  SuccessIcon,
+  PendingIcon,
+  LessonIcon,
+  LoadingIcon,
+  DeleteIcon,
+  AddIcon,
+  SendIcon,
+} from "~/components/icons";
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 
 /** Convert string to hex encoding */
 function stringToHex(str: string): string {
@@ -350,7 +350,7 @@ export function AssignmentCommitment({
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         </AndamioCardContent>
       </AndamioCard>
@@ -366,14 +366,14 @@ export function AssignmentCommitment({
       <AndamioCardContent className="space-y-4">
         {error && (
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>{error}</AndamioAlertDescription>
           </AndamioAlert>
         )}
 
         {showSuccess && (
           <AndamioAlert>
-            <CheckCircle className="h-4 w-4" />
+            <SuccessIcon className="h-4 w-4" />
             <AndamioAlertDescription>{successMessage}</AndamioAlertDescription>
           </AndamioAlert>
         )}
@@ -382,12 +382,12 @@ export function AssignmentCommitment({
           // No commitment yet - show start option
           <div className="space-y-4">
             <div className="text-center py-8 border-2 border-dashed rounded-lg">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <LessonIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <AndamioText variant="small" className="mb-4">
                 You haven&apos;t started this assignment yet
               </AndamioText>
               <AndamioButton onClick={handleStartAssignment}>
-                <Plus className="h-4 w-4 mr-2" />
+                <AddIcon className="h-4 w-4 mr-2" />
                 Start Assignment
               </AndamioButton>
             </div>
@@ -397,7 +397,7 @@ export function AssignmentCommitment({
           <div className="space-y-4">
             {/* Warning banner */}
             <AndamioAlert>
-              <AlertCircle className="h-4 w-4" />
+              <AlertIcon className="h-4 w-4" />
               <AndamioAlertDescription>
                 {isLocked
                   ? "Your evidence is locked. Review it below and submit to the blockchain."
@@ -451,7 +451,7 @@ export function AssignmentCommitment({
                   onClick={handleLockEvidence}
                   disabled={!localEvidenceContent}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <SuccessIcon className="h-4 w-4 mr-2" />
                   Lock Evidence
                 </AndamioButton>
               ) : (
@@ -460,7 +460,7 @@ export function AssignmentCommitment({
                     Edit Evidence
                   </AndamioButton>
                   <AndamioButton onClick={() => setShowSubmitTx(true)}>
-                    <Send className="h-4 w-4 mr-2" />
+                    <SendIcon className="h-4 w-4 mr-2" />
                     Submit to Blockchain
                   </AndamioButton>
                 </>
@@ -506,7 +506,7 @@ export function AssignmentCommitment({
               <div>
                 <AndamioText variant="small" className="font-medium text-foreground">Status</AndamioText>
                 <div className="flex items-center gap-2 mt-1">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <PendingIcon className="h-4 w-4 text-muted-foreground" />
                   <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
                   {commitment?.networkStatus !== "AWAITING_EVIDENCE" && (
                     <AndamioBadge>{commitment?.networkStatus}</AndamioBadge>
@@ -516,7 +516,7 @@ export function AssignmentCommitment({
               <AndamioConfirmDialog
                 trigger={
                   <AndamioButton variant="destructive" size="sm" disabled={isDeleting}>
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <DeleteIcon className="h-4 w-4 mr-2" />
                     Delete
                   </AndamioButton>
                 }
@@ -552,7 +552,7 @@ export function AssignmentCommitment({
                 </>
               ) : (
                 <AndamioAlert>
-                  <AlertCircle className="h-4 w-4" />
+                  <AlertIcon className="h-4 w-4" />
                   <AndamioAlertDescription>
                     No evidence submitted yet. Add your evidence below and submit to the blockchain.
                   </AndamioAlertDescription>
@@ -578,28 +578,19 @@ export function AssignmentCommitment({
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-2">
-              <AndamioButton
+              <AndamioSaveButton
                 variant="outline"
                 onClick={handleUpdateEvidence}
-                disabled={isSaving || !localEvidenceContent}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Draft
-                  </>
-                )}
-              </AndamioButton>
+                isSaving={isSaving}
+                disabled={!localEvidenceContent}
+                label="Save Draft"
+                savingLabel="Saving..."
+              />
               <AndamioButton
                 onClick={() => setShowSubmitTx(true)}
                 disabled={!localEvidenceContent}
               >
-                <Send className="h-4 w-4 mr-2" />
+                <SendIcon className="h-4 w-4 mr-2" />
                 Update on Blockchain
               </AndamioButton>
             </div>

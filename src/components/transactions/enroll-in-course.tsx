@@ -24,7 +24,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { GraduationCap, BookOpen, Hash } from "lucide-react";
+import { LearnerIcon, CourseIcon, TransactionIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
 import type { JSONContent } from "@tiptap/core";
@@ -212,7 +212,7 @@ export function EnrollInCourse({
       <AndamioCard>
         <AndamioCardHeader>
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
+            <LearnerIcon className="h-5 w-5" />
             <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
           </div>
           <AndamioCardDescription>
@@ -230,7 +230,7 @@ export function EnrollInCourse({
         <AndamioCard>
           <AndamioCardHeader>
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
+              <LearnerIcon className="h-5 w-5" />
               <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
             </div>
             <AndamioCardDescription>
@@ -248,7 +248,7 @@ export function EnrollInCourse({
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <GraduationCap className="h-5 w-5 text-primary" />
+            <LearnerIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
@@ -265,7 +265,7 @@ export function EnrollInCourse({
         {isCombinedMode && moduleCode && (
           <div className="flex flex-wrap items-center gap-2">
             <AndamioBadge variant="secondary" className="text-xs">
-              <BookOpen className="h-3 w-3 mr-1" />
+              <CourseIcon className="h-3 w-3 mr-1" />
               Starting with: {moduleTitle ?? moduleCode}
             </AndamioBadge>
           </div>
@@ -281,7 +281,7 @@ export function EnrollInCourse({
           </AndamioText>
           {isCombinedMode && computedHash && (
             <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
-              <Hash className="h-3 w-3 shrink-0" />
+              <TransactionIcon className="h-3 w-3 shrink-0" />
               <code className="font-mono text-primary">{computedHash.slice(0, 24)}...</code>
             </div>
           )}

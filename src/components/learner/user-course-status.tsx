@@ -15,12 +15,12 @@ import { AndamioTransaction } from "~/components/transactions/andamio-transactio
 import { BURN_LOCAL_STATE } from "@andamio/transactions";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import {
-  CheckCircle,
-  Clock,
-  Trophy,
-  AlertTriangle,
-  LogOut,
-} from "lucide-react";
+  SuccessIcon,
+  PendingIcon,
+  AlertIcon,
+  AchievementIcon,
+  LogOutIcon,
+} from "~/components/icons";
 
 /**
  * User Course Status Component
@@ -201,7 +201,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             <div className="space-y-2">
               <AndamioText className="text-sm font-medium">Pending Review</AndamioText>
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-info" />
+                <PendingIcon className="h-4 w-4 text-info" />
                 <AndamioBadge variant="outline">{status.awaitingApproval}</AndamioBadge>
               </div>
               <AndamioText variant="small" className="text-xs">
@@ -216,7 +216,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {status.completedAssignments.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-warning" />
+              <AchievementIcon className="h-4 w-4 text-warning" />
               <AndamioText className="text-sm font-medium">Completed Assignments</AndamioText>
             </div>
             <div className="space-y-2">
@@ -255,7 +255,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
                     className="flex items-center gap-2 text-sm"
                   >
                     {isCompleted ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                      <SuccessIcon className="h-4 w-4 text-success" />
                     ) : (
                       <div className="h-4 w-4 rounded-full border-2 border-muted-foreground" />
                     )}
@@ -278,12 +278,12 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             <span>On-chain sync status:</span>
             {status.syncSuccess ? (
               <AndamioBadge variant="outline" className="text-xs">
-                <CheckCircle className="h-3 w-3 mr-1" />
+                <SuccessIcon className="h-3 w-3 mr-1" />
                 Synced
               </AndamioBadge>
             ) : (
               <AndamioBadge variant="secondary" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
+                <AlertIcon className="h-3 w-3 mr-1" />
                 Pending indexer
               </AndamioBadge>
             )}
@@ -308,7 +308,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             onSuccess={() => {
               refetchStatus();
             }}
-            icon={<LogOut className="h-4 w-4" />}
+            icon={<LogOutIcon className="h-4 w-4" />}
           />
         </div>
       </AndamioCardContent>

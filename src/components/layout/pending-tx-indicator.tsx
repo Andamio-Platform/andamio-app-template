@@ -8,7 +8,7 @@ import {
   AndamioTooltipTrigger,
   AndamioText,
 } from "~/components/andamio";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 
 /**
@@ -44,7 +44,7 @@ export function PendingTxIndicator() {
         <AndamioTooltipTrigger asChild>
           <div className="flex items-center gap-1.5 cursor-default">
             {/* Animated spinner */}
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary flex-shrink-0" />
+            <LoadingIcon className="h-3.5 w-3.5 animate-spin text-primary flex-shrink-0" />
 
             {/* Count badge with pulse animation */}
             <div className="relative">

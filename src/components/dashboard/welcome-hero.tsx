@@ -6,7 +6,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { BookOpen, ArrowRight, Key, CheckCircle2, Sparkles } from "lucide-react";
+import { CourseIcon, ForwardIcon, AccessTokenIcon, VerifiedIcon, SparkleIcon } from "~/components/icons";
 
 interface WelcomeHeroProps {
   accessTokenAlias?: string | null;
@@ -35,7 +35,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                         {accessTokenAlias}
                       </h1>
                       <div className="flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 w-fit shrink-0">
-                        <CheckCircle2 className="h-4 w-4 text-success" />
+                        <VerifiedIcon className="h-4 w-4 text-success" />
                         <span className="text-sm font-medium text-success">Verified</span>
                       </div>
                     </div>
@@ -45,7 +45,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                         New Member
                       </h1>
                       <div className="flex items-center gap-1.5 rounded-full bg-warning/10 px-3 py-1 w-fit shrink-0">
-                        <Sparkles className="h-4 w-4 text-warning" />
+                        <SparkleIcon className="h-4 w-4 text-warning" />
                         <span className="text-sm font-medium text-warning">Setup Required</span>
                       </div>
                     </div>
@@ -56,7 +56,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                 {hasAccessToken && (
                   <div className="hidden sm:flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shrink-0">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
-                      <Key className="h-5 w-5 text-primary" />
+                      <AccessTokenIcon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <AndamioText variant="small" className="text-xs font-medium">Access Token</AndamioText>
@@ -80,9 +80,9 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                   <>
                     <Link href="/course">
                       <AndamioButton size="lg" className="gap-2">
-                        <BookOpen className="h-4 w-4" />
+                        <CourseIcon className="h-4 w-4" />
                         Browse Courses
-                        <ArrowRight className="h-4 w-4" />
+                        <ForwardIcon className="h-4 w-4" />
                       </AndamioButton>
                     </Link>
                     <Link href="/studio/course">
@@ -93,7 +93,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                   </>
                 ) : (
                   <AndamioBadge variant="secondary" className="text-sm px-4 py-2">
-                    <Key className="mr-2 h-4 w-4" />
+                    <AccessTokenIcon className="mr-2 h-4 w-4" />
                     Mint your Access Token below to get started
                   </AndamioBadge>
                 )}

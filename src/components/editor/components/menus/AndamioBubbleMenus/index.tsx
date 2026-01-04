@@ -10,6 +10,7 @@ import {
   UnderlineIcon,
   Link as LinkIcon,
 } from "lucide-react";
+// Note: Editor-specific formatting icons remain from lucide-react as they are not Andamio domain concepts
 import { cn } from "../../../utils";
 import { useCallback, useState } from "react";
 import { AndamioInput } from "~/components/andamio/andamio-input";

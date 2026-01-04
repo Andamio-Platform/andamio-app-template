@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { env } from "~/env";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import {
   AndamioPageHeader,
@@ -11,56 +10,25 @@ import {
   AndamioNotFoundCard,
   AndamioEmptyState,
 } from "~/components/andamio";
-import { BookOpen } from "lucide-react";
-import { type ListPublishedCoursesOutput } from "@andamio/db-api";
+import { CourseIcon } from "~/components/icons";
+import { usePublishedCourses } from "~/hooks/api";
 
 /**
  * Public page displaying all published courses
  *
- * API Endpoint: GET /courses/published (public)
- * Type Reference: See API-TYPE-REFERENCE.md in @andamio/db-api
+ * Uses React Query for cached, deduplicated data fetching:
+ * - usePublishedCourses: All published courses (cached globally)
+ *
+ * Benefits: Automatic caching, background refetching, request deduplication
  */
 export default function CoursePage() {
-  const [courses, setCourses] = useState<ListPublishedCoursesOutput>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: courses = [],
+    isLoading,
+    error: coursesError,
+  } = usePublishedCourses();
 
-  useEffect(() => {
-    const fetchPublishedCourses = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`,
-          {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-          }
-        );
-
-        // 404 means no published courses exist yet - treat as empty state, not error
-        if (response.status === 404) {
-          setCourses([]);
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch courses: ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as ListPublishedCoursesOutput;
-        setCourses(data ?? []);
-      } catch (err) {
-        console.error("Error fetching published courses:", err);
-        setError(err instanceof Error ? err.message : "Failed to load courses");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchPublishedCourses();
-  }, []);
+  const error = coursesError?.message ?? null;
 
   // Loading state
   if (isLoading) {
@@ -86,7 +54,7 @@ export default function CoursePage() {
           description="Browse all published courses"
         />
         <AndamioEmptyState
-          icon={BookOpen}
+          icon={CourseIcon}
           title="No Published Courses"
           description="There are currently no published courses available. Check back later or create your own course."
         />

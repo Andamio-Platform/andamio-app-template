@@ -7,7 +7,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 
 /**
  * Complete authentication interface for Andamio
@@ -88,13 +88,13 @@ export function AndamioAuthButton() {
               className="w-full"
             >
               {isAuthenticating && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />
               )}
               {isAuthenticating ? "Authenticating..." : "Try Again"}
             </AndamioButton>
           ) : (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           )}
         </AndamioCardContent>

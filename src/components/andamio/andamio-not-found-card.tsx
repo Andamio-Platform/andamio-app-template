@@ -28,7 +28,7 @@
  */
 
 import * as React from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertIcon } from "~/components/icons";
 import { AndamioPageHeader } from "./andamio-page-header";
 import { AndamioAlert, AndamioAlertTitle, AndamioAlertDescription } from "./andamio-alert";
 import { cn } from "~/lib/utils";
@@ -64,7 +64,7 @@ export function AndamioNotFoundCard({
       <AndamioPageHeader title={title} />
 
       <AndamioAlert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
         <AndamioAlertDescription>{message}</AndamioAlertDescription>
       </AndamioAlert>

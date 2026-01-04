@@ -19,6 +19,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+// Note: Editor-specific formatting icons remain from lucide-react as they are not Andamio domain concepts
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { cn } from "../../../utils";
 

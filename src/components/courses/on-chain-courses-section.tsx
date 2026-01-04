@@ -33,16 +33,16 @@ import {
   AndamioText,
 } from "~/components/andamio";
 import {
-  CheckCircle,
-  AlertCircle,
-  Plus,
-  Settings,
-  Blocks,
-  Loader2,
-  ExternalLink,
-  Clock,
-  RefreshCw,
-} from "lucide-react";
+  SuccessIcon,
+  AlertIcon,
+  AddIcon,
+  SettingsIcon,
+  OnChainIcon,
+  LoadingIcon,
+  ExternalLinkIcon,
+  PendingIcon,
+  RefreshIcon,
+} from "~/components/icons";
 import { toast } from "sonner";
 import { type ListOwnedCoursesOutput } from "@andamio/db-api";
 
@@ -197,7 +197,7 @@ export function OnChainCoursesSection() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Blocks className="h-5 w-5 text-primary" />
+              <OnChainIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <AndamioCardTitle>Your Courses</AndamioCardTitle>
@@ -216,7 +216,7 @@ export function OnChainCoursesSection() {
                   <AndamioTooltip>
                     <AndamioTooltipTrigger asChild>
                       <AndamioBadge variant="outline" className="text-info border-info">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <PendingIcon className="h-3 w-3 mr-1" />
                         {pendingCount} syncing
                       </AndamioBadge>
                     </AndamioTooltipTrigger>
@@ -233,7 +233,7 @@ export function OnChainCoursesSection() {
               onClick={handleRefresh}
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshIcon className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </AndamioButton>
           </div>
         </div>
@@ -252,7 +252,7 @@ export function OnChainCoursesSection() {
         {/* Error state - only show if no data at all */}
         {onChainError && hybridCourses.length === 0 && (
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               Failed to fetch on-chain data: {onChainError.message}
             </AndamioAlertDescription>
@@ -262,7 +262,7 @@ export function OnChainCoursesSection() {
         {/* Empty state */}
         {!isLoading && hybridCourses.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <OnChainIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <AndamioText variant="small">
               No courses found.
             </AndamioText>
@@ -307,21 +307,21 @@ function HybridCourseRow({
       // Fully synced
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-          <CheckCircle className="h-4 w-4 text-success" />
+          <SuccessIcon className="h-4 w-4 text-success" />
         </div>
       );
     } else if (course.inDb && !course.onChain) {
       // In DB but not yet on-chain (syncing)
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/10">
-          <Clock className="h-4 w-4 text-info animate-pulse" />
+          <PendingIcon className="h-4 w-4 text-info animate-pulse" />
         </div>
       );
     } else {
       // On-chain but not in DB (needs import)
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
-          <AlertCircle className="h-4 w-4 text-warning" />
+          <AlertIcon className="h-4 w-4 text-warning" />
         </div>
       );
     }
@@ -382,7 +382,7 @@ function HybridCourseRow({
         {course.inDb ? (
           <Link href={`/studio/course/${course.courseId}`}>
             <AndamioButton variant="ghost" size="sm">
-              <Settings className="h-4 w-4 sm:mr-1" />
+              <SettingsIcon className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Manage</span>
             </AndamioButton>
           </Link>
@@ -457,7 +457,7 @@ function ImportCourseDrawer({
     <AndamioDrawer open={open} onOpenChange={setOpen}>
       <AndamioDrawerTrigger asChild>
         <AndamioButton variant="default" size="sm">
-          <Plus className="h-4 w-4 mr-1" />
+          <AddIcon className="h-4 w-4 mr-1" />
           Import
         </AndamioButton>
       </AndamioDrawerTrigger>
@@ -485,7 +485,7 @@ function ImportCourseDrawer({
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLinkIcon className="h-4 w-4" />
                 </a>
               </div>
             </div>
@@ -520,12 +520,12 @@ function ImportCourseDrawer({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
                   Importing...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <AddIcon className="h-4 w-4 mr-2" />
                   Import Course
                 </>
               )}

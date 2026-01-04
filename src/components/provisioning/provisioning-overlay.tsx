@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ExternalLink, Sparkles, PartyPopper } from "lucide-react";
+import { ExternalLinkIcon, SparkleIcon, CelebrateIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import { AndamioText } from "~/components/andamio";
 import { cn } from "~/lib/utils";
@@ -58,11 +58,11 @@ export function ProvisioningOverlay({
       <div className="mb-8">
         {isReady ? (
           <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-            <PartyPopper className="h-8 w-8 text-success" />
+            <CelebrateIcon className="h-8 w-8 text-success" />
           </div>
         ) : (
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-primary" />
+            <SparkleIcon className="h-8 w-8 text-primary" />
           </div>
         )}
       </div>
@@ -109,7 +109,7 @@ export function ProvisioningOverlay({
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
           >
             <span className="font-mono text-xs">{truncatedTxHash}</span>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLinkIcon className="h-3 w-3" />
           </a>
         </div>
       )}

@@ -3,17 +3,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2,
-  Circle,
-  AlertCircle,
-  Award,
-  Target,
-  FileText,
-  BookOpen,
-  FileEdit,
-  Rocket,
-  PartyPopper,
-} from "lucide-react";
+  VerifiedIcon,
+  NeutralIcon,
+  AlertIcon,
+  CredentialIcon,
+  SLTIcon,
+  AssignmentIcon,
+  LessonIcon,
+  IntroductionIcon,
+  SendIcon,
+  CelebrateIcon,
+} from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepHighlight } from "../wizard-step";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -54,7 +54,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const reviewItems = [
     {
       id: "credential",
-      icon: Award,
+      icon: CredentialIcon,
       label: "Module Title",
       value: moduleTitle,
       completed: completion.credential,
@@ -62,7 +62,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
     {
       id: "slts",
-      icon: Target,
+      icon: SLTIcon,
       label: "Learning Targets",
       value: `${slts.length} SLT${slts.length !== 1 ? "s" : ""} defined`,
       completed: completion.slts,
@@ -70,7 +70,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
     {
       id: "assignment",
-      icon: FileText,
+      icon: AssignmentIcon,
       label: "Assignment",
       value: data.assignment?.title ?? "Not created",
       completed: completion.assignment,
@@ -78,7 +78,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
     {
       id: "lessons",
-      icon: BookOpen,
+      icon: LessonIcon,
       label: "Lessons",
       value: `${lessons.length} of ${slts.length} lessons`,
       completed: lessons.length > 0,
@@ -87,7 +87,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
     {
       id: "introduction",
-      icon: FileEdit,
+      icon: IntroductionIcon,
       label: "Introduction",
       value: data.introduction?.title ?? "Not created",
       completed: completion.introduction,
@@ -148,7 +148,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 transition={{ delay: 0.2, type: "spring" }}
               >
                 <div className="w-20 h-20 mx-auto rounded-full bg-success/20 flex items-center justify-center">
-                  <PartyPopper className="h-10 w-10 text-success" />
+                  <CelebrateIcon className="h-10 w-10 text-success" />
                 </div>
               </motion.div>
 
@@ -180,7 +180,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
           <WizardStepHighlight>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Rocket className="h-6 w-6 text-primary" />
+                <SendIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold">Almost There!</h3>
@@ -199,7 +199,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
               <div className="space-y-3">
                 {reviewItems.map((item, index) => {
                   const Icon = item.icon;
-                  const StatusIcon = item.completed ? CheckCircle2 : Circle;
+                  const StatusIcon = item.completed ? VerifiedIcon : NeutralIcon;
 
                   return (
                     <motion.div
@@ -245,7 +245,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
           {!allRequiredComplete && (
             <AndamioAlert>
-              <AlertCircle className="h-4 w-4" />
+              <AlertIcon className="h-4 w-4" />
               <AndamioAlertDescription>
                 Complete all required items before approving. Click &quot;Fix&quot; next to any
                 incomplete item.
@@ -255,7 +255,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
           {error && (
             <AndamioAlert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertIcon className="h-4 w-4" />
               <AndamioAlertDescription>{error}</AndamioAlertDescription>
             </AndamioAlert>
           )}
@@ -279,7 +279,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
             isLoading={isApproving}
             className="w-full sm:w-auto"
           >
-            <Award className="h-4 w-4 mr-2" />
+            <CredentialIcon className="h-4 w-4 mr-2" />
             Approve Module
           </AndamioButton>
         )}

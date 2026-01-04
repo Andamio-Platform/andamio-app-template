@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CheckCircle, Clock, Circle, ChevronRight } from "lucide-react";
+import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon } from "~/components/icons";
 import { type CourseModuleOutput } from "@andamio/db-api";
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -39,17 +39,17 @@ interface ModuleCompletion {
 // =============================================================================
 
 function ModuleStatusIcon({ status }: { status: CourseModuleOutput["status"] }) {
-  const config: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
-    ON_CHAIN: { icon: CheckCircle, color: "text-success", label: "On-Chain" },
-    PENDING_TX: { icon: Clock, color: "text-info animate-pulse", label: "Pending" },
-    APPROVED: { icon: Circle, color: "text-warning fill-warning", label: "Ready" },
-    DRAFT: { icon: Circle, color: "text-muted-foreground", label: "Draft" },
-    ARCHIVED: { icon: Circle, color: "text-muted-foreground/50", label: "Archived" },
-    BACKLOG: { icon: Circle, color: "text-muted-foreground", label: "Backlog" },
-    DEPRECATED: { icon: Circle, color: "text-destructive/50", label: "Deprecated" },
+  const config: Record<string, { icon: typeof SuccessIcon; color: string; label: string }> = {
+    ON_CHAIN: { icon: SuccessIcon, color: "text-success", label: "On-Chain" },
+    PENDING_TX: { icon: PendingIcon, color: "text-info animate-pulse", label: "Pending" },
+    APPROVED: { icon: NeutralIcon, color: "text-warning fill-warning", label: "Ready" },
+    DRAFT: { icon: NeutralIcon, color: "text-muted-foreground", label: "Draft" },
+    ARCHIVED: { icon: NeutralIcon, color: "text-muted-foreground/50", label: "Archived" },
+    BACKLOG: { icon: NeutralIcon, color: "text-muted-foreground", label: "Backlog" },
+    DEPRECATED: { icon: NeutralIcon, color: "text-destructive/50", label: "Deprecated" },
   };
 
-  const statusConfig = config[status] ?? { icon: Circle, color: "text-muted-foreground", label: "Draft" };
+  const statusConfig = config[status] ?? { icon: NeutralIcon, color: "text-muted-foreground", label: "Draft" };
   const { icon: Icon, color } = statusConfig;
   return <Icon className={cn("h-4 w-4", color)} />;
 }
@@ -179,9 +179,9 @@ export function StudioModuleCard({
             {/* Module Code & Status */}
             <div className="flex items-center gap-2 mb-2">
               <ModuleStatusIcon status={courseModule.status} />
-              <code className="text-xs font-mono text-primary/70 bg-primary/5 px-2 rounded">
+              <span className="text-xs font-mono text-primary/70 bg-primary/5 px-2 rounded">
                 {courseModule.module_code}
-              </code>
+              </span>
             {/* Title */}
             <div className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
               {courseModule.title ?? "Untitled Module"}
@@ -210,7 +210,7 @@ export function StudioModuleCard({
                 {showProgress && <ModuleProgressIndicator completion={completion} />}
               </div>
             )}
-          <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" />
+          <NextIcon className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 flex-shrink-0 mt-1" />
         </div>
       </AndamioCard>
     </Link>

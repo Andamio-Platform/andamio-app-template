@@ -15,6 +15,13 @@
 
 // Enhanced components with Andamio-specific features
 export * from "./andamio-button";
+export * from "./andamio-save-button";
+export * from "./andamio-add-button";
+export * from "./andamio-back-button";
+export * from "./andamio-edit-button";
+export * from "./andamio-delete-button";
+export * from "./andamio-remove-button";
+export * from "./andamio-row-actions";
 export * from "./andamio-badge";
 export * from "./andamio-text";
 export * from "./andamio-card";
@@ -37,8 +44,11 @@ export * from "./andamio-table-container";
 // Composite/Pattern components (extracted from style reviews)
 export * from "./andamio-not-found-card";
 export * from "./andamio-empty-state";
+export * from "./andamio-error-alert";
 export * from "./andamio-stat-card";
 export * from "./andamio-status-icon";
+export * from "./andamio-card-icon-header";
+export * from "./andamio-action-footer";
 
 // Loading components (unified loading system)
 export * from "./andamio-loading";

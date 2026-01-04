@@ -25,7 +25,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Clock, ExternalLink, RefreshCw, X } from "lucide-react";
+import { PendingIcon, ExternalLinkIcon, RefreshIcon, CloseIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 
 /**
@@ -120,7 +120,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
 
             {/* Icon and badge */}
             <div className="relative flex items-center justify-center">
-              <Clock className={cn("h-6 w-6", isChecking && "animate-pulse")} />
+              <PendingIcon className={cn("h-6 w-6", isChecking && "animate-pulse")} />
               <AndamioBadge
                 variant="destructive"
                 className="absolute -right-2 -top-2 h-5 w-5 rounded-full p-0 text-xs"
@@ -150,7 +150,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                     onClick={handleCheckNow}
                     disabled={isChecking}
                   >
-                    <RefreshCw
+                    <RefreshIcon
                       className={cn(
                         "h-4 w-4",
                         isChecking && "animate-spin"
@@ -206,7 +206,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                           onClick={() => window.open(getExplorerUrl(tx.txHash), "_blank")}
                           title="View on blockchain explorer"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <ExternalLinkIcon className="h-3.5 w-3.5" />
                         </AndamioButton>
                         <AndamioButton
                           variant="ghost"
@@ -215,7 +215,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                           onClick={() => removePendingTx(tx.id)}
                           title="Remove from watch list"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <CloseIcon className="h-3.5 w-3.5" />
                         </AndamioButton>
                       </div>
                     </div>

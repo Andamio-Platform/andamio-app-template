@@ -5,20 +5,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
-  Layers,
-  BookOpen,
-  FolderKanban,
-  ChevronRight,
-  ArrowLeft,
-  Home,
-  Users,
-  ListTodo,
-  Settings,
-  FileText,
-} from "lucide-react";
+  ModuleIcon,
+  CourseIcon,
+  ProjectIcon,
+  NextIcon,
+  BackIcon,
+  DashboardIcon,
+  TeacherIcon,
+  TaskIcon,
+} from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { NavItem } from "~/types/ui";
 
@@ -37,10 +34,8 @@ export function StudioSidebar() {
 
   // Parse the current route to determine context
   const segments = pathname.split("/").filter(Boolean);
-  const isStudio = segments[0] === "studio";
   const studioType = segments[1]; // "course" or "project"
   const entityId = segments[2]; // coursenft or treasurynft
-  const subSection = segments[3]; // modulecode or sub-route
 
   // Determine navigation based on context
   const getNavigation = (): { title: string; backLink?: { href: string; label: string }; items: NavItem[] } => {
@@ -53,13 +48,13 @@ export function StudioSidebar() {
           {
             name: "Course Overview",
             href: `/studio/course/${entityId}`,
-            icon: BookOpen,
+            icon: CourseIcon,
             description: "Course details & modules",
           },
           {
             name: "Instructor Dashboard",
             href: `/studio/course/${entityId}/instructor`,
-            icon: Users,
+            icon: TeacherIcon,
             description: "Manage learners",
           },
         ],
@@ -75,13 +70,13 @@ export function StudioSidebar() {
           {
             name: "Project Overview",
             href: `/studio/project/${entityId}`,
-            icon: FolderKanban,
+            icon: ProjectIcon,
             description: "Project details",
           },
           {
             name: "Draft Tasks",
             href: `/studio/project/${entityId}/draft-tasks`,
-            icon: ListTodo,
+            icon: TaskIcon,
             description: "Manage tasks",
           },
         ],
@@ -95,13 +90,13 @@ export function StudioSidebar() {
         {
           name: "Course Studio",
           href: "/studio/course",
-          icon: BookOpen,
+          icon: CourseIcon,
           description: "Manage your courses",
         },
         {
           name: "Project Studio",
           href: "/studio/project",
-          icon: FolderKanban,
+          icon: ProjectIcon,
           description: "Manage your projects",
         },
       ],
@@ -115,7 +110,7 @@ export function StudioSidebar() {
       {/* Brand Header */}
       <div className="flex h-12 items-center gap-2.5 border-b border-sidebar-border px-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0">
-          <Layers className="h-3.5 w-3.5" />
+          <ModuleIcon className="h-3.5 w-3.5" />
         </div>
         <Link href="/dashboard" className="flex flex-col min-w-0">
           <span className="text-sm font-semibold text-sidebar-foreground truncate">Andamio</span>
@@ -132,7 +127,7 @@ export function StudioSidebar() {
               size="sm"
               className="w-full justify-start text-xs text-muted-foreground hover:text-foreground h-7 px-2"
             >
-              <ArrowLeft className="h-3 w-3 mr-1.5" />
+              <BackIcon className="h-3 w-3 mr-1.5" />
               {navigation.backLink.label}
             </AndamioButton>
           </Link>
@@ -182,7 +177,7 @@ export function StudioSidebar() {
                       {item.name}
                     </span>
                     {isActive && (
-                      <ChevronRight className="h-3 w-3 text-primary flex-shrink-0 ml-auto" />
+                      <NextIcon className="h-3 w-3 text-primary flex-shrink-0 ml-auto" />
                     )}
                   </div>
                 </Link>
@@ -197,7 +192,7 @@ export function StudioSidebar() {
             </h3>
             <Link href="/dashboard">
               <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors cursor-pointer select-none text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground opacity-60">
-                <Home className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground group-hover:text-sidebar-foreground" />
+                <DashboardIcon className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground group-hover:text-sidebar-foreground" />
                 <span className="truncate">Dashboard</span>
               </div>
             </Link>
@@ -208,20 +203,20 @@ export function StudioSidebar() {
       {/* User Section */}
       <div className="border-t border-sidebar-border p-2">
         {isAuthenticated && user ? (
-          <div className="rounded-md bg-sidebar-accent/50 p-2">
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
-              <code className="text-[10px] text-sidebar-foreground truncate">
-                {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
-              </code>
-            </div>
+          <div className="rounded-md bg-sidebar-accent/50 p-2 space-y-1.5">
+            {/* Access Token Name - emphasized */}
             {user.accessTokenAlias && (
-              <div className="mt-1.5 pt-1.5 border-t border-sidebar-border">
-                <AndamioBadge variant="secondary" className="text-[10px] h-5">
-                  {user.accessTokenAlias}
-                </AndamioBadge>
+              <div className="font-semibold text-sm text-sidebar-foreground truncate">
+                {user.accessTokenAlias}
               </div>
             )}
+            {/* Wallet Address */}
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
+              <span className="text-[10px] font-mono text-muted-foreground truncate">
+                {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
+              </span>
+            </div>
           </div>
         ) : (
           <div className="rounded-md bg-sidebar-accent/50 p-2 text-center">

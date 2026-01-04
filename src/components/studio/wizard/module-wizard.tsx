@@ -4,7 +4,6 @@ import React, { useContext, useState, useCallback, useMemo, useEffect } from "re
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { env } from "~/env";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { WizardStepper, WIZARD_STEPS } from "./wizard-stepper";
 import { WizardHeader } from "./wizard-navigation";
 import { AndamioStudioLoading } from "~/components/andamio/andamio-loading";
@@ -82,7 +81,6 @@ export function ModuleWizard({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { authenticatedFetch: _authenticatedFetch } = useAndamioAuth();
 
   // Current step from URL or default
   const urlStep = searchParams.get("step") as WizardStepId | null;

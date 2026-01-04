@@ -6,7 +6,7 @@ import { useOwnedCourses } from "~/hooks/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertIcon, CourseIcon } from "~/components/icons";
 import { CourseStatsDashboard } from "./course-stats-dashboard";
 import { CourseFilterToolbar } from "./course-filter-toolbar";
 import { CourseGridView } from "./course-grid-view";
@@ -83,7 +83,7 @@ export function CourseManager() {
   if (error) {
     return (
       <AndamioAlert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
         <AndamioAlertDescription>{error}</AndamioAlertDescription>
       </AndamioAlert>
@@ -94,7 +94,7 @@ export function CourseManager() {
   if (allCourses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border">
-        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+        <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
         <AndamioText variant="small">No courses found. Create your first course to get started.</AndamioText>
       </div>
     );
@@ -126,7 +126,7 @@ export function CourseManager() {
       {/* View Mode Content */}
       {displayedCourses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border">
-          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+          <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
           <AndamioText variant="small">No courses match your filters.</AndamioText>
         </div>
       ) : (

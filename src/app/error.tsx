@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertIcon, RefreshIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
 /**
@@ -26,7 +26,7 @@ export default function Error({
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-4">
         <div className="flex items-center gap-2 text-red-600">
-          <AlertCircle className="h-6 w-6" />
+          <AlertIcon className="h-6 w-6" />
           <h1 className="text-xl font-bold">Something went wrong</h1>
         </div>
 
@@ -44,7 +44,7 @@ export default function Error({
           onClick={reset}
           className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshIcon className="h-4 w-4" />
           Try again
         </button>
       </div>

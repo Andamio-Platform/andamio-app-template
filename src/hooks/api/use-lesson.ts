@@ -5,7 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type LessonOutput, type ListLessonsOutput } from "@andamio/db-api";
+import { type LessonOutput, type LessonWithSLTOutput, type ListLessonsOutput } from "@andamio/db-api";
 import { sltKeys } from "./use-slt";
 
 // =============================================================================
@@ -111,7 +111,7 @@ export function useLesson(
         throw new Error(`Failed to fetch lesson: ${response.statusText}`);
       }
 
-      return response.json() as Promise<LessonOutput>;
+      return response.json() as Promise<LessonWithSLTOutput>;
     },
     enabled:
       !!courseNftPolicyId && !!moduleCode && moduleIndex !== undefined,

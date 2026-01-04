@@ -34,14 +34,14 @@ import {
   AndamioText,
 } from "~/components/andamio";
 import {
-  Blocks,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-  Plus,
-  Loader2,
-  Settings,
-} from "lucide-react";
+  OnChainIcon,
+  SuccessIcon,
+  AlertIcon,
+  RefreshIcon,
+  AddIcon,
+  LoadingIcon,
+  SettingsIcon,
+} from "~/components/icons";
 import { toast } from "sonner";
 import { type ListCourseModulesOutput } from "@andamio/db-api";
 
@@ -185,7 +185,7 @@ function ImportModuleDrawer({
     <AndamioDrawer open={open} onOpenChange={setOpen}>
       <AndamioDrawerTrigger asChild>
         <AndamioButton variant="default" size="sm">
-          <Plus className="h-4 w-4 mr-1" />
+          <AddIcon className="h-4 w-4 mr-1" />
           Import Module
         </AndamioButton>
       </AndamioDrawerTrigger>
@@ -290,12 +290,12 @@ function ImportModuleDrawer({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
                   Importing...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <AddIcon className="h-4 w-4 mr-2" />
                   Import Module
                 </>
               )}
@@ -329,11 +329,11 @@ function ModuleRow({
           {/* Status Icon */}
           {module.inDb ? (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle className="h-4 w-4 text-success" />
+              <SuccessIcon className="h-4 w-4 text-success" />
             </div>
           ) : (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
-              <AlertCircle className="h-4 w-4 text-warning" />
+              <AlertIcon className="h-4 w-4 text-warning" />
             </div>
           )}
 
@@ -367,7 +367,7 @@ function ModuleRow({
           {module.inDb ? (
             <Link href={`/studio/course/${courseNftPolicyId}/${module.moduleCode}`}>
               <AndamioButton variant="ghost" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
+                <SettingsIcon className="h-4 w-4 mr-1" />
                 Manage
               </AndamioButton>
             </Link>
@@ -521,7 +521,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Blocks className="h-5 w-5 text-primary" />
+              <OnChainIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <AndamioCardTitle>On-Chain Modules</AndamioCardTitle>
@@ -542,7 +542,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
                   <AndamioTooltip>
                     <AndamioTooltipTrigger asChild>
                       <AndamioBadge variant="outline" className="text-warning border-warning">
-                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <AlertIcon className="h-3 w-3 mr-1" />
                         {unregisteredCount} unregistered
                       </AndamioBadge>
                     </AndamioTooltipTrigger>
@@ -559,7 +559,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
               onClick={handleRefresh}
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshIcon className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </AndamioButton>
           </div>
         </div>
@@ -578,7 +578,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
         {/* Error state */}
         {onChainError && hybridModules.length === 0 && (
           <AndamioAlert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               Failed to fetch on-chain data: {onChainError.message}
             </AndamioAlertDescription>
@@ -588,7 +588,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
         {/* Empty state */}
         {!isLoading && hybridModules.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Blocks className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <OnChainIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <AndamioText variant="small">
               No modules minted on-chain yet.
             </AndamioText>

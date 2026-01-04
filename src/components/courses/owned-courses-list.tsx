@@ -7,7 +7,7 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/comp
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertIcon, CourseIcon } from "~/components/icons";
 import { CourseModuleCount, CourseManageButton } from "./course-ui";
 
 /**
@@ -46,7 +46,7 @@ export function OwnedCoursesList() {
   if (error) {
     return (
       <AndamioAlert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
         <AndamioAlertDescription>{error}</AndamioAlertDescription>
       </AndamioAlert>
@@ -57,7 +57,7 @@ export function OwnedCoursesList() {
   if (courses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+        <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
         <AndamioText variant="small">
           No courses found. Create your first course to get started.
         </AndamioText>

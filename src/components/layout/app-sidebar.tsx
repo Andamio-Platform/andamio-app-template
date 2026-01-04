@@ -5,20 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
-  LayoutDashboard,
-  LogOut,
-  GraduationCap,
-  BookOpen,
-  Map,
-  Palette,
-  FolderKanban,
-  ChevronRight,
-  Layers,
-  PenTool,
-} from "lucide-react";
+  DashboardIcon,
+  LearnerIcon,
+  CourseIcon,
+  ProjectIcon,
+  NextIcon,
+  ModuleIcon,
+  EditIcon,
+  LogOutIcon,
+  SitemapIcon,
+  ThemeIcon,
+} from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { NavSection } from "~/types/ui";
 
@@ -37,7 +36,7 @@ const navigationSections: NavSection[] = [
       {
         name: "Dashboard",
         href: "/dashboard",
-        icon: LayoutDashboard,
+        icon: DashboardIcon,
         description: "Your personal hub",
       },
     ],
@@ -48,13 +47,13 @@ const navigationSections: NavSection[] = [
       {
         name: "Browse Courses",
         href: "/course",
-        icon: GraduationCap,
+        icon: LearnerIcon,
         description: "Learn new skills",
       },
       {
         name: "Browse Projects",
         href: "/project",
-        icon: FolderKanban,
+        icon: ProjectIcon,
         description: "Find opportunities",
       },
     ],
@@ -66,13 +65,13 @@ const navigationSections: NavSection[] = [
       {
         name: "Course Studio",
         href: "/studio/course",
-        icon: BookOpen,
+        icon: CourseIcon,
         description: "Manage your courses",
       },
       {
         name: "Project Studio",
         href: "/studio/project",
-        icon: PenTool,
+        icon: EditIcon,
         description: "Manage your projects",
       },
     ],
@@ -84,13 +83,13 @@ const navigationSections: NavSection[] = [
       {
         name: "Component Library",
         href: "/components",
-        icon: Palette,
+        icon: ThemeIcon,
         description: "Andamio UI reference",
       },
       {
         name: "Sitemap",
         href: "/sitemap",
-        icon: Map,
+        icon: SitemapIcon,
         description: "All routes",
       },
     ],
@@ -106,7 +105,7 @@ export function AppSidebar() {
       {/* Brand Header */}
       <div className="flex h-12 items-center gap-2.5 border-b border-sidebar-border px-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0">
-          <Layers className="h-3.5 w-3.5" />
+          <ModuleIcon className="h-3.5 w-3.5" />
         </div>
         <Link href="/" className="flex flex-col min-w-0">
           <span className="text-sm font-semibold text-sidebar-foreground truncate">Andamio</span>
@@ -172,7 +171,7 @@ export function AppSidebar() {
                           {item.name}
                         </span>
                         {isActive && (
-                          <ChevronRight className="h-3 w-3 text-primary flex-shrink-0 ml-auto" />
+                          <NextIcon className="h-3 w-3 text-primary flex-shrink-0 ml-auto" />
                         )}
                       </div>
                     </Link>
@@ -189,20 +188,20 @@ export function AppSidebar() {
         {isAuthenticated && user ? (
           <div className="space-y-2">
             {/* Wallet Info */}
-            <div className="rounded-md bg-sidebar-accent/50 p-2">
-              <div className="flex items-center gap-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
-                <code className="text-[10px] text-sidebar-foreground truncate">
-                  {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
-                </code>
-              </div>
+            <div className="rounded-md bg-sidebar-accent/50 p-2 space-y-1.5">
+              {/* Access Token Name - emphasized */}
               {user.accessTokenAlias && (
-                <div className="mt-1.5 pt-1.5 border-t border-sidebar-border">
-                  <AndamioBadge variant="secondary" className="text-[10px] h-5">
-                    {user.accessTokenAlias}
-                  </AndamioBadge>
+                <div className="font-semibold text-sm text-sidebar-foreground truncate">
+                  {user.accessTokenAlias}
                 </div>
               )}
+              {/* Wallet Address */}
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
+                <span className="text-[10px] font-mono text-muted-foreground truncate">
+                  {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
+                </span>
+              </div>
             </div>
 
             {/* Disconnect Button */}
@@ -212,7 +211,7 @@ export function AppSidebar() {
               onClick={logout}
               className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-[11px] h-7 px-2"
             >
-              <LogOut className="mr-1.5 h-3 w-3 flex-shrink-0" />
+              <LogOutIcon className="mr-1.5 h-3 w-3 flex-shrink-0" />
               Disconnect
             </AndamioButton>
           </div>

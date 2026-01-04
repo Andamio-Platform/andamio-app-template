@@ -13,7 +13,7 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
-import { AlertCircle, ArrowLeft, CheckCircle, Clock, Coins, ListChecks, Users } from "lucide-react";
+import { AlertIcon, BackIcon, SuccessIcon, PendingIcon, TokenIcon, TaskIcon, TeacherIcon } from "~/components/icons";
 import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -131,13 +131,13 @@ export default function TaskDetailPage() {
       <div className="space-y-6">
         <Link href={`/project/${treasuryNftPolicyId}`}>
           <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <BackIcon className="h-4 w-4 mr-1" />
             Back to Project
           </AndamioButton>
         </Link>
 
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
           <AndamioAlertDescription>{error ?? "Task not found"}</AndamioAlertDescription>
         </AndamioAlert>
@@ -151,7 +151,7 @@ export default function TaskDetailPage() {
       <div className="flex items-center justify-between">
         <Link href={`/project/${treasuryNftPolicyId}`}>
           <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <BackIcon className="h-4 w-4 mr-1" />
             Back to Project
           </AndamioButton>
         </Link>
@@ -174,7 +174,7 @@ export default function TaskDetailPage() {
       {/* Task Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <Coins className="h-5 w-5 text-muted-foreground" />
+          <TokenIcon className="h-5 w-5 text-muted-foreground" />
           <div>
             <AndamioText variant="small">Reward</AndamioText>
             <AndamioText className="font-semibold">{formatLovelace(task.lovelace)}</AndamioText>
@@ -182,7 +182,7 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <Clock className="h-5 w-5 text-muted-foreground" />
+          <PendingIcon className="h-5 w-5 text-muted-foreground" />
           <div>
             <AndamioText variant="small">Expires</AndamioText>
             <AndamioText className="font-semibold text-sm">{formatTimestamp(task.expiration_time)}</AndamioText>
@@ -190,7 +190,7 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <Users className="h-5 w-5 text-muted-foreground" />
+          <TeacherIcon className="h-5 w-5 text-muted-foreground" />
           <div>
             <AndamioText variant="small">Commitments</AndamioText>
             <AndamioText className="font-semibold">
@@ -200,7 +200,7 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <ListChecks className="h-5 w-5 text-muted-foreground" />
+          <TaskIcon className="h-5 w-5 text-muted-foreground" />
           <div>
             <AndamioText variant="small">Criteria</AndamioText>
             <AndamioText className="font-semibold">{task.acceptance_criteria.length} items</AndamioText>
@@ -237,7 +237,7 @@ export default function TaskDetailPage() {
           <ul className="space-y-2">
             {task.acceptance_criteria.map((criterion, index) => (
               <li key={index} className="flex items-start gap-2">
-                <CheckCircle className="h-4 w-4 mt-1 text-muted-foreground" />
+                <SuccessIcon className="h-4 w-4 mt-1 text-muted-foreground" />
                 <span>{criterion}</span>
               </li>
             ))}
@@ -334,7 +334,7 @@ export default function TaskDetailPage() {
                 You haven&apos;t committed to this task yet
               </AndamioText>
               <AndamioAlert>
-                <AlertCircle className="h-4 w-4" />
+                <AlertIcon className="h-4 w-4" />
                 <AndamioAlertDescription>
                   Task commitment functionality requires blockchain transactions.
                   Full commitment workflow coming soon.

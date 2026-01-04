@@ -4,22 +4,21 @@ import React, { useEffect, useState } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { MobileNav } from "./mobile-nav";
 import { PendingTxIndicator } from "./pending-tx-indicator";
 import {
-  Wallet,
-  Shield,
-  ShieldCheck,
-  Clock,
-  LogOut,
-  User,
-  ShieldAlert,
-  Circle,
-  Sun,
-  Moon,
-} from "lucide-react";
+  WalletIcon,
+  ShieldIcon,
+  VerifiedIcon,
+  PendingIcon,
+  SecurityAlertIcon,
+  NeutralIcon,
+  AccessTokenIcon,
+  LogOutIcon,
+  LightModeIcon,
+  DarkModeIcon,
+} from "~/components/icons";
 import { getStoredJWT } from "~/lib/andamio-auth";
 import { cn } from "~/lib/utils";
 
@@ -118,9 +117,9 @@ export function AuthStatusBar() {
 
           {/* Wallet Status - Hidden on very small screens */}
           <div className="hidden xs:flex items-center gap-2">
-            <Wallet className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
+            <WalletIcon className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
             <div className="flex items-center gap-1.5 min-w-0">
-              <Circle
+              <NeutralIcon
                 className={cn(
                   "h-1.5 w-1.5 fill-current flex-shrink-0",
                   isWalletConnected ? "text-green-300" : "text-primary-foreground/50"
@@ -138,11 +137,11 @@ export function AuthStatusBar() {
           {/* Auth Status - Hidden on very small screens */}
           <div className="hidden xs:flex items-center gap-2">
             {isAuthenticated ? (
-              <ShieldCheck className="h-3.5 w-3.5 text-green-300 flex-shrink-0" />
+              <VerifiedIcon className="h-3.5 w-3.5 text-green-300 flex-shrink-0" />
             ) : authError ? (
-              <ShieldAlert className="h-3.5 w-3.5 text-red-300 flex-shrink-0" />
+              <SecurityAlertIcon className="h-3.5 w-3.5 text-red-300 flex-shrink-0" />
             ) : (
-              <Shield className="h-3.5 w-3.5 text-primary-foreground/50 flex-shrink-0" />
+              <ShieldIcon className="h-3.5 w-3.5 text-primary-foreground/50 flex-shrink-0" />
             )}
             <span
               className={cn(
@@ -170,7 +169,7 @@ export function AuthStatusBar() {
             <>
               <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
               <div className="hidden sm:flex items-center gap-1.5">
-                <Clock
+                <PendingIcon
                   className={cn(
                     "h-3.5 w-3.5 flex-shrink-0",
                     isExpiringSoon ? "text-amber-300" : "text-primary-foreground/70"
@@ -197,7 +196,7 @@ export function AuthStatusBar() {
             <>
               <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
               <div className="hidden sm:flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
+                <AccessTokenIcon className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
                 <span className="h-5 text-[10px] font-mono px-1.5 bg-primary-foreground/15 text-primary-foreground rounded">
                   {user.accessTokenAlias}
                 </span>
@@ -218,9 +217,9 @@ export function AuthStatusBar() {
               aria-label="Toggle theme"
             >
               {theme === "dark" ? (
-                <Sun className="h-3.5 w-3.5" />
+                <LightModeIcon className="h-3.5 w-3.5" />
               ) : (
-                <Moon className="h-3.5 w-3.5" />
+                <DarkModeIcon className="h-3.5 w-3.5" />
               )}
             </AndamioButton>
           )}
@@ -232,7 +231,7 @@ export function AuthStatusBar() {
               onClick={logout}
               className="hidden sm:flex h-6 px-2 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
             >
-              <LogOut className="mr-1.5 h-3 w-3" />
+              <LogOutIcon className="mr-1.5 h-3 w-3" />
               Logout
             </AndamioButton>
           )}

@@ -38,9 +38,10 @@ The available routes are in `/src/app`. If the user specifies a route that does 
 ### 3. Apply rules to each Component and Subcomponent
 
 Work through the list we created in Step 2. Apply the rules from:
-- [style-rules.md](./style-rules.md) - The 3 core rules (no custom styling, no raw shadcn, Andamio prefix)
+- [style-rules.md](./style-rules.md) - Core styling rules (no custom styling, no raw shadcn, Andamio prefix, etc.)
 - [semantic-colors.md](./semantic-colors.md) - No hardcoded colors, use semantic variables
 - [responsive-design.md](./responsive-design.md) - Use Andamio layout components
+- [icon-system.md](./icon-system.md) - Centralized icon imports with semantic names
 
 **Quick checks for each file:**
 - ❌ Custom className on Andamio components? → Extract to new component
@@ -49,6 +50,7 @@ Work through the list we created in Step 2. Apply the rules from:
 - ❌ Hardcoded colors (`text-green-600`)? → Use semantic (`text-success`)
 - ❌ Inline loading skeletons? → Use `AndamioPageLoading`
 - ❌ Inline empty states? → Use `AndamioEmptyState`
+- ❌ Importing from `lucide-react`? → Change to `~/components/icons` with semantic names
 
 Make sure that every component and sub-component follows these guidelines perfectly.
 
@@ -89,7 +91,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioPageHeader, AndamioSectionHeader } from "~/components/andamio";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertIcon, CourseIcon } from "~/components/icons";
 import { type LessonWithSLTOutput, type CourseOutput, type CourseModuleOutput } from "@andamio/db-api";
 import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
@@ -134,7 +136,7 @@ For example, maybe we could suggest a common "Not Found" component from `src/app
 <AndamioPageHeader title="Lesson Not Found" />
 
 <AndamioAlert variant="destructive">
-    <AlertCircle className="h-4 w-4" />
+    <AlertIcon className="h-4 w-4" />
     <AndamioAlertTitle>Error</AndamioAlertTitle>
     <AndamioAlertDescription>
     {error ?? "Lesson not found"}

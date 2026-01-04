@@ -6,14 +6,26 @@ import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AlertCircle, ArrowLeft, CheckSquare, Edit, Plus, Trash2 } from "lucide-react";
-import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
-import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
-import { AndamioText } from "~/components/andamio/andamio-text";
+import {
+  AndamioBadge,
+  AndamioTable,
+  AndamioTableBody,
+  AndamioTableCell,
+  AndamioTableHead,
+  AndamioTableHeader,
+  AndamioTableRow,
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioSectionHeader,
+  AndamioTableContainer,
+  AndamioEmptyState,
+  AndamioText,
+  AndamioBackButton,
+  AndamioAddButton,
+  AndamioRowActions,
+  AndamioErrorAlert,
+} from "~/components/andamio";
+import { TaskIcon } from "~/components/icons";
 import { type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -127,12 +139,10 @@ export default function DraftTasksPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <Link href={`/studio/project/${treasuryNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Project
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}`}
+          label="Back to Project"
+        />
 
         <AndamioPageHeader
           title="Draft Tasks"
@@ -155,18 +165,12 @@ export default function DraftTasksPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <Link href={`/studio/project/${treasuryNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Project
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}`}
+          label="Back to Project"
+        />
 
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioErrorAlert error={error} />
       </div>
     );
   }
@@ -180,18 +184,13 @@ export default function DraftTasksPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href={`/studio/project/${treasuryNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Project
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton
+          href={`/studio/project/${treasuryNftPolicyId}`}
+          label="Back to Project"
+        />
 
         <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
-          <AndamioButton>
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </AndamioButton>
+          <AndamioAddButton label="New Task" />
         </Link>
       </div>
 
@@ -228,30 +227,13 @@ export default function DraftTasksPage() {
                       <AndamioBadge variant={getStatusVariant(task.status)}>{task.status}</AndamioBadge>
                     </AndamioTableCell>
                     <AndamioTableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/${task.index}`}>
-                          <AndamioButton variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </AndamioButton>
-                        </Link>
-                        <AndamioConfirmDialog
-                          trigger={
-                            <AndamioButton
-                              variant="ghost"
-                              size="sm"
-                              disabled={deletingTaskIndex === task.index}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </AndamioButton>
-                          }
-                          title="Delete Task"
-                          description={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-                          confirmText="Delete"
-                          variant="destructive"
-                          onConfirm={() => handleDeleteTask(task.index)}
-                          isLoading={deletingTaskIndex === task.index}
-                        />
-                      </div>
+                      <AndamioRowActions
+                        editHref={`/studio/project/${treasuryNftPolicyId}/draft-tasks/${task.index}`}
+                        onDelete={() => handleDeleteTask(task.index)}
+                        itemName="task"
+                        deleteDescription={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+                        isDeleting={deletingTaskIndex === task.index}
+                      />
                     </AndamioTableCell>
                   </AndamioTableRow>
                 ))}
@@ -342,15 +324,12 @@ export default function DraftTasksPage() {
       {/* Empty State */}
       {tasks.length === 0 && (
         <AndamioEmptyState
-          icon={CheckSquare}
+          icon={TaskIcon}
           title="No tasks yet"
           description="Create your first task to get started"
           action={
             <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
-              <AndamioButton>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Task
-              </AndamioButton>
+              <AndamioAddButton label="Create Task" />
             </Link>
           }
         />

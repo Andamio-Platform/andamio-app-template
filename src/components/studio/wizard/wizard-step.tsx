@@ -35,7 +35,7 @@ export function WizardStep({
       animate="center"
       exit="exit"
       transition={stepTransition}
-      className={cn("space-y-6", className)}
+      className={cn("space-y-6 w-full min-w-0 overflow-hidden", className)}
     >
       {/* Step header - minimal */}
       <div className="flex items-center gap-3">
@@ -47,8 +47,8 @@ export function WizardStep({
         </h2>
       </div>
 
-      {/* Step content */}
-      <div className="min-h-[400px]">
+      {/* Step content - constrained width to prevent overflow */}
+      <div className="min-h-[400px] w-full min-w-0 overflow-hidden">
         {children}
       </div>
     </motion.div>

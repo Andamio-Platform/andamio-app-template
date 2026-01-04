@@ -24,7 +24,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Coins, Hash, BookOpen, AlertCircle } from "lucide-react";
+import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import {
   v2,
@@ -170,7 +170,7 @@ export function MintModuleTokens({
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <Coins className="h-5 w-5 text-primary" />
+            <TokenIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Mint Module Tokens</AndamioCardTitle>
@@ -194,7 +194,7 @@ export function MintModuleTokens({
                   className="flex items-center justify-between rounded-md border p-2 bg-muted/30"
                 >
                   <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <ModuleIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">{moduleCode}</span>
                     <AndamioBadge variant="outline" className="text-xs">
                       {sltCount} SLT{sltCount !== 1 ? "s" : ""}
@@ -202,7 +202,7 @@ export function MintModuleTokens({
                   </div>
                   {hash && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Hash className="h-3 w-3" />
+                      <TransactionIcon className="h-3 w-3" />
                       <code className="font-mono">{hash.slice(0, 8)}...</code>
                     </div>
                   )}
@@ -215,7 +215,7 @@ export function MintModuleTokens({
         {/* Warning for modules without SLTs */}
         {modulesWithoutSlts.length > 0 && (
           <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
             <div className="text-xs">
               <AndamioText variant="small" className="font-medium text-warning-foreground">Some modules have no SLTs</AndamioText>
               <AndamioText variant="small">
@@ -228,7 +228,7 @@ export function MintModuleTokens({
         {/* Hash Explanation */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-primary" />
+            <TransactionIcon className="h-4 w-4 text-primary" />
             <AndamioText className="font-medium">Tamper-Evident Design</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">

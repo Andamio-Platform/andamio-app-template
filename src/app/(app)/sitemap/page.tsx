@@ -15,21 +15,21 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioPageHeader } from "~/components/andamio";
 import {
-  ExternalLink,
-  Lock,
-  Globe,
-  BookOpen,
-  Sparkles,
-  LayoutDashboard,
-  FileEdit,
-  GraduationCap,
-  Users,
-  FolderKanban,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Server,
-} from "lucide-react";
+  ExternalLinkIcon,
+  LockedIcon,
+  CourseIcon,
+  SparkleIcon,
+  DashboardIcon,
+  DraftIcon,
+  LearnerIcon,
+  TeacherIcon,
+  ProjectIcon,
+  SuccessIcon,
+  ErrorIcon,
+  GlobalIcon,
+  WarningIcon,
+  ServerIcon,
+} from "~/components/icons";
 import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
 import type { RouteCategory } from "~/types/ui";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -69,7 +69,7 @@ const overallCoverage = Math.round((totalImplemented / totalAvailable) * 100);
 const staticRoutes: RouteCategory[] = [
   {
     category: "Main Navigation",
-    icon: LayoutDashboard,
+    icon: DashboardIcon,
     routes: [
       {
         path: "/dashboard",
@@ -105,7 +105,7 @@ const staticRoutes: RouteCategory[] = [
   },
   {
     category: "Studio Pages",
-    icon: Sparkles,
+    icon: SparkleIcon,
     routes: [
       {
         path: "/studio/course",
@@ -132,7 +132,7 @@ const staticRoutes: RouteCategory[] = [
 const dynamicRouteTemplates: RouteCategory[] = [
   {
     category: "Learner Course Pages",
-    icon: GraduationCap,
+    icon: LearnerIcon,
     routes: [
       {
         path: "/course/[courseNftPolicyId]",
@@ -170,7 +170,7 @@ const dynamicRouteTemplates: RouteCategory[] = [
   },
   {
     category: "Creator Studio Course Pages",
-    icon: FileEdit,
+    icon: DraftIcon,
     routes: [
       {
         path: "/studio/course/[courseNftPolicyId]",
@@ -232,7 +232,7 @@ const dynamicRouteTemplates: RouteCategory[] = [
   },
   {
     category: "Contributor Project Pages",
-    icon: FolderKanban,
+    icon: ProjectIcon,
     routes: [
       {
         path: "/project/[treasuryNftPolicyId]",
@@ -254,7 +254,7 @@ const dynamicRouteTemplates: RouteCategory[] = [
   },
   {
     category: "Creator Studio Project Pages",
-    icon: FileEdit,
+    icon: DraftIcon,
     routes: [
       {
         path: "/studio/project/[treasuryNftPolicyId]",
@@ -414,15 +414,15 @@ export default function SitemapPage() {
         <AndamioCardContent className="pt-4">
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-success" />
+              <GlobalIcon className="h-4 w-4 text-success" />
               <span>Public route</span>
             </div>
             <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-warning" />
+              <LockedIcon className="h-4 w-4 text-warning" />
               <span>Requires authentication</span>
             </div>
             <div className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-info" />
+              <ExternalLinkIcon className="h-4 w-4 text-info" />
               <span>Dynamic route (requires params)</span>
             </div>
           </div>
@@ -454,9 +454,9 @@ export default function SitemapPage() {
                           {route.label}
                         </Link>
                         {route.requiresAuth ? (
-                          <Lock className="h-3 w-3 text-warning" />
+                          <LockedIcon className="h-3 w-3 text-warning" />
                         ) : (
-                          <Globe className="h-3 w-3 text-success" />
+                          <GlobalIcon className="h-3 w-3 text-success" />
                         )}
                       </div>
                       <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
@@ -577,11 +577,11 @@ export default function SitemapPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{route.label}</span>
                           {route.requiresAuth ? (
-                            <Lock className="h-3 w-3 text-warning" />
+                            <LockedIcon className="h-3 w-3 text-warning" />
                           ) : (
-                            <Globe className="h-3 w-3 text-success" />
+                            <GlobalIcon className="h-3 w-3 text-success" />
                           )}
-                          <ExternalLink className="h-3 w-3 text-info" />
+                          <ExternalLinkIcon className="h-3 w-3 text-info" />
                         </div>
                         <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
                         <code className="text-xs font-mono text-muted-foreground">
@@ -630,7 +630,7 @@ export default function SitemapPage() {
       <AndamioCard>
         <AndamioCardHeader className="space-y-4">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
+            <CourseIcon className="h-5 w-5" />
             <AndamioCardTitle>Available Data</AndamioCardTitle>
           </div>
           <AndamioCardDescription className="text-base">
@@ -687,7 +687,7 @@ export default function SitemapPage() {
       <AndamioCard>
         <AndamioCardHeader className="space-y-4">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <TeacherIcon className="h-5 w-5" />
             <AndamioCardTitle>API Reference</AndamioCardTitle>
           </div>
           <AndamioCardDescription className="text-base">
@@ -722,7 +722,7 @@ export default function SitemapPage() {
       <AndamioCard>
         <AndamioCardHeader className="space-y-4">
           <div className="flex items-center gap-2">
-            <Server className="h-5 w-5" />
+            <ServerIcon className="h-5 w-5" />
             <AndamioCardTitle>API Coverage Status</AndamioCardTitle>
           </div>
           <AndamioCardDescription className="text-base">
@@ -749,15 +749,15 @@ export default function SitemapPage() {
           {/* Legend */}
           <div className="flex flex-wrap gap-4 text-sm mb-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-success" />
+              <SuccessIcon className="h-4 w-4 text-success" />
               <span>Complete (90%+)</span>
             </div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
+              <WarningIcon className="h-4 w-4 text-warning" />
               <span>Partial (50-89%)</span>
             </div>
             <div className="flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-destructive" />
+              <ErrorIcon className="h-4 w-4 text-destructive" />
               <span>Minimal/Not Started</span>
             </div>
           </div>
@@ -773,13 +773,13 @@ export default function SitemapPage() {
                 >
                   <div className="flex items-center gap-2">
                     {cat.status === "complete" && (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                      <SuccessIcon className="h-4 w-4 text-success" />
                     )}
                     {cat.status === "partial" && (
-                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <WarningIcon className="h-4 w-4 text-warning" />
                     )}
                     {(cat.status === "minimal" || cat.status === "not-started") && (
-                      <XCircle className="h-4 w-4 text-destructive" />
+                      <ErrorIcon className="h-4 w-4 text-destructive" />
                     )}
                     <span className="text-sm font-medium">{cat.category}</span>
                   </div>

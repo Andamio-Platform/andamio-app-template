@@ -114,6 +114,11 @@ export function usePublishedCourses() {
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`
       );
 
+      // 404 means no published courses exist yet - treat as empty state, not error
+      if (response.status === 404) {
+        return [] as ListPublishedCoursesOutput;
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to fetch published courses: ${response.statusText}`);
       }

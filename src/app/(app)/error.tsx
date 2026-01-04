@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioPageHeader } from "~/components/andamio";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertIcon, RefreshIcon } from "~/components/icons";
 
 /**
  * Error boundary for the (app) route group
@@ -32,7 +32,7 @@ export default function AppError({
       />
 
       <AndamioAlert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
         <AndamioAlertDescription>
           {error.message || "An unexpected error occurred"}
@@ -45,7 +45,7 @@ export default function AppError({
       </AndamioAlert>
 
       <AndamioButton onClick={reset} variant="outline">
-        <RefreshCw className="h-4 w-4 mr-2" />
+        <RefreshIcon className="h-4 w-4 mr-2" />
         Try again
       </AndamioButton>
     </div>

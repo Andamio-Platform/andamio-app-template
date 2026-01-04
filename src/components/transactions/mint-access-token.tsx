@@ -16,7 +16,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Key, Shield } from "lucide-react";
+import { AccessTokenIcon, ShieldIcon } from "~/components/icons";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
@@ -139,7 +139,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <Key className="h-5 w-5 text-primary" />
+            <AccessTokenIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Get Your Access Token</AndamioCardTitle>
@@ -153,7 +153,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         {/* What You're Getting */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" />
+            <ShieldIcon className="h-4 w-4 text-primary" />
             <AndamioText className="font-medium">On-Chain Identity</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">

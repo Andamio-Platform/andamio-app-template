@@ -1,7 +1,7 @@
 "use client";
 
 import { type Editor } from "@tiptap/core";
-import { X } from "lucide-react";
+import { CloseIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { cn } from "~/lib/utils";
 
@@ -47,7 +47,7 @@ export function FullscreenEditorWrapper({
           aria-label="Exit full screen (Esc)"
           className="ml-4"
         >
-          <X className="h-4 w-4" />
+          <CloseIcon className="h-4 w-4" />
           <span className="ml-2">Exit Full Screen</span>
         </AndamioButton>
       </div>

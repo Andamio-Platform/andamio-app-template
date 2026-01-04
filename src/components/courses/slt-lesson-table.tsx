@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { BookOpen, CheckCircle } from "lucide-react";
+import { CourseIcon, SuccessIcon } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import {
   AndamioTable,
@@ -60,7 +60,7 @@ export function SLTLessonTable({
   if (data.length === 0) {
     return (
       <AndamioEmptyState
-        icon={BookOpen}
+        icon={CourseIcon}
         title="No learning targets defined for this module"
         className="border rounded-md"
       />
@@ -90,7 +90,7 @@ export function SLTLessonTable({
                     <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
                     {isOnChain && (
                       <span title="Verified on-chain">
-                        <CheckCircle className="h-3.5 w-3.5 text-success" />
+                        <SuccessIcon className="h-3.5 w-3.5 text-success" />
                       </span>
                     )}
                   </div>

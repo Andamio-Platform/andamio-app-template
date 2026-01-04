@@ -18,25 +18,28 @@ import {
   AndamioAlertDescription,
   AndamioScrollArea,
   AndamioStudioLoading,
+  AndamioSaveButton,
 } from "~/components/andamio";
 import {
-  AlertCircle,
-  Plus,
-  Save,
-  Settings,
-  BookOpen,
-  Blocks,
-  FileText,
-  Trash2,
-  Clock,
-  ExternalLink,
-  ImageIcon,
-  Video,
-  Copy,
-  Check,
-  Eye,
-  Sparkles,
-} from "lucide-react";
+  AlertIcon,
+  AddIcon,
+  SettingsIcon,
+  CourseIcon,
+  OnChainIcon,
+  LessonIcon,
+  DeleteIcon,
+  PendingIcon,
+  ExternalLinkIcon,
+  ImagePlaceholderIcon,
+  VideoIcon,
+  CopyIcon,
+  CompletedIcon,
+  PreviewIcon,
+  SparkleIcon,
+  NextIcon,
+  SLTIcon,
+  CredentialIcon,
+} from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -62,9 +65,9 @@ function CopyableAddress({ address, label }: { address: string; label?: string }
   return (
     <div className="flex items-center gap-2">
       {label && <AndamioText as="span" variant="small">{label}</AndamioText>}
-      <code className="text-[10px] text-muted-foreground font-mono flex-1 truncate">
+      <span className="text-[10px] text-muted-foreground font-mono flex-1 truncate">
         {address}
-      </code>
+      </span>
       <AndamioButton
         variant="ghost"
         size="sm"
@@ -72,9 +75,9 @@ function CopyableAddress({ address, label }: { address: string; label?: string }
         onClick={handleCopy}
       >
         {copied ? (
-          <Check className="h-3 w-3 text-success" />
+          <CompletedIcon className="h-3 w-3 text-success" />
         ) : (
-          <Copy className="h-3 w-3" />
+          <CopyIcon className="h-3 w-3" />
         )}
       </AndamioButton>
     </div>
@@ -87,7 +90,7 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
   if (!url || error) {
     return (
       <div className="flex h-24 items-center justify-center rounded-lg border border-dashed bg-muted/30">
-        <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+        <ImagePlaceholderIcon className="h-6 w-6 text-muted-foreground/50" />
       </div>
     );
   }
@@ -121,7 +124,7 @@ function VideoPreview({ url }: { url: string }) {
   if (!url) {
     return (
       <div className="flex h-24 items-center justify-center rounded-lg border border-dashed bg-muted/30">
-        <Video className="h-6 w-6 text-muted-foreground/50" />
+        <VideoIcon className="h-6 w-6 text-muted-foreground/50" />
       </div>
     );
   }
@@ -130,7 +133,7 @@ function VideoPreview({ url }: { url: string }) {
     return (
       <div className="flex h-24 items-center justify-center rounded-lg border bg-muted/30">
         <div className="text-center">
-          <Video className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
+          <VideoIcon className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
           <AndamioText variant="small" className="text-[10px]">Video URL set</AndamioText>
         </div>
       </div>
@@ -214,7 +217,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
           asChild
         >
           <Link href={`/course/${courseNftPolicyId}`}>
-            <Eye className="h-3.5 w-3.5 mr-1" />
+            <PreviewIcon className="h-3.5 w-3.5 mr-1" />
             Preview
           </Link>
         </AndamioButton>
@@ -292,7 +295,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     return (
       <div className="flex items-center justify-center h-full p-8">
         <AndamioAlert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertDescription>
             {courseError instanceof Error ? courseError.message : "Course not found"}
           </AndamioAlertDescription>
@@ -301,105 +304,222 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     );
   }
 
+  // Check if we're in empty state (no modules)
+  const isEmpty = modules.length === 0;
+
   return (
     <AndamioScrollArea className="h-full">
       <div className="min-h-full bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Course Header */}
-        <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="flex items-start justify-between gap-6">
-              {/* Left: Course Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <code className="text-xs font-mono text-muted-foreground">
+        {/* Course Header - Contextual based on module count */}
+        {!isEmpty ? (
+          <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+            <div className="max-w-4xl mx-auto px-6 py-6">
+              <div className="flex items-start justify-between gap-6">
+                {/* Left: Course Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {course.course_code}
+                    </span>
+                    {course.course_nft_policy_id && (
+                      <AndamioBadge variant="default" className="text-[10px]">
+                        <OnChainIcon className="h-2.5 w-2.5 mr-1" />
+                        Published
+                      </AndamioBadge>
+                    )}
+                  </div>
+                  <h1 className="text-2xl font-bold text-foreground mb-1">
+                    {course.title ?? "Untitled Course"}
+                  </h1>
+                  {course.description && (
+                    <AndamioText variant="muted" className="line-clamp-2">
+                      {course.description}
+                    </AndamioText>
+                  )}
+                </div>
+
+                {/* Right: Stats */}
+                <div className="flex items-center gap-4 text-center flex-shrink-0">
+                  <div>
+                    <div className="text-2xl font-bold text-foreground">{moduleStats.total}</div>
+                    <AndamioText variant="small" className="text-[10px]">Credentials</AndamioText>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-2xl font-bold text-success">{moduleStats.onChain}</div>
+                    <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Content Area */}
+        <div className={cn(
+          "mx-auto px-6",
+          isEmpty ? "max-w-5xl py-12" : "max-w-4xl py-6"
+        )}>
+          {isEmpty ? (
+            /* Empty State - Full Welcome Experience (No Tabs) */
+            <div className="flex flex-col items-center">
+              {/* Course Title Banner */}
+              <div className="text-center mb-10">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
                     {course.course_code}
-                  </code>
+                  </span>
                   {course.course_nft_policy_id && (
                     <AndamioBadge variant="default" className="text-[10px]">
-                      <Blocks className="h-2.5 w-2.5 mr-1" />
+                      <OnChainIcon className="h-2.5 w-2.5 mr-1" />
                       Published
                     </AndamioBadge>
                   )}
                 </div>
-                <h1 className="text-2xl font-bold text-foreground mb-1">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                   {course.title ?? "Untitled Course"}
                 </h1>
                 {course.description && (
-                  <AndamioText variant="muted" className="line-clamp-2">
+                  <AndamioText variant="muted" className="mt-2 max-w-lg mx-auto">
                     {course.description}
                   </AndamioText>
                 )}
               </div>
 
-              {/* Right: Stats */}
-              <div className="flex items-center gap-4 text-center flex-shrink-0">
-                <div>
-                  <div className="text-2xl font-bold text-foreground">{moduleStats.total}</div>
-                  <AndamioText variant="small" className="text-[10px]">Modules</AndamioText>
+              {/* Hero Section */}
+              <div className="text-center max-w-2xl mb-12">
+                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 mx-auto mb-6 shadow-xl shadow-primary/30">
+                  <CredentialIcon className="h-12 w-12 text-primary-foreground" />
                 </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-success">{moduleStats.onChain}</div>
-                  <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
+                  Create Your First Credential
+                </h2>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Every module is a <strong className="text-foreground">verifiable credential</strong> that learners earn on-chain.
+                  Design what mastery looks like, and Andamio handles the rest.
+                </p>
+              </div>
+
+              {/* Two Path Options */}
+              <div className="grid md:grid-cols-2 gap-6 w-full max-w-3xl mb-16">
+                {/* Guided Path */}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential&mode=wizard`)}
+                  className="group relative text-left p-6 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-background hover:border-primary hover:shadow-xl hover:shadow-primary/20 transition-all duration-300"
+                >
+                  <div className="absolute top-4 right-4">
+                    <AndamioBadge variant="default" className="text-[10px] shadow-sm">
+                      Recommended
+                    </AndamioBadge>
+                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 mb-4 group-hover:scale-110 group-hover:bg-primary/30 transition-all">
+                    <SparkleIcon className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Guided Setup</h3>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    Walk through each step: define the credential, set learning targets, write lessons, and create an assignment.
+                  </p>
+                  <div className="flex items-center text-primary font-semibold">
+                    Start Building
+                    <NextIcon className="h-5 w-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+
+                {/* Pro Path */}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential&mode=pro`)}
+                  className="group text-left p-6 rounded-2xl border-2 border-border bg-gradient-to-br from-muted/50 via-muted/20 to-background hover:border-border/80 hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4 group-hover:scale-110 group-hover:bg-muted/80 transition-all">
+                    <OnChainIcon className="h-7 w-7 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Quick Create</h3>
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                    Jump directly into the editor. Best for experienced builders who want full control from the start.
+                  </p>
+                  <div className="flex items-center text-muted-foreground group-hover:text-foreground font-semibold transition-colors">
+                    Create Credential
+                    <NextIcon className="h-5 w-5 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              </div>
+
+              {/* Credential Anatomy */}
+              <div className="w-full max-w-3xl">
+                <div className="text-center mb-8">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    Anatomy of a Credential
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Each credential (module) contains everything needed to verify competency
+                  </p>
+                </div>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-info/10 via-info/5 to-transparent border border-info/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-info/20 mb-3">
+                      <SLTIcon className="h-5 w-5 text-info" />
+                    </div>
+                    <div className="font-bold mb-1">Learning Targets</div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Clear, measurable outcomes that define what &quot;mastery&quot; means
+                    </p>
+                  </div>
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-success/10 via-success/5 to-transparent border border-success/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/20 mb-3">
+                      <CourseIcon className="h-5 w-5 text-success" />
+                    </div>
+                    <div className="font-bold mb-1">Lessons</div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Rich content that guides learners toward each target
+                    </p>
+                  </div>
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border border-warning/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/20 mb-3">
+                      <CredentialIcon className="h-5 w-5 text-warning" />
+                    </div>
+                    <div className="font-bold mb-1">Assignment</div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Real-world contribution that proves competency
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          ) : (
+            /* Has Modules - Show Tabs Interface */
+            <AndamioTabs value={activeTab} onValueChange={handleTabChange}>
+              <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
+                <AndamioTabsTrigger value="modules" className="text-sm gap-1.5 px-4">
+                  <CredentialIcon className="h-4 w-4" />
+                  Credentials
+                </AndamioTabsTrigger>
+                <AndamioTabsTrigger value="details" className="text-sm gap-1.5 px-4">
+                  <LessonIcon className="h-4 w-4" />
+                  Details
+                </AndamioTabsTrigger>
+                <AndamioTabsTrigger value="on-chain" className="text-sm gap-1.5 px-4">
+                  <OnChainIcon className="h-4 w-4" />
+                  On-Chain
+                </AndamioTabsTrigger>
+                <AndamioTabsTrigger value="settings" className="text-sm gap-1.5 px-4">
+                  <SettingsIcon className="h-4 w-4" />
+                  Settings
+                </AndamioTabsTrigger>
+              </AndamioTabsList>
 
-        {/* Tabs */}
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          <AndamioTabs value={activeTab} onValueChange={handleTabChange}>
-            <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
-              <AndamioTabsTrigger value="modules" className="text-sm gap-1.5 px-4">
-                <BookOpen className="h-4 w-4" />
-                Modules
-              </AndamioTabsTrigger>
-              <AndamioTabsTrigger value="details" className="text-sm gap-1.5 px-4">
-                <FileText className="h-4 w-4" />
-                Details
-              </AndamioTabsTrigger>
-              <AndamioTabsTrigger value="on-chain" className="text-sm gap-1.5 px-4">
-                <Blocks className="h-4 w-4" />
-                On-Chain
-              </AndamioTabsTrigger>
-              <AndamioTabsTrigger value="settings" className="text-sm gap-1.5 px-4">
-                <Settings className="h-4 w-4" />
-                Settings
-              </AndamioTabsTrigger>
-            </AndamioTabsList>
-
-            {/* Modules Tab */}
-            <AndamioTabsContent value="modules" className="mt-0">
-              {modules.length === 0 ? (
-                /* Empty State */
-                <div className="text-center py-16">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto mb-6">
-                    <Sparkles className="h-10 w-10 text-primary" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">Create Your First Module</h2>
-                  <AndamioText variant="muted" className="max-w-sm mx-auto mb-6">
-                    Modules are the building blocks of your course. Each module contains learning targets, lessons, and an assignment.
-                  </AndamioText>
-                  <AndamioButton
-                    size="lg"
-                    onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential`)}
-                  >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Create Module
-                  </AndamioButton>
-                </div>
-              ) : (
-                /* Module List */
+              {/* Credentials Tab */}
+              <AndamioTabsContent value="modules" className="mt-0">
                 <div className="space-y-4">
-                  {/* Add Module Button */}
+                  {/* Add Credential Button */}
                   <div className="flex justify-end">
                     <AndamioButton
                       variant="outline"
                       onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential`)}
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Module
+                      <AddIcon className="h-4 w-4 mr-2" />
+                      Add Credential
                     </AndamioButton>
                   </div>
 
@@ -417,26 +537,23 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   {/* Footer Stats */}
                   {moduleStats.pending > 0 && (
                     <AndamioAlert className="mt-6">
-                      <Clock className="h-4 w-4 text-info animate-pulse" />
+                      <PendingIcon className="h-4 w-4 text-info animate-pulse" />
                       <AndamioAlertDescription>
-                        {moduleStats.pending} module{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
+                        {moduleStats.pending} credential{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
                       </AndamioAlertDescription>
                     </AndamioAlert>
                   )}
                 </div>
-              )}
-            </AndamioTabsContent>
+              </AndamioTabsContent>
 
             {/* Details Tab */}
             <AndamioTabsContent value="details" className="mt-0 space-y-6">
               <div className="flex justify-end">
-                <AndamioButton
+                <AndamioSaveButton
                   onClick={handleSave}
-                  disabled={updateCourseMutation.isPending || !hasChanges}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateCourseMutation.isPending ? "Saving..." : "Save Changes"}
-                </AndamioButton>
+                  isSaving={updateCourseMutation.isPending}
+                  disabled={!hasChanges}
+                />
               </div>
 
               <StudioFormSection title="Course Information">
@@ -468,7 +585,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <AndamioLabel htmlFor="imageUrl" className="flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" />
+                      <ImagePlaceholderIcon className="h-4 w-4" />
                       Cover Image
                     </AndamioLabel>
                     <ImagePreview url={formImageUrl} alt={formTitle || "Course cover"} />
@@ -482,7 +599,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
                   <div className="space-y-3">
                     <AndamioLabel htmlFor="videoUrl" className="flex items-center gap-2">
-                      <Video className="h-4 w-4" />
+                      <VideoIcon className="h-4 w-4" />
                       Intro Video
                     </AndamioLabel>
                     <VideoPreview url={formVideoUrl} />
@@ -504,7 +621,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Blocks className="h-5 w-5 text-primary" />
+                        <OnChainIcon className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <AndamioText className="font-medium">Policy ID</AndamioText>
@@ -518,7 +635,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         rel="noopener noreferrer"
                         className="flex items-center"
                       >
-                        <ExternalLink className="h-4 w-4 mr-1" />
+                        <ExternalLinkIcon className="h-4 w-4 mr-1" />
                         View
                       </a>
                     </AndamioButton>
@@ -557,7 +674,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       rel="noopener noreferrer"
                       className="flex items-center"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLinkIcon className="h-4 w-4 mr-2" />
                       CardanoScan
                     </a>
                   </AndamioButton>
@@ -568,7 +685,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       rel="noopener noreferrer"
                       className="flex items-center"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLinkIcon className="h-4 w-4 mr-2" />
                       Cexplorer
                     </a>
                   </AndamioButton>
@@ -602,7 +719,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         variant="destructive"
                         disabled={deleteCourseMutation.isPending}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <DeleteIcon className="h-4 w-4 mr-2" />
                         Delete Course
                       </AndamioButton>
                     }
@@ -616,7 +733,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 </div>
               </StudioFormSection>
             </AndamioTabsContent>
-          </AndamioTabs>
+            </AndamioTabs>
+          )}
         </div>
       </div>
     </AndamioScrollArea>

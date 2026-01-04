@@ -19,7 +19,7 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, Inbox, RefreshCw } from "lucide-react";
+import { AlertIcon, EmptyIcon, RefreshIcon } from "~/components/icons";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "./andamio-alert";
 import { AndamioButton } from "./andamio-button";
 import { AndamioText } from "./andamio-text";
@@ -115,7 +115,7 @@ export function ErrorState({
   className,
   icon: IconProp,
 }: ErrorStateProps) {
-  const Icon: IconComponent = IconProp ?? AlertCircle;
+  const Icon: IconComponent = IconProp ?? AlertIcon;
   return (
     <div className={`space-y-4 ${className ?? ""}`}>
       <AndamioAlert variant="destructive">
@@ -125,7 +125,7 @@ export function ErrorState({
       </AndamioAlert>
       {onRetry && (
         <AndamioButton variant="outline" onClick={onRetry}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshIcon className="h-4 w-4 mr-2" />
           {retryLabel}
         </AndamioButton>
       )}
@@ -171,7 +171,7 @@ export function EmptyState({
   action,
   className,
 }: EmptyStateProps) {
-  const Icon: IconComponent = IconProp ?? Inbox;
+  const Icon: IconComponent = IconProp ?? EmptyIcon;
   return (
     <div
       className={`flex flex-col items-center justify-center py-12 text-center border rounded-md ${className ?? ""}`}
@@ -215,7 +215,7 @@ export function NotFoundState({
   backAction,
   className,
 }: NotFoundStateProps) {
-  const NotFoundIcon: IconComponent = AlertCircle;
+  const NotFoundIcon: IconComponent = AlertIcon;
   return (
     <EmptyState
       title={`${itemType} not found`}
@@ -254,7 +254,7 @@ export function AuthRequiredState({
     <div
       className={`flex flex-col items-center justify-center py-12 text-center border rounded-md ${className ?? ""}`}
     >
-      <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+      <AlertIcon className="h-12 w-12 text-muted-foreground mb-4" />
       <h3 className="text-lg font-medium mb-1">Authentication Required</h3>
       <AndamioText variant="small" className="max-w-sm mb-4">
         Connect your wallet to access {feature}.

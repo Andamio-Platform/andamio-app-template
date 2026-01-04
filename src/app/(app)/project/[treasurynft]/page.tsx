@@ -1,15 +1,26 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { env } from "~/env";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioSectionHeader, AndamioTableContainer } from "~/components/andamio";
-import { AlertCircle, ArrowLeft, CheckSquare } from "lucide-react";
+import {
+  AndamioBadge,
+  AndamioTable,
+  AndamioTableBody,
+  AndamioTableCell,
+  AndamioTableHead,
+  AndamioTableHeader,
+  AndamioTableRow,
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioEmptyState,
+  AndamioSectionHeader,
+  AndamioTableContainer,
+  AndamioBackButton,
+  AndamioErrorAlert,
+} from "~/components/andamio";
+import { TaskIcon } from "~/components/icons";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -136,20 +147,8 @@ export default function ProjectDetailPage() {
   if (error || !project) {
     return (
       <div className="space-y-6">
-        <Link href="/project">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </AndamioButton>
-        </Link>
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            {error ?? "Project not found"}
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioBackButton href="/project" label="Back to Projects" />
+        <AndamioErrorAlert error={error ?? "Project not found"} />
       </div>
     );
   }
@@ -161,12 +160,7 @@ export default function ProjectDetailPage() {
   if (liveTasks.length === 0) {
     return (
       <div className="space-y-6">
-        <Link href="/project">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton href="/project" label="Back to Projects" />
 
         <AndamioPageHeader title={project.title} />
         <div className="flex flex-wrap items-center gap-2">
@@ -179,7 +173,7 @@ export default function ProjectDetailPage() {
         </div>
 
         <AndamioEmptyState
-          icon={CheckSquare}
+          icon={TaskIcon}
           title="No tasks available"
           description="This project doesn't have any tasks yet. Check back later."
         />
@@ -190,12 +184,7 @@ export default function ProjectDetailPage() {
   // Project and tasks display
   return (
     <div className="space-y-6">
-      <Link href="/project">
-        <AndamioButton variant="ghost" size="sm">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Projects
-        </AndamioButton>
-      </Link>
+      <AndamioBackButton href="/project" label="Back to Projects" />
 
       <AndamioPageHeader title={project.title} />
       <div className="flex flex-wrap items-center gap-2">

@@ -16,6 +16,10 @@ Andamio T3 App Template is easily customizable for devs and ready for any viewpo
 
 5. **Use AndamioText for Paragraphs**: Never use raw `<p className="...">` with text styling. Always use `AndamioText` component with appropriate variant.
 
+6. **Centralized Icon System**: All icons must be imported from `~/components/icons`, not directly from `lucide-react`. Icons have semantic names (e.g., `CredentialIcon` instead of `Award`).
+
+7. **No `<code>` Elements for Inline Monospace**: Never use `<code>` elements for displaying inline monospace text (addresses, hashes, codes). The global `code` styles in `globals.css` apply `text-sm` which overrides Tailwind utility classes. Use `<span className="font-mono">` instead.
+
 ## Examples
 
 ### Rule 1 - No Custom Styling
@@ -78,9 +82,51 @@ import { AndamioSheet, AndamioSheetContent } from "~/components/andamio/andamio-
 
 **Available variants**: `default`, `muted`, `small`, `lead`, `overline`
 
-6. **Content Max-Width**: Content pages (not studio/editor pages) should constrain width for readability on large screens. The `(app)` layout already applies `max-w-6xl mx-auto` (1152px) via `app-layout.tsx`. Studio pages with dense layouts remain full-width.
+### Rule 6 - Centralized Icon System
 
-7. **Vertical Spacing Scale**: Use consistent spacing between elements:
+```tsx
+// ❌ WRONG - Direct lucide-react import
+import { Award, Target, BookOpen, AlertCircle } from "lucide-react";
+<Award className="h-4 w-4" />
+
+// ✅ CORRECT - Import from centralized icons with semantic names
+import { CredentialIcon, SLTIcon, CourseIcon, AlertIcon } from "~/components/icons";
+<CredentialIcon className="h-4 w-4" />
+```
+
+**Key mappings:**
+- `Award` → `CredentialIcon` (credentials, achievements)
+- `Target` → `SLTIcon` (Student Learning Targets)
+- `BookOpen` → `CourseIcon` (courses)
+- `Blocks` → `OnChainIcon` (blockchain)
+- `AlertCircle` → `AlertIcon` (warnings)
+- `CheckCircle` → `SuccessIcon` (success states)
+- `Loader2` → `LoadingIcon` (loading states)
+
+See [icon-system.md](./icon-system.md) for complete icon reference.
+
+### Rule 7 - No `<code>` for Inline Monospace
+
+```tsx
+// ❌ WRONG - <code> has global text-sm that overrides text-[10px]
+<code className="text-[10px] text-muted-foreground font-mono">
+  addr1qx9...abc
+</code>
+
+// ✅ CORRECT - Use <span> with font-mono
+<span className="text-[10px] font-mono text-muted-foreground">
+  addr1qx9...abc
+</span>
+
+// ✅ ALSO CORRECT - For code blocks, use the Tiptap editor's CodeBlock
+// which has proper styling in the editor extension kit
+```
+
+**Why this matters**: `globals.css` applies `@apply text-sm` to all `code` elements. This style has the same specificity as Tailwind utilities, so `text-xs` or `text-[10px]` won't work. Using `<span className="font-mono">` gives you full control over font size.
+
+8. **Content Max-Width**: Content pages (not studio/editor pages) should constrain width for readability on large screens. The `(app)` layout already applies `max-w-6xl mx-auto` (1152px) via `app-layout.tsx`. Studio pages with dense layouts remain full-width.
+
+9. **Vertical Spacing Scale**: Use consistent spacing between elements:
 
 | Context | Spacing | Tailwind | Use For |
 |---------|---------|----------|---------|
@@ -90,9 +136,29 @@ import { AndamioSheet, AndamioSheetContent } from "~/components/andamio/andamio-
 | Sections | 24px | `space-y-6`, `gap-6` | Page sections |
 | Major sections | 32px | `space-y-8`, `gap-8` | Top-level page divisions |
 
+10. **Use AndamioSaveButton for Save Operations**: All save buttons must use `AndamioSaveButton` from `~/components/andamio/andamio-save-button`. Never create ad-hoc save buttons with inline loading states.
+
+11. **Use AndamioBackButton for Back Navigation**: All "Back to X" buttons must use `AndamioBackButton`. Never create ad-hoc back buttons with Link + Button + BackIcon.
+
+12. **Use AndamioAddButton for Create Operations**: All create/add buttons with loading states must use `AndamioAddButton`. Simple add buttons (no loading) may use `AddIcon` directly.
+
+13. **Use AndamioDeleteButton for Destructive Actions**: All delete buttons requiring confirmation must use `AndamioDeleteButton`. Never create ad-hoc ConfirmDialog + DeleteIcon patterns.
+
+14. **Use AndamioErrorAlert for Error Messages**: All error alerts must use `AndamioErrorAlert`. Never create ad-hoc `<AndamioAlert variant="destructive">` patterns.
+
+15. **Use AndamioEditButton for Edit Navigation**: All edit buttons that navigate to an edit page must use `AndamioEditButton`. Never create ad-hoc Link + Button + EditIcon patterns.
+
+16. **Use AndamioRemoveButton for List Item Removal**: All remove/close buttons for list items (acceptance criteria, tags, etc.) must use `AndamioRemoveButton`. Never create ad-hoc ghost buttons with CloseIcon.
+
+17. **Use AndamioRowActions for Table Row Actions**: All table rows with edit/delete actions must use `AndamioRowActions`. Never create ad-hoc row action patterns with separate edit and delete buttons.
+
+18. **Use AndamioCardIconHeader for Card Headers**: All card headers with icon + title must use `AndamioCardIconHeader`. Never create ad-hoc flex containers with icon + AndamioCardTitle.
+
+19. **Use AndamioActionFooter for Button Groups**: All form/card action button groups must use `AndamioActionFooter`. Never create ad-hoc `flex justify-end gap-2` patterns for button rows.
+
 ## Examples
 
-### Rule 6 - Content Max-Width
+### Rule 7 - Content Max-Width
 
 The `(app)` route group layout (`app-layout.tsx`) already applies `max-w-6xl mx-auto` to all content pages. No additional max-width needed on individual pages.
 
@@ -122,7 +188,7 @@ export default function DashboardPage() {
 - ❌ `(studio)` route group: Full-width (dense layouts benefit from full width)
 - ❌ Editor panels, resizable layouts: Full-width
 
-### Rule 7 - Vertical Spacing
+### Rule 8 - Vertical Spacing
 
 ```tsx
 // ❌ WRONG - Inconsistent spacing
@@ -145,6 +211,253 @@ export default function DashboardPage() {
   <Section title="Overview" />
   <Section title="Details" />
 </div>
+```
+
+### Rule 9 - AndamioSaveButton
+
+```tsx
+// ❌ WRONG - Ad-hoc save button with inline loading state
+<AndamioButton onClick={handleSave} disabled={isSaving}>
+  {isSaving ? (
+    <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
+  ) : (
+    <SaveIcon className="h-4 w-4 mr-2" />
+  )}
+  {isSaving ? "Saving..." : "Save Changes"}
+</AndamioButton>
+
+// ❌ WRONG - Manual loading state management
+<AndamioButton onClick={handleSave} disabled={isSaving} isLoading={isSaving}>
+  <SaveIcon className="h-4 w-4 mr-1" />
+  Save
+</AndamioButton>
+
+// ✅ CORRECT - Use AndamioSaveButton
+import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
+
+<AndamioSaveButton onClick={handleSave} isSaving={isSaving} />
+
+// ✅ CORRECT - Compact variant for toolbars/tight spaces
+<AndamioSaveButton onClick={handleSave} isSaving={isSaving} compact />
+
+// ✅ CORRECT - Custom label (e.g., "Save Draft")
+<AndamioSaveButton
+  onClick={handleSave}
+  isSaving={isSaving}
+  label="Save Draft"
+  savingLabel="Saving..."
+/>
+
+// ✅ CORRECT - Outline variant
+<AndamioSaveButton variant="outline" onClick={handleSave} isSaving={isSaving} />
+```
+
+**Note**: Use `AndamioSaveButton` for **save operations only**. For create/add operations, use `AndamioAddButton`.
+
+### Rule 10 - AndamioBackButton
+
+```tsx
+// ❌ WRONG - Ad-hoc back button
+<Link href="/courses">
+  <AndamioButton variant="ghost" size="sm">
+    <BackIcon className="h-4 w-4 mr-1" />
+    Back to Courses
+  </AndamioButton>
+</Link>
+
+// ✅ CORRECT - Use AndamioBackButton
+import { AndamioBackButton } from "~/components/andamio";
+
+<AndamioBackButton href="/courses" label="Back to Courses" />
+```
+
+### Rule 11 - AndamioAddButton
+
+```tsx
+// ❌ WRONG - Ad-hoc create button with loading
+<AndamioButton onClick={handleCreate} disabled={isCreating}>
+  {isCreating ? <LoadingIcon className="animate-spin" /> : <AddIcon />}
+  {isCreating ? "Creating..." : "Create Task"}
+</AndamioButton>
+
+// ✅ CORRECT - Use AndamioAddButton
+import { AndamioAddButton } from "~/components/andamio";
+
+<AndamioAddButton onClick={handleCreate} isLoading={isCreating} label="Create Task" />
+
+// ✅ ALSO CORRECT - Simple add without loading (no async operation)
+<AndamioButton variant="outline" size="sm" onClick={addItem}>
+  <AddIcon className="h-4 w-4 mr-1" />
+  Add
+</AndamioButton>
+```
+
+### Rule 12 - AndamioDeleteButton
+
+```tsx
+// ❌ WRONG - Ad-hoc delete with ConfirmDialog
+<AndamioConfirmDialog
+  trigger={<AndamioButton variant="ghost" size="sm">
+    <DeleteIcon className="h-4 w-4 text-destructive" />
+  </AndamioButton>}
+  title="Delete Task"
+  description="Are you sure?"
+  variant="destructive"
+  onConfirm={handleDelete}
+/>
+
+// ✅ CORRECT - Use AndamioDeleteButton
+import { AndamioDeleteButton } from "~/components/andamio";
+
+<AndamioDeleteButton
+  onConfirm={handleDelete}
+  itemName="task"
+  isLoading={isDeleting}
+/>
+```
+
+### Rule 13 - AndamioErrorAlert
+
+```tsx
+// ❌ WRONG - Ad-hoc error alert
+{error && (
+  <AndamioAlert variant="destructive">
+    <AlertIcon className="h-4 w-4" />
+    <AndamioAlertTitle>Error</AndamioAlertTitle>
+    <AndamioAlertDescription>{error}</AndamioAlertDescription>
+  </AndamioAlert>
+)}
+
+// ✅ CORRECT - Use AndamioErrorAlert
+import { AndamioErrorAlert } from "~/components/andamio";
+
+{error && <AndamioErrorAlert error={error} />}
+```
+
+### Rule 14 - AndamioEditButton
+
+```tsx
+// ❌ WRONG - Ad-hoc edit button
+<Link href={`/studio/project/${id}/edit`}>
+  <AndamioButton variant="ghost" size="sm">
+    <EditIcon className="h-4 w-4" />
+  </AndamioButton>
+</Link>
+
+// ✅ CORRECT - Use AndamioEditButton (icon-only for tables)
+import { AndamioEditButton } from "~/components/andamio";
+
+<AndamioEditButton href={`/studio/project/${id}/edit`} />
+
+// ✅ CORRECT - With label for standalone buttons
+<AndamioEditButton href={`/studio/project/${id}/edit`} label="Edit Project" iconOnly={false} />
+```
+
+### Rule 15 - AndamioRemoveButton
+
+```tsx
+// ❌ WRONG - Ad-hoc remove button for list items
+<AndamioButton
+  variant="ghost"
+  size="sm"
+  onClick={() => removeCriterion(index)}
+  className="text-muted-foreground hover:text-destructive"
+>
+  <CloseIcon className="h-4 w-4" />
+</AndamioButton>
+
+// ✅ CORRECT - Use AndamioRemoveButton
+import { AndamioRemoveButton } from "~/components/andamio";
+
+<AndamioRemoveButton
+  onClick={() => removeCriterion(index)}
+  ariaLabel={`Remove criterion ${index + 1}`}
+/>
+```
+
+### Rule 16 - AndamioRowActions
+
+```tsx
+// ❌ WRONG - Ad-hoc row actions
+<AndamioTableCell className="text-right">
+  <div className="flex items-center justify-end gap-1">
+    <Link href={`/edit/${id}`}>
+      <AndamioButton variant="ghost" size="sm">
+        <EditIcon className="h-4 w-4" />
+      </AndamioButton>
+    </Link>
+    <AndamioConfirmDialog onConfirm={() => handleDelete(id)} ...>
+      <AndamioButton variant="ghost" size="sm">
+        <DeleteIcon className="h-4 w-4 text-destructive" />
+      </AndamioButton>
+    </AndamioConfirmDialog>
+  </div>
+</AndamioTableCell>
+
+// ✅ CORRECT - Use AndamioRowActions
+import { AndamioRowActions } from "~/components/andamio";
+
+<AndamioTableCell className="text-right">
+  <AndamioRowActions
+    editHref={`/edit/${id}`}
+    onDelete={() => handleDelete(id)}
+    itemName="task"
+    isDeleting={deletingId === id}
+  />
+</AndamioTableCell>
+```
+
+### Rule 17 - AndamioCardIconHeader
+
+```tsx
+// ❌ WRONG - Ad-hoc card icon header
+<AndamioCardHeader>
+  <div className="flex items-center gap-2">
+    <DatabaseIcon className="h-5 w-5 text-muted-foreground" />
+    <AndamioCardTitle className="text-base">On-Chain Data</AndamioCardTitle>
+  </div>
+</AndamioCardHeader>
+
+// ✅ CORRECT - Use AndamioCardIconHeader
+import { AndamioCardIconHeader } from "~/components/andamio";
+
+<AndamioCardHeader>
+  <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
+</AndamioCardHeader>
+
+// ✅ CORRECT - With right-aligned actions
+<AndamioCardHeader>
+  <div className="flex items-center justify-between">
+    <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
+    <AndamioButton variant="ghost" size="icon-sm">
+      <RefreshIcon className="h-4 w-4" />
+    </AndamioButton>
+  </div>
+</AndamioCardHeader>
+```
+
+### Rule 18 - AndamioActionFooter
+
+```tsx
+// ❌ WRONG - Ad-hoc button row
+<div className="flex justify-end gap-2 pt-4 border-t">
+  <AndamioButton variant="outline">Cancel</AndamioButton>
+  <AndamioSaveButton onClick={handleSave} isSaving={isSaving} />
+</div>
+
+// ✅ CORRECT - Use AndamioActionFooter
+import { AndamioActionFooter } from "~/components/andamio";
+
+<AndamioActionFooter showBorder>
+  <AndamioButton variant="outline">Cancel</AndamioButton>
+  <AndamioSaveButton onClick={handleSave} isSaving={isSaving} />
+</AndamioActionFooter>
+
+// ✅ CORRECT - Without border (not at bottom of card)
+<AndamioActionFooter>
+  <AndamioButton variant="outline">Cancel</AndamioButton>
+  <AndamioButton>Submit</AndamioButton>
+</AndamioActionFooter>
 ```
 
 ## Wrapper Convention
@@ -233,4 +546,7 @@ grep -rE "<h[1-6][^>]*(text-(xs|sm|base|lg|xl|[2-9]xl)|font-(normal|medium|semib
 
 # Find raw p tags with className (should use AndamioText)
 grep -rE "<p className=" src/app/ src/components/
+
+# Find direct lucide-react imports (should use ~/components/icons)
+grep -r "from \"lucide-react\"" src/app src/components --include="*.tsx" | grep -v "src/components/icons/" | grep -v "src/components/ui/"
 ```

@@ -21,7 +21,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Send, FileEdit, Shield, Hash } from "lucide-react";
+import { SendIcon, EditIcon, ShieldIcon, TransactionIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
 import type { JSONContent } from "@tiptap/core";
@@ -159,9 +159,9 @@ export function AssignmentUpdate({
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             {isNewCommitment ? (
-              <Send className="h-5 w-5 text-primary" />
+              <SendIcon className="h-5 w-5 text-primary" />
             ) : (
-              <FileEdit className="h-5 w-5 text-primary" />
+              <EditIcon className="h-5 w-5 text-primary" />
             )}
           </div>
           <div className="flex-1">
@@ -192,7 +192,7 @@ export function AssignmentUpdate({
         {/* Tamper-Evidence Explanation */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-success" />
+            <ShieldIcon className="h-4 w-4 text-success" />
             <AndamioText className="font-medium">Tamper-Evident Record</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">
@@ -200,7 +200,7 @@ export function AssignmentUpdate({
           </AndamioText>
           {computedHash && (
             <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
-              <Hash className="h-3 w-3 shrink-0" />
+              <TransactionIcon className="h-3 w-3 shrink-0" />
               <code className="font-mono text-primary">{computedHash.slice(0, 24)}...</code>
             </div>
           )}

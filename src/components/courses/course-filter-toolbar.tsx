@@ -10,7 +10,7 @@ import {
   AndamioSelectTrigger,
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
-import { Search, X, ArrowUpDown, Grid3x3, List, Table } from "lucide-react";
+import { SearchIcon, CloseIcon, GridViewIcon, ListViewIcon, TableViewIcon, SortIcon } from "~/components/icons";
 import { type CourseFilter, type CourseSortConfig, type CourseViewMode, defaultCourseFilter } from "~/lib/course-filters";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 
@@ -51,7 +51,7 @@ export function CourseFilterToolbar({
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <AndamioInput
             type="text"
             placeholder="Search courses by title, code, or description..."
@@ -65,7 +65,7 @@ export function CourseFilterToolbar({
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label="Clear search"
             >
-              <X className="h-4 w-4" />
+              <CloseIcon className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -78,7 +78,7 @@ export function CourseFilterToolbar({
             onClick={() => onViewModeChange("grid")}
             aria-label="Grid view"
           >
-            <Grid3x3 className="h-4 w-4" />
+            <GridViewIcon className="h-4 w-4" />
           </AndamioButton>
           <AndamioButton
             variant={viewMode === "list" ? "secondary" : "ghost"}
@@ -86,7 +86,7 @@ export function CourseFilterToolbar({
             onClick={() => onViewModeChange("list")}
             aria-label="List view"
           >
-            <List className="h-4 w-4" />
+            <ListViewIcon className="h-4 w-4" />
           </AndamioButton>
           <AndamioButton
             variant={viewMode === "table" ? "secondary" : "ghost"}
@@ -94,7 +94,7 @@ export function CourseFilterToolbar({
             onClick={() => onViewModeChange("table")}
             aria-label="Table view"
           >
-            <Table className="h-4 w-4" />
+            <TableViewIcon className="h-4 w-4" />
           </AndamioButton>
         </div>
       </div>
@@ -130,7 +130,7 @@ export function CourseFilterToolbar({
             }}
           >
             <AndamioSelectTrigger className="w-full">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SortIcon className="h-4 w-4 mr-2" />
               <AndamioSelectValue placeholder="Sort By" />
             </AndamioSelectTrigger>
             <AndamioSelectContent>
@@ -147,7 +147,7 @@ export function CourseFilterToolbar({
         {/* Clear Filters */}
         {activeFilterCount > 0 && (
           <AndamioButton variant="outline" size="sm" onClick={handleResetFilters} className="w-full sm:w-auto">
-            <X className="h-4 w-4 mr-2" />
+            <CloseIcon className="h-4 w-4 mr-2" />
             Clear Filters
             <AndamioBadge variant="secondary" className="ml-2">
               {activeFilterCount}

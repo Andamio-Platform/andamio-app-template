@@ -24,7 +24,7 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Award, Shield } from "lucide-react";
+import { CredentialIcon, ShieldIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
 
@@ -133,7 +133,7 @@ export function CredentialClaim({
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-            <Award className="h-5 w-5 text-success" />
+            <CredentialIcon className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Claim Your Credential</AndamioCardTitle>
@@ -161,7 +161,7 @@ export function CredentialClaim({
         {/* What You're Getting */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" />
+            <ShieldIcon className="h-4 w-4 text-primary" />
             <AndamioText className="font-medium">On-Chain Credential</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">

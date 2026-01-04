@@ -24,7 +24,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { Users, Plus, Minus, AlertCircle } from "lucide-react";
+import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { v2 } from "@andamio/transactions";
 
@@ -140,7 +140,7 @@ export function TeachersUpdate({
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <Users className="h-5 w-5 text-muted-foreground" />
+            <TeacherIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>Manage Teachers</AndamioCardTitle>
@@ -175,7 +175,7 @@ export function TeachersUpdate({
             onClick={() => setAction("add")}
             disabled={state !== "idle" && state !== "error"}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <AddIcon className="h-4 w-4 mr-1" />
             Add
           </AndamioButton>
           <AndamioButton
@@ -184,7 +184,7 @@ export function TeachersUpdate({
             onClick={() => setAction("remove")}
             disabled={state !== "idle" && state !== "error"}
           >
-            <Minus className="h-4 w-4 mr-1" />
+            <DeleteIcon className="h-4 w-4 mr-1" />
             Remove
           </AndamioButton>
         </div>
@@ -210,7 +210,7 @@ export function TeachersUpdate({
         {/* Warning for remove */}
         {action === "remove" && (
           <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
             <AndamioText variant="small" className="text-xs text-warning-foreground">
               Removing teachers will revoke their ability to manage modules and assess assignments.
             </AndamioText>

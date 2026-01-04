@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CheckCircle2, Circle, ArrowRight, Wallet, Key, BookOpen, GraduationCap } from "lucide-react";
+import { VerifiedIcon, NeutralIcon, ForwardIcon, WalletIcon, AccessTokenIcon, CourseIcon, LearnerIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { StepItem } from "~/types/ui";
 
@@ -20,19 +20,19 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
       id: "connect",
       title: "Connect Wallet",
       completed: isAuthenticated,
-      icon: Wallet,
+      icon: WalletIcon,
     },
     {
       id: "token",
       title: "Mint Access Token",
       completed: hasAccessToken,
-      icon: Key,
+      icon: AccessTokenIcon,
     },
     {
       id: "explore",
       title: "Start Learning",
       completed: false,
-      icon: BookOpen,
+      icon: CourseIcon,
       link: "/course",
     },
   ];
@@ -51,7 +51,7 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
           {/* Progress indicator */}
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
-              <GraduationCap className="h-5 w-5 text-warning" />
+              <LearnerIcon className="h-5 w-5 text-warning" />
             </div>
             <div>
               <AndamioText variant="small" className="font-semibold text-foreground">Getting Started</AndamioText>
@@ -80,12 +80,12 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
                       )}
                     >
                       {step.completed ? (
-                        <CheckCircle2 className="h-4 w-4" />
+                        <VerifiedIcon className="h-4 w-4" />
                       ) : (
                         <Icon className="h-4 w-4" />
                       )}
                       <span className="hidden sm:inline font-medium">{step.title}</span>
-                      {!step.completed && <ArrowRight className="h-3 w-3" />}
+                      {!step.completed && <ForwardIcon className="h-3 w-3" />}
                     </Link>
                   ) : (
                     <div
@@ -97,9 +97,9 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
                       )}
                     >
                       {step.completed ? (
-                        <CheckCircle2 className="h-4 w-4" />
+                        <VerifiedIcon className="h-4 w-4" />
                       ) : (
-                        <Circle className="h-4 w-4" />
+                        <NeutralIcon className="h-4 w-4" />
                       )}
                       <span className="hidden sm:inline font-medium">{step.title}</span>
                     </div>

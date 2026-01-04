@@ -6,17 +6,33 @@ import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
-import { AlertCircle, ArrowLeft, CheckSquare, ClipboardList, History, Save, Users, Wallet, FileText, BarChart3, Settings } from "lucide-react";
-import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
-import { AndamioText } from "~/components/andamio/andamio-text";
+import {
+  AndamioAlert,
+  AndamioAlertTitle,
+  AndamioAlertDescription,
+  AndamioBadge,
+  AndamioButton,
+  AndamioInput,
+  AndamioLabel,
+  AndamioTextarea,
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioSaveButton,
+  AndamioTabs,
+  AndamioTabsContent,
+  AndamioTabsList,
+  AndamioTabsTrigger,
+  AndamioText,
+  AndamioBackButton,
+  AndamioErrorAlert,
+  AndamioActionFooter,
+} from "~/components/andamio";
+import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon } from "~/components/icons";
 import { type ListOwnedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 
 type TaskListOutput = CreateTaskOutput[];
@@ -178,20 +194,11 @@ export default function ProjectDashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <Link href="/studio/project">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </AndamioButton>
-        </Link>
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Authentication Required</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            Please connect your wallet to access the project dashboard.
-          </AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioBackButton href="/studio/project" label="Back to Projects" />
+        <AndamioErrorAlert
+          error="Please connect your wallet to access the project dashboard."
+          title="Authentication Required"
+        />
       </div>
     );
   }
@@ -205,18 +212,8 @@ export default function ProjectDashboardPage() {
   if (error || !project) {
     return (
       <div className="space-y-6">
-        <Link href="/studio/project">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </AndamioButton>
-        </Link>
-
-        <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error ?? "Project not found"}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioBackButton href="/studio/project" label="Back to Projects" />
+        <AndamioErrorAlert error={error ?? "Project not found"} />
       </div>
     );
   }
@@ -231,12 +228,7 @@ export default function ProjectDashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href="/studio/project">
-          <AndamioButton variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Projects
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton href="/studio/project" label="Back to Projects" />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
             {treasuryNftPolicyId.slice(0, 16)}...
@@ -260,7 +252,7 @@ export default function ProjectDashboardPage() {
 
       {saveError && (
         <AndamioAlert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
           <AndamioAlertDescription>{saveError}</AndamioAlertDescription>
         </AndamioAlert>
@@ -270,19 +262,19 @@ export default function ProjectDashboardPage() {
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <AndamioTabsList className="grid w-full grid-cols-4">
           <AndamioTabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
+            <ChartIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
           </AndamioTabsTrigger>
           <AndamioTabsTrigger value="tasks" className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4" />
+            <TaskIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Tasks</span>
           </AndamioTabsTrigger>
           <AndamioTabsTrigger value="team" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <TeacherIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Team</span>
           </AndamioTabsTrigger>
           <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
+            <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Settings</span>
           </AndamioTabsTrigger>
         </AndamioTabsList>
@@ -293,7 +285,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+                <ChartIcon className="h-5 w-5" />
                 Project Stats
               </AndamioCardTitle>
               <AndamioCardDescription>Overview of project activity</AndamioCardDescription>
@@ -324,7 +316,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
+                <TreasuryIcon className="h-5 w-5" />
                 Treasury
               </AndamioCardTitle>
               <AndamioCardDescription>Project funds and transactions</AndamioCardDescription>
@@ -337,14 +329,14 @@ export default function ProjectDashboardPage() {
                 </div>
                 <Link href={`/studio/project/${treasuryNftPolicyId}/manage-treasury`}>
                   <AndamioButton variant="outline">
-                    <Wallet className="h-4 w-4 mr-2" />
+                    <TreasuryIcon className="h-4 w-4 mr-2" />
                     Manage Treasury
                   </AndamioButton>
                 </Link>
               </div>
               <Link href={`/studio/project/${treasuryNftPolicyId}/transaction-history`}>
                 <AndamioButton variant="outline" className="w-full justify-start">
-                  <History className="h-4 w-4 mr-2" />
+                  <HistoryIcon className="h-4 w-4 mr-2" />
                   View Transaction History
                 </AndamioButton>
               </Link>
@@ -357,7 +349,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <CheckSquare className="h-5 w-5" />
+                <TaskIcon className="h-5 w-5" />
                 Task Management
               </AndamioCardTitle>
               <AndamioCardDescription>Create and manage project tasks</AndamioCardDescription>
@@ -365,7 +357,7 @@ export default function ProjectDashboardPage() {
             <AndamioCardContent className="space-y-3">
               <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <CheckSquare className="h-5 w-5 mr-3" />
+                  <TaskIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
                     <div className="font-medium">Draft Tasks</div>
                     <div className="text-sm text-muted-foreground">
@@ -377,7 +369,7 @@ export default function ProjectDashboardPage() {
 
               <Link href={`/studio/project/${treasuryNftPolicyId}/commitments`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <ClipboardList className="h-5 w-5 mr-3" />
+                  <AssignmentIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
                     <div className="font-medium">Task Commitments</div>
                     <div className="text-sm text-muted-foreground">
@@ -395,7 +387,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <TeacherIcon className="h-5 w-5" />
                 Contributors
               </AndamioCardTitle>
               <AndamioCardDescription>Manage project contributors</AndamioCardDescription>
@@ -403,7 +395,7 @@ export default function ProjectDashboardPage() {
             <AndamioCardContent>
               <Link href={`/studio/project/${treasuryNftPolicyId}/manage-contributors`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <Users className="h-5 w-5 mr-3" />
+                  <TeacherIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
                     <div className="font-medium">View Contributors</div>
                     <div className="text-sm text-muted-foreground">
@@ -421,7 +413,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <LessonIcon className="h-5 w-5" />
                 Project Details
               </AndamioCardTitle>
               <AndamioCardDescription>Edit project information</AndamioCardDescription>
@@ -481,15 +473,16 @@ export default function ProjectDashboardPage() {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end gap-2">
+              <AndamioActionFooter>
                 <AndamioButton variant="outline" onClick={() => router.push("/studio/project")}>
                   Cancel
                 </AndamioButton>
-                <AndamioButton onClick={handleSave} disabled={isSaving || !hasChanges}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </AndamioButton>
-              </div>
+                <AndamioSaveButton
+                  onClick={handleSave}
+                  isSaving={isSaving}
+                  disabled={!hasChanges}
+                />
+              </AndamioActionFooter>
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>

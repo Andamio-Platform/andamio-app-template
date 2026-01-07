@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Task Detail Page Commitment Flow** (`/project/[treasurynft]/[taskhash]`): Full task commitment workflow with evidence editor, stats grid using `AndamioDashboardStat`, and `ProjectEnroll`/`TaskCommit` transaction components
+- **Contributor Dashboard** (`/project/[treasurynft]/contributor`): New dashboard for project contributors to enroll, commit to tasks, and claim credentials
+- **Manager Dashboard** (`/studio/project/[treasurynft]/manager`): New dashboard for project managers to review task submissions and accept/deny
+- **AndamioDashboardStat Component**: Extracted reusable KPI stat card with icon, label, value, optional description, and semantic color support
+- **AndamioSearchInput Component**: Search input with integrated SearchIcon, supports default and compact (`sm`) size variants
+- **Project Transaction Components**: New transaction components for project workflows
+  - `ProjectEnroll` - Enroll in a project and commit to initial task
+  - `TaskCommit` - Commit to a task with evidence
+  - `ProjectCredentialClaim` - Claim earned project credentials
+  - `TasksAssess` - Manager component to assess task submissions
+  - `TasksManage` - Manage project tasks
+  - `ManagersManage` - Manage project managers
+  - `BlacklistManage` - Manage project blacklist
+  - `CreateProject` - Create new project treasury
 - **React Query Migration Complete**: All primary course routes now use React Query hooks for cached, deduplicated data fetching
   - `course/page.tsx` - Uses `usePublishedCourses` for course catalog
   - `course/[coursenft]/[modulecode]/page.tsx` - Uses `useCourse`, `useCourseModule`, `useSLTs`, `useLessons`
@@ -47,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated all `<p className=...>` patterns to use `AndamioText` component (232+ occurrences)
 
 ### Fixed
+- **Course Creation Side Effects** (`use-andamio-transaction.ts`): Fixed case mismatch where API returns `course_id` (snake_case) but hook was looking for `courseId` (camelCase). Side effect mapping now correctly uses `course_nft_policy_id`.
+- **Missing MintModuleTokens UI** (`studio/course/[coursenft]/page.tsx`): On-Chain tab showed "Ready to Mint" count but had no mint action. Added `MintModuleTokens` component that renders when approved modules exist.
+- **Undefined Modules Crash** (`studio/course/page.tsx`): Fixed crash when `onChainCourse.modules` was undefined by adding optional chaining (`modules?.length ?? 0`).
+- **Module Mint API Schema** (`modules-manage.ts`, `mint-module-tokens.tsx`): Updated transaction definition and component to match Atlas API required fields (`slts`, `allowed_course_state_ids`, `prereq_slt_hashes`). Removed obsolete `allowed_students_v2` and `prerequisite_assignments_v2` fields.
 - **Wizard Navigation**: Fixed lesson step → introduction navigation by checking assignment completion state and using `goToStep("introduction")` directly instead of calling `goNext()` twice
 - **Sidebar User Info**: Redesigned sidebar footer to show access token alias prominently above wallet address with smaller font size
 - **Code Element Styling**: Changed `<code>` elements to `<span className="font-mono">` to avoid global `text-sm` override from base styles

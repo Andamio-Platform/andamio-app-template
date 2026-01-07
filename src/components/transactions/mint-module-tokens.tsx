@@ -2,15 +2,19 @@
  * MintModuleTokens Transaction Component (V2)
  *
  * Teacher UI for minting/updating course module tokens.
+ * Uses COURSE_TEACHER_MODULES_MANAGE transaction definition from @andamio/transactions.
  * V2 uses batch operations for multiple modules in a single transaction.
  *
  * Module token names are Blake2b-256 hashes of the SLT content,
  * creating tamper-evident on-chain credentials.
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/course/teacher/modules-manage.ts
  */
 
 "use client";
 
 import React, { useMemo } from "react";
+import { COURSE_TEACHER_MODULES_MANAGE, computeSltHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -26,10 +30,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
-import {
-  v2,
-  computeSltHash,
-} from "@andamio/transactions";
 import type { ListCourseModulesOutput } from "@andamio/db-api";
 
 export interface MintModuleTokensProps {
@@ -108,23 +108,24 @@ export function MintModuleTokens({
       return;
     }
 
-    // Format modules for the V2 API - each module needs slts, allowedStudents_V2, prerequisiteAssignments_V2
-    const modulesToMint = courseModules
+    // Format modules for the V2 API - each module needs slts and access control fields
+    const modules_to_mint = courseModules
       .filter((cm) => cm.slts && cm.slts.length > 0)
       .map((courseModule) => ({
         slts: courseModule.slts?.map((slt) => slt.slt_text) ?? [],
-        allowedStudents_V2: [] as string[], // Empty for now - can be configured per module
-        prerequisiteAssignments_V2: [] as string[], // Empty for now - can be configured per module
+        allowed_course_state_ids: [] as string[], // Minting policy IDs for course states that can access this module
+        prereq_slt_hashes: [] as string[], // Prerequisite SLT hashes (64 char hex)
       }));
 
     await execute({
-      definition: v2.COURSE_TEACHER_MODULES_MANAGE,
+      definition: COURSE_TEACHER_MODULES_MANAGE,
       params: {
+        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        courseId: courseNftPolicyId,
-        modulesToMint,
-        modulesToUpdate: [],
-        modulesToBurn: [],
+        course_id: courseNftPolicyId,
+        modules_to_mint,
+        modules_to_update: [],
+        modules_to_burn: [],
       },
       onSuccess: async (txResult) => {
         console.log("[MintModuleTokens] Success!", txResult);

@@ -4,12 +4,17 @@
  * Elegant UI for enrolling in a course. Supports two modes:
  * 1. Simple enrollment - just create the course state token
  * 2. Combined enrollment with initial commitment (V2 recommended)
+ *
+ * Uses COURSE_STUDENT_ENROLL transaction definition from @andamio/transactions.
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/course/student/enroll.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { COURSE_STUDENT_ENROLL, computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -26,7 +31,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { LearnerIcon, CourseIcon, TransactionIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
 import type { JSONContent } from "@tiptap/core";
 
 export interface EnrollInCourseProps {
@@ -133,19 +137,19 @@ export function EnrollInCourse({
       setEvidenceHash(hash);
 
       await execute({
-        definition: v2.COURSE_STUDENT_ENROLL,
+        definition: COURSE_STUDENT_ENROLL,
         params: {
-          // Transaction API params
+          // Transaction API params (snake_case per V2 API)
           alias: user.accessTokenAlias,
-          courseId: courseNftPolicyId,
-          commitData: {
-            sltHash: sltHash,
-            assignmentInfo: hash,
+          course_id: courseNftPolicyId,
+          commit_data: {
+            slt_hash: sltHash,
+            assignment_info: hash,
           },
           // Side effect params
-          moduleCode,
-          networkEvidence: evidence,
-          networkEvidenceHash: hash,
+          module_code: moduleCode,
+          network_evidence: evidence,
+          network_evidence_hash: hash,
         },
         onSuccess: async (txResult) => {
           console.log("[EnrollInCourse] Combined mode success!", txResult);
@@ -172,12 +176,12 @@ export function EnrollInCourse({
     } else {
       // Simple mode: Just enrollment (no initial commitment)
       await execute({
-        definition: v2.COURSE_STUDENT_ENROLL,
+        definition: COURSE_STUDENT_ENROLL,
         params: {
-          // Transaction API params
+          // Transaction API params (snake_case per V2 API)
           alias: user.accessTokenAlias,
-          courseId: courseNftPolicyId,
-          // No commitData for simple enrollment
+          course_id: courseNftPolicyId,
+          // No commit_data for simple enrollment
         },
         onSuccess: async (txResult) => {
           console.log("[EnrollInCourse] Simple mode success!", txResult);

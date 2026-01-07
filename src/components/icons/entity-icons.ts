@@ -52,6 +52,15 @@ export { Wallet as WalletIcon } from "lucide-react";
 /** User - generic user/person */
 export { User as UserIcon } from "lucide-react";
 
+/** Manager - project managers who oversee tasks and assessments */
+export { UserCog as ManagerIcon } from "lucide-react";
+
+/** Contributor - project contributors who complete tasks */
+export { UserCheck as ContributorIcon } from "lucide-react";
+
+/** Block - blacklisting/blocking actions */
+export { Ban as BlockIcon } from "lucide-react";
+
 /** Mail/Email - communication, notifications */
 export { Mail as MailIcon } from "lucide-react";
 

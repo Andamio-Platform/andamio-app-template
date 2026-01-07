@@ -1,17 +1,17 @@
 /**
- * CreateCourse Transaction Component (V2)
+ * CreateProject Transaction Component (V2)
  *
- * UI for creating a new Andamio Course on-chain.
- * Uses INSTANCE_COURSE_CREATE transaction definition from @andamio/transactions.
+ * UI for creating a new Andamio Project on-chain.
+ * Uses INSTANCE_PROJECT_CREATE transaction definition from @andamio/transactions.
  *
- * @see packages/andamio-transactions/src/definitions/v2/instance/course-create.ts
+ * @see packages/andamio-transactions/src/definitions/v2/instance/project-create.ts
  */
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
-import { INSTANCE_COURSE_CREATE } from "@andamio/transactions";
+import { INSTANCE_PROJECT_CREATE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -27,35 +27,36 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseIcon, TeacherIcon, AlertIcon } from "~/components/icons";
+import { ProjectIcon, ManagerIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 
-export interface CreateCourseProps {
+export interface CreateProjectProps {
   /**
-   * Callback fired when course is successfully created
-   * @param courseNftPolicyId - The course NFT policy ID returned by the API
+   * Callback fired when project is successfully created
+   * @param projectNftPolicyId - The project NFT policy ID returned by the API
    */
-  onSuccess?: (courseNftPolicyId: string) => void | Promise<void>;
+  onSuccess?: (projectNftPolicyId: string) => void | Promise<void>;
 }
 
 /**
- * CreateCourse - Full UI for creating a course on-chain (V2)
+ * CreateProject - Full UI for creating a project on-chain (V2)
  *
- * Uses INSTANCE_COURSE_CREATE transaction definition with automatic side effects.
+ * Uses INSTANCE_PROJECT_CREATE transaction definition with automatic side effects.
  *
  * @example
  * ```tsx
- * <CreateCourse onSuccess={(policyId) => router.push(`/studio/course/${policyId}`)} />
+ * <CreateProject onSuccess={(policyId) => router.push(`/studio/project/${policyId}`)} />
  * ```
  */
-export function CreateCourse({ onSuccess }: CreateCourseProps) {
+export function CreateProject({ onSuccess }: CreateProjectProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
-  const [additionalTeachers, setAdditionalTeachers] = useState("");
+  const [additionalManagers, setAdditionalManagers] = useState("");
+  const [depositLovelace, setDepositLovelace] = useState("5000000"); // 5 ADA default
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -81,41 +82,45 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
     void fetchWalletData();
   }, [wallet, connected]);
 
-  const handleCreateCourse = async () => {
+  const handleCreateProject = async () => {
     if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
     }
 
-    // Parse additional teachers (comma-separated)
-    const teachersList = additionalTeachers
+    // Parse additional managers (comma-separated)
+    const managersList = additionalManagers
       .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0);
 
-    // Always include the creator as a teacher
-    const allTeachers = [user.accessTokenAlias, ...teachersList.filter((t) => t !== user.accessTokenAlias)];
+    // Parse deposit
+    const lovelaceAmount = parseInt(depositLovelace, 10) || 5000000;
 
     await execute({
-      definition: INSTANCE_COURSE_CREATE,
+      definition: INSTANCE_PROJECT_CREATE,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        teachers: allTeachers,
+        managers: managersList.length > 0 ? managersList : [user.accessTokenAlias],
+        course_prereqs: [], // No prerequisites by default
+        deposit_value: {
+          lovelace: lovelaceAmount,
+          native_assets: [],
+        },
         initiator_data: initiatorData,
         // Side effect params
         title: title.trim(),
-        // course_nft_policy_id will be extracted from API response (course_id)
-        // and added to buildInputs by useAndamioTransaction hook
+        // project_nft_policy_id will be extracted from API response (project_id)
       },
       onSuccess: async (txResult) => {
-        console.log("[CreateCourse] Success!", txResult);
+        console.log("[CreateProject] Success!", txResult);
 
-        // Extract course_id from the API response
+        // Extract project_id from the V2 API response
         const apiResponse = txResult.apiResponse;
-        const extractedCourseId = apiResponse?.course_id as string | undefined;
+        const extractedProjectId = apiResponse?.project_id as string | undefined;
 
         // Show success toast
-        toast.success("Course Created!", {
+        toast.success("Project Created!", {
           description: `"${title.trim()}" has been created on-chain`,
           action: txResult.blockchainExplorerUrl
             ? {
@@ -125,17 +130,17 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
             : undefined,
         });
 
-        // Call the parent's onSuccess callback with the courseNftPolicyId
-        if (extractedCourseId) {
-          await onSuccess?.(extractedCourseId);
+        // Call the parent's onSuccess callback with the projectNftPolicyId
+        if (extractedProjectId) {
+          await onSuccess?.(extractedProjectId);
         }
       },
       onError: (txError) => {
-        console.error("[CreateCourse] Error:", txError);
+        console.error("[CreateProject] Error:", txError);
 
         // Show error toast
-        toast.error("Course Creation Failed", {
-          description: txError.message || "Failed to create course",
+        toast.error("Project Creation Failed", {
+          description: txError.message || "Failed to create project",
         });
       },
     });
@@ -156,12 +161,12 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <CourseIcon className="h-5 w-5 text-primary" />
+            <ProjectIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Create Course On-Chain</AndamioCardTitle>
+            <AndamioCardTitle>Create Project On-Chain</AndamioCardTitle>
             <AndamioCardDescription>
-              Mint a Course NFT to start managing learners on-chain
+              Mint a Project NFT to start managing contributors on-chain
             </AndamioCardDescription>
           </div>
         </div>
@@ -172,7 +177,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           <AndamioAlert variant="destructive">
             <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
-              You need an Access Token to create a course. Mint one first!
+              You need an Access Token to create a project. Mint one first!
             </AndamioAlertDescription>
           </AndamioAlert>
         )}
@@ -186,10 +191,10 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           </AndamioAlert>
         )}
 
-        {/* Course Creator Info */}
+        {/* Project Creator Info */}
         {hasAccessToken && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TeacherIcon className="h-4 w-4" />
+            <ManagerIcon className="h-4 w-4" />
             <span>Creating as</span>
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
               {user.accessTokenAlias}
@@ -197,41 +202,60 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           </div>
         )}
 
-        {/* Course Title Input */}
+        {/* Project Title Input */}
         {hasAccessToken && hasInitiatorData && (
           <div className="space-y-2">
             <AndamioLabel htmlFor="title">
-              Course Title <span className="text-destructive">*</span>
+              Project Title <span className="text-destructive">*</span>
             </AndamioLabel>
             <AndamioInput
               id="title"
               type="text"
-              placeholder="Introduction to Cardano Development"
+              placeholder="Cardano Developer Bounty Program"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={state !== "idle" && state !== "error"}
               maxLength={200}
             />
             <AndamioText variant="small" className="text-xs">
-              Give your course a descriptive title. You can update this later.
+              Give your project a descriptive title. You can update this later.
             </AndamioText>
           </div>
         )}
 
-        {/* Additional Teachers Input */}
+        {/* Additional Managers Input */}
         {hasAccessToken && hasInitiatorData && (
           <div className="space-y-2">
-            <AndamioLabel htmlFor="teachers">Additional Teachers (Optional)</AndamioLabel>
+            <AndamioLabel htmlFor="managers">Additional Managers (Optional)</AndamioLabel>
             <AndamioInput
-              id="teachers"
+              id="managers"
               type="text"
-              placeholder="teacher1, teacher2"
-              value={additionalTeachers}
-              onChange={(e) => setAdditionalTeachers(e.target.value)}
+              placeholder="manager1, manager2"
+              value={additionalManagers}
+              onChange={(e) => setAdditionalManagers(e.target.value)}
               disabled={state !== "idle" && state !== "error"}
             />
             <AndamioText variant="small" className="text-xs">
-              Enter access token aliases of additional teachers, separated by commas. You are automatically included.
+              Enter access token aliases of additional managers, separated by commas.
+            </AndamioText>
+          </div>
+        )}
+
+        {/* Deposit Amount Input */}
+        {hasAccessToken && hasInitiatorData && (
+          <div className="space-y-2">
+            <AndamioLabel htmlFor="deposit">Contributor Deposit (Lovelace)</AndamioLabel>
+            <AndamioInput
+              id="deposit"
+              type="number"
+              placeholder="5000000"
+              value={depositLovelace}
+              onChange={(e) => setDepositLovelace(e.target.value)}
+              disabled={state !== "idle" && state !== "error"}
+              min={1000000}
+            />
+            <AndamioText variant="small" className="text-xs">
+              Required deposit for contributors (1 ADA = 1,000,000 lovelace).
             </AndamioText>
           </div>
         )}
@@ -246,7 +270,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
               reset();
             }}
             messages={{
-              success: "Your course has been created on-chain!",
+              success: "Your project has been created on-chain!",
             }}
           />
         )}
@@ -255,10 +279,10 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         {state !== "success" && canCreate && (
           <TransactionButton
             txState={state}
-            onClick={handleCreateCourse}
+            onClick={handleCreateProject}
             disabled={!canCreate}
             stateText={{
-              idle: "Create Course",
+              idle: "Create Project",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Creating on Blockchain...",

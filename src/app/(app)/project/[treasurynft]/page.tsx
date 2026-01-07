@@ -6,6 +6,7 @@ import Link from "next/link";
 import { env } from "~/env";
 import {
   AndamioBadge,
+  AndamioButton,
   AndamioTable,
   AndamioTableBody,
   AndamioTableCell,
@@ -20,7 +21,7 @@ import {
   AndamioBackButton,
   AndamioErrorAlert,
 } from "~/components/andamio";
-import { TaskIcon } from "~/components/icons";
+import { TaskIcon, ContributorIcon } from "~/components/icons";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -186,7 +187,17 @@ export default function ProjectDetailPage() {
     <div className="space-y-6">
       <AndamioBackButton href="/project" label="Back to Projects" />
 
-      <AndamioPageHeader title={project.title} />
+      <AndamioPageHeader
+        title={project.title}
+        action={
+          <Link href={`/project/${treasuryNftPolicyId}/contributor`}>
+            <AndamioButton>
+              <ContributorIcon className="h-4 w-4 mr-2" />
+              Contribute
+            </AndamioButton>
+          </Link>
+        }
+      />
       <div className="flex flex-wrap items-center gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {project.treasury_nft_policy_id?.slice(0, 16)}...

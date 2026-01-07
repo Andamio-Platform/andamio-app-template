@@ -2,21 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioPageHeader, AndamioPageLoading } from "~/components/andamio";
+import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioBackButton, AndamioErrorAlert, AndamioDashboardStat } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
-import { AlertIcon, BackIcon, SuccessIcon, PendingIcon, TokenIcon, TaskIcon, TeacherIcon } from "~/components/icons";
+import { ContentEditor } from "~/components/editor";
+import { SuccessIcon, PendingIcon, TokenIcon, TaskIcon, TeacherIcon, EditIcon } from "~/components/icons";
 import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { ProjectEnroll, TaskCommit } from "~/components/transactions";
 
 type TaskListOutput = CreateTaskOutput[];
 
@@ -37,6 +37,14 @@ export default function TaskDetailPage() {
   const [commitment, setCommitment] = useState<GetTaskCommitmentByTaskHashOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Contributor state - in a real app this would come from on-chain data
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [contributorStateId, setContributorStateId] = useState<string | null>(null);
+
+  // Evidence editor state
+  const [evidence, setEvidence] = useState<JSONContent | null>(null);
+  const [isEditingEvidence, setIsEditingEvidence] = useState(false);
 
   useEffect(() => {
     const fetchTaskAndCommitment = async () => {
@@ -129,18 +137,8 @@ export default function TaskDetailPage() {
   if (error || !task) {
     return (
       <div className="space-y-6">
-        <Link href={`/project/${treasuryNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <BackIcon className="h-4 w-4 mr-1" />
-            Back to Project
-          </AndamioButton>
-        </Link>
-
-        <AndamioAlert variant="destructive">
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error ?? "Task not found"}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioBackButton href={`/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioErrorAlert error={error ?? "Task not found"} />
       </div>
     );
   }
@@ -149,12 +147,7 @@ export default function TaskDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href={`/project/${treasuryNftPolicyId}`}>
-          <AndamioButton variant="ghost" size="sm">
-            <BackIcon className="h-4 w-4 mr-1" />
-            Back to Project
-          </AndamioButton>
-        </Link>
+        <AndamioBackButton href={`/project/${treasuryNftPolicyId}`} label="Back to Project" />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
             #{task.index}
@@ -173,39 +166,28 @@ export default function TaskDetailPage() {
 
       {/* Task Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <TokenIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <AndamioText variant="small">Reward</AndamioText>
-            <AndamioText className="font-semibold">{formatLovelace(task.lovelace)}</AndamioText>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <PendingIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <AndamioText variant="small">Expires</AndamioText>
-            <AndamioText className="font-semibold text-sm">{formatTimestamp(task.expiration_time)}</AndamioText>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <TeacherIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <AndamioText variant="small">Commitments</AndamioText>
-            <AndamioText className="font-semibold">
-              {task.num_allocated_commitments} / {task.num_allowed_commitments}
-            </AndamioText>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 p-4 border rounded-lg">
-          <TaskIcon className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <AndamioText variant="small">Criteria</AndamioText>
-            <AndamioText className="font-semibold">{task.acceptance_criteria.length} items</AndamioText>
-          </div>
-        </div>
+        <AndamioDashboardStat
+          icon={TokenIcon}
+          label="Reward"
+          value={formatLovelace(task.lovelace)}
+          iconColor="success"
+        />
+        <AndamioDashboardStat
+          icon={PendingIcon}
+          label="Expires"
+          value={formatTimestamp(task.expiration_time)}
+        />
+        <AndamioDashboardStat
+          icon={TeacherIcon}
+          label="Commitments"
+          value={`${task.num_allocated_commitments} / ${task.num_allowed_commitments}`}
+          iconColor="info"
+        />
+        <AndamioDashboardStat
+          icon={TaskIcon}
+          label="Criteria"
+          value={`${task.acceptance_criteria.length} items`}
+        />
       </div>
 
       {/* Task Hash */}
@@ -238,7 +220,7 @@ export default function TaskDetailPage() {
             {task.acceptance_criteria.map((criterion, index) => (
               <li key={index} className="flex items-start gap-2">
                 <SuccessIcon className="h-4 w-4 mt-1 text-muted-foreground" />
-                <span>{criterion}</span>
+                <AndamioText as="span">{criterion}</AndamioText>
               </li>
             ))}
           </ul>
@@ -292,7 +274,7 @@ export default function TaskDetailPage() {
           ) : commitment ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Status</span>
+                <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
                 <AndamioBadge variant={getCommitmentStatusVariant(commitment.status)}>
                   {commitment.status.replace(/_/g, " ")}
                 </AndamioBadge>
@@ -333,17 +315,121 @@ export default function TaskDetailPage() {
               <AndamioText variant="muted" className="mb-4">
                 You haven&apos;t committed to this task yet
               </AndamioText>
-              <AndamioAlert>
-                <AlertIcon className="h-4 w-4" />
-                <AndamioAlertDescription>
-                  Task commitment functionality requires blockchain transactions.
-                  Full commitment workflow coming soon.
-                </AndamioAlertDescription>
-              </AndamioAlert>
+              <AndamioButton
+                variant="outline"
+                onClick={() => setIsEditingEvidence(true)}
+              >
+                <EditIcon className="h-4 w-4 mr-2" />
+                Start Commitment
+              </AndamioButton>
             </div>
           )}
         </AndamioCardContent>
       </AndamioCard>
+
+      {/* Evidence Editor and Transaction */}
+      {isAuthenticated && !commitment && isEditingEvidence && (
+        <div className="space-y-6">
+          <AndamioSectionHeader
+            title="Submit Your Evidence"
+            icon={<EditIcon className="h-5 w-5" />}
+          />
+
+          {/* Evidence Editor */}
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle>Task Evidence</AndamioCardTitle>
+              <AndamioCardDescription>
+                Describe how you&apos;ll complete this task or provide your initial submission
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
+              <ContentEditor
+                content={evidence}
+                onContentChange={setEvidence}
+                showWordCount
+              />
+            </AndamioCardContent>
+          </AndamioCard>
+
+          {/* Transaction Component */}
+          {evidence && Object.keys(evidence).length > 0 && (
+            isEnrolled ? (
+              <TaskCommit
+                projectNftPolicyId={treasuryNftPolicyId}
+                contributorStateId={contributorStateId ?? "0".repeat(56)}
+                taskHash={taskHash}
+                taskCode={`TASK_${task.index}`}
+                taskTitle={task.title ?? undefined}
+                taskEvidence={evidence}
+                onSuccess={async () => {
+                  setIsEditingEvidence(false);
+                  // Refetch commitment status
+                  try {
+                    const commitmentResponse = await authenticatedFetch(
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ task_hash: taskHash }),
+                      }
+                    );
+                    if (commitmentResponse.ok) {
+                      const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+                      setCommitment(commitmentData);
+                    }
+                  } catch {
+                    // Handled by transaction component
+                  }
+                }}
+              />
+            ) : (
+              <ProjectEnroll
+                projectNftPolicyId={treasuryNftPolicyId}
+                contributorStateId={contributorStateId ?? "0".repeat(56)}
+                taskHash={taskHash}
+                taskCode={`TASK_${task.index}`}
+                taskTitle={task.title ?? undefined}
+                taskEvidence={evidence}
+                onSuccess={async () => {
+                  setIsEnrolled(true);
+                  setIsEditingEvidence(false);
+                  // Refetch commitment status
+                  try {
+                    const commitmentResponse = await authenticatedFetch(
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ task_hash: taskHash }),
+                      }
+                    );
+                    if (commitmentResponse.ok) {
+                      const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+                      setCommitment(commitmentData);
+                    }
+                  } catch {
+                    // Handled by transaction component
+                  }
+                }}
+              />
+            )
+          )}
+
+          {/* Cancel Button */}
+          <div className="flex justify-end">
+            <AndamioButton
+              variant="ghost"
+              onClick={() => {
+                setIsEditingEvidence(false);
+                setEvidence(null);
+              }}
+            >
+              Cancel
+            </AndamioButton>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

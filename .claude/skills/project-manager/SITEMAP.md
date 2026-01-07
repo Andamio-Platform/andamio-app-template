@@ -1,7 +1,7 @@
 # Application Sitemap
 
 > **Complete route and page mapping for Andamio T3 App Template**
-> Last Updated: December 31, 2025
+> Last Updated: January 7, 2026
 
 This document provides a comprehensive overview of all routes, their purpose, authentication requirements, and API dependencies.
 
@@ -61,6 +61,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
 | `/project/[treasurynft]` | `app/(app)/project/[treasurynft]/page.tsx` | No | Project detail with tasks |
+| `/project/[treasurynft]/contributor` | `app/(app)/project/[treasurynft]/contributor/page.tsx` | Yes | Contributor dashboard - enroll, commit tasks, claim credentials |
 | `/project/[treasurynft]/[taskhash]` | `app/(app)/project/[treasurynft]/[taskhash]/page.tsx` | No | Task detail and commitment |
 
 ### Creator Studio - Course Routes
@@ -82,6 +83,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
 | `/studio/project/[treasurynft]` | `app/(app)/studio/project/[treasurynft]/page.tsx` | Yes | Project dashboard |
+| `/studio/project/[treasurynft]/manager` | `app/(app)/studio/project/[treasurynft]/manager/page.tsx` | Yes | Manager dashboard - review task submissions, accept/deny |
 | `/studio/project/[treasurynft]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
 | `/studio/project/[treasurynft]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
 | `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
@@ -142,6 +144,7 @@ POST /tasks/list                 Get tasks for project
 POST /tasks/list                 Filter to specific task
 POST /task-commitments/get       Get commitment if exists (if auth)
 ```
+**Components**: `AndamioDashboardStat` (stats grid), `ContentEditor` (evidence), `ProjectEnroll` / `TaskCommit` (transactions)
 
 ### Protected Routes (Requires Auth)
 
@@ -241,6 +244,23 @@ POST /tasks/list                 Get tasks for project
 POST /projects/update            Update project metadata
 ```
 
+#### `/studio/project/[treasurynft]/manager` - Manager Dashboard
+```
+POST /projects/list              Get project details
+POST /task-submissions/list      Get all task submissions for project
+POST /task-submissions/accept    Accept a task submission
+POST /task-submissions/deny      Deny a task submission
+```
+
+#### `/project/[treasurynft]/contributor` - Contributor Dashboard
+```
+POST /projects/list              Get project details
+POST /tasks/list                 Get available tasks
+POST /contributor/enroll         Enroll in project and commit to task
+POST /task-commit/create         Commit to a task
+POST /credential/claim           Claim earned credentials
+```
+
 #### `/studio/project/.../draft-tasks` - Task Management
 ```
 POST /tasks/list                 Get all tasks
@@ -328,5 +348,5 @@ Studio → Projects → Project Title → Tasks
 
 ---
 
-**Last Updated**: December 31, 2025
+**Last Updated**: January 7, 2026
 **Maintained By**: Andamio Platform Team

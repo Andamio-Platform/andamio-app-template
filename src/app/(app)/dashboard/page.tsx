@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { MyLearning } from "~/components/learner/my-learning";
-import { MintAccessToken, CreateCourse } from "~/components/transactions";
+import { MintAccessToken, CreateCourse, CreateProject } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
@@ -72,6 +72,16 @@ export default function DashboardPage() {
           onSuccess={(txHash) => {
             console.log("Course created with txHash:", txHash);
             // Optionally redirect or refresh
+          }}
+        />
+      )}
+
+      {/* Create Project Section - Only show if user has access token */}
+      {hasAccessToken && (
+        <CreateProject
+          onSuccess={(projectId) => {
+            console.log("Project created with ID:", projectId);
+            router.push(`/studio/project/${projectId}`);
           }}
         />
       )}

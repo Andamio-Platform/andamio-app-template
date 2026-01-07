@@ -37,3 +37,31 @@ export type { AssignmentUpdateProps } from "./assignment-update";
 
 export { CredentialClaim } from "./credential-claim";
 export type { CredentialClaimProps } from "./credential-claim";
+
+// Project Transaction Components (V2)
+export { CreateProject } from "./create-project";
+export type { CreateProjectProps } from "./create-project";
+
+export { ManagersManage } from "./managers-manage";
+export type { ManagersManageProps } from "./managers-manage";
+
+export { BlacklistManage } from "./blacklist-manage";
+export type { BlacklistManageProps } from "./blacklist-manage";
+
+export { TasksManage } from "./tasks-manage";
+export type { TasksManageProps } from "./tasks-manage";
+
+export { TasksAssess } from "./tasks-assess";
+export type { TasksAssessProps } from "./tasks-assess";
+
+export { ProjectEnroll } from "./project-enroll";
+export type { ProjectEnrollProps } from "./project-enroll";
+
+export { TaskAction } from "./task-action";
+export type { TaskActionProps } from "./task-action";
+
+export { TaskCommit } from "./task-commit";
+export type { TaskCommitProps } from "./task-commit";
+
+export { ProjectCredentialClaim } from "./project-credential-claim";
+export type { ProjectCredentialClaimProps } from "./project-credential-claim";

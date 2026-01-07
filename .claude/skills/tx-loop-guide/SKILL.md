@@ -2,6 +2,12 @@
 
 Guide testers through Andamio transaction loops while collecting UX feedback.
 
+## Critical Behaviors (Do Not Skip)
+
+1. **Blocker bugs** → Create GitHub issue IMMEDIATELY using `gh issue create`
+2. **Session ends** → Create feedback digest issue AUTOMATICALLY (don't wait to be asked)
+3. **UX friction noted** → Track it and include in the digest issue
+
 ## Purpose
 
 This skill guides a tester or developer through a specified Andamio Transaction (Tx) Loop. Each loop is a chance to improve the T3 App Template through structured testing and feedback collection.
@@ -42,10 +48,12 @@ After each transaction:
 
 ### Handling Blockers
 
+**CRITICAL: Create GitHub issues IMMEDIATELY when blockers are found. Do not wait for the user to remind you.**
+
 If the user encounters a bug that blocks progress:
 1. Document the bug clearly
-2. Create a separate GitHub issue immediately using `gh issue create`
-3. Decide whether to:
+2. **IMMEDIATELY** create a GitHub issue using `gh issue create` — do this right away, not at the end
+3. Then decide whether to:
    - Work around it and continue
    - Stop the loop and focus on the bug
    - Switch to a different loop
@@ -61,9 +69,14 @@ Take notes on:
 - **Error handling** - Did errors make sense? Could they recover?
 - **Missing features** - What did they expect that wasn't there?
 
-### After the Loop
+### After the Loop (or when user stops)
 
-Create a digest issue summarizing all feedback using the template below.
+**CRITICAL: Always create a feedback digest issue using `gh issue create` when:**
+- The loop is completed
+- The user decides to stop
+- The session ends for any reason
+
+Do NOT skip this step. Do NOT wait for the user to ask. Create the issue automatically.
 
 ## Issue Templates
 

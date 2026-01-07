@@ -690,6 +690,132 @@ Shows completion status for 6 wizard steps:
 | 2025-12 | Module Wizard | Inline lesson editing, Blueprint→Credential rename, silent refetch on save |
 | 2025-12 | `/studio/course` | `RegisterCourseDrawer` for on-chain-only course registration |
 | 2025-12 | `/studio/course/[coursenft]` | Credential-focused empty state, conditional tabs |
+| 2026-01 | `/project/[treasurynft]/contributor` | `AndamioDashboardStat` - Replaced inline KPI cards |
+| 2026-01 | `/studio/project/[treasurynft]/manager` | `AndamioSearchInput`, `AndamioDashboardStat` - Replaced inline patterns |
+| 2026-01 | `/studio/course/[coursenft]/instructor` | `AndamioDashboardStat`, `AndamioSearchInput`, `AndamioPageLoading`, `AndamioEmptyState`, `AndamioErrorAlert` |
+| 2026-01 | `/project/[treasurynft]/[taskhash]` | `AndamioBackButton`, `AndamioErrorAlert`, `AndamioDashboardStat`, `AndamioText` - Task commitment flow with evidence editor |
+
+---
+
+### AndamioSearchInput
+
+**File**: `src/components/andamio/andamio-search-input.tsx`
+
+**Extracted From**: Style review of `/studio/project/[treasurynft]/manager` route (2026-01)
+
+**Purpose**: Search input with integrated search icon. Replaces the repeated pattern of wrapping an input in a relative div with positioned icon.
+
+**Pattern Replaced**:
+```tsx
+<div className="relative">
+  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  <AndamioInput className="pl-8" placeholder="Search..." />
+</div>
+```
+
+**Usage**:
+```tsx
+import { AndamioSearchInput } from "~/components/andamio";
+
+// Default size
+<AndamioSearchInput
+  placeholder="Search courses..."
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+/>
+
+// Compact variant for toolbars
+<AndamioSearchInput
+  inputSize="sm"
+  placeholder="Search..."
+  value={query}
+  onChange={handleChange}
+/>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `inputSize` | `"default" \| "sm"` | `"default"` | Size variant |
+| `...inputProps` | `InputHTMLAttributes` | - | All input props (placeholder, value, onChange, etc.) |
+
+**Features**:
+- SearchIcon automatically positioned inside input
+- Size variants for different contexts
+- Forwards ref to underlying input
+
+---
+
+### AndamioDashboardStat
+
+**File**: `src/components/andamio/andamio-dashboard-stat.tsx`
+
+**Extracted From**: Style review of `/project/[treasurynft]/contributor` and `/studio/project/[treasurynft]/manager` routes (2026-01)
+
+**Purpose**: Full card-based KPI stat display for dashboard grids. Shows label with icon in header and large value below.
+
+**Pattern Replaced**:
+```tsx
+<AndamioCard>
+  <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <AndamioCardTitle className="text-sm font-medium">Total Submissions</AndamioCardTitle>
+    <ManagerIcon className="h-4 w-4 text-muted-foreground" />
+  </AndamioCardHeader>
+  <AndamioCardContent>
+    <div className="text-2xl font-bold">{stats.total}</div>
+  </AndamioCardContent>
+</AndamioCard>
+```
+
+**Usage**:
+```tsx
+import { AndamioDashboardStat } from "~/components/andamio";
+
+// Basic stat
+<AndamioDashboardStat
+  icon={ManagerIcon}
+  label="Total Submissions"
+  value={stats.total}
+/>
+
+// With description sub-text
+<AndamioDashboardStat
+  icon={CourseIcon}
+  label="Total Courses"
+  value={stats.total}
+  description={`${stats.published} published, ${stats.draft} draft`}
+/>
+
+// With semantic color
+<AndamioDashboardStat
+  icon={SuccessIcon}
+  label="Accepted"
+  value={stats.accepted}
+  valueColor="success"
+  iconColor="success"
+/>
+
+// Grid of stats
+<div className="grid gap-4 md:grid-cols-4">
+  <AndamioDashboardStat icon={ManagerIcon} label="Total" value={10} />
+  <AndamioDashboardStat icon={PendingIcon} label="Pending" value={5} />
+  <AndamioDashboardStat icon={SuccessIcon} label="Accepted" value={3} valueColor="success" iconColor="success" />
+  <AndamioDashboardStat icon={ErrorIcon} label="Denied" value={2} valueColor="destructive" iconColor="destructive" />
+</div>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `icon` | `IconComponent` | required | Lucide icon component |
+| `label` | `string` | required | Label describing the statistic |
+| `value` | `ReactNode` | required | The value to display (number, string, or JSX) |
+| `description` | `string` | - | Optional sub-text shown below the value |
+| `valueColor` | `"success" \| "warning" \| "destructive" \| "info" \| "muted"` | - | Semantic color for value text |
+| `iconColor` | `"success" \| "warning" \| "destructive" \| "info" \| "muted"` | `"muted"` | Semantic color for icon |
+| `className` | `string` | - | Additional CSS classes for card |
+
+**Note**: For compact inline stats (icon + value + label without card wrapper), use `AndamioStatCard` instead.
 
 ---
 

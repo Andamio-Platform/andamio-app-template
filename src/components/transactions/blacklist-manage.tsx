@@ -1,16 +1,16 @@
 /**
- * TeachersUpdate Transaction Component (V2)
+ * BlacklistManage Transaction Component (V2)
  *
- * UI for adding or removing teachers from a course.
- * Uses COURSE_OWNER_TEACHERS_MANAGE transaction definition - purely on-chain, no side effects.
+ * UI for adding or removing contributors from a project's blacklist.
+ * Uses PROJECT_OWNER_BLACKLIST_MANAGE transaction definition - purely on-chain, no side effects.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/owner/teachers-manage.ts
+ * @see packages/andamio-transactions/src/definitions/v2/project/owner/blacklist-manage.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { COURSE_OWNER_TEACHERS_MANAGE } from "@andamio/transactions";
+import { PROJECT_OWNER_BLACKLIST_MANAGE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -27,85 +27,85 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
+import { BlockIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 
-export interface TeachersUpdateProps {
+export interface BlacklistManageProps {
   /**
-   * Course NFT Policy ID
+   * Project NFT Policy ID
    */
-  courseNftPolicyId: string;
+  projectNftPolicyId: string;
 
   /**
-   * Current teachers (for display)
+   * Current blacklisted aliases (for display)
    */
-  currentTeachers?: string[];
+  currentBlacklist?: string[];
 
   /**
-   * Callback fired when teachers are successfully updated
+   * Callback fired when blacklist is successfully updated
    */
   onSuccess?: () => void | Promise<void>;
 }
 
 /**
- * TeachersUpdate - UI for adding/removing teachers from a course (V2)
+ * BlacklistManage - UI for adding/removing contributors from project blacklist (V2)
  *
  * @example
  * ```tsx
- * <TeachersUpdate
- *   courseNftPolicyId="abc123..."
- *   currentTeachers={["alice", "bob"]}
- *   onSuccess={() => refetchCourse()}
+ * <BlacklistManage
+ *   projectNftPolicyId="abc123..."
+ *   currentBlacklist={["badactor1", "badactor2"]}
+ *   onSuccess={() => refetchProject()}
  * />
  * ```
  */
-export function TeachersUpdate({
-  courseNftPolicyId,
-  currentTeachers = [],
+export function BlacklistManage({
+  projectNftPolicyId,
+  currentBlacklist = [],
   onSuccess,
-}: TeachersUpdateProps) {
+}: BlacklistManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
-  const [teacherInput, setTeacherInput] = useState("");
+  const [aliasInput, setAliasInput] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");
 
-  const handleUpdateTeachers = async () => {
-    if (!user?.accessTokenAlias || !teacherInput.trim()) {
+  const handleUpdateBlacklist = async () => {
+    if (!user?.accessTokenAlias || !aliasInput.trim()) {
       return;
     }
 
-    // Parse teacher aliases (comma-separated)
-    const teacherAliases = teacherInput
+    // Parse aliases (comma-separated)
+    const aliases = aliasInput
       .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
 
-    if (teacherAliases.length === 0) {
-      toast.error("No teachers specified");
+    if (aliases.length === 0) {
+      toast.error("No aliases specified");
       return;
     }
 
-    // Build params based on action - API uses separate arrays for add/remove
-    const teachers_to_add = action === "add" ? teacherAliases : [];
-    const teachers_to_remove = action === "remove" ? teacherAliases : [];
+    // Build params based on action
+    const aliases_to_add = action === "add" ? aliases : [];
+    const aliases_to_remove = action === "remove" ? aliases : [];
 
     await execute({
-      definition: COURSE_OWNER_TEACHERS_MANAGE,
+      definition: PROJECT_OWNER_BLACKLIST_MANAGE,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        teachers_to_add,
-        teachers_to_remove,
+        project_id: projectNftPolicyId,
+        aliases_to_add,
+        aliases_to_remove,
       },
       onSuccess: async (txResult) => {
-        console.log("[TeachersUpdate] Success!", txResult);
+        console.log("[BlacklistManage] Success!", txResult);
 
         // Show success toast
         const actionText = action === "add" ? "added to" : "removed from";
-        toast.success("Teachers Updated!", {
-          description: `${teacherAliases.join(", ")} ${actionText} course`,
+        toast.success("Blacklist Updated!", {
+          description: `${aliases.join(", ")} ${actionText} blacklist`,
           action: txResult.blockchainExplorerUrl
             ? {
                 label: "View Transaction",
@@ -115,15 +115,15 @@ export function TeachersUpdate({
         });
 
         // Clear input
-        setTeacherInput("");
+        setAliasInput("");
 
         // Call callback
         await onSuccess?.();
       },
       onError: (txError) => {
-        console.error("[TeachersUpdate] Error:", txError);
+        console.error("[BlacklistManage] Error:", txError);
         toast.error("Update Failed", {
-          description: txError.message || "Failed to update teachers",
+          description: txError.message || "Failed to update blacklist",
         });
       },
     });
@@ -134,35 +134,35 @@ export function TeachersUpdate({
   }
 
   const hasAccessToken = !!user.accessTokenAlias;
-  const hasTeachers = teacherInput.trim().length > 0;
-  const canSubmit = hasAccessToken && hasTeachers;
+  const hasAliases = aliasInput.trim().length > 0;
+  const canSubmit = hasAccessToken && hasAliases;
 
   return (
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <TeacherIcon className="h-5 w-5 text-muted-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+            <BlockIcon className="h-5 w-5 text-destructive" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Manage Teachers</AndamioCardTitle>
+            <AndamioCardTitle>Manage Contributor Blacklist</AndamioCardTitle>
             <AndamioCardDescription>
-              Add or remove teachers from this course
+              Block or unblock contributors from this project
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Current Teachers */}
-        {currentTeachers.length > 0 && (
+        {/* Current Blacklist */}
+        {currentBlacklist.length > 0 && (
           <div className="space-y-2">
             <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
-              Current Teachers
+              Currently Blacklisted
             </AndamioText>
             <div className="flex flex-wrap gap-2">
-              {currentTeachers.map((teacher) => (
-                <AndamioBadge key={teacher} variant="secondary" className="text-xs font-mono">
-                  {teacher}
+              {currentBlacklist.map((alias) => (
+                <AndamioBadge key={alias} variant="destructive" className="text-xs font-mono">
+                  {alias}
                 </AndamioBadge>
               ))}
             </div>
@@ -172,36 +172,36 @@ export function TeachersUpdate({
         {/* Action Toggle */}
         <div className="flex gap-2">
           <AndamioButton
-            variant={action === "add" ? "default" : "outline"}
+            variant={action === "add" ? "destructive" : "outline"}
             size="sm"
             onClick={() => setAction("add")}
             disabled={state !== "idle" && state !== "error"}
           >
             <AddIcon className="h-4 w-4 mr-1" />
-            Add
+            Blacklist
           </AndamioButton>
           <AndamioButton
-            variant={action === "remove" ? "destructive" : "outline"}
+            variant={action === "remove" ? "default" : "outline"}
             size="sm"
             onClick={() => setAction("remove")}
             disabled={state !== "idle" && state !== "error"}
           >
             <DeleteIcon className="h-4 w-4 mr-1" />
-            Remove
+            Unblock
           </AndamioButton>
         </div>
 
-        {/* Teacher Input */}
+        {/* Alias Input */}
         <div className="space-y-2">
-          <AndamioLabel htmlFor="teachers">
-            {action === "add" ? "Teachers to Add" : "Teachers to Remove"}
+          <AndamioLabel htmlFor="aliases">
+            {action === "add" ? "Contributors to Blacklist" : "Contributors to Unblock"}
           </AndamioLabel>
           <AndamioInput
-            id="teachers"
+            id="aliases"
             type="text"
-            placeholder="alice, bob, carol"
-            value={teacherInput}
-            onChange={(e) => setTeacherInput(e.target.value)}
+            placeholder="badactor1, badactor2"
+            value={aliasInput}
+            onChange={(e) => setAliasInput(e.target.value)}
             disabled={state !== "idle" && state !== "error"}
           />
           <AndamioText variant="small" className="text-xs">
@@ -209,12 +209,12 @@ export function TeachersUpdate({
           </AndamioText>
         </div>
 
-        {/* Warning for remove */}
-        {action === "remove" && (
-          <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-            <AndamioText variant="small" className="text-xs text-warning-foreground">
-              Removing teachers will revoke their ability to manage modules and assess assignments.
+        {/* Warning for blacklist */}
+        {action === "add" && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3">
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+            <AndamioText variant="small" className="text-xs text-destructive-foreground">
+              Blacklisted contributors cannot enroll, commit to tasks, or receive rewards from this project.
             </AndamioText>
           </div>
         )}
@@ -227,7 +227,7 @@ export function TeachersUpdate({
             error={error}
             onRetry={() => reset()}
             messages={{
-              success: `Teachers ${action === "add" ? "added" : "removed"} successfully!`,
+              success: `Contributors ${action === "add" ? "blacklisted" : "unblocked"} successfully!`,
             }}
           />
         )}
@@ -236,10 +236,10 @@ export function TeachersUpdate({
         {state !== "success" && (
           <TransactionButton
             txState={state}
-            onClick={handleUpdateTeachers}
+            onClick={handleUpdateBlacklist}
             disabled={!canSubmit}
             stateText={{
-              idle: action === "add" ? "Add Teachers" : "Remove Teachers",
+              idle: action === "add" ? "Blacklist Contributors" : "Unblock Contributors",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",

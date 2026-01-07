@@ -45,6 +45,7 @@ import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialo
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/use-course";
 import { useCourseModules } from "~/hooks/api/use-course-module";
+import { MintModuleTokens } from "~/components/transactions/mint-module-tokens";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 
@@ -171,7 +172,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
   // React Query hooks
   const { data: course, isLoading: isLoadingCourse, error: courseError } = useCourse(courseNftPolicyId);
-  const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(courseNftPolicyId);
+  const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useCourseModules(courseNftPolicyId);
 
   // Mutations
   const updateCourseMutation = useUpdateCourse();
@@ -664,6 +665,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   </div>
                 </div>
               </StudioFormSection>
+
+              {/* Mint Modules - Show when there are approved modules ready to mint */}
+              {moduleStats.approved > 0 && (
+                <MintModuleTokens
+                  courseNftPolicyId={courseNftPolicyId}
+                  courseModules={modules.filter((m) => m.status === "APPROVED")}
+                  onSuccess={() => void refetchModules()}
+                />
+              )}
 
               <StudioFormSection title="Blockchain Links">
                 <div className="flex flex-wrap gap-3">

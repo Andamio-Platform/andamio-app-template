@@ -103,14 +103,14 @@ export default function StudioCourseListPage() {
         const existing = courseMap.get(onChainCourse.course_id);
         if (existing) {
           existing.onChain = true;
-          existing.onChainModuleCount = onChainCourse.modules.length;
+          existing.onChainModuleCount = onChainCourse.modules?.length ?? 0;
         } else {
           courseMap.set(onChainCourse.course_id, {
             courseId: onChainCourse.course_id,
             title: null,
             inDb: false,
             onChain: true,
-            onChainModuleCount: onChainCourse.modules.length,
+            onChainModuleCount: onChainCourse.modules?.length ?? 0,
           });
         }
       }

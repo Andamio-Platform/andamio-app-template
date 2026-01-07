@@ -105,7 +105,9 @@ export function useTransaction<TParams = unknown>() {
 
         const unsignedTx = (await apiResponse.json()) as UnsignedTxResponse;
 
-        if (!unsignedTx.unsignedTxCBOR) {
+        // V2 API uses unsigned_tx, legacy uses unsignedTxCBOR
+        const unsignedCbor = unsignedTx.unsigned_tx ?? unsignedTx.unsignedTxCBOR;
+        if (!unsignedCbor) {
           txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
           throw new Error("No CBOR returned from transaction API");
         }
@@ -116,7 +118,7 @@ export function useTransaction<TParams = unknown>() {
         setState("signing");
         config.onStateChange?.("signing");
 
-        const signedTx = await wallet.signTx(unsignedTx.unsignedTxCBOR);
+        const signedTx = await wallet.signTx(unsignedCbor);
 
         // Step 3: Submit to blockchain
         setState("submitting");

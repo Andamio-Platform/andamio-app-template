@@ -88,12 +88,20 @@ export interface TransactionConfig<TParams = unknown> {
 }
 
 /**
- * Response from Andamioscan transaction endpoint
- * Contains unsigned CBOR hex string
+ * Response from transaction API endpoint
+ * V2 API uses unsigned_tx, legacy uses unsignedTxCBOR
  */
 export interface UnsignedTxResponse {
-  unsignedTxCBOR: string;
+  /** V2 API format - unsigned transaction CBOR hex string */
+  unsigned_tx?: string;
+  /** Legacy format - unsigned transaction CBOR hex string */
+  unsignedTxCBOR?: string;
+  /** Transaction hash (optional, some endpoints return this) */
   txHash?: string;
+  /** Course ID returned by INSTANCE_COURSE_CREATE */
+  course_id?: string;
+  /** Project ID returned by INSTANCE_PROJECT_CREATE */
+  project_id?: string;
 }
 
 /**

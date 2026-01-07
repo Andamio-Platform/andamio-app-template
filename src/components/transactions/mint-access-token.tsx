@@ -2,12 +2,15 @@
  * MintAccessToken Component
  *
  * UI for minting a new Andamio Access Token NFT.
- * Demonstrates the full transaction flow using transaction components.
+ * Uses GENERAL_ACCESS_TOKEN_MINT transaction definition from @andamio/transactions.
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/general/access-token-mint.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
+import { GENERAL_ACCESS_TOKEN_MINT } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useTransaction } from "~/hooks/use-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -20,7 +23,6 @@ import { AccessTokenIcon, ShieldIcon } from "~/components/icons";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
-import type { MintAccessTokenParams } from "~/types/transaction";
 
 export interface MintAccessTokenProps {
   /**
@@ -46,7 +48,7 @@ function isValidAlias(alias: string): boolean {
 
 export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useTransaction<MintAccessTokenParams>();
+  const { state, result, error, execute, reset } = useTransaction();
   const [alias, setAlias] = useState("");
 
   const aliasError = alias.trim() && !isValidAlias(alias.trim())
@@ -58,14 +60,17 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
       return;
     }
 
+    // Use endpoint and txType from GENERAL_ACCESS_TOKEN_MINT definition
+    const endpoint = GENERAL_ACCESS_TOKEN_MINT.buildTxConfig.builder.endpoint!;
+
     await execute({
-      endpoint: "/tx/v2/general/mint-access-token",
+      endpoint,
       method: "POST",
       params: {
-        walletData: user.cardanoBech32Addr,
+        initiator_data: user.cardanoBech32Addr,
         alias: alias.trim(),
       },
-      txType: "MINT_ACCESS_TOKEN",
+      txType: GENERAL_ACCESS_TOKEN_MINT.txType,
       onSuccess: async (txResult) => {
         console.log("[MintAccessToken] Success!", txResult);
 

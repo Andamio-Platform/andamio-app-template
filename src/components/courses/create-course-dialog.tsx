@@ -29,7 +29,7 @@ import {
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AddIcon, SparkleIcon, CourseIcon, ExternalLinkIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { v2 } from "@andamio/transactions";
+import { INSTANCE_COURSE_CREATE } from "@andamio/transactions";
 
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
@@ -47,9 +47,9 @@ export function CreateCourseDialog() {
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [walletData, setWalletData] = useState<{
-    usedAddresses: string[];
-    changeAddress: string;
+  const [initiatorData, setInitiatorData] = useState<{
+    used_addresses: string[];
+    change_address: string;
   } | null>(null);
 
   // Provisioning state for tracking blockchain confirmation
@@ -85,17 +85,20 @@ export function CreateCourseDialog() {
   useEffect(() => {
     const fetchWalletData = async () => {
       if (!wallet || !connected) {
-        setWalletData(null);
+        setInitiatorData(null);
         return;
       }
 
       try {
         const usedAddresses = await wallet.getUsedAddresses();
         const changeAddress = await wallet.getChangeAddress();
-        setWalletData({ usedAddresses, changeAddress });
+        setInitiatorData({
+          used_addresses: usedAddresses,
+          change_address: changeAddress,
+        });
       } catch (err) {
         console.error("Failed to fetch wallet data:", err);
-        setWalletData(null);
+        setInitiatorData(null);
       }
     };
 
@@ -103,20 +106,23 @@ export function CreateCourseDialog() {
   }, [wallet, connected]);
 
   const handleCreateCourse = async () => {
-    if (!user?.accessTokenAlias || !walletData || !title.trim()) {
+    if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
     }
 
     await execute({
-      definition: v2.COURSE_ADMIN_CREATE,
+      definition: INSTANCE_COURSE_CREATE,
       params: {
-        walletData,
+        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         teachers: [user.accessTokenAlias],
+        initiator_data: initiatorData,
+        // Side effect params
         title: title.trim(),
       },
       onSuccess: async (txResult) => {
-        const courseNftPolicyId = txResult.apiResponse?.courseId as string | undefined;
+        // Extract course_id from the V2 API response
+        const courseNftPolicyId = txResult.apiResponse?.course_id as string | undefined;
         const txHash = txResult.txHash;
 
         if (courseNftPolicyId && txHash) {
@@ -173,9 +179,9 @@ export function CreateCourseDialog() {
 
   // Requirements
   const hasAccessToken = !!user?.accessTokenAlias;
-  const hasWalletData = !!walletData;
+  const hasInitiatorData = !!initiatorData;
   const hasTitle = title.trim().length > 0;
-  const canCreate = hasAccessToken && hasWalletData && hasTitle;
+  const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
 
   return (
     <AndamioDrawer open={open} onOpenChange={handleOpenChange}>
@@ -226,7 +232,7 @@ export function CreateCourseDialog() {
                   </AndamioAlert>
                 )}
 
-                {hasAccessToken && !hasWalletData && (
+                {hasAccessToken && !hasInitiatorData && (
                   <AndamioAlert>
                     <AlertIcon className="h-4 w-4" />
                     <AndamioAlertDescription>
@@ -236,7 +242,7 @@ export function CreateCourseDialog() {
                 )}
 
                 {/* Title Input */}
-                {hasAccessToken && hasWalletData && state !== "success" && (
+                {hasAccessToken && hasInitiatorData && state !== "success" && (
                   <div className="space-y-3">
                     <AndamioLabel htmlFor="course-title" className="text-base">
                       Course Title

@@ -43,6 +43,9 @@ export {
   AccessTokenIcon,
   WalletIcon,
   UserIcon,
+  ManagerIcon,
+  ContributorIcon,
+  BlockIcon,
   MailIcon,
   PaymentIcon,
   // Projects & Contributions

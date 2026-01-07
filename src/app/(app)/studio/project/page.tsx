@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { RequireAuth } from "~/components/auth/require-auth";
@@ -10,17 +11,20 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
-import { AlertIcon, ProjectIcon, SettingsIcon } from "~/components/icons";
+import { AlertIcon, ProjectIcon, SettingsIcon, AddIcon } from "~/components/icons";
 import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
+import { CreateProject } from "~/components/transactions";
 
 /**
  * Project list content - only rendered when authenticated
  */
 function ProjectListContent() {
+  const router = useRouter();
   const { authenticatedFetch } = useAndamioAuth();
   const [projects, setProjects] = useState<ListOwnedTreasuriesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateProject, setShowCreateProject] = useState(false);
 
   useEffect(() => {
     const fetchOwnedProjects = async () => {
@@ -89,7 +93,13 @@ function ProjectListContent() {
         <AndamioEmptyState
           icon={ProjectIcon}
           title="No Projects Found"
-          description="You don't have any projects yet. Projects are created through the Andamio treasury system."
+          description="You don't have any projects yet. Create your first project to start managing contributors and tasks."
+        />
+
+        <CreateProject
+          onSuccess={(projectId) => {
+            router.push(`/studio/project/${projectId}`);
+          }}
         />
       </div>
     );
@@ -101,7 +111,25 @@ function ProjectListContent() {
       <AndamioPageHeader
         title="Project Studio"
         description="Manage and edit your Andamio projects"
+        action={
+          <AndamioButton
+            onClick={() => setShowCreateProject(!showCreateProject)}
+            variant={showCreateProject ? "outline" : "default"}
+          >
+            <AddIcon className="h-4 w-4 mr-2" />
+            {showCreateProject ? "Cancel" : "Create Project"}
+          </AndamioButton>
+        }
       />
+
+      {showCreateProject && (
+        <CreateProject
+          onSuccess={(projectId) => {
+            setShowCreateProject(false);
+            router.push(`/studio/project/${projectId}`);
+          }}
+        />
+      )}
 
       <AndamioTableContainer>
         <AndamioTable>

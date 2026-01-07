@@ -1,16 +1,16 @@
 /**
- * TeachersUpdate Transaction Component (V2)
+ * ManagersManage Transaction Component (V2)
  *
- * UI for adding or removing teachers from a course.
- * Uses COURSE_OWNER_TEACHERS_MANAGE transaction definition - purely on-chain, no side effects.
+ * UI for adding or removing managers from a project.
+ * Uses PROJECT_OWNER_MANAGERS_MANAGE transaction definition - purely on-chain, no side effects.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/owner/teachers-manage.ts
+ * @see packages/andamio-transactions/src/definitions/v2/project/owner/managers-manage.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { COURSE_OWNER_TEACHERS_MANAGE } from "@andamio/transactions";
+import { PROJECT_OWNER_MANAGERS_MANAGE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -27,85 +27,85 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
+import { ManagerIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 
-export interface TeachersUpdateProps {
+export interface ManagersManageProps {
   /**
-   * Course NFT Policy ID
+   * Project NFT Policy ID
    */
-  courseNftPolicyId: string;
+  projectNftPolicyId: string;
 
   /**
-   * Current teachers (for display)
+   * Current managers (for display)
    */
-  currentTeachers?: string[];
+  currentManagers?: string[];
 
   /**
-   * Callback fired when teachers are successfully updated
+   * Callback fired when managers are successfully updated
    */
   onSuccess?: () => void | Promise<void>;
 }
 
 /**
- * TeachersUpdate - UI for adding/removing teachers from a course (V2)
+ * ManagersManage - UI for adding/removing managers from a project (V2)
  *
  * @example
  * ```tsx
- * <TeachersUpdate
- *   courseNftPolicyId="abc123..."
- *   currentTeachers={["alice", "bob"]}
- *   onSuccess={() => refetchCourse()}
+ * <ManagersManage
+ *   projectNftPolicyId="abc123..."
+ *   currentManagers={["alice", "bob"]}
+ *   onSuccess={() => refetchProject()}
  * />
  * ```
  */
-export function TeachersUpdate({
-  courseNftPolicyId,
-  currentTeachers = [],
+export function ManagersManage({
+  projectNftPolicyId,
+  currentManagers = [],
   onSuccess,
-}: TeachersUpdateProps) {
+}: ManagersManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
-  const [teacherInput, setTeacherInput] = useState("");
+  const [managerInput, setManagerInput] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");
 
-  const handleUpdateTeachers = async () => {
-    if (!user?.accessTokenAlias || !teacherInput.trim()) {
+  const handleUpdateManagers = async () => {
+    if (!user?.accessTokenAlias || !managerInput.trim()) {
       return;
     }
 
-    // Parse teacher aliases (comma-separated)
-    const teacherAliases = teacherInput
+    // Parse manager aliases (comma-separated)
+    const managerAliases = managerInput
       .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0);
 
-    if (teacherAliases.length === 0) {
-      toast.error("No teachers specified");
+    if (managerAliases.length === 0) {
+      toast.error("No managers specified");
       return;
     }
 
     // Build params based on action - API uses separate arrays for add/remove
-    const teachers_to_add = action === "add" ? teacherAliases : [];
-    const teachers_to_remove = action === "remove" ? teacherAliases : [];
+    const managers_to_add = action === "add" ? managerAliases : [];
+    const managers_to_remove = action === "remove" ? managerAliases : [];
 
     await execute({
-      definition: COURSE_OWNER_TEACHERS_MANAGE,
+      definition: PROJECT_OWNER_MANAGERS_MANAGE,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        teachers_to_add,
-        teachers_to_remove,
+        project_id: projectNftPolicyId,
+        managers_to_add,
+        managers_to_remove,
       },
       onSuccess: async (txResult) => {
-        console.log("[TeachersUpdate] Success!", txResult);
+        console.log("[ManagersManage] Success!", txResult);
 
         // Show success toast
         const actionText = action === "add" ? "added to" : "removed from";
-        toast.success("Teachers Updated!", {
-          description: `${teacherAliases.join(", ")} ${actionText} course`,
+        toast.success("Managers Updated!", {
+          description: `${managerAliases.join(", ")} ${actionText} project`,
           action: txResult.blockchainExplorerUrl
             ? {
                 label: "View Transaction",
@@ -115,15 +115,15 @@ export function TeachersUpdate({
         });
 
         // Clear input
-        setTeacherInput("");
+        setManagerInput("");
 
         // Call callback
         await onSuccess?.();
       },
       onError: (txError) => {
-        console.error("[TeachersUpdate] Error:", txError);
+        console.error("[ManagersManage] Error:", txError);
         toast.error("Update Failed", {
-          description: txError.message || "Failed to update teachers",
+          description: txError.message || "Failed to update managers",
         });
       },
     });
@@ -134,35 +134,35 @@ export function TeachersUpdate({
   }
 
   const hasAccessToken = !!user.accessTokenAlias;
-  const hasTeachers = teacherInput.trim().length > 0;
-  const canSubmit = hasAccessToken && hasTeachers;
+  const hasManagers = managerInput.trim().length > 0;
+  const canSubmit = hasAccessToken && hasManagers;
 
   return (
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <TeacherIcon className="h-5 w-5 text-muted-foreground" />
+            <ManagerIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Manage Teachers</AndamioCardTitle>
+            <AndamioCardTitle>Manage Project Managers</AndamioCardTitle>
             <AndamioCardDescription>
-              Add or remove teachers from this course
+              Add or remove managers from this project
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Current Teachers */}
-        {currentTeachers.length > 0 && (
+        {/* Current Managers */}
+        {currentManagers.length > 0 && (
           <div className="space-y-2">
             <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
-              Current Teachers
+              Current Managers
             </AndamioText>
             <div className="flex flex-wrap gap-2">
-              {currentTeachers.map((teacher) => (
-                <AndamioBadge key={teacher} variant="secondary" className="text-xs font-mono">
-                  {teacher}
+              {currentManagers.map((manager) => (
+                <AndamioBadge key={manager} variant="secondary" className="text-xs font-mono">
+                  {manager}
                 </AndamioBadge>
               ))}
             </div>
@@ -191,17 +191,17 @@ export function TeachersUpdate({
           </AndamioButton>
         </div>
 
-        {/* Teacher Input */}
+        {/* Manager Input */}
         <div className="space-y-2">
-          <AndamioLabel htmlFor="teachers">
-            {action === "add" ? "Teachers to Add" : "Teachers to Remove"}
+          <AndamioLabel htmlFor="managers">
+            {action === "add" ? "Managers to Add" : "Managers to Remove"}
           </AndamioLabel>
           <AndamioInput
-            id="teachers"
+            id="managers"
             type="text"
             placeholder="alice, bob, carol"
-            value={teacherInput}
-            onChange={(e) => setTeacherInput(e.target.value)}
+            value={managerInput}
+            onChange={(e) => setManagerInput(e.target.value)}
             disabled={state !== "idle" && state !== "error"}
           />
           <AndamioText variant="small" className="text-xs">
@@ -214,7 +214,7 @@ export function TeachersUpdate({
           <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
             <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
             <AndamioText variant="small" className="text-xs text-warning-foreground">
-              Removing teachers will revoke their ability to manage modules and assess assignments.
+              Removing managers will revoke their ability to manage tasks and assess submissions.
             </AndamioText>
           </div>
         )}
@@ -227,7 +227,7 @@ export function TeachersUpdate({
             error={error}
             onRetry={() => reset()}
             messages={{
-              success: `Teachers ${action === "add" ? "added" : "removed"} successfully!`,
+              success: `Managers ${action === "add" ? "added" : "removed"} successfully!`,
             }}
           />
         )}
@@ -236,10 +236,10 @@ export function TeachersUpdate({
         {state !== "success" && (
           <TransactionButton
             txState={state}
-            onClick={handleUpdateTeachers}
+            onClick={handleUpdateManagers}
             disabled={!canSubmit}
             stateText={{
-              idle: action === "add" ? "Add Teachers" : "Remove Teachers",
+              idle: action === "add" ? "Add Managers" : "Remove Managers",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",

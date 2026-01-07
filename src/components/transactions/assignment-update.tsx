@@ -3,11 +3,15 @@
  *
  * Elegant UI for students to submit or update assignment evidence.
  * Supports two modes: updating existing submission or committing to a new module.
+ * Uses COURSE_STUDENT_ASSIGNMENT_ACTION transaction definition from @andamio/transactions.
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-action.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { COURSE_STUDENT_ASSIGNMENT_ACTION, computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -23,7 +27,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { SendIcon, EditIcon, ShieldIcon, TransactionIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { v2, computeAssignmentInfoHash } from "@andamio/transactions";
 import type { JSONContent } from "@tiptap/core";
 
 export interface AssignmentUpdateProps {
@@ -107,18 +110,18 @@ export function AssignmentUpdate({
     setEvidenceHash(hash);
 
     await execute({
-      definition: v2.COURSE_STUDENT_ASSIGNMENT_UPDATE,
+      definition: COURSE_STUDENT_ASSIGNMENT_ACTION,
       params: {
-        // Transaction API params
+        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        courseId: courseNftPolicyId,
-        assignmentInfo: hash,
-        // maybeNewSltHash would be set if committing to a new module
+        course_id: courseNftPolicyId,
+        assignment_info: hash,
+        // new_slt_hash would be set if committing to a new module
         // Side effect params
-        isNewCommitment,
-        moduleCode,
-        networkEvidence: evidence,
-        networkEvidenceHash: hash,
+        is_new_commitment: isNewCommitment,
+        module_code: moduleCode,
+        network_evidence: evidence,
+        network_evidence_hash: hash,
       },
       onSuccess: async (txResult) => {
         console.log("[AssignmentUpdate] Success!", txResult);

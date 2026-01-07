@@ -4,10 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import {
   AndamioTable,
   AndamioTableBody,
@@ -16,7 +14,15 @@ import {
   AndamioTableHeader,
   AndamioTableRow,
 } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioTableContainer } from "~/components/andamio";
+import {
+  AndamioPageHeader,
+  AndamioTableContainer,
+  AndamioDashboardStat,
+  AndamioPageLoading,
+  AndamioErrorAlert,
+  AndamioEmptyState,
+  AndamioSearchInput,
+} from "~/components/andamio";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -31,9 +37,8 @@ import {
   AndamioSelectTrigger,
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
-import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AlertIcon, TeacherIcon, SuccessIcon, PendingIcon, ErrorIcon, SearchIcon, CloseIcon } from "~/components/icons";
+import { TeacherIcon, SuccessIcon, PendingIcon, ErrorIcon, CloseIcon } from "~/components/icons";
 import {
   type CourseOutput,
   type AssignmentCommitmentWithAssignmentOutput,
@@ -201,26 +206,7 @@ export default function InstructorDashboardPage() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <AndamioSkeleton className="h-9 w-64 mb-2" />
-          <AndamioSkeleton className="h-5 w-96" />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <AndamioSkeleton key={i} className="h-24 w-full" />
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <AndamioSkeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AndamioPageLoading variant="detail" />;
   }
 
   // Error state
@@ -234,11 +220,7 @@ export default function InstructorDashboardPage() {
 
         <AndamioPageHeader title="Instructor Dashboard" />
 
-        <AndamioAlert variant="destructive">
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error ?? "Course not found"}</AndamioAlertDescription>
-        </AndamioAlert>
+        <AndamioErrorAlert error={error ?? "Course not found"} />
       </div>
     );
   }
@@ -259,45 +241,10 @@ export default function InstructorDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <AndamioCard>
-          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <AndamioCardTitle className="text-sm font-medium">Total Commitments</AndamioCardTitle>
-            <TeacherIcon className="h-4 w-4 text-muted-foreground" />
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </AndamioCardContent>
-        </AndamioCard>
-
-        <AndamioCard>
-          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <AndamioCardTitle className="text-sm font-medium">Pending</AndamioCardTitle>
-            <PendingIcon className="h-4 w-4 text-muted-foreground" />
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </AndamioCardContent>
-        </AndamioCard>
-
-        <AndamioCard>
-          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <AndamioCardTitle className="text-sm font-medium">Accepted</AndamioCardTitle>
-            <SuccessIcon className="h-4 w-4 text-success" />
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <div className="text-2xl font-bold text-success">{stats.accepted}</div>
-          </AndamioCardContent>
-        </AndamioCard>
-
-        <AndamioCard>
-          <AndamioCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <AndamioCardTitle className="text-sm font-medium">Denied</AndamioCardTitle>
-            <ErrorIcon className="h-4 w-4 text-destructive" />
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.denied}</div>
-          </AndamioCardContent>
-        </AndamioCard>
+        <AndamioDashboardStat icon={TeacherIcon} label="Total Commitments" value={stats.total} />
+        <AndamioDashboardStat icon={PendingIcon} label="Pending" value={stats.pending} />
+        <AndamioDashboardStat icon={SuccessIcon} label="Accepted" value={stats.accepted} valueColor="success" iconColor="success" />
+        <AndamioDashboardStat icon={ErrorIcon} label="Denied" value={stats.denied} valueColor="destructive" iconColor="destructive" />
       </div>
 
       {/* Filters */}
@@ -344,16 +291,12 @@ export default function InstructorDashboardPage() {
 
             <div className="space-y-2">
               <AndamioLabel htmlFor="search">Search Learner</AndamioLabel>
-              <div className="relative">
-                <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <AndamioInput
-                  id="search"
-                  placeholder="Search by access token alias..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+              <AndamioSearchInput
+                id="search"
+                placeholder="Search by access token alias..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
 
@@ -380,27 +323,26 @@ export default function InstructorDashboardPage() {
 
       {/* Commitments Table */}
       {filteredCommitments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">
-          <TeacherIcon className="h-12 w-12 text-muted-foreground mb-4" />
-          <AndamioText variant="small" className="mb-2">
-            {commitments.length === 0
-              ? "No assignment commitments yet."
-              : "No commitments match your filters."}
-          </AndamioText>
-          {commitments.length > 0 && (
-            <AndamioButton
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setStatusFilter("all");
-                setAssignmentFilter("all");
-                setSearchQuery("");
-              }}
-            >
-              Clear Filters
-            </AndamioButton>
-          )}
-        </div>
+        <AndamioEmptyState
+          icon={TeacherIcon}
+          title={commitments.length === 0 ? "No assignment commitments yet" : "No commitments match your filters"}
+          description="Assignment commitments from learners will appear here for review."
+          action={
+            commitments.length > 0 ? (
+              <AndamioButton
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setAssignmentFilter("all");
+                  setSearchQuery("");
+                }}
+              >
+                Clear Filters
+              </AndamioButton>
+            ) : undefined
+          }
+        />
       ) : (
         <AndamioTableContainer>
           <AndamioTable>

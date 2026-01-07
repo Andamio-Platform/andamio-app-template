@@ -17,10 +17,12 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `color-system` | Manage and update the semantic color palette in globals.css | Low | Useful for theme iterations; the theme-expert skill covers usage but not modification |
 | `naming-convention-checker` | Validate naming conventions (module codes, SLT references) across components | Medium | New convention for `<module-code>.<module-index>` should be consistently applied |
 | `loading-state-auditor` | Verify loading states match page layouts (loadingVariant patterns) | Low | Prevents loading screen "flash" issues; check RequireCourseAccess usage, React Query patterns |
-| `transaction-auditor` | Verify transaction definitions match API endpoints | High | Caught endpoint path mismatch in COURSE_ADMIN_CREATE; side effects depend on exact paths |
+| `transaction-auditor` | Verify transaction definitions match API endpoints and schemas | **Critical** | Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Should fetch swagger.json and validate all required fields. Caught COURSE_ADMIN_CREATE path mismatch and COURSE_TEACHER_MODULES_MANAGE schema drift (missing `allowed_course_state_ids`, `prereq_slt_hashes`). |
+| `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
+| `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2025-12-31 (added transaction-auditor skill suggestion)
+**Updated**: 2026-01-07 (added project-workflow-guide, dashboard-builder suggestions)
 
 ---
 
@@ -30,6 +32,7 @@ Ideas for improving existing documentation.
 
 | Idea | Location | Priority | Notes |
 |------|----------|----------|-------|
+| **Audit React Query cache invalidation after transactions** | `src/hooks/api/`, transaction components | **High** | Some routes require manual refresh after transactions complete. Need to ensure `queryClient.invalidateQueries()` is called with correct keys in all transaction `onSuccess` callbacks. Check: course creation, module minting, enrollment, assignment commits. |
 | Add @dnd-kit to dependencies list in CLAUDE.md | `.claude/CLAUDE.md` | Low | Now used for SLT reordering, should be documented as a core dependency |
 | Document color system design decisions | `.claude/skills/theme-expert/` | Low | Current values use oklch with hue 250 (sky blue); rationale could be documented |
 
@@ -76,3 +79,18 @@ Items that have been addressed and can be archived.
 | Fix raw `<input>` elements in studio/course/page.tsx | 2025-12-31 | Changed to AndamioInput |
 | Update STATUS.md with Session 5 changes | 2025-12-31 | Added new session entry |
 | Build `global-style-checker` skill | 2025-12-31 | Created SKILL.md and global-overrides.md reference |
+| Add AndamioDashboardStat to extracted-components.md | 2026-01-07 | Documented with props table, usage examples |
+| Add AndamioSearchInput to extracted-components.md | 2026-01-07 | Documented with props table, usage examples |
+| Add Contributor Dashboard route to SITEMAP.md | 2026-01-07 | `/project/[treasurynft]/contributor` with API deps |
+| Add Manager Dashboard route to SITEMAP.md | 2026-01-07 | `/studio/project/[treasurynft]/manager` with API deps |
+| Add project transaction components to CHANGELOG.md | 2026-01-07 | 8 new transaction components documented |
+| Add new dashboard components to CHANGELOG.md | 2026-01-07 | AndamioDashboardStat, AndamioSearchInput |
+| Add Task Detail Page Commitment Flow to CHANGELOG.md | 2026-01-07 | Full commitment workflow with evidence editor |
+| Add task detail route to SITEMAP.md | 2026-01-07 | Component details for `/project/[treasurynft]/[taskhash]` |
+| Review-styling task detail page | 2026-01-07 | Fixed 5 violations, added to Review History |
+| Update tx-loop-guide SKILL.md with critical behaviors | 2026-01-07 | Added section on automatic issue creation |
+| Add MintModuleTokens to On-Chain tab | 2026-01-07 | Fixed missing UI for module minting |
+| Fix course creation side effect case mismatch | 2026-01-07 | Changed camelCase to snake_case mappings |
+| Update modules-manage.ts schema | 2026-01-07 | Aligned with Atlas API swagger.json |
+| Document tx loop session in STATUS.md | 2026-01-07 | Added Session 2 notes with bugs and systemic issues |
+| Update CHANGELOG with tx loop bug fixes | 2026-01-07 | Added 4 new Fixed entries |

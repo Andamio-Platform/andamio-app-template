@@ -1,16 +1,16 @@
 /**
- * AssessAssignment Transaction Component (V2)
+ * TasksAssess Transaction Component (V2)
  *
- * UI for teachers to assess (accept/deny) student assignment submissions.
- * Uses COURSE_TEACHER_ASSIGNMENTS_ASSESS transaction definition from @andamio/transactions.
+ * UI for project managers to assess (accept/refuse/deny) contributor task submissions.
+ * Uses PROJECT_MANAGER_TASKS_ASSESS transaction definition.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/teacher/assignments-assess.ts
+ * @see packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { COURSE_TEACHER_ASSIGNMENTS_ASSESS } from "@andamio/transactions";
+import { PROJECT_MANAGER_TASKS_ASSESS } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -25,62 +25,83 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { SuccessIcon, ErrorIcon, AssessIcon, AlertIcon } from "~/components/icons";
+import { AssessIcon, SuccessIcon, ErrorIcon, AlertIcon, BlockIcon } from "~/components/icons";
 import { toast } from "sonner";
 
-export interface AssessAssignmentProps {
+type AssessmentOutcome = "accept" | "refuse" | "deny";
+
+export interface TasksAssessProps {
   /**
-   * Course NFT Policy ID
+   * Project NFT Policy ID
    */
-  courseNftPolicyId: string;
+  projectNftPolicyId: string;
 
   /**
-   * Student's access token alias
+   * Contributor state ID (required for task assessment)
    */
-  studentAlias: string;
+  contributorStateId: string;
 
   /**
-   * Module code for the assignment
+   * Contributor's access token alias
    */
-  moduleCode: string;
+  contributorAlias: string;
 
   /**
-   * Module title for display
+   * Task hash being assessed (64 char hex)
    */
-  moduleTitle?: string;
+  taskHash: string;
+
+  /**
+   * Task code for display and side effects
+   */
+  taskCode: string;
+
+  /**
+   * Task title for display (optional)
+   */
+  taskTitle?: string;
 
   /**
    * Callback fired when assessment is successful
    */
-  onSuccess?: (result: "accept" | "refuse") => void | Promise<void>;
+  onSuccess?: (result: AssessmentOutcome) => void | Promise<void>;
 }
 
 /**
- * AssessAssignment - Teacher UI for accepting/denying student submissions (V2)
+ * TasksAssess - Manager UI for assessing contributor task submissions (V2)
+ *
+ * Assessment outcomes:
+ * - **Accept**: Contributor receives the task reward, task is marked complete
+ * - **Refuse**: Task is rejected but contributor can resubmit
+ * - **Deny**: Task is permanently rejected, contributor loses deposit
  *
  * @example
  * ```tsx
- * <AssessAssignment
- *   courseNftPolicyId="abc123..."
- *   studentAlias="alice"
- *   moduleCode="MODULE_1"
- *   onSuccess={(result) => refetchCommitments()}
+ * <TasksAssess
+ *   projectNftPolicyId="abc123..."
+ *   contributorStateId="def456..."
+ *   contributorAlias="alice"
+ *   taskHash="ghi789..."
+ *   taskCode="TASK_001"
+ *   onSuccess={(result) => refetchSubmissions()}
  * />
  * ```
  */
-export function AssessAssignment({
-  courseNftPolicyId,
-  studentAlias,
-  moduleCode,
-  moduleTitle,
+export function TasksAssess({
+  projectNftPolicyId,
+  contributorStateId,
+  contributorAlias,
+  taskHash,
+  taskCode,
+  taskTitle,
   onSuccess,
-}: AssessAssignmentProps) {
+}: TasksAssessProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
-  const [assessmentResult, setAssessmentResult] = useState<"accept" | "refuse" | null>(null);
+  const [assessmentResult, setAssessmentResult] = useState<AssessmentOutcome | null>(null);
 
-  const handleAssess = async (decision: "accept" | "refuse") => {
+  const handleAssess = async (decision: AssessmentOutcome) => {
     if (!user?.accessTokenAlias) {
       return;
     }
@@ -88,26 +109,32 @@ export function AssessAssignment({
     setAssessmentResult(decision);
 
     await execute({
-      definition: COURSE_TEACHER_ASSIGNMENTS_ASSESS,
+      definition: PROJECT_MANAGER_TASKS_ASSESS,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        assignment_decisions: [
-          { alias: studentAlias, outcome: decision },
+        project_id: projectNftPolicyId,
+        contributor_state_id: contributorStateId,
+        task_decisions: [
+          { task_hash: taskHash, outcome: decision },
         ],
         // Side effect params
-        module_code: moduleCode,
-        student_access_token_alias: studentAlias,
+        contributor_alias: contributorAlias,
+        task_code: taskCode,
         assessment_result: decision,
       },
       onSuccess: async (txResult) => {
-        console.log("[AssessAssignment] Success!", txResult);
+        console.log("[TasksAssess] Success!", txResult);
 
-        // Show success toast
-        const actionText = decision === "accept" ? "accepted" : "refused";
-        toast.success(`Assignment ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
-          description: `${studentAlias}'s submission has been ${actionText}`,
+        const actionText =
+          decision === "accept"
+            ? "accepted"
+            : decision === "refuse"
+              ? "refused"
+              : "denied";
+
+        toast.success(`Task ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
+          description: `${contributorAlias}'s submission has been ${actionText}`,
           action: txResult.blockchainExplorerUrl
             ? {
                 label: "View Transaction",
@@ -119,7 +146,7 @@ export function AssessAssignment({
         await onSuccess?.(decision);
       },
       onError: (txError) => {
-        console.error("[AssessAssignment] Error:", txError);
+        console.error("[TasksAssess] Error:", txError);
         setAssessmentResult(null);
         toast.error("Assessment Failed", {
           description: txError.message || "Failed to submit assessment",
@@ -142,22 +169,41 @@ export function AssessAssignment({
             <AssessIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Assess Submission</AndamioCardTitle>
+            <AndamioCardTitle>Assess Task Submission</AndamioCardTitle>
             <AndamioCardDescription>
-              Review and assess {studentAlias}&apos;s assignment
+              Review and assess {contributorAlias}&apos;s task submission
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Assignment Info */}
+        {/* Task Info */}
         <div className="flex flex-wrap items-center gap-2">
           <AndamioBadge variant="outline" className="text-xs font-mono">
-            Student: {studentAlias}
+            Contributor: {contributorAlias}
           </AndamioBadge>
           <AndamioBadge variant="secondary" className="text-xs">
-            {moduleTitle ?? moduleCode}
+            {taskTitle ?? taskCode}
           </AndamioBadge>
+        </div>
+
+        {/* Assessment Outcomes Explanation */}
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+          <AndamioText variant="small" className="font-medium">Assessment Options:</AndamioText>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <SuccessIcon className="h-3 w-3 text-success" />
+              <span><strong>Accept</strong>: Approve and release reward</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ErrorIcon className="h-3 w-3 text-warning" />
+              <span><strong>Refuse</strong>: Reject, allow resubmission</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <BlockIcon className="h-3 w-3 text-destructive" />
+              <span><strong>Deny</strong>: Permanently reject, forfeit deposit</span>
+            </div>
+          </div>
         </div>
 
         {/* Warning about irreversibility */}
@@ -179,14 +225,20 @@ export function AssessAssignment({
               reset();
             }}
             messages={{
-              success: `Assignment ${assessmentResult === "accept" ? "accepted" : "refused"} successfully!`,
+              success: `Task ${
+                assessmentResult === "accept"
+                  ? "accepted"
+                  : assessmentResult === "refuse"
+                    ? "refused"
+                    : "denied"
+              } successfully!`,
             }}
           />
         )}
 
         {/* Assessment Buttons */}
         {state === "idle" && hasAccessToken && (
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <AndamioButton
               variant="default"
               className="flex-1"
@@ -196,12 +248,20 @@ export function AssessAssignment({
               Accept
             </AndamioButton>
             <AndamioButton
-              variant="destructive"
+              variant="outline"
               className="flex-1"
               onClick={() => handleAssess("refuse")}
             >
               <ErrorIcon className="h-4 w-4 mr-2" />
               Refuse
+            </AndamioButton>
+            <AndamioButton
+              variant="destructive"
+              className="flex-1"
+              onClick={() => handleAssess("deny")}
+            >
+              <BlockIcon className="h-4 w-4 mr-2" />
+              Deny
             </AndamioButton>
           </div>
         )}
@@ -213,7 +273,12 @@ export function AssessAssignment({
             onClick={() => undefined}
             disabled
             stateText={{
-              idle: assessmentResult === "accept" ? "Accept" : "Refuse",
+              idle:
+                assessmentResult === "accept"
+                  ? "Accept"
+                  : assessmentResult === "refuse"
+                    ? "Refuse"
+                    : "Deny",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Recording on Blockchain...",

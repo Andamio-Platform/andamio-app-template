@@ -32,8 +32,9 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon } from "~/components/icons";
 import { type ListOwnedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
+import { ManagersManage, BlacklistManage } from "~/components/transactions";
 
 type TaskListOutput = CreateTaskOutput[];
 
@@ -59,7 +60,7 @@ export default function ProjectDashboardPage() {
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
-  const validTabs = ["overview", "tasks", "team", "settings"];
+  const validTabs = ["overview", "tasks", "team", "blacklist", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "overview";
 
   const handleTabChange = (value: string) => {
@@ -83,71 +84,73 @@ export default function ProjectDashboardPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
-  useEffect(() => {
+  // Fetch function extracted so it can be called from transaction success handlers
+  const fetchProjectAndTasks = async () => {
     if (!isAuthenticated) {
       setIsLoading(false);
       return;
     }
 
-    const fetchProjectAndTasks = async () => {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // Fetch owned projects (POST with body)
-        const projectResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list-owned`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
-        );
-
-        if (!projectResponse.ok) {
-          throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
+    try {
+      // Fetch owned projects (POST with body)
+      const projectResponse = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list-owned`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
         }
+      );
 
-        const projectsData = (await projectResponse.json()) as ListOwnedTreasuriesOutput;
-
-        // Find the specific project
-        const projectData = projectsData.find(
-          (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-        );
-
-        if (!projectData) {
-          throw new Error("Project not found or you don't have access");
-        }
-
-        setProject(projectData);
-        setTitle(projectData.title ?? "");
-        // Note: description, imageUrl, videoUrl are not in the list-owned response
-        // They would need to be fetched from a separate endpoint if needed
-
-        // Fetch tasks (POST with body)
-        const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
-        );
-
-        if (tasksResponse.ok) {
-          const tasksData = (await tasksResponse.json()) as TaskListOutput;
-          setTasks(tasksData ?? []);
-        }
-      } catch (err) {
-        console.error("Error fetching project:", err);
-        setError(err instanceof Error ? err.message : "Failed to load project");
-      } finally {
-        setIsLoading(false);
+      if (!projectResponse.ok) {
+        throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
       }
-    };
 
+      const projectsData = (await projectResponse.json()) as ListOwnedTreasuriesOutput;
+
+      // Find the specific project
+      const projectData = projectsData.find(
+        (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
+      );
+
+      if (!projectData) {
+        throw new Error("Project not found or you don't have access");
+      }
+
+      setProject(projectData);
+      setTitle(projectData.title ?? "");
+      // Note: description, imageUrl, videoUrl are not in the list-owned response
+      // They would need to be fetched from a separate endpoint if needed
+
+      // Fetch tasks (POST with body)
+      const tasksResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
+        }
+      );
+
+      if (tasksResponse.ok) {
+        const tasksData = (await tasksResponse.json()) as TaskListOutput;
+        setTasks(tasksData ?? []);
+      }
+    } catch (err) {
+      console.error("Error fetching project:", err);
+      setError(err instanceof Error ? err.message : "Failed to load project");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     void fetchProjectAndTasks();
-  }, [isAuthenticated, authenticatedFetch, treasuryNftPolicyId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, treasuryNftPolicyId]);
 
   const handleSave = async () => {
     if (!isAuthenticated || !project) {
@@ -260,7 +263,7 @@ export default function ProjectDashboardPage() {
 
       {/* Tabbed Interface */}
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <AndamioTabsList className="grid w-full grid-cols-4">
+        <AndamioTabsList className="grid w-full grid-cols-5">
           <AndamioTabsTrigger value="overview" className="flex items-center gap-2">
             <ChartIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -272,6 +275,10 @@ export default function ProjectDashboardPage() {
           <AndamioTabsTrigger value="team" className="flex items-center gap-2">
             <TeacherIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Team</span>
+          </AndamioTabsTrigger>
+          <AndamioTabsTrigger value="blacklist" className="flex items-center gap-2">
+            <BlockIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Blacklist</span>
           </AndamioTabsTrigger>
           <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
@@ -378,6 +385,18 @@ export default function ProjectDashboardPage() {
                   </div>
                 </AndamioButton>
               </Link>
+
+              <Link href={`/studio/project/${treasuryNftPolicyId}/manager`}>
+                <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
+                  <ManagerIcon className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-medium">Manager Dashboard</div>
+                    <div className="text-sm text-muted-foreground">
+                      Assess contributor submissions
+                    </div>
+                  </div>
+                </AndamioButton>
+              </Link>
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>
@@ -406,6 +425,26 @@ export default function ProjectDashboardPage() {
               </Link>
             </AndamioCardContent>
           </AndamioCard>
+
+          {/* Managers Management */}
+          <ManagersManage
+            projectNftPolicyId={treasuryNftPolicyId}
+            onSuccess={() => {
+              // Refresh project data
+              void fetchProjectAndTasks();
+            }}
+          />
+        </AndamioTabsContent>
+
+        {/* Blacklist Tab */}
+        <AndamioTabsContent value="blacklist" className="mt-6 space-y-4">
+          <BlacklistManage
+            projectNftPolicyId={treasuryNftPolicyId}
+            onSuccess={() => {
+              // Refresh project data
+              void fetchProjectAndTasks();
+            }}
+          />
         </AndamioTabsContent>
 
         {/* Settings Tab */}

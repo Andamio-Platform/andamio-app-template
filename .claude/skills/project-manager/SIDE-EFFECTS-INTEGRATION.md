@@ -220,6 +220,40 @@ pathParams: {
 ✅ **User Feedback** - Appropriate toast notifications
 ✅ **Flexible** - Works with any AndamioTransactionDefinition
 
+## Known Issues / Caveats
+
+### API Response Mapping Uses snake_case
+
+The hook maps API response fields to `buildInputs` for side effects. **API responses use snake_case**, so mappings must also use snake_case:
+
+```typescript
+// ✅ CORRECT - snake_case matches API response
+if (apiResponse.course_id && typeof apiResponse.course_id === 'string') {
+  buildInputs.course_nft_policy_id = apiResponse.course_id;
+}
+
+// ❌ WRONG - camelCase won't match API response
+if (apiResponse.courseId) {  // This will always be undefined!
+  buildInputs.courseNftPolicyId = apiResponse.courseId;
+}
+```
+
+**Fixed 2026-01-07**: The hook was incorrectly looking for `courseId` (camelCase) but the API returns `course_id` (snake_case). This caused course creation side effects to fail silently.
+
+### Transaction Definition Schema Drift
+
+The Atlas API schema evolves independently of `@andamio/transactions` definitions. Fields may be added/removed without updating the package. Always validate transaction schemas against the latest swagger.json:
+
+```
+https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json
+```
+
+**Example**: `COURSE_TEACHER_MODULES_MANAGE` required fields changed:
+- Removed: `allowed_students_v2`, `prerequisite_assignments_v2`
+- Added: `allowed_course_state_ids`, `prereq_slt_hashes`
+
+See GitHub issue #24 for systemic tracking.
+
 ## Testing
 
 To test side effects in development:

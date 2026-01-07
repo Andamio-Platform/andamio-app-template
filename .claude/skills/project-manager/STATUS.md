@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: December 31, 2025
+> **Last Updated**: January 7, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -24,7 +24,7 @@ Current implementation status of the Andamio T3 App Template.
 | Area | Status | Progress |
 |------|--------|----------|
 | Course System | Stable | 15/15 routes, ~66% API coverage |
-| Project System | Planned | 13 routes documented, 0 implemented |
+| Project System | In Progress | 2/13 routes, 8 transaction components |
 | React Query Migration | Complete | 18 hooks created, 6 pages migrated |
 | Transaction System | Stable | Side effects, pending tx monitoring |
 | Styling System | Stable | Full semantic color system |
@@ -171,30 +171,44 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 ## Project System
 
-### Status: Planned (Post-Mainnet)
+### Status: In Progress 🔄
 
-**Timeline**: Implementation after 2026-02-06
+**Recent Progress**: Contributor and Manager dashboards implemented (January 2026)
 
-13 routes documented in `project-local-state.md`:
+### Routes: 2/13 Implemented
 
-**Public (Contributor)** - 3 routes:
-- `/project` - Project catalog
-- `/project/[treasurynft]` - Project detail with tasks
+**Public (Contributor)** - 2/3 routes:
+- `/project` - ✅ Project catalog
+- `/project/[treasurynft]` - ✅ Project detail with tasks
+- `/project/[treasurynft]/contributor` - ✅ **NEW** Contributor dashboard (enroll, commit, claim)
 - `/project/[treasurynft]/[taskhash]` - Task detail with commitment
 
-**Studio (Manager)** - 10 routes:
-- `/studio/project` - Project management
-- `/studio/project/[treasurynft]` - Project dashboard
-- `/studio/project/[treasurynft]/manage-treasury`
-- `/studio/project/[treasurynft]/manage-contributors`
-- `/studio/project/[treasurynft]/commitments`
-- `/studio/project/[treasurynft]/commitments/[alias]`
-- `/studio/project/[treasurynft]/draft-tasks`
-- `/studio/project/[treasurynft]/draft-tasks/new`
-- `/studio/project/[treasurynft]/draft-tasks/[taskindex]`
-- `/studio/project/[treasurynft]/transaction-history`
+**Studio (Manager)** - 1/10 routes:
+- `/studio/project` - ✅ Project management
+- `/studio/project/[treasurynft]` - ✅ Project dashboard
+- `/studio/project/[treasurynft]/manager` - ✅ **NEW** Manager dashboard (review submissions)
+- `/studio/project/[treasurynft]/draft-tasks` - ✅ Task list management
+- `/studio/project/[treasurynft]/draft-tasks/new` - ✅ Create new task
+- `/studio/project/[treasurynft]/draft-tasks/[taskindex]` - ✅ Edit existing task
+- `/studio/project/[treasurynft]/manage-treasury` - Planned
+- `/studio/project/[treasurynft]/manage-contributors` - Planned
+- `/studio/project/[treasurynft]/commitments` - Planned
+- `/studio/project/[treasurynft]/transaction-history` - Planned
 
-16 API endpoints mapped, awaiting implementation.
+### Transaction Components: 8 Created
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `ProjectEnroll` | Enroll in project + initial task commit | Active |
+| `TaskCommit` | Commit to a task with evidence | Active |
+| `ProjectCredentialClaim` | Claim earned project credentials | Active |
+| `TasksAssess` | Manager: assess task submissions | Active |
+| `TasksManage` | Manager: manage project tasks | Active |
+| `ManagersManage` | Manager: manage project managers | Active |
+| `BlacklistManage` | Manager: manage blacklist | Active |
+| `CreateProject` | Create new project treasury | Active |
+
+16 API endpoints mapped, implementation ongoing.
 
 ---
 
@@ -213,6 +227,50 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 ---
 
 ## Recent Changes
+
+### January 7, 2026 (Session 2 - Tx Loop Testing)
+
+**Tx Loop Testing Session**: Tested Loop 1 (Onboarding) and Loop 3 (Create and Publish Course)
+
+**Bugs Found & Fixed**:
+- **Course Creation Side Effects** (`use-andamio-transaction.ts`): Fixed case mismatch - API returns `course_id` (snake_case) but hook was looking for `courseId` (camelCase). Side effect mapping now correctly uses `course_nft_policy_id`.
+- **Missing MintModuleTokens UI** (`studio/course/[coursenft]/page.tsx`): The On-Chain tab showed "Ready to Mint" count but had no mint button. Added `MintModuleTokens` component to render when approved modules exist.
+- **Undefined Modules Crash** (`studio/course/page.tsx`): Fixed crash when `onChainCourse.modules` was undefined by adding optional chaining.
+- **API Schema Mismatch** (`modules-manage.ts`, `mint-module-tokens.tsx`): Updated transaction definition and component to match Atlas API's required fields: `slts`, `allowed_course_state_ids`, `prereq_slt_hashes` (removed obsolete `allowed_students_v2`, `prerequisite_assignments_v2`).
+
+**GitHub Issues Created**:
+- #23: Blocker - Course creation tx succeeds but side effect fails (fixed)
+- #24: Feedback Digest - Loop 3 UX feedback
+
+**UX Feedback Collected** (see issue #24 for details):
+- Mint UI confusing, alias input hard to find (Loop 1)
+- No visual feedback while waiting for tx confirmation
+- Dashboard too cluttered, unclear call to action
+- Module mint action was hidden in On-Chain tab
+
+**Systemic Issues Identified**:
+1. **Transaction Definition Drift**: Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Need periodic audit against swagger.json.
+2. **Side Effect Parameter Mapping**: The hook's API response mapping is fragile. Consider standardizing snake_case throughout or adding explicit mapping functions.
+
+### January 7, 2026 (Session 1)
+
+- **Contributor Dashboard**: New route `/project/[treasurynft]/contributor` for project contributors
+  - Project enrollment with initial task commit
+  - Task commitment workflow with evidence submission
+  - Credential claiming for completed tasks
+  - Stats grid showing commitments, approvals, tokens
+- **Manager Dashboard**: New route `/studio/project/[treasurynft]/manager` for project managers
+  - Review pending task submissions
+  - Approve/deny submissions with feedback
+  - Stats grid showing pending, approved, denied counts
+- **8 Project Transaction Components**: Full set of project workflow transactions
+  - `ProjectEnroll`, `TaskCommit`, `ProjectCredentialClaim` (contributor)
+  - `TasksAssess`, `TasksManage`, `ManagersManage`, `BlacklistManage`, `CreateProject` (manager)
+- **AndamioDashboardStat Component**: Reusable KPI card with icon, label, value, description
+  - Semantic color support for value and icon
+  - Optional description prop for sub-text
+- **AndamioSearchInput Component**: Search input with integrated SearchIcon
+- **Documentation Updates**: Updated SITEMAP, CHANGELOG, extracted-components.md
 
 ### January 1, 2026
 
@@ -294,10 +352,13 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 ## Known Issues
 
-1. **Low Hook Coverage**: Most pages use `useState`/`useEffect` instead of React Query
-2. **Project Routes Missing**: All project/task routes documented but not built
-3. **User Endpoints Unused**: 0% of user-related API endpoints integrated
-4. **Duplicate Routes**: `/courses` and `/studio/course` show same data
+1. **Transaction Definition Drift**: Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Need periodic audit against swagger.json to catch missing required fields.
+2. **Side Effect Parameter Mapping**: The `useAndamioTransaction` hook's API response mapping is fragile. API returns snake_case, but mappings have been inconsistent. Consider standardizing or adding explicit mapping functions.
+3. **Cache Invalidation After Transactions**: Some routes require manual refresh after transactions complete. Need to audit all transaction `onSuccess` callbacks to ensure `queryClient.invalidateQueries()` is called with correct query keys. Affected: course creation, module minting, enrollment, assignment commits.
+4. **Low Hook Coverage**: Most pages use `useState`/`useEffect` instead of React Query
+5. **Project Routes Partial**: 6/13 routes implemented, remaining 7 routes pending (manage-treasury, manage-contributors, commitments, etc.)
+6. **User Endpoints Unused**: 0% of user-related API endpoints integrated
+7. **Duplicate Routes**: `/courses` and `/studio/course` show same data
 
 ---
 

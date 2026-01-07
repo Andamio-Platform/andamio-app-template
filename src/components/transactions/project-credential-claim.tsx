@@ -1,21 +1,21 @@
 /**
- * CredentialClaim Transaction Component (V2)
+ * ProjectCredentialClaim Transaction Component (V2)
  *
- * Elegant UI for students to claim their credential token after completing
- * all required assignments for a course module.
+ * UI for contributors to claim credential tokens after completing project tasks.
+ * Uses PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM transaction definition.
  *
- * This is the culmination of the learning journey - a tamper-evident,
- * on-chain proof of achievement.
+ * This transaction has no database side effects because:
+ * 1. By the time a contributor claims credentials, all task completions have already been recorded.
+ * 2. The credential token itself IS the proof of completion.
+ * 3. Credential ownership is verified via blockchain queries, not database lookups.
  *
- * Uses COURSE_STUDENT_CREDENTIAL_CLAIM transaction definition from @andamio/transactions.
- *
- * @see packages/andamio-transactions/src/definitions/v2/course/student/credential-claim.ts
+ * @see packages/andamio-transactions/src/definitions/v2/project/contributor/credential-claim.ts
  */
 
 "use client";
 
 import React from "react";
-import { COURSE_STUDENT_CREDENTIAL_CLAIM } from "@andamio/transactions";
+import { PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -29,29 +29,24 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialIcon, ShieldIcon } from "~/components/icons";
+import { CredentialIcon, ShieldIcon, ProjectIcon } from "~/components/icons";
 import { toast } from "sonner";
 
-export interface CredentialClaimProps {
+export interface ProjectCredentialClaimProps {
   /**
-   * Course NFT Policy ID
+   * Project NFT Policy ID
    */
-  courseNftPolicyId: string;
+  projectNftPolicyId: string;
 
   /**
-   * Module code for the credential being claimed
+   * Contributor state ID (56 char hex)
    */
-  moduleCode: string;
+  contributorStateId: string;
 
   /**
-   * Module title for display
+   * Project title for display
    */
-  moduleTitle?: string;
-
-  /**
-   * Course title for display
-   */
-  courseTitle?: string;
+  projectTitle?: string;
 
   /**
    * Callback fired when claim is successful
@@ -60,32 +55,27 @@ export interface CredentialClaimProps {
 }
 
 /**
- * CredentialClaim - Student UI for claiming a course credential (V2)
+ * ProjectCredentialClaim - Contributor UI for claiming project credentials (V2)
  *
- * This transaction has no database side effects because:
- * 1. By the time a student claims a credential, all assignment commitments
- *    have already been completed and recorded via earlier transactions.
- * 2. The credential token itself IS the proof of completion.
- * 3. Credential ownership is verified via blockchain queries, not database lookups.
+ * This is the culmination of the contribution journey - a tamper-evident,
+ * on-chain proof of achievement.
  *
  * @example
  * ```tsx
- * <CredentialClaim
- *   courseNftPolicyId="abc123..."
- *   moduleCode="MODULE_1"
- *   moduleTitle="Introduction to Cardano"
- *   courseTitle="Cardano Developer Course"
+ * <ProjectCredentialClaim
+ *   projectNftPolicyId="abc123..."
+ *   contributorStateId="def456..."
+ *   projectTitle="Bounty Program"
  *   onSuccess={() => refetchCredentials()}
  * />
  * ```
  */
-export function CredentialClaim({
-  courseNftPolicyId,
-  moduleCode,
-  moduleTitle,
-  courseTitle,
+export function ProjectCredentialClaim({
+  projectNftPolicyId,
+  contributorStateId,
+  projectTitle,
   onSuccess,
-}: CredentialClaimProps) {
+}: ProjectCredentialClaimProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
@@ -95,18 +85,20 @@ export function CredentialClaim({
     }
 
     await execute({
-      definition: COURSE_STUDENT_CREDENTIAL_CLAIM,
+      definition: PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        // Note: Credentials are claimed for the entire course
+        project_id: projectNftPolicyId,
+        contributor_state_id: contributorStateId,
       },
       onSuccess: async (txResult) => {
-        console.log("[CredentialClaim] Success!", txResult);
+        console.log("[ProjectCredentialClaim] Success!", txResult);
 
-        toast.success("Credential Claimed!", {
-          description: `You've earned your credential for ${moduleTitle ?? moduleCode}`,
+        toast.success("Credentials Claimed!", {
+          description: projectTitle
+            ? `You've earned your credentials from ${projectTitle}`
+            : "Your project credentials have been minted",
           action: txResult.blockchainExplorerUrl
             ? {
                 label: "View Transaction",
@@ -118,9 +110,9 @@ export function CredentialClaim({
         await onSuccess?.();
       },
       onError: (txError) => {
-        console.error("[CredentialClaim] Error:", txError);
+        console.error("[ProjectCredentialClaim] Error:", txError);
         toast.error("Claim Failed", {
-          description: txError.message || "Failed to claim credential",
+          description: txError.message || "Failed to claim credentials",
         });
       },
     });
@@ -140,36 +132,33 @@ export function CredentialClaim({
             <CredentialIcon className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Claim Your Credential</AndamioCardTitle>
+            <AndamioCardTitle>Claim Project Credentials</AndamioCardTitle>
             <AndamioCardDescription>
-              Mint your credential token for completing this module
+              Mint your credential tokens for completed tasks
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Credential Info */}
-        <div className="space-y-2">
+        {/* Project Info */}
+        {projectTitle && (
           <div className="flex flex-wrap items-center gap-2">
             <AndamioBadge variant="secondary" className="text-xs">
-              {moduleTitle ?? moduleCode}
+              <ProjectIcon className="h-3 w-3 mr-1" />
+              {projectTitle}
             </AndamioBadge>
-            {courseTitle && (
-              <AndamioBadge variant="outline" className="text-xs text-muted-foreground">
-                {courseTitle}
-              </AndamioBadge>
-            )}
           </div>
-        </div>
+        )}
 
         {/* What You're Getting */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <ShieldIcon className="h-4 w-4 text-primary" />
-            <AndamioText className="font-medium">On-Chain Credential</AndamioText>
+            <AndamioText className="font-medium">On-Chain Credentials</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">
-            A native Cardano token that serves as permanent, verifiable proof of your achievement.
+            Native Cardano tokens that serve as permanent, verifiable proof of your contributions
+            and achievements in this project.
           </AndamioText>
         </div>
 
@@ -181,7 +170,7 @@ export function CredentialClaim({
             error={error}
             onRetry={() => reset()}
             messages={{
-              success: "Your credential has been minted to your wallet!",
+              success: "Your credentials have been minted to your wallet!",
             }}
           />
         )}
@@ -193,10 +182,10 @@ export function CredentialClaim({
             onClick={handleClaim}
             disabled={!hasAccessToken}
             stateText={{
-              idle: "Claim Credential",
+              idle: "Claim Credentials",
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
-              submitting: "Minting Credential...",
+              submitting: "Minting Credentials...",
             }}
             className="w-full"
           />

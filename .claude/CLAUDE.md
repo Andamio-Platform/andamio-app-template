@@ -731,6 +731,7 @@ This project uses Claude Skills for AI-assisted development workflows:
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API endpoint coverage |
 | `project-manager` | Track project status and roadmap |
+| `plan-andamioscan-integration` | Plan new Andamioscan endpoint integrations with UX interview |
 
 Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
 

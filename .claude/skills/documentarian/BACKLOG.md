@@ -20,9 +20,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `transaction-auditor` | Verify transaction definitions match API endpoints and schemas | **Critical** | Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Should fetch swagger.json and validate all required fields. Caught COURSE_ADMIN_CREATE path mismatch and COURSE_TEACHER_MODULES_MANAGE schema drift (missing `allowed_course_state_ids`, `prereq_slt_hashes`). |
 | `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
 | `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
+| `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | High | 15 Event endpoints remain unimplemented. Would replace Koios polling with entity-specific confirmation. See GitHub issue #26 |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-07 (added project-workflow-guide, dashboard-builder suggestions)
+**Updated**: 2026-01-08 (added andamioscan-event-integrator suggestion)
 
 ---
 
@@ -55,6 +56,12 @@ Items that have been addressed and can be archived.
 
 | Item | Completed | Outcome |
 |------|-----------|---------|
+| Add Andamioscan integration to CHANGELOG.md | 2026-01-08 | Documented 17 endpoints, 6 dashboard components |
+| Add `/credentials` route to SITEMAP.md | 2026-01-08 | New protected route for on-chain credentials |
+| Add Dashboard Summary Components to extracted-components.md | 2026-01-08 | 6 new components with common pattern |
+| Add InstructorIcon to CHANGELOG.md | 2026-01-08 | Crown icon for course ownership |
+| Update STATUS.md with Andamioscan progress | 2026-01-08 | 53% coverage (17/32) |
+| Create GitHub issue #26 for Event endpoints | 2026-01-08 | 15 remaining endpoints for tx confirmation |
 | Update step-blueprint.tsx → step-credential.tsx in api-coverage.md | 2025-12-29 | Fixed file references |
 | Add StudioModuleCard to extracted-components.md | 2025-12-29 | Documented new component |
 | Document RequireCourseAccess loadingVariant prop | 2025-12-29 | Updated props table and usage notes |

@@ -43,6 +43,9 @@ export { GraduationCap as LearnerIcon } from "lucide-react";
 /** Teachers/Instructors - course creators and assessors */
 export { Users as TeacherIcon } from "lucide-react";
 
+/** Instructors/Course Owners - users who own and manage courses */
+export { Crown as InstructorIcon } from "lucide-react";
+
 /** Access Token - user's on-chain identity */
 export { Key as AccessTokenIcon } from "lucide-react";
 

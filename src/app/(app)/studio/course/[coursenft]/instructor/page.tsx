@@ -48,6 +48,7 @@ import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { ACCEPT_ASSIGNMENT, DENY_ASSIGNMENT } from "@andamio/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
+import { PendingReviewsList } from "~/components/instructor/pending-reviews-list";
 
 /**
  * Instructor Dashboard Page
@@ -247,6 +248,12 @@ export default function InstructorDashboardPage() {
         <AndamioDashboardStat icon={ErrorIcon} label="Denied" value={stats.denied} valueColor="destructive" iconColor="destructive" />
       </div>
 
+      {/* On-Chain Pending Assessments - Live data from Andamioscan */}
+      <PendingReviewsList
+        accessTokenAlias={user?.accessTokenAlias}
+        courseId={courseNftPolicyId}
+      />
+
       {/* Filters */}
       <AndamioCard>
         <AndamioCardHeader>
@@ -302,9 +309,9 @@ export default function InstructorDashboardPage() {
 
           {(statusFilter !== "all" || assignmentFilter !== "all" || searchQuery) && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
+              <AndamioText variant="small">
                 Showing {filteredCommitments.length} of {commitments.length} commitments
-              </span>
+              </AndamioText>
               <AndamioButton
                 variant="ghost"
                 size="sm"
@@ -379,13 +386,13 @@ export default function InstructorDashboardPage() {
                   </AndamioTableCell>
                   <AndamioTableCell>
                     {commitment.network_evidence ? (
-                      <div className="max-w-xs truncate text-sm">
+                      <AndamioText variant="small" className="max-w-xs truncate">
                         {typeof commitment.network_evidence === "string"
                           ? commitment.network_evidence
                           : JSON.stringify(commitment.network_evidence)}
-                      </div>
+                      </AndamioText>
                     ) : (
-                      <span className="text-sm text-muted-foreground italic">No evidence</span>
+                      <AndamioText variant="small" className="italic">No evidence</AndamioText>
                     )}
                   </AndamioTableCell>
                 </AndamioTableRow>

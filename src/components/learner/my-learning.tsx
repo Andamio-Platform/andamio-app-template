@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useEnrolledCourses } from "~/hooks/use-andamioscan";
 import { env } from "~/env";
 import { learnerLogger } from "~/lib/debug-logger";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
@@ -11,7 +12,8 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AlertIcon, CourseIcon, SuccessIcon, PendingIcon, LessonIcon } from "~/components/icons";
+import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
+import { AlertIcon, CourseIcon, SuccessIcon, PendingIcon, LessonIcon, OnChainIcon } from "~/components/icons";
 import { type z } from "zod";
 import { type getMyLearningOutputSchema } from "@andamio/db-api";
 
@@ -28,10 +30,18 @@ type MyLearningData = z.infer<typeof getMyLearningOutputSchema>;
 type CourseWithProgress = MyLearningData['courses'][number];
 
 export function MyLearning() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
   const [courses, setCourses] = useState<CourseWithProgress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch on-chain enrolled courses for status indicator
+  const { data: onChainCourses } = useEnrolledCourses(user?.accessTokenAlias ?? undefined);
+
+  // Create a Set of on-chain course IDs for quick lookup
+  const onChainCourseIds = useMemo(() => {
+    return new Set(onChainCourses?.map((c) => c.course_id) ?? []);
+  }, [onChainCourses]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -178,6 +188,9 @@ export function MyLearning() {
             const progress = course.commitment_count > 0
               ? Math.round((course.completed_count / course.commitment_count) * 100)
               : 0;
+            const isOnChain = course.course_nft_policy_id
+              ? onChainCourseIds.has(course.course_nft_policy_id)
+              : false;
 
             return (
               <div
@@ -186,12 +199,26 @@ export function MyLearning() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <Link
-                      href={`/course/${course.course_nft_policy_id}`}
-                      className="hover:underline"
-                    >
-                      <h3 className="font-semibold mb-1">{course.title}</h3>
-                    </Link>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Link
+                        href={`/course/${course.course_nft_policy_id}`}
+                        className="hover:underline"
+                      >
+                        <h3 className="font-semibold">{course.title}</h3>
+                      </Link>
+                      {isOnChain && (
+                        <AndamioTooltip>
+                          <AndamioTooltipTrigger asChild>
+                            <div className="flex items-center">
+                              <OnChainIcon className="h-4 w-4 text-success" />
+                            </div>
+                          </AndamioTooltipTrigger>
+                          <AndamioTooltipContent>
+                            Enrolled on-chain
+                          </AndamioTooltipContent>
+                        </AndamioTooltip>
+                      )}
+                    </div>
                     {course.description && (
                       <AndamioText variant="small" className="line-clamp-2 mb-2">
                         {course.description}

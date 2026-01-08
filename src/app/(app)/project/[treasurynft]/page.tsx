@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
+import { useProject } from "~/hooks/use-andamioscan";
 import {
   AndamioBadge,
   AndamioButton,
@@ -21,11 +22,210 @@ import {
   AndamioBackButton,
   AndamioErrorAlert,
 } from "~/components/andamio";
-import { TaskIcon, ContributorIcon } from "~/components/icons";
+import {
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardHeader,
+} from "~/components/andamio/andamio-card";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
+import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import {
+  TaskIcon,
+  ContributorIcon,
+  OnChainIcon,
+  CourseIcon,
+  CredentialIcon,
+  TreasuryIcon,
+} from "~/components/icons";
 import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 type TaskListOutput = CreateTaskOutput[];
+
+import type { AndamioscanProjectDetails } from "~/lib/andamioscan";
+
+/**
+ * On-Chain Project Data Component
+ * Displays blockchain data from Andamioscan
+ */
+function OnChainProjectData({
+  projectDetails,
+  isLoading,
+}: {
+  projectDetails: AndamioscanProjectDetails | null | undefined;
+  isLoading: boolean;
+}) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardIconHeader icon={OnChainIcon} title="On-Chain Data" />
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <AndamioSkeleton className="h-4 w-20" />
+                <AndamioSkeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
+
+  // Not on chain
+  if (!projectDetails) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardIconHeader icon={OnChainIcon} title="On-Chain Data" />
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <OnChainIcon className="h-4 w-4" />
+            <AndamioText variant="small">
+              Project not yet indexed on-chain
+            </AndamioText>
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
+
+  // Calculate totals
+  const totalFunding = projectDetails.treasury_fundings.reduce(
+    (sum, f) => sum + f.lovelace,
+    0
+  );
+  const pendingSubmissions = projectDetails.submissions.filter(
+    (s) => !s.deletedAt?.valid
+  ).length;
+  const completedAssessments = projectDetails.assessments.filter(
+    (a) => !a.deletedAt?.valid
+  ).length;
+
+  return (
+    <AndamioCard>
+      <AndamioCardHeader>
+        <div className="flex items-center justify-between">
+          <AndamioCardIconHeader
+            icon={OnChainIcon}
+            title="On-Chain Data"
+            description="Live blockchain data from Andamioscan"
+          />
+          <AndamioBadge status="success">
+            Verified
+          </AndamioBadge>
+        </div>
+      </AndamioCardHeader>
+      <AndamioCardContent className="space-y-6">
+        {/* Stats Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <ContributorIcon className="h-4 w-4" />
+              <AndamioText variant="small">Contributors</AndamioText>
+            </div>
+            <AndamioText className="text-2xl font-bold">
+              {projectDetails.contributors.length}
+            </AndamioText>
+          </div>
+
+          <div className="rounded-lg bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <TaskIcon className="h-4 w-4" />
+              <AndamioText variant="small">On-Chain Tasks</AndamioText>
+            </div>
+            <AndamioText className="text-2xl font-bold">
+              {projectDetails.tasks.length}
+            </AndamioText>
+          </div>
+
+          <div className="rounded-lg bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <CredentialIcon className="h-4 w-4" />
+              <AndamioText variant="small">Credentials Claimed</AndamioText>
+            </div>
+            <AndamioText className="text-2xl font-bold">
+              {projectDetails.credential_claims.length}
+            </AndamioText>
+          </div>
+
+          <div className="rounded-lg bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <TreasuryIcon className="h-4 w-4" />
+              <AndamioText variant="small">Total Funded</AndamioText>
+            </div>
+            <AndamioText className="text-2xl font-bold">
+              {formatLovelace(totalFunding)}
+            </AndamioText>
+          </div>
+        </div>
+
+        {/* Activity Summary */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <AndamioText variant="small" className="font-medium mb-2">
+              Submission Activity
+            </AndamioText>
+            <div className="flex items-center gap-4">
+              <AndamioBadge variant="secondary">
+                {projectDetails.submissions.length} submissions
+              </AndamioBadge>
+              <AndamioBadge variant="outline">
+                {pendingSubmissions} pending
+              </AndamioBadge>
+              <AndamioBadge variant="default">
+                {completedAssessments} assessed
+              </AndamioBadge>
+            </div>
+          </div>
+
+          {projectDetails.prerequisites.length > 0 && (
+            <div>
+              <AndamioText variant="small" className="font-medium mb-2">
+                Prerequisites
+              </AndamioText>
+              <div className="flex flex-wrap gap-2">
+                {projectDetails.prerequisites.map((prereq, i) => (
+                  <AndamioBadge key={i} variant="outline" className="font-mono text-xs">
+                    <CourseIcon className="h-3 w-3 mr-1" />
+                    {prereq.course_id.slice(0, 12)}... ({prereq.assignment_ids.length} assignments)
+                  </AndamioBadge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Contributors List */}
+        {projectDetails.contributors.length > 0 && (
+          <div>
+            <AndamioText variant="small" className="font-medium mb-2">
+              Active Contributors
+            </AndamioText>
+            <div className="flex flex-wrap gap-2">
+              {projectDetails.contributors.slice(0, 10).map((alias) => (
+                <AndamioBadge key={alias} variant="secondary" className="font-mono text-xs">
+                  {alias}
+                </AndamioBadge>
+              ))}
+              {projectDetails.contributors.length > 10 && (
+                <AndamioBadge variant="outline">
+                  +{projectDetails.contributors.length - 10} more
+                </AndamioBadge>
+              )}
+            </div>
+          </div>
+        )}
+      </AndamioCardContent>
+    </AndamioCard>
+  );
+}
 
 /**
  * Project detail page displaying project info and tasks list
@@ -42,6 +242,12 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<TaskListOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch on-chain project details from Andamioscan
+  const {
+    data: onChainProject,
+    isLoading: isOnChainLoading,
+  } = useProject(treasuryNftPolicyId);
 
   useEffect(() => {
     const fetchProjectAndTasks = async () => {
@@ -173,6 +379,12 @@ export default function ProjectDetailPage() {
           </AndamioBadge>
         </div>
 
+        {/* On-Chain Data Section */}
+        <OnChainProjectData
+          projectDetails={onChainProject}
+          isLoading={isOnChainLoading}
+        />
+
         <AndamioEmptyState
           icon={TaskIcon}
           title="No tasks available"
@@ -207,6 +419,12 @@ export default function ProjectDetailPage() {
         </AndamioBadge>
       </div>
 
+      {/* On-Chain Data Section */}
+      <OnChainProjectData
+        projectDetails={onChainProject}
+        isLoading={isOnChainLoading}
+      />
+
       <div className="space-y-4">
         <AndamioSectionHeader title="Available Tasks" />
         <AndamioTableContainer>
@@ -235,7 +453,7 @@ export default function ProjectDetailPage() {
                         {task.title}
                       </Link>
                     ) : (
-                      <span className="font-medium">{task.title}</span>
+                      <AndamioText className="font-medium">{task.title}</AndamioText>
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">

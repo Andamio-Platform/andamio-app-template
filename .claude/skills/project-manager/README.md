@@ -1,6 +1,6 @@
 # Project Manager Skill
 
-> **Last Updated**: December 19, 2025
+> **Last Updated**: January 8, 2026
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
@@ -47,13 +47,14 @@ This skill directory contains project planning, status tracking, and architectur
 | Metric | Value |
 |--------|-------|
 | Course Routes | 15/15 implemented |
-| Project Routes | 0/13 implemented |
-| API Coverage | ~66% (49/74 endpoints) |
-| React Query Hooks | 18 created, 1 page migrated |
+| Project Routes | 6/13 implemented |
+| DB API Coverage | ~66% (49/74 endpoints) |
+| Andamioscan Coverage | 53% (17/32 endpoints) |
+| React Query Hooks | 18 DB + 25 Andamioscan hooks |
 
 ### Current Focus
 
-**React Query Migration** - Replacing `useState`/`useEffect` with cached hooks.
+**Andamio V2 Preprod Release** (2026-01-09) - Final optimizations before launch.
 
 See `ROADMAP.md` for current priorities.
 

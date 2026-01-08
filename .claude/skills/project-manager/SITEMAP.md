@@ -1,7 +1,7 @@
 # Application Sitemap
 
 > **Complete route and page mapping for Andamio T3 App Template**
-> Last Updated: January 7, 2026
+> Last Updated: January 8, 2026
 
 This document provides a comprehensive overview of all routes, their purpose, authentication requirements, and API dependencies.
 
@@ -34,6 +34,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | `/sitemap` | `app/(app)/sitemap/page.tsx` | No | Development sitemap tool |
 | `/editor` | `app/(app)/editor/page.tsx` | No | Standalone editor demo |
 | `/components` | `app/(app)/components/page.tsx` | No | Component library showcase |
+| `/credentials` | `app/(app)/credentials/page.tsx` | Yes | On-chain credentials display |
 
 ### Studio Pages
 
@@ -153,6 +154,13 @@ POST /task-commitments/get       Get commitment if exists (if auth)
 POST /my-learning/get            Get learner's enrolled courses
 POST /credential/list            Get learner's credentials (per course)
 ```
+**Andamioscan Hooks**: `useEnrolledCourses`, `usePendingAssessments`, `useCompletedCourses`, `useContributingProjects`, `useManagingProjects`, `useOwnedCourses`, `useUserGlobalState`
+
+#### `/credentials` - Credentials Page
+```
+GET  /v2/users/{alias}/courses/completed    Get completed courses (Andamioscan)
+```
+**Andamioscan Hooks**: `useCompletedCourses`
 
 #### `/studio/course` - Course Studio
 ```
@@ -348,5 +356,5 @@ Studio → Projects → Project Title → Tasks
 
 ---
 
-**Last Updated**: January 7, 2026
+**Last Updated**: January 8, 2026
 **Maintained By**: Andamio Platform Team

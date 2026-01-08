@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Andamioscan Integration Complete** (53% coverage): Implemented 17 of 32 Andamioscan V2 API endpoints
+  - All Course endpoints (4): `getAllCourses`, `getCourse`, `getCourseStudent`, `getPendingAssessments`
+  - All User endpoints (5): `getUserGlobalState`, `getCoursesOwnedByAlias`, `getEnrolledCourses`, `getCompletedCourses`, `getOwnedCourses`
+  - All Project endpoints (8): `getAllProjects`, `getProject`, `getProjectContributorStatus`, `getManagerPendingAssessments`, `getContributingProjects`, `getManagingProjects`, `getOwnedProjects`, `getCompletedProjects`
+  - 15 Event endpoints remain (for transaction confirmation) - tracked in GitHub issue #26
+- **Dashboard Summary Components**: 6 new on-chain data summary cards for the dashboard
+  - `EnrolledCoursesSummary` - Shows on-chain enrolled courses for learners
+  - `PendingReviewsSummary` - Shows pending assessments for teachers
+  - `CredentialsSummary` - Shows earned credentials with links to credentials page
+  - `ContributingProjectsSummary` - Shows projects user is contributing to
+  - `ManagingProjectsSummary` - Shows projects user is managing (hidden if none)
+  - `OwnedCoursesSummary` - Shows courses user owns with studio links
+- **Credentials Page** (`/credentials`): New page displaying all earned on-chain credentials with verification indicator
+- **InstructorIcon**: Added Crown icon to entity icons for course ownership indicator
+- **Studio Course Ownership Indicator**: Crown badge on courses the user owns vs teaches
 - **Task Detail Page Commitment Flow** (`/project/[treasurynft]/[taskhash]`): Full task commitment workflow with evidence editor, stats grid using `AndamioDashboardStat`, and `ProjectEnroll`/`TaskCommit` transaction components
 - **Contributor Dashboard** (`/project/[treasurynft]/contributor`): New dashboard for project contributors to enroll, commit to tasks, and claim credentials
 - **Manager Dashboard** (`/studio/project/[treasurynft]/manager`): New dashboard for project managers to review task submissions and accept/deny

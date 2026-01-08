@@ -694,6 +694,150 @@ Shows completion status for 6 wizard steps:
 | 2026-01 | `/studio/project/[treasurynft]/manager` | `AndamioSearchInput`, `AndamioDashboardStat` - Replaced inline patterns |
 | 2026-01 | `/studio/course/[coursenft]/instructor` | `AndamioDashboardStat`, `AndamioSearchInput`, `AndamioPageLoading`, `AndamioEmptyState`, `AndamioErrorAlert` |
 | 2026-01 | `/project/[treasurynft]/[taskhash]` | `AndamioBackButton`, `AndamioErrorAlert`, `AndamioDashboardStat`, `AndamioText` - Task commitment flow with evidence editor |
+| 2026-01 | `/dashboard` | 6 Andamioscan summary components: `EnrolledCoursesSummary`, `PendingReviewsSummary`, `CredentialsSummary`, `ContributingProjectsSummary`, `ManagingProjectsSummary`, `OwnedCoursesSummary` |
+| 2026-01 | `/credentials` | New page using `useCompletedCourses` hook |
+| 2026-01 | `/studio/course` | `InstructorIcon` - Crown icon for course ownership indicator |
+
+---
+
+## Dashboard Summary Components
+
+These components follow a consistent pattern for displaying on-chain data summaries on the dashboard. They use React Query hooks for data fetching with skeleton loading states and graceful error handling.
+
+### EnrolledCoursesSummary
+
+**File**: `src/components/dashboard/enrolled-courses-summary.tsx`
+
+**Purpose**: Shows a summary of on-chain enrolled courses for the current user.
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `useEnrolledCourses`
+
+---
+
+### PendingReviewsSummary
+
+**File**: `src/components/dashboard/pending-reviews-summary.tsx`
+
+**Purpose**: Shows pending assessment reviews for teachers/instructors.
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `usePendingAssessments`
+
+---
+
+### CredentialsSummary
+
+**File**: `src/components/dashboard/credentials-summary.tsx`
+
+**Purpose**: Shows earned on-chain credentials with link to full credentials page.
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `useCompletedCourses`
+
+---
+
+### ContributingProjectsSummary
+
+**File**: `src/components/dashboard/contributing-projects-summary.tsx`
+
+**Purpose**: Shows projects the user is actively contributing to.
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `useContributingProjects`
+
+---
+
+### ManagingProjectsSummary
+
+**File**: `src/components/dashboard/managing-projects-summary.tsx`
+
+**Purpose**: Shows projects the user is managing. Only renders if user has managing projects (returns null for non-managers).
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `useManagingProjects`
+
+---
+
+### OwnedCoursesSummary
+
+**File**: `src/components/dashboard/owned-courses-summary.tsx`
+
+**Purpose**: Shows on-chain courses the user owns (created), with links to studio.
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `accessTokenAlias` | `string \| null \| undefined` | required | User's access token alias |
+
+**Hook Used**: `useOwnedCourses`
+
+---
+
+### Common Pattern for Dashboard Summary Components
+
+All dashboard summary components follow this structure:
+
+```tsx
+export function SummaryComponent({ accessTokenAlias }: Props) {
+  const { data, isLoading, error, refetch } = useHookName(accessTokenAlias ?? undefined);
+
+  // Log errors silently
+  React.useEffect(() => {
+    if (error) console.error(`[ComponentName] Failed to load:`, error.message);
+  }, [error]);
+
+  // No access token - don't render
+  if (!accessTokenAlias) return null;
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader className="pb-3">
+          <AndamioCardIconHeader icon={RelevantIcon} title="Title" />
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioSkeleton className="..." />
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
+
+  // Empty/error state - return null or empty state
+  if (!data || data.length === 0 || error) return null;
+
+  // Render data
+  return (
+    <AndamioCard>
+      {/* Header with icon, title, badge, refresh button */}
+      {/* Summary stat with icon */}
+      {/* List of items (truncated to 3) */}
+      {/* Action button */}
+    </AndamioCard>
+  );
+}
+```
 
 ---
 

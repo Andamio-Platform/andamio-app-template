@@ -11,6 +11,8 @@ export interface HybridCourseStatus {
   inDb: boolean;
   onChain: boolean;
   onChainModuleCount: number;
+  /** Whether user is admin/owner of the course (from /courses/owned) */
+  isOwned?: boolean;
   dbCourse?: ListOwnedCoursesOutput[number];
 }
 

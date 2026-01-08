@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { env } from "~/env";
+import { useAllProjects } from "~/hooks/use-andamioscan";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer } from "~/components/andamio";
-import { AlertIcon, ProjectIcon } from "~/components/icons";
+import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
+import { AlertIcon, ProjectIcon, OnChainIcon } from "~/components/icons";
 import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -21,6 +23,14 @@ export default function ProjectCatalogPage() {
   const [projects, setProjects] = useState<ListPublishedTreasuriesOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch on-chain projects for status indicator
+  const { data: onChainProjects } = useAllProjects();
+
+  // Create a Set of on-chain project IDs for quick lookup
+  const onChainProjectIds = useMemo(() => {
+    return new Set(onChainProjects?.map((p) => p.project_id) ?? []);
+  }, [onChainProjects]);
 
   useEffect(() => {
     const fetchPublishedProjects = async () => {
@@ -105,7 +115,7 @@ export default function ProjectCatalogPage() {
     <div className="space-y-6">
       <AndamioPageHeader
         title="Projects"
-        description="Browse all published projects"
+        description="Browse all published projects. Projects with a chain icon are verified on-chain."
       />
 
       <AndamioTableContainer>
@@ -126,15 +136,34 @@ export default function ProjectCatalogPage() {
                 0
               ) ?? 0;
 
+              // Check if project exists on-chain
+              const isOnChain = project.treasury_nft_policy_id
+                ? onChainProjectIds.has(project.treasury_nft_policy_id)
+                : false;
+
               return (
                 <AndamioTableRow key={project.treasury_nft_policy_id ?? project.title}>
                   <AndamioTableCell>
-                    <Link
-                      href={`/project/${project.treasury_nft_policy_id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {project.title}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/project/${project.treasury_nft_policy_id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {project.title}
+                      </Link>
+                      {isOnChain && (
+                        <AndamioTooltip>
+                          <AndamioTooltipTrigger asChild>
+                            <div className="flex items-center">
+                              <OnChainIcon className="h-4 w-4 text-success" />
+                            </div>
+                          </AndamioTooltipTrigger>
+                          <AndamioTooltipContent>
+                            Verified on-chain
+                          </AndamioTooltipContent>
+                        </AndamioTooltip>
+                      )}
+                    </div>
                   </AndamioTableCell>
                   <AndamioTableCell className="font-mono text-xs break-all max-w-xs">
                     {project.treasury_nft_policy_id ? (

@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 7, 2026
+> **Last Updated**: January 8, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -24,7 +24,8 @@ Current implementation status of the Andamio T3 App Template.
 | Area | Status | Progress |
 |------|--------|----------|
 | Course System | Stable | 15/15 routes, ~66% API coverage |
-| Project System | In Progress | 2/13 routes, 8 transaction components |
+| Project System | In Progress | 6/13 routes, 8 transaction components |
+| Andamioscan Integration | **53% Complete** | 17/32 endpoints (all Course/User/Project done) |
 | React Query Migration | Complete | 18 hooks created, 6 pages migrated |
 | Transaction System | Stable | Side effects, pending tx monitoring |
 | Styling System | Stable | Full semantic color system |
@@ -227,6 +228,44 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 ---
 
 ## Recent Changes
+
+### January 8, 2026 - Andamioscan Integration Complete
+
+**Andamioscan API Integration**: Completed all Course, User, and Project endpoints (17/32, 53%)
+
+**New Endpoints Implemented**:
+- `GET /v2/users/{alias}/projects/contributing` - Dashboard summary
+- `GET /v2/users/{alias}/projects/managing` - Dashboard summary (managers only)
+- `GET /v2/users/{alias}/projects/owned` - Project ownership check
+- `GET /v2/users/{alias}/projects/completed` - Project credentials
+- `GET /v2/projects/{id}/contributors/{alias}/status` - Contributor progress
+- `GET /v2/projects/managers/{alias}/assessments/pending` - Manager pending reviews
+- `GET /v2/users/{alias}/courses/owned` - Course ownership (admin vs teacher)
+
+**New Dashboard Components**:
+- `OwnedCoursesSummary` - Shows courses user owns/created
+- `ContributingProjectsSummary` - Shows projects user contributes to
+- `ManagingProjectsSummary` - Shows projects user manages (only if manager)
+
+**Studio Enhancement**:
+- Course list shows ownership indicator (crown badge) for courses user is admin of
+
+**New Hooks Created**:
+- `useOwnedCourses`, `useContributingProjects`, `useManagingProjects`
+- `useOwnedProjects`, `useCompletedProjects`
+- `useProjectContributorStatus`, `useIsProjectContributor`, `useContributorProgress`
+- `useManagerPendingAssessments`
+
+**New Types**:
+- `AndamioscanContributorStatus`, `AndamioscanProjectPendingAssessment`
+
+**New Icon**:
+- `InstructorIcon` (Crown) for course ownership indicator
+
+**GitHub Issue Created**:
+- #26: Implement Andamioscan Event Endpoints for Transaction Confirmation
+
+**Remaining**: 15 Event endpoints for transaction confirmation (tracked in issue #26)
 
 ### January 7, 2026 (Session 2 - Tx Loop Testing)
 

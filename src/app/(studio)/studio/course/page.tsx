@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCoursesOwnedByAlias } from "~/hooks/use-andamioscan";
+import { useCoursesOwnedByAlias, useOwnedCourses } from "~/hooks/use-andamioscan";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
 import {
@@ -46,6 +46,7 @@ import {
   LoadingIcon,
   AddIcon,
   ExternalLinkIcon,
+  InstructorIcon,
 } from "~/components/icons";
 import { getTokenExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
@@ -74,12 +75,25 @@ export default function StudioCourseListPage() {
     refetch: refetchDbCourses,
   } = useOwnedCoursesQuery();
 
-  // Fetch on-chain courses
+  // Fetch on-chain courses (where user is teacher)
   const {
     data: onChainCourses,
     isLoading: isLoadingOnChain,
     refetch: refetchOnChain,
   } = useCoursesOwnedByAlias(alias);
+
+  // Fetch owned courses (where user is admin/creator)
+  const {
+    data: ownedCourses,
+    isLoading: isLoadingOwned,
+    refetch: refetchOwned,
+  } = useOwnedCourses(alias);
+
+  // Create a Set of owned course IDs for quick lookup
+  const ownedCourseIds = useMemo(() => {
+    if (!ownedCourses) return new Set<string>();
+    return new Set(ownedCourses.map((c) => c.course_id));
+  }, [ownedCourses]);
 
   // Merge and dedupe courses
   const hybridCourses = useMemo<HybridCourseStatus[]>(() => {
@@ -93,6 +107,7 @@ export default function StudioCourseListPage() {
           inDb: true,
           onChain: false,
           onChainModuleCount: 0,
+          isOwned: ownedCourseIds.has(dbCourse.course_nft_policy_id),
           dbCourse,
         });
       }
@@ -111,6 +126,7 @@ export default function StudioCourseListPage() {
             inDb: false,
             onChain: true,
             onChainModuleCount: onChainCourse.modules?.length ?? 0,
+            isOwned: ownedCourseIds.has(onChainCourse.course_id),
           });
         }
       }
@@ -121,7 +137,7 @@ export default function StudioCourseListPage() {
       if (!a.inDb && b.inDb) return 1;
       return a.courseId.localeCompare(b.courseId);
     });
-  }, [dbCourses, onChainCourses]);
+  }, [dbCourses, onChainCourses, ownedCourseIds]);
 
   // No auto-select - show welcome screen initially
 
@@ -136,12 +152,13 @@ export default function StudioCourseListPage() {
     );
   }, [hybridCourses, searchQuery]);
 
-  const isLoading = isLoadingOnChain || isLoadingDb;
+  const isLoading = isLoadingOnChain || isLoadingDb || isLoadingOwned;
 
   const handleRefresh = useCallback(() => {
     void refetchDbCourses();
     void refetchOnChain();
-  }, [refetchDbCourses, refetchOnChain]);
+    void refetchOwned();
+  }, [refetchDbCourses, refetchOnChain, refetchOwned]);
 
   // Get selected course
   const selectedCourse = useMemo(
@@ -302,6 +319,11 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
           <span className="text-[10px] text-muted-foreground font-mono truncate">
             {course.courseId.slice(0, 8)}…{course.courseId.slice(-6)}
           </span>
+          {course.isOwned && (
+            <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-warning/10 border-warning/30 text-warning">
+              <InstructorIcon className="h-2.5 w-2.5" />
+            </AndamioBadge>
+          )}
           {course.onChain && course.onChainModuleCount > 0 && (
             <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-background/50">
               <OnChainIcon className="h-2.5 w-2.5 mr-0.5" />

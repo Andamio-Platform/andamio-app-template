@@ -4,24 +4,20 @@ import { env } from "~/env";
 /**
  * Andamioscan API proxy route
  *
- * This proxy route forwards requests to the Andamioscan on-chain data API.
+ * Forwards requests to the Andamioscan on-chain data API.
  * Using a server-side proxy avoids CORS issues with the external API.
  *
- * Examples:
- * - GET  /api/andamioscan/course-state/utxos?policy=X → ANDAMIOSCAN_API/course-state/utxos?policy=X
- * - GET  /api/andamioscan/aggregate/user-info?alias=X → ANDAMIOSCAN_API/aggregate/user-info?alias=X
- * - POST /api/andamioscan/tx/v2/general/mint-access-token → ANDAMIOSCAN_API/tx/v2/general/mint-access-token
+ * Base URL: ANDAMIOSCAN_API_URL (e.g., https://preprod.andamioscan.io/api)
  *
- * Available endpoints:
- * - /aggregate/user-info - User's on-chain aggregated data
- * - /course-state/utxos - Course UTXOs
- * - /course-state/info - Course on-chain info
- * - /course-state/decoded-datum - User's enrollment datum
- * - /assignment-validator/utxos - Assignment commitment UTXOs
- * - /assignment-validator/decoded-datum - Decoded assignment datum
- * - /module-ref-validator/utxos - Module ref validator UTXOs
- * - /module-ref-validator/decoded-datum - Decoded module ref datum
- * - /tx/v2/general/mint-access-token - Mint access token transaction
+ * Currently used endpoints:
+ * - GET /v2/courses - List all courses
+ * - GET /v2/courses/{id}/details - Get course with modules & students
+ * - GET /v2/courses/{id}/students/{alias}/status - Get student progress
+ * - GET /v2/users/{alias}/state - Get user enrollments & credentials
+ * - GET /v2/users/{alias}/courses/teaching - Get courses user teaches
+ *
+ * @see src/lib/andamioscan.ts - Typed API client
+ * @see .claude/skills/project-manager/andamioscan-api.md - Full documentation
  */
 
 async function proxyRequest(

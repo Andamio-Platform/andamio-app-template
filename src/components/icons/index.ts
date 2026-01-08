@@ -40,6 +40,7 @@ export {
   // Users & Roles
   LearnerIcon,
   TeacherIcon,
+  InstructorIcon,
   AccessTokenIcon,
   WalletIcon,
   UserIcon,

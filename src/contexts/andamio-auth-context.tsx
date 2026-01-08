@@ -145,6 +145,7 @@ interface AndamioAuthContextType {
   // Actions
   authenticate: () => Promise<void>;
   logout: () => void;
+  refreshAuth: () => void;
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
@@ -399,6 +400,51 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   }, [disconnectWallet]);
 
   /**
+   * Refresh auth state from stored JWT
+   * Useful after operations that update the JWT (e.g., minting access token)
+   * Updates context state without requiring re-authentication
+   */
+  const refreshAuth = useCallback(() => {
+    const storedJWT = getStoredJWT();
+
+    if (!storedJWT) {
+      authLogger.warn("refreshAuth called but no JWT in storage");
+      return;
+    }
+
+    if (isJWTExpired(storedJWT)) {
+      authLogger.warn("refreshAuth called but stored JWT is expired");
+      clearStoredJWT();
+      setJwt(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(atob(storedJWT.split(".")[1]!)) as {
+        userId: string;
+        cardanoBech32Addr?: string;
+        accessTokenAlias?: string;
+      };
+
+      const updatedUser: AuthUser = {
+        id: payload.userId,
+        cardanoBech32Addr: payload.cardanoBech32Addr ?? null,
+        accessTokenAlias: payload.accessTokenAlias ?? null,
+      };
+
+      authLogger.info("Refreshing auth state from stored JWT:", updatedUser);
+
+      setJwt(storedJWT);
+      setUser(updatedUser);
+      setIsAuthenticated(true);
+    } catch (error) {
+      authLogger.error("Failed to parse JWT during refresh:", error);
+    }
+  }, []);
+
+  /**
    * Make authenticated API request
    */
   const authenticatedFetch = useCallback(
@@ -434,6 +480,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         isWalletConnected: connected,
         authenticate,
         logout,
+        refreshAuth,
         authenticatedFetch,
       }}
     >

@@ -10,6 +10,12 @@ import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AccountDetailsCard } from "~/components/dashboard/account-details";
+import { PendingReviewsSummary } from "~/components/dashboard/pending-reviews-summary";
+import { EnrolledCoursesSummary } from "~/components/dashboard/enrolled-courses-summary";
+import { CredentialsSummary } from "~/components/dashboard/credentials-summary";
+import { ContributingProjectsSummary } from "~/components/dashboard/contributing-projects-summary";
+import { ManagingProjectsSummary } from "~/components/dashboard/managing-projects-summary";
+import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summary";
 import { AndamioPageHeader } from "~/components/andamio";
 
 export default function DashboardPage() {
@@ -87,7 +93,19 @@ export default function DashboardPage() {
       )}
 
       {/* Account Details Section */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Enrolled Courses Card - Shows on-chain enrolled courses for learners */}
+        <EnrolledCoursesSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}
+        <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Credentials Card - Shows on-chain earned credentials */}
+        <CredentialsSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Contributing Projects Card - Shows on-chain project contributions */}
+        <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}
+        <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Owned Courses Card - Shows on-chain courses user owns/created */}
+        <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
         {/* Wallet & Session Card */}
         <AccountDetailsCard
           cardanoBech32Addr={user.cardanoBech32Addr}

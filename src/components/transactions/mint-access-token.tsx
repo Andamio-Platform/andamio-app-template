@@ -47,7 +47,7 @@ function isValidAlias(alias: string): boolean {
 }
 
 export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
   const [alias, setAlias] = useState("");
 
@@ -104,6 +104,10 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
             // Store the new JWT with updated alias
             storeJWT(data.jwt);
             console.log("✅ JWT updated with access token alias");
+
+            // Refresh auth context state to reflect the new access token
+            refreshAuth();
+            console.log("✅ Auth context refreshed");
           } else {
             console.error("Failed to update access token alias:", await response.text());
           }

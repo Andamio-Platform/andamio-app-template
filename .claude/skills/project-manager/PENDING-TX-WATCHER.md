@@ -548,6 +548,91 @@ When moving this functionality to a backend service:
 2. Disable watcher when user is inactive
 3. Move to backend monitoring service
 
+---
+
+## PENDING_TX Status Protection
+
+When an entity has a `PENDING_TX` status, it indicates a blockchain transaction has been submitted but not yet confirmed. During this period, **only the blockchain confirmation service should be able to update the status** - users should not be able to make changes.
+
+This protection prevents data inconsistencies where a user might change status while a transaction is being confirmed on-chain.
+
+### Backend Protection (API Layer)
+
+Add validation in status update endpoints to prevent user updates when status is `PENDING_TX`:
+
+```typescript
+// Before updating status
+if (currentStatus === "PENDING_TX") {
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: "Cannot update status while transaction is pending. Only blockchain confirmation can update PENDING_TX status.",
+  });
+}
+```
+
+**Key Points:**
+- Use `FORBIDDEN` error code (403)
+- Provide clear error message explaining why the update is blocked
+- This check should happen **before** status transition validation
+- Only the monitoring/confirmation service should bypass this check
+
+### Frontend Protection (UI Layer)
+
+Disable status controls and show informative message when status is `PENDING_TX`:
+
+```tsx
+<Select
+  value={status}
+  onValueChange={setStatus}
+  disabled={entity?.status === "PENDING_TX"}
+>
+  {/* ... options */}
+</Select>
+
+{entity?.status === "PENDING_TX" && (
+  <Alert>
+    <AlertCircle className="h-4 w-4" />
+    <AlertDescription>
+      Status is locked while transaction is pending. Only blockchain
+      confirmation can update from PENDING_TX to ON_CHAIN.
+    </AlertDescription>
+  </Alert>
+)}
+```
+
+**Key Points:**
+- Disable form controls (don't just hide them)
+- Show clear explanation of why controls are disabled
+- Display transaction hash with link to blockchain explorer
+- Provide visual indicator (Alert/Badge) that status is locked
+
+### Entities with PENDING_TX Protection
+
+| Entity | Status Field | Protection Status |
+|--------|--------------|-------------------|
+| Course Module | `status: PENDING_TX` | ✅ Implemented |
+| Assignment Commitment | `networkStatus: PENDING_TX_*` | 🔄 TODO |
+| Task | `status: PENDING_TX` | 🔄 TODO |
+| Task Commitment | `status: PENDING_TX` | 🔄 TODO |
+
+### Implementation Checklist
+
+When adding status update functionality for entities with pending transaction states:
+
+**Backend (API):**
+- [ ] Add validation check for `PENDING_TX` status before processing updates
+- [ ] Use `FORBIDDEN` error code with clear message
+- [ ] Place check **before** status transition validation
+- [ ] Document that only monitoring service should bypass this check
+
+**Frontend (UI):**
+- [ ] Disable status form controls when status is `PENDING_TX`
+- [ ] Show Alert/message explaining status is locked
+- [ ] Display pending transaction hash with blockchain explorer link
+- [ ] Update save/submit button to be disabled when status is locked
+
+---
+
 ## Summary
 
 The Pending Transaction Watcher provides a simple, temporary solution for monitoring blockchain transactions in the T3 App Template:
@@ -557,5 +642,6 @@ The Pending Transaction Watcher provides a simple, temporary solution for monito
 - ✅ Persists across page refreshes
 - ✅ User-friendly notifications
 - ✅ Free blockchain API (Koios)
+- ✅ PENDING_TX protection prevents user modifications during pending state
 
 For production applications, migrate this functionality to a backend monitoring service for improved reliability and scalability.

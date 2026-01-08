@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCoursesOwnedByAlias } from "~/hooks/use-andamioscan";
+import { useCoursesOwnedByAliasWithDetails } from "~/hooks/use-andamioscan";
 import { env } from "~/env";
 import { getTokenExplorerUrl, type CardanoNetwork } from "~/lib/constants";
 import {
@@ -77,13 +77,13 @@ export function OnChainCoursesSection() {
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const alias = user?.accessTokenAlias ?? undefined;
 
-  // Fetch on-chain courses owned by user (may be delayed)
+  // Fetch on-chain courses owned by user with full details (may be delayed)
   const {
     data: onChainCourses,
     isLoading: isLoadingOnChain,
     error: onChainError,
     refetch: refetchOnChain,
-  } = useCoursesOwnedByAlias(alias);
+  } = useCoursesOwnedByAliasWithDetails(alias);
 
   // Fetch DB courses (immediate)
   const [dbCourses, setDbCourses] = useState<ListOwnedCoursesOutput>([]);

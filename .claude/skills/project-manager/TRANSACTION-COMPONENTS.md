@@ -1,6 +1,6 @@
 # Andamio Template Transaction Components
 
-> Last Updated: December 11, 2025
+> Last Updated: January 9, 2026
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
@@ -28,6 +28,7 @@ This document describes the transaction component architecture for the T3 App Te
 - Manages transaction state (idle, loading, signing, submitting, success, error)
 - Integrates with Mesh SDK for wallet signing
 - Provides callbacks for success/error handling
+- Supports partial signing for multi-sig transactions via `partialSign` option
 
 **2. Transaction Button Component (`TransactionButton`)**
 - Reusable button for initiating transactions
@@ -68,6 +69,24 @@ Transaction endpoints can use different HTTP methods:
 - **Endpoint**: `/api/andamioscan/tx/{transaction-name}`
 
 The `useTransaction` hook automatically handles both methods based on the `method` parameter in the transaction config.
+
+### Partial Signing (Multi-Sig Support)
+
+For transactions that require multiple signatures (e.g., pre-signed by backend), use the `partialSign` option:
+
+```typescript
+await execute({
+  endpoint: "/tx/v2/some/multi-sig-tx",
+  params: { ... },
+  partialSign: true,  // Preserves existing signatures when signing
+  onSuccess: (result) => { ... },
+});
+```
+
+When `partialSign: true`:
+- The wallet adds its signature without clearing existing signatures in the CBOR
+- Used when the unsigned CBOR already contains signatures from other parties
+- The transaction is still submitted normally after signing
 
 ---
 
@@ -174,7 +193,7 @@ export { TransactionStatus } from "./components/transaction-status"
 export type {
   TransactionState,
   TransactionResult,
-  TransactionConfig
+  TransactionConfig  // Includes partialSign option
 } from "./types"
 ```
 

@@ -75,7 +75,7 @@ export interface WizardContextValue {
 
   // Data
   data: WizardData;
-  refetchData: () => Promise<void>;
+  refetchData: (moduleCodeOverride?: string) => Promise<void>;
   updateSlts: (slts: WizardData["slts"]) => void;
 
   // Course identifiers
@@ -84,6 +84,11 @@ export interface WizardContextValue {
 
   // Creation mode
   isNewModule: boolean;
+
+  // Module creation - allows smooth transition after creating a new module
+  // without triggering a full page refresh from URL change
+  createdModuleCode: string | null;
+  onModuleCreated: (newModuleCode: string) => Promise<void>;
 }
 
 /**

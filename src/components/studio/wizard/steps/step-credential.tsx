@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { SparkleIcon, CredentialIcon, SLTIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
@@ -23,8 +22,7 @@ interface StepCredentialProps {
 }
 
 export function StepCredential({ config, direction }: StepCredentialProps) {
-  const router = useRouter();
-  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule } = useWizard();
+  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule, onModuleCreated } = useWizard();
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
   const [title, setTitle] = useState(data.courseModule?.title ?? "");
@@ -97,10 +95,12 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         throw new Error("Failed to create module");
       }
 
-      // Redirect to the actual module URL and continue to SLTs step
-      router.replace(`/studio/course/${courseNftPolicyId}/${newModuleCode}?step=slts`);
+      // Use onModuleCreated for smooth transition without full page refresh
+      // This updates state, URL (silently), refetches data, and navigates to SLTs step
+      await onModuleCreated(newModuleCode);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create module");
+    } finally {
       setIsSaving(false);
     }
   };

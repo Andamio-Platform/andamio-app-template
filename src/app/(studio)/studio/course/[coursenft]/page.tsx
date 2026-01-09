@@ -45,9 +45,43 @@ import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialo
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/use-course";
 import { useCourseModules } from "~/hooks/api/use-course-module";
+import { useCourse as useAndamioscanCourse } from "~/hooks/use-andamioscan";
 import { MintModuleTokens } from "~/components/transactions/mint-module-tokens";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
+import type { CourseModuleOutput } from "@andamio/db-api";
+import type { AndamioscanModule } from "~/lib/andamioscan";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/**
+ * Sync status for modules - indicates where data exists
+ */
+type ModuleSyncStatus = "synced" | "db-only" | "onchain-only";
+
+/**
+ * Hybrid module data combining DB and on-chain sources
+ */
+interface HybridModule {
+  /** Module code from database (or derived from on-chain data) */
+  moduleCode: string;
+  /** Module hash (Blake2b-256 of SLTs) */
+  moduleHash: string | null;
+  /** Title from database */
+  title: string | null;
+  /** Where this module exists */
+  syncStatus: ModuleSyncStatus;
+  /** Database record (if exists) */
+  dbModule: CourseModuleOutput | null;
+  /** On-chain data (if exists) */
+  onChainModule: AndamioscanModule | null;
+  /** SLTs from on-chain (source of truth when on-chain) */
+  onChainSlts: string[];
+  /** SLT count from database */
+  dbSltCount: number;
+}
 
 // =============================================================================
 // Helper Components
@@ -170,9 +204,73 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Update studio header
   const { setBreadcrumbs, setTitle, setActions } = useStudioHeader();
 
-  // React Query hooks
+  // React Query hooks - Database
   const { data: course, isLoading: isLoadingCourse, error: courseError } = useCourse(courseNftPolicyId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useCourseModules(courseNftPolicyId);
+
+  // Andamioscan hook - On-chain data
+  const { data: onChainCourse, isLoading: isLoadingOnChain, refetch: refetchOnChain } = useAndamioscanCourse(courseNftPolicyId);
+  const onChainModules = onChainCourse?.modules ?? [];
+
+  // Merge database and on-chain modules into hybrid view
+  const hybridModules = useMemo<HybridModule[]>(() => {
+    const moduleMap = new Map<string, HybridModule>();
+
+    // Step 1: Add all database modules (keyed by module_hash if available, else module_code)
+    for (const dbModule of modules) {
+      const key = dbModule.module_hash ?? `db:${dbModule.module_code}`;
+      moduleMap.set(key, {
+        moduleCode: dbModule.module_code,
+        moduleHash: dbModule.module_hash,
+        title: dbModule.title,
+        syncStatus: "db-only", // Will update to "synced" if found on-chain
+        dbModule,
+        onChainModule: null,
+        onChainSlts: [],
+        dbSltCount: dbModule.slts?.length ?? 0,
+      });
+    }
+
+    // Step 2: Merge on-chain modules (keyed by assignment_id which is the hash)
+    for (const onChainModule of onChainModules) {
+      const key = onChainModule.assignment_id;
+      const existing = moduleMap.get(key);
+
+      if (existing) {
+        // Found in DB - update to synced
+        existing.syncStatus = "synced";
+        existing.onChainModule = onChainModule;
+        existing.onChainSlts = onChainModule.slts;
+      } else {
+        // On-chain only - not in database (orphan)
+        moduleMap.set(key, {
+          moduleCode: `hash:${onChainModule.assignment_id.slice(0, 8)}`,
+          moduleHash: onChainModule.assignment_id,
+          title: null,
+          syncStatus: "onchain-only",
+          dbModule: null,
+          onChainModule,
+          onChainSlts: onChainModule.slts,
+          dbSltCount: 0,
+        });
+      }
+    }
+
+    return Array.from(moduleMap.values());
+  }, [modules, onChainModules]);
+
+  // Hybrid module stats
+  const hybridStats = useMemo(() => ({
+    total: hybridModules.length,
+    synced: hybridModules.filter((m) => m.syncStatus === "synced").length,
+    dbOnly: hybridModules.filter((m) => m.syncStatus === "db-only").length,
+    onChainOnly: hybridModules.filter((m) => m.syncStatus === "onchain-only").length,
+    // Database status breakdown (for modules that exist in DB)
+    dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
+    dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
+    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
+    dbDraft: modules.filter((m) => m.status === "DRAFT").length,
+  }), [hybridModules, modules]);
 
   // Mutations
   const updateCourseMutation = useUpdateCourse();
@@ -269,22 +367,13 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   };
 
   // Computed values
-  const isLoading = isLoadingCourse || isLoadingModules;
+  const isLoading = isLoadingCourse || isLoadingModules || isLoadingOnChain;
   const hasChanges = course && (
     formTitle !== (course.title ?? "") ||
     formDescription !== (course.description ?? "") ||
     formImageUrl !== (course.image_url ?? "") ||
     formVideoUrl !== (course.video_url ?? "")
   );
-
-  // Module stats
-  const moduleStats = useMemo(() => ({
-    total: modules.length,
-    onChain: modules.filter((m) => m.status === "ON_CHAIN").length,
-    pending: modules.filter((m) => m.status === "PENDING_TX").length,
-    approved: modules.filter((m) => m.status === "APPROVED").length,
-    draft: modules.filter((m) => m.status === "DRAFT").length,
-  }), [modules]);
 
   // Loading state
   if (isLoading && !course) {
@@ -342,12 +431,12 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 {/* Right: Stats */}
                 <div className="flex items-center gap-4 text-center flex-shrink-0">
                   <div>
-                    <div className="text-2xl font-bold text-foreground">{moduleStats.total}</div>
+                    <div className="text-2xl font-bold text-foreground">{hybridStats.total}</div>
                     <AndamioText variant="small" className="text-[10px]">Credentials</AndamioText>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div>
-                    <div className="text-2xl font-bold text-success">{moduleStats.onChain}</div>
+                    <div className="text-2xl font-bold text-success">{onChainModules.length}</div>
                     <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
                   </div>
                 </div>
@@ -536,11 +625,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   </div>
 
                   {/* Footer Stats */}
-                  {moduleStats.pending > 0 && (
+                  {hybridStats.dbPending > 0 && (
                     <AndamioAlert className="mt-6">
                       <PendingIcon className="h-4 w-4 text-info animate-pulse" />
                       <AndamioAlertDescription>
-                        {moduleStats.pending} credential{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
+                        {hybridStats.dbPending} credential{hybridStats.dbPending !== 1 ? "s" : ""} pending blockchain confirmation
                       </AndamioAlertDescription>
                     </AndamioAlert>
                   )}
@@ -646,32 +735,91 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               </StudioFormSection>
 
               <StudioFormSection title="Module Status">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="rounded-xl border p-4 text-center">
-                    <div className="text-3xl font-bold">{moduleStats.total}</div>
-                    <AndamioText variant="small">Total</AndamioText>
+                {/* On-Chain vs Database comparison */}
+                <div className="space-y-4">
+                  {/* Primary stats row */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="rounded-xl border p-4 text-center">
+                      <div className="text-3xl font-bold">{hybridStats.total}</div>
+                      <AndamioText variant="small">Total</AndamioText>
+                    </div>
+                    <div className="rounded-xl border p-4 text-center bg-success/5 border-success/20">
+                      <div className="text-3xl font-bold text-success">{onChainModules.length}</div>
+                      <AndamioText variant="small">On-Chain</AndamioText>
+                      <AndamioText variant="small" className="text-[10px] text-muted-foreground">
+                        (Andamioscan)
+                      </AndamioText>
+                    </div>
+                    <div className="rounded-xl border p-4 text-center bg-warning/5 border-warning/20">
+                      <div className="text-3xl font-bold text-warning">{hybridStats.dbApproved}</div>
+                      <AndamioText variant="small">Ready to Mint</AndamioText>
+                    </div>
+                    <div className="rounded-xl border p-4 text-center">
+                      <div className="text-3xl font-bold text-muted-foreground">{hybridStats.dbDraft}</div>
+                      <AndamioText variant="small">Draft</AndamioText>
+                    </div>
                   </div>
-                  <div className="rounded-xl border p-4 text-center bg-success/5 border-success/20">
-                    <div className="text-3xl font-bold text-success">{moduleStats.onChain}</div>
-                    <AndamioText variant="small">On-Chain</AndamioText>
-                  </div>
-                  <div className="rounded-xl border p-4 text-center bg-warning/5 border-warning/20">
-                    <div className="text-3xl font-bold text-warning">{moduleStats.approved}</div>
-                    <AndamioText variant="small">Ready to Mint</AndamioText>
-                  </div>
-                  <div className="rounded-xl border p-4 text-center">
-                    <div className="text-3xl font-bold text-muted-foreground">{moduleStats.draft}</div>
-                    <AndamioText variant="small">Draft</AndamioText>
-                  </div>
+
+                  {/* Sync status indicator */}
+                  {(hybridStats.onChainOnly > 0 || hybridStats.dbOnChain !== onChainModules.length) && (
+                    <div className="rounded-lg border border-info/30 bg-info/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <AlertIcon className="h-4 w-4 text-info" />
+                        Data Sync Status
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        {hybridStats.onChainOnly > 0 && (
+                          <p>
+                            <span className="font-medium text-info">{hybridStats.onChainOnly}</span> module(s) found on-chain without database records.
+                          </p>
+                        )}
+                        {hybridStats.dbOnChain !== onChainModules.length && (
+                          <p>
+                            Database shows <span className="font-medium">{hybridStats.dbOnChain}</span> ON_CHAIN, Andamioscan shows <span className="font-medium">{onChainModules.length}</span>.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* On-chain modules list (when there are on-chain-only modules) */}
+                  {hybridStats.onChainOnly > 0 && (
+                    <div className="space-y-2">
+                      <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
+                        On-Chain Only Modules ({hybridStats.onChainOnly})
+                      </AndamioText>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {hybridModules
+                          .filter((m) => m.syncStatus === "onchain-only")
+                          .map((m) => (
+                            <div
+                              key={m.moduleHash}
+                              className="flex items-center justify-between rounded-md border border-info/30 bg-info/5 p-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <OnChainIcon className="h-4 w-4 text-info" />
+                                <code className="text-xs font-mono">{m.moduleHash?.slice(0, 16)}...</code>
+                              </div>
+                              <AndamioBadge variant="outline" className="text-xs border-info/30">
+                                {m.onChainSlts.length} SLT{m.onChainSlts.length !== 1 ? "s" : ""}
+                              </AndamioBadge>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </StudioFormSection>
 
               {/* Mint Modules - Show when there are approved modules ready to mint */}
-              {moduleStats.approved > 0 && (
+              {hybridStats.dbApproved > 0 && (
                 <MintModuleTokens
                   courseNftPolicyId={courseNftPolicyId}
                   courseModules={modules.filter((m) => m.status === "APPROVED")}
-                  onSuccess={() => void refetchModules()}
+                  onSuccess={async () => {
+                    await refetchModules();
+                    await refetchOnChain();
+                  }}
                 />
               )}
 

@@ -118,7 +118,7 @@ export function useTransaction<TParams = unknown>() {
         setState("signing");
         config.onStateChange?.("signing");
 
-        const signedTx = await wallet.signTx(unsignedCbor);
+        const signedTx = await wallet.signTx(unsignedCbor, config.partialSign);
 
         // Step 3: Submit to blockchain
         setState("submitting");

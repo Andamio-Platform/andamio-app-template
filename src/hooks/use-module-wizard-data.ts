@@ -22,7 +22,7 @@ interface UseModuleWizardDataProps {
 interface UseModuleWizardDataReturn {
   data: WizardData;
   completion: StepCompletion;
-  refetchData: () => Promise<void>;
+  refetchData: (moduleCodeOverride?: string) => Promise<void>;
   updateSlts: (slts: WizardData["slts"]) => void;
 }
 
@@ -56,9 +56,13 @@ export function useModuleWizardData({
 
   /**
    * Fetch all wizard data
+   * @param moduleCodeOverride - Optional module code to use instead of the prop (used after creating a new module)
    */
-  const fetchWizardData = useCallback(async () => {
-    if (isNewModule) {
+  const fetchWizardData = useCallback(async (moduleCodeOverride?: string) => {
+    const effectiveModuleCode = moduleCodeOverride ?? moduleCode;
+    const isNewModuleFetch = isNewModule && !moduleCodeOverride;
+
+    if (isNewModuleFetch) {
       // For new modules, just fetch course info
       try {
         const courseResponse = await fetch(
@@ -124,7 +128,7 @@ export function useModuleWizardData({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            module_code: effectiveModuleCode,
           }),
         }
       );
@@ -140,7 +144,7 @@ export function useModuleWizardData({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            module_code: effectiveModuleCode,
           }),
         }
       );
@@ -156,8 +160,8 @@ export function useModuleWizardData({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            assignment_code: `${moduleCode}-ASSIGNMENT`,
+            module_code: effectiveModuleCode,
+            assignment_code: `${effectiveModuleCode}-ASSIGNMENT`,
           }),
         }
       );
@@ -173,7 +177,7 @@ export function useModuleWizardData({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            module_code: effectiveModuleCode,
           }),
         }
       );
@@ -189,7 +193,7 @@ export function useModuleWizardData({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            module_code: effectiveModuleCode,
           }),
         }
       );

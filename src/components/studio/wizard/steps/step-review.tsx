@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   VerifiedIcon,
@@ -164,12 +165,25 @@ export function StepReview({ config, direction }: StepReviewProps) {
                   APPROVED
                 </AndamioBadge>
                 <span className="text-muted-foreground">→</span>
-                <AndamioBadge variant="outline">Ready to Mint</AndamioBadge>
+                <Link
+                  href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <AndamioBadge variant="outline" className="cursor-pointer hover:bg-accent">
+                    Ready to Mint →
+                  </AndamioBadge>
+                </Link>
               </div>
 
               <AndamioText variant="small" className="max-w-md mx-auto">
-                Head to the <strong>On-Chain</strong> tab in Advanced Mode to mint
-                your module tokens on Cardano.
+                Head to the{" "}
+                <Link
+                  href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  On-Chain tab
+                </Link>{" "}
+                to mint your module tokens on Cardano.
               </AndamioText>
             </div>
           </WizardStepHighlight>

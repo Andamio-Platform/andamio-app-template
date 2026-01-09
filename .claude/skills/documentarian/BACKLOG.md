@@ -101,3 +101,5 @@ Items that have been addressed and can be archived.
 | Update modules-manage.ts schema | 2026-01-07 | Aligned with Atlas API swagger.json |
 | Document tx loop session in STATUS.md | 2026-01-07 | Added Session 2 notes with bugs and systemic issues |
 | Update CHANGELOG with tx loop bug fixes | 2026-01-07 | Added 4 new Fixed entries |
+| Document partialSign option in TRANSACTION-COMPONENTS.md | 2026-01-09 | Added multi-sig support section, updated hook description |
+| Add partialSign to CHANGELOG.md | 2026-01-09 | Added to Unreleased section |

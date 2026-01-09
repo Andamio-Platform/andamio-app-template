@@ -85,6 +85,14 @@ export interface TransactionConfig<TParams = unknown> {
    * Optional callback fired on any state change
    */
   onStateChange?: (state: TransactionState) => void;
+
+  /**
+   * Enable partial signing for multi-sig transactions.
+   * When true, calls wallet.signTx(cbor, true) to indicate
+   * that additional signatures may be required.
+   * @default false
+   */
+  partialSign?: boolean;
 }
 
 /**

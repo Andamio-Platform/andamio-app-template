@@ -66,6 +66,14 @@ function ModuleWizardContent({
   const { setBreadcrumbs, setTitle, setStatus, setActions } = useStudioHeader();
   const [isOutlineCollapsed, setIsOutlineCollapsed] = useState(false);
 
+  // Track the created module code for smooth transitions after creation
+  // This allows us to update the URL silently without triggering a full page refresh
+  const [createdModuleCode, setCreatedModuleCode] = useState<string | null>(null);
+
+  // The effective module code is the created one (if exists) or the URL param
+  const effectiveModuleCode = createdModuleCode ?? moduleCode;
+  const effectiveIsNewModule = isNewModule && !createdModuleCode;
+
   // Handle header updates when data loads
   const handleDataLoaded = useCallback(
     (course: CourseOutput | null, courseModule: CourseModuleOutput | null) => {
@@ -91,11 +99,11 @@ function ModuleWizardContent({
     [courseNftPolicyId, isNewModule, moduleCode, setBreadcrumbs, setTitle, setStatus]
   );
 
-  // Data fetching hook
+  // Data fetching hook - uses effective values to support smooth transitions after module creation
   const { data, completion, refetchData, updateSlts } = useModuleWizardData({
     courseNftPolicyId,
-    moduleCode,
-    isNewModule,
+    moduleCode: effectiveModuleCode,
+    isNewModule: effectiveIsNewModule,
     onDataLoaded: handleDataLoaded,
   });
 
@@ -112,6 +120,28 @@ function ModuleWizardContent({
     getStepStatus,
     isStepUnlocked,
   } = useWizardNavigation({ completion });
+
+  /**
+   * Handle module creation - updates URL silently and refetches data
+   * This prevents a full page refresh when transitioning from /new to the actual module code
+   */
+  const onModuleCreated = useCallback(
+    async (newModuleCode: string) => {
+      // Update state to track the created module
+      setCreatedModuleCode(newModuleCode);
+
+      // Update URL silently without triggering Next.js route change
+      const newUrl = `/studio/course/${courseNftPolicyId}/${newModuleCode}?step=slts`;
+      window.history.replaceState(null, "", newUrl);
+
+      // Refetch data for the newly created module
+      await refetchData(newModuleCode);
+
+      // Navigate to SLTs step
+      goToStep("slts");
+    },
+    [courseNftPolicyId, refetchData, goToStep]
+  );
 
   // Build outline steps for the panel
   const outlineSteps: OutlineStep[] = useMemo(
@@ -142,8 +172,10 @@ function ModuleWizardContent({
       refetchData,
       updateSlts,
       courseNftPolicyId,
-      moduleCode,
-      isNewModule,
+      moduleCode: effectiveModuleCode,
+      isNewModule: effectiveIsNewModule,
+      createdModuleCode,
+      onModuleCreated,
     }),
     [
       currentStep,
@@ -159,8 +191,10 @@ function ModuleWizardContent({
       refetchData,
       updateSlts,
       courseNftPolicyId,
-      moduleCode,
-      isNewModule,
+      effectiveModuleCode,
+      effectiveIsNewModule,
+      createdModuleCode,
+      onModuleCreated,
     ]
   );
 

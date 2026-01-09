@@ -335,6 +335,8 @@ export function ModuleWizard({
 
   /**
    * Context value
+   * Note: createdModuleCode and onModuleCreated are only used in the split-pane wizard.
+   * This legacy wizard uses router navigation for module creation.
    */
   const contextValue = useMemo<WizardContextValue>(
     () => ({
@@ -353,6 +355,11 @@ export function ModuleWizard({
       courseNftPolicyId,
       moduleCode,
       isNewModule,
+      createdModuleCode: null,
+      onModuleCreated: () => {
+        // Not used in legacy wizard - module creation uses router navigation
+        return Promise.resolve();
+      },
     }),
     [
       currentStep,

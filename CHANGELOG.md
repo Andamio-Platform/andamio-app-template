@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Partial Signing Support**: Added `partialSign` option to `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR, allowing transactions pre-signed by other parties to be completed.
 - **Andamioscan Integration Complete** (53% coverage): Implemented 17 of 32 Andamioscan V2 API endpoints
   - All Course endpoints (4): `getAllCourses`, `getCourse`, `getCourseStudent`, `getPendingAssessments`
   - All User endpoints (5): `getUserGlobalState`, `getCoursesOwnedByAlias`, `getEnrolledCourses`, `getCompletedCourses`, `getOwnedCourses`

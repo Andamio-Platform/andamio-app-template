@@ -103,3 +103,7 @@ Items that have been addressed and can be archived.
 | Update CHANGELOG with tx loop bug fixes | 2026-01-07 | Added 4 new Fixed entries |
 | Document partialSign option in TRANSACTION-COMPONENTS.md | 2026-01-09 | Added multi-sig support section, updated hook description |
 | Add partialSign to CHANGELOG.md | 2026-01-09 | Added to Unreleased section |
+| Audit all transaction components use useAndamioTransaction | 2026-01-09 | All 16 V2 transactions now use standardized hook pattern |
+| Update MintAccessToken to use useAndamioTransaction | 2026-01-09 | Hybrid approach - auto side effects + manual JWT handling |
+| Update TRANSACTION-COMPONENTS.md with V2 matrix | 2026-01-09 | Full matrix of 16 definitions to components |
+| Add MintAccessToken hybrid approach to SIDE-EFFECTS-INTEGRATION.md | 2026-01-09 | Documented special JWT handling case |

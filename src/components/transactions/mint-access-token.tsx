@@ -2,17 +2,20 @@
  * MintAccessToken Component
  *
  * UI for minting a new Andamio Access Token NFT.
- * Uses GENERAL_ACCESS_TOKEN_MINT transaction definition from @andamio/transactions.
+ * Uses GLOBAL_GENERAL_ACCESS_TOKEN_MINT transaction definition from @andamio/transactions.
  *
- * @see packages/andamio-transactions/src/definitions/v2/general/access-token-mint.ts
+ * This component uses useAndamioTransaction for standardized side effect execution,
+ * but manually handles JWT storage since the update-alias endpoint returns a new JWT.
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/global/general/access-token-mint.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { GENERAL_ACCESS_TOKEN_MINT } from "@andamio/transactions";
+import { GLOBAL_GENERAL_ACCESS_TOKEN_MINT } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useTransaction } from "~/hooks/use-transaction";
+import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -48,7 +51,7 @@ function isValidAlias(alias: string): boolean {
 
 export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
   const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useTransaction();
+  const { state, result, error, execute, reset } = useAndamioTransaction();
   const [alias, setAlias] = useState("");
 
   const aliasError = alias.trim() && !isValidAlias(alias.trim())
@@ -60,21 +63,19 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
       return;
     }
 
-    // Use endpoint and txType from GENERAL_ACCESS_TOKEN_MINT definition
-    const endpoint = GENERAL_ACCESS_TOKEN_MINT.buildTxConfig.builder.endpoint!;
-
     await execute({
-      endpoint,
-      method: "POST",
+      definition: GLOBAL_GENERAL_ACCESS_TOKEN_MINT,
       params: {
+        // Transaction API params
         initiator_data: user.cardanoBech32Addr,
         alias: alias.trim(),
       },
-      txType: GENERAL_ACCESS_TOKEN_MINT.txType,
       onSuccess: async (txResult) => {
         console.log("[MintAccessToken] Success!", txResult);
 
-        // Update the user's access token alias in the database
+        // Manually handle JWT storage since update-alias returns a new JWT
+        // Note: The onSubmit side effect (set pending tx) is auto-executed by useAndamioTransaction
+        // The onConfirmation side effects will be handled by the pending tx watcher
         try {
           const response = await authenticatedFetch(
             `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-alias`,

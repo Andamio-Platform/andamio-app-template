@@ -23,20 +23,28 @@ This document describes the transaction component architecture for the T3 App Te
 
 ### Core Components
 
-**1. Transaction Hook (`useTransaction`)**
-- Handles transaction lifecycle: fetch → sign → submit
-- Manages transaction state (idle, loading, signing, submitting, success, error)
-- Integrates with Mesh SDK for wallet signing
+**1. Transaction Hook (`useAndamioTransaction`)**
+- Wraps `useTransaction` and adds automatic side effect execution
+- Accepts `AndamioTransactionDefinition` from `@andamio/transactions`
+- Filters params based on definition's `txApiSchema`
+- Executes `onSubmit` side effects after transaction submission
+- Manages transaction state (idle, fetching, signing, submitting, success, error)
 - Provides callbacks for success/error handling
-- Supports partial signing for multi-sig transactions via `partialSign` option
+- Supports partial signing via underlying `useTransaction`
 
-**2. Transaction Button Component (`TransactionButton`)**
+**2. Base Transaction Hook (`useTransaction`)**
+- Low-level hook for transaction lifecycle: fetch → sign → submit
+- Integrates with Mesh SDK for wallet signing
+- Supports partial signing for multi-sig transactions via `partialSign` option
+- Used directly only when custom transaction handling is needed
+
+**3. Transaction Button Component (`TransactionButton`)**
 - Reusable button for initiating transactions
 - Shows loading states during transaction flow
 - Displays transaction status (signing, submitting, etc.)
 - Uses AndamioButton with enhanced states
 
-**3. Transaction Status Component (`TransactionStatus`)**
+**4. Transaction Status Component (`TransactionStatus`)**
 - Displays transaction progress/result
 - Shows transaction hash in a formatted code block on success
 - Provides "View on Cardano Explorer" button with external link
@@ -90,7 +98,35 @@ When `partialSign: true`:
 
 ---
 
-## Implemented Transactions
+## Implemented Transactions (V2)
+
+All 16 V2 transaction definitions from `@andamio/transactions` are implemented. Each component uses the `useAndamioTransaction` hook which:
+- Executes `onSubmit` side effects automatically after transaction submission
+- Filters transaction params based on definition schema
+- Provides consistent state management and error handling
+
+### Transaction Component Matrix
+
+| Definition | Component | Role |
+|------------|-----------|------|
+| `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` | general |
+| `INSTANCE_COURSE_CREATE` | `create-course.tsx` | instance-owner |
+| `INSTANCE_PROJECT_CREATE` | `create-project.tsx` | instance-owner |
+| `COURSE_OWNER_TEACHERS_MANAGE` | `teachers-update.tsx` | course-owner |
+| `COURSE_TEACHER_MODULES_MANAGE` | `mint-module-tokens.tsx` | course-teacher |
+| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assess-assignment.tsx` | course-teacher |
+| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `enroll-in-course.tsx` | course-student |
+| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment-update.tsx` | course-student |
+| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential-claim.tsx` | course-student |
+| `PROJECT_OWNER_MANAGERS_MANAGE` | `managers-manage.tsx` | project-owner |
+| `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist-manage.tsx` | project-owner |
+| `PROJECT_MANAGER_TASKS_MANAGE` | `tasks-manage.tsx` | project-manager |
+| `PROJECT_MANAGER_TASKS_ASSESS` | `tasks-assess.tsx` | project-manager |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `project-enroll.tsx`, `task-commit.tsx` | project-contributor |
+| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` | project-contributor |
+| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` | project-contributor |
+
+---
 
 ### Mint Access Token
 
@@ -98,109 +134,133 @@ When `partialSign: true`:
 
 **Purpose**: Mint a new Andamio Access Token NFT for the user
 
-**Andamioscan Endpoint**: `/tx/access-token/mint`
+**Definition**: `GLOBAL_GENERAL_ACCESS_TOKEN_MINT`
 
-**Frontend Endpoint**: `/api/andamioscan/tx/access-token/mint`
-
-**HTTP Method**: `GET` (parameters sent as query string)
+**Atlas API Endpoint**: `POST /v2/tx/global/general/access-token/mint`
 
 **Parameters**:
-- `user_address` (string): User's Cardano wallet address (bech32 format)
-- `new_alias` (string): Desired access token alias/username
+- `initiator_data` (string): User's Cardano wallet address (bech32 format)
+- `alias` (string): Desired access token alias (1-31 alphanumeric chars)
 
 **Flow**:
 1. User enters desired alias on dashboard
 2. Click "Mint Access Token" button
-3. Fetch unsigned CBOR from Andamioscan
-4. Sign with wallet
-5. Submit to blockchain
-6. Update database with new access token record
+3. `useAndamioTransaction` fetches unsigned CBOR from Atlas API
+4. User signs with wallet
+5. Transaction submitted to blockchain
+6. `onSubmit` side effects executed (set pending tx)
+7. Manual JWT handling updates user's alias and stores new JWT
+8. Auth context refreshed
 
 **Components**:
-- `src/hooks/use-transaction.ts` - Core transaction hook
+- `src/hooks/use-andamio-transaction.ts` - Transaction hook with side effects
 - `src/components/transactions/transaction-button.tsx` - Reusable tx button
 - `src/components/transactions/transaction-status.tsx` - Status display
 - `src/components/transactions/mint-access-token.tsx` - Mint token UI
+
+**Special Note**: Uses hybrid approach - `useAndamioTransaction` for standardized side effects, but manually handles JWT storage since the endpoint returns a new JWT.
 
 **Used In**:
 - Dashboard page - for users without access token
 
 ---
 
-### Enroll in Course (Mint Local State)
+### Enroll in Course
 
 **Status**: ✅ Active
 
-**Purpose**: Enroll a learner in a course by minting their course local state NFT
+**Purpose**: Enroll a learner in a course with an initial module commitment
 
-**Andamioscan Endpoint**: `/tx/student/mint-local-state`
+**Definition**: `COURSE_STUDENT_ASSIGNMENT_COMMIT`
 
-**Frontend Endpoint**: `/api/andamioscan/tx/student/mint-local-state`
-
-**HTTP Method**: `GET` (parameters sent as query string)
+**Atlas API Endpoint**: `POST /v2/tx/course/student/assignment/commit`
 
 **Parameters**:
-- `user_access_token` (string): Concatenated access token policy ID + user's alias
-- `policy` (string): Course NFT policy ID
+- `alias` (string): User's access token alias
+- `course_id` (string): Course NFT Policy ID
+- `slt_hash` (string): Module SLT hash (64 char hex)
+- `assignment_info` (string): Evidence hash
 
 **Flow**:
-1. User visits course page
-2. System checks enrollment status via `/user-course-status/{courseNftPolicyId}`
-3. If not enrolled, show EnrollInCourse component
-4. Click "Enroll in Course" button
-5. Fetch unsigned CBOR from Andamioscan
-6. Sign with wallet
-7. Submit to blockchain
-8. On success, refetch status to show progress card
+1. User visits course page and selects a module
+2. User provides initial evidence for the module
+3. Click "Enroll & Submit" button
+4. `useAndamioTransaction` builds and submits transaction
+5. Course state token minted to user's wallet
+6. Side effects update database with enrollment record
 
 **Components**:
-- `src/components/transactions/enroll-in-course.tsx` - Enrollment transaction UI
-- `src/components/learner/user-course-status.tsx` - Shows enrollment or progress
+- `src/components/transactions/enroll-in-course.tsx` - Enrollment UI with module selection
 
 **Used In**:
-- `/course/[coursenft]` - Course detail page (via UserCourseStatus component)
-
-**Note**: The `user_access_token` is built by concatenating `NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID` + user's alias.
+- `/course/[coursenft]` - Course detail page
 
 ---
 
-## Future Transactions
+### Assignment Update
 
-These will follow the same pattern:
+**Status**: ✅ Active
 
-- **Submit Assignment**
-- **Issue Course Module Credential**
-- **Create Course**
-- **Update Course**
-- **Burn Access Token**
+**Purpose**: Update assignment evidence for an existing module commitment
+
+**Definition**: `COURSE_STUDENT_ASSIGNMENT_UPDATE` or `COURSE_STUDENT_ASSIGNMENT_COMMIT`
+
+**Components**:
+- `src/components/transactions/assignment-update.tsx` - Supports both update and new commitment modes
+
+**Note**: Component uses `isNewCommitment` prop to switch between `ASSIGNMENT_UPDATE` (updating existing) and `ASSIGNMENT_COMMIT` (new module commitment).
 
 ---
 
-## Package Extraction Plan
+### Project Enrollment
 
-**Target Package**: `@andamio/transactions`
+**Status**: ✅ Active
 
-**Exports**:
+**Purpose**: Enroll a contributor in a project with initial task commitment
+
+**Definition**: `PROJECT_CONTRIBUTOR_TASK_COMMIT`
+
+**Components**:
+- `src/components/transactions/project-enroll.tsx` - Initial project enrollment
+- `src/components/transactions/task-commit.tsx` - Subsequent task commitments
+
+**Used In**:
+- `/project/[treasurynft]/contributor` - Contributor dashboard
+- `/project/[treasurynft]/[taskhash]` - Task detail page
+
+---
+
+## Package Architecture
+
+**`@andamio/transactions` Package** (already exists):
+- Transaction definitions with schemas and side effects
+- Side effect execution utilities (`executeOnSubmit`, `executeOnConfirmation`)
+- Input helper functions (hash computation, etc.)
+- Types for definitions and contexts
+
+**T3 App Template** (this app):
+- `useAndamioTransaction` hook - integrates definitions with wallet
+- `useTransaction` hook - base transaction lifecycle
+- `TransactionButton`, `TransactionStatus` - UI components
+- 16 transaction-specific components
+
+**Exports from `@andamio/transactions`**:
 ```typescript
-// Hooks
-export { useTransaction } from "./hooks/use-transaction"
+// V2 Definitions (16 total)
+export { GLOBAL_GENERAL_ACCESS_TOKEN_MINT } from "./definitions/v2/global";
+export { INSTANCE_COURSE_CREATE, INSTANCE_PROJECT_CREATE } from "./definitions/v2/instance";
+export { COURSE_OWNER_TEACHERS_MANAGE, ... } from "./definitions/v2/course";
+export { PROJECT_OWNER_MANAGERS_MANAGE, ... } from "./definitions/v2/project";
 
-// Components
-export { TransactionButton } from "./components/transaction-button"
-export { TransactionStatus } from "./components/transaction-status"
+// Execution utilities
+export { executeOnSubmit, executeOnConfirmation } from "./execution";
+
+// Input helpers
+export { computeAssignmentInfoHash, computeModuleInfoHash } from "./utils";
 
 // Types
-export type {
-  TransactionState,
-  TransactionResult,
-  TransactionConfig  // Includes partialSign option
-} from "./types"
+export type { AndamioTransactionDefinition, SubmissionContext } from "./types";
 ```
-
-**Dependencies**:
-- `@meshsdk/core` - Wallet integration
-- `@andamio/ui` - UI components (when extracted)
-- React
 
 ---
 

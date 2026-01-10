@@ -1,18 +1,17 @@
 /**
  * ProjectEnroll Transaction Component (V2)
  *
- * UI for contributors to enroll in a project by minting a contributor state token.
- * Enrollment requires selecting a task to commit to.
+ * UI for contributors to enroll in a project by committing to a task.
+ * Uses PROJECT_CONTRIBUTOR_TASK_COMMIT which handles both initial enrollment
+ * and subsequent task commitments.
  *
- * Uses PROJECT_CONTRIBUTOR_ENROLL transaction definition.
- *
- * @see packages/andamio-transactions/src/definitions/v2/project/contributor/enroll.ts
+ * @see packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { PROJECT_CONTRIBUTOR_ENROLL, computeAssignmentInfoHash } from "@andamio/transactions";
+import { PROJECT_CONTRIBUTOR_TASK_COMMIT, computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -133,7 +132,7 @@ export function ProjectEnroll({
     setEvidenceHash(hash);
 
     await execute({
-      definition: PROJECT_CONTRIBUTOR_ENROLL,
+      definition: PROJECT_CONTRIBUTOR_TASK_COMMIT,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
@@ -142,9 +141,7 @@ export function ProjectEnroll({
         task_hash: taskHash,
         task_info: hash,
         // Side effect params
-        task_code: taskCode,
-        task_evidence: taskEvidence,
-        task_evidence_hash: hash,
+        evidence: taskEvidence,
       },
       onSuccess: async (txResult) => {
         console.log("[ProjectEnroll] Success!", txResult);

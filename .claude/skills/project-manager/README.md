@@ -1,6 +1,6 @@
 # Project Manager Skill
 
-> **Last Updated**: January 8, 2026
+> **Last Updated**: January 9, 2026
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
@@ -48,15 +48,24 @@ This skill directory contains project planning, status tracking, and architectur
 |--------|-------|
 | Course Routes | 15/15 implemented |
 | Project Routes | 6/13 implemented |
+| Transaction Components | **16/16 V2 complete** |
 | DB API Coverage | ~66% (49/74 endpoints) |
 | Andamioscan Coverage | 53% (17/32 endpoints) |
 | React Query Hooks | 18 DB + 25 Andamioscan hooks |
+
+### Current Blockers
+
+| Blocker | Status |
+|---------|--------|
+| @andamio/transactions NPM | Waiting (have locally) |
+| Andamio DB API (Go) | Waiting for deployment |
+| Event Endpoints | 0/15 (using Koios polling) |
 
 ### Current Focus
 
 **Andamio V2 Preprod Release** (2026-01-09) - Final optimizations before launch.
 
-See `ROADMAP.md` for current priorities.
+See `ROADMAP.md` for current priorities and `STATUS.md` for detailed blockers.
 
 ---
 

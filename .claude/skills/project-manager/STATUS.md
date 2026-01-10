@@ -1,8 +1,23 @@
 # Project Status
 
-> **Last Updated**: January 8, 2026
+> **Last Updated**: January 9, 2026
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## Current Blockers
+
+| Blocker | Status | Impact |
+|---------|--------|--------|
+| **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
+| **Andamio DB API (Go Rewrite)** | Waiting for deployment | Some side effect endpoints not yet implemented; API being rewritten in Go |
+| **Event Endpoints (Andamioscan)** | 0/15 implemented | Transaction confirmation relies on Koios polling instead of entity-specific endpoints |
+
+**Workarounds in Place**:
+- Using workspace symlink for `@andamio/transactions` (local development works)
+- Side effects that depend on unimplemented endpoints are marked "Not implemented" and skipped gracefully
+- Koios polling handles transaction confirmation until Event endpoints are ready
 
 ---
 
@@ -119,23 +134,44 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 | Component | Status | Purpose |
 |-----------|--------|---------|
-| `useTransaction` | Stable | Core transaction hook |
-| `useAndamioTransaction` | Stable | Wrapper with side effects |
-| `AndamioTransaction` | Stable | Transaction UI component |
-| `PendingTxWatcher` | Stable | Automatic tx monitoring |
+| `useAndamioTransaction` | **Primary** | Transaction hook with automatic side effects |
+| `useTransaction` | Stable | Base hook (used internally by useAndamioTransaction) |
+| `TransactionButton` | Stable | Reusable transaction button |
+| `TransactionStatus` | Stable | Transaction result display |
+| `PendingTxWatcher` | Stable | Automatic tx monitoring via Koios |
 
-### Implemented Transactions
+### V2 Transaction Components: 16/16 Complete ✅
 
-| Transaction | Type | Status |
-|-------------|------|--------|
-| Mint Access Token | User | Active |
-| Enroll in Course | Learner | Active |
-| Mint Module Tokens | Creator | Active |
-| Accept Assignment | Instructor | Active |
-| Deny Assignment | Instructor | Active |
-| Commit to Assignment | Learner | Active |
-| Update Assignment | Learner | Active |
-| Leave Assignment | Learner | Active |
+All transaction components now use `useAndamioTransaction` for standardized side effect execution.
+
+**Global**:
+| Component | Definition | Status |
+|-----------|------------|--------|
+| `mint-access-token.tsx` | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | ✅ Hybrid (manual JWT) |
+
+**Course System** (6):
+| Component | Definition | Status |
+|-----------|------------|--------|
+| `create-course.tsx` | `INSTANCE_COURSE_CREATE` | ✅ |
+| `teachers-update.tsx` | `COURSE_OWNER_TEACHERS_MANAGE` | ✅ |
+| `mint-module-tokens.tsx` | `COURSE_TEACHER_MODULES_MANAGE` | ✅ |
+| `assess-assignment.tsx` | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | ✅ |
+| `enroll-in-course.tsx` | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | ✅ |
+| `assignment-update.tsx` | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | ✅ |
+| `credential-claim.tsx` | `COURSE_STUDENT_CREDENTIAL_CLAIM` | ✅ |
+
+**Project System** (9):
+| Component | Definition | Status |
+|-----------|------------|--------|
+| `create-project.tsx` | `INSTANCE_PROJECT_CREATE` | ✅ |
+| `managers-manage.tsx` | `PROJECT_OWNER_MANAGERS_MANAGE` | ✅ |
+| `blacklist-manage.tsx` | `PROJECT_OWNER_BLACKLIST_MANAGE` | ✅ |
+| `tasks-manage.tsx` | `PROJECT_MANAGER_TASKS_MANAGE` | ✅ |
+| `tasks-assess.tsx` | `PROJECT_MANAGER_TASKS_ASSESS` | ✅ |
+| `project-enroll.tsx` | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | ✅ |
+| `task-commit.tsx` | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | ✅ |
+| `task-action.tsx` | `PROJECT_CONTRIBUTOR_TASK_ACTION` | ✅ |
+| `project-credential-claim.tsx` | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | ✅ |
 
 ### Side Effects System
 
@@ -143,6 +179,7 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 - Status updates: `PENDING_TX` → `ON_CHAIN`
 - Toast notifications for success/failure
 - Error handling with retry logic
+- **Note**: Some DB API endpoints pending Go rewrite deployment
 
 ---
 
@@ -228,6 +265,22 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 ---
 
 ## Recent Changes
+
+### January 9, 2026 - Transaction Component Audit Complete
+
+**Transaction System Audit**: All 16 V2 transaction components verified to use `useAndamioTransaction` hook.
+
+**MintAccessToken Updated**: Migrated from `useTransaction` to `useAndamioTransaction` (hybrid approach). Now executes `onSubmit` side effects automatically while manually handling JWT storage.
+
+**Documentation Updated**:
+- `TRANSACTION-COMPONENTS.md` - Full V2 transaction matrix with 16 components
+- `SIDE-EFFECTS-INTEGRATION.md` - Added MintAccessToken hybrid approach section
+- `CHANGELOG.md` - Added hook migration note
+
+**Blockers Documented**: Added "Current Blockers" section to STATUS.md tracking:
+- @andamio/transactions NPM publish (waiting)
+- Andamio DB API Go rewrite (waiting for deployment)
+- Event endpoints for transaction confirmation (0/15)
 
 ### January 8, 2026 - Andamioscan Integration Complete
 

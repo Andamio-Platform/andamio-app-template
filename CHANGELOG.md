@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Partial Signing Support**: Added `partialSign` option to `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR, allowing transactions pre-signed by other parties to be completed.
+
+### Changed
+- **MintAccessToken Hook Migration**: Updated `mint-access-token.tsx` from `useTransaction` to `useAndamioTransaction` hook (hybrid approach). Now executes `onSubmit` side effects automatically while still handling JWT storage manually since the endpoint returns a new JWT. All 16 transaction components now use the standardized `useAndamioTransaction` hook.
 - **Andamioscan Integration Complete** (53% coverage): Implemented 17 of 32 Andamioscan V2 API endpoints
   - All Course endpoints (4): `getAllCourses`, `getCourse`, `getCourseStudent`, `getPendingAssessments`
   - All User endpoints (5): `getUserGlobalState`, `getCoursesOwnedByAlias`, `getEnrolledCourses`, `getCompletedCourses`, `getOwnedCourses`

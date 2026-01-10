@@ -3,15 +3,23 @@
  *
  * Elegant UI for students to submit or update assignment evidence.
  * Supports two modes: updating existing submission or committing to a new module.
- * Uses COURSE_STUDENT_ASSIGNMENT_ACTION transaction definition from @andamio/transactions.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-action.ts
+ * Uses:
+ * - COURSE_STUDENT_ASSIGNMENT_UPDATE for updating existing submissions
+ * - COURSE_STUDENT_ASSIGNMENT_COMMIT for committing to a new module
+ *
+ * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-update.ts
+ * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-commit.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { COURSE_STUDENT_ASSIGNMENT_ACTION, computeAssignmentInfoHash } from "@andamio/transactions";
+import {
+  COURSE_STUDENT_ASSIGNMENT_UPDATE,
+  COURSE_STUDENT_ASSIGNMENT_COMMIT,
+  computeAssignmentInfoHash,
+} from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -51,6 +59,12 @@ export interface AssignmentUpdateProps {
   isNewCommitment?: boolean;
 
   /**
+   * SLT hash (64 char hex) - REQUIRED when isNewCommitment is true.
+   * This is the module token name on-chain (Blake2b-256 of SLT content).
+   */
+  sltHash?: string;
+
+  /**
    * Evidence content (Tiptap JSON)
    */
   evidence: JSONContent;
@@ -84,6 +98,7 @@ export function AssignmentUpdate({
   moduleCode,
   moduleTitle,
   isNewCommitment = false,
+  sltHash,
   evidence,
   onSuccess,
 }: AssignmentUpdateProps) {
@@ -105,23 +120,49 @@ export function AssignmentUpdate({
       return;
     }
 
+    // Validate sltHash is provided for new commitments
+    if (isNewCommitment && !sltHash) {
+      toast.error("Missing SLT Hash", {
+        description: "sltHash is required when committing to a new module",
+      });
+      return;
+    }
+
     // Compute evidence hash
     const hash = computeAssignmentInfoHash(evidence);
     setEvidenceHash(hash);
 
+    // Select transaction definition and build params based on mode
+    const definition = isNewCommitment
+      ? COURSE_STUDENT_ASSIGNMENT_COMMIT
+      : COURSE_STUDENT_ASSIGNMENT_UPDATE;
+
+    // Build txParams based on transaction type
+    const txParams = isNewCommitment
+      ? {
+          alias: user.accessTokenAlias,
+          course_id: courseNftPolicyId,
+          slt_hash: sltHash!, // Required for COMMIT
+          assignment_info: hash,
+        }
+      : {
+          alias: user.accessTokenAlias,
+          course_id: courseNftPolicyId,
+          assignment_info: hash,
+        };
+
+    // Side effect params are the same for both
+    const sideEffectParams = {
+      module_code: moduleCode,
+      network_evidence: evidence,
+      network_evidence_hash: hash,
+    };
+
     await execute({
-      definition: COURSE_STUDENT_ASSIGNMENT_ACTION,
+      definition,
       params: {
-        // Transaction API params (snake_case per V2 API)
-        alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        assignment_info: hash,
-        // new_slt_hash would be set if committing to a new module
-        // Side effect params
-        is_new_commitment: isNewCommitment,
-        module_code: moduleCode,
-        network_evidence: evidence,
-        network_evidence_hash: hash,
+        ...txParams,
+        ...sideEffectParams,
       },
       onSuccess: async (txResult) => {
         console.log("[AssignmentUpdate] Success!", txResult);
@@ -154,7 +195,8 @@ export function AssignmentUpdate({
 
   const hasAccessToken = !!user.accessTokenAlias;
   const hasEvidence = evidence && Object.keys(evidence).length > 0;
-  const canSubmit = hasAccessToken && hasEvidence;
+  const hasSltHash = !isNewCommitment || !!sltHash; // sltHash only required for new commitments
+  const canSubmit = hasAccessToken && hasEvidence && hasSltHash;
 
   return (
     <AndamioCard>

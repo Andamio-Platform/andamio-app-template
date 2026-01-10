@@ -62,6 +62,28 @@ await execute({
 
 The side effects are executed automatically behind the scenes.
 
+### 4. Special Case: `MintAccessToken` (Hybrid Approach)
+
+**Location**: `src/components/transactions/mint-access-token.tsx`
+
+Uses `useAndamioTransaction` for standardized side effect execution, but **manually handles JWT storage** since the `/access-token/update-alias` endpoint returns a new JWT that needs to be stored in localStorage.
+
+```typescript
+await execute({
+  definition: GLOBAL_GENERAL_ACCESS_TOKEN_MINT,
+  params: { initiator_data: address, alias: alias },
+  onSuccess: async (txResult) => {
+    // onSubmit side effects already executed automatically
+    // Manual JWT handling for alias update
+    const response = await authenticatedFetch("/access-token/update-alias", ...);
+    storeJWT(data.jwt);
+    refreshAuth();
+  },
+});
+```
+
+**Why hybrid?** The access token minting flow requires storing a new JWT with the user's alias claim. The standard side effect system doesn't handle JWT storage, so we execute side effects automatically but handle JWT manually.
+
 ## How It Works
 
 ### Transaction Flow

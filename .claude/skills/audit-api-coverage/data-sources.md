@@ -1,9 +1,13 @@
 # Data Sources Architecture
 
 > **Where does this app get its data?**
-> Last Updated: December 15, 2025 (v0.5.0 - Singular endpoint paths)
+> Last Updated: January 9, 2026 (Go API Migration)
 
 This document explains the external data sources used by the Andamio T3 App Template and provides a complete endpoint inventory.
+
+## ⚠️ Go API Migration (January 9, 2026)
+
+The Andamio DB API was rewritten in Go with updated endpoint paths. See `api-coverage.md` for the migration table. Endpoint tables below may still reference old paths.
 
 ---
 

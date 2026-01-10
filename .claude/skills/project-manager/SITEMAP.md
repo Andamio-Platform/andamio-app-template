@@ -151,7 +151,7 @@ POST /task-commitments/get       Get commitment if exists (if auth)
 
 #### `/dashboard` - User Dashboard
 ```
-POST /my-learning/get            Get learner's enrolled courses
+GET  /learner/my-learning        Get learner's enrolled courses
 POST /credential/list            Get learner's credentials (per course)
 ```
 **Andamioscan Hooks**: `useEnrolledCourses`, `usePendingAssessments`, `useCompletedCourses`, `useContributingProjects`, `useManagingProjects`, `useOwnedCourses`, `useUserGlobalState`
@@ -164,8 +164,8 @@ GET  /v2/users/{alias}/courses/completed    Get completed courses (Andamioscan)
 
 #### `/studio/course` - Course Studio
 ```
-POST /course/list                Get owned courses
-POST /course-module/map          Get module counts
+GET  /courses/owned              Get owned courses
+POST /course-modules/list        Get module counts (by policy IDs)
 ```
 
 #### `/studio/course/[coursenft]` - Course Editor

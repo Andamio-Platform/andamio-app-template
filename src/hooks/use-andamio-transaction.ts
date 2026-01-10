@@ -121,12 +121,12 @@ export function useAndamioTransaction<TParams = unknown>() {
         txType: config.definition.txType,
         onSuccess: async (txResult) => {
           // Update user's unconfirmedTx (blocks further transactions until confirmed)
-          const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-unconfirmed-tx`;
+          const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
           const unconfirmedTxBody = { tx_hash: txResult.txHash };
-          txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "POST", unconfirmedTxUrl, unconfirmedTxBody);
+          txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "PATCH", unconfirmedTxUrl, unconfirmedTxBody);
           try {
             const unconfirmedTxResponse = await fetch(unconfirmedTxUrl, {
-              method: "POST",
+              method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${jwt}`,

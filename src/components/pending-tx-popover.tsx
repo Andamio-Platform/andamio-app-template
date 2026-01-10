@@ -186,7 +186,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                     {/* Entity ID */}
                     <div className="mb-2">
                       <AndamioText variant="small" className="font-medium text-foreground">{tx.entityId}</AndamioText>
-                      {tx.context.courseNftPolicyId && (
+                      {tx.context?.courseNftPolicyId && (
                         <AndamioText variant="small" className="text-xs">
                           Course: {truncateTxHash(tx.context.courseNftPolicyId, 16)}
                         </AndamioText>

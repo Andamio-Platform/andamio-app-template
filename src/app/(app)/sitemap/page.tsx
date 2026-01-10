@@ -334,14 +334,9 @@ export default function SitemapPage() {
 
         // Fetch owned data if authenticated
         if (isAuthenticated) {
-          // Owned courses - POST /courses/owned
+          // Owned courses - GET /courses/owned
           const ownedCourseResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({}),
-            }
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
           );
           if (ownedCourseResponse.ok) {
             const ownedData = (await ownedCourseResponse.json()) as ListOwnedCoursesOutput;

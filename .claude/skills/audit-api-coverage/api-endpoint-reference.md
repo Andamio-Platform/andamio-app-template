@@ -1,17 +1,34 @@
 # API Endpoint Reference & UX Mapping
 
 > **Complete mapping of Andamio Database API endpoints to frontend implementation**
-> Last Updated: December 19, 2025
-> API Version: **v0** (Unstable)
+> Last Updated: January 9, 2026
+> API Version: **v0** (Unstable) - **Go API**
 > Coverage: **~49/74 endpoints (~66%)**
 
 This document provides a comprehensive reference for all API endpoints, their purpose, and where they are used in the T3 App Template. Use this as the alignment document between backend API and frontend UX.
 
 ---
 
+## ⚠️ Go API Migration (January 9, 2026)
+
+The Andamio DB API was rewritten in Go. Key endpoint changes:
+
+| Old Endpoint (TypeScript) | New Endpoint (Go) | Method |
+|---------------------------|-------------------|--------|
+| `POST /course/list` | `GET /courses/owned` | GET |
+| `POST /course-module/map` | `POST /course-modules/list` | POST |
+| `POST /my-learning/get` | `GET /learner/my-learning` | GET |
+| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` | PATCH |
+| `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` | PATCH |
+| `GET /transaction/pending-transactions` | `GET /pending-transactions` | GET |
+
+**Note**: Some sections below still reference old endpoint paths. The T3 App has been updated to use the new paths.
+
+---
+
 ## API Design Pattern
 
-**All endpoints use POST requests with JSON bodies** (except `/transaction/pending-transactions` which is GET).
+**The Go API uses RESTful conventions** with appropriate HTTP methods (GET, POST, PATCH, DELETE).
 
 This design pattern provides:
 - Consistent request format across all operations

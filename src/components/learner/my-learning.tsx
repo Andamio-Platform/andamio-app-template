@@ -55,16 +55,11 @@ export function MyLearning() {
       setError(null);
 
       try {
-        learnerLogger.debug("Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/my-learning/get`);
+        learnerLogger.debug("Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
 
-        // Single API call to get all courses with learner's commitments (POST /my-learning/get)
+        // Single API call to get all courses with learner's commitments (GET /learner/my-learning)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/my-learning/get`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`
         );
 
         learnerLogger.debug("Response status:", response.status);

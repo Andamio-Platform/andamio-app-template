@@ -279,12 +279,12 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         }
 
         // Clear user's unconfirmedTx now that it's confirmed
-        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-unconfirmed-tx`;
+        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
         const clearBody = { tx_hash: null };
-        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "POST", clearUrl, clearBody);
+        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "PATCH", clearUrl, clearBody);
         try {
           const clearResponse = await authenticatedFetch(clearUrl, {
-            method: "POST",
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(clearBody),
           });
@@ -404,7 +404,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       pendingTxLogger.debug("Loading pending transactions from database...");
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/transaction/pending-transactions`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
       );
 
       if (!response.ok) {

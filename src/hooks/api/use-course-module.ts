@@ -124,16 +124,17 @@ export function useCourseModule(
 }
 
 /**
- * Batch fetch modules for multiple courses
+ * Batch fetch modules for multiple courses by policy ID
  *
  * Used for dashboard views showing module counts across courses.
+ * Uses POST /course-modules/list endpoint.
  *
  * @example
  * ```tsx
- * function CourseCards({ courseIds }: { courseIds: string[] }) {
- *   const { data: moduleMap } = useCourseModuleMap(courseIds);
+ * function CourseCards({ policyIds }: { policyIds: string[] }) {
+ *   const { data: moduleMap } = useCourseModuleMap(policyIds);
  *
- *   return courseIds.map(id => (
+ *   return policyIds.map(id => (
  *     <CourseCard
  *       key={id}
  *       moduleCount={moduleMap?.[id]?.length ?? 0}
@@ -142,18 +143,19 @@ export function useCourseModule(
  * }
  * ```
  */
-export function useCourseModuleMap(courseCodes: string[]) {
+export function useCourseModuleMap(courseNftPolicyIds: string[]) {
   const { authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: courseModuleKeys.map(courseCodes),
+    queryKey: courseModuleKeys.map(courseNftPolicyIds),
     queryFn: async () => {
+      // POST /course-modules/list - returns modules grouped by policy ID
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/map`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_codes: courseCodes }),
+          body: JSON.stringify({ courseNftPolicyIds }),
         }
       );
 
@@ -165,7 +167,7 @@ export function useCourseModuleMap(courseCodes: string[]) {
         Record<string, Array<{ module_code: string; title: string }>>
       >;
     },
-    enabled: courseCodes.length > 0,
+    enabled: courseNftPolicyIds.length > 0,
   });
 }
 

@@ -54,8 +54,8 @@ async function syncAccessTokenFromWallet(
     authLogger.info("Syncing access token to database:", accessToken.unit);
     authLogger.info("Extracted alias:", alias);
 
-    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-alias`, {
-      method: "POST",
+    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${jwt}`,
@@ -313,8 +313,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       // Authenticate
       const authResponse = await authenticateWithWallet({
         signMessage: async (nonce: string) => {
-          // Sign the nonce - Mesh SDK's signData handles CIP-30 format
-          const signature = await wallet.signData(nonce);
+          // Sign the nonce - Mesh SDK's signData requires (address, payload)
+          const signature = await wallet.signData(address, nonce);
           return signature;
         },
         address,

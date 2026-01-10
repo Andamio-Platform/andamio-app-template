@@ -43,7 +43,7 @@ export function usePendingTransactions(options: UsePendingTransactionsOptions = 
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/transaction/pending-transactions`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
       );
 
       if (!response.ok) {

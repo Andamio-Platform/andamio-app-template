@@ -21,9 +21,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
 | `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
 | `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | High | 15 Event endpoints remain unimplemented. Would replace Koios polling with entity-specific confirmation. See GitHub issue #26 |
+| `api-migration-validator` | Validate T3 App endpoints match Go API swagger | **Critical** | Go API migration required updating 14 files. Would fetch swagger.json and compare all endpoint paths/methods against codebase. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-08 (added andamioscan-event-integrator suggestion)
+**Updated**: 2026-01-09 (added api-migration-validator suggestion)
 
 ---
 
@@ -107,3 +108,11 @@ Items that have been addressed and can be archived.
 | Update MintAccessToken to use useAndamioTransaction | 2026-01-09 | Hybrid approach - auto side effects + manual JWT handling |
 | Update TRANSACTION-COMPONENTS.md with V2 matrix | 2026-01-09 | Full matrix of 16 definitions to components |
 | Add MintAccessToken hybrid approach to SIDE-EFFECTS-INTEGRATION.md | 2026-01-09 | Documented special JWT handling case |
+| Document Go API migration in CHANGELOG.md | 2026-01-09 | Added 6 endpoint path changes, auth fix, null safety fix |
+| Add Go API migration notice to api-endpoint-reference.md | 2026-01-09 | Added migration table and note about RESTful conventions |
+| Add Go API migration notice to api-coverage.md | 2026-01-09 | Added migration table at top |
+| Add Go API migration notice to data-sources.md | 2026-01-09 | Updated header with migration reference |
+| Update SITEMAP.md endpoint paths | 2026-01-09 | Fixed /my-learning/get and /course/list references |
+| Update SIDE-EFFECTS-INTEGRATION.md endpoint path | 2026-01-09 | Changed /access-token/update-alias to /user/access-token-alias |
+| Update extracted-components.md endpoint reference | 2026-01-09 | Fixed RequireCourseAccess API docs |
+| Update STATUS.md with Go API session notes | 2026-01-09 | Added Session 2 with migration details |

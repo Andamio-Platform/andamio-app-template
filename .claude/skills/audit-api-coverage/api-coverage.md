@@ -1,10 +1,25 @@
 # API Coverage Status
 
 > **Cross-reference of Andamio Database API endpoints vs T3 App Template implementation**
-> Last Updated: December 19, 2025
-> API Version: **v0** (Unstable)
+> Last Updated: January 9, 2026
+> API Version: **v0** (Unstable) - **Go API**
 
 This document tracks which API endpoints are implemented in the T3 App Template and which remain to be built.
+
+## ⚠️ Go API Migration (January 9, 2026)
+
+The Andamio DB API was rewritten in Go. Key endpoint changes have been applied to the T3 App:
+
+| Old (TypeScript) | New (Go) |
+|------------------|----------|
+| `POST /course/list` | `GET /courses/owned` |
+| `POST /course-module/map` | `POST /course-modules/list` |
+| `POST /my-learning/get` | `GET /learner/my-learning` |
+| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` |
+| `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` |
+| `GET /transaction/pending-transactions` | `GET /pending-transactions` |
+
+**Note**: Tables below may still reference old endpoint paths. The T3 App code uses the new paths.
 
 ---
 

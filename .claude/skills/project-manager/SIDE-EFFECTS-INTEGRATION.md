@@ -66,7 +66,7 @@ The side effects are executed automatically behind the scenes.
 
 **Location**: `src/components/transactions/mint-access-token.tsx`
 
-Uses `useAndamioTransaction` for standardized side effect execution, but **manually handles JWT storage** since the `/access-token/update-alias` endpoint returns a new JWT that needs to be stored in localStorage.
+Uses `useAndamioTransaction` for standardized side effect execution, but **manually handles JWT storage** since the `PATCH /user/access-token-alias` endpoint returns a new JWT that needs to be stored in localStorage.
 
 ```typescript
 await execute({
@@ -75,7 +75,7 @@ await execute({
   onSuccess: async (txResult) => {
     // onSubmit side effects already executed automatically
     // Manual JWT handling for alias update
-    const response = await authenticatedFetch("/access-token/update-alias", ...);
+    const response = await authenticatedFetch("/user/access-token-alias", { method: "PATCH", ... });
     storeJWT(data.jwt);
     refreshAuth();
   },

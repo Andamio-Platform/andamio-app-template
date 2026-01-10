@@ -584,7 +584,7 @@ const {
 
 **Authorization Logic**:
 - Checks if user is authenticated
-- Calls `/course/list` endpoint to verify user owns or contributes to the course
+- Calls `GET /courses/owned` endpoint to verify user owns or contributes to the course
 - Course ownership = created the course
 - Teacher access = listed as contributor
 

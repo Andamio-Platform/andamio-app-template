@@ -11,12 +11,11 @@ Current implementation status of the Andamio T3 App Template.
 | Blocker | Status | Impact |
 |---------|--------|--------|
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
-| **Andamio DB API (Go Rewrite)** | Waiting for deployment | Some side effect endpoints not yet implemented; API being rewritten in Go |
+| **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
 | **Event Endpoints (Andamioscan)** | 0/15 implemented | Transaction confirmation relies on Koios polling instead of entity-specific endpoints |
 
 **Workarounds in Place**:
 - Using workspace symlink for `@andamio/transactions` (local development works)
-- Side effects that depend on unimplemented endpoints are marked "Not implemented" and skipped gracefully
 - Koios polling handles transaction confirmation until Event endpoints are ready
 
 ---
@@ -266,7 +265,30 @@ All transaction components now use `useAndamioTransaction` for standardized side
 
 ## Recent Changes
 
-### January 9, 2026 - Transaction Component Audit Complete
+### January 9, 2026 (Session 2) - Go API Migration Complete
+
+**Andamio DB API (Go) Now Live**: Migrated all T3 App endpoints to match the new Go API.
+
+**Endpoint Migrations**:
+| Old Endpoint | New Endpoint | Files Updated |
+|--------------|--------------|---------------|
+| `POST /course/list` | `GET /courses/owned` | 5 files |
+| `POST /course-module/map` | `POST /course-modules/list` | 2 files |
+| `POST /my-learning/get` | `GET /learner/my-learning` | 1 file |
+| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` | 2 files |
+| `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` | 2 files |
+| `GET /transaction/pending-transactions` | `GET /pending-transactions` | 2 files |
+
+**Fixed Issues**:
+- CORS configuration on Cloud Run
+- Invalid signature error (Mesh SDK `signData` requires address parameter - pending fix)
+- Null safety for `tx.context` in pending-tx-popover
+
+**Remaining Work**:
+- Fix wallet auth signature (add address to `signData` call)
+- Verify all API response schemas match Go API
+
+### January 9, 2026 (Session 1) - Transaction Component Audit Complete
 
 **Transaction System Audit**: All 16 V2 transaction components verified to use `useAndamioTransaction` hook.
 

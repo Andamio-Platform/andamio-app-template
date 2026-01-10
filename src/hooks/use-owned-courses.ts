@@ -68,13 +68,9 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
     setError(null);
 
     try {
+      // GET /courses/owned - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
       );
 
       if (!response.ok) {
@@ -85,31 +81,43 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       setCourses(data ?? []);
 
       // Fetch module counts for all courses using batch endpoint
-      // Note: This endpoint is public but we use authenticatedFetch for consistency
+      // POST /course-modules/list accepts courseNftPolicyIds
       if (data && data.length > 0) {
         try {
-          const courseCodes = data.map((c) => c.course_code);
-          const modulesResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/map`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ course_codes: courseCodes }),
-            }
-          );
+          const courseNftPolicyIds = data
+            .map((c) => c.course_nft_policy_id)
+            .filter((id): id is string => id !== null);
 
-          if (modulesResponse.ok) {
-            const modulesData = (await modulesResponse.json()) as Record<
-              string,
-              Array<{ module_code: string; title: string }>
-            >;
+          if (courseNftPolicyIds.length > 0) {
+            const modulesResponse = await authenticatedFetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ courseNftPolicyIds }),
+              }
+            );
 
-            // Convert to counts
-            const counts: Record<string, number> = {};
-            for (const [courseCode, modules] of Object.entries(modulesData)) {
-              counts[courseCode] = modules.length;
+            if (modulesResponse.ok) {
+              const modulesData = (await modulesResponse.json()) as Record<
+                string,
+                Array<{ module_code: string; title: string }>
+              >;
+
+              // Convert to counts keyed by course_code
+              // Map policy ID back to course code for UI consistency
+              const policyToCode = new Map(
+                data.map((c) => [c.course_nft_policy_id, c.course_code])
+              );
+              const counts: Record<string, number> = {};
+              for (const [policyId, modules] of Object.entries(modulesData)) {
+                const courseCode = policyToCode.get(policyId);
+                if (courseCode) {
+                  counts[courseCode] = modules.length;
+                }
+              }
+              setModuleCounts(counts);
             }
-            setModuleCounts(counts);
           }
         } catch (err) {
           console.error("Error fetching module counts:", err);

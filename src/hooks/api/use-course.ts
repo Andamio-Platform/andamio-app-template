@@ -152,13 +152,9 @@ export function useOwnedCoursesQuery() {
   return useQuery({
     queryKey: courseKeys.owned(),
     queryFn: async () => {
+      // GET /courses/owned - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
       );
 
       if (!response.ok) {

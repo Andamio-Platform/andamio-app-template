@@ -78,9 +78,9 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         // The onConfirmation side effects will be handled by the pending tx watcher
         try {
           const response = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/access-token/update-alias`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`,
             {
-              method: "POST",
+              method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
               },

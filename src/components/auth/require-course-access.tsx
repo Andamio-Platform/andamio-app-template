@@ -32,7 +32,7 @@ interface RequireCourseAccessProps {
  *
  * Authorization logic:
  * - First checks if user is authenticated
- * - Then calls /course/list endpoint to check if user owns or contributes to the course
+ * - Then calls /courses/owned endpoint to check if user owns or contributes to the course
  * - Course ownership = created the course
  * - Teacher access = listed as contributor
  *
@@ -72,14 +72,9 @@ export function RequireCourseAccess({
       setAccessCheck((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Fetch user's owned courses to check access
+        // Fetch user's owned courses to check access (GET /courses/owned)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
         );
 
         if (!response.ok) {

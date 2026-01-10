@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardFooter, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 import {
   CourseStatusBadge,
   CourseStatusIcon,
@@ -12,7 +12,7 @@ import {
 } from "./course-ui";
 
 interface CourseGridViewProps {
-  courses: ListOwnedCoursesOutput;
+  courses: CourseListResponse;
   moduleCounts: Record<string, number>;
 }
 
@@ -51,7 +51,7 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
 
           <AndamioCardFooter className="mt-auto">
             <CourseManageButton
-              courseNftPolicyId={courseData.course_nft_policy_id}
+              courseNftPolicyId={courseData.course_nft_policy_id ?? null}
               label="Manage Course"
               className="w-full"
             />

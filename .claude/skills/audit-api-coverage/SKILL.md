@@ -1,86 +1,276 @@
 ---
-name: audit-api-coverage-and-performance
-description: Audit the usage of Andamio API endpoints.
+name: audit-api-coverage
+description: Audit the usage of Andamio API endpoints across all three sub-systems.
 ---
 
 # Audit API Coverage and Performance
 
 ## Introduction
 
-This Andamio T3 App Project is built to be a reference implementation that demonstrates how anyone can use the Andamio APIs. Right now, it is also where we are testing different "sub-systems" of the forthcoming Andamio API.
+The Andamio T3 App Template integrates with **three API sub-systems**. This skill audits API coverage and performance across all three.
 
-Your job is to review API coverage and performance given the current state of Andamio API development, which changes frequently.
+## The Three API Sub-Systems
 
-Your work consists of two distinct phases:
-- Phase 1 = Check Coverage: You will read an open-api spec, then confirm that each endpoint in the spec is used in the Andamio T3 App Template.
-- Phase 2 = Audit Performance: You will audit the codebase for performance, based on its efficient use of the existing queries, making recommendations for how to refine the API to make it as efficient as possible.
+| API | Purpose | Endpoints | Base URL |
+|-----|---------|-----------|----------|
+| **Andamio DB API** | Off-chain CRUD, user data, drafts | 73 | `https://andamio-db-api-343753432212.us-central1.run.app` |
+| **Andamio Tx API** | Transaction building (unsigned CBOR) | 16 | `https://atlas-api-preprod-507341199760.us-central1.run.app` |
+| **Andamioscan** | On-chain indexed data, events | 36 | `https://preprod.andamioscan.io/api` |
+
+**Total: 125 endpoints across 3 APIs**
+
+## OpenAPI Documentation URLs
+
+| API | Swagger/OpenAPI URL |
+|-----|---------------------|
+| DB API | [/docs/doc.json](https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json) |
+| Tx API | [/swagger.json](https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json) |
+| Andamioscan | [/api](https://preprod.andamioscan.io/api) (download OpenAPI Document) |
+
+## API Documentation Files
+
+| File | Content |
+|------|---------|
+| [db-api-endpoints.md](./db-api-endpoints.md) | Full Andamio DB API endpoint reference (73 endpoints) |
+| [tx-api-endpoints.md](./tx-api-endpoints.md) | Full Andamio Tx API endpoint reference (16 endpoints) |
+| [andamioscan-endpoints.md](./andamioscan-endpoints.md) | Full Andamioscan endpoint reference (36 endpoints) |
+| [andamioscan-api-doc.json](./andamioscan-api-doc.json) | Raw OpenAPI spec for Andamioscan |
+| [api-coverage.md](./api-coverage.md) | Coverage matrix showing hook/component usage |
+| [data-sources.md](./data-sources.md) | Architecture overview and data flow |
 
 ## Rules
 
-1. API endpoints should always be called via custom hooks built on `@tanstack/react-query`
-2. API response data should be cached and re-used as often as possible
-3. We are iterating via two conflicting goals: "full API usage" and "minimum number of queries". Your job is to show what we have in terms of coverage, and make recommendations for improving the system. By iterating on this process, our two conflicting goals will converge.
+1. **DB API** endpoints must be called via custom hooks in `src/hooks/api/`
+2. **Andamioscan** endpoints must be called via `src/lib/andamioscan.ts` client
+3. **Tx API** endpoints are called via `@andamio/transactions` package definitions
+4. Types must be imported from `@andamio/db-api-types` - never define API types locally
+5. API response data should be cached and re-used via React Query
 
-## Where We Are Going
+## Instructions - Phase 1: Check Coverage
 
-Soon, there will be a single Andamio API serving all data to this App Template. Currently, there are three sub-systems in testing. For now, you can ignore the other sub-system APIs in this project (Andamioscan and Atlas Tx API). We will address these sub-systems later. Review [data-sources](./data-sources.md) for a comprehensive overview of the architecture.
+### 1. Pull Latest OpenAPI Specs
 
+```bash
+# DB API
+curl https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json
 
-## Instructions - Phase 1:
+# Tx API
+curl https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json
 
-### 1. Pull Andamio API Open API Data
+# Andamioscan - download from UI at https://preprod.andamioscan.io/api
+```
 
-The current Andamio DB API is a subsystem of the Andamio API, but for now, it's all we are concerned about.
+### 2. Compare to Local Docs
 
-Pull the latest `openapi.json` from https://andamio-db-api-343753432212.europe-west1.run.app/openapi.json
+Check the endpoint files against fetched specs. Update any mismatches.
 
-If this url returns an error, stop and let the user know.
+### 3. Review Implementation Coverage
 
+| API | Implementation Location | Pattern |
+|-----|------------------------|---------|
+| DB API | `src/hooks/api/*.ts` | React Query hooks |
+| Andamioscan | `src/lib/andamioscan.ts` | Typed client functions |
+| Tx API | `@andamio/transactions` | Transaction definitions |
 
-### 2. Compare to Existing Docs
+### 4. Update Coverage Matrix
 
-Look at our local docs files: [data-sources](./data-sources.md), [api-coverage](./api-coverage.md) and [api-endpoint-reference](./api-endpoint-reference.md). These files should match the latest open-api.json file. If there are no inconsistencies, then skip to Step 3.
+For each endpoint, document:
+- Hook/function name
+- Components that use it
+- Routes that use it
 
-If there are inconsistencies, add and remove entries from the local docs files until they precisely align with the openapi spec.
+### 5. Generate Coverage Report
 
-### 3. Review Hook Coverage
+Output a coverage report with:
+- Total endpoints per API
+- Implemented endpoints
+- Coverage percentage
+- Missing endpoints
 
-As you can see in the local docs, our ultimate goal is to be able to show where each API endpoint is used in the T3 App codebase.
+## Instructions - Phase 2: Audit Performance
 
-Database API calls should only be made via custom hooks. Review the hooks in `src/hooks` to make sure that each endpoint is accessible via a custom hook.
+### 1. Identify Redundant Queries
 
-### 4. Review Hook Usage
+- Look for duplicate fetches of same data
+- Check if list endpoints can replace detail fetches
+- Review cache key strategies
 
-Search the codebase for each hook, to make sure that it is actually in use.
+### 2. Review Caching Strategy
 
-Confirm that all Types are based on imports from `@andamio/db-api`, which should match the API query params and responses perfectly. If you find an inconsistency, be sure to flag it for review.
+- Verify React Query cache keys are consistent
+- Check invalidation after mutations
+- Ensure stale time is appropriate
 
-### 5. Update Local Docs Files
+### 3. Make Recommendations
 
-We should have a table in the local docs that shows:
+Document:
+- Redundant queries to consolidate
+- Missing endpoints that would improve efficiency
+- Cache invalidation improvements needed
 
-| API ENDPOINT | HOOK | UX COMPONENT(S) | UX ROUTE(S) |
-|--------------|------|-----------------|-------------|
+## Instructions - Phase 3: Implementation Planning (Interview)
 
-## Instructions - Phase 2:
+When the user wants to implement a new endpoint integration, use this interview-based workflow.
 
-### 1. Optimize the application
+### Step 1: Identify the API and Endpoint
 
-When redundant queries are made, we must address them. Our goal is to re-use query data as often as possible. Clearly, this is at odds with "using every endpoint". That's where you come in as the Expert Efficiency Reviewer.
+Ask the user:
+1. **Which API?** DB API, Tx API, or Andamioscan?
+2. **What feature?** What UX goal are they trying to achieve?
 
-This app uses `"@tanstack/react-query": "^5.69.0"`, which enables caching, re-use of data, and invalidation of cached data when updates to the DB are made.
+Then suggest relevant endpoints from the documentation files.
 
-We want to use react-query whenever possible. When you see that data is already accessible in the app, replace the redundant query. When any list of data has all the data you need, do not query individual resource endpoints.
+### Step 2: Interview Questions by API Type
 
-### 2. Make Recommendations
+#### For DB API Endpoints (React Query Hooks)
 
-Keep a list of redundant and inefficient queries. As a developer who wants to build a high-performance, user-friendly application, do you recommend creating new endpoints in our API, or do you have what you need? Do you recommend removing or refactoring any API endpoints?
+```
+1. Which route(s) will use this data?
+2. Is this a query (read) or mutation (write)?
+3. For queries:
+   - What loading state? (skeleton, spinner, shimmer)
+   - What empty state? ("No data", "Create first X", hide section)
+   - What error state? (inline alert, toast, error boundary)
+   - Should it auto-refresh? (refetch interval, or manual only)
+4. For mutations:
+   - What optimistic update behavior?
+   - Which queries should invalidate on success?
+   - What success/error feedback? (toast, inline message)
+```
 
-## Examples
+#### For Andamioscan Endpoints (Client Functions)
 
-Claude Code will populate this section of the Skill after refining the process with the user.
+```
+1. Which route(s) will use this on-chain data?
+2. Is this for:
+   - User state (enrollments, credentials, progress)
+   - Entity details (course, project)
+   - Event confirmation (transaction tracking)
+3. What loading state? (skeleton, spinner)
+4. What empty state? (no on-chain data yet, not enrolled, etc.)
+5. What error state? (indexer lag message, retry button)
+6. Should it poll for updates? (for pending transactions)
+```
+
+#### For Tx API Endpoints (Transaction Definitions)
+
+```
+1. Which transaction type is this for?
+2. Does a definition exist in @andamio/transactions?
+3. What UI component will trigger this transaction?
+4. Side effects needed:
+   - onSubmit: What DB API calls after tx submission?
+   - onConfirmation: What updates after blockchain confirms?
+5. What transaction states to show?
+   - Building (preparing tx)
+   - Signing (wallet prompt)
+   - Submitting (sending to chain)
+   - Pending (waiting for confirmation)
+   - Confirmed (success)
+   - Failed (error with retry option)
+```
+
+### Step 3: Create Implementation Plan
+
+Based on the interview, document:
+
+```markdown
+## Implementation Plan: [Feature Name]
+
+### Endpoint
+- API: [DB API / Andamioscan / Tx API]
+- Path: [endpoint path]
+- Method: [GET/POST]
+- Parameters: [required params]
+
+### Implementation
+
+**[For DB API]**
+- Hook: `src/hooks/api/use-[resource].ts`
+- Hook name: `use[Resource]()` or `use[Action][Resource]()`
+- Query key: `[resource]Keys.[method](params)`
+
+**[For Andamioscan]**
+- Client function: `src/lib/andamioscan.ts`
+- Function name: `get[Resource](params)`
+- Hook (optional): `src/hooks/use-andamioscan.ts`
+
+**[For Tx API]**
+- Definition: `@andamio/transactions` - `[TX_TYPE]`
+- Component: `src/components/transactions/[tx-name].tsx`
+- Side effects: onSubmit → [DB calls], onConfirmation → [DB calls]
+
+### UX Integration
+- Route(s): [/path/to/page]
+- Component(s): [ComponentName]
+
+### State Handling
+- Loading: [skeleton/spinner/shimmer]
+- Empty: [message and/or CTA]
+- Error: [inline alert/toast/boundary] + [retry: yes/no]
+
+### Cache Strategy
+- Stale time: [duration]
+- Invalidation: [which queries on success]
+- Refetch: [on mount / interval / manual]
+```
+
+### Step 4: Update Documentation
+
+After planning:
+1. Add endpoint to `api-coverage.md` as "Planned"
+2. Note target route/component
+3. After implementation, update to "Implemented"
+
+---
+
+## Common UX Patterns
+
+### Loading States
+| Pattern | Use For |
+|---------|---------|
+| Skeleton | Cards, lists, tables - shows layout shape |
+| Spinner | Buttons, small areas, inline loading |
+| Shimmer | Text content, paragraphs |
+
+### Empty States
+| Pattern | Use For |
+|---------|---------|
+| Celebratory | Task completion ("All caught up!") |
+| Informative | Neutral state ("No data yet") |
+| Action-oriented | Onboarding ("Create your first X") |
+
+### Error States
+| Pattern | Use For |
+|---------|---------|
+| Inline Alert | Non-blocking, shows in content area |
+| Toast | Temporary notification, auto-dismisses |
+| Error Boundary | Full page error for critical failures |
+| Retry Button | Allow user to attempt request again |
+
+### Transaction States
+| State | UI |
+|-------|-----|
+| Idle | Primary action button |
+| Building | Disabled button + "Preparing..." |
+| Signing | Modal/overlay + "Check your wallet" |
+| Submitting | Progress indicator + "Submitting..." |
+| Pending | Status badge + "Waiting for confirmation" |
+| Confirmed | Success toast + updated data |
+| Failed | Error alert + "Try again" button |
+
+---
 
 ## Output Format
 
-- In the Claude Code REPL, show a simple list of changes made and API recommendations
-- Save your API Recommendations to a new file: `./api-recommendations-{date}.md`
+1. Update documentation files in this directory
+2. Generate coverage report: `api-coverage-report-{date}.md`
+3. Summary in Claude REPL with:
+   - Coverage percentages per API
+   - Key gaps identified
+   - Priority recommendations
+
+For implementation planning (Phase 3):
+1. Create implementation plan in conversation
+2. Update `api-coverage.md` with planned endpoints
+3. After implementation, mark as implemented

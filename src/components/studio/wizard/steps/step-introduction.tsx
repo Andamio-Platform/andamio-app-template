@@ -61,9 +61,9 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
     try {
       if (introduction) {
-        // Update existing introduction
+        // Go API: POST /course/teacher/introduction/update
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/update`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -80,9 +80,9 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
           throw new Error("Failed to update introduction");
         }
       } else {
-        // Create new introduction
+        // Go API: POST /course/teacher/introduction/create
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

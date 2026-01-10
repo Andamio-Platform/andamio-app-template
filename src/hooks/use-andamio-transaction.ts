@@ -119,6 +119,8 @@ export function useAndamioTransaction<TParams = unknown>() {
         method: "POST", // V2 endpoints use POST with JSON body
         params: txApiParams as TParams, // Only send txParams to transaction API
         txType: config.definition.txType,
+        // Pass partialSign from definition (e.g., INSTANCE_PROJECT_CREATE requires it)
+        partialSign: config.definition.partialSign,
         onSuccess: async (txResult) => {
           // Update user's unconfirmedTx (blocks further transactions until confirmed)
           const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;

@@ -72,9 +72,14 @@ export function RequireCourseAccess({
       setAccessCheck((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Fetch user's owned courses to check access (GET /courses/owned)
+        // Go API: POST /course/owner/courses/list
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }
         );
 
         if (!response.ok) {

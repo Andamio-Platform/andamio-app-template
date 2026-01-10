@@ -31,7 +31,7 @@ import {
   NextIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import type { CourseModuleOutput, CourseOutput } from "@andamio/db-api";
+import type { CourseModuleResponse, CourseResponse } from "@andamio/db-api-types";
 
 // Import wizard step components
 import { StepCredential } from "~/components/studio/wizard/steps/step-credential";
@@ -76,7 +76,7 @@ function ModuleWizardContent({
 
   // Handle header updates when data loads
   const handleDataLoaded = useCallback(
-    (course: CourseOutput | null, courseModule: CourseModuleOutput | null) => {
+    (course: CourseResponse | null, courseModule: CourseModuleResponse | null) => {
       if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },

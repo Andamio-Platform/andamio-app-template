@@ -61,9 +61,9 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
 
     try {
       if (assignment) {
-        // Update existing assignment
+        // Go API: POST /course/teacher/assignment/update
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/update`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -81,9 +81,9 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
           throw new Error("Failed to update assignment");
         }
       } else {
-        // Create new assignment
+        // Go API: POST /course/teacher/assignment/create
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

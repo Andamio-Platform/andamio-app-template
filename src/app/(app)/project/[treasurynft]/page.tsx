@@ -38,10 +38,10 @@ import {
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
-import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
+import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
 import { formatLovelace } from "~/lib/cardano-utils";
 
-type TaskListOutput = CreateTaskOutput[];
+type TaskListOutput = TaskResponse[];
 
 import type { AndamioscanProjectDetails } from "~/lib/andamioscan";
 
@@ -238,7 +238,7 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const treasuryNftPolicyId = params.treasurynft as string;
 
-  const [project, setProject] = useState<ListPublishedTreasuriesOutput[0] | null>(null);
+  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
   const [tasks, setTasks] = useState<TaskListOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -255,9 +255,9 @@ export default function ProjectDetailPage() {
       setError(null);
 
       try {
-        // Fetch project details (POST with body)
+        // Go API: POST /project/public/treasury/list
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -275,7 +275,7 @@ export default function ProjectDetailPage() {
           throw new Error(`Project not found (${projectResponse.status})`);
         }
 
-        const projectsData = (await projectResponse.json()) as ListPublishedTreasuriesOutput;
+        const projectsData = (await projectResponse.json()) as TreasuryListResponse;
 
         // Find the specific project by treasury_nft_policy_id
         const projectData = projectsData.find(
@@ -288,14 +288,9 @@ export default function ProjectDetailPage() {
 
         setProject(projectData);
 
-        // Fetch tasks for this project (POST with body)
+        // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
         const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
         );
 
         if (!tasksResponse.ok) {
@@ -374,9 +369,6 @@ export default function ProjectDetailPage() {
           <AndamioBadge variant="outline" className="font-mono text-xs">
             {project.treasury_nft_policy_id?.slice(0, 16)}...
           </AndamioBadge>
-          <AndamioBadge variant="secondary">
-            {formatLovelace(project.total_ada).toLocaleString() ?? 0} ADA
-          </AndamioBadge>
         </div>
 
         {/* On-Chain Data Section */}
@@ -414,9 +406,6 @@ export default function ProjectDetailPage() {
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {project.treasury_nft_policy_id?.slice(0, 16)}...
         </AndamioBadge>
-        <AndamioBadge variant="secondary">
-          {formatLovelace(project.total_ada).toLocaleString() ?? 0}
-        </AndamioBadge>
       </div>
 
       {/* On-Chain Data Section */}
@@ -440,9 +429,9 @@ export default function ProjectDetailPage() {
             </AndamioTableHeader>
             <AndamioTableBody>
               {liveTasks.map((task) => (
-                <AndamioTableRow key={task.task_hash ?? task.index}>
+                <AndamioTableRow key={task.task_hash ?? task.task_index}>
                   <AndamioTableCell className="font-mono text-xs">
-                    {task.index}
+                    {task.task_index}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     {task.task_hash ? (

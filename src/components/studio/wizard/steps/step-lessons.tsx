@@ -17,7 +17,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
-import type { LessonWithSLTOutput } from "@andamio/db-api";
+import type { LessonResponse } from "@andamio/db-api-types";
 
 interface StepLessonsProps {
   config: WizardStepConfig;
@@ -44,9 +44,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
   const slts = data.slts;
   const lessons = data.lessons;
 
-  // Map lessons to their SLT's slt_index
+  // Map lessons to their SLT's module_index
   const lessonBySltIndex = lessons.reduce((acc, lesson) => {
-    acc[lesson.slt_index] = lesson;
+    acc[lesson.module_index] = lesson;
     return acc;
   }, {} as Record<number, typeof lessons[number]>);
 
@@ -56,8 +56,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
     setIsCreating(true);
 
     try {
+      // Go API: POST /course/teacher/lesson/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -299,7 +300,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 // =============================================================================
 
 interface LessonEditorProps {
-  lesson: LessonWithSLTOutput;
+  lesson: LessonResponse;
   courseNftPolicyId: string;
   moduleCode: string;
   onSave: () => Promise<void>;
@@ -328,15 +329,16 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
     setIsSaving(true);
 
     try {
+      // Go API: POST /course/teacher/lesson/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            module_index: lesson.slt_index,
+            module_index: lesson.module_index,
             title,
             content_json: content,
           }),

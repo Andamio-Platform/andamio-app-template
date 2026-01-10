@@ -30,7 +30,7 @@ import {
   type AndamioscanModule,
   type AndamioscanCourse,
 } from "~/lib/andamioscan";
-import { type ListSLTsOutput } from "@andamio/db-api";
+import { type SLTListResponse } from "@andamio/db-api-types";
 
 // =============================================================================
 // Types
@@ -85,7 +85,7 @@ export interface UseHybridSltsResult {
   /** On-chain module data if found */
   onChainModule: AndamioscanModule | null;
   /** DB SLTs */
-  dbSlts: ListSLTsOutput;
+  dbSlts: SLTListResponse;
   /** Loading state */
   isLoading: boolean;
   /** Error state */
@@ -144,7 +144,7 @@ export function useHybridSlts(
   moduleCode: string | undefined,
   moduleHash?: string // Optional: If known, use to find on-chain module
 ): UseHybridSltsResult {
-  const [dbSlts, setDbSlts] = useState<ListSLTsOutput>([]);
+  const [dbSlts, setDbSlts] = useState<SLTListResponse>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [dbError, setDbError] = useState<Error | null>(null);
 
@@ -167,23 +167,16 @@ export function useHybridSlts(
     setDbError(null);
 
     try {
+      // Go API: GET /course/public/slts/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch SLTs: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as ListSLTsOutput;
+      const data = (await response.json()) as SLTListResponse;
       setDbSlts(data ?? []);
     } catch (err) {
       console.error("Error fetching DB SLTs:", err);
@@ -233,13 +226,14 @@ export function useHybridSlts(
     // Add DB SLTs
     for (const dbSlt of dbSlts) {
       const key = dbSlt.slt_text;
+      const dbId = `db-${dbSlt.module_index}`;
       sltMap.set(key, {
-        id: dbSlt.id,
+        id: dbId,
         moduleIndex: dbSlt.module_index,
         text: dbSlt.slt_text,
         inDb: true,
         onChain: false,
-        dbId: dbSlt.id,
+        dbId: dbId,
       });
     }
 
@@ -339,13 +333,9 @@ export function useHybridModules(
     setDbError(null);
 
     try {
+      // Go API: GET /course/public/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {

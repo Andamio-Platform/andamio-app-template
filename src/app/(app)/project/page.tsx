@@ -10,17 +10,16 @@ import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, And
 import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer } from "~/components/andamio";
 import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
 import { AlertIcon, ProjectIcon, OnChainIcon } from "~/components/icons";
-import { type ListPublishedTreasuriesOutput } from "@andamio/db-api";
-import { formatLovelace } from "~/lib/cardano-utils";
+import { type TreasuryListResponse } from "@andamio/db-api-types";
 
 /**
  * Public page displaying all published projects (treasuries)
  *
  * API Endpoint: POST /projects/list (public)
- * Type Reference: ListPublishedTreasuriesOutput from @andamio/db-api
+ * Type Reference: TreasuryListResponse from @andamio/db-api
  */
 export default function ProjectCatalogPage() {
-  const [projects, setProjects] = useState<ListPublishedTreasuriesOutput>([]);
+  const [projects, setProjects] = useState<TreasuryListResponse>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +37,9 @@ export default function ProjectCatalogPage() {
       setError(null);
 
       try {
+        // Go API: POST /project/public/treasury/list
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -57,7 +57,7 @@ export default function ProjectCatalogPage() {
           throw new Error(`Failed to fetch projects: ${response.statusText}`);
         }
 
-        const data = (await response.json()) as ListPublishedTreasuriesOutput;
+        const data = (await response.json()) as TreasuryListResponse;
         setProjects(data ?? []);
       } catch (err) {
         console.error("Error fetching published projects:", err);
@@ -124,18 +124,11 @@ export default function ProjectCatalogPage() {
             <AndamioTableRow>
               <AndamioTableHead>Title</AndamioTableHead>
               <AndamioTableHead>Treasury NFT Policy ID</AndamioTableHead>
-              <AndamioTableHead className="text-center">Tasks</AndamioTableHead>
-              <AndamioTableHead className="text-center">Total ADA</AndamioTableHead>
+              <AndamioTableHead className="text-center">Status</AndamioTableHead>
             </AndamioTableRow>
           </AndamioTableHeader>
           <AndamioTableBody>
             {projects.map((project) => {
-              // Calculate total task count from escrows
-              const totalTasks = project.escrows?.reduce(
-                (sum, escrow) => sum + (escrow._count?.tasks ?? 0),
-                0
-              ) ?? 0;
-
               // Check if project exists on-chain
               const isOnChain = project.treasury_nft_policy_id
                 ? onChainProjectIds.has(project.treasury_nft_policy_id)
@@ -175,13 +168,8 @@ export default function ProjectCatalogPage() {
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
-                    <AndamioBadge variant="secondary">
-                      {totalTasks} {totalTasks === 1 ? "task" : "tasks"}
-                    </AndamioBadge>
-                  </AndamioTableCell>
-                  <AndamioTableCell className="text-center">
-                    <AndamioBadge variant="outline">
-                      {formatLovelace(project.total_ada).toLocaleString() ?? 0} ADA
+                    <AndamioBadge variant={project.live ? "default" : "secondary"}>
+                      {project.live ? "Live" : "Draft"}
                     </AndamioBadge>
                   </AndamioTableCell>
                 </AndamioTableRow>

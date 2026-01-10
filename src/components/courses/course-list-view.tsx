@@ -3,7 +3,7 @@
 import React from "react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 import {
   CourseStatusBadge,
   CourseStatusIcon,
@@ -12,7 +12,7 @@ import {
 } from "./course-ui";
 
 interface CourseListViewProps {
-  courses: ListOwnedCoursesOutput;
+  courses: CourseListResponse;
   moduleCounts: Record<string, number>;
 }
 
@@ -55,7 +55,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
             {/* Action Button */}
             <div className="flex-shrink-0 w-full sm:w-auto">
               <CourseManageButton
-                courseNftPolicyId={courseData.course_nft_policy_id}
+                courseNftPolicyId={courseData.course_nft_policy_id ?? null}
                 className="w-full sm:w-auto"
               />
             </div>

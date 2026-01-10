@@ -16,9 +16,8 @@ import { ContentEditor } from "~/components/editor";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
 import { ContentDisplay } from "~/components/content-display";
 import {
-  COMMIT_TO_ASSIGNMENT,
-  UPDATE_ASSIGNMENT,
-  LEAVE_ASSIGNMENT,
+  COURSE_STUDENT_ASSIGNMENT_COMMIT,
+  COURSE_STUDENT_ASSIGNMENT_UPDATE,
 } from "@andamio/transactions";
 import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
@@ -83,7 +82,7 @@ interface AssignmentCommitmentProps {
 //   { value: "ASSIGNMENT_DENIED", label: "Assignment Denied" },
 //   { value: "PENDING_TX_CLAIM_CREDENTIAL", label: "Claiming Credential (Pending TX)" },
 //   { value: "CREDENTIAL_CLAIMED", label: "Credential Claimed" },
-//   { value: "PENDING_TX_LEAVE_ASSIGNMENT", label: "Leaving (Pending TX)" },
+//   { value: "PENDING_TX_COURSE_STUDENT_ASSIGNMENT_UPDATE", label: "Leaving (Pending TX)" },
 //   { value: "ASSIGNMENT_LEFT", label: "Assignment Left" },
 // ] as const;
 
@@ -161,9 +160,9 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Fetch all commitments for this course (POST /assignment-commitment/list)
+      // Go API: POST /course/student/assignment-commitment/list
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -260,8 +259,9 @@ export function AssignmentCommitment({
       // Calculate hash from normalized content
       const evidenceHash = hashNormalizedContent(localEvidenceContent);
 
+      // Go API: POST /course/student/assignment-commitment/update-evidence
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/update-evidence`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -299,8 +299,9 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
+      // Go API: POST /course/student/assignment-commitment/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -472,7 +473,7 @@ export function AssignmentCommitment({
               <>
                 <AndamioSeparator />
                 <AndamioTransaction
-                  definition={COMMIT_TO_ASSIGNMENT}
+                  definition={COURSE_STUDENT_ASSIGNMENT_COMMIT}
                   inputs={{
                     // txParams (for Andamioscan transaction builder)
                     user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
@@ -600,7 +601,7 @@ export function AssignmentCommitment({
               <>
                 <AndamioSeparator />
                 <AndamioTransaction
-                  definition={COMMIT_TO_ASSIGNMENT}
+                  definition={COURSE_STUDENT_ASSIGNMENT_COMMIT}
                   inputs={{
                     // txParams (for Andamioscan transaction builder)
                     user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
@@ -625,7 +626,7 @@ export function AssignmentCommitment({
               </>
             )}
 
-            {/* UPDATE_ASSIGNMENT Transaction - Show when PENDING_APPROVAL or ASSIGNMENT_DENIED */}
+            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction - Show when PENDING_APPROVAL or ASSIGNMENT_DENIED */}
             {commitment && user?.accessTokenAlias &&
              (commitment.networkStatus === "PENDING_APPROVAL" || commitment.networkStatus === "ASSIGNMENT_DENIED") && (
               <>
@@ -638,7 +639,7 @@ export function AssignmentCommitment({
                       : "Your assignment is pending review. You can update your evidence if needed."}
                   </AndamioText>
                   <AndamioTransaction
-                    definition={UPDATE_ASSIGNMENT}
+                    definition={COURSE_STUDENT_ASSIGNMENT_UPDATE}
                     inputs={{
                       user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                       policy: courseNftPolicyId,
@@ -657,7 +658,7 @@ export function AssignmentCommitment({
               </>
             )}
 
-            {/* LEAVE_ASSIGNMENT Transaction - Show as withdrawal option */}
+            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction - Show as withdrawal option */}
             {commitment && user?.accessTokenAlias && commitment.networkStatus !== "ASSIGNMENT_ACCEPTED" && (
               <>
                 <AndamioSeparator />
@@ -667,7 +668,7 @@ export function AssignmentCommitment({
                     Remove your commitment to this assignment. You can recommit later if needed.
                   </AndamioText>
                   <AndamioTransaction
-                    definition={LEAVE_ASSIGNMENT}
+                    definition={COURSE_STUDENT_ASSIGNMENT_UPDATE}
                     inputs={{
                       user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
                       policy: courseNftPolicyId,

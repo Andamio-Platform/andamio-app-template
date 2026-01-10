@@ -18,11 +18,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
-  type CourseOutput,
-  type ListOwnedCoursesOutput,
-  type ListPublishedCoursesOutput,
-  type UpdateCourseInput,
-} from "@andamio/db-api";
+  type CourseResponse,
+  type CourseListResponse,
+} from "@andamio/db-api-types";
 
 // =============================================================================
 // Query Keys
@@ -69,20 +67,16 @@ export function useCourse(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseKeys.detail(courseNftPolicyId ?? ""),
     queryFn: async () => {
+      // Go API: GET /course/public/course/get/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch course: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseOutput>;
+      return response.json() as Promise<CourseResponse>;
     },
     enabled: !!courseNftPolicyId,
   });
@@ -110,20 +104,21 @@ export function usePublishedCourses() {
   return useQuery({
     queryKey: courseKeys.published(),
     queryFn: async () => {
+      // Go API endpoint: /course/public/courses/list
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/courses/list`
       );
 
       // 404 means no published courses exist yet - treat as empty state, not error
       if (response.status === 404) {
-        return [] as ListPublishedCoursesOutput;
+        return [] as CourseListResponse;
       }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch published courses: ${response.statusText}`);
       }
 
-      return response.json() as Promise<ListPublishedCoursesOutput>;
+      return response.json() as Promise<CourseListResponse>;
     },
   });
 }
@@ -152,16 +147,21 @@ export function useOwnedCoursesQuery() {
   return useQuery({
     queryKey: courseKeys.owned(),
     queryFn: async () => {
-      // GET /courses/owned - returns courses owned by authenticated user
+      // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch owned courses: ${response.statusText}`);
       }
 
-      return response.json() as Promise<ListOwnedCoursesOutput>;
+      return response.json() as Promise<CourseListResponse>;
     },
     enabled: isAuthenticated,
   });
@@ -178,7 +178,7 @@ export function useOwnedCoursesQuery() {
  *
  * @example
  * ```tsx
- * function EditCourseForm({ course }: { course: CourseOutput }) {
+ * function EditCourseForm({ course }: { course: CourseResponse }) {
  *   const updateCourse = useUpdateCourse();
  *
  *   const handleSubmit = async (data: UpdateCourseInput) => {
@@ -203,12 +203,19 @@ export function useUpdateCourse() {
       data,
     }: {
       courseNftPolicyId: string;
-      data: Partial<UpdateCourseInput>;
+      data: Partial<{
+        title?: string;
+        description?: string;
+        image_url?: string;
+        video_url?: string;
+        live?: boolean;
+      }>;
     }) => {
+      // Go API: POST /course/owner/course/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -221,7 +228,7 @@ export function useUpdateCourse() {
         throw new Error(`Failed to update course: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseOutput>;
+      return response.json() as Promise<CourseResponse>;
     },
     onSuccess: (_, variables) => {
       // Invalidate the specific course
@@ -264,10 +271,11 @@ export function useDeleteCourse() {
 
   return useMutation({
     mutationFn: async (courseNftPolicyId: string) => {
+      // Go API: POST /course/owner/course/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/delete`,
         {
-          method: "DELETE",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
         }

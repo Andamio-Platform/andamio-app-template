@@ -69,7 +69,8 @@ function getExplorerUrl(txHash: string): string {
 /**
  * Truncate transaction hash for display
  */
-function truncateTxHash(txHash: string, length = 12): string {
+function truncateTxHash(txHash: string | undefined | null, length = 12): string {
+  if (!txHash) return "—";
   if (txHash.length <= length) return txHash;
   const start = Math.floor(length / 2);
   const end = Math.floor(length / 2);
@@ -199,15 +200,17 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                         {truncateTxHash(tx.txHash, 20)}
                       </code>
                       <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <AndamioButton
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => window.open(getExplorerUrl(tx.txHash), "_blank")}
-                          title="View on blockchain explorer"
-                        >
-                          <ExternalLinkIcon className="h-3.5 w-3.5" />
-                        </AndamioButton>
+                        {tx.txHash && (
+                          <AndamioButton
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => window.open(getExplorerUrl(tx.txHash!), "_blank")}
+                            title="View on blockchain explorer"
+                          >
+                            <ExternalLinkIcon className="h-3.5 w-3.5" />
+                          </AndamioButton>
+                        )}
                         <AndamioButton
                           variant="ghost"
                           size="sm"

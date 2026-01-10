@@ -44,7 +44,7 @@ import {
   RefreshIcon,
 } from "~/components/icons";
 import { toast } from "sonner";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 
 /**
  * Represents a course with hybrid on-chain + DB status
@@ -61,7 +61,7 @@ interface HybridCourseStatus {
   /** Teachers from on-chain data */
   teachers: string[];
   /** Full DB course data if available */
-  dbCourse?: ListOwnedCoursesOutput[number];
+  dbCourse?: CourseListResponse[number];
 }
 
 /**
@@ -86,7 +86,7 @@ export function OnChainCoursesSection() {
   } = useCoursesOwnedByAliasWithDetails(alias);
 
   // Fetch DB courses (immediate)
-  const [dbCourses, setDbCourses] = useState<ListOwnedCoursesOutput>([]);
+  const [dbCourses, setDbCourses] = useState<CourseListResponse>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
 
   const fetchDbCourses = useCallback(async () => {
@@ -97,12 +97,17 @@ export function OnChainCoursesSection() {
 
     setIsLoadingDb(true);
     try {
-      // GET /courses/owned - returns courses owned by authenticated user
+      // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
       );
       if (response.ok) {
-        const data = (await response.json()) as ListOwnedCoursesOutput;
+        const data = (await response.json()) as CourseListResponse;
         setDbCourses(data ?? []);
       }
     } catch (err) {
@@ -413,8 +418,9 @@ function ImportCourseDrawer({
 
     setIsSubmitting(true);
     try {
+      // Go API: POST /course/owner/course/mint
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/create-on-submit-minting-tx`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/mint`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

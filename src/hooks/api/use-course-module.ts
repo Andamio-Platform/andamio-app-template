@@ -17,10 +17,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
-  type CourseModuleOutput,
-  type ListCourseModulesOutput,
-  type CreateCourseModuleInput,
-} from "@andamio/db-api";
+  type CourseModuleResponse,
+  type CourseModuleListResponse,
+} from "@andamio/db-api-types";
+
+/**
+ * Input for creating a course module
+ */
+interface CreateCourseModuleInput {
+  module_code: string;
+  title: string;
+  description?: string;
+}
 import { courseKeys } from "./use-course";
 
 // =============================================================================
@@ -60,20 +68,16 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
     queryFn: async () => {
+      // Go API: GET /course/public/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      return response.json() as Promise<ListCourseModulesOutput>;
+      return response.json() as Promise<CourseModuleListResponse>;
     },
     enabled: !!courseNftPolicyId,
   });
@@ -101,23 +105,16 @@ export function useCourseModule(
   return useQuery({
     queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
+      // Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch module: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleOutput>;
+      return response.json() as Promise<CourseModuleResponse>;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });
@@ -149,13 +146,13 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
   return useQuery({
     queryKey: courseModuleKeys.map(courseNftPolicyIds),
     queryFn: async () => {
-      // POST /course-modules/list - returns modules grouped by policy ID
+      // Go API: POST /course/teacher/course-modules/list - returns modules grouped by policy ID
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ courseNftPolicyIds }),
+          body: JSON.stringify({ course_nft_policy_ids: courseNftPolicyIds }),
         }
       );
 
@@ -203,8 +200,9 @@ export function useCreateCourseModule() {
     mutationFn: async (
       input: CreateCourseModuleInput & { course_nft_policy_id: string }
     ) => {
+      // Go API: POST /course/teacher/course-module/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -216,7 +214,7 @@ export function useCreateCourseModule() {
         throw new Error(`Failed to create module: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleOutput>;
+      return response.json() as Promise<CourseModuleResponse>;
     },
     onSuccess: (_, variables) => {
       // Invalidate the module list for this course
@@ -248,10 +246,11 @@ export function useUpdateCourseModule() {
       moduleCode: string;
       data: Partial<{ title: string; description: string }>;
     }) => {
+      // Go API: POST /course/teacher/course-module/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -265,7 +264,7 @@ export function useUpdateCourseModule() {
         throw new Error(`Failed to update module: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleOutput>;
+      return response.json() as Promise<CourseModuleResponse>;
     },
     onSuccess: (_, variables) => {
       // Invalidate the specific module
@@ -300,10 +299,11 @@ export function useUpdateCourseModuleStatus() {
       moduleCode: string;
       status: string;
     }) => {
+      // Go API: POST /course/teacher/course-module/update-status
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update-status`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -317,7 +317,7 @@ export function useUpdateCourseModuleStatus() {
         throw new Error(`Failed to update module status: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleOutput>;
+      return response.json() as Promise<CourseModuleResponse>;
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({

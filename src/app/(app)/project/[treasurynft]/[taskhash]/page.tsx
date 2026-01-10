@@ -13,12 +13,12 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor } from "~/components/editor";
 import { SuccessIcon, PendingIcon, TokenIcon, TaskIcon, TeacherIcon, EditIcon } from "~/components/icons";
-import { type CreateTaskOutput, type GetTaskCommitmentByTaskHashOutput } from "@andamio/db-api";
+import { type TaskResponse, type TaskCommitmentResponse } from "@andamio/db-api-types";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { ProjectEnroll, TaskCommit } from "~/components/transactions";
 
-type TaskListOutput = CreateTaskOutput[];
+type TaskListOutput = TaskResponse[];
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality
@@ -33,14 +33,15 @@ export default function TaskDetailPage() {
   const taskHash = params.taskhash as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [task, setTask] = useState<CreateTaskOutput | null>(null);
-  const [commitment, setCommitment] = useState<GetTaskCommitmentByTaskHashOutput | null>(null);
+  const [task, setTask] = useState<TaskResponse | null>(null);
+  const [commitment, setCommitment] = useState<TaskCommitmentResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Contributor state - in a real app this would come from on-chain data
   const [isEnrolled, setIsEnrolled] = useState(false);
-  const [contributorStateId, setContributorStateId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [contributorStateId, _setContributorStateId] = useState<string | null>(null);
 
   // Evidence editor state
   const [evidence, setEvidence] = useState<JSONContent | null>(null);
@@ -52,14 +53,9 @@ export default function TaskDetailPage() {
       setError(null);
 
       try {
-        // Fetch all tasks for this project
+        // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
         const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
         );
 
         if (!tasksResponse.ok) {
@@ -79,7 +75,7 @@ export default function TaskDetailPage() {
         if (isAuthenticated) {
           try {
             const commitmentResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -88,7 +84,7 @@ export default function TaskDetailPage() {
             );
 
             if (commitmentResponse.ok) {
-              const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+              const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
               setCommitment(commitmentData);
             }
           } catch {
@@ -150,7 +146,7 @@ export default function TaskDetailPage() {
         <AndamioBackButton href={`/project/${treasuryNftPolicyId}`} label="Back to Project" />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            #{task.index}
+            #{task.task_index}
           </AndamioBadge>
           <AndamioBadge variant="default">
             {task.status === "ON_CHAIN" ? "Live" : task.status}
@@ -161,7 +157,7 @@ export default function TaskDetailPage() {
       {/* Task Title and Description */}
       <AndamioPageHeader
         title={task.title}
-        description={task.description}
+        description={task.description ?? undefined}
       />
 
       {/* Task Stats */}
@@ -180,13 +176,13 @@ export default function TaskDetailPage() {
         <AndamioDashboardStat
           icon={TeacherIcon}
           label="Commitments"
-          value={`${task.num_allocated_commitments} / ${task.num_allowed_commitments}`}
+          value={`${task.num_allowed_commitments} / ${task.num_allowed_commitments}`}
           iconColor="info"
         />
         <AndamioDashboardStat
           icon={TaskIcon}
           label="Criteria"
-          value={`${task.acceptance_criteria.length} items`}
+          value={`${task.acceptance_criteria?.length ?? 0} items`}
         />
       </div>
 
@@ -210,22 +206,24 @@ export default function TaskDetailPage() {
       )}
 
       {/* Acceptance Criteria */}
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Acceptance Criteria</AndamioCardTitle>
-          <AndamioCardDescription>What you need to deliver to complete this task</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <ul className="space-y-2">
-            {task.acceptance_criteria.map((criterion, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <SuccessIcon className="h-4 w-4 mt-1 text-muted-foreground" />
-                <AndamioText as="span">{criterion}</AndamioText>
-              </li>
-            ))}
-          </ul>
-        </AndamioCardContent>
-      </AndamioCard>
+      {task.acceptance_criteria && task.acceptance_criteria.length > 0 && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardTitle>Acceptance Criteria</AndamioCardTitle>
+            <AndamioCardDescription>What you need to deliver to complete this task</AndamioCardDescription>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <ul className="space-y-2">
+              {task.acceptance_criteria.map((criterion, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <SuccessIcon className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <AndamioText as="span">{criterion}</AndamioText>
+                </li>
+              ))}
+            </ul>
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
 
       {/* Token Rewards (if any) */}
       {task.tokens && task.tokens.length > 0 && (
@@ -236,15 +234,12 @@ export default function TaskDetailPage() {
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="space-y-2">
-              {task.tokens.map((token) => (
-                <div key={token.subject} className="flex items-center justify-between p-2 border rounded">
+              {task.tokens.map((token, idx) => (
+                <div key={token.policy_id ?? idx} className="flex items-center justify-between p-2 border rounded">
                   <div>
-                    <AndamioText className="font-medium">
-                      {token.name ?? token.asset_name_decoded ?? token.asset_name}
+                    <AndamioText className="font-medium font-mono text-sm">
+                      {token.asset_name ?? token.policy_id?.slice(0, 16)}
                     </AndamioText>
-                    {token.ticker && (
-                      <AndamioText variant="small">{token.ticker}</AndamioText>
-                    )}
                   </div>
                   <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
                 </div>
@@ -303,12 +298,6 @@ export default function TaskDetailPage() {
                 </>
               )}
 
-              <AndamioSeparator />
-
-              <div className="flex justify-between">
-                <AndamioText variant="small">Started: {new Date(commitment.created).toLocaleDateString()}</AndamioText>
-                <AndamioText variant="small">Updated: {new Date(commitment.updated).toLocaleDateString()}</AndamioText>
-              </div>
             </div>
           ) : (
             <div className="text-center py-6">
@@ -359,7 +348,7 @@ export default function TaskDetailPage() {
                 projectNftPolicyId={treasuryNftPolicyId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
-                taskCode={`TASK_${task.index}`}
+                taskCode={`TASK_${task.task_index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 onSuccess={async () => {
@@ -367,7 +356,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -375,7 +364,7 @@ export default function TaskDetailPage() {
                       }
                     );
                     if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+                      const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
                       setCommitment(commitmentData);
                     }
                   } catch {
@@ -388,7 +377,7 @@ export default function TaskDetailPage() {
                 projectNftPolicyId={treasuryNftPolicyId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
-                taskCode={`TASK_${task.index}`}
+                taskCode={`TASK_${task.task_index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 onSuccess={async () => {
@@ -397,7 +386,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-commitments/get`,
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -405,7 +394,7 @@ export default function TaskDetailPage() {
                       }
                     );
                     if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as GetTaskCommitmentByTaskHashOutput;
+                      const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
                       setCommitment(commitmentData);
                     }
                   } catch {

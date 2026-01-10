@@ -16,13 +16,13 @@ import {
   type WizardContextValue,
 } from "./types";
 import type {
-  CourseModuleOutput,
-  CourseOutput,
-  ListSLTsOutput,
-  AssignmentOutput,
-  IntroductionOutput,
-  ListLessonsOutput,
-} from "@andamio/db-api";
+  CourseModuleResponse,
+  CourseResponse,
+  SLTListResponse,
+  AssignmentResponse,
+  IntroductionResponse,
+  LessonListResponse,
+} from "@andamio/db-api-types";
 
 // Step components (will be created next)
 import { StepCredential } from "./steps/step-credential";
@@ -58,8 +58,8 @@ const STEP_ORDER: WizardStepId[] = [
 interface ModuleWizardProps {
   courseNftPolicyId: string;
   moduleCode: string;
-  course: CourseOutput | null;
-  courseModule: CourseModuleOutput | null;
+  course: CourseResponse | null;
+  courseModule: CourseModuleResponse | null;
   onExitWizard: () => void;
   isNewModule?: boolean;
 }
@@ -114,85 +114,44 @@ export function ModuleWizard({
     setData((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Fetch SLTs
+      // Fetch SLTs - Go API: GET /course/public/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
       const slts = sltsResponse.ok
-        ? ((await sltsResponse.json()) as ListSLTsOutput)
+        ? ((await sltsResponse.json()) as SLTListResponse)
         : [];
 
-      // Fetch assignment
+      // Fetch assignment - Go API: GET /course/public/assignment/get/{policy_id}/{module_code}
       const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            assignment_code: `${moduleCode}-ASSIGNMENT`,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/assignment/get/${courseNftPolicyId}/${moduleCode}`
       );
       const assignment = assignmentResponse.ok
-        ? ((await assignmentResponse.json()) as AssignmentOutput)
+        ? ((await assignmentResponse.json()) as AssignmentResponse)
         : null;
 
-      // Fetch introduction
+      // Fetch introduction - Go API: GET /course/public/introduction/get/{policy_id}/{module_code}
       const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/introduction/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/introduction/get/${courseNftPolicyId}/${moduleCode}`
       );
       const introduction = introResponse.ok
-        ? ((await introResponse.json()) as IntroductionOutput)
+        ? ((await introResponse.json()) as IntroductionResponse)
         : null;
 
-      // Fetch lessons
+      // Fetch lessons - Go API: GET /course/public/lessons/list/{policy_id}/{module_code}
       const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
       const lessons = lessonsResponse.ok
-        ? ((await lessonsResponse.json()) as ListLessonsOutput)
+        ? ((await lessonsResponse.json()) as LessonListResponse)
         : [];
 
-      // Refetch module for latest status
+      // Refetch module for latest status - Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
       const updatedModule = moduleResponse.ok
-        ? ((await moduleResponse.json()) as CourseModuleOutput)
+        ? ((await moduleResponse.json()) as CourseModuleResponse)
         : courseModule;
 
       setData({

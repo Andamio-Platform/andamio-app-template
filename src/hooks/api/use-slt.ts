@@ -5,7 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type ListSLTsOutput, type SLTOutput } from "@andamio/db-api";
+import { type SLTListResponse, type SLTResponse } from "@andamio/db-api-types";
 import { courseModuleKeys } from "./use-course-module";
 
 // =============================================================================
@@ -45,23 +45,16 @@ export function useSLTs(
   return useQuery({
     queryKey: sltKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
+      // Go API: GET /course/public/slts/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch SLTs: ${response.statusText}`);
       }
 
-      return response.json() as Promise<ListSLTsOutput>;
+      return response.json() as Promise<SLTListResponse>;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });
@@ -90,8 +83,9 @@ export function useCreateSLT() {
       moduleIndex: number;
       sltText: string;
     }) => {
+      // Go API: POST /course/teacher/slt/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -108,7 +102,7 @@ export function useCreateSLT() {
         throw new Error(`Failed to create SLT: ${response.statusText}`);
       }
 
-      return response.json() as Promise<SLTOutput>;
+      return response.json() as Promise<SLTResponse>;
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
@@ -144,10 +138,11 @@ export function useUpdateSLT() {
       moduleIndex: number;
       sltText: string;
     }) => {
+      // Go API: POST /course/teacher/slt/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/update`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
@@ -162,7 +157,7 @@ export function useUpdateSLT() {
         throw new Error(`Failed to update SLT: ${response.statusText}`);
       }
 
-      return response.json() as Promise<SLTOutput>;
+      return response.json() as Promise<SLTResponse>;
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
@@ -189,10 +184,11 @@ export function useDeleteSLT() {
       moduleCode: string;
       moduleIndex: number;
     }) => {
+      // Go API: POST /course/teacher/slt/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/delete`,
         {
-          method: "DELETE",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,

@@ -14,7 +14,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
-import type { ListCourseModulesOutput } from "@andamio/db-api";
+import type { CourseModuleListResponse } from "@andamio/db-api-types";
 
 interface StepCredentialProps {
   config: WizardStepConfig;
@@ -31,17 +31,13 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const [error, setError] = useState<string | null>(null);
 
   // For new modules, we need to fetch existing modules to generate a unique code
-  const [existingModules, setExistingModules] = useState<ListCourseModulesOutput>([]);
+  const [existingModules, setExistingModules] = useState<CourseModuleListResponse>([]);
 
   useEffect(() => {
     if (isNewModule) {
-      // Fetch existing modules to generate unique code
-      void fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-      })
-        .then((res) => res.ok ? res.json() as Promise<ListCourseModulesOutput> : [])
+      // Go API: GET /course/public/course-modules/list/{policy_id}
+      void fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`)
+        .then((res) => res.ok ? res.json() as Promise<CourseModuleListResponse> : [])
         .then(setExistingModules)
         .catch(() => setExistingModules([]));
     }
@@ -76,8 +72,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
     try {
       const newModuleCode = generateModuleCode();
 
+      // Go API: POST /course/teacher/course-module/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -115,8 +112,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
     setError(null);
 
     try {
+      // Go API: POST /course/teacher/course-module/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

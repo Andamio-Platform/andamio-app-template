@@ -49,7 +49,7 @@ import { useCourse as useAndamioscanCourse } from "~/hooks/use-andamioscan";
 import { MintModuleTokens } from "~/components/transactions/mint-module-tokens";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
-import type { CourseModuleOutput } from "@andamio/db-api";
+import type { CourseModuleResponse } from "@andamio/db-api-types";
 import type { AndamioscanModule } from "~/lib/andamioscan";
 
 // =============================================================================
@@ -74,7 +74,7 @@ interface HybridModule {
   /** Where this module exists */
   syncStatus: ModuleSyncStatus;
   /** Database record (if exists) */
-  dbModule: CourseModuleOutput | null;
+  dbModule: CourseModuleResponse | null;
   /** On-chain data (if exists) */
   onChainModule: AndamioscanModule | null;
   /** SLTs from on-chain (source of truth when on-chain) */
@@ -210,7 +210,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
   // Andamioscan hook - On-chain data
   const { data: onChainCourse, isLoading: isLoadingOnChain, refetch: refetchOnChain } = useAndamioscanCourse(courseNftPolicyId);
-  const onChainModules = onChainCourse?.modules ?? [];
+
+  // Memoize on-chain modules to prevent dependency changes on every render
+  const onChainModules = useMemo(() => onChainCourse?.modules ?? [], [onChainCourse?.modules]);
 
   // Merge database and on-chain modules into hybrid view
   const hybridModules = useMemo<HybridModule[]>(() => {
@@ -221,7 +223,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       const key = dbModule.module_hash ?? `db:${dbModule.module_code}`;
       moduleMap.set(key, {
         moduleCode: dbModule.module_code,
-        moduleHash: dbModule.module_hash,
+        moduleHash: dbModule.module_hash ?? null,
         title: dbModule.title,
         syncStatus: "db-only", // Will update to "synced" if found on-chain
         dbModule,
@@ -268,7 +270,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     // Database status breakdown (for modules that exist in DB)
     dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
     dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
-    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
+    dbApproved: 0, // APPROVED status no longer exists
     dbDraft: modules.filter((m) => m.status === "DRAFT").length,
   }), [hybridModules, modules]);
 
@@ -337,13 +339,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       await updateCourseMutation.mutateAsync({
         courseNftPolicyId,
         data: {
-          course_code: course.course_code,
-          data: {
-            title: formTitle || undefined,
-            description: formDescription || undefined,
-            image_url: formImageUrl || undefined,
-            video_url: formVideoUrl || undefined,
-          },
+          title: formTitle || undefined,
+          description: formDescription || undefined,
+          image_url: formImageUrl || undefined,
+          video_url: formVideoUrl || undefined,
         },
       });
       toast.success("Course updated");
@@ -811,11 +810,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 </div>
               </StudioFormSection>
 
-              {/* Mint Modules - Show when there are approved modules ready to mint */}
-              {hybridStats.dbApproved > 0 && (
+              {/* Mint Modules - Show when there are modules ready to mint */}
+              {hybridStats.dbDraft > 0 && (
                 <MintModuleTokens
                   courseNftPolicyId={courseNftPolicyId}
-                  courseModules={modules.filter((m) => m.status === "APPROVED")}
+                  courseModules={modules.filter((m) => m.status === "DRAFT")}
                   onSuccess={async () => {
                     await refetchModules();
                     await refetchOnChain();

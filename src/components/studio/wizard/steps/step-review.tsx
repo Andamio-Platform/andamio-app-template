@@ -46,7 +46,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
   const [isApproving, setIsApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isApproved, setIsApproved] = useState(data.courseModule?.status === "APPROVED");
+  const [isApproved, setIsApproved] = useState(data.courseModule?.status === "ON_CHAIN");
 
   const slts = data.slts;
   const lessons = data.lessons;
@@ -105,15 +105,16 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
+      // Go API: POST /course/teacher/course-module/update-status
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/update-status`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            status: "APPROVED",
+            status: "ON_CHAIN",
           }),
         }
       );

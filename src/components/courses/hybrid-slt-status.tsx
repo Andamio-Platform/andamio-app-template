@@ -146,8 +146,9 @@ function ImportSLTDrawer({
 
     setIsSubmitting(true);
     try {
+      // Go API: POST /course/teacher/slt/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

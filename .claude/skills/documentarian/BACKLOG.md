@@ -11,7 +11,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | Skill | Purpose | Priority | Notes |
 |-------|---------|----------|-------|
 | `component-generator` | Create new Andamio wrapper components following the wrapper convention | High | Many wrappers follow identical patterns (re-export with Andamio prefix) |
-| `type-auditor` | Verify all API types are imported from andamio-db-api, not locally defined | High | Critical for maintaining type safety across the stack |
+| `type-auditor` | Verify all API types are imported from @andamio/db-api-types, not locally defined | High | Critical for maintaining type safety across the stack. Now uses `@andamio/db-api-types` package (v1.1.0+). |
 | `route-creator` | Scaffold new app routes with proper auth gates, loading states, breadcrumbs | Medium | All routes follow consistent patterns |
 | `wizard-step-generator` | Add new steps to the module wizard following existing patterns | Low | Useful as app grows, but wizard is fairly stable |
 | `color-system` | Manage and update the semantic color palette in globals.css | Low | Useful for theme iterations; the theme-expert skill covers usage but not modification |
@@ -24,7 +24,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `api-migration-validator` | Validate T3 App endpoints match Go API swagger | **Critical** | Go API migration required updating 14 files. Would fetch swagger.json and compare all endpoint paths/methods against codebase. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-09 (added api-migration-validator suggestion)
+**Updated**: 2026-01-10 (updated type-auditor for new @andamio/db-api-types package)
 
 ---
 
@@ -34,6 +34,7 @@ Ideas for improving existing documentation.
 
 | Idea | Location | Priority | Notes |
 |------|----------|----------|-------|
+| **Test wallet auth with multiple wallets** | `src/contexts/andamio-auth-context.tsx` | **High** | Eternl tested and working. Need to verify: Nami, Flint, Yoroi, Lace, Vespr. Document which wallets return hex vs bech32 addresses in CLAUDE.md wallet compatibility table. |
 | **Audit React Query cache invalidation after transactions** | `src/hooks/api/`, transaction components | **High** | Some routes require manual refresh after transactions complete. Need to ensure `queryClient.invalidateQueries()` is called with correct keys in all transaction `onSuccess` callbacks. Check: course creation, module minting, enrollment, assignment commits. |
 | Add @dnd-kit to dependencies list in CLAUDE.md | `.claude/CLAUDE.md` | Low | Now used for SLT reordering, should be documented as a core dependency |
 | Document color system design decisions | `.claude/skills/theme-expert/` | Low | Current values use oklch with hue 250 (sky blue); rationale could be documented |
@@ -116,3 +117,12 @@ Items that have been addressed and can be archived.
 | Update SIDE-EFFECTS-INTEGRATION.md endpoint path | 2026-01-09 | Changed /access-token/update-alias to /user/access-token-alias |
 | Update extracted-components.md endpoint reference | 2026-01-09 | Fixed RequireCourseAccess API docs |
 | Update STATUS.md with Go API session notes | 2026-01-09 | Added Session 2 with migration details |
+| Migrate @andamio/db-api to @andamio/db-api-types | 2026-01-10 | Updated 38 files, fixed all type names |
+| Update transaction imports to v0.5.0 | 2026-01-10 | New naming convention (COURSE_STUDENT_*, COURSE_TEACHER_*) |
+| Update CLAUDE.md type safety section | 2026-01-10 | Added common type names reference |
+| Update README.md API examples | 2026-01-10 | Changed import examples |
+| Update review-styling SKILL.md imports | 2026-01-10 | Fixed type import examples |
+| Update audit-api-coverage SKILL.md | 2026-01-10 | Updated package name reference |
+| Update GETTING-STARTED.md imports | 2026-01-10 | Fixed type import example |
+| Update STATUS.md dependencies | 2026-01-10 | Updated package versions |
+| Add types migration to CHANGELOG.md | 2026-01-10 | Comprehensive migration changelog entry |

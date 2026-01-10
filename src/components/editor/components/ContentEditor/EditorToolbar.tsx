@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import { type Editor } from "@tiptap/core";
 import { AndamioToggle } from "~/components/andamio/andamio-toggle";
 import { AndamioButton } from "~/components/andamio/andamio-button";

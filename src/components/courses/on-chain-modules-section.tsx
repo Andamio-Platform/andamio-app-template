@@ -43,7 +43,7 @@ import {
   SettingsIcon,
 } from "~/components/icons";
 import { toast } from "sonner";
-import { type ListCourseModulesOutput } from "@andamio/db-api";
+import { type CourseModuleListResponse } from "@andamio/db-api-types";
 
 // =============================================================================
 // Types
@@ -108,8 +108,9 @@ function ImportModuleDrawer({
 
     try {
       // Step 1: Create the course module in the database
+      // Go API: POST /course/teacher/course-module/create
       const createModuleResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -127,10 +128,11 @@ function ImportModuleDrawer({
       }
 
       // Step 2: Create SLTs for each on-chain SLT
+      // Go API: POST /course/teacher/slt/create
       for (let i = 0; i < module.slts.length; i++) {
         const sltText = module.slts[i];
         const createSltResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -439,22 +441,18 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
   } = useCourse(courseNftPolicyId);
 
   // Fetch DB modules
-  const [dbModules, setDbModules] = useState<ListCourseModulesOutput>([]);
+  const [dbModules, setDbModules] = useState<CourseModuleListResponse>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
 
   const fetchDbModules = useCallback(async () => {
     setIsLoadingDb(true);
     try {
+      // Go API: GET /course/public/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`
       );
       if (response.ok) {
-        const data = (await response.json()) as ListCourseModulesOutput;
+        const data = (await response.json()) as CourseModuleListResponse;
         setDbModules(data ?? []);
       }
     } catch (err) {
@@ -475,7 +473,7 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
     return onChainCourse.modules.map((onChainMod) => {
       // Try to find matching DB module by SLT content overlap
       const onChainSltTexts = new Set(onChainMod.slts);
-      let matchedDbModule: ListCourseModulesOutput[number] | null = null;
+      let matchedDbModule: CourseModuleListResponse[number] | null = null;
 
       for (const dbMod of dbModules) {
         const dbSltTexts = new Set(dbMod.slts.map((s) => s.slt_text));

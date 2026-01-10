@@ -1,6 +1,6 @@
 # Project Manager Skill
 
-> **Last Updated**: January 9, 2026
+> **Last Updated**: January 10, 2026
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
@@ -57,9 +57,9 @@ This skill directory contains project planning, status tracking, and architectur
 
 | Blocker | Status |
 |---------|--------|
-| @andamio/transactions NPM | Waiting (have locally) |
-| Andamio DB API (Go) | Waiting for deployment |
-| Event Endpoints | 0/15 (using Koios polling) |
+| @andamio/transactions NPM | Waiting (have locally via workspace) |
+| Go API Migration | ✅ **Complete** (50+ endpoints migrated) |
+| Event Endpoints | 0/16 (using Koios polling) |
 
 ### Current Focus
 
@@ -74,9 +74,9 @@ See `ROADMAP.md` for current priorities and `STATUS.md` for detailed blockers.
 | Skill | Purpose |
 |-------|---------|
 | `audit-api-coverage` | API endpoint tracking, React Query hooks |
-| `review-styling` | Style rules validation, extracted components |
-| `theme-expert` | Design system: layouts, colors, spacing, components |
+| `design-system` | Unified styling skill (3 modes: review, diagnose, reference) |
 | `documentarian` | Documentation updates, skill backlog |
+| `review-pr` | PR review with automatic skill delegation |
 
 ---
 

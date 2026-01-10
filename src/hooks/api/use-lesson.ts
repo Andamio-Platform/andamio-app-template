@@ -5,7 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type LessonOutput, type LessonWithSLTOutput, type ListLessonsOutput } from "@andamio/db-api";
+import { type LessonResponse, type LessonListResponse } from "@andamio/db-api-types";
 import { sltKeys } from "./use-slt";
 
 // =============================================================================
@@ -45,23 +45,16 @@ export function useLessons(
   return useQuery({
     queryKey: lessonKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
+      // Go API: GET /course/public/lessons/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch lessons: ${response.statusText}`);
       }
 
-      return response.json() as Promise<ListLessonsOutput>;
+      return response.json() as Promise<LessonListResponse>;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });
@@ -94,24 +87,16 @@ export function useLesson(
       moduleIndex ?? 0
     ),
     queryFn: async () => {
+      // Go API: GET /course/public/lesson/get/{policy_id}/{module_code}/{index}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: moduleIndex,
-          }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch lesson: ${response.statusText}`);
       }
 
-      return response.json() as Promise<LessonWithSLTOutput>;
+      return response.json() as Promise<LessonResponse>;
     },
     enabled:
       !!courseNftPolicyId && !!moduleCode && moduleIndex !== undefined,
@@ -145,8 +130,9 @@ export function useCreateLesson() {
       description?: string;
       contentJson?: object;
     }) => {
+      // Go API: POST /course/teacher/lesson/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/lesson/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -165,7 +151,7 @@ export function useCreateLesson() {
         throw new Error(`Failed to create lesson: ${response.statusText}`);
       }
 
-      return response.json() as Promise<LessonOutput>;
+      return response.json() as Promise<LessonResponse>;
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({

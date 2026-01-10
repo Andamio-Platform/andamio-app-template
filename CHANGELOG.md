@@ -8,9 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Partial Signing Support**: Added `partialSign` option to `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR, allowing transactions pre-signed by other parties to be completed.
+- **Partial Signing Support**: Added `partialSign` property to `AndamioTransactionDefinition` type and `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR. `INSTANCE_PROJECT_CREATE` now sets `partialSign: true` to fix Eternl wallet errors.
+- **Project Dashboard Role Detection**: `/studio/project/[treasurynft]` now detects both owner and manager roles. Owners see an info banner explaining their role, managers can fully manage the project. Uses Andamioscan `getManagingProjects` to check manager status.
+- **Design System Skill**: Consolidated 3 skills (`review-styling`, `global-style-checker`, `theme-expert`) into unified `design-system` skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns)
 
 ### Changed
+- **Go API RESTful Migration Complete** (January 10, 2026): Migrated all 50+ API endpoint calls to new role-based path structure. Pattern: `/{system}/{role}/{resource}/{action}`. See `.claude/skills/audit-api-coverage/API-AUDIT-2026-01-10.md` for full migration report.
+  - Public endpoints: Changed from POST with body to GET with path params (e.g., `/course/public/course/get/{policy_id}`)
+  - Owner endpoints: `/course/owner/courses/list`, `/project/owner/treasury/list-owned`
+  - Teacher endpoints: `/course/teacher/course-module/create`, `/course/teacher/slt/create`
+  - Student endpoints: `/course/student/courses`, `/course/student/assignment-commitments/list-by-course`
+  - Manager endpoints: `/project/manager/task/create`, `/project/manager/task/update`
+  - Files updated: 36 files across hooks, components, and pages
+
+### Fixed
+- **Null Safety in PendingTxPopover**: `truncateTxHash` function now handles undefined/null `txHash` values, returning "—" instead of crashing. Explorer link button only shows when txHash exists.
+- **Eternl Wallet Authentication**: Fixed wallet authentication for Eternl and other wallets that return hex-encoded addresses instead of bech32.
+  - Added automatic hex-to-bech32 address conversion using `core.Address.fromString().toBech32()` from `@meshsdk/core`
+  - Fixed `wallet.signData()` parameter order: Mesh SDK ISigner interface expects `signData(payload, address?)` not `signData(address, payload)`
+  - Addresses starting with "addr" (bech32) are used directly; hex addresses are converted
+  - Debug logging added to trace address formats during authentication
+
+### Changed
+- **Types Package Migration**: Migrated from `@andamio/db-api` to `@andamio/db-api-types@1.1.0`. Updated 38 files with new imports and type names:
+  - `ListOwnedCoursesOutput` → `CourseListResponse`
+  - `CourseOutput` → `CourseResponse`
+  - `CourseModuleOutput` → `CourseModuleResponse`
+  - `LessonWithSLTResponse` → `LessonResponse`
+  - `AssignmentCommitmentWithAssignmentResponse` → `AssignmentCommitmentResponse`
+- **Transactions Package Update**: Updated to `@andamio/transactions@0.5.0` with new naming convention:
+  - `COMMIT_TO_ASSIGNMENT` → `COURSE_STUDENT_ASSIGNMENT_COMMIT`
+  - `BURN_LOCAL_STATE` → `COURSE_STUDENT_CREDENTIAL_CLAIM`
+  - `LEAVE_ASSIGNMENT` → `COURSE_STUDENT_ASSIGNMENT_UPDATE`
+  - `ACCEPT_ASSIGNMENT` + `DENY_ASSIGNMENT` → `COURSE_TEACHER_ASSIGNMENTS_ASSESS`
+- **Property Renames**: Applied breaking changes from new API:
+  - `slt_index` → `module_index` (on SLTs and lessons)
+  - `task.index` → `task.task_index`
+  - `learner_access_token_alias` → `access_token_alias`
+  - Flattened `commitment.assignment.*` to `commitment.module_code`, `commitment.assignment_title`
+- **Status Enum Updates**: Changed status values from `"APPROVED"` to `"ON_CHAIN"` (new enum: `DRAFT | PENDING_TX | ON_CHAIN`)
+
+### Removed
+- **Treasury Features**: Removed displays using `total_ada`, `escrows`, `_count` (no longer in API response)
+- **Commitment Timestamps**: Removed `created`/`updated` fields from commitment displays
+- **Token Metadata**: Simplified token display (removed `subject`, `name`, `ticker`, `asset_name_decoded`)
 - **Go API Migration**: Migrated all T3 App endpoints to match the new Go-based Andamio DB API (now live on Cloud Run). Updated 14 files across 6 endpoint paths:
   - `POST /course/list` → `GET /courses/owned`
   - `POST /course-module/map` → `POST /course-modules/list`

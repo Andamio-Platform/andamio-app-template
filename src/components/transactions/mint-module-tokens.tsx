@@ -30,7 +30,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
-import type { ListCourseModulesOutput } from "@andamio/db-api";
+import type { CourseModuleListResponse } from "@andamio/db-api-types";
 
 export interface MintModuleTokensProps {
   /**
@@ -42,7 +42,7 @@ export interface MintModuleTokensProps {
    * Array of modules with SLT data from the database API
    * Should come from the `/courses/{courseNftPolicyId}/course-modules` endpoint
    */
-  courseModules: ListCourseModulesOutput;
+  courseModules: CourseModuleListResponse;
 
   /**
    * Callback fired when minting is successful
@@ -63,7 +63,7 @@ export interface MintModuleTokensProps {
  *
  * @example
  * ```tsx
- * const courseModules: ListCourseModulesOutput = await fetch(
+ * const courseModules: CourseModuleListResponse = await fetch(
  *   `${API_URL}/courses/${courseNftPolicyId}/course-modules`
  * ).then(r => r.json());
  *

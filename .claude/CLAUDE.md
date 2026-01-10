@@ -12,7 +12,7 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 - shadcn/ui component library (full suite installed)
 - Full-screen app layout with sidebar navigation
 - Wallet-based authentication with Andamio Database API
-- Type-safe API integration via linked `andamio-db-api` package
+- Type-safe API integration via `@andamio/db-api-types` package
 
 ## Architecture
 
@@ -20,28 +20,32 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 This template is part of the `andamio-platform` monorepo:
 ```
 andamio-platform/
-├── andamio-db-api/     # Linked for type imports
+├── andamio-db-api/     # Database API (separate deployment)
 ├── andamio-t3-app-template/  # This project
-└── ...
-```
-
-The `andamio-db-api` package is linked via symlink:
-```bash
-node_modules/andamio-db-api -> ../../andamio-db-api
+└── packages/andamio-transactions/  # Transaction definitions
 ```
 
 ### Type Safety
-**CRITICAL**: Always import types from `andamio-db-api` package:
+**CRITICAL**: Always import types from `@andamio/db-api-types` package:
 
 ```typescript
 // ✅ Correct
-import { type ListOwnedCoursesOutput } from "andamio-db-api";
+import { type CourseListResponse, type CourseResponse } from "@andamio/db-api-types";
 
 // ❌ Wrong - Never define API types locally
 interface Course { ... }
 ```
 
 This ensures zero type drift between the API and the app.
+
+**Common Type Names** (as of v1.1.0):
+- `CourseListResponse` - List of courses
+- `CourseResponse` - Single course
+- `CourseModuleResponse` - Course module
+- `CourseModuleListResponse` - List of modules
+- `LessonResponse` - Lesson data
+- `SLTResponse` - Student Learning Target
+- `AssignmentCommitmentResponse` - Assignment commitment
 
 ## Coding Conventions
 
@@ -64,7 +68,7 @@ This ensures zero type drift between the API and the app.
 
 ```typescript
 // ✅ CORRECT - Specific and safe
-const [courseModule, setCourseModule] = useState<CourseModuleOutput | null>(null);
+const [courseModule, setCourseModule] = useState<CourseModuleResponse | null>(null);
 
 if (!courseModule) {
   return <div>Module not found</div>;
@@ -78,7 +82,7 @@ const handleUpdate = async () => {
 
 ```typescript
 // ❌ WRONG - Using reserved identifier
-const [module, setModule] = useState<CourseModuleOutput | null>(null);
+const [module, setModule] = useState<CourseModuleResponse | null>(null);
 
 if (!module) {  // Dangerous!
   return <div>Module not found</div>;
@@ -278,6 +282,18 @@ The authentication flow combines wallet connection and signing into a single sea
 5. JWT included in all authenticated requests
 
 **Logout**: Clears JWT AND disconnects wallet, returning user to initial state.
+
+**Wallet Compatibility**:
+Different wallets return addresses in different formats. The auth system handles this automatically:
+- **Bech32 format** (starts with "addr"): Used directly
+- **Hex format** (starts with "00", "01", etc.): Converted to bech32 using `core.Address.fromString().toBech32()`
+
+| Wallet | Address Format | Status |
+|--------|---------------|--------|
+| Eternl | Hex | ✅ Tested |
+| Nami, Flint, Yoroi, Lace | TBD | ⏳ Needs testing |
+
+**Technical Note**: Mesh SDK ISigner interface expects `signData(payload, address?)` - payload first, address second.
 
 **Components**:
 - `AndamioAuthButton` - Complete auth UI with auto-authentication (`src/components/auth/andamio-auth-button.tsx`)
@@ -512,7 +528,7 @@ const data = (await response.json()) as YourTypeFromDatabaseAPI;
 
 **Courses**:
 - `GET /courses/owned` - List owned courses (requires JWT)
-  - Returns `ListOwnedCoursesOutput` type
+  - Returns `CourseListResponse` type
 
 ## Adding New Features
 
@@ -709,7 +725,7 @@ Main documentation is now stored in `.claude/skills/` directories for AI-assiste
 
 **Documentation Locations**:
 - `.claude/CLAUDE.md` - This file, main project guidance
-- `.claude/skills/review-styling/` - Style rules and extracted components
+- `.claude/skills/design-system/` - Style rules, components, layouts, colors
 - `.claude/skills/project-manager/` - Project status and roadmap
 - `.claude/skills/audit-api-coverage/` - API coverage tracking
 - `.claude/skills/documentarian/` - Documentation maintenance workflow
@@ -725,13 +741,10 @@ This project uses Claude Skills for AI-assisted development workflows:
 | Skill | Purpose |
 |-------|---------|
 | `review-pr` | Comprehensive PR review with automatic skill delegation |
-| `review-styling` | Validate routes against style guidelines |
-| `global-style-checker` | Detect CSS specificity conflicts with globals.css |
-| `theme-expert` | Comprehensive design system knowledge (layouts, colors, spacing, rules) |
+| `design-system` | Unified design system skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns) |
 | `documentarian` | Review changes and update documentation |
-| `audit-api-coverage` | Track API endpoint coverage |
+| `audit-api-coverage` | Track API coverage across all 3 sub-systems + interview-based implementation planning |
 | `project-manager` | Track project status and roadmap |
-| `plan-andamioscan-integration` | Plan new Andamioscan endpoint integrations with UX interview |
 
 Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
 

@@ -42,19 +42,32 @@ export function usePendingTransactions(options: UsePendingTransactionsOptions = 
     setError(null);
 
     try {
+      // Go API: GET /user/pending-transactions
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/pending-transactions`
       );
 
+      // Handle 404/empty as "no pending transactions" - not an error
+      if (response.status === 404 || response.status === 204) {
+        setPendingTxs([]);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error("Failed to fetch pending transactions");
+        // Only log error for unexpected failures, not for empty states
+        console.warn("Pending transactions endpoint returned:", response.status);
+        setPendingTxs([]);
+        return;
       }
 
       const data = (await response.json()) as PendingTransaction[];
-      setPendingTxs(data);
+      setPendingTxs(data ?? []);
     } catch (err) {
-      console.error("Error fetching pending transactions:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
+      // Silently handle fetch errors - pending tx display is non-critical
+      // Only log in development for debugging
+      if (process.env.NODE_ENV === "development") {
+        console.debug("Pending transactions fetch:", err instanceof Error ? err.message : "Unknown error");
+      }
       setPendingTxs([]);
     } finally {
       setIsLoading(false);

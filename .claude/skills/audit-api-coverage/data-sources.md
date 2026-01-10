@@ -1,13 +1,29 @@
 # Data Sources Architecture
 
 > **Where does this app get its data?**
-> Last Updated: January 9, 2026 (Go API Migration)
+> Last Updated: January 10, 2026 (Go API v0 - Role-Based Routing)
 
 This document explains the external data sources used by the Andamio T3 App Template and provides a complete endpoint inventory.
 
-## ⚠️ Go API Migration (January 9, 2026)
+## Go API v0 - Role-Based Routing (January 10, 2026)
 
-The Andamio DB API was rewritten in Go with updated endpoint paths. See `api-coverage.md` for the migration table. Endpoint tables below may still reference old paths.
+The Andamio DB API uses **role-based routing**:
+
+```
+/{system}/{role}/{resource}/{action}
+```
+
+**Systems**: `auth`, `user`, `course`, `project`
+**Roles**: `public`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
+
+### Key Design Decisions
+
+1. **Public endpoints use GET with path parameters** - Better caching, RESTful semantics
+2. **Role prefixes** - Clear authorization requirements in the URL
+3. **Unified role initialization** - `/user/init-roles` replaces separate creator/learner creation
+4. **Batch operations** - New endpoints for efficient transaction confirmations
+
+See `api-coverage.md` for the complete migration table.
 
 ---
 
@@ -97,8 +113,8 @@ The app pulls data from **two main categories**:
 ```bash
 # All 3 data sources are active
 
-# 1. Off-chain data - Andamio Database API
-NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.europe-west1.run.app/api/v0"
+# 1. Off-chain data - Andamio Database API (Go - Role-Based Routing)
+NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.us-central1.run.app/api/v0"
 
 # 2. On-chain indexed data - Andamioscan
 # Server-side only - accessed via /api/andamioscan proxy
@@ -141,8 +157,9 @@ This inventory documents every API call made by this application. Use this as th
 ### 1. ANDAMIO DATABASE API
 
 **Base URL**: `env.NEXT_PUBLIC_ANDAMIO_API_URL`
+**Route Pattern**: `/{system}/{role}/{resource}/{action}`
 
-#### Authentication Endpoints
+#### Authentication Endpoints (No Change)
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|
@@ -151,27 +168,98 @@ This inventory documents every API call made by this application. Use this as th
 
 #### User Management Endpoints
 
-| Endpoint | Method | Auth | Files | Purpose |
-|----------|--------|------|-------|---------|
-| `/access-token/update-alias` | POST | JWT | `andamio-auth-context.tsx`, `mint-access-token.tsx` | Sync access token alias |
-| `/access-token/update-unconfirmed-tx` | PATCH | JWT | `use-pending-tx-watcher.ts`, `use-andamio-transaction.ts` | Update pending tx hash |
-| `/creator/create` | POST | JWT | `andamio-auth-context.tsx` | Auto-register as Creator |
-| `/learner/create` | POST | JWT | `andamio-auth-context.tsx` | Auto-register as Learner |
+| Old Endpoint | New Endpoint | Method | Auth | Files | Purpose |
+|--------------|--------------|--------|------|-------|---------|
+| `/access-token/update-alias` | `/user/access-token-alias` | POST | JWT | `andamio-auth-context.tsx` | Sync access token alias |
+| - | `/user/unconfirmed-tx` | GET/POST | JWT | `use-pending-tx-watcher.ts` | Get/update pending tx hash |
+| `/creator/create` + `/learner/create` | `/user/init-roles` | POST | JWT | `andamio-auth-context.tsx` | **MERGED** - Initialize all roles |
+| `/pending-transactions` | `/user/pending-transactions` | GET | JWT | `use-pending-transactions.ts` | List pending transactions |
 
-#### Course Endpoints
+#### Course System - Public Endpoints (GET with path params)
 
-| Endpoint | Method | Auth | Files | Purpose |
-|----------|--------|------|-------|---------|
-| `/course/published` | GET | Public | `course/page.tsx` | List all published courses |
-| `/course/owned` | POST | JWT | `owned-courses-list.tsx`, `course-manager.tsx`, `sitemap/page.tsx`, `studio/project/page.tsx` | List owned courses |
-| `/course/get` | POST | Public | `course/[coursenft]/page.tsx`, `studio/course/[coursenft]/page.tsx`, `instructor/page.tsx` | Fetch course by NFT policy ID |
-| `/course/create` | POST | JWT | `create-course-dialog.tsx` | Create new course |
-| `/course/check` | POST | Public | `create-course-dialog.tsx` | Check if course code exists |
-| `/course/update` | PATCH | JWT | `studio/course/[coursenft]/page.tsx` | Update course metadata |
-| `/course/delete` | DELETE | JWT | `studio/course/[coursenft]/page.tsx` | Delete course |
-| `/course/unpublished-projects` | POST | JWT | `studio/course/[coursenft]/page.tsx` | Get unpublished projects |
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/course/public/courses/list` | GET | `/course/published` | `course/page.tsx` | List all published courses |
+| `/course/public/course/get/{policy_id}` | GET | `/course/get` (POST) | `course/[coursenft]/page.tsx` | Fetch course by NFT policy ID |
+| `/course/public/course/check/{code}` | GET | `/course/check` (POST) | `create-course-dialog.tsx` | Check if course code exists |
+| `/course/public/course-modules/list/{policy_id}` | GET | `/course-module/list` | Course pages | List modules for course |
+| `/course/public/course-module/get/{policy_id}/{module_code}` | GET | `/course-module/get` | Module pages | Fetch single module |
+| `/course/public/slts/list/{policy_id}/{module_code}` | GET | `/slt/list` | SLT pages | List SLTs for module |
+| `/course/public/lessons/list/{policy_id}/{module_code}` | GET | `/lesson/list` | Lesson pages | List lessons for module |
+| `/course/public/lesson/get/{policy_id}/{module_code}/{index}` | GET | `/lesson/get` | Lesson pages | Fetch single lesson |
+| `/course/public/assignment/get/{policy_id}/{module_code}` | GET | `/assignment/get` | Assignment pages | Fetch assignment |
+| `/course/public/introduction/get/{policy_id}/{module_code}` | GET | `/introduction/get` | Introduction pages | Fetch introduction |
 
-#### Course Module Endpoints
+#### Course System - Owner Endpoints (POST, authenticated)
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/course/owner/courses/list` | POST | `/courses/owned` | `owned-courses-list.tsx` | List owned courses |
+| `/course/owner/course/create` | POST | `/course/create` | `create-course-dialog.tsx` | Create new course |
+| `/course/owner/course/update` | POST | `/course/update` (PATCH) | Studio pages | Update course metadata |
+| `/course/owner/course/delete` | POST | `/course/delete` (DELETE) | Studio pages | Delete course |
+| `/course/owner/course/mint` | POST | **NEW** | - | Mint course NFT |
+| `/course/owner/course/confirm-mint` | POST | **NEW** | - | Confirm mint transaction |
+
+#### Course System - Teacher Endpoints (POST, authenticated)
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/course/teacher/course-modules/list` | POST | `/course-modules/list` | `use-owned-courses.ts` | Batch fetch modules |
+| `/course/teacher/course-module/create` | POST | `/course-module/create` | Module dialogs | Create module |
+| `/course/teacher/course-module/update` | POST | `/course-module/update` | Studio pages | Update module |
+| `/course/teacher/course-module/update-status` | POST | `/course-module/update-status` | Wizard steps | Update status |
+| `/course/teacher/slt/create` | POST | `/slt/create` | SLT pages | Create SLT |
+| `/course/teacher/slt/update` | POST | `/slt/update` | SLT pages | Update SLT |
+| `/course/teacher/slt/delete` | POST | `/slt/delete` | SLT pages | Delete SLT |
+| `/course/teacher/lesson/create` | POST | `/lesson/create` | Lesson pages | Create lesson |
+| `/course/teacher/assignment/create` | POST | `/assignment/create` | Assignment pages | Create assignment |
+| `/course/teacher/assignment-commitments/list-by-course` | POST | `/assignment-commitment/by-course` | Instructor pages | List all commitments |
+
+#### Course System - Student Endpoints (POST, authenticated)
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/course/student/courses` | POST | `/learner/my-learning` | `my-learning.tsx` | Get enrolled courses |
+| `/course/student/assignment-commitments/list-by-course` | POST | `/assignment-commitment/list` | `assignment-commitment.tsx` | Learner's commitments |
+| `/course/student/assignment-commitment/update-evidence` | POST | `/assignment-commitment/update-evidence` | `assignment-commitment.tsx` | Submit evidence |
+| `/course/student/assignment-commitment/delete` | POST | `/assignment-commitment/delete` | `assignment-commitment.tsx` | Delete commitment |
+
+#### Project System - Public Endpoints
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/project/public/treasury/list` | POST | `/projects/list` | `project/page.tsx` | List published projects |
+| `/project/public/task/list/{treasury_nft_policy_id}` | GET | `/tasks/list` | Project pages | List tasks for project |
+
+#### Project System - Owner Endpoints
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/project/owner/treasury/list-owned` | POST | `/projects/list-owned` | `studio/project/page.tsx` | List owned projects |
+| `/project/owner/treasury/update` | POST | `/projects/update` | `studio/project/[treasurynft]/page.tsx` | Update project |
+
+#### Project System - Manager Endpoints
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/project/manager/task/create` | POST | `/tasks/create` | `draft-tasks/new/page.tsx` | Create task |
+| `/project/manager/task/update` | POST | `/tasks/update` | `draft-tasks/[taskindex]/page.tsx` | Update task |
+| `/project/manager/task/delete` | POST | `/tasks/delete` | `draft-tasks/page.tsx` | Delete task |
+
+#### Project System - Contributor Endpoints
+
+| New Endpoint | Method | Old Path | Files | Purpose |
+|--------------|--------|----------|-------|---------|
+| `/project/contributor/commitment/get` | POST | `/task-commitments/get` | Task pages | Get commitment |
+| `/project/contributor/commitment/create` | POST | **NEW** | - | Create commitment |
+| `/project/contributor/commitment/update-evidence` | POST | **NEW** | - | Update evidence |
+
+---
+
+> **Note**: The old endpoint tables below are kept for reference but are outdated. See tables above for current API structure.
+
+#### Course Module Endpoints (DEPRECATED - See above)
 
 | Endpoint | Method | Auth | Files | Purpose |
 |----------|--------|------|-------|---------|

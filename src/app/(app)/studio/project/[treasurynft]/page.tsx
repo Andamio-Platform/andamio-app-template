@@ -33,10 +33,11 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon } from "~/components/icons";
-import { type ListOwnedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
+import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
 import { ManagersManage, BlacklistManage } from "~/components/transactions";
+import { getManagingProjects } from "~/lib/andamioscan";
 
-type TaskListOutput = CreateTaskOutput[];
+type TaskListOutput = TaskResponse[];
 
 interface ApiError {
   message?: string;
@@ -56,7 +57,7 @@ export default function ProjectDashboardPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const treasuryNftPolicyId = params.treasurynft as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
@@ -69,10 +70,12 @@ export default function ProjectDashboardPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const [project, setProject] = useState<ListOwnedTreasuriesOutput[0] | null>(null);
+  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
   const [tasks, setTasks] = useState<TaskListOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track user's role: "owner" can view but not manage, "manager" can manage
+  const [userRole, setUserRole] = useState<"owner" | "manager" | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -93,11 +96,15 @@ export default function ProjectDashboardPage() {
 
     setIsLoading(true);
     setError(null);
+    setUserRole(null);
 
     try {
-      // Fetch owned projects (POST with body)
+      let projectData: TreasuryListResponse[0] | null = null;
+      let detectedRole: "owner" | "manager" | null = null;
+
+      // Step 1: Try to fetch as owner first
       const projectResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list-owned`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,34 +112,61 @@ export default function ProjectDashboardPage() {
         }
       );
 
-      if (!projectResponse.ok) {
-        throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
+      if (projectResponse.ok) {
+        const projectsData = (await projectResponse.json()) as TreasuryListResponse;
+        projectData = projectsData.find(
+          (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
+        ) ?? null;
+        if (projectData) {
+          detectedRole = "owner";
+        }
       }
 
-      const projectsData = (await projectResponse.json()) as ListOwnedTreasuriesOutput;
+      // Step 2: If not found as owner, check if user is a manager via Andamioscan
+      if (!projectData && user?.accessTokenAlias) {
+        try {
+          const managingProjects = await getManagingProjects(user.accessTokenAlias);
+          const isManager = managingProjects.some(
+            (p) => p.project_id === treasuryNftPolicyId
+          );
 
-      // Find the specific project
-      const projectData = projectsData.find(
-        (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-      );
+          if (isManager) {
+            detectedRole = "manager";
+            // Fetch project data via public endpoint since managers can access
+            const publicProjectResponse = await fetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
+              }
+            );
+
+            if (publicProjectResponse.ok) {
+              const publicProjectsData = (await publicProjectResponse.json()) as TreasuryListResponse;
+              projectData = publicProjectsData.find(
+                (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
+              ) ?? null;
+            }
+          }
+        } catch (scanErr) {
+          console.warn("Andamioscan check failed, continuing:", scanErr);
+        }
+      }
 
       if (!projectData) {
         throw new Error("Project not found or you don't have access");
       }
 
       setProject(projectData);
+      setUserRole(detectedRole);
       setTitle(projectData.title ?? "");
       // Note: description, imageUrl, videoUrl are not in the list-owned response
       // They would need to be fetched from a separate endpoint if needed
 
-      // Fetch tasks (POST with body)
+      // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
       const tasksResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
       );
 
       if (tasksResponse.ok) {
@@ -150,7 +184,7 @@ export default function ProjectDashboardPage() {
   useEffect(() => {
     void fetchProjectAndTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, treasuryNftPolicyId]);
+  }, [isAuthenticated, treasuryNftPolicyId, user?.accessTokenAlias]);
 
   const handleSave = async () => {
     if (!isAuthenticated || !project) {
@@ -162,8 +196,9 @@ export default function ProjectDashboardPage() {
     setSaveError(null);
 
     try {
+      // Go API: POST /project/owner/treasury/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -236,9 +271,27 @@ export default function ProjectDashboardPage() {
           <AndamioBadge variant="outline" className="font-mono text-xs">
             {treasuryNftPolicyId.slice(0, 16)}...
           </AndamioBadge>
+          {userRole === "owner" && (
+            <AndamioBadge variant="secondary">Owner</AndamioBadge>
+          )}
+          {userRole === "manager" && (
+            <AndamioBadge variant="default">Manager</AndamioBadge>
+          )}
           <AndamioBadge variant="default">Published</AndamioBadge>
         </div>
       </div>
+
+      {/* Role Notice */}
+      {userRole === "owner" && (
+        <AndamioAlert>
+          <AlertIcon className="h-4 w-4" />
+          <AndamioAlertTitle>Owner View</AndamioAlertTitle>
+          <AndamioAlertDescription>
+            As the project owner, you can view project details and manage team settings.
+            To manage tasks and assess contributor work, you need to be added as a Manager.
+          </AndamioAlertDescription>
+        </AndamioAlert>
+      )}
 
       <AndamioPageHeader
         title="Project Dashboard"
@@ -311,10 +364,6 @@ export default function ProjectDashboardPage() {
                   <div className="text-2xl font-bold">{liveTasks}</div>
                   <div className="text-sm text-muted-foreground">Live Tasks</div>
                 </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{project._count?.escrows ?? 0}</div>
-                  <div className="text-sm text-muted-foreground">Escrows</div>
-                </div>
               </div>
             </AndamioCardContent>
           </AndamioCard>
@@ -331,8 +380,8 @@ export default function ProjectDashboardPage() {
             <AndamioCardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <div className="text-sm text-muted-foreground">Available Balance</div>
-                  <div className="text-2xl font-bold">{project.total_ada?.toLocaleString() ?? 0} ADA</div>
+                  <div className="text-sm text-muted-foreground">Treasury Management</div>
+                  <div className="text-lg font-medium">Configure project treasury settings</div>
                 </div>
                 <Link href={`/studio/project/${treasuryNftPolicyId}/manage-treasury`}>
                   <AndamioButton variant="outline">

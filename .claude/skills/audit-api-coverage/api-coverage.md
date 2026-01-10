@@ -1,349 +1,342 @@
 # API Coverage Status
 
-> **Cross-reference of Andamio Database API endpoints vs T3 App Template implementation**
-> Last Updated: January 9, 2026
-> API Version: **v0** (Unstable) - **Go API**
+> **Cross-reference of all Andamio API endpoints vs T3 App Template implementation**
+> Last Updated: January 10, 2026
+> **Status**: ✅ Go API Migration Complete
 
-This document tracks which API endpoints are implemented in the T3 App Template and which remain to be built.
+This document tracks which API endpoints are implemented in the T3 App Template.
 
-## ⚠️ Go API Migration (January 9, 2026)
+## Quick Reference
 
-The Andamio DB API was rewritten in Go. Key endpoint changes have been applied to the T3 App:
+| API | Total | Implemented | Coverage |
+|-----|-------|-------------|----------|
+| [Andamio DB API](#andamio-db-api-73-endpoints) | 73 | ~50 endpoints | **~68%** |
+| [Andamio Tx API](#andamio-tx-api-16-endpoints) | 16 | 16 definitions | **100%** |
+| [Andamioscan](#andamioscan-36-endpoints) | 36 | 21 functions | **58%** |
+| **TOTAL** | **125** | **~87** | **~70%** |
 
-| Old (TypeScript) | New (Go) |
-|------------------|----------|
-| `POST /course/list` | `GET /courses/owned` |
-| `POST /course-module/map` | `POST /course-modules/list` |
-| `POST /my-learning/get` | `GET /learner/my-learning` |
-| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` |
-| `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` |
-| `GET /transaction/pending-transactions` | `GET /pending-transactions` |
+See [API-AUDIT-2026-01-10.md](./API-AUDIT-2026-01-10.md) for the complete migration report.
 
-**Note**: Tables below may still reference old endpoint paths. The T3 App code uses the new paths.
+---
+
+## Go API Migration Status
+
+**✅ COMPLETE** - All endpoints in the T3 App Template have been migrated to use the new Go API RESTful structure.
+
+### Migration Summary
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Core hooks (course, module, SLT, lesson) | ✅ Complete |
+| Phase 2 | Wizard step components | ✅ Complete |
+| Phase 3 | Project page endpoints | ✅ Complete |
+| Phase 4 | Learner component endpoints | ✅ Complete |
+| Phase 5 | Misc endpoints | ✅ Complete |
+
+---
+
+## Andamio Tx API (16 Endpoints)
+
+**Status**: **100% Complete**
+
+All transaction types have definitions in `@andamio/transactions` and UI components in `src/components/transactions/`.
+
+| Transaction | Component |
+|-------------|-----------|
+| `GLOBAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` |
+| `COURSE_ADMIN_CREATE` | `create-course.tsx` |
+| `COURSE_ADMIN_TEACHERS_MANAGE` | `teachers-update.tsx` |
+| `COURSE_TEACHER_MODULES_MANAGE` | `mint-module-tokens.tsx` |
+| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assess-assignment.tsx` |
+| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `enroll-in-course.tsx` |
+| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment-update.tsx` |
+| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential-claim.tsx` |
+| `PROJECT_ADMIN_CREATE` | `create-project.tsx` |
+| `PROJECT_ADMIN_MANAGERS_MANAGE` | `managers-manage.tsx` |
+| `PROJECT_ADMIN_BLACKLIST_MANAGE` | `blacklist-manage.tsx` |
+| `PROJECT_MANAGER_TASKS_MANAGE` | `tasks-manage.tsx` |
+| `PROJECT_MANAGER_TASKS_ASSESS` | `tasks-assess.tsx` |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task-commit.tsx` |
+| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` |
+| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` |
+
+---
+
+## Andamioscan (36 Endpoints)
+
+**Status**: **58% Complete** (21/36)
+
+Implementation in `src/lib/andamioscan.ts`. Hooks in `src/hooks/use-andamioscan.ts`.
+
+### Implemented (21)
+
+| Endpoint | Function |
+|----------|----------|
+| `/api/v2/courses` | `getAllCourses()` |
+| `/api/v2/courses/{id}/details` | `getCourse(id)` |
+| `/api/v2/courses/{id}/students/{alias}/status` | `getCourseStudent(id, alias)` |
+| `/api/v2/courses/teachers/{alias}/assessments/pending` | `getPendingAssessments(alias)` |
+| `/api/v2/projects` | `getAllProjects()` |
+| `/api/v2/projects/{id}/details` | `getProject(id)` |
+| `/api/v2/projects/{id}/contributors/{alias}/status` | `getProjectContributorStatus(id, alias)` |
+| `/api/v2/projects/managers/{alias}/assessments/pending` | `getManagerPendingAssessments(alias)` |
+| `/api/v2/users/{alias}/state` | `getUserGlobalState(alias)` |
+| `/api/v2/users/{alias}/courses/teaching` | `getCoursesOwnedByAlias(alias)` |
+| `/api/v2/users/{alias}/courses/enrolled` | `getEnrolledCourses(alias)` |
+| `/api/v2/users/{alias}/courses/completed` | `getCompletedCourses(alias)` |
+| `/api/v2/users/{alias}/courses/owned` | `getOwnedCourses(alias)` |
+| `/api/v2/users/{alias}/projects/contributing` | `getContributingProjects(alias)` |
+| `/api/v2/users/{alias}/projects/managing` | `getManagingProjects(alias)` |
+| `/api/v2/users/{alias}/projects/owned` | `getOwnedProjects(alias)` |
+| `/api/v2/users/{alias}/projects/completed` | `getCompletedProjects(alias)` |
+
+### Not Implemented - Event Endpoints (16)
+
+These replace Koios polling for transaction confirmation (tracked in GitHub issue #26):
+
+| Endpoint | Transaction Type |
+|----------|------------------|
+| `/api/v2/events/access-tokens/mint/{tx_hash}` | GLOBAL_ACCESS_TOKEN_MINT |
+| `/api/v2/events/courses/create/{tx_hash}` | COURSE_ADMIN_CREATE |
+| `/api/v2/events/teachers/update/{tx_hash}` | COURSE_ADMIN_TEACHERS_MANAGE |
+| `/api/v2/events/modules/manage/{tx_hash}` | COURSE_TEACHER_MODULES_MANAGE |
+| `/api/v2/events/enrollments/enroll/{tx_hash}` | COURSE_STUDENT_ASSIGNMENT_COMMIT |
+| `/api/v2/events/assignments/submit/{tx_hash}` | COURSE_STUDENT_ASSIGNMENT_UPDATE |
+| `/api/v2/events/assessments/assess/{tx_hash}` | COURSE_TEACHER_ASSIGNMENTS_ASSESS |
+| `/api/v2/events/credential-claims/claim/{tx_hash}` | COURSE_STUDENT_CREDENTIAL_CLAIM |
+| `/api/v2/events/projects/create/{tx_hash}` | PROJECT_ADMIN_CREATE |
+| `/api/v2/events/projects/join/{tx_hash}` | PROJECT_CONTRIBUTOR_TASK_COMMIT |
+| `/api/v2/events/tasks/manage/{tx_hash}` | PROJECT_MANAGER_TASKS_MANAGE |
+| `/api/v2/events/tasks/submit/{tx_hash}` | PROJECT_CONTRIBUTOR_TASK_ACTION |
+| `/api/v2/events/tasks/assess/{tx_hash}` | PROJECT_MANAGER_TASKS_ASSESS |
+| `/api/v2/events/credential-claims/project/{tx_hash}` | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM |
+| `/api/v2/events/treasury/fund/{tx_hash}` | - |
+| `/api/v2/transactions` | Paginated tx list |
+
+---
+
+## Andamio DB API (73 Endpoints)
+
+**Status**: **~68% Implemented** (~50/73)
+
+The Go API uses **role-based routing**:
+
+```
+/{system}/{role}/{resource}/{action}
+```
+
+**Systems**: `auth`, `user`, `course`, `project`
+**Roles**: `public`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
 
 ---
 
 ## Coverage Summary
 
-| Category | Available | Implemented | Coverage | Hook Coverage | Status |
-|----------|-----------|-------------|----------|---------------|--------|
-| Authentication | 2 | 2 | **100%** | 0% (lib) | Complete |
-| Access Token | 3 | 2 | 67% | 0% | Partial |
-| Course | 9 | 6 | 67% | 33% | Partial |
-| Course Module | 11 | 7 | 64% | 29% | Partial |
-| SLT | 7 | 4 | 57% | 50% | Partial |
-| Introduction | 4 | 3 | 75% | 0% | Partial |
-| Lesson | 6 | 3 | 50% | 0% | Partial |
-| Assignment | 5 | 3 | 60% | 0% | Partial |
-| Assignment Commitment | 6 | 5 | 83% | 0% | Near Complete |
-| Role Creation (deprecated) | 2 | 2 | **100%** | 0% | Complete |
-| Contributor | 1 | 0 | **0%** | 0% | Not Started |
-| Task Commitments | 7 | 1 | 14% | 0% | Minimal |
-| Task Management | 4 | 4 | **100%** | 0% | Complete |
-| Projects/Treasury | 4 | 4 | **100%** | 0% | Complete |
-| Credentials | 1 | 1 | **100%** | 0% | Complete |
-| My Learning | 1 | 1 | **100%** | 0% | Complete |
-| Transaction | 1 | 1 | **100%** | **100%** | Complete |
-| **TOTAL** | **~74** | **~49** | **~66%** | **~8%** | |
-
-**Note**: "Hook Coverage" indicates endpoints accessed via dedicated React Query hooks vs raw `fetch()` calls. Phase 2 will migrate all endpoints to hooks.
+| Category | Total Endpoints | Implemented | Status |
+|----------|-----------------|-------------|--------|
+| Authentication | 2 | 2 | ✅ Complete |
+| User Management | 5 | 4 | ✅ Migrated |
+| Course Public | 13 | 9 | ✅ Migrated |
+| Course Owner | 6 | 5 | ✅ Migrated |
+| Course Teacher | 25 | 16 | ✅ Migrated |
+| Course Student | 6 | 4 | ✅ Migrated |
+| Course Shared | 3 | 2 | ✅ Migrated |
+| Project Public | 3 | 2 | ✅ Migrated |
+| Project Owner | 4 | 3 | ✅ Migrated |
+| Project Manager | 7 | 4 | ✅ Migrated |
+| Project Contributor | 6 | 1 | ⚠️ Partial |
+| Project Shared | 1 | 0 | ⏳ Not Started |
+| **TOTAL** | **~81** | **~52** | **~64%** |
 
 ---
 
-## Implementation Status by Category
+## Endpoint Implementation Status
 
-### Authentication - 100% Complete
+### Authentication ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/auth/login/session` | POST | Implemented | N/A | `lib/andamio-auth.ts` |
-| `/auth/login/validate` | POST | Implemented | N/A | `lib/andamio-auth.ts` |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/auth/login/session` | POST | `andamio-auth.ts` | ✅ |
+| `/auth/login/validate` | POST | `andamio-auth.ts` | ✅ |
 
-### Access Token - 67% Complete
+### User Management ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/access-token/update-alias` | POST | Implemented | No | `contexts/andamio-auth-context.tsx`, `components/transactions/mint-access-token.tsx` |
-| `/access-token/update-unconfirmed-tx` | POST | Implemented | No | `hooks/use-andamio-transaction.ts`, `hooks/use-pending-tx-watcher.ts` |
-| `/access-token/unconfirmed-tx` | GET | **NOT USED** | - | Client-side tracking used instead |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/user/access-token-alias` | POST | `andamio-auth-context.tsx` | ✅ |
+| `/user/unconfirmed-tx` | GET/POST | `use-andamio-transaction.ts` | ✅ |
+| `/user/init-roles` | POST | `andamio-auth-context.tsx` | ✅ |
+| `/user/pending-transactions` | GET | `use-pending-transactions.ts` | ✅ |
 
-### Course - 67% Complete
+### Course Public ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/course/list` | POST | Implemented | **Yes** | `hooks/use-owned-courses.ts`, multiple pages |
-| `/course/published` | GET | Implemented | No | `app/(app)/course/page.tsx`, `sitemap/page.tsx` |
-| `/course/get` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, multiple pages |
-| `/course/update` | PATCH | Implemented | No | `app/(studio)/studio/course/[coursenft]/page.tsx` |
-| `/course/delete` | DELETE | Implemented | No | `app/(studio)/studio/course/[coursenft]/page.tsx` |
-| `/course/create-on-submit-minting-tx` | POST | Implemented | No | `components/courses/on-chain-courses-section.tsx` |
-| `/course/check` | POST | **NOT USED** | - | Validation before course creation |
-| `/course/confirm-minting-tx` | POST | **NOT USED** | - | Complete course minting flow |
-| `/course/import` | POST | **NOT USED** | - | Admin course import (low priority) |
-| `/course/unpublished-projects` | POST | **NOT USED** | - | Project prerequisite checking |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/course/public/courses/list` | GET | `use-course.ts` | ✅ |
+| `/course/public/course/get/{id}` | GET | `use-course.ts` | ✅ |
+| `/course/public/course/check/{code}` | GET | - | ⏳ |
+| `/course/public/course-modules/list/{id}` | GET | `use-course-module.ts` | ✅ |
+| `/course/public/course-module/get/{id}/{code}` | GET | `use-course-module.ts` | ✅ |
+| `/course/public/course-modules/assignment-summary/{id}` | GET | - | ⏳ |
+| `/course/public/slts/list/{id}/{code}` | GET | `use-slt.ts` | ✅ |
+| `/course/public/slt/get/{id}/{code}/{index}` | GET | - | ⏳ |
+| `/course/public/lessons/list/{id}/{code}` | GET | `use-lesson.ts` | ✅ |
+| `/course/public/lesson/get/{id}/{code}/{index}` | GET | `use-lesson.ts` | ✅ |
+| `/course/public/assignment/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
+| `/course/public/introduction/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
+| `/course/public/assignment-commitment/has-commitments/{id}/{code}` | GET | - | ⏳ |
 
-### Course Module - 64% Complete
+### Course Owner ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/course-module/list` | POST | Implemented | Partial | `hooks/use-hybrid-slts.ts`, multiple pages |
-| `/course-module/map` | POST | Implemented | **Yes** | `hooks/use-owned-courses.ts` |
-| `/course-module/get` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, multiple pages |
-| `/course-module/create` | POST | Implemented | No | `components/courses/on-chain-modules-section.tsx`, `step-credential.tsx` |
-| `/course-module/update` | PATCH | Implemented | No | `components/studio/wizard/steps/step-credential.tsx` |
-| `/course-module/update-status` | PATCH | Implemented | No | `components/studio/wizard/steps/step-review.tsx` |
-| `/course-module/confirm-transaction` | POST | Implemented | Partial | `hooks/use-pending-tx-watcher.ts` |
-| `/course-module/delete` | DELETE | **NOT USED** | - | Module deletion |
-| `/course-module/with-assignments` | POST | **NOT USED** | - | Assignment summary |
-| `/course-module/batch-update-status` | POST | **NOT USED** | - | Bulk status updates |
-| `/course-module/batch-confirm` | POST | **NOT USED** | - | Bulk tx confirmation |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/course/owner/courses/list` | POST | `use-course.ts`, `use-owned-courses.ts` | ✅ |
+| `/course/owner/course/create` | POST | - | ⏳ |
+| `/course/owner/course/update` | POST | `use-course.ts` | ✅ |
+| `/course/owner/course/delete` | POST | `use-course.ts` | ✅ |
+| `/course/owner/course/mint` | POST | `on-chain-courses-section.tsx` | ✅ |
+| `/course/owner/course/confirm-mint` | POST | - | ⏳ |
 
-### SLT (Student Learning Targets) - 57% Complete
+### Course Teacher ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/slt/list` | POST | Implemented | **Yes** | `hooks/use-hybrid-slts.ts`, `hooks/use-module-wizard-data.ts` |
-| `/slt/create` | POST | Implemented | No | `components/courses/on-chain-modules-section.tsx`, `step-slts.tsx` |
-| `/slt/update` | PATCH | Implemented | No | `components/studio/wizard/steps/step-slts.tsx` |
-| `/slt/delete` | DELETE | Implemented | No | `components/studio/wizard/steps/step-slts.tsx` |
-| `/slt/get` | POST | **NOT USED** | - | Individual SLT fetch |
-| `/slt/reorder` | POST | **NOT USED** | - | Drag-and-drop reordering |
-| `/slt/update-index` | POST | **NOT USED** | - | Individual index update |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/course/teacher/course-modules/list` | POST | `use-course-module.ts` | ✅ |
+| `/course/teacher/course-module/create` | POST | `use-course-module.ts` | ✅ |
+| `/course/teacher/course-module/update` | POST | `use-course-module.ts` | ✅ |
+| `/course/teacher/course-module/delete` | POST | - | ⏳ |
+| `/course/teacher/course-module/update-status` | POST | `use-course-module.ts` | ✅ |
+| `/course/teacher/course-module/update-code` | POST | - | ⏳ |
+| `/course/teacher/course-module/publish` | POST | - | ⏳ |
+| `/course/teacher/course-module/set-pending-tx` | POST | - | ⏳ |
+| `/course/teacher/course-module/confirm-tx` | POST | `use-pending-tx-watcher.ts` | ✅ |
+| `/course/teacher/course-modules/batch-update-status` | POST | - | ⏳ |
+| `/course/teacher/course-modules/batch-confirm` | POST | - | ⏳ |
+| `/course/teacher/slt/create` | POST | `use-slt.ts` | ✅ |
+| `/course/teacher/slt/update` | POST | `use-slt.ts` | ✅ |
+| `/course/teacher/slt/update-index` | POST | - | ⏳ |
+| `/course/teacher/slt/delete` | POST | `use-slt.ts` | ✅ |
+| `/course/teacher/slts/batch-update-indexes` | POST | `step-slts.tsx` | ✅ |
+| `/course/teacher/lesson/create` | POST | `use-lesson.ts` | ✅ |
+| `/course/teacher/lesson/update` | POST | `step-lessons.tsx` | ✅ |
+| `/course/teacher/lesson/publish` | POST | - | ⏳ |
+| `/course/teacher/lesson/delete` | POST | - | ⏳ |
+| `/course/teacher/assignment/create` | POST | `step-assignment.tsx` | ✅ |
+| `/course/teacher/assignment/update` | POST | `step-assignment.tsx` | ✅ |
+| `/course/teacher/assignment/publish` | POST | - | ⏳ |
+| `/course/teacher/assignment/delete` | POST | - | ⏳ |
+| `/course/teacher/introduction/create` | POST | `step-introduction.tsx` | ✅ |
+| `/course/teacher/introduction/update` | POST | `step-introduction.tsx` | ✅ |
+| `/course/teacher/introduction/publish` | POST | - | ⏳ |
+| `/course/teacher/introduction/delete` | POST | - | ⏳ |
+| `/course/teacher/assignment-commitments/list-by-course` | POST | `instructor/page.tsx` | ✅ |
+| `/course/teacher/assignment-commitment/review` | POST | - | ⏳ |
 
-### Introduction - 75% Complete
+### Course Student ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/introduction/get` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, `module-wizard.tsx` |
-| `/introduction/create` | POST | Implemented | No | `components/studio/wizard/steps/step-introduction.tsx` |
-| `/introduction/update` | POST | Implemented | No | `components/studio/wizard/steps/step-introduction.tsx` |
-| `/introduction/publish` | POST | **NOT USED** | - | Publish introduction |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/course/student/courses` | POST | `my-learning.tsx` | ✅ |
+| `/course/student/course-status` | POST | `user-course-status.tsx` | ✅ |
+| `/course/student/assignment-commitments/list-by-course` | POST | `assignment-commitment.tsx` | ✅ |
+| `/course/student/assignment-commitment/create` | POST | - | ⏳ |
+| `/course/student/assignment-commitment/update-evidence` | POST | `assignment-commitment.tsx` | ✅ |
+| `/course/student/assignment-commitment/delete` | POST | `assignment-commitment.tsx` | ✅ |
 
-### Lesson - 50% Complete
+### Course Shared ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/lesson/list` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, multiple pages |
-| `/lesson/get` | POST | Implemented | No | `app/(app)/course/.../[moduleindex]/page.tsx` |
-| `/lesson/create` | POST | Implemented | No | `components/studio/wizard/steps/step-lessons.tsx` |
-| `/lesson/update` | POST | **NOT USED** | - | Update lesson |
-| `/lesson/delete` | POST | **NOT USED** | - | Delete lesson |
-| `/lesson/publish` | POST | **NOT USED** | - | Publish lesson |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/course/shared/assignment-commitment/get` | POST | - | ⏳ |
+| `/course/shared/assignment-commitment/update-status` | POST | `use-pending-tx-watcher.ts` | ✅ |
+| `/course/shared/assignment-commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Assignment - 60% Complete
+### Project Public ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/assignment/get` | POST | Implemented | Partial | `hooks/use-module-wizard-data.ts`, `module-wizard.tsx` |
-| `/assignment/create` | POST | Implemented | No | `components/studio/wizard/steps/step-assignment.tsx` |
-| `/assignment/update` | PATCH | Implemented | No | `components/studio/wizard/steps/step-assignment.tsx` |
-| `/assignment/delete` | DELETE | **NOT USED** | - | Delete assignment |
-| `/assignment/publish` | POST | **NOT USED** | - | Publish assignment |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/project/public/treasury/list` | POST | `project/page.tsx` | ✅ |
+| `/project/public/tasks/list/{id}` | GET | `[treasurynft]/page.tsx` | ✅ |
+| `/project/public/prerequisite/list` | GET | - | ⏳ |
 
-### Assignment Commitment - 83% Complete
+### Project Owner ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/assignment-commitment/list` | POST | Implemented | No | `components/learner/assignment-commitment.tsx` |
-| `/assignment-commitment/update-evidence` | PATCH | Implemented | No | `components/learner/assignment-commitment.tsx` |
-| `/assignment-commitment/delete` | DELETE | Implemented | No | `components/learner/assignment-commitment.tsx` |
-| `/assignment-commitment/by-course` | POST | Implemented | No | `app/(app)/studio/.../instructor/page.tsx` |
-| `/assignment-commitment/update-status` | PATCH | Implemented | Partial | `hooks/use-pending-tx-watcher.ts` |
-| `/assignment-commitment/create` | POST | **NOT USED** | - | Learner enrollment |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/project/owner/treasury/list-owned` | POST | `studio/project/page.tsx` | ✅ |
+| `/project/owner/treasury/update` | POST | `[treasurynft]/page.tsx` | ✅ |
+| `/project/owner/treasury/mint` | POST | - | ⏳ |
+| `/project/owner/treasury/confirm-mint` | POST | - | ⏳ |
+| `/project/owner/task/delete` | POST | `draft-tasks/page.tsx` | ✅ |
 
-### Projects/Treasury - 100% Complete
+### Project Manager ✅
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/projects/list` | GET | Implemented | No | `app/(app)/project/page.tsx`, `sitemap/page.tsx` |
-| `/projects/owned` | GET | Implemented | No | `app/(app)/sitemap/page.tsx` |
-| `/projects/list-owned` | GET | Implemented | No | `app/(app)/studio/project/page.tsx` |
-| `/projects/update` | PATCH | Implemented | No | `app/(app)/studio/project/[treasurynft]/page.tsx` |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/project/manager/task/create` | POST | `draft-tasks/new/page.tsx` | ✅ |
+| `/project/manager/task/update` | POST | `[taskindex]/page.tsx` | ✅ |
+| `/project/manager/task/delete` | POST | - | ⏳ |
+| `/project/manager/task/batch-update-status` | POST | - | ⏳ |
+| `/project/manager/task/batch-confirm` | POST | - | ⏳ |
+| `/project/manager/commitment/update-status` | POST | - | ⏳ |
+| `/project/manager/commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Task Management - 100% Complete
+### Project Contributor ⚠️
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/tasks/list` | POST | Implemented | No | Multiple project pages |
-| `/tasks/create` | POST | Implemented | No | `draft-tasks/new/page.tsx` |
-| `/tasks/update` | PATCH | Implemented | No | `draft-tasks/[taskindex]/page.tsx` |
-| `/tasks/delete` | DELETE | Implemented | No | `draft-tasks/page.tsx` |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/project/contributor/commitment/get` | POST | `[taskhash]/page.tsx` | ✅ |
+| `/project/contributor/commitment/create` | POST | - | ⏳ |
+| `/project/contributor/commitment/update-evidence` | POST | - | ⏳ |
+| `/project/contributor/commitment/update-status` | POST | - | ⏳ |
+| `/project/contributor/commitment/delete` | POST | - | ⏳ |
+| `/project/contributor/commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Task Commitments - 14% Complete
+### Project Shared ⏳
 
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/task-commitments/get` | POST | Implemented | No | `project/[treasurynft]/[taskhash]/page.tsx` |
-| `/task-commitments/list` | POST | **NOT USED** | - | Contributor dashboard |
-| `/task-commitments/create` | POST | **NOT USED** | - | Task claiming workflow |
-| `/task-commitments/update-evidence` | POST | **NOT USED** | - | Task submission |
-| `/task-commitments/update-status` | POST | **NOT USED** | - | Task progress tracking |
-| `/task-commitments/delete` | POST | **NOT USED** | - | Task cancellation |
-| `/task-commitments/confirm-transaction` | POST | **NOT USED** | - | Task completion on-chain |
-
-### Contributor - 0% Complete
-
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/contributors/create` | POST | **NOT USED** | - | Contributor onboarding |
-
-### Credentials - 100% Complete
-
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/credential/list` | POST | Implemented | No | `components/learner/user-course-status.tsx` |
-
-### My Learning - 100% Complete
-
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/my-learning/get` | POST | Implemented | No | `components/learner/my-learning.tsx` |
-
-### Transaction - 100% Complete
-
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/transaction/pending-transactions` | GET | Implemented | **Yes** | `hooks/use-pending-transactions.ts`, `hooks/use-pending-tx-watcher.ts` |
-
-### Role Creation (Deprecated) - In Use
-
-| Endpoint | Method | Status | Hook | Location |
-|----------|--------|--------|------|----------|
-| `/creator/create` | POST | Implemented | No | `contexts/andamio-auth-context.tsx` |
-| `/learner/create` | POST | Implemented | No | `contexts/andamio-auth-context.tsx` |
+| Endpoint | Method | Hook/File | Status |
+|----------|--------|-----------|--------|
+| `/project/shared/contributor/create` | POST | - | ⏳ |
 
 ---
 
-## React Query Hook Coverage
+## Hook Reference
 
-Currently, only **4 dedicated hooks** wrap API endpoints:
+### Implemented Hooks (Updated for Go API)
 
-| Hook | Endpoints Covered | React Query |
-|------|-------------------|-------------|
-| `useOwnedCourses` | `/course/list`, `/course-module/map` | No (useState) |
-| `usePendingTransactions` | `/transaction/pending-transactions` | No (useState) |
-| `useHybridSlts` | `/slt/list`, `/course-module/list` | No (useState) |
-| `useModuleWizardData` | Multiple read endpoints | No (useState) |
-
-**Phase 2 Goal**: Migrate all endpoints to React Query hooks for:
-- Automatic caching and deduplication
-- Background refetching
-- Optimistic updates
-- Proper error/loading states
-
----
-
-## Priority Implementation Gaps
-
-### High Priority (Core Flow Blockers)
-
-| Endpoint | Impact | Use Case |
-|----------|--------|----------|
-| `/assignment-commitment/create` | Learner UX | Allow learners to enroll in assignments |
-| `/lesson/update` | Creator UX | Allow editing existing lessons |
-| `/lesson/publish` | Creator UX | Control lesson visibility |
-| `/assignment/publish` | Creator UX | Control assignment visibility |
-
-### Medium Priority (Contributor Features)
-
-| Endpoint | Impact | Use Case |
-|----------|--------|----------|
-| `/task-commitments/create` | Contributor | Claim tasks from projects |
-| `/task-commitments/list` | Contributor | View claimed tasks dashboard |
-| `/task-commitments/update-evidence` | Contributor | Submit work for review |
-| `/task-commitments/update-status` | Contributor | Track task progress |
-| `/task-commitments/confirm-transaction` | Blockchain | Confirm task completion |
-| `/contributors/create` | Contributor | Register as contributor |
-
-### Low Priority (Optimization/Admin)
-
-| Endpoint | Impact | Use Case |
-|----------|--------|----------|
-| `/course-module/batch-update-status` | Performance | Bulk operations |
-| `/course-module/batch-confirm` | Performance | Bulk confirmations |
-| `/course/check` | UX | Course code validation |
-| `/course/import` | Admin | Bulk course import |
-| `/slt/reorder` | UX | Drag-and-drop SLT ordering |
-
----
-
-## User Journey Coverage
-
-### Creator Journey - 85% Complete
-
-```
-Create Course     Implemented  /course/create-on-submit-minting-tx
-Add Modules       Implemented  /course-module/create
-Define SLTs       Implemented  /slt/create
-Create Lessons    Implemented  /lesson/create
-Edit Lessons      NOT IMPL     /lesson/update ← NEEDED
-Create Assignment Implemented  /assignment/create
-Publish           NOT IMPL     /lesson/publish, /assignment/publish ← NEEDED
-Review Students   Implemented  /assignment-commitment/by-course
-```
-
-### Learner Journey - 80% Complete
-
-```
-Browse Courses    Implemented  /course/published
-View Course       Implemented  /course/get
-View Lessons      Implemented  /lesson/get
-Start Assignment  NOT IMPL     /assignment-commitment/create ← NEEDED
-Submit Work       Implemented  /assignment-commitment/update-evidence
-Track Progress    Implemented  /credential/list, /my-learning/get
-```
-
-### Contributor Journey - 20% Complete
-
-```
-Browse Projects   Implemented  /projects/list
-View Tasks        Implemented  /tasks/list
-Claim Task        NOT IMPL     /task-commitments/create ← NEEDED
-Submit Work       NOT IMPL     /task-commitments/update-evidence ← NEEDED
-Track Progress    NOT IMPL     /task-commitments/list ← NEEDED
-```
-
-### Project Manager Journey - 100% Complete
-
-```
-List Projects     Implemented  /projects/list-owned
-Create Tasks      Implemented  /tasks/create
-Update Tasks      Implemented  /tasks/update
-Delete Tasks      Implemented  /tasks/delete
-Update Project    Implemented  /projects/update
-```
-
----
-
-## Phase 2 Migration Targets
-
-The following endpoints need to be migrated from raw `fetch()` to React Query hooks:
-
-### Priority 1: High-traffic read endpoints
-- `/course/published` - Course catalog
-- `/course/get` - Course detail pages
-- `/course-module/list` - Module listings
-- `/lesson/list` - Lesson listings
-- `/projects/list` - Project catalog
-
-### Priority 2: Authenticated data
-- `/credential/list` - Learner progress
-- `/my-learning/get` - Dashboard data
-- `/assignment-commitment/list` - Learner commitments
-- `/assignment-commitment/by-course` - Instructor view
-
-### Priority 3: Write operations (mutations)
-- All create/update/delete operations
+| Hook | Endpoints Used |
+|------|----------------|
+| `useCourse` | `/course/public/course/get/{id}` |
+| `usePublishedCourses` | `/course/public/courses/list` |
+| `useOwnedCoursesQuery` | `/course/owner/courses/list` |
+| `useUpdateCourse` | `/course/owner/course/update` |
+| `useDeleteCourse` | `/course/owner/course/delete` |
+| `useCourseModules` | `/course/public/course-modules/list/{id}` |
+| `useCourseModule` | `/course/public/course-module/get/{id}/{code}` |
+| `useCourseModuleMap` | `/course/teacher/course-modules/list` |
+| `useCreateCourseModule` | `/course/teacher/course-module/create` |
+| `useUpdateCourseModule` | `/course/teacher/course-module/update` |
+| `useUpdateCourseModuleStatus` | `/course/teacher/course-module/update-status` |
+| `useSLTs` | `/course/public/slts/list/{id}/{code}` |
+| `useCreateSLT` | `/course/teacher/slt/create` |
+| `useUpdateSLT` | `/course/teacher/slt/update` |
+| `useDeleteSLT` | `/course/teacher/slt/delete` |
+| `useLessons` | `/course/public/lessons/list/{id}/{code}` |
+| `useLesson` | `/course/public/lesson/get/{id}/{code}/{index}` |
+| `useCreateLesson` | `/course/teacher/lesson/create` |
+| `usePendingTransactions` | `/user/pending-transactions` |
 
 ---
 
 ## Related Documentation
 
-- [API-ENDPOINT-REFERENCE.md](./api-endpoint-reference.md) - Full endpoint documentation
+- [API-AUDIT-2026-01-10.md](./API-AUDIT-2026-01-10.md) - Complete migration report
+- [api-endpoint-reference.md](./api-endpoint-reference.md) - Full endpoint documentation
+- [db-api-endpoints.md](./db-api-endpoints.md) - Go API endpoint reference
 - [data-sources.md](./data-sources.md) - API systems overview
-- [query-patterns.md](./query-patterns.md) - React Query patterns
 
 ---
 
-**Last Updated**: December 19, 2025
+**Last Updated**: January 10, 2026
+**Migration Status**: ✅ Complete
 **Maintained By**: Andamio Platform Team

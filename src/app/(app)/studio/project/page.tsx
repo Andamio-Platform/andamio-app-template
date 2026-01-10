@@ -12,7 +12,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
 import { AlertIcon, ProjectIcon, SettingsIcon, AddIcon } from "~/components/icons";
-import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
+import { type TreasuryListResponse } from "@andamio/db-api-types";
 import { CreateProject } from "~/components/transactions";
 
 /**
@@ -21,7 +21,7 @@ import { CreateProject } from "~/components/transactions";
 function ProjectListContent() {
   const router = useRouter();
   const { authenticatedFetch } = useAndamioAuth();
-  const [projects, setProjects] = useState<ListOwnedTreasuriesOutput>([]);
+  const [projects, setProjects] = useState<TreasuryListResponse>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -32,8 +32,9 @@ function ProjectListContent() {
       setError(null);
 
       try {
+        // Go API: POST /project/owner/treasury/list-owned
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list-owned`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -45,7 +46,7 @@ function ProjectListContent() {
           throw new Error(`Failed to fetch projects: ${response.statusText}`);
         }
 
-        const data = (await response.json()) as ListOwnedTreasuriesOutput;
+        const data = (await response.json()) as TreasuryListResponse;
         setProjects(data ?? []);
       } catch (err) {
         console.error("Error fetching owned projects:", err);
@@ -137,8 +138,7 @@ function ProjectListContent() {
             <AndamioTableRow>
               <AndamioTableHead>Title</AndamioTableHead>
               <AndamioTableHead>Treasury NFT Policy ID</AndamioTableHead>
-              <AndamioTableHead className="text-center">Escrows</AndamioTableHead>
-              <AndamioTableHead className="text-center">Total ADA</AndamioTableHead>
+              <AndamioTableHead className="text-center">Status</AndamioTableHead>
               <AndamioTableHead className="text-right">Actions</AndamioTableHead>
             </AndamioTableRow>
           </AndamioTableHeader>
@@ -158,11 +158,8 @@ function ProjectListContent() {
                   )}
                 </AndamioTableCell>
                 <AndamioTableCell className="text-center">
-                  <AndamioBadge variant="outline">{project._count?.escrows ?? 0}</AndamioBadge>
-                </AndamioTableCell>
-                <AndamioTableCell className="text-center">
-                  <AndamioBadge variant="secondary">
-                    {project.total_ada?.toLocaleString() ?? 0} ADA
+                  <AndamioBadge variant={project.live ? "default" : "secondary"}>
+                    {project.live ? "Live" : "Draft"}
                   </AndamioBadge>
                 </AndamioTableCell>
                 <AndamioTableCell className="text-right">
@@ -188,7 +185,7 @@ function ProjectListContent() {
  * Project Studio Page - Lists projects owned/managed by the authenticated user
  *
  * API Endpoint: POST /projects/list-owned (protected)
- * Type Reference: ListOwnedTreasuriesOutput from @andamio/db-api
+ * Type Reference: TreasuryListResponse from @andamio/db-api
  */
 export default function ProjectStudioPage() {
   return (

@@ -32,10 +32,10 @@ import {
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
 import { AddIcon } from "~/components/icons";
-import { type CreateTaskOutput } from "@andamio/db-api";
+import { type TaskResponse } from "@andamio/db-api-types";
 import type { JSONContent } from "@tiptap/core";
 
-type TaskListOutput = CreateTaskOutput[];
+type TaskListOutput = TaskResponse[];
 
 interface ApiError {
   message?: string;
@@ -55,7 +55,7 @@ export default function EditTaskPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   // Task state
-  const [task, setTask] = useState<CreateTaskOutput | null>(null);
+  const [task, setTask] = useState<TaskResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -86,13 +86,9 @@ export default function EditTaskPage() {
       setLoadError(null);
 
       try {
+        // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
         );
 
         if (!response.ok) {
@@ -100,7 +96,7 @@ export default function EditTaskPage() {
         }
 
         const tasks = (await response.json()) as TaskListOutput;
-        const taskData = tasks.find((t) => t.index === taskIndex);
+        const taskData = tasks.find((t) => t.task_index === taskIndex);
 
         if (!taskData) {
           throw new Error("Task not found");
@@ -112,10 +108,10 @@ export default function EditTaskPage() {
 
         setTask(taskData);
         setTitle(taskData.title);
-        setDescription(taskData.description);
+        setDescription(taskData.description ?? "");
         setLovelace(taskData.lovelace);
         setExpirationTime(taskData.expiration_time);
-        setAcceptanceCriteria(taskData.acceptance_criteria.length > 0 ? taskData.acceptance_criteria : [""]);
+        setAcceptanceCriteria(taskData.acceptance_criteria && taskData.acceptance_criteria.length > 0 ? taskData.acceptance_criteria : [""]);
         setNumAllowedCommitments(taskData.num_allowed_commitments);
         setContentJson((taskData.content_json as JSONContent) ?? null);
       } catch (err) {
@@ -167,8 +163,9 @@ export default function EditTaskPage() {
       // Filter out empty acceptance criteria
       const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
 
+      // Go API: POST /project/owner/task/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

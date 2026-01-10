@@ -3,7 +3,7 @@
  * Used by Course Creator interface for managing course data
  */
 
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 
 // View mode options
 export type CourseViewMode = "grid" | "table" | "list";
@@ -38,9 +38,9 @@ export const defaultCourseSortConfig: CourseSortConfig = {
  * Filter courses based on filter criteria
  */
 export function filterCourses(
-  courses: ListOwnedCoursesOutput,
+  courses: CourseListResponse,
   filter: CourseFilter
-): ListOwnedCoursesOutput {
+): CourseListResponse {
   return courses.filter((courseData) => {
     // Search filter (title, code, description)
     if (filter.search) {
@@ -70,10 +70,10 @@ export function filterCourses(
  * Sort courses based on sort configuration
  */
 export function sortCourses(
-  courses: ListOwnedCoursesOutput,
+  courses: CourseListResponse,
   sortConfig: CourseSortConfig,
   moduleCounts: Record<string, number>
-): ListOwnedCoursesOutput {
+): CourseListResponse {
   const sorted = [...courses];
 
   sorted.sort((a, b) => {
@@ -104,7 +104,7 @@ export function sortCourses(
  * Calculate course statistics
  */
 export function calculateCourseStats(
-  courses: ListOwnedCoursesOutput,
+  courses: CourseListResponse,
   moduleCounts: Record<string, number>
 ) {
   const total = courses.length;

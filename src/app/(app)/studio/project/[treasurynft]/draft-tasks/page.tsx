@@ -26,10 +26,10 @@ import {
   AndamioErrorAlert,
 } from "~/components/andamio";
 import { TaskIcon } from "~/components/icons";
-import { type CreateTaskOutput } from "@andamio/db-api";
+import { type TaskResponse } from "@andamio/db-api-types";
 import { formatLovelace } from "~/lib/cardano-utils";
 
-type TaskListOutput = CreateTaskOutput[];
+type TaskListOutput = TaskResponse[];
 
 interface ApiError {
   message?: string;
@@ -57,13 +57,9 @@ export default function DraftTasksPage() {
     setError(null);
 
     try {
+      // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -93,8 +89,9 @@ export default function DraftTasksPage() {
     setDeletingTaskIndex(taskIndex);
 
     try {
+      // Go API: POST /project/owner/task/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -217,8 +214,8 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {draftTasks.map((task) => (
-                  <AndamioTableRow key={task.index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_index}>
+                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                     <AndamioTableCell className="text-center">
                       <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
@@ -228,11 +225,11 @@ export default function DraftTasksPage() {
                     </AndamioTableCell>
                     <AndamioTableCell className="text-right">
                       <AndamioRowActions
-                        editHref={`/studio/project/${treasuryNftPolicyId}/draft-tasks/${task.index}`}
-                        onDelete={() => handleDeleteTask(task.index)}
+                        editHref={`/studio/project/${treasuryNftPolicyId}/draft-tasks/${task.task_index}`}
+                        onDelete={() => handleDeleteTask(task.task_index)}
                         itemName="task"
                         deleteDescription={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-                        isDeleting={deletingTaskIndex === task.index}
+                        isDeleting={deletingTaskIndex === task.task_index}
                       />
                     </AndamioTableCell>
                   </AndamioTableRow>
@@ -261,8 +258,8 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {liveTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_hash ?? task.task_index}>
+                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">
                       <Link
                         href={`/project/${treasuryNftPolicyId}/${task.task_hash}`}
@@ -304,8 +301,8 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {otherTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_hash ?? task.task_index}>
+                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                     <AndamioTableCell className="text-center">
                       <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>

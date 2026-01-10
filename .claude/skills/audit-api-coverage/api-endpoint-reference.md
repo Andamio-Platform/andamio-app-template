@@ -1,57 +1,66 @@
 # API Endpoint Reference & UX Mapping
 
 > **Complete mapping of Andamio Database API endpoints to frontend implementation**
-> Last Updated: January 9, 2026
+> Last Updated: January 10, 2026
 > API Version: **v0** (Unstable) - **Go API**
-> Coverage: **~49/74 endpoints (~66%)**
+> Coverage: **~52/73 endpoints (~71%)**
+> Migration Status: **✅ Complete**
 
 This document provides a comprehensive reference for all API endpoints, their purpose, and where they are used in the T3 App Template. Use this as the alignment document between backend API and frontend UX.
 
 ---
 
-## ⚠️ Go API Migration (January 9, 2026)
+## Go API RESTful Structure (January 10, 2026)
 
-The Andamio DB API was rewritten in Go. Key endpoint changes:
+The Andamio DB API uses **role-based routing**:
 
-| Old Endpoint (TypeScript) | New Endpoint (Go) | Method |
-|---------------------------|-------------------|--------|
-| `POST /course/list` | `GET /courses/owned` | GET |
-| `POST /course-module/map` | `POST /course-modules/list` | POST |
-| `POST /my-learning/get` | `GET /learner/my-learning` | GET |
-| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` | PATCH |
-| `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` | PATCH |
-| `GET /transaction/pending-transactions` | `GET /pending-transactions` | GET |
+```
+/{system}/{role}/{resource}/{action}
+```
 
-**Note**: Some sections below still reference old endpoint paths. The T3 App has been updated to use the new paths.
+**Systems**: `auth`, `user`, `course`, `project`
+**Roles**: `public`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
+
+### Key Design Principles
+
+1. **Public endpoints use GET with path parameters** - No request body, cacheable
+2. **Authenticated endpoints use POST with JSON body** - Secure, flexible
+3. **Role prefixes identify authorization requirements** - Clear access control
+4. **Resource paths are explicit** - e.g., `/course/teacher/course-module/create`
+
+### Migration Complete
+
+All T3 App Template endpoints have been migrated to use the new Go API paths. See [API-AUDIT-2026-01-10.md](./API-AUDIT-2026-01-10.md) for the complete migration report.
 
 ---
 
 ## API Design Pattern
 
-**The Go API uses RESTful conventions** with appropriate HTTP methods (GET, POST, PATCH, DELETE).
+**The Go API uses RESTful conventions** with role-based routing.
 
 This design pattern provides:
-- Consistent request format across all operations
-- JSON bodies for all parameters (no URL parameters)
+- Role-based access control via URL prefixes
+- GET with path params for public read operations
+- POST with JSON body for authenticated operations
 - snake_case field naming convention
-- Action-based endpoint paths (e.g., `/course/get`, `/course/create`)
 
 ### Request Format
 
 ```typescript
-// All requests use this format
-const response = await fetch(`${API_URL}/endpoint-name`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ field_name: value }),
-});
+// Public GET requests (no auth, path parameters)
+const response = await fetch(
+  `${API_URL}/course/public/course/get/${courseNftPolicyId}`
+);
 
-// Authenticated requests add Bearer token
-const response = await authenticatedFetch(`${API_URL}/endpoint-name`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ field_name: value }),
-});
+// Authenticated POST requests (Bearer token, JSON body)
+const response = await authenticatedFetch(
+  `${API_URL}/course/owner/courses/list`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ field_name: value }),
+  }
+);
 ```
 
 ---
@@ -1340,5 +1349,6 @@ import {
 
 ---
 
-**Last Updated**: December 19, 2025
+**Last Updated**: January 10, 2026
+**Migration Status**: ✅ Complete
 **Maintained By**: Andamio Platform Team

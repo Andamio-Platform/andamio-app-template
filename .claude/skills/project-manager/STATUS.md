@@ -1,8 +1,21 @@
 # Project Status
 
-> **Last Updated**: January 9, 2026
+> **Last Updated**: January 10, 2026 (Session 4 - API Migration & Transaction Fixes)
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## API Coverage Summary (All 3 Sub-Systems)
+
+| API | Endpoints | Implemented | Coverage | Priority |
+|-----|-----------|-------------|----------|----------|
+| **Andamio DB API** | 73 | 18 hooks | **25%** | High |
+| **Andamio Tx API** | 16 | 16 definitions | **100%** | Complete |
+| **Andamioscan** | 36 | 21 functions | **58%** | Medium |
+| **Overall** | **125** | **55** | **44%** | - |
+
+> Full report: `.claude/skills/audit-api-coverage/api-coverage-report-2026-01-10.md`
 
 ---
 
@@ -12,11 +25,16 @@ Current implementation status of the Andamio T3 App Template.
 |---------|--------|--------|
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
 | **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
-| **Event Endpoints (Andamioscan)** | 0/15 implemented | Transaction confirmation relies on Koios polling instead of entity-specific endpoints |
+| **Wallet Authentication** | ✅ **Fixed** | Eternl auth working; other wallets need testing |
+| **Event Endpoints (Andamioscan)** | 0/16 implemented | Transaction confirmation relies on Koios polling instead of entity-specific endpoints |
+| **Assignment System Hooks** | 0/12 endpoints | Cannot create/review assignments without DB API hooks |
 
 **Workarounds in Place**:
 - Using workspace symlink for `@andamio/transactions` (local development works)
 - Koios polling handles transaction confirmation until Event endpoints are ready
+
+**Testing Needed**:
+- Wallet authentication with: Nami, Flint, Yoroi, Lace, Vespr (some may return bech32 directly, some hex)
 
 ---
 
@@ -24,12 +42,57 @@ Current implementation status of the Andamio T3 App Template.
 
 | Date | Milestone | Impact on Template |
 |------|-----------|-------------------|
-| **2026-01-09** | Andamio V2 Preprod Release | Template optimization complete |
-| **2026-01-12** | Andamio Pioneers Program | Preprod testing begins |
-| **2026-01-12 → 2026-02-06** | V1→V2 Migration Focus | Work shifts to app.andamio.io |
+| **2026-01-09 (Thu)** | Go API Migration Complete | ✅ 50+ endpoints migrated |
+| **2026-01-10 (Fri)** | **Today** | Bug fixes, testing |
+| **2026-01-12 (Mon)** | V2 Preprod Rollout Begins | Rollout week starts |
+| **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | Preprod testing begins |
+| **2026-01-16 (Fri)** | **Final Demos** | Demo day |
+| **2026-01-16 → 2026-02-06** | V1→V2 Migration Focus | Work shifts to app.andamio.io |
 | **2026-02-06** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
-**Note**: During Jan 12 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+**Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+
+---
+
+## Monday Planning (January 12, 2026) - Rollout Day
+
+**Context**: V2 Preprod Rollout begins Monday. Andamio Pioneers launches Wednesday January 14.
+
+### Priority 1: Event Endpoints (Andamioscan)
+**Impact**: Remove Koios polling dependency, faster transaction confirmation
+
+16 Event endpoints need client functions in `src/lib/andamioscan.ts`:
+- Access token mint, Course create, Teachers update, Modules manage
+- Student enrollment, Assignment submit, Assessment, Credential claim
+- Project create, join, tasks manage/submit/assess, project credential
+
+**Effort**: Medium (add functions, update `useAndamioTransaction`)
+
+### Priority 2: Assignment System Hooks (DB API)
+**Impact**: Enable student interactions during Pioneers testing
+
+12 endpoints need React Query hooks:
+- `GET /assignment/get/{policy_id}/{module_code}` - View assignment
+- `POST /assignment/create`, `POST /assignment/update` - Teacher ops
+- `POST /assignment-commitment/create`, `POST /assignment-commitment/update-evidence` - Student ops
+- `POST /assignment-commitment/review`, `POST /assignment-commitments/list-by-course` - Teacher review
+
+**Effort**: Medium-High (hooks + UI integration)
+
+### Priority 3: Cache Invalidation Audit
+**Impact**: Fix "manual refresh required" after transactions
+
+Verify `queryClient.invalidateQueries()` called with correct keys in:
+- `useUpdateCourse`, `useUpdateCourseModule` mutations
+- Transaction `onSuccess` callbacks
+- Side effect completions
+
+**Effort**: Low (audit and fix)
+
+### Deferred (Post-Pioneers)
+- Project System hooks (13 endpoints)
+- User Management hooks (5 endpoints)
+- Module Introductions hooks (5 endpoints)
 
 ---
 
@@ -37,11 +100,11 @@ Current implementation status of the Andamio T3 App Template.
 
 | Area | Status | Progress |
 |------|--------|----------|
-| Course System | Stable | 15/15 routes, ~66% API coverage |
+| Course System | Stable | 15/15 routes, 25% DB API coverage |
 | Project System | In Progress | 6/13 routes, 8 transaction components |
-| Andamioscan Integration | **53% Complete** | 17/32 endpoints (all Course/User/Project done) |
+| Andamioscan Integration | **58% Complete** | 21/36 endpoints (Event endpoints pending) |
 | React Query Migration | Complete | 18 hooks created, 6 pages migrated |
-| Transaction System | Stable | Side effects, pending tx monitoring |
+| Transaction System | **100% Complete** | 16/16 definitions, side effects working |
 | Styling System | Stable | Full semantic color system |
 
 ---
@@ -68,22 +131,23 @@ Current implementation status of the Andamio T3 App Template.
 - `/studio/course/[coursenft]/[modulecode]/[moduleindex]` - Lesson editor
 - `/studio/course/[coursenft]/[modulecode]/introduction` - Introduction editor
 
-### API Coverage: ~66% (49/74 endpoints)
+### DB API Hook Coverage: 25% (18/73 endpoints)
 
-See `audit-api-coverage/api-coverage.md` for detailed breakdown.
+See `audit-api-coverage/api-coverage-report-2026-01-10.md` for full breakdown.
 
-| Category | Available | Implemented | Coverage |
-|----------|-----------|-------------|----------|
-| Course | 9 | 6 | 67% |
-| Course Module | 9 | 6 | 67% |
-| SLT | 7 | 6 | 86% |
-| Lesson | 5 | 4 | 80% |
-| Assignment | 5 | 4 | 80% |
-| Assignment Commitment | 10 | 8 | 80% |
-| Introduction | 4 | 4 | 100% |
-| Auth | 3 | 3 | 100% |
-| User | 7 | 0 | 0% |
-| Project/Task | ~15 | 0 | 0% |
+**Implemented Hooks** (18):
+| Category | Hooks |
+|----------|-------|
+| Course | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse` |
+| Modules | `useCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus` |
+| SLTs | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT` |
+| Lessons | `useLessons`, `useLesson`, `useCreateLesson` |
+
+**Missing High-Priority Hooks**:
+- Assignment: create, update, get (5 endpoints)
+- Assignment Commitments: create, update, review, list (7 endpoints)
+- Course Minting: create, mint, confirm-mint (3 endpoints)
+- Introductions: create, update, get (5 endpoints)
 
 ---
 
@@ -258,12 +322,123 @@ All transaction components now use `useAndamioTransaction` for standardized side
 | @meshsdk/core | ^2.x | Cardano wallet |
 | @tiptap/react | ^2.x | Rich text editor |
 | @dnd-kit/core | ^6.x | Drag and drop |
-| @andamio/db-api | ^0.5.x | API types & schemas |
-| @andamio/transactions | ^0.1.x | Transaction definitions |
+| @andamio/db-api-types | ^1.1.x | API types & schemas |
+| @andamio/transactions | ^0.5.x | Transaction definitions |
 
 ---
 
 ## Recent Changes
+
+### January 10, 2026 (Session 4) - API Migration & Transaction Fixes ✅
+
+**Go API RESTful Migration Complete**: Migrated all 50+ API endpoint calls to new role-based path structure.
+
+**Migration Pattern**: Changed from `POST /endpoint` with body to `GET /{system}/{role}/{resource}/{action}` with path params.
+
+**Example Changes**:
+- `POST /course/list` → `GET /course/owner/courses/list`
+- `POST /course/get` → `GET /course/public/course/get/{policy_id}`
+- `POST /assignment-commitment/create` → `POST /course/student/assignment-commitment/create`
+
+**Files Updated**: 36 files across hooks, components, and pages. Full audit report at `.claude/skills/audit-api-coverage/API-AUDIT-2026-01-10.md`.
+
+**Transaction Partial Signing Fix**: Fixed Eternl wallet "ErrorSignTx.canOnlySignPartially" error.
+- Added `partialSign` property to `AndamioTransactionDefinition` type
+- Set `partialSign: true` on `INSTANCE_PROJECT_CREATE` definition
+- Updated `useAndamioTransaction` to pass through `partialSign` from definition
+
+**Null Safety Fix**: Fixed `truncateTxHash` crash when `txHash` is undefined in `PendingTxPopover`.
+
+**Project Dashboard Role Detection**: `/studio/project/[treasurynft]` now detects both owner and manager roles.
+- Owners see an info banner explaining their capabilities
+- Managers can fully manage the project
+- Uses Andamioscan `getManagingProjects` to check manager status via on-chain data
+
+**Skill Consolidation**: Merged 3 styling skills into unified `design-system` skill with 3 modes: `review`, `diagnose`, `reference`.
+
+### January 10, 2026 (Session 3) - Eternl Wallet Authentication Fixed ✅
+
+**Fixed Authentication for Eternl Wallet**: Wallet-based authentication now works with Eternl and other wallets that return hex-encoded addresses.
+
+**Root Causes Found & Fixed**:
+1. **Address Format Mismatch**: Eternl returns hex addresses (e.g., `00db...`), but Mesh SDK's `signData` was internally calling `Address.fromBech32()` which failed on hex input.
+2. **Parameter Order Reversed**: Mesh SDK ISigner interface expects `signData(payload, address?)` but we were calling `signData(address, payload)`.
+
+**Solution** (`src/contexts/andamio-auth-context.tsx`):
+- Import `core` from `@meshsdk/core`
+- Detect address format: if starts with "addr" it's already bech32, otherwise convert
+- Convert hex → bech32 using `core.Address.fromString(hex).toBech32()`
+- Fixed parameter order: `wallet.signData(nonce, bech32Address)`
+
+**Testing Status**:
+- ✅ Eternl wallet (preprod) - authentication successful
+- ⏳ Other wallets (Nami, Flint, Yoroi, Lace) - needs testing
+
+**Skill Consolidation**:
+- Merged `global-style-checker`, `review-styling`, `theme-expert` → **`design-system`** (3 modes: review, diagnose, reference)
+- Merged `plan-andamioscan-integration` → **`audit-api-coverage`** (added Phase 3 interview workflows)
+- Fixed ESLint warnings across 7 files
+
+### January 10, 2026 (Session 2) - API Coverage Audit Complete
+
+**Full API Audit**: Completed comprehensive audit of all 3 API sub-systems.
+
+**Coverage Statistics**:
+| API | Endpoints | Implemented | Coverage |
+|-----|-----------|-------------|----------|
+| Andamio DB API | 73 | 18 hooks | 25% |
+| Andamio Tx API | 16 | 16 definitions | 100% |
+| Andamioscan | 36 | 21 functions | 58% |
+| **Total** | **125** | **55** | **44%** |
+
+**Documentation Created**:
+- `audit-api-coverage/db-api-endpoints.md` - 73 endpoints by category
+- `audit-api-coverage/tx-api-endpoints.md` - 16 transaction mappings
+- `audit-api-coverage/andamioscan-endpoints.md` - 36 endpoints + 21 client functions
+- `audit-api-coverage/api-coverage-report-2026-01-10.md` - Full report with recommendations
+- `audit-api-coverage/api-coverage.md` - Updated quick reference
+
+**Key Findings**:
+1. **Tx API 100% Complete** - All 16 transaction types have definitions and UI components
+2. **16 Event endpoints missing** - Andamioscan event endpoints would replace Koios polling
+3. **Assignment system gap** - 12 DB API endpoints need hooks for student interactions
+4. **Cache invalidation needed** - React Query invalidation after mutations needs audit
+
+**Monday Priorities Set**: Event endpoints → Assignment hooks → Cache audit
+
+### January 10, 2026 (Session 1) - Types Package Migration Complete
+
+**Major Migration**: Completed migration from `@andamio/db-api` to `@andamio/db-api-types@1.1.0` and `@andamio/transactions@0.5.0`.
+
+**Type Changes** (38 files updated):
+| Old Type | New Type |
+|----------|----------|
+| `ListOwnedCoursesOutput` | `CourseListResponse` |
+| `CourseOutput` | `CourseResponse` |
+| `CourseModuleOutput` | `CourseModuleResponse` |
+| `LessonWithSLTResponse` | `LessonResponse` |
+| `AssignmentCommitmentWithAssignmentResponse` | `AssignmentCommitmentResponse` |
+
+**Property Renames**:
+- `slt_index` → `module_index` (on SLTs and lessons)
+- `task.index` → `task.task_index`
+- `learner_access_token_alias` → `access_token_alias`
+- Flattened `commitment.assignment.*` → `commitment.module_code`, `commitment.assignment_title`
+
+**Status Enum Changes**: `DRAFT | PENDING_TX | ON_CHAIN` (APPROVED removed)
+
+**Removed Data** (UI simplified):
+- Treasury: `total_ada`, `escrows`, `_count`
+- Commitments: `created`, `updated` timestamps
+- Tokens: `subject`, `name`, `ticker`, `asset_name_decoded`
+
+**Transaction Renames**:
+- `COMMIT_TO_ASSIGNMENT` → `COURSE_STUDENT_ASSIGNMENT_COMMIT`
+- `BURN_LOCAL_STATE` → `COURSE_STUDENT_CREDENTIAL_CLAIM`
+- `LEAVE_ASSIGNMENT` → `COURSE_STUDENT_ASSIGNMENT_UPDATE`
+- `ACCEPT_ASSIGNMENT` + `DENY_ASSIGNMENT` → `COURSE_TEACHER_ASSIGNMENTS_ASSESS`
+
+**All type errors resolved - typecheck passes.**
 
 ### January 9, 2026 (Session 2) - Go API Migration Complete
 

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon } from "~/components/icons";
-import { type CourseModuleOutput } from "@andamio/db-api";
+import { type CourseModuleResponse } from "@andamio/db-api-types";
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { cn } from "~/lib/utils";
@@ -38,7 +38,7 @@ interface ModuleCompletion {
 // Module Status Icon
 // =============================================================================
 
-function ModuleStatusIcon({ status }: { status: CourseModuleOutput["status"] }) {
+function ModuleStatusIcon({ status }: { status: CourseModuleResponse["status"] }) {
   const config: Record<string, { icon: typeof SuccessIcon; color: string; label: string }> = {
     ON_CHAIN: { icon: SuccessIcon, color: "text-success", label: "On-Chain" },
     PENDING_TX: { icon: PendingIcon, color: "text-info animate-pulse", label: "Pending" },
@@ -132,7 +132,7 @@ function ModuleProgressIndicator({
 // =============================================================================
 
 export interface StudioModuleCardProps {
-  courseModule: CourseModuleOutput;
+  courseModule: CourseModuleResponse;
   courseNftPolicyId: string;
   /** Show the 6-step wizard progress indicator */
   showProgress?: boolean;

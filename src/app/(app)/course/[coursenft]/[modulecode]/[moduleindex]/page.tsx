@@ -94,7 +94,7 @@ export default function LessonDetailPage() {
           mode="public"
           course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
           courseModule={{ code: courseModule.module_code, title: courseModule.title }}
-          lesson={{ index: lesson.slt_index, title: lesson.title ?? undefined }}
+          lesson={{ index: lesson.module_index, title: lesson.title ?? undefined }}
           currentPage="lesson"
         />
       )}
@@ -113,7 +113,7 @@ export default function LessonDetailPage() {
         <AndamioCardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <AndamioCardDescription>Learning Target #{lesson.slt_index}</AndamioCardDescription>
+              <AndamioCardDescription>Learning Target #{lesson.module_index}</AndamioCardDescription>
               <AndamioCardTitle>{lesson.slt_text}</AndamioCardTitle>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function LessonDetailPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            {lesson.title ?? `Lesson ${lesson.slt_index}`}
+            {lesson.title ?? `Lesson ${lesson.module_index}`}
           </h1>
           {lesson.description && (
             <AndamioText variant="lead" className="mt-2">

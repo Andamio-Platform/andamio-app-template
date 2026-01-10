@@ -37,7 +37,7 @@ import {
   extractOnChainData,
   type TransactionConfirmation,
 } from "~/lib/cardano-indexer";
-import type { CourseModuleOutput } from "@andamio/db-api";
+import type { CourseModuleResponse } from "@andamio/db-api-types";
 
 /**
  * Pending transaction to monitor
@@ -162,10 +162,11 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         console.warn(`[PendingTx] No moduleHash found in on-chain data for ${tx.txHash}`);
       }
 
+      // Go API: POST /course/teacher/course-module/confirm-transaction
       // Confirm blockchain transaction and update module status to ON_CHAIN
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-module/confirm-transaction`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/confirm-transaction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -183,7 +184,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         throw new Error(`Failed to update module status: ${error.message ?? response.statusText}`);
       }
 
-      const updatedModule = (await response.json()) as CourseModuleOutput;
+      const updatedModule = (await response.json()) as CourseModuleResponse;
       pendingTxLogger.info(`Module status updated to ON_CHAIN:`, updatedModule);
 
       return updatedModule;
@@ -204,10 +205,11 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Extract networkEvidenceHash from on-chain data if available
       const networkEvidenceHash = onChainData.dataHash as string | undefined;
 
+      // Go API: POST /course/student/assignment-commitment/update-status
       // Confirm blockchain transaction and update assignment commitment status
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/assignment-commitment/update-status`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -403,13 +405,21 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
     try {
       pendingTxLogger.debug("Loading pending transactions from database...");
 
+      // Go API: GET /user/pending-transactions
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/pending-transactions`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/pending-transactions`
       );
 
+      // Handle 404/empty as "no pending transactions" - not an error
+      if (response.status === 404 || response.status === 204) {
+        pendingTxLogger.debug("No pending transactions in database (404/204)");
+        return;
+      }
+
       if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(`Failed to load pending transactions: ${error.message ?? response.statusText}`);
+        // Log but don't throw for non-critical endpoint failures
+        pendingTxLogger.warn("Pending transactions endpoint returned:", response.status);
+        return;
       }
 
       const dbTransactions = (await response.json()) as PendingTransaction[];
@@ -438,7 +448,8 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         return merged;
       });
     } catch (error) {
-      console.error("[PendingTx] Failed to load pending transactions from database:", error);
+      // Silently handle - pending tx loading is non-critical
+      pendingTxLogger.debug("Failed to load pending transactions:", error);
     }
   }, [jwt, authenticatedFetch]);
 

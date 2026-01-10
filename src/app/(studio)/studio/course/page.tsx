@@ -60,7 +60,7 @@ import { cn } from "~/lib/utils";
  * Split-pane layout: courses list on left, preview on right
  */
 export default function StudioCourseListPage() {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const alias = user?.accessTokenAlias ?? undefined;
   const { setActions } = useStudioHeader();
 
@@ -377,7 +377,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
     const total = modules.length;
     const onChain = modules.filter((m) => m.status === "ON_CHAIN").length;
     const draft = modules.filter((m) => m.status === "DRAFT").length;
-    const approved = modules.filter((m) => m.status === "APPROVED").length;
+    const approved = 0; // APPROVED status no longer exists
     const totalSlts = modules.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
     return { total, onChain, draft, approved, totalSlts };
   }, [modules]);
@@ -649,8 +649,9 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
 
     setIsSubmitting(true);
     try {
+      // Go API: POST /course/owner/course/mint
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/create-on-submit-minting-tx`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/mint`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -177,7 +177,7 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 ```typescript
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
-import { type YourType } from "@andamio/db-api";
+import { type YourType } from "@andamio/db-api-types";
 
 export function MyComponent() {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();

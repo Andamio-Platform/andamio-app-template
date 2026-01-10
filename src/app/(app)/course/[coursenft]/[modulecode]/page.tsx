@@ -55,18 +55,18 @@ export default function ModuleLessonsPage() {
     if (!slts) return [];
 
     return slts.map((slt) => {
-      const lesson = lessons?.find((l) => l.slt_index === slt.module_index);
+      const lesson = lessons?.find((l) => l.module_index === slt.module_index);
       return {
         module_index: slt.module_index,
         slt_text: slt.slt_text,
-        slt_id: slt.id,
+        slt_id: `slt-${slt.module_index}`,
         lesson: lesson
           ? {
-              title: lesson.title,
-              description: lesson.description,
-              image_url: lesson.image_url,
-              video_url: lesson.video_url,
-              live: lesson.live,
+              title: lesson.title ?? null,
+              description: lesson.description ?? null,
+              image_url: lesson.image_url ?? null,
+              video_url: lesson.video_url ?? null,
+              live: lesson.live ?? null,
             }
           : undefined,
       };

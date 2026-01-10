@@ -12,7 +12,7 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { EnrollInCourse } from "~/components/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
-import { BURN_LOCAL_STATE } from "@andamio/transactions";
+import { COURSE_STUDENT_CREDENTIAL_CLAIM } from "@andamio/transactions";
 import { buildAccessTokenUnit } from "~/lib/access-token-utils";
 import {
   SuccessIcon,
@@ -76,7 +76,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/credential/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/credential/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -111,7 +111,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
       try {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/credential/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/credential/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -296,7 +296,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {/* Exit Course */}
         <div className="pt-4 border-t">
           <AndamioTransaction
-            definition={BURN_LOCAL_STATE}
+            definition={COURSE_STUDENT_CREDENTIAL_CLAIM}
             inputs={{
               user_access_token: buildAccessTokenUnit(
                 user?.accessTokenAlias ?? "",

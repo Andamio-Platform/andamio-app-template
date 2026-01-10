@@ -42,7 +42,7 @@ import {
   CloseIcon,
   BlockIcon,
 } from "~/components/icons";
-import { type ListOwnedTreasuriesOutput } from "@andamio/db-api";
+import { type TreasuryListResponse } from "@andamio/db-api-types";
 import { TasksAssess } from "~/components/transactions";
 
 interface TaskSubmission {
@@ -55,10 +55,6 @@ interface TaskSubmission {
   status: string;
   evidence?: unknown;
   submitted_at?: string;
-}
-
-interface ApiError {
-  message?: string;
 }
 
 // Status color mapping
@@ -87,9 +83,9 @@ const formatStatus = (status: string): string => {
 export default function ManagerDashboardPage() {
   const params = useParams();
   const treasuryNftPolicyId = params.treasurynft as string;
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [project, setProject] = useState<ListOwnedTreasuriesOutput[0] | null>(null);
+  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<TaskSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,9 +112,9 @@ export default function ManagerDashboardPage() {
     setError(null);
 
     try {
-      // Fetch project details
+      // Go API: POST /project/owner/treasury/list-owned
       const projectResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list-owned`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -130,7 +126,7 @@ export default function ManagerDashboardPage() {
         throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
       }
 
-      const projectsData = (await projectResponse.json()) as ListOwnedTreasuriesOutput;
+      const projectsData = (await projectResponse.json()) as TreasuryListResponse;
       const projectData = projectsData.find(
         (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
       );

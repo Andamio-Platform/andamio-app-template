@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { IconComponent } from "~/types/ui";
-import type { CourseModuleOutput, CourseOutput, ListSLTsOutput, AssignmentOutput, IntroductionOutput, ListLessonsOutput } from "@andamio/db-api";
+import type { CourseModuleResponse, CourseResponse, SLTListResponse, AssignmentResponse, IntroductionResponse, LessonListResponse } from "@andamio/db-api-types";
 
 /**
  * Wizard step identifiers
@@ -46,12 +46,12 @@ export interface StepCompletion {
  * Data loaded for the wizard
  */
 export interface WizardData {
-  course: CourseOutput | null;
-  courseModule: CourseModuleOutput | null;
-  slts: ListSLTsOutput;
-  assignment: AssignmentOutput | null;
-  introduction: IntroductionOutput | null;
-  lessons: ListLessonsOutput;
+  course: CourseResponse | null;
+  courseModule: CourseModuleResponse | null;
+  slts: SLTListResponse;
+  assignment: AssignmentResponse | null;
+  introduction: IntroductionResponse | null;
+  lessons: LessonListResponse;
   isLoading: boolean;
   error: string | null;
 }

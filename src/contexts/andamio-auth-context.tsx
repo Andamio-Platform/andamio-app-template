@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useWallet } from "@meshsdk/react";
+import { core } from "@meshsdk/core";
 import {
   authenticateWithWallet,
   storeJWT,
@@ -307,17 +308,53 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     setAuthError(null);
 
     try {
-      // Get wallet address
-      const address = await wallet.getChangeAddress();
+      // Get wallet address (may be hex or bech32 depending on wallet)
+      const rawAddress = await wallet.getChangeAddress();
+
+      if (!rawAddress || rawAddress.length < 10) {
+        console.error("Invalid address from wallet:", rawAddress);
+        throw new Error(`Invalid wallet address: ${rawAddress || "(empty)"}`);
+      }
+
+      // Convert to bech32 if needed (Eternl returns hex, other wallets may return bech32)
+      let bech32Address: string;
+      if (rawAddress.startsWith("addr")) {
+        // Already bech32 format
+        bech32Address = rawAddress;
+      } else {
+        // Hex format - convert to bech32 using Mesh SDK
+        try {
+          const addressObj = core.Address.fromString(rawAddress);
+          if (!addressObj) {
+            throw new Error("Failed to parse address");
+          }
+          bech32Address = addressObj.toBech32();
+          authLogger.debug("Converted hex address to bech32:", { hex: rawAddress.slice(0, 20) + "...", bech32: bech32Address });
+        } catch (conversionError) {
+          console.error("Failed to convert address format:", conversionError);
+          throw new Error(`Unable to convert wallet address format: ${rawAddress.slice(0, 20)}...`);
+        }
+      }
+
+      // Debug logging
+      authLogger.debug("Authentication addresses:", {
+        rawAddress: rawAddress.slice(0, 20) + "...",
+        bech32Address,
+        walletName,
+      });
 
       // Authenticate
       const authResponse = await authenticateWithWallet({
         signMessage: async (nonce: string) => {
-          // Sign the nonce - Mesh SDK's signData requires (address, payload)
-          const signature = await wallet.signData(address, nonce);
+          authLogger.debug("Signing nonce:", { nonce: nonce.slice(0, 20) + "...", length: nonce.length });
+          authLogger.debug("Using bech32 address for signing:", bech32Address);
+
+          // Mesh SDK ISigner interface: signData(payload: string, address?: string)
+          // Note: payload comes FIRST, address is optional second parameter
+          const signature = await wallet.signData(nonce, bech32Address);
           return signature;
         },
-        address,
+        address: bech32Address, // Always send bech32 to the API
         walletName: walletName ?? undefined,
         convertUTF8: false, // Try false first, can be made configurable
         getAssets: async () => {

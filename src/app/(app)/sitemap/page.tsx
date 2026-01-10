@@ -30,7 +30,7 @@ import {
   WarningIcon,
   ServerIcon,
 } from "~/components/icons";
-import { type ListOwnedCoursesOutput, type ListPublishedCoursesOutput, type ListPublishedTreasuriesOutput, type ListOwnedTreasuriesOutput } from "@andamio/db-api";
+import { type CourseListResponse, type TreasuryListResponse } from "@andamio/db-api-types";
 import type { RouteCategory } from "~/types/ui";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -294,10 +294,10 @@ const dynamicRouteTemplates: RouteCategory[] = [
 
 export default function SitemapPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [ownedCourses, setOwnedCourses] = useState<ListOwnedCoursesOutput>([]);
-  const [publishedCourses, setPublishedCourses] = useState<ListPublishedCoursesOutput>([]);
-  const [publishedProjects, setPublishedProjects] = useState<ListPublishedTreasuriesOutput>([]);
-  const [ownedProjects, setOwnedProjects] = useState<ListOwnedTreasuriesOutput>([]);
+  const [ownedCourses, setOwnedCourses] = useState<CourseListResponse>([]);
+  const [publishedCourses, setPublishedCourses] = useState<CourseListResponse>([]);
+  const [publishedProjects, setPublishedProjects] = useState<TreasuryListResponse>([]);
+  const [ownedProjects, setOwnedProjects] = useState<TreasuryListResponse>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch courses and projects for dynamic route examples
@@ -305,22 +305,18 @@ export default function SitemapPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch published courses (public) - GET /courses/published
+        // Go API: GET /course/public/courses/list
         const pubCourseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/published`,
-          {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/courses/list`
         );
         if (pubCourseResponse.ok) {
-          const pubData = (await pubCourseResponse.json()) as ListPublishedCoursesOutput;
+          const pubData = (await pubCourseResponse.json()) as CourseListResponse;
           setPublishedCourses(pubData ?? []);
         }
 
-        // Fetch published projects (public) - POST /projects/list
+        // Go API: POST /project/public/treasury/list
         const pubProjectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list`,
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -328,24 +324,29 @@ export default function SitemapPage() {
           }
         );
         if (pubProjectResponse.ok) {
-          const pubData = (await pubProjectResponse.json()) as ListPublishedTreasuriesOutput;
+          const pubData = (await pubProjectResponse.json()) as TreasuryListResponse;
           setPublishedProjects(pubData ?? []);
         }
 
         // Fetch owned data if authenticated
         if (isAuthenticated) {
-          // Owned courses - GET /courses/owned
+          // Go API: POST /course/owner/courses/list
           const ownedCourseResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            }
           );
           if (ownedCourseResponse.ok) {
-            const ownedData = (await ownedCourseResponse.json()) as ListOwnedCoursesOutput;
+            const ownedData = (await ownedCourseResponse.json()) as CourseListResponse;
             setOwnedCourses(ownedData ?? []);
           }
 
-          // Owned projects - POST /projects/owned
+          // Go API: POST /project/owner/treasury/list-owned
           const ownedProjectResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/owned`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -353,7 +354,7 @@ export default function SitemapPage() {
             }
           );
           if (ownedProjectResponse.ok) {
-            const ownedData = (await ownedProjectResponse.json()) as ListOwnedTreasuriesOutput;
+            const ownedData = (await ownedProjectResponse.json()) as TreasuryListResponse;
             setOwnedProjects(ownedData ?? []);
           }
         }

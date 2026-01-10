@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: December 19, 2025
+> **Last Updated**: January 10, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -9,18 +9,25 @@
 ## Andamio V2 Release Schedule
 
 ```
-TODAY ──────────────────────────────────────────────────── 2025-12-19
+GO API MIGRATION COMPLETE ──────────────────────────────── 2026-01-09 (Thu) ✅
   │
-  │   Template optimization, React Query migration
-  │
-  ▼
-PREPROD V2 RELEASE ─────────────────────────────────────── 2026-01-09
-  │
-  │   3 days prep
+  │   50+ endpoints migrated to role-based paths
   │
   ▼
-ANDAMIO PIONEERS PROGRAM BEGINS ────────────────────────── 2026-01-12
-  │   Featured Activity: Preprod Testing
+TODAY ──────────────────────────────────────────────────── 2026-01-10 (Fri) ← We are here
+  │
+  │   Weekend: Final testing, wallet compatibility, bug fixes
+  │
+  ▼
+V2 PREPROD ROLLOUT BEGINS ──────────────────────────────── 2026-01-12 (Mon)
+  │
+  ▼
+ANDAMIO PIONEERS LAUNCH ────────────────────────────────── 2026-01-14 (Wed)
+  │
+  │   Pioneers testing on preprod
+  │
+  ▼
+FINAL DEMOS ────────────────────────────────────────────── 2026-01-16 (Fri)
   │
   │   V1 → V2 Migration Features
   │   (app.andamio.io focus, not this template)
@@ -36,13 +43,15 @@ MAINNET V2 LAUNCH ────────────────────�
 
 ### Key Dates
 
-| Date | Milestone |
-|------|-----------|
-| 2025-12-19 | Today - Template optimization |
-| 2026-01-09 | Andamio V2 Preprod Release |
-| 2026-01-12 | Andamio Pioneers Program Begins |
-| 2026-01-12 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) |
-| 2026-02-06 | Andamio V2 Mainnet Launch |
+| Date | Milestone | Status |
+|------|-----------|--------|
+| 2026-01-09 (Thu) | Go API Migration Complete | ✅ Complete |
+| **2026-01-10 (Fri)** | **Today - Bug fixes, testing** | 🔄 Active |
+| 2026-01-12 (Mon) | V2 Preprod Rollout Begins | ⏳ Monday |
+| **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | |
+| **2026-01-16 (Fri)** | **Final Demos** | |
+| 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | |
+| 2026-02-06 | Andamio V2 Mainnet Launch | |
 
 ### Note on Template vs Production App
 
@@ -57,31 +66,32 @@ This template continues as the **reference implementation** and will receive upd
 
 ## Current Focus
 
-### React Query Migration (Active)
+### Pre-Pioneers Stabilization (4 Days to Pioneers)
 
-**Goal**: Replace `useState`/`useEffect` patterns with React Query hooks
+**Goal**: Ensure stable, tested platform for Pioneers Program launch on Wednesday January 14.
 
-**Status**:
-- 18 hooks created (`src/hooks/api/`)
-- 1 page migrated as demo
-- Migration roadmap documented
+**Completed Today** (Session 4):
+- ✅ Go API RESTful migration (50+ endpoints)
+- ✅ Eternl wallet `partialSign` fix for project creation
+- ✅ Project dashboard role detection (owner vs manager)
+- ✅ Null safety fixes in PendingTxPopover
 
-**Next Steps**:
-1. Migrate remaining course pages
-2. Migrate wizard step components
-3. Deprecate old useState-based hooks
+**Remaining Before Pioneers**:
+1. **Wallet Testing**: Test authentication with Nami, Flint, Yoroi, Lace, Vespr
+2. **Assignment System Hooks**: 12 DB API endpoints need React Query hooks for student interactions
+3. **Cache Invalidation Audit**: Verify `queryClient.invalidateQueries()` after transactions
 
-See `audit-api-coverage/api-recommendations-2025-12-19.md` for details.
+See `STATUS.md` for Monday Planning priorities.
 
 ---
 
 ## Phase Overview
 
 ```
-Phase 1: Course & Learning System ━━━━━━━━━━━━━━━━ ✅ Complete
-Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━━ 🔄 In Progress (Now → Jan 2026)
-Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 📋 Planned (Post-Mainnet)
-Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (2026)
+Phase 1: Course & Learning System ━━━━━━━━━━━━━━━━ ✅ Complete (15/15 routes)
+Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━━ ✅ Complete (Go API migrated)
+Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (6/13 routes, 9/9 tx)
+Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 
 ---
@@ -139,39 +149,45 @@ Focus on developer experience and performance.
 
 ---
 
-## 📋 Phase 3: Project & Contribution System (Planned)
+## 🔄 Phase 3: Project & Contribution System (In Progress)
 
 Full project/task/contributor workflow.
 
-**Timeline**: Post-Mainnet Launch (after 2026-02-06)
+**Timeline**: Active development, continuing post-Mainnet
 
-### What's Documented
+### What's Implemented
 
-- 13 routes mapped in `project-local-state.md`
-- 16 API endpoints identified
-- Task commitment status flow designed
+**Routes** (6/13 complete):
+- ✅ `/project` - Project catalog
+- ✅ `/project/[treasurynft]` - Project detail with role detection
+- ✅ `/project/[treasurynft]/contributor` - Contributor dashboard
+- ✅ `/studio/project` - Project management
+- ✅ `/studio/project/[treasurynft]` - Project dashboard (owner/manager aware)
+- ✅ `/studio/project/[treasurynft]/manager` - Manager dashboard
 
-### Not Yet Started
+**Transaction Components** (9/9 complete):
+- ✅ `CreateProject` - Create project treasury
+- ✅ `ProjectEnroll` - Enroll + initial task commit
+- ✅ `TaskCommit` - Commit to task with evidence
+- ✅ `TaskAction` - Update commitment
+- ✅ `ProjectCredentialClaim` - Claim earned credentials
+- ✅ `TasksAssess` - Manager: assess submissions
+- ✅ `TasksManage` - Manager: manage tasks
+- ✅ `ManagersManage` - Manager: manage managers
+- ✅ `BlacklistManage` - Manager: manage blacklist
 
-- No routes implemented
-- No transactions integrated
-- Awaiting protocol team specs for some validators
+### Remaining Routes (7)
 
-### Key Components Needed
+**Public**:
+- `/project/[treasurynft]/[taskhash]` - Task detail with commitment
 
-**Public Routes** (3):
-- `/project` - Project catalog
-- `/project/[treasurynft]` - Project detail
-- `/project/[treasurynft]/[taskhash]` - Task detail
-
-**Studio Routes** (10):
-- Project dashboard, treasury management
-- Contributor management, commitments
-- Task CRUD, transaction history
-
-**Transactions** (~9):
-- Contributor: join, commit, update, leave, claim
-- Manager: accept, deny, distribute
+**Studio**:
+- `/studio/project/[treasurynft]/draft-tasks` - Task list management
+- `/studio/project/[treasurynft]/draft-tasks/new` - Create new task
+- `/studio/project/[treasurynft]/draft-tasks/[taskindex]` - Edit task
+- `/studio/project/[treasurynft]/manage-treasury` - Treasury management
+- `/studio/project/[treasurynft]/manage-contributors` - Contributor management
+- `/studio/project/[treasurynft]/commitments` - Commitment review
 
 ---
 

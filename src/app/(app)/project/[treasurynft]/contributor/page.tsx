@@ -25,15 +25,11 @@ import {
   TaskIcon,
   CredentialIcon,
 } from "~/components/icons";
-import { type ListPublishedTreasuriesOutput, type CreateTaskOutput } from "@andamio/db-api";
+import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
 import { ProjectEnroll, TaskCommit, ProjectCredentialClaim } from "~/components/transactions";
 import { formatLovelace } from "~/lib/cardano-utils";
 
-type TaskListOutput = CreateTaskOutput[];
-
-interface ApiError {
-  message?: string;
-}
+type TaskListOutput = TaskResponse[];
 
 // Contributor status from on-chain data
 type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_accepted" | "can_claim";
@@ -51,17 +47,18 @@ type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_ac
 function ContributorDashboardContent() {
   const params = useParams();
   const treasuryNftPolicyId = params.treasurynft as string;
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  useAndamioAuth(); // Auth context required for authenticated routes
 
-  const [project, setProject] = useState<ListPublishedTreasuriesOutput[0] | null>(null);
+  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
   const [tasks, setTasks] = useState<TaskListOutput>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Contributor state - in a real app this would come from on-chain data
   const [contributorStatus, setContributorStatus] = useState<ContributorStatus>("not_enrolled");
-  const [contributorStateId, setContributorStateId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<CreateTaskOutput | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [contributorStateId, _setContributorStateId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
 
   // Mock evidence for demo - in real app this would come from an editor
   const [taskEvidence] = useState({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "My task submission..." }] }] });
@@ -71,9 +68,9 @@ function ContributorDashboardContent() {
     setError(null);
 
     try {
-      // Fetch project details
+      // Go API: POST /project/public/treasury/list
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/projects/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -85,7 +82,7 @@ function ContributorDashboardContent() {
         throw new Error(`Project not found (${projectResponse.status})`);
       }
 
-      const projectsData = (await projectResponse.json()) as ListPublishedTreasuriesOutput;
+      const projectsData = (await projectResponse.json()) as TreasuryListResponse;
       const projectData = projectsData.find(
         (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
       );
@@ -96,14 +93,9 @@ function ContributorDashboardContent() {
 
       setProject(projectData);
 
-      // Fetch tasks
+      // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
       const tasksResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/tasks/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-        }
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
       );
 
       if (tasksResponse.ok) {
@@ -171,9 +163,7 @@ function ContributorDashboardContent() {
         <AndamioBadge variant="outline">
           <span className="font-mono text-xs">{treasuryNftPolicyId.slice(0, 16)}...</span>
         </AndamioBadge>
-        <AndamioBadge variant="secondary">
-          {formatLovelace(project.total_ada)} Available
-        </AndamioBadge>
+{/* Treasury balance removed - total_ada not available in new API */}
       </div>
 
       {/* Stats Cards */}
@@ -213,7 +203,7 @@ function ContributorDashboardContent() {
           <AndamioCardContent className="space-y-2">
             {liveTasks.map((task) => (
               <div
-                key={task.task_hash ?? task.index}
+                key={task.task_hash ?? task.task_index}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                   selectedTask?.task_hash === task.task_hash
                     ? "border-primary bg-primary/5"
@@ -243,7 +233,7 @@ function ContributorDashboardContent() {
           contributorStateId={contributorStateId ?? "0".repeat(56)} // Placeholder - would be generated
           projectTitle={project.title}
           taskHash={selectedTask.task_hash ?? ""}
-          taskCode={`TASK_${selectedTask.index}`}
+          taskCode={`TASK_${selectedTask.task_index}`}
           taskTitle={selectedTask.title ?? undefined}
           taskEvidence={taskEvidence}
           onSuccess={async () => {
@@ -259,7 +249,7 @@ function ContributorDashboardContent() {
           contributorStateId={contributorStateId ?? "0".repeat(56)}
           projectTitle={project.title}
           taskHash={selectedTask.task_hash ?? ""}
-          taskCode={`TASK_${selectedTask.index}`}
+          taskCode={`TASK_${selectedTask.task_index}`}
           taskTitle={selectedTask.title ?? undefined}
           taskEvidence={taskEvidence}
           onSuccess={async () => {

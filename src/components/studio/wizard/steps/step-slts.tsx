@@ -27,7 +27,7 @@ import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
-import type { ListSLTsOutput } from "@andamio/db-api";
+import type { SLTListResponse } from "@andamio/db-api-types";
 import { AndamioInput } from "~/components/andamio";
 
 interface StepSLTsProps {
@@ -35,7 +35,7 @@ interface StepSLTsProps {
   direction: number;
 }
 
-type SLT = ListSLTsOutput[number];
+type SLT = SLTListResponse[number];
 
 /**
  * StepSLTs - Define learning targets with "I can..." statements
@@ -89,9 +89,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     // Optimistic update - compute the list we'll set
     const optimisticSlt: SLT = {
-      id: `temp-${nextIndex}`,
       module_index: nextIndex,
       slt_text: text,
+      module_code: moduleCode,
+      policy_id: courseNftPolicyId,
     };
     const optimisticList = [...localSlts, optimisticSlt];
     setLocalSlts(optimisticList);
@@ -100,8 +101,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     addPendingOp(opId);
 
     try {
+      // Go API: POST /course/teacher/slt/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -119,14 +121,12 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         throw new Error(errorData.message ?? "Failed to create");
       }
 
-      // Update optimistic item with real ID from server and sync to context
-      const result = await response.json() as { id: string };
-      const finalList = optimisticList.map((s) => s.id === optimisticSlt.id ? { ...s, id: result.id } : s);
-      setLocalSlts(finalList);
-      updateSlts(finalList);
+      // Sync to context - the optimistic item is already correct
+      await response.json();
+      updateSlts(optimisticList);
     } catch (err) {
       // Rollback optimistic update
-      setLocalSlts((prev) => prev.filter((s) => s.id !== optimisticSlt.id));
+      setLocalSlts((prev) => prev.filter((s) => s.module_index !== optimisticSlt.module_index));
       setError(err instanceof Error ? err.message : "Failed to create");
     } finally {
       removePendingOp(opId);
@@ -151,8 +151,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     addPendingOp(opId);
 
     try {
+      // Go API: POST /course/teacher/slt/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -194,8 +195,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     addPendingOp(opId);
 
     try {
+      // Go API: POST /course/teacher/slt/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -255,8 +257,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = localSlts.findIndex((s) => s.id === active.id);
-    const newIndex = localSlts.findIndex((s) => s.id === over.id);
+    const oldIndex = localSlts.findIndex((s) => s.module_index === active.id);
+    const newIndex = localSlts.findIndex((s) => s.module_index === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
     // Optimistic update
@@ -265,20 +267,21 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     // Build the new order mapping
     const reorderData = reorderedSlts.map((slt, idx) => ({
-      id: slt.id,
+      id: slt.module_index,
       module_index: idx + 1,
     }));
 
     try {
+      // Go API: POST /course/teacher/slts/batch-update-indexes
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/slt/reorder`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slts/batch-update-indexes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_nft_policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            order: reorderData,
+            slts: reorderData,
           }),
         }
       );
@@ -352,13 +355,13 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
             onDragEnd={(e: DragEndEvent) => void handleDragEnd(e)}
           >
             <SortableContext
-              items={localSlts.map((s) => s.id)}
+              items={localSlts.map((s) => s.module_index)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
                 {localSlts.map((slt) => (
                   <SortableSltItem
-                    key={slt.id}
+                    key={slt.module_index}
                     slt={slt}
                     moduleCode={moduleCode}
                     isEditing={editingIndex === slt.module_index}
@@ -423,7 +426,7 @@ function SortableSltItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: slt.id });
+  } = useSortable({ id: slt.module_index });
 
   const style = {
     transform: CSS.Transform.toString(transform),

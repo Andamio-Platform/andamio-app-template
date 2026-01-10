@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { env } from "~/env";
 import { useAndamioAuth } from "./use-andamio-auth";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 
 /**
  * useOwnedCourses - Fetches owned courses with module counts
@@ -26,7 +26,7 @@ export interface UseOwnedCoursesResult {
   /**
    * List of owned courses (empty array until loaded)
    */
-  courses: ListOwnedCoursesOutput;
+  courses: CourseListResponse;
 
   /**
    * Module counts per course code
@@ -51,7 +51,7 @@ export interface UseOwnedCoursesResult {
 
 export function useOwnedCourses(): UseOwnedCoursesResult {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [courses, setCourses] = useState<ListOwnedCoursesOutput>([]);
+  const [courses, setCourses] = useState<CourseListResponse>([]);
   const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,20 +68,25 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
     setError(null);
 
     try {
-      // GET /courses/owned - returns courses owned by authenticated user
+      // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/courses/owned`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch courses: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as ListOwnedCoursesOutput;
+      const data = (await response.json()) as CourseListResponse;
       setCourses(data ?? []);
 
       // Fetch module counts for all courses using batch endpoint
-      // POST /course-modules/list accepts courseNftPolicyIds
+      // Go API: POST /course/teacher/course-modules/list
       if (data && data.length > 0) {
         try {
           const courseNftPolicyIds = data
@@ -90,11 +95,11 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
 
           if (courseNftPolicyIds.length > 0) {
             const modulesResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course-modules/list`,
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-modules/list`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ courseNftPolicyIds }),
+                body: JSON.stringify({ course_nft_policy_ids: courseNftPolicyIds }),
               }
             );
 

@@ -103,12 +103,12 @@ import { RequireAuth } from "~/components/auth/require-auth";
 ```
 
 ### Type-Safe API Calls
-Types imported directly from `@andamio/db-api` via npm workspaces:
+Types imported from `@andamio/db-api-types` package:
 
 ```typescript
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 
-const { data, isLoading, error } = useAndamioFetch<ListOwnedCoursesOutput>({
+const { data, isLoading, error } = useAndamioFetch<CourseListResponse>({
   endpoint: "/courses/owned",
   authenticated: true,
 });

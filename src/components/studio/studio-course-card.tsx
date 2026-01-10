@@ -2,7 +2,7 @@
 
 import React from "react";
 import { SuccessIcon, PendingIcon, AlertIcon, OnChainIcon } from "~/components/icons";
-import { type ListOwnedCoursesOutput } from "@andamio/db-api";
+import { type CourseListResponse } from "@andamio/db-api-types";
 import { cn } from "~/lib/utils";
 
 export interface HybridCourseStatus {
@@ -13,7 +13,7 @@ export interface HybridCourseStatus {
   onChainModuleCount: number;
   /** Whether user is admin/owner of the course (from /courses/owned) */
   isOwned?: boolean;
-  dbCourse?: ListOwnedCoursesOutput[number];
+  dbCourse?: CourseListResponse[number];
 }
 
 interface StudioCourseCardProps {

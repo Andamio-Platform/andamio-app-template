@@ -9,12 +9,12 @@
  * @example
  * ```tsx
  * // Simple GET request
- * const { data, isLoading, error } = useAndamioFetch<CourseOutput>({
+ * const { data, isLoading, error } = useAndamioFetch<CourseResponse>({
  *   endpoint: `/course/get?course_nft_policy_id=${courseId}`,
  * });
  *
  * // With authentication (uses JWT from useAndamioAuth)
- * const { data } = useAndamioFetch<CourseOutput>({
+ * const { data } = useAndamioFetch<CourseResponse>({
  *   endpoint: `/course/list`,
  *   authenticated: true,
  * });
@@ -34,7 +34,7 @@
  * import { LoadingState, ErrorState, EmptyState } from "~/components/andamio";
  *
  * function CoursePage({ courseId }: { courseId: string }) {
- *   const { data: course, isLoading, error, refetch } = useAndamioFetch<CourseOutput>({
+ *   const { data: course, isLoading, error, refetch } = useAndamioFetch<CourseResponse>({
  *     endpoint: `/course/get?course_nft_policy_id=${courseId}`,
  *   });
  *
@@ -87,7 +87,7 @@
  *
  * Before (30+ lines):
  * ```tsx
- * const [data, setData] = useState<CourseOutput | null>(null);
+ * const [data, setData] = useState<CourseResponse | null>(null);
  * const [isLoading, setIsLoading] = useState(true);
  * const [error, setError] = useState<string | null>(null);
  *
@@ -110,7 +110,7 @@
  *
  * After (4 lines):
  * ```tsx
- * const { data, isLoading, error } = useAndamioFetch<CourseOutput>({
+ * const { data, isLoading, error } = useAndamioFetch<CourseResponse>({
  *   endpoint: `/course/get?course_nft_policy_id=${id}`,
  *   deps: [id],
  * });
@@ -344,7 +344,7 @@ export function useAndamioFetch<TData, TBody = unknown>(
  * @example
  * ```tsx
  * // Fetching owned courses (protected endpoint)
- * const { data: courses, isLoading } = useAuthenticatedFetch<ListOwnedCoursesOutput>({
+ * const { data: courses, isLoading } = useAuthenticatedFetch<CourseListResponse>({
  *   endpoint: `/course/list`,
  * });
  * ```

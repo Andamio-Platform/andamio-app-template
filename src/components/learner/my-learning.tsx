@@ -14,9 +14,6 @@ import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHea
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
 import { AlertIcon, CourseIcon, SuccessIcon, PendingIcon, LessonIcon, OnChainIcon } from "~/components/icons";
-import { type z } from "zod";
-import { type getMyLearningOutputSchema } from "@andamio/db-api";
-
 /**
  * My Learning component - Shows learner's enrolled courses and assignment progress
  *
@@ -26,8 +23,20 @@ import { type getMyLearningOutputSchema } from "@andamio/db-api";
  * Performance: 1 API call instead of 50-100+ calls with previous implementation
  */
 
-type MyLearningData = z.infer<typeof getMyLearningOutputSchema>;
-type CourseWithProgress = MyLearningData['courses'][number];
+/**
+ * Type for course with progress data from my-learning endpoint
+ */
+interface CourseWithProgress {
+  course_nft_policy_id: string | null;
+  title: string;
+  description?: string | null;
+  commitment_count: number;
+  completed_count: number;
+}
+
+interface MyLearningData {
+  courses: CourseWithProgress[];
+}
 
 export function MyLearning() {
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
@@ -55,11 +64,11 @@ export function MyLearning() {
       setError(null);
 
       try {
-        learnerLogger.debug("Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`);
+        // Go API: GET /course/student/my-learning
+        learnerLogger.debug("Fetching my learning from:", `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/my-learning`);
 
-        // Single API call to get all courses with learner's commitments (GET /learner/my-learning)
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/my-learning`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/my-learning`
         );
 
         learnerLogger.debug("Response status:", response.status);

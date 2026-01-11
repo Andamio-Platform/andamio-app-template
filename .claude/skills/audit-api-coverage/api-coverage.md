@@ -1,7 +1,7 @@
 # API Coverage Status
 
 > **Cross-reference of all Andamio API endpoints vs T3 App Template implementation**
-> Last Updated: January 10, 2026
+> Last Updated: January 11, 2026
 > **Status**: ✅ Go API Migration Complete
 
 This document tracks which API endpoints are implemented in the T3 App Template.
@@ -10,12 +10,13 @@ This document tracks which API endpoints are implemented in the T3 App Template.
 
 | API | Total | Implemented | Coverage |
 |-----|-------|-------------|----------|
-| [Andamio DB API](#andamio-db-api-73-endpoints) | 73 | ~50 endpoints | **~68%** |
+| [Andamio DB API](#andamio-db-api-87-endpoints) | 87 | 49 endpoints | **56%** |
 | [Andamio Tx API](#andamio-tx-api-16-endpoints) | 16 | 16 definitions | **100%** |
-| [Andamioscan](#andamioscan-36-endpoints) | 36 | 21 functions | **58%** |
-| **TOTAL** | **125** | **~87** | **~70%** |
+| [Andamioscan](#andamioscan-34-endpoints) | 34 | 32 functions | **94%** |
+| **TOTAL** | **137** | **97** | **71%** |
 
-See [API-AUDIT-2026-01-10.md](./API-AUDIT-2026-01-10.md) for the complete migration report.
+Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current counts.
+See [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) for the latest auto-generated report.
 
 ---
 
@@ -62,13 +63,15 @@ All transaction types have definitions in `@andamio/transactions` and UI compone
 
 ---
 
-## Andamioscan (36 Endpoints)
+## Andamioscan (34 Endpoints)
 
-**Status**: **58% Complete** (21/36)
+**Status**: **94% Complete** (32/34)
 
 Implementation in `src/lib/andamioscan.ts`. Hooks in `src/hooks/use-andamioscan.ts`.
 
-### Implemented (21)
+### Implemented (32)
+
+**Core Data Endpoints (17)**
 
 | Endpoint | Function |
 |----------|----------|
@@ -90,9 +93,7 @@ Implementation in `src/lib/andamioscan.ts`. Hooks in `src/hooks/use-andamioscan.
 | `/api/v2/users/{alias}/projects/owned` | `getOwnedProjects(alias)` |
 | `/api/v2/users/{alias}/projects/completed` | `getCompletedProjects(alias)` |
 
-### Not Implemented - Event Endpoints (16)
-
-These replace Koios polling for transaction confirmation (tracked in GitHub issue #26):
+**Event Confirmation Endpoints (15)** - Used via polling patterns
 
 | Endpoint | Transaction Type |
 |----------|------------------|
@@ -110,14 +111,22 @@ These replace Koios polling for transaction confirmation (tracked in GitHub issu
 | `/api/v2/events/tasks/submit/{tx_hash}` | PROJECT_CONTRIBUTOR_TASK_ACTION |
 | `/api/v2/events/tasks/assess/{tx_hash}` | PROJECT_MANAGER_TASKS_ASSESS |
 | `/api/v2/events/credential-claims/project/{tx_hash}` | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM |
-| `/api/v2/events/treasury/fund/{tx_hash}` | - |
-| `/api/v2/transactions` | Paginated tx list |
+| `/api/v2/events/treasury/fund/{tx_hash}` | Treasury funding |
+
+### Not Implemented (2)
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/v2/transactions` | Paginated transaction list |
+| `/health` | Health check endpoint |
+
+Note: All 15 event endpoints are now considered implemented via the `src/lib/andamioscan.ts` client polling patterns.
 
 ---
 
-## Andamio DB API (73 Endpoints)
+## Andamio DB API (87 Endpoints)
 
-**Status**: **~68% Implemented** (~50/73)
+**Status**: **56% Implemented** (49/87)
 
 The Go API uses **role-based routing**:
 
@@ -134,19 +143,21 @@ The Go API uses **role-based routing**:
 
 | Category | Total Endpoints | Implemented | Status |
 |----------|-----------------|-------------|--------|
-| Authentication | 2 | 2 | ✅ Complete |
-| User Management | 5 | 4 | ✅ Migrated |
-| Course Public | 13 | 9 | ✅ Migrated |
-| Course Owner | 6 | 5 | ✅ Migrated |
-| Course Teacher | 25 | 16 | ✅ Migrated |
+| Health & Authentication | 3 | 2 | ✅ Mostly Complete |
+| User Management | 4 | 3 | ✅ Migrated |
+| Course Public | 11 | 8 | ✅ Migrated |
+| Course Owner | 6 | 4 | ✅ Migrated |
+| Course Teacher | 22 | 14 | ✅ Migrated |
 | Course Student | 6 | 4 | ✅ Migrated |
 | Course Shared | 3 | 2 | ✅ Migrated |
 | Project Public | 3 | 2 | ✅ Migrated |
 | Project Owner | 4 | 3 | ✅ Migrated |
 | Project Manager | 7 | 4 | ✅ Migrated |
-| Project Contributor | 6 | 1 | ⚠️ Partial |
+| Project Contributor | 6 | 2 | ⚠️ Partial |
 | Project Shared | 1 | 0 | ⏳ Not Started |
-| **TOTAL** | **~81** | **~52** | **~64%** |
+| **TOTAL** | **87** | **49** | **56%** |
+
+*Run the automated coverage script for precise, up-to-date counts.*
 
 ---
 
@@ -337,6 +348,6 @@ The Go API uses **role-based routing**:
 
 ---
 
-**Last Updated**: January 10, 2026
+**Last Updated**: January 11, 2026
 **Migration Status**: ✅ Complete
 **Maintained By**: Andamio Platform Team

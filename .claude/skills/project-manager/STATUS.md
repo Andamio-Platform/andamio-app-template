@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 10, 2026 (Session 4 - API Migration & Transaction Fixes)
+> **Last Updated**: January 11, 2026 (API Coverage Audit Script)
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -10,12 +10,13 @@ Current implementation status of the Andamio T3 App Template.
 
 | API | Endpoints | Implemented | Coverage | Priority |
 |-----|-----------|-------------|----------|----------|
-| **Andamio DB API** | 73 | 18 hooks | **25%** | High |
+| **Andamio DB API** | 87 | 49 | **56%** | High |
 | **Andamio Tx API** | 16 | 16 definitions | **100%** | Complete |
-| **Andamioscan** | 36 | 21 functions | **58%** | Medium |
-| **Overall** | **125** | **55** | **44%** | - |
+| **Andamioscan** | 34 | 32 functions | **94%** | Low |
+| **Overall** | **137** | **97** | **71%** | - |
 
-> Full report: `.claude/skills/audit-api-coverage/api-coverage-report-2026-01-10.md`
+> Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for live metrics.
+> Full report: `.claude/skills/audit-api-coverage/COVERAGE-REPORT.md`
 
 ---
 
@@ -25,13 +26,13 @@ Current implementation status of the Andamio T3 App Template.
 |---------|--------|--------|
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
 | **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
-| **Wallet Authentication** | ✅ **Fixed** | Eternl auth working; other wallets need testing |
-| **Event Endpoints (Andamioscan)** | 0/16 implemented | Transaction confirmation relies on Koios polling instead of entity-specific endpoints |
-| **Assignment System Hooks** | 0/12 endpoints | Cannot create/review assignments without DB API hooks |
+| **Wallet Authentication** | ✅ **Eternl Fixed** | Eternl auth working; other wallets need testing |
+| **Andamioscan Coverage** | ✅ **94% Complete** | 32/34 endpoints implemented (only `/health` and `/transactions` missing) |
+| **Assignment System Hooks** | Partial | Some assignment/commitment endpoints still need React Query hooks |
 
 **Workarounds in Place**:
 - Using workspace symlink for `@andamio/transactions` (local development works)
-- Koios polling handles transaction confirmation until Event endpoints are ready
+- Andamioscan polling patterns handle transaction confirmation
 
 **Testing Needed**:
 - Wallet authentication with: Nami, Flint, Yoroi, Lace, Vespr (some may return bech32 directly, some hex)
@@ -42,13 +43,14 @@ Current implementation status of the Andamio T3 App Template.
 
 | Date | Milestone | Impact on Template |
 |------|-----------|-------------------|
-| **2026-01-09 (Thu)** | Go API Migration Complete | ✅ 50+ endpoints migrated |
-| **2026-01-10 (Fri)** | **Today** | Bug fixes, testing |
+| **2026-01-09 (Fri)** | Go API Migration Complete | ✅ 50+ endpoints migrated |
+| **2026-01-10 (Sat)** | API Coverage Audit | ✅ Automated script created |
+| **2026-01-11 (Sun)** | **Today** | Documentation sync |
 | **2026-01-12 (Mon)** | V2 Preprod Rollout Begins | Rollout week starts |
 | **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | Preprod testing begins |
 | **2026-01-16 (Fri)** | **Final Demos** | Demo day |
 | **2026-01-16 → 2026-02-06** | V1→V2 Migration Focus | Work shifts to app.andamio.io |
-| **2026-02-06** | Andamio V2 Mainnet Launch | Feature backlog resumes |
+| **2026-02-06 (Fri)** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
 **Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
 
@@ -58,24 +60,23 @@ Current implementation status of the Andamio T3 App Template.
 
 **Context**: V2 Preprod Rollout begins Monday. Andamio Pioneers launches Wednesday January 14.
 
-### Priority 1: Event Endpoints (Andamioscan)
-**Impact**: Remove Koios polling dependency, faster transaction confirmation
+### Priority 1: Wallet Compatibility Testing
+**Impact**: Ensure all wallets work for Pioneers testing
 
-16 Event endpoints need client functions in `src/lib/andamioscan.ts`:
-- Access token mint, Course create, Teachers update, Modules manage
-- Student enrollment, Assignment submit, Assessment, Credential claim
-- Project create, join, tasks manage/submit/assess, project credential
+Test authentication with:
+- Nami, Flint, Yoroi, Lace, Vespr
+- Some may return bech32 directly, some hex (Eternl fix already in place)
 
-**Effort**: Medium (add functions, update `useAndamioTransaction`)
+**Effort**: Low (testing only)
 
 ### Priority 2: Assignment System Hooks (DB API)
 **Impact**: Enable student interactions during Pioneers testing
 
-12 endpoints need React Query hooks:
-- `GET /assignment/get/{policy_id}/{module_code}` - View assignment
-- `POST /assignment/create`, `POST /assignment/update` - Teacher ops
-- `POST /assignment-commitment/create`, `POST /assignment-commitment/update-evidence` - Student ops
-- `POST /assignment-commitment/review`, `POST /assignment-commitments/list-by-course` - Teacher review
+Missing React Query hooks for assignment workflows:
+- `GET /course/public/assignment/get/{policy_id}/{module_code}` - View assignment
+- `POST /course/teacher/assignment/create`, `update` - Teacher ops
+- `POST /course/student/assignment-commitment/create`, `update-evidence` - Student ops
+- `POST /course/teacher/assignment-commitment/review` - Teacher review
 
 **Effort**: Medium-High (hooks + UI integration)
 
@@ -90,9 +91,9 @@ Verify `queryClient.invalidateQueries()` called with correct keys in:
 **Effort**: Low (audit and fix)
 
 ### Deferred (Post-Pioneers)
-- Project System hooks (13 endpoints)
-- User Management hooks (5 endpoints)
-- Module Introductions hooks (5 endpoints)
+- Remaining DB API hooks (38 endpoints at 56% coverage)
+- Project System routes (7 remaining routes)
+- User Management hooks
 
 ---
 
@@ -100,10 +101,11 @@ Verify `queryClient.invalidateQueries()` called with correct keys in:
 
 | Area | Status | Progress |
 |------|--------|----------|
-| Course System | Stable | 15/15 routes, 25% DB API coverage |
-| Project System | In Progress | 6/13 routes, 8 transaction components |
-| Andamioscan Integration | **58% Complete** | 21/36 endpoints (Event endpoints pending) |
-| React Query Migration | Complete | 18 hooks created, 6 pages migrated |
+| Course System | Stable | 15/15 routes |
+| Project System | In Progress | 6/13 routes, 9 transaction components |
+| DB API Coverage | **56%** | 49/87 endpoints |
+| Tx API Coverage | **100%** | 16/16 definitions |
+| Andamioscan Coverage | **94%** | 32/34 endpoints |
 | Transaction System | **100% Complete** | 16/16 definitions, side effects working |
 | Styling System | Stable | Full semantic color system |
 
@@ -131,9 +133,9 @@ Verify `queryClient.invalidateQueries()` called with correct keys in:
 - `/studio/course/[coursenft]/[modulecode]/[moduleindex]` - Lesson editor
 - `/studio/course/[coursenft]/[modulecode]/introduction` - Introduction editor
 
-### DB API Hook Coverage: 25% (18/73 endpoints)
+### DB API Hook Coverage: 56% (49/87 endpoints)
 
-See `audit-api-coverage/api-coverage-report-2026-01-10.md` for full breakdown.
+See `audit-api-coverage/COVERAGE-REPORT.md` for full breakdown.
 
 **Implemented Hooks** (18):
 | Category | Hooks |

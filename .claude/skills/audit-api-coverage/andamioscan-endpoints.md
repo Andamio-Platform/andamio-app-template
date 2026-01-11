@@ -2,7 +2,8 @@
 
 > **Base URL**: `https://preprod.andamioscan.io/api`
 > **Docs**: [/api](https://preprod.andamioscan.io/api) (download OpenAPI Document)
-> **Total Endpoints**: 36
+> **Total Endpoints**: 34
+> **Last Updated**: January 11, 2026
 
 ## Summary by Category
 
@@ -10,9 +11,9 @@
 |----------|-------|-------------|
 | Health | 1 | Service health check |
 | Courses | 4 | Course list, details, student status, pending assessments |
-| Projects | 5 | Project list, details, contributor status, pending assessments |
+| Projects | 4 | Project list, details, contributor status, pending assessments |
 | Users | 9 | User state, courses (4 endpoints), projects (4 endpoints) |
-| Events | 16 | Transaction confirmation events |
+| Events | 15 | Transaction confirmation events |
 | Transactions | 1 | Paginated transaction list |
 
 ## Purpose
@@ -39,7 +40,7 @@ Andamioscan is a **read-only blockchain indexer** that provides:
 | GET | `/api/v2/courses/{course_id}/students/{alias}/status` | Student progress in course | `getCourseStudent(id, alias)` |
 | GET | `/api/v2/courses/teachers/{alias}/assessments/pending` | Pending assessments for teacher | `getPendingAssessments(alias)` |
 
-## Projects (5)
+## Projects (4)
 
 | Method | Path | Description | Client Function |
 |--------|------|-------------|-----------------|
@@ -62,7 +63,7 @@ Andamioscan is a **read-only blockchain indexer** that provides:
 | GET | `/api/v2/users/{alias}/projects/owned` | Projects user owns | `getOwnedProjects(alias)` |
 | GET | `/api/v2/users/{alias}/projects/completed` | Projects user completed | `getCompletedProjects(alias)` |
 
-## Events (16)
+## Events (15)
 
 Events provide **transaction confirmation** by tx_hash. These replace Koios polling.
 
@@ -126,4 +127,4 @@ import {
 
 ---
 
-*Last Updated: January 10, 2026*
+*Last Updated: January 11, 2026*

@@ -2,28 +2,30 @@
 
 > **Base URL**: `https://andamio-db-api-343753432212.us-central1.run.app`
 > **Docs**: [/docs/doc.json](https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json)
-> **Total Endpoints**: 73
+> **Total Endpoints**: 87
+> **Last Updated**: January 11, 2026
 
 ## Summary by Category
 
 | Category | Count | Description |
 |----------|-------|-------------|
 | Health & Auth | 3 | Health check, login session, login validate |
-| User Management | 5 | Access token alias, unconfirmed tx, roles, pending transactions |
-| Course Public | 6 | Published courses, course details, module lists |
+| User Management | 4 | Access token alias, unconfirmed tx, roles, pending transactions |
+| Course Public | 11 | Published courses, course details, module lists, SLTs, lessons |
 | Course Owner | 6 | Create, update, delete, mint, confirm courses |
-| Course Teacher/Modules | 11 | Module CRUD, status updates, publishing |
-| SLTs | 7 | SLT CRUD, reordering |
-| Lessons | 6 | Lesson CRUD, publishing |
-| Assignments | 5 | Assignment CRUD, publishing |
-| Assignment Commitments | 9 | Student/teacher commitment workflows |
-| Module Introductions | 5 | Introduction CRUD |
+| Course Teacher/Modules | 11 | Module CRUD, status updates, publishing, batch ops |
+| SLTs | 5 | SLT CRUD, reordering |
+| Lessons | 4 | Lesson CRUD, publishing |
+| Assignments | 4 | Assignment CRUD, publishing |
+| Assignment Commitments | 9 | Student/teacher/shared commitment workflows |
+| Module Introductions | 4 | Introduction CRUD |
 | Student Course Status | 2 | Learner course data |
 | Project Public | 3 | Treasury list, tasks, prerequisites |
 | Project Owner | 4 | Treasury CRUD, mint, confirm |
-| Task Manager | 5 | Task CRUD, batch operations |
-| Task Commitments | 8 | Manager and contributor commitment workflows |
-| Contributor | 1 | Create contributor role |
+| Project Manager/Tasks | 5 | Task CRUD, batch operations |
+| Project Manager/Commitments | 2 | Manager commitment workflows |
+| Project Contributor/Commitments | 6 | Contributor commitment workflows |
+| Contributor Management | 1 | Create contributor role |
 
 ---
 
@@ -165,7 +167,7 @@
 | POST | `/project/owner/treasury/mint` | Create project on mint tx submit |
 | POST | `/project/owner/treasury/confirm-mint` | Confirm project after blockchain |
 
-## Task Manager (5)
+## Project Manager - Tasks (5)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -175,14 +177,14 @@
 | POST | `/project/manager/task/batch-update-status` | Update status for multiple tasks |
 | POST | `/project/manager/task/batch-confirm` | Confirm multiple tasks after blockchain |
 
-## Task Commitments - Manager (2)
+## Project Manager - Commitments (2)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/project/manager/commitment/update-status` | Manager updates commitment status |
 | POST | `/project/manager/commitment/confirm-transaction` | Confirm commitment tx |
 
-## Task Commitments - Contributor (6)
+## Project Contributor - Commitments (6)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -201,4 +203,4 @@
 
 ---
 
-*Last Updated: January 10, 2026*
+*Last Updated: January 11, 2026*

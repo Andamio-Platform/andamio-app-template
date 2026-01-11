@@ -13,11 +13,11 @@ The Andamio T3 App Template integrates with **three API sub-systems**. This skil
 
 | API | Purpose | Endpoints | Base URL |
 |-----|---------|-----------|----------|
-| **Andamio DB API** | Off-chain CRUD, user data, drafts | 73 | `https://andamio-db-api-343753432212.us-central1.run.app` |
+| **Andamio DB API** | Off-chain CRUD, user data, drafts | 87 | `https://andamio-db-api-343753432212.us-central1.run.app` |
 | **Andamio Tx API** | Transaction building (unsigned CBOR) | 16 | `https://atlas-api-preprod-507341199760.us-central1.run.app` |
-| **Andamioscan** | On-chain indexed data, events | 36 | `https://preprod.andamioscan.io/api` |
+| **Andamioscan** | On-chain indexed data, events | 34 | `https://preprod.andamioscan.io/api` |
 
-**Total: 125 endpoints across 3 APIs**
+**Total: 137 endpoints across 3 APIs** (as of January 2026 - run script for current counts)
 
 ## OpenAPI Documentation URLs
 
@@ -46,7 +46,52 @@ The Andamio T3 App Template integrates with **three API sub-systems**. This skil
 4. Types must be imported from `@andamio/db-api-types` - never define API types locally
 5. API response data should be cached and re-used via React Query
 
-## Instructions - Phase 1: Check Coverage
+## Automated Coverage Audit
+
+Run the automated coverage script to get accurate, machine-verified coverage data:
+
+```bash
+npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts
+```
+
+### What the Script Does
+
+1. **Fetches live OpenAPI specs** from all 3 API endpoints
+2. **Scans implementation code** for endpoint usage patterns:
+   - DB API: Searches `src/` for `ANDAMIO_API_URL` patterns
+   - Tx API: Scans `packages/andamio-transactions/` for builder endpoints
+   - Andamioscan: Parses `src/lib/andamioscan.ts` for client functions
+3. **Generates reports**:
+   - `coverage-report.json` - Machine-readable with full endpoint details
+   - `COVERAGE-REPORT.md` - Human-readable summary with missing endpoints
+
+### Output Example
+
+```
+📈 COVERAGE SUMMARY
+==================================================
+
+  DB API:      49/87 (56%)
+  Tx API:      16/16 (100%)
+  Andamioscan: 32/34 (94%)
+
+  TOTAL:       97/137 (71%)
+```
+
+### Generated Report Files
+
+| File | Description |
+|------|-------------|
+| [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Human-readable coverage summary |
+| [coverage-report.json](./coverage-report.json) | Full JSON with endpoint-level details |
+
+The JSON report includes for each endpoint:
+- `path` - API endpoint path
+- `method` - HTTP method
+- `implemented` - Boolean coverage status
+- `implementationLocation` - File where endpoint is called (if implemented)
+
+## Instructions - Phase 1: Check Coverage (Manual)
 
 ### 1. Pull Latest OpenAPI Specs
 

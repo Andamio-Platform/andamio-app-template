@@ -1,6 +1,6 @@
 # Project Manager Skill
 
-> **Last Updated**: January 10, 2026
+> **Last Updated**: January 11, 2026
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
@@ -49,9 +49,12 @@ This skill directory contains project planning, status tracking, and architectur
 | Course Routes | 15/15 implemented |
 | Project Routes | 6/13 implemented |
 | Transaction Components | **16/16 V2 complete** |
-| DB API Coverage | ~66% (49/74 endpoints) |
-| Andamioscan Coverage | 53% (17/32 endpoints) |
-| React Query Hooks | 18 DB + 25 Andamioscan hooks |
+| DB API Coverage | **56%** (49/87 endpoints) |
+| Tx API Coverage | **100%** (16/16 endpoints) |
+| Andamioscan Coverage | **94%** (32/34 endpoints) |
+| **Overall API Coverage** | **71%** (97/137 endpoints) |
+
+Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for live metrics.
 
 ### Current Blockers
 
@@ -59,11 +62,11 @@ This skill directory contains project planning, status tracking, and architectur
 |---------|--------|
 | @andamio/transactions NPM | Waiting (have locally via workspace) |
 | Go API Migration | ✅ **Complete** (50+ endpoints migrated) |
-| Event Endpoints | 0/16 (using Koios polling) |
+| Wallet Testing | ⏳ Need to test Nami, Flint, Yoroi, Lace |
 
 ### Current Focus
 
-**Andamio V2 Preprod Release** (2026-01-09) - Final optimizations before launch.
+**Andamio Pioneers Launch** (2026-01-14) - Final testing before Pioneers Program.
 
 See `ROADMAP.md` for current priorities and `STATUS.md` for detailed blockers.
 

@@ -194,9 +194,12 @@ Currently supported entity types:
 | Entity Type | Status Flow | Handler |
 |-------------|-------------|---------|
 | **module** | PENDING_TX → ON_CHAIN | ✅ Implemented |
+| **access-token** | (pending) → confirmed | ✅ Implemented (uses `refreshAuth()` instead of page refresh) |
+| **course** | Created on submit | ✅ Implemented |
+| **project** | Created on submit | ✅ Implemented |
 | assignment | PENDING_TX → ... | 🔄 TODO |
 | task | PENDING_TX → ON_CHAIN | 🔄 TODO |
-| assignment-commitment | PENDING_TX_* → ... | 🔄 TODO |
+| assignment-commitment | PENDING_TX_* → ... | ✅ Implemented |
 | task-commitment | PENDING_TX → ... | 🔄 TODO |
 
 ### Adding Support for New Entity Types
@@ -213,14 +216,14 @@ const processConfirmed[EntityType] = useCallback(
     // Extract data from on-chain
     const someData = onChainData.mints?.[0]?.assetName;
 
-    // Update entity status via API
+    // Update entity status via API (Andamio API uses POST for all mutations)
     const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/[entity-endpoint]/${entityId}/status`,
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/[entity-endpoint]/confirm-transaction`,
       {
-        method: "PATCH",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "ON_CHAIN",
+          tx_hash: tx.txHash,
           someData,
         }),
       }

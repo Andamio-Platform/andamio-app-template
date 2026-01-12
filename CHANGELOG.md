@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Access Token Minting Pending State**: New user onboarding shows a friendly "Confirming on-chain" message while access token minting transaction is pending. Dashboard displays the pending alias with animated loading indicator instead of showing the mint form again.
+  - Added `access-token` entity type to `PendingTransaction`
+  - `MintAccessToken` now tracks pending tx via `useTrackPendingTx`
+  - `WelcomeHero` accepts `isPendingMint` and `pendingAlias` props for pending UI state
+  - On confirmation, uses `refreshAuth()` instead of full page reload for instant UI update
 - **Partial Signing Support**: Added `partialSign` property to `AndamioTransactionDefinition` type and `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR. `INSTANCE_PROJECT_CREATE` now sets `partialSign: true` to fix Eternl wallet errors.
 - **Project Dashboard Role Detection**: `/studio/project/[treasurynft]` now detects both owner and manager roles. Owners see an info banner explaining their role, managers can fully manage the project. Uses Andamioscan `getManagingProjects` to check manager status.
 - **Design System Skill**: Consolidated 3 skills (`review-styling`, `global-style-checker`, `theme-expert`) into unified `design-system` skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns)
@@ -22,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files updated: 36 files across hooks, components, and pages
 
 ### Fixed
+- **API Method Standardization**: Andamio Go API uses only GET (reads) and POST (writes). Fixed all remaining PATCH/PUT/DELETE usages:
+  - `/user/access-token-alias`: PATCH → POST
+  - `/user/unconfirmed-tx`: PATCH → POST
+  - `useAndamioFetch` hook: Removed PATCH/PUT/DELETE from method types (now only GET/POST)
+  - Updated comments in `assignment-commitment.tsx` to reflect new endpoint paths
 - **Null Safety in PendingTxPopover**: `truncateTxHash` function now handles undefined/null `txHash` values, returning "—" instead of crashing. Explorer link button only shows when txHash exists.
 - **Eternl Wallet Authentication**: Fixed wallet authentication for Eternl and other wallets that return hex-encoded addresses instead of bech32.
   - Added automatic hex-to-bech32 address conversion using `core.Address.fromString().toBech32()` from `@meshsdk/core`
@@ -56,8 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POST /course/list` → `GET /courses/owned`
   - `POST /course-module/map` → `POST /course-modules/list`
   - `POST /my-learning/get` → `GET /learner/my-learning`
-  - `POST /access-token/update-alias` → `PATCH /user/access-token-alias`
-  - `POST /access-token/update-unconfirmed-tx` → `PATCH /user/unconfirmed-tx`
+  - `POST /access-token/update-alias` → `POST /user/access-token-alias`
+  - `POST /access-token/update-unconfirmed-tx` → `POST /user/unconfirmed-tx`
   - `GET /transaction/pending-transactions` → `GET /pending-transactions`
 - **Wallet Auth Fix**: Fixed `signData` call to pass both address and nonce (`wallet.signData(address, nonce)`) as required by Mesh SDK CIP-30 implementation.
 - **Null Safety Fix**: Added optional chaining for `tx.context` in pending-tx-popover to handle API responses without context field.

@@ -56,7 +56,7 @@ async function syncAccessTokenFromWallet(
     authLogger.info("Extracted alias:", alias);
 
     const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`, {
-      method: "PATCH",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${jwt}`,

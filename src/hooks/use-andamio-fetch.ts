@@ -145,13 +145,13 @@ export interface UseAndamioFetchOptions<TBody = unknown> {
   endpoint: string;
 
   /**
-   * HTTP method
+   * HTTP method (Andamio API uses GET for reads, POST for writes)
    * @default "GET"
    */
-  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  method?: "GET" | "POST";
 
   /**
-   * Request body (for POST, PATCH, PUT)
+   * Request body (for POST requests)
    */
   body?: TBody;
 

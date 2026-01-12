@@ -69,7 +69,7 @@ Detailed checklists for common PR types. Use these as reference when performing 
 
 ### New Endpoints
 - [ ] Endpoint documented in API coverage docs
-- [ ] Proper HTTP method used (GET for reads, POST/PUT for writes)
+- [ ] Proper HTTP method used (GET for reads, POST for writes - Andamio API does not use PUT/PATCH/DELETE)
 - [ ] Request/response types defined
 - [ ] Error responses handled
 

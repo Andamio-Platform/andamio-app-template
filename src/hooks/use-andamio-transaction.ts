@@ -12,7 +12,7 @@
  *
  * ### Unconfirmed Transaction Tracking
  * After every successful transaction submission, this hook automatically:
- * 1. Calls `PATCH /user/unconfirmed-tx` with the txHash
+ * 1. Calls `POST /user/unconfirmed-tx` with the txHash
  * 2. This sets `user.unconfirmedTx` in the database
  * 3. Frontend should check this field to block new transactions while pending
  * 4. When tx is confirmed on-chain (via polling), call the endpoint with `null`
@@ -125,10 +125,10 @@ export function useAndamioTransaction<TParams = unknown>() {
           // Update user's unconfirmedTx (blocks further transactions until confirmed)
           const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
           const unconfirmedTxBody = { tx_hash: txResult.txHash };
-          txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "PATCH", unconfirmedTxUrl, unconfirmedTxBody);
+          txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "POST", unconfirmedTxUrl, unconfirmedTxBody);
           try {
             const unconfirmedTxResponse = await fetch(unconfirmedTxUrl, {
-              method: "PATCH",
+              method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${jwt}`,

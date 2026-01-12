@@ -126,3 +126,7 @@ Items that have been addressed and can be archived.
 | Update GETTING-STARTED.md imports | 2026-01-10 | Fixed type import example |
 | Update STATUS.md dependencies | 2026-01-10 | Updated package versions |
 | Add types migration to CHANGELOG.md | 2026-01-10 | Comprehensive migration changelog entry |
+| Fix PATCH → POST in all API calls | 2026-01-12 | Updated 4 source files, aligned with Go API (GET/POST only) |
+| Add access-token pending state to dashboard | 2026-01-12 | New onboarding UX with "Confirming on-chain" message |
+| Update PENDING-TX-WATCHER.md entity types | 2026-01-12 | Added access-token, course, project to supported types |
+| Add access token minting UX to CHANGELOG.md | 2026-01-12 | Documented pending state and smart refresh |

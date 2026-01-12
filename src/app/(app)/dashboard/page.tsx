@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { usePendingTxContext } from "~/components/pending-tx-watcher";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessToken, CreateCourse, CreateProject } from "~/components/transactions";
@@ -21,6 +22,13 @@ import { AndamioPageHeader } from "~/components/andamio";
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
+  const { pendingTransactions } = usePendingTxContext();
+
+  // Check if there's a pending access token minting transaction
+  const pendingAccessTokenTx = pendingTransactions.find(
+    (tx) => tx.entityType === "access-token"
+  );
+  const isPendingAccessTokenMint = !!pendingAccessTokenTx;
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -56,16 +64,22 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Hero - Main identity display */}
-      <WelcomeHero accessTokenAlias={user.accessTokenAlias} />
-
-      {/* Getting Started - Only shows when user needs to mint token */}
-      <GettingStarted
-        isAuthenticated={isAuthenticated}
-        hasAccessToken={hasAccessToken}
+      <WelcomeHero
+        accessTokenAlias={user.accessTokenAlias}
+        isPendingMint={isPendingAccessTokenMint}
+        pendingAlias={pendingAccessTokenTx?.entityId}
       />
 
-      {/* Mint Access Token - Prominent when user doesn't have one */}
-      {!hasAccessToken && (
+      {/* Getting Started - Only shows when user needs to mint token and not pending */}
+      {!isPendingAccessTokenMint && (
+        <GettingStarted
+          isAuthenticated={isAuthenticated}
+          hasAccessToken={hasAccessToken}
+        />
+      )}
+
+      {/* Mint Access Token - Only show when user doesn't have one and not pending */}
+      {!hasAccessToken && !isPendingAccessTokenMint && (
         <MintAccessToken onSuccess={() => router.refresh()} />
       )}
 

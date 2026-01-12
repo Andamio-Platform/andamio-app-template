@@ -25,6 +25,7 @@
 
 import React, { createContext, useContext, type ReactNode } from "react";
 import { usePendingTxWatcher, type PendingTransaction } from "~/hooks/use-pending-tx-watcher";
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { PendingTxPopover } from "./pending-tx-popover";
@@ -92,6 +93,7 @@ export function PendingTxWatcher({
   enabled = true,
 }: PendingTxWatcherProps) {
   const router = useRouter();
+  const { refreshAuth } = useAndamioAuth();
 
   const watcherState = usePendingTxWatcher({
     pollInterval,
@@ -99,12 +101,21 @@ export function PendingTxWatcher({
     onConfirmation: (tx, confirmation) => {
       console.log(`[PendingTxWatcher] Transaction confirmed: ${tx.txHash}`);
 
-      // Show success notification
-      toast.success("Transaction Confirmed", {
-        description: `Your ${tx.entityType} transaction has been confirmed on-chain with ${confirmation.confirmations} confirmations.`,
-      });
+      // Show success notification with entity-specific message
+      const description = tx.entityType === "access-token"
+        ? `Your access token "${tx.entityId}" is now live on-chain!`
+        : `Your ${tx.entityType} transaction has been confirmed on-chain with ${confirmation.confirmations} confirmations.`;
 
-      // Refresh the current page to show updated data
+      toast.success("Transaction Confirmed", { description });
+
+      // For access-token minting, just refresh auth state (no full page reload)
+      // The JWT already contains the alias, so refreshAuth() will update the UI
+      if (tx.entityType === "access-token") {
+        refreshAuth();
+        return;
+      }
+
+      // For other transactions, refresh the current page to show updated data
       router.refresh();
     },
     onError: (tx, error) => {

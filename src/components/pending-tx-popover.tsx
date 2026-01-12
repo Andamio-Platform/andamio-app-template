@@ -169,11 +169,8 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
 
             <AndamioCardContent className="max-h-96 overflow-y-auto p-0">
               <div className="divide-y">
-                {pendingTransactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="group relative p-4 transition-colors hover:bg-muted/50"
-                  >
+                {pendingTransactions.map((tx, index) => (
+                  <div key={tx.txHash ?? tx.id ?? `pending-${index}`} className="group relative p-4 transition-colors hover:bg-muted/50">
                     {/* Entity Type Badge */}
                     <div className="mb-2 flex items-center justify-between">
                       <AndamioBadge variant="outline" className="text-xs">
@@ -205,7 +202,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0"
-                            onClick={() => window.open(getExplorerUrl(tx.txHash!), "_blank")}
+                            onClick={() => window.open(getExplorerUrl(tx.txHash), "_blank")}
                             title="View on blockchain explorer"
                           >
                             <ExternalLinkIcon className="h-3.5 w-3.5" />

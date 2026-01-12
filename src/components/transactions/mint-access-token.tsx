@@ -16,6 +16,7 @@ import React, { useState } from "react";
 import { GLOBAL_GENERAL_ACCESS_TOKEN_MINT } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useTrackPendingTx } from "~/components/pending-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -52,6 +53,7 @@ function isValidAlias(alias: string): boolean {
 export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
   const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { trackPendingTx } = useTrackPendingTx();
   const [alias, setAlias] = useState("");
 
   const aliasError = alias.trim() && !isValidAlias(alias.trim())
@@ -80,7 +82,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
           const response = await authenticatedFetch(
             `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`,
             {
-              method: "PATCH",
+              method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
@@ -109,6 +111,18 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
             // Refresh auth context state to reflect the new access token
             refreshAuth();
             console.log("✅ Auth context refreshed");
+
+            // Track the pending transaction for on-chain confirmation
+            if (txResult.txHash) {
+              trackPendingTx({
+                id: `access-token-${alias.trim()}`,
+                txHash: txResult.txHash,
+                entityType: "access-token",
+                entityId: alias.trim(),
+                context: {},
+              });
+              console.log("✅ Pending tx tracked for confirmation");
+            }
           } else {
             console.error("Failed to update access token alias:", await response.text());
           }

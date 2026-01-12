@@ -17,7 +17,7 @@
  * ## Unconfirmed Transaction Clearing
  * When a transaction is confirmed, this hook automatically:
  * 1. Processes entity-specific side effects (module status, etc.)
- * 2. Calls `PATCH /user/unconfirmed-tx` with `null` to clear the user's pending tx
+ * 2. Calls `POST /user/unconfirmed-tx` with `null` to clear the user's pending tx
  * 3. Removes the transaction from the watch list
  *
  * This works in tandem with `useAndamioTransaction` which sets the unconfirmedTx
@@ -47,8 +47,8 @@ export interface PendingTransaction {
   id: string;
   /** Transaction hash on the blockchain */
   txHash: string;
-  /** Type of entity (module, assignment, task, course, project, etc.) */
-  entityType: "module" | "assignment" | "task" | "assignment-commitment" | "task-commitment" | "course" | "project";
+  /** Type of entity (module, assignment, task, course, project, access-token, etc.) */
+  entityType: "module" | "assignment" | "task" | "assignment-commitment" | "task-commitment" | "course" | "project" | "access-token";
   /** Entity identifier (e.g., moduleCode, courseNftPolicyId, treasuryNftPolicyId) */
   entityId: string;
   /** Additional context needed for updates */
@@ -273,6 +273,12 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             pendingTxLogger.info(`Project confirmed: ${tx.entityId} (${tx.context.title ?? "Untitled"})`);
             break;
 
+          case "access-token":
+            // Access token minting confirmed. The alias was already saved to DB on submission.
+            // Confirmation just triggers UI update (dashboard will refresh).
+            pendingTxLogger.info(`Access token confirmed: ${tx.entityId}`);
+            break;
+
           // TODO: Add handlers for other entity types
           case "assignment":
           case "task":
@@ -283,10 +289,10 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         // Clear user's unconfirmedTx now that it's confirmed
         const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
         const clearBody = { tx_hash: null };
-        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "PATCH", clearUrl, clearBody);
+        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "POST", clearUrl, clearBody);
         try {
           const clearResponse = await authenticatedFetch(clearUrl, {
-            method: "PATCH",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(clearBody),
           });
@@ -373,7 +379,8 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
    * Start polling
    */
   useEffect(() => {
-    if (!enabled || pendingTransactions.length === 0) {
+    // Need both: pending transactions to check AND jwt to authenticate API calls
+    if (!enabled || pendingTransactions.length === 0 || !jwt) {
       return;
     }
 
@@ -392,7 +399,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, pendingTransactions.length, pollInterval]); // Don't include checkPendingTransactions to avoid infinite loop
+  }, [enabled, pendingTransactions.length, pollInterval, jwt]); // Include jwt to re-trigger when auth is ready
 
   /**
    * Load pending transactions from database

@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 11, 2026 (API Coverage Audit Script)
+> **Last Updated**: January 12, 2026 (Access Token UX + API Method Fixes)
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -43,10 +43,10 @@ Current implementation status of the Andamio T3 App Template.
 
 | Date | Milestone | Impact on Template |
 |------|-----------|-------------------|
-| **2026-01-09 (Fri)** | Go API Migration Complete | ✅ 50+ endpoints migrated |
-| **2026-01-10 (Sat)** | API Coverage Audit | ✅ Automated script created |
-| **2026-01-11 (Sun)** | **Today** | Documentation sync |
-| **2026-01-12 (Mon)** | V2 Preprod Rollout Begins | Rollout week starts |
+| **2026-01-09 (Thu)** | Go API Migration Complete | ✅ 50+ endpoints migrated |
+| **2026-01-10 (Fri)** | API Coverage Audit | ✅ Automated script created |
+| **2026-01-11 (Sat)** | Documentation sync | ✅ Completed |
+| **2026-01-12 (Sun)** | **Today** - Access Token UX + API fixes | ✅ Completed |
 | **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | Preprod testing begins |
 | **2026-01-16 (Fri)** | **Final Demos** | Demo day |
 | **2026-01-16 → 2026-02-06** | V1→V2 Migration Focus | Work shifts to app.andamio.io |
@@ -56,12 +56,24 @@ Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## Monday Planning (January 12, 2026) - Rollout Day
+## Session Notes (January 12, 2026) - Rollout Day
 
-**Context**: V2 Preprod Rollout begins Monday. Andamio Pioneers launches Wednesday January 14.
+**Context**: V2 Preprod Rollout day. Andamio Pioneers launches Wednesday January 14.
 
-### Priority 1: Wallet Compatibility Testing
+### Completed Today
+
+| Task | Details |
+|------|---------|
+| **Access Token Minting UX** | New onboarding shows "Confirming on-chain" while tx pending. Smart refresh via `refreshAuth()` instead of full page reload. |
+| **API Method Standardization** | Fixed all PATCH/PUT/DELETE → POST. Go API uses only GET (reads) and POST (writes). |
+| **DB API Auth Fix** | Resolved "Failed to create user" error (API-side fix deployed). |
+| **Documentation Sync** | Updated CHANGELOG, PENDING-TX-WATCHER.md, SIDE-EFFECTS-INTEGRATION.md, review-checklists.md |
+
+### Remaining Pre-Pioneers Priorities
+
+#### Priority 1: Wallet Compatibility Testing ⚡
 **Impact**: Ensure all wallets work for Pioneers testing
+**Status**: Only Eternl tested so far
 
 Test authentication with:
 - Nami, Flint, Yoroi, Lace, Vespr
@@ -69,31 +81,21 @@ Test authentication with:
 
 **Effort**: Low (testing only)
 
-### Priority 2: Assignment System Hooks (DB API)
-**Impact**: Enable student interactions during Pioneers testing
-
-Missing React Query hooks for assignment workflows:
-- `GET /course/public/assignment/get/{policy_id}/{module_code}` - View assignment
-- `POST /course/teacher/assignment/create`, `update` - Teacher ops
-- `POST /course/student/assignment-commitment/create`, `update-evidence` - Student ops
-- `POST /course/teacher/assignment-commitment/review` - Teacher review
-
-**Effort**: Medium-High (hooks + UI integration)
-
-### Priority 3: Cache Invalidation Audit
+#### Priority 2: Cache Invalidation Audit
 **Impact**: Fix "manual refresh required" after transactions
 
 Verify `queryClient.invalidateQueries()` called with correct keys in:
 - `useUpdateCourse`, `useUpdateCourseModule` mutations
 - Transaction `onSuccess` callbacks
-- Side effect completions
 
 **Effort**: Low (audit and fix)
 
+**Note**: Access token flow now uses `refreshAuth()` pattern which works well - consider applying similar targeted refresh to other flows.
+
 ### Deferred (Post-Pioneers)
+- Assignment System Hooks (12 endpoints for student/teacher workflows)
 - Remaining DB API hooks (38 endpoints at 56% coverage)
 - Project System routes (7 remaining routes)
-- User Management hooks
 
 ---
 
@@ -452,7 +454,7 @@ All transaction components now use `useAndamioTransaction` for standardized side
 | `POST /course/list` | `GET /courses/owned` | 5 files |
 | `POST /course-module/map` | `POST /course-modules/list` | 2 files |
 | `POST /my-learning/get` | `GET /learner/my-learning` | 1 file |
-| `POST /access-token/update-alias` | `PATCH /user/access-token-alias` | 2 files |
+| `POST /access-token/update-alias` | `POST /user/access-token-alias` | 2 files |
 | `POST /access-token/update-unconfirmed-tx` | `PATCH /user/unconfirmed-tx` | 2 files |
 | `GET /transaction/pending-transactions` | `GET /pending-transactions` | 2 files |
 

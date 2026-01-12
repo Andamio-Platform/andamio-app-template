@@ -48,9 +48,9 @@ function stringToHex(str: string): string {
  * - Delete commitments
  *
  * API Endpoints:
- * - POST /assignment-commitments (protected)
- * - PATCH /assignment-commitments/{courseNftPolicyId}/{moduleCode}/{assignmentCode}/{accessTokenAlias}/evidence (protected)
- * - DELETE /assignment-commitments/{courseNftPolicyId}/{moduleCode}/{assignmentCode}/{accessTokenAlias} (protected)
+ * - POST /course/student/assignment-commitment/create (protected)
+ * - POST /course/student/assignment-commitment/update-evidence (protected)
+ * - POST /course/student/assignment-commitment/delete (protected)
  */
 
 interface AssignmentCommitmentProps {

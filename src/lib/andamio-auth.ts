@@ -98,8 +98,13 @@ export async function validateSignature(params: {
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as { message?: string };
-    throw new Error(error.message ?? "Failed to validate signature");
+    const error = (await response.json()) as { message?: string; error?: string; details?: unknown };
+    authLogger.error("Validate signature failed:", {
+      status: response.status,
+      statusText: response.statusText,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to validate signature");
   }
 
   // Transform snake_case API response to camelCase

@@ -1,12 +1,19 @@
+---
+name: tx-loop-guide
+description: Guide testers through transaction loops to validate functionality, data visibility, and query completeness. Creates GitHub issues for blockers and feedback digests.
+---
+
 # Tx Loop Guide
 
 Guide testers through Andamio transaction loops while collecting UX feedback.
 
 ## Critical Behaviors (Do Not Skip)
 
-1. **Blocker bugs** → Create GitHub issue IMMEDIATELY using `gh issue create`
-2. **Session ends** → Create feedback digest issue AUTOMATICALLY (don't wait to be asked)
-3. **UX friction noted** → Track it and include in the digest issue
+1. **Starting a session** → Read [loop-history.md](./loop-history.md) FIRST to suggest loops
+2. **Blocker bugs** → Create GitHub issue IMMEDIATELY using `gh issue create`
+3. **Session ends** → Create feedback digest issue AUTOMATICALLY (don't wait to be asked)
+4. **After session** → Update [loop-history.md](./loop-history.md) with new status, date, and issue links
+5. **UX friction noted** → Track it and include in the digest issue
 
 ## Purpose
 
@@ -15,18 +22,95 @@ This skill guides a tester or developer through a specified Andamio Transaction 
 ## Reference Files
 
 - **[tx-loops.md](./tx-loops.md)** - Catalog of all tx loops with steps and side effects
+- **[loop-history.md](./loop-history.md)** - Testing status and history for each loop
 - **[@andamio/transactions](../../../packages/andamio-transactions/README.md)** - Transaction definitions and expected behavior
+
+## Goals & Questions
+
+### Current Phase: Foundational Validation
+
+We're validating that the core experience works before optimizing it. Each loop session should answer:
+
+1. **Do transactions work?** — Can users complete each transaction without errors?
+2. **Is data visible?** — Can users see the information they need at each step?
+3. **Are queries complete?** — Does the UI show all relevant data, or is something missing/wrong?
+4. **Do side effects run?** — Does the DB API update correctly after each transaction?
+5. **Does the UI update?** — Does data refresh automatically without requiring a page reload?
+
+A loop is **validated** when testers can confidently say "yes" to all five.
+
+### Questions to Ask
+
+**After each transaction:**
+- "Did that work? Any errors or unexpected behavior?"
+- "Can you see the data you expected to see?"
+- "Is anything missing or showing incorrectly?"
+- "Did the UI update automatically, or did you have to refresh?"
+
+**About side effects:**
+- "Did the database reflect the change? (Check the relevant list/detail view)"
+- "Did status indicators update correctly?"
+
+**At decision points (e.g., finding where to enroll, locating a submission):**
+- "Were you able to find what you needed?"
+- "What did you expect to see here?"
+
+**After completing the loop:**
+- "Did all the transactions succeed?"
+- "Was any data missing or confusing?"
+- "Did you have to refresh the page at any point?"
+- "What would need to change for this to feel ready?"
+
+### When Is a Loop "Done"?
+
+A loop moves to **Validated** status when:
+- [ ] All transactions complete successfully
+- [ ] All required data is visible at each step
+- [ ] Side effects update the database correctly
+- [ ] UI updates automatically (no page refresh needed)
+- [ ] No blocking issues remain open
+- [ ] Tester confirms: "This works, data is complete"
+
+Until then, keep running loops and filing issues.
 
 ## How to Guide
 
 ### Starting a Loop
 
-1. Ask which loop the user wants to test (or suggest one based on context)
-2. Confirm their role setup:
-   - Do they have the required Access Tokens minted?
-   - Are they using multiple browser profiles or wallet accounts?
-   - Offer to help with setup if needed
-3. Briefly explain what the loop tests and how many transactions are involved
+**Step 1: Check loop-history.md**
+
+Always read [loop-history.md](./loop-history.md) first to see current status. Suggest loops based on:
+
+| Priority | Status | Reasoning |
+|----------|--------|-----------|
+| 1 | **Untested** | Unknown state — need baseline data |
+| 2 | **Blocked** | May be unblocked by recent fixes |
+| 3 | **Issues Found** | Re-test to verify fixes |
+| 4 | **Validated** | Only re-test if related code changed |
+
+**Dependencies to consider:**
+- Loop 1 (Onboarding) must be validated before others — users need Access Tokens
+- Loop 3 (Create & Publish Course) should be validated before Loop 2 — need a course to enroll in
+- Loops 4, 5, 6 build on Loop 2's foundation
+
+**Step 2: Suggest a loop (or series)**
+
+Present the tester with a recommendation:
+> "Based on loop-history.md, I recommend starting with **Loop 3: Create & Publish Course** — it's currently Untested and is a prerequisite for the credential flows. Want to run that one?"
+
+Or suggest a series:
+> "Loops 1, 3, and 2 are all Untested. Want to run them in sequence? That would give us a complete onboarding → course creation → credential flow."
+
+**Step 3: Confirm role setup**
+
+Once a loop is selected:
+- Do they have the required Access Tokens minted?
+- Are they using multiple browser profiles or wallet accounts?
+- Offer to help with setup if needed
+
+**Step 4: Brief the tester**
+
+Explain what the loop tests and how many transactions are involved.
 
 ### During Each Step
 

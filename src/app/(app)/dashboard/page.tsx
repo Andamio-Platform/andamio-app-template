@@ -9,6 +9,7 @@ import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessToken, CreateCourse, CreateProject } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
+import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-token-confirmation-alert";
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AccountDetailsCard } from "~/components/dashboard/account-details";
 import { PendingReviewsSummary } from "~/components/dashboard/pending-reviews-summary";
@@ -69,6 +70,9 @@ export default function DashboardPage() {
         isPendingMint={isPendingAccessTokenMint}
         pendingAlias={pendingAccessTokenTx?.entityId}
       />
+
+      {/* Access Token Confirmation Alert - Shows during pending mint */}
+      <AccessTokenConfirmationAlert onComplete={() => router.refresh()} />
 
       {/* Getting Started - Only shows when user needs to mint token and not pending */}
       {!isPendingAccessTokenMint && (

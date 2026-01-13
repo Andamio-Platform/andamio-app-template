@@ -127,7 +127,7 @@ export const stepVariants = {
 
 export const stepTransition = {
   duration: 0.15,
-  ease: "easeOut",
+  ease: "easeOut" as const,
 };
 
 /**
@@ -140,7 +140,7 @@ export const checkmarkVariants = {
     opacity: 1,
     transition: {
       duration: 0.15,
-      ease: "easeOut",
+      ease: "easeOut" as const,
     },
   },
 };
@@ -154,7 +154,7 @@ export const progressVariants = {
     width: `${progress}%`,
     transition: {
       duration: 0.2,
-      ease: "easeOut",
+      ease: "easeOut" as const,
     },
   }),
 };

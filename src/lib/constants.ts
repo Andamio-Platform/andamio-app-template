@@ -16,6 +16,20 @@ export const UI_TIMEOUTS = {
   TOAST_DEFAULT: 3000,
   /** Duration for error notifications (longer for readability) */
   ERROR_NOTIFICATION: 5000,
+  /** Duration to show success state before transitioning (confirmation alerts) */
+  SUCCESS_TRANSITION: 3000,
+  /** Threshold to show "taking longer than expected" warning */
+  LONG_WAIT_WARNING: 120000, // 2 minutes
+} as const;
+
+/**
+ * Blockchain polling intervals by entity type (in milliseconds)
+ */
+export const POLLING_INTERVALS = {
+  /** Default polling interval for most transactions */
+  DEFAULT: 30000, // 30 seconds
+  /** Fast polling for access token minting (user waiting on onboarding) */
+  ACCESS_TOKEN: 5000, // 5 seconds
 } as const;
 
 /**

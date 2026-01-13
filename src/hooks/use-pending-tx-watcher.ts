@@ -27,7 +27,7 @@
  * @see andamio-db-api/src/routers/user.ts - API endpoint documentation
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useAndamioAuth } from "./use-andamio-auth";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
@@ -65,6 +65,8 @@ export interface PendingTransaction {
   };
   /** Timestamp when transaction was submitted */
   submittedAt: Date;
+  /** Optional polling interval override in milliseconds (default uses global config) */
+  pollingInterval?: number;
 }
 
 export interface PendingTxWatcherConfig {
@@ -376,6 +378,24 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
   }, [pendingTransactions, jwt, processConfirmedTransaction]);
 
   /**
+   * Calculate the effective polling interval
+   * Uses the minimum interval among all pending transactions, or global default
+   */
+  const effectivePollInterval = useMemo(() => {
+    if (pendingTransactions.length === 0) {
+      return pollInterval;
+    }
+    const intervals = pendingTransactions
+      .map((tx) => tx.pollingInterval)
+      .filter((interval): interval is number => interval !== undefined && interval > 0);
+
+    if (intervals.length === 0) {
+      return pollInterval;
+    }
+    return Math.min(pollInterval, ...intervals);
+  }, [pendingTransactions, pollInterval]);
+
+  /**
    * Start polling
    */
   useEffect(() => {
@@ -387,10 +407,10 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
     // Initial check
     void checkPendingTransactions();
 
-    // Set up polling
+    // Set up polling with effective interval
     pollTimeoutRef.current = setInterval(() => {
       void checkPendingTransactions();
-    }, pollInterval);
+    }, effectivePollInterval);
 
     return () => {
       if (pollTimeoutRef.current) {
@@ -399,7 +419,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, pendingTransactions.length, pollInterval, jwt]); // Include jwt to re-trigger when auth is ready
+  }, [enabled, pendingTransactions.length, effectivePollInterval, jwt]); // Include jwt to re-trigger when auth is ready
 
   /**
    * Load pending transactions from database

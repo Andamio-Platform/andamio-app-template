@@ -27,6 +27,7 @@ import { AccessTokenIcon, ShieldIcon } from "~/components/icons";
 import { env } from "~/env";
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
+import { POLLING_INTERVALS } from "~/lib/constants";
 
 export interface MintAccessTokenProps {
   /**
@@ -112,7 +113,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
             refreshAuth();
             console.log("✅ Auth context refreshed");
 
-            // Track the pending transaction for on-chain confirmation
+            // Track the pending transaction for on-chain confirmation with fast polling
             if (txResult.txHash) {
               trackPendingTx({
                 id: `access-token-${alias.trim()}`,
@@ -120,8 +121,9 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
                 entityType: "access-token",
                 entityId: alias.trim(),
                 context: {},
+                pollingInterval: POLLING_INTERVALS.ACCESS_TOKEN,
               });
-              console.log("✅ Pending tx tracked for confirmation");
+              console.log("✅ Pending tx tracked for confirmation (5s polling)");
             }
           } else {
             console.error("Failed to update access token alias:", await response.text());

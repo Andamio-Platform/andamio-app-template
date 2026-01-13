@@ -53,7 +53,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [courses, setCourses] = useState<CourseListResponse>([]);
   const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchOwnedCourses = useCallback(async () => {

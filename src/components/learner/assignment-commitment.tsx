@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
+import { useCourseStudent } from "~/hooks/use-andamioscan";
 import { env } from "~/env";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -19,6 +20,7 @@ import {
   COURSE_STUDENT_ASSIGNMENT_COMMIT,
   COURSE_STUDENT_ASSIGNMENT_UPDATE,
 } from "@andamio/transactions";
+import { CredentialClaim } from "~/components/transactions/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
 import {
@@ -31,12 +33,8 @@ import {
   AddIcon,
   SendIcon,
 } from "~/components/icons";
+import { useTrackPendingTx } from "~/components/pending-tx-watcher";
 import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
-
-/** Convert string to hex encoding */
-function stringToHex(str: string): string {
-  return Buffer.from(str, "utf-8").toString("hex");
-}
 
 /**
  * Assignment Commitment Component
@@ -59,6 +57,7 @@ interface AssignmentCommitmentProps {
   assignmentTitle: string;
   courseNftPolicyId: string;
   moduleCode: string;
+  sltHash: string | null; // Module hash (64-char hex) - required for on-chain transactions
 }
 
 // Status constants commented out - not currently used but kept for future reference
@@ -86,20 +85,29 @@ interface AssignmentCommitmentProps {
 //   { value: "ASSIGNMENT_LEFT", label: "Assignment Left" },
 // ] as const;
 
+// Response from /course/shared/assignment-commitment/get
+// API uses network_* prefixed fields
+interface CommitmentApiResponse {
+  policy_id: string;
+  module_code: string;
+  assignment_code: string;
+  access_token_alias: string;
+  network_status: string;
+  network_evidence: Record<string, unknown> | null;
+  network_evidence_hash: string | null;
+  pending_tx_hash: string | null;
+}
+
+// Internal commitment state (normalized from API response)
 interface Commitment {
-  id: string;
-  learnerAccessTokenAlias: string;
+  policyId: string;
+  moduleCode: string;
+  assignmentCode: string;
+  accessTokenAlias: string;
   networkStatus: string;
-  networkEvidence: unknown;
+  networkEvidence: Record<string, unknown> | null;
   networkEvidenceHash: string | null;
   pendingTxHash: string | null;
-  assignment: {
-    assignmentCode: string;
-    title: string;
-    module: {
-      moduleCode: string;
-    };
-  };
 }
 
 export function AssignmentCommitment({
@@ -107,9 +115,32 @@ export function AssignmentCommitment({
   assignmentTitle,
   courseNftPolicyId,
   moduleCode,
+  sltHash,
 }: AssignmentCommitmentProps) {
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
+  const { trackPendingTx } = useTrackPendingTx();
+
+  // Check on-chain student status from Andamioscan
+  const {
+    data: onChainStudent,
+    isLoading: onChainLoading,
+    refetch: refetchOnChain,
+  } = useCourseStudent(courseNftPolicyId, user?.accessTokenAlias ?? undefined);
+
+  // Check if user has a current commitment for THIS module on-chain
+  const hasOnChainCommitment = useMemo(() => {
+    if (!onChainStudent || !sltHash) return false;
+    // current is the module hash of the pending commitment
+    return onChainStudent.current === sltHash;
+  }, [onChainStudent, sltHash]);
+
+  // Check if user has already completed THIS module on-chain
+  const hasCompletedOnChain = useMemo(() => {
+    if (!onChainStudent || !sltHash) return false;
+    return onChainStudent.completed.includes(sltHash);
+  }, [onChainStudent, sltHash]);
+
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -151,7 +182,7 @@ export function AssignmentCommitment({
 
   // Refetchable commitment loader
   const fetchCommitment = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.accessTokenAlias) {
       setIsLoading(false);
       return;
     }
@@ -160,59 +191,63 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Go API: POST /course/student/assignment-commitment/list
+      // Use the shared endpoint to get commitment for this specific module
+      // POST /course/shared/assignment-commitment/get
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/list`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          body: JSON.stringify({
+            policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            access_token_alias: user.accessTokenAlias,
+          }),
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch commitments");
+      // 404 means no commitment yet
+      if (response.status === 404) {
+        setCommitment(null);
+        return;
       }
 
-      const commitments = (await response.json()) as Commitment[];
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Failed to fetch commitment:", response.status, errorBody);
+        throw new Error(`Failed to fetch commitment: ${response.status}`);
+      }
 
-      const existingCommitment = commitments.find((c) => c.assignment.assignmentCode === assignmentCode);
+      const apiResponse = (await response.json()) as CommitmentApiResponse;
+      console.log("[AssignmentCommitment] API response:", apiResponse);
 
-      if (existingCommitment) {
-        setCommitment(existingCommitment);
-        // Set local UI status based on network status
-        if (existingCommitment.networkStatus === "ASSIGNMENT_ACCEPTED" || existingCommitment.networkStatus === "CREDENTIAL_CLAIMED") {
-          setPrivateStatus("COMPLETE");
-        } else if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus.startsWith("PENDING_TX_")) {
-          setPrivateStatus("COMMITMENT");
-        }
-        // Set local evidence content if evidence exists
-        if (existingCommitment.networkEvidence) {
-          // Handle different evidence formats
-          let content: JSONContent | null = null;
-          if (typeof existingCommitment.networkEvidence === "string") {
-            try {
-              // Try to parse as JSON first
-              const parsed = JSON.parse(existingCommitment.networkEvidence) as unknown;
-              // If it has a 'type' property, it's likely Tiptap JSON
-              if (parsed && typeof parsed === "object" && "type" in parsed) {
-                content = parsed as JSONContent;
-              } else {
-                // Not Tiptap JSON, treat as plain string - wrap in Tiptap structure
-                content = null;
-              }
-            } catch {
-              // Not valid JSON, treat as plain string (HTML or text)
-              content = null;
-            }
-          } else {
-            // Already an object
-            content = existingCommitment.networkEvidence as JSONContent;
-          }
-          setLocalEvidenceContent(content);
-        }
+      // Transform snake_case API response to camelCase
+      const existingCommitment: Commitment = {
+        policyId: apiResponse.policy_id,
+        moduleCode: apiResponse.module_code,
+        assignmentCode: apiResponse.assignment_code,
+        accessTokenAlias: apiResponse.access_token_alias,
+        networkStatus: apiResponse.network_status,
+        networkEvidence: apiResponse.network_evidence,
+        networkEvidenceHash: apiResponse.network_evidence_hash,
+        pendingTxHash: apiResponse.pending_tx_hash,
+      };
+
+      setCommitment(existingCommitment);
+
+      // Set local UI status based on commitment network status
+      if (existingCommitment.networkStatus === "PENDING_APPROVAL") {
+        setPrivateStatus("COMMITMENT");
+      } else if (existingCommitment.networkStatus?.includes("PENDING")) {
+        setPrivateStatus("COMMITMENT");
       } else {
-        setCommitment(null);
+        setPrivateStatus("IN_PROGRESS");
+      }
+
+      // Set local evidence content if evidence exists
+      if (existingCommitment.networkEvidence) {
+        // Evidence is already a JSON object from the API
+        setLocalEvidenceContent(existingCommitment.networkEvidence as JSONContent);
       }
     } catch (err) {
       console.error("Error fetching commitment:", err);
@@ -220,7 +255,7 @@ export function AssignmentCommitment({
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, authenticatedFetch, assignmentCode, courseNftPolicyId]);
+  }, [isAuthenticated, authenticatedFetch, user?.accessTokenAlias, courseNftPolicyId, moduleCode]);
 
   // Initial fetch on mount
   useEffect(() => {
@@ -259,19 +294,17 @@ export function AssignmentCommitment({
       // Calculate hash from normalized content
       const evidenceHash = hashNormalizedContent(localEvidenceContent);
 
-      // Go API: POST /course/student/assignment-commitment/update-evidence
+      // API: POST /course/student/assignment-commitment/update-evidence
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            assignment_code: commitment.assignment.assignmentCode,
             access_token_alias: user.accessTokenAlias,
-            network_evidence: localEvidenceContent, // Send as JSON object, not stringified
-            network_evidence_hash: evidenceHash,
+            evidence: localEvidenceContent,
           }),
         }
       );
@@ -281,8 +314,8 @@ export function AssignmentCommitment({
         throw new Error(errorData.message ?? "Failed to update evidence");
       }
 
-      const updatedCommitment = (await response.json()) as Commitment;
-      setCommitment(updatedCommitment);
+      // Refetch commitment to get updated data
+      void fetchCommitment();
       triggerSuccess("Draft saved successfully!");
     } catch (err) {
       console.error("Error updating evidence:", err);
@@ -299,16 +332,15 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Go API: POST /course/student/assignment-commitment/delete
+      // API: POST /course/student/assignment-commitment/delete
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            assignment_code: commitment.assignment.assignmentCode,
             access_token_alias: user.accessTokenAlias,
           }),
         }
@@ -342,7 +374,26 @@ export function AssignmentCommitment({
     );
   }
 
-  if (isLoading) {
+  if (!sltHash) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
+          <AndamioCardDescription>This module is not yet available on-chain</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AndamioAlert>
+            <AlertIcon className="h-4 w-4" />
+            <AndamioAlertDescription>
+              The instructor needs to mint this module on-chain before you can submit your assignment.
+            </AndamioAlertDescription>
+          </AndamioAlert>
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
+
+  if (isLoading || onChainLoading) {
     return (
       <AndamioCard>
         <AndamioCardHeader>
@@ -379,19 +430,207 @@ export function AssignmentCommitment({
           </AndamioAlert>
         )}
 
-        {!commitment && !hasStarted ? (
-          // No commitment yet - show start option
+        {/* Check if already completed on-chain */}
+        {hasCompletedOnChain ? (
+          <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-success/10 border-success/20">
+            <SuccessIcon className="h-12 w-12 text-success mb-4" />
+            <AndamioText className="font-medium mb-2">Module Completed</AndamioText>
+            <AndamioText variant="small" className="text-muted-foreground">
+              You have successfully completed this module on-chain.
+            </AndamioText>
+          </div>
+        ) : commitment?.networkStatus === "ASSIGNMENT_ACCEPTED" ? (
+          // Assignment accepted - show credential claim
           <div className="space-y-4">
-            <div className="text-center py-8 border-2 border-dashed rounded-lg">
-              <LessonIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <AndamioText variant="small" className="mb-4">
-                You haven&apos;t started this assignment yet
-              </AndamioText>
-              <AndamioButton onClick={handleStartAssignment}>
-                <AddIcon className="h-4 w-4 mr-2" />
-                Start Assignment
-              </AndamioButton>
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-success/10 border-success/20">
+              <SuccessIcon className="h-8 w-8 text-success shrink-0" />
+              <div>
+                <AndamioText className="font-medium">Assignment Accepted!</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Your teacher has approved your work. You can now claim your credential.
+                </AndamioText>
+              </div>
             </div>
+
+            {/* Show submitted evidence */}
+            {commitment.networkEvidence && (
+              <div className="space-y-2">
+                <AndamioLabel>Your Approved Evidence</AndamioLabel>
+                <ContentDisplay
+                  content={commitment.networkEvidence as JSONContent}
+                  variant="muted"
+                />
+              </div>
+            )}
+
+            <AndamioSeparator />
+
+            {/* Credential Claim Component */}
+            <CredentialClaim
+              courseNftPolicyId={courseNftPolicyId}
+              moduleCode={moduleCode}
+              moduleTitle={assignmentTitle}
+              onSuccess={() => {
+                // Refresh data after claiming
+                void fetchCommitment();
+                void refetchOnChain();
+              }}
+            />
+          </div>
+        ) : hasOnChainCommitment && !commitment ? (
+          // On-chain commitment exists but no database record - allow sync
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-warning/10 border-warning/20">
+              <AlertIcon className="h-8 w-8 text-warning shrink-0" />
+              <div>
+                <AndamioText className="font-medium">Sync Required</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Your assignment is on-chain but not synced to the database. Add your evidence below to enable teacher review.
+                </AndamioText>
+              </div>
+            </div>
+
+            {/* Display on-chain evidence hash */}
+            {onChainStudent?.currentContent && (
+              <div className="space-y-2">
+                <AndamioLabel>On-Chain Evidence Hash</AndamioLabel>
+                <div className="p-3 border rounded-md bg-muted/20">
+                  <AndamioText variant="small" className="text-muted-foreground mb-1">
+                    Your evidence hash is verified on-chain:
+                  </AndamioText>
+                  <span className="text-xs font-mono break-all">
+                    {/* Decode hex to get actual hash */}
+                    {(() => {
+                      try {
+                        const hex = onChainStudent.currentContent;
+                        // Decode hex string to ASCII
+                        let decoded = "";
+                        for (let i = 0; i < hex.length; i += 2) {
+                          decoded += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
+                        }
+                        return decoded;
+                      } catch {
+                        return onChainStudent.currentContent;
+                      }
+                    })()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <AndamioSeparator />
+
+            {/* Evidence Editor for Sync */}
+            <div className="space-y-2">
+              <AndamioLabel>Your Evidence</AndamioLabel>
+              <AndamioText variant="small" className="text-xs mb-2">
+                Enter the same evidence you submitted on-chain. The hash must match for verification.
+              </AndamioText>
+              <div className="border border-foreground/30 dark:border-muted-foreground rounded-md overflow-hidden">
+                <ContentEditor
+                  content={localEvidenceContent}
+                  onContentChange={handleEvidenceContentChange}
+                  minHeight="200px"
+                  placeholder="Enter your assignment evidence to sync with the database..."
+                />
+              </div>
+              {localEvidenceContent && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span>Hash:</span>
+                  <span className="font-mono bg-muted px-2 py-1 rounded">{hashNormalizedContent(localEvidenceContent)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2">
+              <AndamioButton
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void refetchOnChain();
+                  void fetchCommitment();
+                }}
+              >
+                Refresh Status
+              </AndamioButton>
+              <AndamioSaveButton
+                onClick={async () => {
+                  if (!user?.accessTokenAlias || !localEvidenceContent) return;
+
+                  setIsSaving(true);
+                  setError(null);
+
+                  try {
+                    // Step 1: Create the commitment record
+                    // API: POST /course/student/assignment-commitment/create
+                    const createResponse = await authenticatedFetch(
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/create`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          policy_id: courseNftPolicyId,
+                          module_code: moduleCode,
+                          status: "PENDING_APPROVAL", // On-chain commitment means it's pending review
+                        }),
+                      }
+                    );
+
+                    // If create fails with conflict (409), record might already exist - continue to update
+                    if (!createResponse.ok && createResponse.status !== 409) {
+                      const errorData = (await createResponse.json()) as { message?: string };
+                      throw new Error(errorData.message ?? "Failed to create commitment record");
+                    }
+
+                    // Step 2: Update the evidence
+                    // API: POST /course/student/assignment-commitment/update-evidence
+                    const updateResponse = await authenticatedFetch(
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          policy_id: courseNftPolicyId,
+                          module_code: moduleCode,
+                          access_token_alias: user.accessTokenAlias,
+                          evidence: localEvidenceContent,
+                        }),
+                      }
+                    );
+
+                    if (!updateResponse.ok) {
+                      const errorData = (await updateResponse.json()) as { message?: string };
+                      throw new Error(errorData.message ?? "Failed to update evidence");
+                    }
+
+                    triggerSuccess("Evidence synced successfully!");
+                    void fetchCommitment();
+                  } catch (err) {
+                    console.error("Error syncing evidence:", err);
+                    setError(err instanceof Error ? err.message : "Failed to sync evidence");
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                isSaving={isSaving}
+                disabled={!localEvidenceContent}
+                label="Sync Evidence to Database"
+                savingLabel="Syncing..."
+              />
+            </div>
+          </div>
+        ) : !commitment && !hasStarted ? (
+          // No commitment yet - show start option
+          <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed rounded-lg">
+            <LessonIcon className="h-12 w-12 text-muted-foreground mb-4" />
+            <AndamioText variant="small" className="mb-4">
+              You haven&apos;t started this assignment yet
+            </AndamioText>
+            <AndamioButton variant="default" onClick={handleStartAssignment}>
+              <AddIcon className="h-4 w-4 mr-2" />
+              Start Assignment
+            </AndamioButton>
           </div>
         ) : !commitment && hasStarted ? (
           // Started locally but not committed to blockchain yet
@@ -413,12 +652,14 @@ export function AssignmentCommitment({
                 <AndamioText variant="small" className="text-xs mb-2">
                   Write your evidence below. When finished, lock it to generate a hash for submission.
                 </AndamioText>
-                <ContentEditor
-                  content={localEvidenceContent}
-                  onContentChange={handleEvidenceContentChange}
-                  minHeight="200px"
-                  placeholder="Write your assignment evidence..."
-                />
+                <div className="border border-foreground/30 dark:border-muted-foreground rounded-md overflow-hidden">
+                  <ContentEditor
+                    content={localEvidenceContent}
+                    onContentChange={handleEvidenceContentChange}
+                    minHeight="200px"
+                    placeholder="Write your assignment evidence..."
+                  />
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -428,7 +669,7 @@ export function AssignmentCommitment({
                 )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                   <span>Hash:</span>
-                  <code className="bg-muted px-2 py-1 rounded">{evidenceHash}</code>
+                  <span className="font-mono bg-muted px-2 py-1 rounded">{evidenceHash}</span>
                 </div>
               </div>
             )}
@@ -469,26 +710,41 @@ export function AssignmentCommitment({
             </div>
 
             {/* Submit to Blockchain Transaction */}
-            {showSubmitTx && user?.accessTokenAlias && evidenceHash && (
+            {showSubmitTx && user?.accessTokenAlias && evidenceHash && sltHash && (
               <>
                 <AndamioSeparator />
                 <AndamioTransaction
                   definition={COURSE_STUDENT_ASSIGNMENT_COMMIT}
                   inputs={{
-                    // txParams (for Andamioscan transaction builder)
-                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
-                    policy: courseNftPolicyId,
-                    assignment_code: assignmentCode,
-                    assignment_info: evidenceHash, // Hash, not full content
+                    // txParams (for transaction builder API)
+                    alias: user.accessTokenAlias,
+                    course_id: courseNftPolicyId,
+                    slt_hash: sltHash,
+                    assignment_info: evidenceHash,
                     // sideEffectParams (for db-api)
-                    moduleCode: moduleCode,
-                    accessTokenAlias: user.accessTokenAlias,
-                    assignmentEvidence: evidenceContent, // Full Tiptap JSON content for database
+                    module_code: moduleCode,
+                    network_evidence: evidenceContent,
+                    network_evidence_hash: evidenceHash,
                   }}
-                  onSuccess={() => {
+                  onSuccess={(result) => {
                     setShowSubmitTx(false);
                     setHasUnsavedChanges(false);
                     triggerSuccess("Assignment submitted to blockchain!");
+
+                    // Track pending transaction for confirmation handling
+                    if (result.txHash && user?.accessTokenAlias) {
+                      trackPendingTx({
+                        id: `assignment-commitment-${courseNftPolicyId}-${moduleCode}-${user.accessTokenAlias}`,
+                        txHash: result.txHash,
+                        entityType: "assignment-commitment",
+                        entityId: user.accessTokenAlias, // Student alias for the confirm endpoint
+                        context: {
+                          courseNftPolicyId,
+                          moduleCode,
+                        },
+                      });
+                    }
+
                     // Refresh commitment data
                     void fetchCommitment();
                   }}
@@ -509,8 +765,8 @@ export function AssignmentCommitment({
                 <div className="flex items-center gap-2 mt-1">
                   <PendingIcon className="h-4 w-4 text-muted-foreground" />
                   <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
-                  {commitment?.networkStatus !== "AWAITING_EVIDENCE" && (
-                    <AndamioBadge>{commitment?.networkStatus}</AndamioBadge>
+                  {commitment?.networkStatus && (
+                    <AndamioBadge>{commitment.networkStatus}</AndamioBadge>
                   )}
                 </div>
               </div>
@@ -538,16 +794,16 @@ export function AssignmentCommitment({
               {commitment?.networkEvidence ? (
                 <>
                   <AndamioText variant="small" className="text-xs mb-2">
-                    This is the evidence you submitted on-chain for review.
+                    This is the evidence you submitted for review.
                   </AndamioText>
                   <ContentDisplay
-                    content={commitment.networkEvidence as string | JSONContent}
+                    content={commitment.networkEvidence as JSONContent}
                     variant="muted"
                   />
                   {commitment.networkEvidenceHash && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                       <span>Hash:</span>
-                      <code className="bg-muted px-2 py-1 rounded">{commitment.networkEvidenceHash}</code>
+                      <span className="font-mono bg-muted px-2 py-1 rounded">{commitment.networkEvidenceHash.slice(0, 16)}...</span>
                     </div>
                   )}
                 </>
@@ -597,25 +853,40 @@ export function AssignmentCommitment({
             </div>
 
             {/* Submit to Blockchain Transaction */}
-            {showSubmitTx && user?.accessTokenAlias && (
+            {showSubmitTx && user?.accessTokenAlias && sltHash && localEvidenceContent && (
               <>
                 <AndamioSeparator />
                 <AndamioTransaction
                   definition={COURSE_STUDENT_ASSIGNMENT_COMMIT}
                   inputs={{
-                    // txParams (for Andamioscan transaction builder)
-                    user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
-                    policy: courseNftPolicyId,
-                    assignment_code: assignmentCode,
-                    assignment_info: localEvidenceContent ? hashNormalizedContent(localEvidenceContent) : "",
+                    // txParams (for transaction builder API)
+                    alias: user.accessTokenAlias,
+                    course_id: courseNftPolicyId,
+                    slt_hash: sltHash,
+                    assignment_info: hashNormalizedContent(localEvidenceContent),
                     // sideEffectParams (for db-api)
-                    moduleCode: moduleCode,
-                    accessTokenAlias: user.accessTokenAlias,
-                    assignmentEvidence: localEvidenceContent ?? {},
+                    module_code: moduleCode,
+                    network_evidence: localEvidenceContent,
+                    network_evidence_hash: hashNormalizedContent(localEvidenceContent),
                   }}
-                  onSuccess={() => {
+                  onSuccess={(result) => {
                     setShowSubmitTx(false);
                     triggerSuccess("Assignment submitted to blockchain!");
+
+                    // Track pending transaction for confirmation handling
+                    if (result.txHash && user?.accessTokenAlias) {
+                      trackPendingTx({
+                        id: `assignment-commitment-${courseNftPolicyId}-${moduleCode}-${user.accessTokenAlias}`,
+                        txHash: result.txHash,
+                        entityType: "assignment-commitment",
+                        entityId: user.accessTokenAlias,
+                        context: {
+                          courseNftPolicyId,
+                          moduleCode,
+                        },
+                      });
+                    }
+
                     // Refresh commitment data
                     void fetchCommitment();
                   }}
@@ -626,24 +897,26 @@ export function AssignmentCommitment({
               </>
             )}
 
-            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction - Show when PENDING_APPROVAL or ASSIGNMENT_DENIED */}
-            {commitment && user?.accessTokenAlias &&
-             (commitment.networkStatus === "PENDING_APPROVAL" || commitment.networkStatus === "ASSIGNMENT_DENIED") && (
+            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction - Show when commitment is on-chain (PENDING_APPROVAL) */}
+            {commitment && user?.accessTokenAlias && localEvidenceContent &&
+             commitment.networkStatus === "PENDING_APPROVAL" && (
               <>
                 <AndamioSeparator />
                 <div className="space-y-2">
                   <AndamioLabel className="text-sm font-medium">Update Your Submission</AndamioLabel>
                   <AndamioText variant="small" className="text-xs">
-                    {commitment.networkStatus === "ASSIGNMENT_DENIED"
-                      ? "Your assignment was denied. You can update your evidence and resubmit for review."
-                      : "Your assignment is pending review. You can update your evidence if needed."}
+                    Your assignment is on-chain. You can update your evidence if needed.
                   </AndamioText>
                   <AndamioTransaction
                     definition={COURSE_STUDENT_ASSIGNMENT_UPDATE}
                     inputs={{
-                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
-                      policy: courseNftPolicyId,
-                      assignment_info: localEvidenceContent ? hashNormalizedContent(localEvidenceContent) : "",
+                      // txParams (for transaction builder API)
+                      alias: user.accessTokenAlias,
+                      course_id: courseNftPolicyId,
+                      assignment_info: hashNormalizedContent(localEvidenceContent),
+                      // sideEffectParams (for db-api)
+                      module_code: moduleCode,
+                      evidence: localEvidenceContent,
                     }}
                     showCard={false}
                     onSuccess={() => {
@@ -658,35 +931,9 @@ export function AssignmentCommitment({
               </>
             )}
 
-            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction - Show as withdrawal option */}
-            {commitment && user?.accessTokenAlias && commitment.networkStatus !== "ASSIGNMENT_ACCEPTED" && (
-              <>
-                <AndamioSeparator />
-                <div className="space-y-2">
-                  <AndamioLabel className="text-sm font-medium text-destructive">Withdraw from Assignment</AndamioLabel>
-                  <AndamioText variant="small" className="text-xs">
-                    Remove your commitment to this assignment. You can recommit later if needed.
-                  </AndamioText>
-                  <AndamioTransaction
-                    definition={COURSE_STUDENT_ASSIGNMENT_UPDATE}
-                    inputs={{
-                      user_access_token: `${env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}323232${stringToHex(user.accessTokenAlias)}`,
-                      policy: courseNftPolicyId,
-                      moduleCode: moduleCode,
-                      student_alias: user.accessTokenAlias,
-                    }}
-                    showCard={false}
-                    onSuccess={() => {
-                      triggerSuccess("You've withdrawn from this assignment.");
-                      void fetchCommitment();
-                    }}
-                    onError={(err) => {
-                      setError(err.message);
-                    }}
-                  />
-                </div>
-              </>
-            )}
+            {/* TODO: Withdrawal is not supported via COURSE_STUDENT_ASSIGNMENT_UPDATE in V2.
+                Students can only update evidence or claim credentials. If withdrawal is needed,
+                a separate mechanism would be required. */}
           </div>
         )}
       </AndamioCardContent>

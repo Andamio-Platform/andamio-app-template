@@ -130,3 +130,15 @@ Items that have been addressed and can be archived.
 | Add access-token pending state to dashboard | 2026-01-12 | New onboarding UX with "Confirming on-chain" message |
 | Update PENDING-TX-WATCHER.md entity types | 2026-01-12 | Added access-token, course, project to supported types |
 | Add access token minting UX to CHANGELOG.md | 2026-01-12 | Documented pending state and smart refresh |
+| Add CourseTeachersCard to CHANGELOG.md | 2026-01-13 | New component for on-chain vs DB teacher sync |
+| Add JWT console logging to CHANGELOG.md | 2026-01-13 | Debug feature for API testing |
+| Update loop-history.md with Loop 3 session | 2026-01-13 | Added session log for teacher sync testing |
+| Fix instructor dashboard API endpoint | 2026-01-13 | Endpoint path and request body field fixes |
+| Fix assignment commitment field names | 2026-01-13 | network_* prefix pattern for DB API fields |
+| Add instructor assessment UI to CHANGELOG.md | 2026-01-13 | Accept/Refuse decision buttons |
+| Fix teacher assessment transaction inputs | 2026-01-13 | Matched COURSE_TEACHER_ASSIGNMENTS_ASSESS schema |
+| Add pending tx tracking for teacher assessments | 2026-01-13 | Enables onConfirmation side effects |
+| Create GitHub issue #33 | 2026-01-13 | Stuck transactions missing onConfirmation |
+| Create GitHub issue #34 | 2026-01-13 | Assessment button UX improvements |
+| Create GitHub issue #35 | 2026-01-13 | Andamioscan module token/SLT mismatch |
+| Update STATUS.md with session notes | 2026-01-13 | Session 4 instructor dashboard fixes |

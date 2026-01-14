@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { usePendingTxContext } from "~/components/pending-tx-watcher";
 import type { ProvisioningStep, ProvisioningConfig, ProvisioningState } from "./types";
 
@@ -50,7 +49,6 @@ export interface UseProvisioningStateReturn {
 export function useProvisioningState(
   config: UseProvisioningStateConfig | null
 ): UseProvisioningStateReturn {
-  const router = useRouter();
   const { pendingTransactions, addPendingTx, removePendingTx } = usePendingTxContext();
 
   const [state, setState] = useState<ProvisioningState | null>(null);
@@ -126,7 +124,18 @@ export function useProvisioningState(
    * Navigate to the entity page
    */
   const navigateToEntity = useCallback(() => {
-    if (!config?.successRedirectPath) return;
+    console.log("[Provisioning] navigateToEntity called", {
+      hasConfig: !!config,
+      successRedirectPath: config?.successRedirectPath,
+      stateSuccessPath: state?.successRedirectPath,
+    });
+
+    // Use state.successRedirectPath as fallback (more stable reference)
+    const redirectPath = config?.successRedirectPath ?? state?.successRedirectPath;
+    if (!redirectPath) {
+      console.error("[Provisioning] No redirect path available");
+      return;
+    }
 
     // Clear any pending redirect timeout
     if (redirectTimeoutRef.current) {
@@ -140,8 +149,10 @@ export function useProvisioningState(
     }
 
     // Navigate to success path
-    router.push(config.successRedirectPath);
-  }, [config, router, removePendingTx]);
+    // Use window.location for more reliable navigation from within drawers/modals
+    console.log("[Provisioning] Navigating to:", redirectPath);
+    window.location.href = redirectPath;
+  }, [config, state, removePendingTx]);
 
   /**
    * Retry after an error

@@ -54,6 +54,7 @@ import { type HybridCourseStatus } from "~/components/studio/studio-course-card"
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourseModules } from "~/hooks/api/use-course-module";
 import { cn } from "~/lib/utils";
+import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 
 /**
  * Studio Course List Page
@@ -519,6 +520,12 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
               </ul>
             </div>
           )}
+
+          {/* Course Team Card */}
+          <CourseTeachersCard
+            courseNftPolicyId={course.courseId}
+            className="mt-8 max-w-sm mx-auto text-left"
+          />
         </div>
       </div>
     </div>

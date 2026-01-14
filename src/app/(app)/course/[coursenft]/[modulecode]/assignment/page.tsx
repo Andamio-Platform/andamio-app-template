@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { env } from "~/env";
 import { ContentViewer } from "~/components/editor";
@@ -8,6 +8,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import {
   AndamioPageHeader,
   AndamioPageLoading,
@@ -15,7 +16,10 @@ import {
 } from "~/components/andamio";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
+import { getCourse } from "~/lib/andamioscan";
 import { type CourseResponse, type CourseModuleResponse } from "@andamio/db-api-types";
+import { computeSltHashDefinite } from "@andamio/transactions";
+import { AlertIcon, SuccessIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 
 /**
@@ -47,6 +51,12 @@ interface Assignment {
   }>;
 }
 
+interface SLT {
+  id: string;
+  module_index: number;
+  slt_text: string;
+}
+
 export default function LearnerAssignmentPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
@@ -55,6 +65,8 @@ export default function LearnerAssignmentPage() {
   const [course, setCourse] = useState<CourseResponse | null>(null);
   const [courseModule, setCourseModule] = useState<CourseModuleResponse | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [slts, setSlts] = useState<SLT[]>([]);
+  const [onChainModuleHash, setOnChainModuleHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +96,17 @@ export default function LearnerAssignmentPage() {
           setCourseModule(moduleData);
         }
 
+        // Fetch SLTs for the module
+        // Go API: GET /course/public/slts/list/{policy_id}/{module_code}
+        const sltsResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
+        );
+
+        if (sltsResponse.ok) {
+          const sltsData = (await sltsResponse.json()) as SLT[];
+          setSlts(sltsData);
+        }
+
         // Go API: GET /course/public/assignment/get/{policy_id}/{module_code}
         const response = await fetch(
           `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/assignment/get/${courseNftPolicyId}/${moduleCode}`
@@ -110,6 +133,63 @@ export default function LearnerAssignmentPage() {
 
     void fetchAssignment();
   }, [courseNftPolicyId, moduleCode]);
+
+  // Compute sltHash from fetched SLTs
+  const computedSltHash = useMemo(() => {
+    if (slts.length > 0) {
+      const sltTexts = [...slts]
+        .sort((a, b) => a.module_index - b.module_index)
+        .map((slt) => slt.slt_text);
+      return computeSltHashDefinite(sltTexts);
+    }
+    return null;
+  }, [slts]);
+
+  // Fetch on-chain data and match after we have computed hash
+  useEffect(() => {
+    if (!computedSltHash || !courseNftPolicyId) return;
+
+    const matchOnChain = async () => {
+      try {
+        const onChainCourse = await getCourse(courseNftPolicyId);
+        if (onChainCourse?.modules) {
+          // Find module with matching assignment_id (which is the slt_hash)
+          const matchingModule = onChainCourse.modules.find(
+            (m) => m.assignment_id === computedSltHash
+          );
+          if (matchingModule) {
+            console.log("Found matching on-chain module:", matchingModule.assignment_id);
+            setOnChainModuleHash(matchingModule.assignment_id);
+          } else {
+            console.warn(
+              "No exact SLT hash match found on-chain. Computed:",
+              computedSltHash,
+              "On-chain modules:",
+              onChainCourse.modules.map((m) => m.assignment_id)
+            );
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch on-chain course data:", err);
+      }
+    };
+
+    void matchOnChain();
+  }, [computedSltHash, courseNftPolicyId]);
+
+  // Determine the sltHash to use:
+  // 1. On-chain hash (authoritative, from Andamioscan) - if verified to match
+  // 2. Database module_hash (if available)
+  // 3. Computed hash (fallback)
+  const sltHash = onChainModuleHash ?? courseModule?.module_hash ?? computedSltHash;
+
+  // Check for hash mismatch between computed and on-chain
+  const hashMismatch = useMemo(() => {
+    if (onChainModuleHash && computedSltHash && onChainModuleHash !== computedSltHash) {
+      return { computed: computedSltHash, onChain: onChainModuleHash };
+    }
+    return null;
+  }, [onChainModuleHash, computedSltHash]);
 
   // Loading state
   if (isLoading) {
@@ -167,24 +247,26 @@ export default function LearnerAssignmentPage() {
       </div>
 
       {/* Linked SLTs */}
-      {assignment.slts && assignment.slts.length > 0 && (
+      {slts.length > 0 && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Learning Targets</AndamioCardTitle>
             <AndamioCardDescription>
-              This assignment covers {assignment.slts.length} Student Learning Target{assignment.slts.length !== 1 ? 's' : ''}
+              This assignment covers {slts.length} Student Learning Target{slts.length !== 1 ? 's' : ''}
             </AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="space-y-2">
-              {assignment.slts.map((slt) => (
-                <div key={slt.id} className="flex items-start gap-3 p-3 border rounded-md">
-                  <AndamioBadge variant="outline" className="mt-0.5">
-                    {slt.moduleIndex}
-                  </AndamioBadge>
-                  <AndamioText variant="small" className="flex-1 text-foreground">{slt.sltText}</AndamioText>
-                </div>
-              ))}
+              {slts
+                .sort((a, b) => a.module_index - b.module_index)
+                .map((slt) => (
+                  <div key={`slt-${slt.module_index}`} className="flex items-start gap-3 p-3 border rounded-md">
+                    <AndamioBadge variant="outline" className="mt-0.5">
+                      {slt.module_index}
+                    </AndamioBadge>
+                    <AndamioText variant="small" className="flex-1 text-foreground">{slt.slt_text}</AndamioText>
+                  </div>
+                ))}
             </div>
           </AndamioCardContent>
         </AndamioCard>
@@ -242,6 +324,35 @@ export default function LearnerAssignmentPage() {
 
       <AndamioSeparator />
 
+      {/* Hash Verification Status */}
+      {hashMismatch && (
+        <AndamioAlert variant="destructive">
+          <AlertIcon className="h-4 w-4" />
+          <AndamioAlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">SLT Hash Mismatch Detected</p>
+              <p className="text-sm">The on-chain module hash does not match the computed hash from database SLTs. This may indicate the SLTs were modified after minting.</p>
+              <div className="text-xs font-mono space-y-1 mt-2">
+                <div><span className="text-muted-foreground">On-chain:</span> {hashMismatch.onChain}</div>
+                <div><span className="text-muted-foreground">Computed:</span> {hashMismatch.computed}</div>
+              </div>
+            </div>
+          </AndamioAlertDescription>
+        </AndamioAlert>
+      )}
+
+      {onChainModuleHash && !hashMismatch && (
+        <AndamioAlert>
+          <SuccessIcon className="h-4 w-4 text-success" />
+          <AndamioAlertDescription>
+            <span className="font-medium">Module verified on-chain</span>
+            <span className="ml-2 text-xs font-mono text-muted-foreground">
+              {onChainModuleHash.slice(0, 16)}...
+            </span>
+          </AndamioAlertDescription>
+        </AndamioAlert>
+      )}
+
       {/* Assignment Commitment Component */}
       <AssignmentCommitment
         assignmentId={assignment.id}
@@ -249,6 +360,7 @@ export default function LearnerAssignmentPage() {
         assignmentTitle={assignment.title}
         courseNftPolicyId={courseNftPolicyId}
         moduleCode={moduleCode}
+        sltHash={sltHash}
       />
     </div>
   );

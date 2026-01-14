@@ -40,6 +40,7 @@ type RawApiCourseDetails = {
 
 /**
  * Raw student status from API
+ * Note: current_assignment can be either a string (hash) or an object with assignment_id
  */
 type RawApiStudentStatus = {
   alias: string;
@@ -48,7 +49,7 @@ type RawApiStudentStatus = {
     assignment_id: string;
     content: string;
   }>;
-  current_assignment: string | null;
+  current_assignment: string | { assignment_id: string; content: string } | null;
 };
 
 /**
@@ -80,7 +81,7 @@ type RawApiUserState = {
  * On-chain module data from Andamioscan (normalized)
  */
 export type AndamioscanModule = {
-  /** Module hash (Blake2b-256 of SLTs) - matches computeSltHash() */
+  /** Module hash (Blake2b-256 of SLTs) - matches computeSltHashDefinite() */
   assignment_id: string;
   /** Creator's access token alias */
   created_by: string;
@@ -120,6 +121,8 @@ export type AndamioscanStudent = {
   course_id: string;
   /** Current assignment module hash (or null if none) */
   current: string | null;
+  /** Current assignment evidence content (if available) */
+  currentContent: string | null;
   /** Array of completed module hashes */
   completed: string[];
 };
@@ -183,10 +186,27 @@ function normalizeCourseDetails(raw: RawApiCourseDetails): AndamioscanCourse {
  * Transform raw API student status to normalized format
  */
 function normalizeStudentStatus(raw: RawApiStudentStatus): AndamioscanStudent {
+  // Handle current_assignment being either a string or an object
+  let current: string | null = null;
+  let currentContent: string | null = null;
+
+  if (raw.current_assignment !== null) {
+    if (typeof raw.current_assignment === "string") {
+      current = raw.current_assignment;
+    } else if (typeof raw.current_assignment === "object") {
+      // It's an object - extract assignment_id and content
+      const assignment = raw.current_assignment as Record<string, unknown>;
+      current = (assignment.assignment_id as string) ?? null;
+      // Content is hex-encoded evidence hash from on-chain
+      currentContent = (assignment.content as string) ?? null;
+    }
+  }
+
   return {
     alias: raw.alias,
     course_id: raw.course_id,
-    current: raw.current_assignment,
+    current,
+    currentContent,
     completed: raw.completed_assignments.map((a) => a.assignment_id),
   };
 }
@@ -448,7 +468,7 @@ export async function getUserCredentials(
  * Check if a module exists on-chain for a course
  *
  * @param courseId - Course NFT Policy ID
- * @param moduleHash - Module hash (from computeSltHash)
+ * @param moduleHash - Module hash (from computeSltHashDefinite)
  * @returns true if module exists on-chain
  */
 export async function isModuleOnChain(courseId: string, moduleHash: string): Promise<boolean> {

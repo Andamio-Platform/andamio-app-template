@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 11, 2026
+> **Last Updated**: January 13, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -19,12 +19,12 @@ API COVERAGE AUDIT ────────────────────�
   │   Automated coverage script created (71% overall)
   │
   ▼
-TODAY ──────────────────────────────────────────────────── 2026-01-11 (Sun) ← We are here
-  │
-  │   Documentation sync, final testing
+V2 PREPROD ROLLOUT BEGINS ──────────────────────────────── 2026-01-12 (Mon) ✅
   │
   ▼
-V2 PREPROD ROLLOUT BEGINS ──────────────────────────────── 2026-01-12 (Mon)
+TODAY ──────────────────────────────────────────────────── 2026-01-13 (Tue) ← We are here
+  │
+  │   Tx Loop 2 complete, instructor dashboard fixes
   │
   ▼
 ANDAMIO PIONEERS LAUNCH ────────────────────────────────── 2026-01-14 (Wed)
@@ -52,9 +52,9 @@ MAINNET V2 LAUNCH ────────────────────�
 |------|-----------|--------|
 | 2026-01-09 (Fri) | Go API Migration Complete | ✅ Complete |
 | 2026-01-10 (Sat) | API Coverage Audit | ✅ Complete |
-| **2026-01-11 (Sun)** | **Today - Documentation sync** | 🔄 Active |
-| 2026-01-12 (Mon) | V2 Preprod Rollout Begins | ⏳ Tomorrow |
-| **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | |
+| 2026-01-12 (Mon) | V2 Preprod Rollout Begins | ✅ Complete |
+| **2026-01-13 (Tue)** | **Today - Tx Loop 2 Complete** | ✅ Done |
+| **2026-01-14 (Wed)** | **Andamio Pioneers Launch** | ⏳ Tomorrow |
 | **2026-01-16 (Fri)** | **Final Demos** | |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | |

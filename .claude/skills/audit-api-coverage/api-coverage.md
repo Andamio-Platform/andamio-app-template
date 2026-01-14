@@ -146,7 +146,7 @@ The Go API uses **role-based routing**:
 | Health & Authentication | 3 | 2 | ✅ Mostly Complete |
 | User Management | 4 | 3 | ✅ Migrated |
 | Course Public | 11 | 8 | ✅ Migrated |
-| Course Owner | 6 | 4 | ✅ Migrated |
+| Course Owner | 7 | 5 | ✅ Migrated |
 | Course Teacher | 22 | 14 | ✅ Migrated |
 | Course Student | 6 | 4 | ✅ Migrated |
 | Course Shared | 3 | 2 | ✅ Migrated |
@@ -155,7 +155,7 @@ The Go API uses **role-based routing**:
 | Project Manager | 7 | 4 | ✅ Migrated |
 | Project Contributor | 6 | 2 | ⚠️ Partial |
 | Project Shared | 1 | 0 | ⏳ Not Started |
-| **TOTAL** | **87** | **49** | **56%** |
+| **TOTAL** | **88** | **50** | **57%** |
 
 *Run the automated coverage script for precise, up-to-date counts.*
 
@@ -207,6 +207,7 @@ The Go API uses **role-based routing**:
 | `/course/owner/course/delete` | POST | `use-course.ts` | ✅ |
 | `/course/owner/course/mint` | POST | `on-chain-courses-section.tsx` | ✅ |
 | `/course/owner/course/confirm-mint` | POST | - | ⏳ |
+| `/course/owner/course/sync-teachers` | POST | `course-teachers-card.tsx` | ✅ |
 
 ### Course Teacher ✅
 

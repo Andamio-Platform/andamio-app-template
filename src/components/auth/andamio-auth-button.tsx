@@ -60,20 +60,28 @@ export function AndamioAuthButton() {
     );
   }
 
-  // Wallet connected but not authenticated - auto-auth should be in progress
-  // This state shows while waiting for signature or if there was an error
+  // Wallet connected but not authenticated
+  // Possible states: authenticating, error, or idle (waiting for user action)
   if (isWalletConnected) {
+    // Determine the current state
+    const isIdle = !isAuthenticating && !authError;
+
+    let title = "Authenticating...";
+    let description = "Please sign the message in your wallet";
+
+    if (authError) {
+      title = "Authentication Failed";
+      description = "Please try again or reconnect your wallet";
+    } else if (isIdle) {
+      title = "Sign to Continue";
+      description = "Sign a message with your wallet to authenticate";
+    }
+
     return (
       <AndamioCard>
         <AndamioCardHeader>
-          <AndamioCardTitle>
-            {authError ? "Authentication Failed" : "Authenticating..."}
-          </AndamioCardTitle>
-          <AndamioCardDescription>
-            {authError
-              ? "Please try again or reconnect your wallet"
-              : "Please sign the message in your wallet"}
-          </AndamioCardDescription>
+          <AndamioCardTitle>{title}</AndamioCardTitle>
+          <AndamioCardDescription>{description}</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
           {authError && (
@@ -81,21 +89,18 @@ export function AndamioAuthButton() {
               <AndamioAlertDescription>{authError}</AndamioAlertDescription>
             </AndamioAlert>
           )}
-          {authError ? (
+          {isAuthenticating ? (
+            <div className="flex items-center justify-center py-4">
+              <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
             <AndamioButton
               onClick={authenticate}
               disabled={isAuthenticating}
               className="w-full"
             >
-              {isAuthenticating && (
-                <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isAuthenticating ? "Authenticating..." : "Try Again"}
+              {authError ? "Try Again" : "Sign to Authenticate"}
             </AndamioButton>
-          ) : (
-            <div className="flex items-center justify-center py-4">
-              <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
           )}
         </AndamioCardContent>
       </AndamioCard>

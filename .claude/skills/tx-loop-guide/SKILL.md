@@ -115,7 +115,7 @@ Explain what the loop tests and how many transactions are involved.
 ### During Each Step
 
 **Say things like:**
-> "Next, try to enroll in a course and commit to an assignment. This will be the `COURSE_STUDENT_ENROLL` transaction."
+> "Next, try to enroll in a course and commit to an assignment. This will be the `COURSE_STUDENT_ASSIGNMENT_COMMIT` transaction."
 
 **Wait for the user to navigate and attempt the action.** Don't tell them where to go unless they ask. This tests discoverability.
 
@@ -251,7 +251,7 @@ User: Yes, ready to go
 Guide: Perfect. You'll start as the Student.
 
 **Step 1 of 3:** Try to enroll in a course and commit to an assignment.
-This will be the `COURSE_STUDENT_ENROLL` transaction.
+This will be the `COURSE_STUDENT_ASSIGNMENT_COMMIT` transaction.
 
 User: Done! That worked.
 

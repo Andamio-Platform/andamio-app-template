@@ -188,6 +188,9 @@ export function useAndamioTransaction<TParams = unknown>() {
                 }
               }
 
+              // Create submission context
+              // Include sideEffectParams as alias for buildInputs for backwards compatibility
+              // with npm-published @andamio/transactions that uses paths like "sideEffectParams.title"
               const submissionContext: SubmissionContext = {
                 txHash: txResult.txHash!,
                 signedCbor: "", // We don't have access to this in the current flow
@@ -197,6 +200,19 @@ export function useAndamioTransaction<TParams = unknown>() {
                 buildInputs,
                 timestamp: new Date(),
               };
+              // Add txParams and sideEffectParams as aliases for path resolution compatibility
+              // Transaction definitions use paths like "txParams.course_id" and "sideEffectParams.module_code"
+              // Both point to the same flat buildInputs object since we pass all params together
+              (submissionContext as Record<string, unknown>).txParams = buildInputs;
+              (submissionContext as Record<string, unknown>).sideEffectParams = buildInputs;
+
+              // Debug: log buildInputs to verify values are present
+              console.log("[TX] Side effect buildInputs:", buildInputs);
+              console.log("[TX] Side effect context:", {
+                txHash: submissionContext.txHash,
+                userId: submissionContext.userId,
+                buildInputsKeys: Object.keys(buildInputs),
+              });
 
               // Track counts for summary
               let succeeded = 0, failed = 0, skipped = 0;

@@ -25,7 +25,7 @@ A loop is **Validated** when:
 | Loop | Status | Last Tested | Tester | Open Issues | Notes |
 |------|--------|-------------|--------|-------------|-------|
 | 1: Onboarding | Issues Found | 2026-01-12 | @robertom | #28, #30 | Access Token mints successfully but UI stuck, alert keeps flashing |
-| 3: Create & Publish Course | Untested | - | - | - | - |
+| 3: Create & Publish Course | Issues Found | 2026-01-13 | @james | - | Teacher sync working, need to test full loop |
 | 2: Earn Credential | Blocked | 2026-01-12 | @robertom | #29, #30 | Enrollment blocked by missing transaction data |
 | 4: Assignment Revision | Untested | - | - | - | - |
 | 5: Multi-Module Path | Untested | - | - | - | - |
@@ -69,7 +69,7 @@ Record each testing session here.
 **Result:** Blocked
 
 **Transactions:**
-- [ ] COURSE_STUDENT_ENROLL — Failed (missing transaction data)
+- [ ] COURSE_STUDENT_ASSIGNMENT_COMMIT — Failed (missing transaction data)
 
 **Issues Created:**
 - #29 — Transaction Input is invalid error blocks course enrollment (blocker)
@@ -94,6 +94,37 @@ Record each testing session here.
 - Create Course vs Create Project UI patterns inconsistent
 - Module status indicator ("101 APPROVED") meaning unclear
 - Wallet disconnects on page refresh
+
+---
+
+### 2026-01-13 — Loop 3: Create & Publish Course (Partial)
+
+**Tester:** @james
+**Result:** Issues Found (in progress)
+
+**Transactions:**
+- [x] COURSE_ADMIN_CREATE — Previously completed (course exists on-chain)
+- [ ] COURSE_TEACHER_MODULES_MANAGE — Not yet tested this session
+
+**Issues Created:**
+- None (DB API bugs fixed during session)
+
+**Notes:**
+- Focused on validating teacher sync data flow
+- CourseTeachersCard component created to show on-chain vs DB teachers
+- Initial sync-teachers endpoint returned "Course not found" due to:
+  1. Field name mismatch (`policy_id` → `course_nft_policy_id`)
+  2. Broken Preload causing query to error out
+- Both issues fixed in DB API deployment
+- Teacher sync now works: on-chain teachers successfully synced to database
+- JWT console logging added for easier curl testing
+- Next: Continue with COURSE_TEACHER_MODULES_MANAGE transaction
+
+**Data Visibility Validated:**
+- [x] On-chain teachers visible via Andamioscan API
+- [x] Database teachers visible after sync
+- [x] Sync status comparison working ("In Sync" badge)
+- [ ] Module minting data flow — not yet tested
 
 ---
 

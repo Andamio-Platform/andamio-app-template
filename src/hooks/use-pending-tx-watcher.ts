@@ -198,43 +198,39 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
    * Process a confirmed assignment commitment transaction
    */
   const processConfirmedAssignmentCommitment = useCallback(
-    async (tx: PendingTransaction, onChainData: Record<string, unknown>) => {
-      const { learnerId, assignmentId } = tx.context;
-      if (!learnerId || !assignmentId) {
-        throw new Error("Missing learnerId or assignmentId in context");
+    async (tx: PendingTransaction) => {
+      const { courseNftPolicyId, moduleCode } = tx.context;
+      if (!courseNftPolicyId || !moduleCode) {
+        throw new Error("Missing courseNftPolicyId or moduleCode in context");
       }
 
-      // Extract networkEvidenceHash from on-chain data if available
-      const networkEvidenceHash = onChainData.dataHash as string | undefined;
-
-      // Go API: POST /course/student/assignment-commitment/update-status
-      // Confirm blockchain transaction and update assignment commitment status
-      // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
+      // Go API: POST /course/shared/assignment-commitment/confirm-transaction
+      // Confirm blockchain transaction and update assignment commitment status to PENDING_APPROVAL
+      // This matches the onConfirmation side effect in COURSE_STUDENT_ASSIGNMENT_COMMIT
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-status`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/confirm-transaction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: tx.entityId,
+            policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            access_token_alias: tx.entityId, // entityId is the student's alias
             tx_hash: tx.txHash,
-            network_evidence_hash: networkEvidenceHash ?? undefined,
           }),
         }
       );
 
       if (!response.ok) {
         const error = (await response.json()) as { message?: string };
-        throw new Error(`Failed to update assignment commitment status: ${error.message ?? response.statusText}`);
+        throw new Error(`Failed to confirm assignment commitment: ${error.message ?? response.statusText}`);
       }
 
       const updatedCommitment = (await response.json()) as {
         id: string;
-        assignmentId: string;
-        learnerId: string;
         networkStatus: string;
       };
-      pendingTxLogger.info(`Assignment commitment status updated:`, updatedCommitment);
+      pendingTxLogger.info(`Assignment commitment confirmed:`, updatedCommitment);
 
       return updatedCommitment;
     },
@@ -260,7 +256,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             break;
 
           case "assignment-commitment":
-            await processConfirmedAssignmentCommitment(tx, onChainData);
+            await processConfirmedAssignmentCommitment(tx);
             break;
 
           case "course":

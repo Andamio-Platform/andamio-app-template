@@ -117,7 +117,14 @@ export function ProvisioningOverlay({
       {/* Action buttons */}
       <div className="w-full max-w-xs">
         {isReady && onNavigate && (
-          <Button onClick={onNavigate} className="w-full" size="lg">
+          <Button
+            onClick={() => {
+              console.log("[ProvisioningOverlay] Button clicked, calling onNavigate");
+              onNavigate();
+            }}
+            className="w-full"
+            size="lg"
+          >
             {display.ctaLabel}
           </Button>
         )}

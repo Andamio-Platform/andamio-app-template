@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { usePendingTxContext } from "~/components/pending-tx-watcher";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { MyLearning } from "~/components/learner/my-learning";
-import { MintAccessToken, CreateCourse, CreateProject } from "~/components/transactions";
+import { MintAccessToken } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-token-confirmation-alert";
@@ -21,7 +20,6 @@ import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summar
 import { AndamioPageHeader } from "~/components/andamio";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
   const { pendingTransactions } = usePendingTxContext();
 
@@ -84,34 +82,14 @@ export default function DashboardPage() {
 
       {/* Mint Access Token - Only show when user doesn't have one and not pending */}
       {!hasAccessToken && !isPendingAccessTokenMint && (
-        <MintAccessToken onSuccess={() => router.refresh()} />
+        <MintAccessToken />
       )}
 
       {/* My Learning Section - Only show if user has access token */}
       {hasAccessToken && <MyLearning />}
 
-      {/* Create Course Section - Only show if user has access token */}
-      {hasAccessToken && (
-        <CreateCourse
-          onSuccess={(txHash) => {
-            console.log("Course created with txHash:", txHash);
-            // Optionally redirect or refresh
-          }}
-        />
-      )}
-
-      {/* Create Project Section - Only show if user has access token */}
-      {hasAccessToken && (
-        <CreateProject
-          onSuccess={(projectId) => {
-            console.log("Project created with ID:", projectId);
-            router.push(`/studio/project/${projectId}`);
-          }}
-        />
-      )}
-
       {/* Account Details Section */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Enrolled Courses Card - Shows on-chain enrolled courses for learners */}
         <EnrolledCoursesSummary accessTokenAlias={user.accessTokenAlias} />
         {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}

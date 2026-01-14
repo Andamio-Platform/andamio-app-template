@@ -166,20 +166,18 @@ export default function ModuleLessonsPage() {
 
       {/* Module Assignment */}
       <div className="space-y-4">
-        <AndamioSectionHeader
-          title="Module Assignment"
-          action={
-            <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-              <AndamioButton>
-                <LessonIcon className="h-4 w-4 mr-2" />
-                View Assignment
-              </AndamioButton>
-            </Link>
-          }
-        />
+        <AndamioSectionHeader title="Module Assignment" />
         <AndamioText variant="small">
           Complete the assignment to demonstrate your understanding of this module&apos;s learning targets.
         </AndamioText>
+        <div className="flex justify-center pt-4">
+          <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+            <AndamioButton size="lg">
+              <LessonIcon className="h-4 w-4 mr-2" />
+              View Assignment
+            </AndamioButton>
+          </Link>
+        </div>
       </div>
     </div>
   );

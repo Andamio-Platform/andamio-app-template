@@ -68,7 +68,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              course_nft_policy_id: courseNftPolicyId,
+              policy_id: courseNftPolicyId,
               module_code: moduleCode,
               title,
               content_json: content,
@@ -87,7 +87,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              course_nft_policy_id: courseNftPolicyId,
+              policy_id: courseNftPolicyId,
               module_code: moduleCode,
               title,
               content_json: content,

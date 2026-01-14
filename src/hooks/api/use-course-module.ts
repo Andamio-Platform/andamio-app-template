@@ -201,17 +201,26 @@ export function useCreateCourseModule() {
       input: CreateCourseModuleInput & { course_nft_policy_id: string }
     ) => {
       // Go API: POST /course/teacher/course-module/create
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        }
-      );
+      // API expects "policy_id" not "course_nft_policy_id"
+      const { course_nft_policy_id, ...rest } = input;
+      const url = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`;
+      const body = {
+        policy_id: course_nft_policy_id,
+        ...rest,
+      };
+      console.log("[CreateModule] URL:", url);
+      console.log("[CreateModule] Body:", body);
+      const response = await authenticatedFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      console.log("[CreateModule] Response status:", response.status);
+      const responseText = await response.clone().text();
+      console.log("[CreateModule] Response body:", responseText);
 
       if (!response.ok) {
-        throw new Error(`Failed to create module: ${response.statusText}`);
+        throw new Error(`Failed to create module: ${response.statusText} - ${responseText}`);
       }
 
       return response.json() as Promise<CourseModuleResponse>;
@@ -247,13 +256,14 @@ export function useUpdateCourseModule() {
       data: Partial<{ title: string; description: string }>;
     }) => {
       // Go API: POST /course/teacher/course-module/update
+      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             ...data,
           }),
@@ -300,13 +310,14 @@ export function useUpdateCourseModuleStatus() {
       status: string;
     }) => {
       // Go API: POST /course/teacher/course-module/update-status
+      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             status,
           }),
@@ -326,6 +337,81 @@ export function useUpdateCourseModuleStatus() {
           variables.moduleCode
         ),
       });
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Delete Course Module
+// =============================================================================
+
+/**
+ * Delete a course module
+ *
+ * Permanently removes a course module from the database.
+ * Only works for modules that are not on-chain (DRAFT status).
+ *
+ * Automatically invalidates course module caches on success.
+ *
+ * @example
+ * ```tsx
+ * function DeleteModuleButton({ courseNftPolicyId, moduleCode }: Props) {
+ *   const deleteModule = useDeleteCourseModule();
+ *
+ *   const handleDelete = async () => {
+ *     if (confirm("Are you sure?")) {
+ *       await deleteModule.mutateAsync({ courseNftPolicyId, moduleCode });
+ *     }
+ *   };
+ *
+ *   return <Button onClick={handleDelete} variant="destructive">Delete</Button>;
+ * }
+ * ```
+ */
+export function useDeleteCourseModule() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      courseNftPolicyId,
+      moduleCode,
+    }: {
+      courseNftPolicyId: string;
+      moduleCode: string;
+    }) => {
+      // Go API: POST /course/teacher/course-module/delete
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})) as { message?: string };
+        throw new Error(errorData.message ?? `Failed to delete module: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Remove the specific module from cache
+      queryClient.removeQueries({
+        queryKey: courseModuleKeys.detail(
+          variables.courseNftPolicyId,
+          variables.moduleCode
+        ),
+      });
+      // Invalidate the list
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
       });

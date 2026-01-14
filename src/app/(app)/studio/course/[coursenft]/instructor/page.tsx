@@ -38,7 +38,9 @@ import {
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { TeacherIcon, SuccessIcon, PendingIcon, ErrorIcon, CloseIcon } from "~/components/icons";
+import { TeacherIcon, SuccessIcon, PendingIcon, CloseIcon, LoadingIcon } from "~/components/icons";
+import { ContentDisplay } from "~/components/content-display";
+import type { JSONContent } from "@tiptap/core";
 import {
   type CourseResponse,
   type AssignmentCommitmentResponse,
@@ -47,7 +49,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { COURSE_TEACHER_ASSIGNMENTS_ASSESS } from "@andamio/transactions";
 import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
-import { buildAccessTokenUnit } from "~/lib/access-token-utils";
+import { useTrackPendingTx } from "~/components/pending-tx-watcher";
 import { PendingReviewsList } from "~/components/instructor/pending-reviews-list";
 
 /**
@@ -56,7 +58,8 @@ import { PendingReviewsList } from "~/components/instructor/pending-reviews-list
  * View all student assignment commitments for a course
  *
  * API Endpoint:
- * - GET /assignment-commitments/course/{courseNftPolicyId} (protected)
+ * - POST /course/teacher/assignment-commitments/list-by-course (protected)
+ *   Body: { policy_id: string }
  */
 
 interface ApiError {
@@ -65,21 +68,23 @@ interface ApiError {
 
 // Network status color mapping based on workflow stages
 const getStatusVariant = (
-  status: string
+  status: string | undefined | null
 ): "default" | "secondary" | "destructive" | "outline" => {
+  if (!status) return "outline";
   // Pending/in-progress states
   if (status.includes("PENDING")) return "secondary";
   // Success states
-  if (status.includes("ACCEPTED") || status.includes("CLAIMED")) return "default";
+  if (status.includes("ACCEPTED") || status.includes("CLAIMED") || status === "ON_CHAIN") return "default";
   // Failure states
   if (status.includes("DENIED")) return "destructive";
   // Initial states
-  if (status === "AWAITING_EVIDENCE") return "outline";
+  if (status === "AWAITING_EVIDENCE" || status === "DRAFT") return "outline";
   // Other states
   return "default";
 };
 
-const formatNetworkStatus = (status: string): string => {
+const formatNetworkStatus = (status: string | undefined | null): string => {
+  if (!status) return "Unknown";
   // Convert SNAKE_CASE to Title Case
   return status
     .split("_")
@@ -91,6 +96,7 @@ export default function InstructorDashboardPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { trackPendingTx } = useTrackPendingTx();
 
   const [course, setCourse] = useState<CourseResponse | null>(null);
   const [commitments, setCommitments] = useState<AssignmentCommitmentResponse[]>([]);
@@ -100,6 +106,13 @@ export default function InstructorDashboardPage() {
 
   // Selected commitment for management
   const [selectedCommitment, setSelectedCommitment] = useState<AssignmentCommitmentResponse | null>(null);
+  const [detailedCommitment, setDetailedCommitment] = useState<{
+    evidence: JSONContent | null;
+    status: string;
+    txHash: string | null;
+  } | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [assessmentDecision, setAssessmentDecision] = useState<"accept" | "refuse">("accept");
 
   // Filtering state
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -111,12 +124,13 @@ export default function InstructorDashboardPage() {
     new Set(commitments.map((c) => c.module_code))
   );
 
-  // Stats
+  // Stats - use optional chaining since status might be undefined
+  // Status values: DRAFT, PENDING_TX, ON_CHAIN
   const stats = {
     total: commitments.length,
-    pending: commitments.filter((c) => c.status.includes("PENDING")).length,
-    accepted: commitments.filter((c) => c.status.includes("ACCEPTED")).length,
-    denied: commitments.filter((c) => c.status.includes("DENIED")).length,
+    draft: commitments.filter((c) => c.status === "DRAFT").length,
+    pending: commitments.filter((c) => c.status === "PENDING_TX").length,
+    onChain: commitments.filter((c) => c.status === "ON_CHAIN").length,
   };
 
   // Fetch data function - extracted so it can be called from transaction success handlers
@@ -142,13 +156,13 @@ export default function InstructorDashboardPage() {
         throw new Error("You must be authenticated to view assignment commitments");
       }
 
-      // Go API: POST /course/teacher/assignment-commitment/by-course
+      // Go API: POST /course/teacher/assignment-commitments/list-by-course
       const commitmentsResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment-commitment/by-course`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment-commitments/list-by-course`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          body: JSON.stringify({ policy_id: courseNftPolicyId }),
         }
       );
 
@@ -159,6 +173,9 @@ export default function InstructorDashboardPage() {
 
       const commitmentsData =
         (await commitmentsResponse.json()) as AssignmentCommitmentResponse[];
+
+      // Debug: log the actual API response to see field names
+      console.log("[InstructorDashboard] Assignment commitments response:", commitmentsData);
 
       setCommitments(commitmentsData);
       setFilteredCommitments(commitmentsData);
@@ -175,13 +192,80 @@ export default function InstructorDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseNftPolicyId, isAuthenticated]);
 
+  // Fetch detailed commitment data when a commitment is selected
+  const fetchCommitmentDetail = async (commitment: AssignmentCommitmentResponse) => {
+    if (!commitment.access_token_alias) {
+      setDetailedCommitment(null);
+      return;
+    }
+
+    setIsLoadingDetail(true);
+    setDetailedCommitment(null);
+
+    try {
+      // DB API: POST /course/shared/assignment-commitment/get
+      const requestBody = {
+        policy_id: courseNftPolicyId,
+        module_code: commitment.module_code,
+        access_token_alias: commitment.access_token_alias,
+      };
+      console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
+
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      console.log("[InstructorDashboard] Response status:", response.status);
+
+      if (response.status === 404) {
+        // No detailed record found
+        console.log("[InstructorDashboard] No detailed commitment found (404)");
+        setDetailedCommitment(null);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[InstructorDashboard] Failed to fetch commitment detail:", response.status, errorText);
+        setDetailedCommitment(null);
+        return;
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+      console.log("[InstructorDashboard] Detailed commitment response:", data);
+
+      // API uses network_evidence, network_status, pending_tx_hash
+      setDetailedCommitment({
+        evidence: (data.network_evidence as JSONContent | null) ?? null,
+        status: (data.network_status as string) ?? "UNKNOWN",
+        txHash: (data.pending_tx_hash as string | null) ?? null,
+      });
+    } catch (err) {
+      console.error("[InstructorDashboard] Error fetching commitment detail:", err);
+      setDetailedCommitment(null);
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  };
+
+  // Handle commitment selection - fetch detailed data
+  const handleSelectCommitment = (commitment: AssignmentCommitmentResponse) => {
+    setSelectedCommitment(commitment);
+    void fetchCommitmentDetail(commitment);
+  };
+
   // Apply filters whenever they change
   useEffect(() => {
     let filtered = [...commitments];
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((c) => c.status === statusFilter);
+      filtered = filtered.filter((c) => c.status && c.status === statusFilter);
     }
 
     // Assignment filter (by module_code)
@@ -237,9 +321,9 @@ export default function InstructorDashboardPage() {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <AndamioDashboardStat icon={TeacherIcon} label="Total Commitments" value={stats.total} />
-        <AndamioDashboardStat icon={PendingIcon} label="Pending" value={stats.pending} />
-        <AndamioDashboardStat icon={SuccessIcon} label="Accepted" value={stats.accepted} valueColor="success" iconColor="success" />
-        <AndamioDashboardStat icon={ErrorIcon} label="Denied" value={stats.denied} valueColor="destructive" iconColor="destructive" />
+        <AndamioDashboardStat icon={PendingIcon} label="Draft" value={stats.draft} />
+        <AndamioDashboardStat icon={PendingIcon} label="Pending TX" value={stats.pending} valueColor="warning" iconColor="warning" />
+        <AndamioDashboardStat icon={SuccessIcon} label="On Chain" value={stats.onChain} valueColor="success" iconColor="success" />
       </div>
 
       {/* On-Chain Pending Assessments - Live data from Andamioscan */}
@@ -264,11 +348,9 @@ export default function InstructorDashboardPage() {
                 </AndamioSelectTrigger>
                 <AndamioSelectContent>
                   <AndamioSelectItem value="all">All Statuses</AndamioSelectItem>
-                  <AndamioSelectItem value="AWAITING_EVIDENCE">Awaiting Evidence</AndamioSelectItem>
-                  <AndamioSelectItem value="PENDING_APPROVAL">Pending Approval</AndamioSelectItem>
-                  <AndamioSelectItem value="ASSIGNMENT_ACCEPTED">Accepted</AndamioSelectItem>
-                  <AndamioSelectItem value="ASSIGNMENT_DENIED">Denied</AndamioSelectItem>
-                  <AndamioSelectItem value="CREDENTIAL_CLAIMED">Credential Claimed</AndamioSelectItem>
+                  <AndamioSelectItem value="DRAFT">Draft</AndamioSelectItem>
+                  <AndamioSelectItem value="PENDING_TX">Pending Transaction</AndamioSelectItem>
+                  <AndamioSelectItem value="ON_CHAIN">On Chain</AndamioSelectItem>
                 </AndamioSelectContent>
               </AndamioSelect>
             </div>
@@ -360,7 +442,7 @@ export default function InstructorDashboardPage() {
                 <AndamioTableRow
                   key={`${commitment.module_code}-${commitment.access_token_alias}`}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setSelectedCommitment(commitment)}
+                  onClick={() => handleSelectCommitment(commitment)}
                 >
                   <AndamioTableCell className="font-mono text-xs">
                     {commitment.access_token_alias ?? "No access token"}
@@ -410,7 +492,10 @@ export default function InstructorDashboardPage() {
               <AndamioButton
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedCommitment(null)}
+                onClick={() => {
+                  setSelectedCommitment(null);
+                  setDetailedCommitment(null);
+                }}
               >
                 <CloseIcon className="h-4 w-4" />
               </AndamioButton>
@@ -433,49 +518,117 @@ export default function InstructorDashboardPage() {
               <div>
                 <AndamioLabel>Current Status</AndamioLabel>
                 <div className="mt-1">
-                  <AndamioBadge variant={getStatusVariant(selectedCommitment.status)}>
-                    {formatNetworkStatus(selectedCommitment.status)}
+                  <AndamioBadge variant={getStatusVariant(detailedCommitment?.status ?? selectedCommitment.status)}>
+                    {formatNetworkStatus(detailedCommitment?.status ?? selectedCommitment.status)}
                   </AndamioBadge>
                 </div>
               </div>
-              <div>
-                <AndamioLabel>Evidence</AndamioLabel>
-                <AndamioText variant="small" className="mt-1 max-w-md break-words text-foreground">
-                  {selectedCommitment.evidence ? (
-                    typeof selectedCommitment.evidence === "string"
-                      ? selectedCommitment.evidence
-                      : JSON.stringify(selectedCommitment.evidence)
-                  ) : (
-                    <span className="text-muted-foreground italic">No evidence submitted</span>
-                  )}
-                </AndamioText>
+              {detailedCommitment?.txHash && (
+                <div>
+                  <AndamioLabel>Transaction Hash</AndamioLabel>
+                  <AndamioText variant="small" className="font-mono mt-1 text-foreground">
+                    {detailedCommitment.txHash.slice(0, 16)}...
+                  </AndamioText>
+                </div>
+              )}
+            </div>
+
+            {/* Student Evidence - Full Tiptap Content */}
+            <div className="space-y-2">
+              <AndamioLabel>Student Evidence</AndamioLabel>
+              {isLoadingDetail ? (
+                <div className="flex items-center justify-center py-8 border rounded-md bg-muted/20">
+                  <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <AndamioText variant="small" className="ml-2">Loading evidence...</AndamioText>
+                </div>
+              ) : detailedCommitment?.evidence ? (
+                <div className="border rounded-md">
+                  <ContentDisplay content={detailedCommitment.evidence} variant="muted" />
+                </div>
+              ) : (
+                <div className="py-4 px-3 border rounded-md bg-muted/20">
+                  <AndamioText variant="small" className="text-muted-foreground italic">
+                    No evidence content available. The student may not have submitted evidence yet.
+                  </AndamioText>
+                </div>
+              )}
+            </div>
+
+            {/* Assessment Decision */}
+            <div className="space-y-3 pt-4 border-t">
+              <AndamioLabel>Assessment Decision</AndamioLabel>
+              <div className="flex gap-4">
+                <AndamioButton
+                  variant={assessmentDecision === "accept" ? "default" : "outline"}
+                  onClick={() => setAssessmentDecision("accept")}
+                  className="flex-1"
+                >
+                  <SuccessIcon className="h-4 w-4 mr-2" />
+                  Accept
+                </AndamioButton>
+                <AndamioButton
+                  variant={assessmentDecision === "refuse" ? "destructive" : "outline"}
+                  onClick={() => setAssessmentDecision("refuse")}
+                  className="flex-1"
+                >
+                  <CloseIcon className="h-4 w-4 mr-2" />
+                  Refuse
+                </AndamioButton>
               </div>
+              <AndamioText variant="small" className="text-muted-foreground">
+                {assessmentDecision === "accept"
+                  ? "Accepting will grant the student credit for completing this module."
+                  : "Refusing will reject the submission. The student can update and resubmit."}
+              </AndamioText>
             </div>
 
             {/* Transaction Actions */}
-            <div className="flex gap-4 pt-4 border-t">
+            <div className="pt-4">
               <AndamioTransaction
                 definition={COURSE_TEACHER_ASSIGNMENTS_ASSESS}
                 inputs={{
-                  user_access_token: user?.accessTokenAlias
-                    ? buildAccessTokenUnit(user.accessTokenAlias, env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID)
-                    : "",
-                  student_alias: selectedCommitment.access_token_alias ?? "",
-                  policy: courseNftPolicyId,
-                  moduleCode: selectedCommitment.module_code,
+                  // txParams - for the transaction builder API
+                  alias: user?.accessTokenAlias ?? "",
+                  course_id: courseNftPolicyId,
+                  assignment_decisions: [
+                    {
+                      alias: selectedCommitment.access_token_alias ?? "",
+                      outcome: assessmentDecision,
+                    },
+                  ],
+                  // sideEffectParams - for the DB API side effects
+                  module_code: selectedCommitment.module_code,
+                  student_access_token_alias: selectedCommitment.access_token_alias ?? "",
+                  assessment_result: assessmentDecision,
                 }}
-                onSuccess={async () => {
+                onSuccess={async (result) => {
+                  // Track pending transaction for confirmation handling
+                  if (result.txHash && selectedCommitment.access_token_alias) {
+                    trackPendingTx({
+                      id: `assessment-${courseNftPolicyId}-${selectedCommitment.module_code}-${selectedCommitment.access_token_alias}`,
+                      txHash: result.txHash,
+                      entityType: "assignment-commitment",
+                      entityId: selectedCommitment.access_token_alias,
+                      context: {
+                        courseNftPolicyId,
+                        moduleCode: selectedCommitment.module_code,
+                      },
+                    });
+                  }
+
                   // Refresh commitments list
                   await fetchData();
                   setSelectedCommitment(null);
+                  setDetailedCommitment(null);
+                  setAssessmentDecision("accept"); // Reset for next assessment
                 }}
                 requirements={{
                   check: !!(
                     selectedCommitment.access_token_alias &&
-                    selectedCommitment.status !== "ON_CHAIN"
+                    (detailedCommitment?.status ?? selectedCommitment.status) === "PENDING_APPROVAL"
                   ),
                   failureMessage: selectedCommitment.access_token_alias
-                    ? "This assignment has already been processed"
+                    ? "This assignment is not ready for assessment"
                     : "Learner does not have an access token",
                 }}
               />

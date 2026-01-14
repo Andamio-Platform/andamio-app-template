@@ -45,7 +45,7 @@ Reference catalog for Andamio transaction loops. Each loop represents a realisti
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Student | `COURSE_STUDENT_ENROLL` | Enroll and commit to assignment (~2.14 ADA) |
+| 1 | Student | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Enroll and commit to assignment (~2.14 ADA) |
 | 2 | Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Accept the submission (~0.21 ADA) |
 | 3 | Student | `COURSE_STUDENT_CREDENTIAL_CLAIM` | Claim credential (~-1.03 ADA refund) |
 
@@ -119,7 +119,7 @@ Step 2 (Modules Manage - Mint):
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Student | `COURSE_STUDENT_ENROLL` | Enroll and submit initial work (~2.14 ADA) |
+| 1 | Student | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Enroll and submit initial work (~2.14 ADA) |
 | 2 | Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Refuse - needs revision (~0.21 ADA) |
 | 3 | Student | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Resubmit with updated evidence (~0.33 ADA) |
 | 4 | Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Accept the revision (~0.21 ADA) |
@@ -156,7 +156,7 @@ Step 3 (Update):
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Student | `COURSE_STUDENT_ENROLL` | Enroll, commit to Module 1 (~2.14 ADA) |
+| 1 | Student | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Enroll, commit to Module 1 (~2.14 ADA) |
 | 2 | Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Accept Module 1 (~0.21 ADA) |
 | 3 | Student | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Commit to Module 2 (~0.33 ADA) |
 | 4 | Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Accept Module 2 (~0.21 ADA) |
@@ -219,7 +219,7 @@ Step 2 (Teachers Update):
 | `COURSE_ADMIN_TEACHERS_UPDATE` | Admin | ~5.3 ADA | No |
 | `COURSE_TEACHER_MODULES_MANAGE` | Teacher | ~1.86 ADA | Yes |
 | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Teacher | ~0.21 ADA | Yes |
-| `COURSE_STUDENT_ENROLL` | Student | ~2.14 ADA | Yes |
+| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Student | ~2.14 ADA | Yes |
 | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Student | ~0.33 ADA | Yes |
 | `COURSE_STUDENT_CREDENTIAL_CLAIM` | Student | ~-1.03 ADA | No |
 

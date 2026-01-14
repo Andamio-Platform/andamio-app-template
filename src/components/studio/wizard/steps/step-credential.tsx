@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { SparkleIcon, CredentialIcon, SLTIcon } from "~/components/icons";
+import { SparkleIcon, CredentialIcon, SLTIcon, CopyIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
@@ -11,10 +12,21 @@ import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import {
+  AndamioDialog,
+  AndamioDialogContent,
+  AndamioDialogHeader,
+  AndamioDialogTitle,
+  AndamioDialogDescription,
+  AndamioDialogFooter,
+} from "~/components/andamio/andamio-dialog";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useCreateCourseModule, useUpdateCourseModule, useCourseModules } from "~/hooks/api/use-course-module";
+import { useCreateSLT } from "~/hooks/api/use-slt";
+import { useCreateLesson } from "~/hooks/api/use-lesson";
 import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
-import type { CourseModuleListResponse } from "@andamio/db-api-types";
 
 interface StepCredentialProps {
   config: WizardStepConfig;
@@ -23,25 +35,26 @@ interface StepCredentialProps {
 
 export function StepCredential({ config, direction }: StepCredentialProps) {
   const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule, onModuleCreated } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   const [title, setTitle] = useState(data.courseModule?.title ?? "");
   const [description, setDescription] = useState(data.courseModule?.description ?? "");
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // For new modules, we need to fetch existing modules to generate a unique code
-  const [existingModules, setExistingModules] = useState<CourseModuleListResponse>([]);
+  // Use hooks for API calls
+  const createModule = useCreateCourseModule();
+  const updateModule = useUpdateCourseModule();
+  const createSLT = useCreateSLT();
+  const createLesson = useCreateLesson();
 
-  useEffect(() => {
-    if (isNewModule) {
-      // Go API: GET /course/public/course-modules/list/{policy_id}
-      void fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`)
-        .then((res) => res.ok ? res.json() as Promise<CourseModuleListResponse> : [])
-        .then(setExistingModules)
-        .catch(() => setExistingModules([]));
-    }
-  }, [isNewModule, courseNftPolicyId]);
+  // Duplicate module state
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateModuleCode, setDuplicateModuleCode] = useState("");
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const router = useRouter();
+
+  // For new modules, fetch existing modules to generate a unique code
+  const { data: existingModules = [] } = useCourseModules(courseNftPolicyId);
 
   /**
    * Generate a unique module code based on existing modules
@@ -54,11 +67,42 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
     return String(nextNumber);
   };
 
+  // Module code state - for new modules, generate a default; for existing, use current value
+  const [editableModuleCode, setEditableModuleCode] = useState(() => {
+    if (isNewModule) {
+      return ""; // Will be set once existingModules loads
+    }
+    return moduleCode ?? "";
+  });
+
+  // Update the generated code when existingModules loads (for new modules)
+  React.useEffect(() => {
+    if (isNewModule && existingModules.length >= 0 && !editableModuleCode) {
+      setEditableModuleCode(generateModuleCode());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNewModule, existingModules]);
+
+  // Check if module code already exists
+  const moduleCodeExists = existingModules.some(
+    (m) => m.module_code === editableModuleCode && m.module_code !== moduleCode
+  );
+
+  // Check if duplicate module code already exists
+  const duplicateCodeExists = existingModules.some(
+    (m) => m.module_code === duplicateModuleCode
+  );
+
+  // Check if module is locked (approved or on-chain)
+  const moduleStatus = data.courseModule?.status as string | undefined;
+  const isModuleLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
+
   const hasChanges =
     title !== (data.courseModule?.title ?? "") ||
     description !== (data.courseModule?.description ?? "");
 
-  const canProceed = title.trim().length > 0;
+  const canProceed = title.trim().length > 0 && editableModuleCode.trim().length > 0 && !moduleCodeExists;
+  const isSaving = createModule.isPending || updateModule.isPending;
 
   /**
    * Create a new module (for new module mode)
@@ -66,39 +110,21 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const handleCreateModule = async () => {
     if (!isAuthenticated || !canProceed) return;
 
-    setIsSaving(true);
     setError(null);
 
     try {
-      const newModuleCode = generateModuleCode();
-
-      // Go API: POST /course/teacher/course-module/create
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: newModuleCode,
-            title,
-            description,
-            status: "DRAFT",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to create module");
-      }
+      await createModule.mutateAsync({
+        course_nft_policy_id: courseNftPolicyId,
+        module_code: editableModuleCode.trim(),
+        title,
+        description,
+      });
 
       // Use onModuleCreated for smooth transition without full page refresh
       // This updates state, URL (silently), refetches data, and navigates to SLTs step
-      await onModuleCreated(newModuleCode);
+      await onModuleCreated(editableModuleCode.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create module");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -106,37 +132,117 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
    * Update existing module
    */
   const handleUpdateModule = async () => {
-    if (!isAuthenticated || !canProceed) return;
+    if (!isAuthenticated || !canProceed || !moduleCode) return;
 
-    setIsSaving(true);
     setError(null);
 
     try {
-      // Go API: POST /course/teacher/course-module/update
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            title,
-            description,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save module");
-      }
+      await updateModule.mutateAsync({
+        courseNftPolicyId,
+        moduleCode,
+        data: { title, description },
+      });
 
       await refetchData();
       goNext();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
+    }
+  };
+
+  /**
+   * Duplicate module with all its content
+   */
+  const handleDuplicateModule = async () => {
+    if (!isAuthenticated || !duplicateModuleCode.trim() || duplicateCodeExists) return;
+
+    setIsDuplicating(true);
+    setError(null);
+
+    try {
+      const newCode = duplicateModuleCode.trim();
+
+      // 1. Create new module with DRAFT status
+      await createModule.mutateAsync({
+        course_nft_policy_id: courseNftPolicyId,
+        module_code: newCode,
+        title: `${title} (Copy)`,
+        description,
+      });
+
+      // 2. Copy SLTs (if any) - must be done sequentially to maintain order
+      if (data.slts.length > 0) {
+        for (const slt of data.slts) {
+          await createSLT.mutateAsync({
+            courseNftPolicyId,
+            moduleCode: newCode,
+            moduleIndex: slt.module_index,
+            sltText: slt.slt_text,
+          });
+        }
+      }
+
+      // 3. Copy assignment (if exists) - use direct API call
+      if (data.assignment) {
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/create`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              policy_id: courseNftPolicyId,
+              module_code: newCode,
+              title: data.assignment.title,
+              content_json: data.assignment.content_json,
+            }),
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to copy assignment: ${response.statusText}`);
+        }
+      }
+
+      // 4. Copy lessons (if any)
+      if (data.lessons.length > 0) {
+        for (const lesson of data.lessons) {
+          await createLesson.mutateAsync({
+            courseNftPolicyId,
+            moduleCode: newCode,
+            moduleIndex: lesson.module_index,
+            title: lesson.title,
+            contentJson: lesson.content_json as object | undefined,
+          });
+        }
+      }
+
+      // 5. Copy introduction (if exists) - use direct API call
+      if (data.introduction) {
+        const response = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/create`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              policy_id: courseNftPolicyId,
+              module_code: newCode,
+              title: data.introduction.title,
+              content_json: data.introduction.content_json,
+            }),
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to copy introduction: ${response.statusText}`);
+        }
+      }
+
+      // Close dialog and navigate to new module
+      setShowDuplicateDialog(false);
+      setDuplicateModuleCode("");
+      router.push(`/studio/course/${courseNftPolicyId}/${newCode}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to duplicate module");
     } finally {
-      setIsSaving(false);
+      setIsDuplicating(false);
     }
   };
 
@@ -204,21 +310,68 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       {/* Module form */}
       <AndamioCard>
         <AndamioCardContent className="pt-6 space-y-6">
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="title">
-              Module Title <span className="text-destructive">*</span>
-            </AndamioLabel>
-            <AndamioInput
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Introduction to Smart Contracts"
-              maxLength={200}
-              className="text-lg"
-            />
-            <AndamioText variant="small" className="text-xs">
-              Choose a title that captures what learners will achieve
-            </AndamioText>
+          <div className="grid gap-6 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-2">
+              <AndamioLabel htmlFor="title">
+                Module Title <span className="text-destructive">*</span>
+              </AndamioLabel>
+              <AndamioInput
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Introduction to Smart Contracts"
+                maxLength={200}
+                className="text-lg"
+              />
+              <AndamioText variant="small" className="text-xs">
+                Choose a title that captures what learners will achieve
+              </AndamioText>
+            </div>
+
+            <div className="space-y-2">
+              <AndamioLabel htmlFor="moduleCode">
+                Module Code <span className="text-destructive">*</span>
+              </AndamioLabel>
+              <div className="flex items-center gap-2">
+                <AndamioInput
+                  id="moduleCode"
+                  value={editableModuleCode}
+                  onChange={(e) => setEditableModuleCode(e.target.value.replace(/[^a-zA-Z0-9-]/g, ""))}
+                  placeholder="e.g., 101"
+                  maxLength={20}
+                  className="font-mono w-32"
+                  disabled={isModuleLocked || !isNewModule}
+                />
+                {!isNewModule && (
+                  <AndamioButton
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDuplicateModuleCode(generateModuleCode());
+                      setShowDuplicateDialog(true);
+                    }}
+                    title="Duplicate this module with a new code"
+                  >
+                    <CopyIcon className="h-4 w-4" />
+                  </AndamioButton>
+                )}
+              </div>
+              {moduleCodeExists && (
+                <AndamioText variant="small" className="text-destructive text-xs">
+                  This code already exists
+                </AndamioText>
+              )}
+              {!isNewModule && !isModuleLocked && (
+                <AndamioText variant="small" className="text-xs">
+                  Code cannot be changed — duplicate instead
+                </AndamioText>
+              )}
+              {isModuleLocked && (
+                <AndamioText variant="small" className="text-xs">
+                  Module is approved — duplicate to make changes
+                </AndamioText>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -231,15 +384,6 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               rows={3}
             />
           </div>
-
-          {!isNewModule && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                {moduleCode}
-              </span>
-              <span>Module Code</span>
-            </div>
-          )}
         </AndamioCardContent>
       </AndamioCard>
 
@@ -263,6 +407,70 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         nextLabel={isNewModule ? "Create Module" : "Define Learning Targets"}
         isLoading={isSaving}
       />
+
+      {/* Duplicate Module Dialog */}
+      <AndamioDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AndamioDialogContent>
+          <AndamioDialogHeader>
+            <AndamioDialogTitle>Duplicate Module</AndamioDialogTitle>
+            <AndamioDialogDescription>
+              Create a copy of this module with all its content (SLTs, assignment, lessons, introduction).
+              The new module will start as a Draft.
+            </AndamioDialogDescription>
+          </AndamioDialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <AndamioLabel htmlFor="duplicateCode">New Module Code</AndamioLabel>
+              <AndamioInput
+                id="duplicateCode"
+                value={duplicateModuleCode}
+                onChange={(e) => setDuplicateModuleCode(e.target.value.replace(/[^a-zA-Z0-9-]/g, ""))}
+                placeholder="e.g., 102"
+                maxLength={20}
+                className="font-mono"
+              />
+              {duplicateCodeExists && (
+                <AndamioText variant="small" className="text-destructive text-xs">
+                  This code already exists
+                </AndamioText>
+              )}
+            </div>
+
+            <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+              <AndamioText variant="small" className="font-medium">Will be copied:</AndamioText>
+              <ul className="text-sm text-muted-foreground space-y-0.5">
+                <li>• Module title: &quot;{title} (Copy)&quot;</li>
+                <li>• {data.slts.length} SLT{data.slts.length !== 1 ? "s" : ""}</li>
+                <li>• {data.assignment ? "Assignment" : "No assignment"}</li>
+                <li>• {data.lessons.length} lesson{data.lessons.length !== 1 ? "s" : ""}</li>
+                <li>• {data.introduction ? "Introduction" : "No introduction"}</li>
+              </ul>
+            </div>
+          </div>
+
+          <AndamioDialogFooter>
+            <AndamioButton
+              variant="outline"
+              onClick={() => {
+                setShowDuplicateDialog(false);
+                setDuplicateModuleCode("");
+              }}
+              disabled={isDuplicating}
+            >
+              Cancel
+            </AndamioButton>
+            <AndamioButton
+              onClick={handleDuplicateModule}
+              disabled={!duplicateModuleCode.trim() || duplicateCodeExists || isDuplicating}
+              isLoading={isDuplicating}
+            >
+              <CopyIcon className="h-4 w-4 mr-2" />
+              Duplicate Module
+            </AndamioButton>
+          </AndamioDialogFooter>
+        </AndamioDialogContent>
+      </AndamioDialog>
     </WizardStep>
   );
 }

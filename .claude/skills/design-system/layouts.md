@@ -269,6 +269,48 @@ Used in both Master-Detail and Wizard layouts for the left panel.
 
 ---
 
+## 6. Centered Content Pattern
+
+**Problem**: When centering text blocks with constrained width (`max-w-md`), using `text-center` alone doesn't work because it only centers the text within the constrained block, not the block itself.
+
+**Solution**: Use flexbox with `items-center` on the parent to center the constrained block.
+
+```tsx
+// ✅ CORRECT - Flexbox centers the constrained block
+<div className="flex flex-col items-center gap-3">
+  <h3 className="text-lg font-semibold">Title</h3>
+  <p className="text-sm text-muted-foreground text-center max-w-md">
+    This paragraph is constrained to max-w-md width AND centered
+    within its parent container.
+  </p>
+</div>
+```
+
+```tsx
+// ❌ WRONG - Block is constrained but not centered
+<div className="text-center">
+  <h3>Title</h3>
+  <p className="text-center max-w-md mx-auto">
+    This uses mx-auto which centers the block, but can have
+    subtle alignment issues with text-center inheritance.
+  </p>
+</div>
+```
+
+**Key Classes**:
+- Parent: `flex flex-col items-center` - Centers all children horizontally
+- Child: `text-center max-w-md` - Centers text AND constrains width
+
+**Use Cases**:
+- Hero sections with centered headlines and descriptions
+- Wizard step headers (e.g., Review step in Module Editor)
+- Empty states with centered messaging
+- Modal/dialog content
+
+**Example**: `src/components/studio/wizard/steps/step-review.tsx`
+
+---
+
 ## Anti-Patterns
 
 **DO NOT**:
@@ -277,3 +319,4 @@ Used in both Master-Detail and Wizard layouts for the left panel.
 - Show redundant navigation (breadcrumbs provide context)
 - Mix layout patterns on the same page
 - Add custom padding that breaks consistency
+- Use `mx-auto` alone for centering constrained text blocks (use flexbox instead)

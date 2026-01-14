@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Instructor Dashboard Assessment UI** (`/studio/course/[coursenft]/instructor`): Full teacher workflow for reviewing student assignment commitments
+  - Accept/Refuse decision buttons with radio-style selection
+  - Evidence display using ContentViewer for Tiptap content
+  - Two-step data fetching: list endpoint for table, detail endpoint for full evidence
+  - Transaction integration with `COURSE_TEACHER_ASSIGNMENTS_ASSESS`
+  - Pending transaction tracking via `useTrackPendingTx` for onConfirmation side effects
+- **CourseTeachersCard Component**: New card for Studio course pages showing on-chain vs database teachers with sync capability
+  - Fetches on-chain teachers from Andamioscan API (`/api/v2/courses/{course_id}/details`)
+  - Displays database teachers after sync for comparison
+  - "Sync from Chain" button calls `/course/owner/course/sync-teachers` endpoint
+  - Shows "In Sync" or "Mismatch" badge based on comparison
+  - Located at `src/components/studio/course-teachers-card.tsx`
+- **JWT Console Logging**: JWT token now logged to console on authentication for debugging/testing
+  - Logs on new authentication (wallet connect + sign)
+  - Logs on session restore (page reload with valid JWT)
+  - Includes ready-to-use curl example for API testing
+  - Shows token, payload, expiration, and Authorization header format
 - **Access Token Minting Pending State**: New user onboarding shows a friendly "Confirming on-chain" message while access token minting transaction is pending. Dashboard displays the pending alias with animated loading indicator instead of showing the mint form again.
   - Added `access-token` entity type to `PendingTransaction`
   - `MintAccessToken` now tracks pending tx via `useTrackPendingTx`
@@ -27,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files updated: 36 files across hooks, components, and pages
 
 ### Fixed
+- **Instructor Dashboard API Endpoint**: Fixed endpoint path from `/course/teacher/assignment-commitment/by-course` to `/course/teacher/assignment-commitments/list-by-course` (plural form). Fixed request body field `course_nft_policy_id` → `policy_id`.
+- **Assignment Commitment Field Names**: Fixed field name mapping across both instructor and student views to use the `network_*` prefix pattern from DB API:
+  - `evidence` → `network_evidence` (Tiptap JSON content)
+  - `status` → `network_status` (DRAFT | PENDING_TX | ON_CHAIN)
+  - `tx_hash` → `network_evidence_hash` / `pending_tx_hash`
+- **Teacher Assessment Transaction Inputs**: Fixed `COURSE_TEACHER_ASSIGNMENTS_ASSESS` inputs to match schema (`alias`, `course_id`, `assignment_decisions[]`, `module_code`, `student_access_token_alias`, `assessment_result`). Added optional chaining for status filters.
 - **API Method Standardization**: Andamio Go API uses only GET (reads) and POST (writes). Fixed all remaining PATCH/PUT/DELETE usages:
   - `/user/access-token-alias`: PATCH → POST
   - `/user/unconfirmed-tx`: PATCH → POST

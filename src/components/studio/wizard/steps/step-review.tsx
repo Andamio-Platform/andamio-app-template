@@ -24,6 +24,7 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { env } from "~/env";
+import { computeSltHashDefinite } from "@andamio/transactions";
 import type { WizardStepConfig } from "../types";
 
 interface StepReviewProps {
@@ -45,8 +46,11 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
   const [isApproving, setIsApproving] = useState(false);
+  const [isUnapproving, setIsUnapproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isApproved, setIsApproved] = useState(data.courseModule?.status === "ON_CHAIN");
+  // Note: "APPROVED" status exists in DB API but types may not be updated yet
+  const moduleStatus = data.courseModule?.status as string | undefined;
+  const [isApproved, setIsApproved] = useState(moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN");
 
   const slts = data.slts;
   const lessons = data.lessons;
@@ -105,6 +109,12 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
+      // Compute the module hash from SLTs (sorted by module_index)
+      const sortedSltTexts = [...slts]
+        .sort((a, b) => a.module_index - b.module_index)
+        .map((slt) => slt.slt_text);
+      const moduleHash = computeSltHashDefinite(sortedSltTexts);
+
       // Go API: POST /course/teacher/course-module/update-status
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
@@ -112,9 +122,10 @@ export function StepReview({ config, direction }: StepReviewProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            status: "ON_CHAIN",
+            status: "APPROVED",
+            module_hash: moduleHash,
           }),
         }
       );
@@ -133,6 +144,41 @@ export function StepReview({ config, direction }: StepReviewProps) {
     }
   };
 
+  const handleUnapprove = async () => {
+    if (!isAuthenticated) return;
+
+    setIsUnapproving(true);
+    setError(null);
+
+    try {
+      // Go API: POST /course/teacher/course-module/update-status
+      const response = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            policy_id: courseNftPolicyId,
+            module_code: moduleCode,
+            status: "DRAFT",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json() as { message?: string };
+        throw new Error(errorData.message ?? "Failed to unapprove module");
+      }
+
+      setIsApproved(false);
+      await refetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to unapprove module");
+    } finally {
+      setIsUnapproving(false);
+    }
+  };
+
   return (
     <WizardStep config={config} direction={direction}>
       {isApproved ? (
@@ -143,29 +189,28 @@ export function StepReview({ config, direction }: StepReviewProps) {
           transition={{ type: "spring", damping: 15 }}
         >
           <WizardStepHighlight>
-            <div className="text-center space-y-4 py-4">
+            <div className="flex flex-col items-center gap-4 py-4">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
               >
-                <div className="w-20 h-20 mx-auto rounded-full bg-success/20 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center">
                   <CelebrateIcon className="h-10 w-10 text-success" />
                 </div>
               </motion.div>
 
-              <div>
+              <div className="flex flex-col items-center">
                 <h3 className="text-xl font-bold">Module Approved!</h3>
-                <AndamioText variant="muted" className="mt-1">
+                <AndamioText variant="muted" className="mt-1 text-center">
                   &quot;{moduleTitle}&quot; is ready for the blockchain.
                 </AndamioText>
               </div>
 
-              <div className="flex items-center justify-center gap-2 text-sm">
+              <div className="flex flex-col items-center gap-2 text-sm">
                 <AndamioBadge className="bg-success text-success-foreground">
                   APPROVED
                 </AndamioBadge>
-                <span className="text-muted-foreground">→</span>
                 <Link
                   href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
                   className="hover:opacity-80 transition-opacity"
@@ -176,7 +221,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 </Link>
               </div>
 
-              <AndamioText variant="small" className="max-w-md mx-auto">
+              <AndamioText variant="small" className="text-center max-w-md">
                 Head to the{" "}
                 <Link
                   href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
@@ -186,6 +231,17 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 </Link>{" "}
                 to mint your module tokens on Cardano.
               </AndamioText>
+
+              <AndamioButton
+                variant="ghost"
+                size="sm"
+                onClick={handleUnapprove}
+                disabled={isUnapproving}
+                isLoading={isUnapproving}
+                className="text-muted-foreground"
+              >
+                Return to Draft
+              </AndamioButton>
             </div>
           </WizardStepHighlight>
         </motion.div>
@@ -193,15 +249,17 @@ export function StepReview({ config, direction }: StepReviewProps) {
         // Review checklist
         <>
           <WizardStepHighlight>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <SendIcon className="h-6 w-6 text-primary" />
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <SendIcon className="h-7 w-7 text-primary" />
               </div>
-              <div>
-                <h3 className="font-semibold">Almost There!</h3>
-                <AndamioText variant="small">
-                  Review your module and approve it for blockchain minting.
-                </AndamioText>
+              <div className="flex flex-col items-center">
+                <h3 className="text-lg font-semibold">Ready to Publish?</h3>
+                <p className="text-sm text-muted-foreground mt-1 text-center max-w-md">
+                  Review your module content below. When everything looks good,
+                  click <strong>Approve Module</strong> to mark it as ready for
+                  on-chain minting.
+                </p>
               </div>
             </div>
           </WizardStepHighlight>
@@ -277,27 +335,35 @@ export function StepReview({ config, direction }: StepReviewProps) {
         </>
       )}
 
-      {/* Navigation */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t">
-        <AndamioButton
-          variant="ghost"
-          onClick={goPrevious}
-          disabled={!canGoPrevious || isApproving}
-        >
-          ← Back to Introduction
-        </AndamioButton>
-
+      {/* CTA and Navigation */}
+      <div className="space-y-4 pt-6 border-t">
         {!isApproved && (
-          <AndamioButton
-            onClick={handleApprove}
-            disabled={!allRequiredComplete || isApproving}
-            isLoading={isApproving}
-            className="w-full sm:w-auto"
-          >
-            <CredentialIcon className="h-4 w-4 mr-2" />
-            Approve Module
-          </AndamioButton>
+          <div className="flex flex-col items-center gap-3">
+            <AndamioButton
+              onClick={handleApprove}
+              disabled={!allRequiredComplete || isApproving}
+              isLoading={isApproving}
+              size="lg"
+              className="w-full sm:w-auto px-8"
+            >
+              <CredentialIcon className="h-5 w-5 mr-2" />
+              Approve Module
+            </AndamioButton>
+            <AndamioText variant="small" className="text-center">
+              This marks your module as ready to mint on Cardano
+            </AndamioText>
+          </div>
         )}
+
+        <div className="flex justify-center">
+          <AndamioButton
+            variant="ghost"
+            onClick={goPrevious}
+            disabled={!canGoPrevious || isApproving}
+          >
+            ← Back to Introduction
+          </AndamioButton>
+        </div>
       </div>
     </WizardStep>
   );

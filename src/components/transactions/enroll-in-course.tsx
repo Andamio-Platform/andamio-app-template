@@ -14,7 +14,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { COURSE_STUDENT_ASSIGNMENT_COMMIT, computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
@@ -57,7 +56,7 @@ export interface EnrollInCourseProps {
 
   /**
    * Module SLT hash (64-char Blake2b-256 hash) - required for on-chain commitment
-   * Use computeSltHash() from @andamio/transactions to compute this
+   * Use computeSltHashDefinite() from @andamio/transactions to compute this
    */
   sltHash?: string;
 
@@ -87,7 +86,7 @@ export interface EnrollInCourseProps {
  *   courseTitle="Introduction to Blockchain"
  *   moduleCode="MODULE_1"
  *   moduleTitle="Getting Started"
- *   sltHash={computeSltHash(module.slts)}
+ *   sltHash={computeSltHashDefinite(module.slts)}
  *   evidence={editorContent}
  *   onSuccess={() => router.refresh()}
  * />
@@ -101,7 +100,6 @@ export function EnrollInCourse({
   evidence,
   onSuccess,
 }: EnrollInCourseProps) {
-  const router = useRouter();
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
@@ -200,7 +198,7 @@ export function EnrollInCourse({
             </AndamioCardDescription>
           </AndamioCardHeader>
         </AndamioCard>
-        <MintAccessToken onSuccess={() => router.refresh()} />
+        <MintAccessToken />
       </div>
     );
   }

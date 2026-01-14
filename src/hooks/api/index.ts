@@ -66,6 +66,7 @@ export {
   useCreateCourseModule,
   useUpdateCourseModule,
   useUpdateCourseModuleStatus,
+  useDeleteCourseModule,
   courseModuleKeys,
 } from "./use-course-module";
 
@@ -85,3 +86,11 @@ export {
   useCreateLesson,
   lessonKeys,
 } from "./use-lesson";
+
+// Andamioscan (on-chain) hooks
+export {
+  useAndamioscanCourse,
+  useAndamioscanAllCourses,
+  useInvalidateAndamioscan,
+  andamioscanKeys,
+} from "./use-andamioscan";

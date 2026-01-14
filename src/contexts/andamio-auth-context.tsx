@@ -220,8 +220,25 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         };
         authLogger.debug("Validating stored JWT against connected wallet");
 
-        // Get wallet address
-        const walletAddress = await wallet.getChangeAddress();
+        // Get wallet address and convert to bech32 if needed
+        // (Eternl returns hex, other wallets may return bech32)
+        const rawAddress = await wallet.getChangeAddress();
+        let walletAddress: string;
+        if (rawAddress.startsWith("addr")) {
+          walletAddress = rawAddress;
+        } else {
+          try {
+            const addressObj = core.Address.fromString(rawAddress);
+            if (!addressObj) {
+              throw new Error("Failed to parse address");
+            }
+            walletAddress = addressObj.toBech32();
+          } catch (conversionError) {
+            authLogger.error("Failed to convert wallet address:", conversionError);
+            setValidatingJWT(false);
+            return;
+          }
+        }
 
         // Check address match
         if (payload.cardanoBech32Addr && payload.cardanoBech32Addr !== walletAddress) {
@@ -263,6 +280,19 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         };
         setUser(userData);
         authLogger.info("User data loaded from stored JWT:", userData);
+
+        // Log JWT to console for debugging/testing (restored session)
+        console.group("🔐 Andamio Session Restored");
+        console.log("JWT Token:", storedJWT);
+        console.log("User:", userData);
+        console.log("\nTo use in API requests:");
+        console.log(`Authorization: Bearer ${storedJWT}`);
+        console.log("\nCurl example:");
+        console.log(`curl -X POST "${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/sync-teachers" \\
+  -H "Authorization: Bearer ${storedJWT}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
+        console.groupEnd();
 
         // Sync access token from wallet (in case wallet has a new one)
         void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
@@ -376,25 +406,28 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       // Sync access token from wallet to database (in case it wasn't detected during auth)
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
 
-      // Log JWT to console for debugging (in development only)
-      if (process.env.NODE_ENV === "development") {
-        console.group("🔐 Andamio Authentication Successful");
-        console.log("JWT Token:", authResponse.jwt);
+      // Log JWT to console for debugging/testing
+      console.group("🔐 Andamio Authentication Successful");
+      console.log("JWT Token:", authResponse.jwt);
 
-        // Decode and display JWT payload
-        try {
-          const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!)) as { exp: number };
-          console.log("JWT Payload:", payload);
-          console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
-        } catch {
-          console.log("Could not decode JWT payload");
-        }
-
-        console.log("User:", authResponse.user);
-        console.log("\nTo use in API requests:");
-        console.log(`Authorization: Bearer ${authResponse.jwt}`);
-        console.groupEnd();
+      // Decode and display JWT payload
+      try {
+        const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!)) as { exp: number };
+        console.log("JWT Payload:", payload);
+        console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
+      } catch {
+        console.log("Could not decode JWT payload");
       }
+
+      console.log("User:", authResponse.user);
+      console.log("\nTo use in API requests:");
+      console.log(`Authorization: Bearer ${authResponse.jwt}`);
+      console.log("\nCurl example:");
+      console.log(`curl -X POST "${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/sync-teachers" \\
+  -H "Authorization: Bearer ${authResponse.jwt}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
+      console.groupEnd();
     } catch (error) {
       authLogger.error("Authentication failed:", error);
       setAuthError(

@@ -84,13 +84,14 @@ export function useCreateSLT() {
       sltText: string;
     }) => {
       // Go API: POST /course/teacher/slt/create
+      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             module_index: moduleIndex,
             slt_text: sltText,
@@ -139,13 +140,14 @@ export function useUpdateSLT() {
       sltText: string;
     }) => {
       // Go API: POST /course/teacher/slt/update
+      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             module_index: moduleIndex,
             slt_text: sltText,
@@ -185,13 +187,14 @@ export function useDeleteSLT() {
       moduleIndex: number;
     }) => {
       // Go API: POST /course/teacher/slt/delete
+      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             module_index: moduleIndex,
           }),

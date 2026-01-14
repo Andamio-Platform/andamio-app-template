@@ -44,9 +44,12 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
   const slts = data.slts;
   const lessons = data.lessons;
 
-  // Map lessons to their SLT's module_index
+  // Map lessons to their SLT's index
+  // Note: API returns slt_index but types say module_index - they're the same value
   const lessonBySltIndex = lessons.reduce((acc, lesson) => {
-    acc[lesson.module_index] = lesson;
+    // Use slt_index if available (actual API response), fall back to module_index (type definition)
+    const sltIndex = (lesson as { slt_index?: number }).slt_index ?? lesson.module_index;
+    acc[sltIndex] = lesson;
     return acc;
   }, {} as Record<number, typeof lessons[number]>);
 
@@ -63,7 +66,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
             module_index: sltIndex,
             title: newLessonTitle.trim(),
@@ -72,7 +75,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to create lesson");
+        const errorData = await response.json() as { message?: string };
+        throw new Error(errorData.message ?? "Failed to create lesson");
       }
 
       setNewLessonTitle("");
@@ -336,9 +340,9 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            policy_id: courseNftPolicyId,
             module_code: moduleCode,
-            module_index: lesson.module_index,
+            module_index: (lesson as { slt_index?: number }).slt_index ?? lesson.module_index,
             title,
             content_json: content,
           }),
@@ -346,7 +350,8 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
       );
 
       if (!response.ok) {
-        throw new Error("Failed to update lesson");
+        const errorData = await response.json() as { message?: string };
+        throw new Error(errorData.message ?? "Failed to update lesson");
       }
 
       await onSave();

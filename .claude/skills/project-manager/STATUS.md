@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 12, 2026 (Access Token UX + API Method Fixes)
+> **Last Updated**: January 13, 2026 (Session 5 - Credential Claim + Dashboard Cleanup)
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -10,13 +10,23 @@ Current implementation status of the Andamio T3 App Template.
 
 | API | Endpoints | Implemented | Coverage | Priority |
 |-----|-----------|-------------|----------|----------|
-| **Andamio DB API** | 87 | 49 | **56%** | High |
+| **Andamio DB API** | 88 | 50 | **57%** | High |
 | **Andamio Tx API** | 16 | 16 definitions | **100%** | Complete |
 | **Andamioscan** | 34 | 32 functions | **94%** | Low |
-| **Overall** | **137** | **97** | **71%** | - |
+| **Overall** | **138** | **98** | **71%** | - |
 
 > Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for live metrics.
 > Full report: `.claude/skills/audit-api-coverage/COVERAGE-REPORT.md`
+
+### API Source of Truth
+
+**IMPORTANT**: The `andamio-db-api/` directory in the monorepo is **deprecated** for reference purposes.
+
+**Always use the deployed API schema as the source of truth:**
+- **OpenAPI Spec**: https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json
+- **Swagger UI**: https://andamio-db-api-343753432212.us-central1.run.app/docs
+
+When implementing new endpoints or debugging API issues, fetch the live schema rather than reading local code.
 
 ---
 
@@ -53,6 +63,107 @@ Current implementation status of the Andamio T3 App Template.
 | **2026-02-06 (Fri)** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
 **Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+
+---
+
+## Session Notes (January 13, 2026) - Session 5: Credential Claim + Dashboard Cleanup
+
+**Context**: Implementing COURSE_STUDENT_CREDENTIAL_CLAIM and cleaning up dashboard UX.
+
+### Completed This Session
+
+| Task | Details |
+|------|---------|
+| **CredentialClaim Integration** | Added `CredentialClaim` component to `AssignmentCommitment` when `networkStatus === "ASSIGNMENT_ACCEPTED"`. Students now see success banner and can claim credential after teacher approval. |
+| **Sync-from-Chain Feature** | When student has on-chain commitment but no DB record, they can now enter evidence and sync to database (2-step: create + update-evidence). |
+| **Dashboard Cleanup** | Removed `CreateCourse` and `CreateProject` from dashboard. Changed grid from 4-col to 2-col (`md:grid-cols-2`) for less crowded layout. |
+
+### Student Flow States Now Supported
+
+| State | UI Shown |
+|-------|----------|
+| No commitment | "Start Assignment" button |
+| Working locally | Evidence editor with "Lock" button |
+| On-chain, no DB record | Sync warning + evidence editor |
+| Pending assessment | Info banner + on-chain hash |
+| **Assignment accepted** | **Success banner + CredentialClaim** |
+| Credential claimed | "Module Completed" success |
+
+### Pending Testing
+
+1. **Test full student flow**: commit → teacher accept → claim credential
+2. **Test Project system functionality**
+
+---
+
+## Session Notes (January 13, 2026) - Tx Loop 2 Complete
+
+**Context**: Testing Tx Loop 2 (Student Assignment Commitment + Teacher Assessment) for full workflow validation.
+
+### Completed Today
+
+| Task | Details |
+|------|---------|
+| **Assignment Commitment API Fix** | Fixed student view to use correct API field names: `network_evidence`, `network_status`, `network_evidence_hash` instead of `evidence`, `status`, `tx_hash`. |
+| **Instructor Dashboard Overhaul** | Fixed endpoint path (`/course/teacher/assignment-commitments/list-by-course`), request body (`policy_id`), and added detailed commitment fetching. |
+| **Student Evidence Display** | Teachers can now view full Tiptap content submitted by students via `/course/shared/assignment-commitment/get`. |
+| **Assessment Decision UI** | Added Accept/Refuse buttons with visual feedback and descriptive helper text. |
+| **Transaction Input Fix** | Fixed `COURSE_TEACHER_ASSIGNMENTS_ASSESS` inputs to match schema: `alias`, `course_id`, `assignment_decisions[]`, `module_code`, `student_access_token_alias`, `assessment_result`. |
+| **Pending Tx Tracking** | Added `trackPendingTx` call in instructor dashboard for `onConfirmation` side effects. |
+
+### GitHub Issues Created
+
+| Issue | Title |
+|-------|-------|
+| **#33** | Stuck transactions missing onConfirmation side effects |
+| **#34** | Assessment Accept/Refuse button UX improvements |
+| **#35** | Blocked: Andamioscan module token/SLT mismatch (multi-module courses) |
+
+### API Field Naming Pattern
+
+The DB API uses `network_*` prefixed fields for commitment data:
+```
+network_evidence      → Tiptap JSON content
+network_status        → "PENDING_APPROVAL", "ASSIGNMENT_ACCEPTED", etc.
+network_evidence_hash → 64-char hex hash
+pending_tx_hash       → Transaction hash while pending
+```
+
+### Blockers Identified
+
+| Blocker | Impact |
+|---------|--------|
+| **Andamioscan SLT/Module Mismatch** | Cannot test multi-module courses until fixed upstream |
+| **Stuck Transactions** | Manual intervention needed for txs submitted before tracking was added |
+
+### Next Steps
+
+- Wait for Andamioscan fix before resuming Tx Loop 3
+- Consider building admin utility for stuck transaction recovery (Issue #33)
+- UX improvements for assessment buttons (Issue #34)
+
+---
+
+## Session Notes (January 13, 2026 - Earlier) - Loop 3 Testing
+
+**Context**: Testing Loop 3 (Create & Publish Course) for data visibility validation.
+
+### Completed
+
+| Task | Details |
+|------|---------|
+| **CourseTeachersCard Component** | New card for Studio course pages showing on-chain vs database teachers with sync capability. Fetches teachers from Andamioscan API. |
+| **Teacher Sync Integration** | Integrated `/course/owner/course/sync-teachers` endpoint. Fixed field naming (`policy_id` → `course_nft_policy_id`). |
+| **JWT Console Logging** | JWT now logged to console on auth for easier curl testing during development. |
+| **DB API Bug Fixes** | Coordinated fixes with DB API Claude for sync-teachers endpoint (broken Preload, field name mismatch). |
+
+### Loop 3 Testing Status
+
+**Validated:**
+- [x] On-chain teachers visible via Andamioscan API
+- [x] Database teachers visible after sync
+- [x] Sync status comparison working ("In Sync" badge)
+- [ ] Module minting data flow — blocked by Andamioscan issue
 
 ---
 
@@ -105,7 +216,7 @@ Verify `queryClient.invalidateQueries()` called with correct keys in:
 |------|--------|----------|
 | Course System | Stable | 15/15 routes |
 | Project System | In Progress | 6/13 routes, 9 transaction components |
-| DB API Coverage | **56%** | 49/87 endpoints |
+| DB API Coverage | **57%** | 50/88 endpoints |
 | Tx API Coverage | **100%** | 16/16 definitions |
 | Andamioscan Coverage | **94%** | 32/34 endpoints |
 | Transaction System | **100% Complete** | 16/16 definitions, side effects working |

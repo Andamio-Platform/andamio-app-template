@@ -756,3 +756,8 @@ select {
   border: 1px solid color-mix(in oklch, var(--border) 60%, transparent) !important;
   padding-inline: 1rem !important;
 }
+
+/* Checkbox - high-contrast border outside @layer for maximum specificity */
+[data-slot="checkbox"] {
+  border: 1px solid var(--foreground) !important;
+}

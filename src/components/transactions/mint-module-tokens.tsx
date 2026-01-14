@@ -13,8 +13,8 @@
 
 "use client";
 
-import React, { useMemo } from "react";
-import { COURSE_TEACHER_MODULES_MANAGE, computeSltHash } from "@andamio/transactions";
+import React, { useMemo, useCallback } from "react";
+import { COURSE_TEACHER_MODULES_MANAGE, computeSltHashDefinite } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
@@ -30,6 +30,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { env } from "~/env";
 import type { CourseModuleListResponse } from "@andamio/db-api-types";
 
 export interface MintModuleTokensProps {
@@ -83,14 +84,23 @@ export function MintModuleTokens({
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useAndamioTransaction();
 
+  // Helper to get sorted SLT texts (by module_index for consistent ordering)
+  const getSortedSltTexts = useCallback((slts: typeof courseModules[0]["slts"]) => {
+    if (!slts || slts.length === 0) return [];
+    // Sort by module_index to ensure consistent hash computation
+    return [...slts]
+      .sort((a, b) => a.module_index - b.module_index)
+      .map((slt) => slt.slt_text);
+  }, []);
+
   // Compute module hashes for display
   const moduleHashes = useMemo(() => {
     return courseModules.map((courseModule) => {
       try {
-        const sltTexts = courseModule.slts?.map((slt) => slt.slt_text) ?? [];
+        const sltTexts = getSortedSltTexts(courseModule.slts);
         return {
           moduleCode: courseModule.module_code,
-          hash: computeSltHash(sltTexts),
+          hash: computeSltHashDefinite(sltTexts),
           sltCount: sltTexts.length,
         };
       } catch {
@@ -101,38 +111,54 @@ export function MintModuleTokens({
         };
       }
     });
-  }, [courseModules]);
+  }, [courseModules, getSortedSltTexts]);
 
   const handleMintModules = async () => {
     if (!user?.accessTokenAlias || courseModules.length === 0) {
       return;
     }
 
-    // Format modules for the V2 API - each module needs slts and access control fields
-    const modules_to_mint = courseModules
+    // Prepare module data for both API request and side effects
+    const modulesWithData = courseModules
       .filter((cm) => cm.slts && cm.slts.length > 0)
-      .map((courseModule) => ({
-        slts: courseModule.slts?.map((slt) => slt.slt_text) ?? [],
-        allowed_course_state_ids: [] as string[], // Minting policy IDs for course states that can access this module
-        prereq_slt_hashes: [] as string[], // Prerequisite SLT hashes (64 char hex)
-      }));
+      .map((courseModule) => {
+        const slts = getSortedSltTexts(courseModule.slts);
+        const hash = computeSltHashDefinite(slts);
+        return {
+          moduleCode: courseModule.module_code,
+          slts,
+          hash,
+        };
+      });
+
+    const moduleCodes = modulesWithData.map((m) => m.moduleCode);
+    const moduleHashes = modulesWithData.map((m) => m.hash);
+    const modules_to_mint = modulesWithData.map((m) => ({
+      slts: m.slts,
+      allowed_course_state_ids: [] as string[],
+      prereq_slt_hashes: [] as string[],
+    }));
+
+    const txRequest = {
+      alias: user.accessTokenAlias,
+      course_id: courseNftPolicyId,
+      modules_to_mint,
+      modules_to_update: [],
+      modules_to_burn: [],
+    };
 
     await execute({
       definition: COURSE_TEACHER_MODULES_MANAGE,
-      params: {
-        // Transaction API params (snake_case per V2 API)
-        alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
-        modules_to_mint,
-        modules_to_update: [],
-        modules_to_burn: [],
-      },
+      params: txRequest,
       onSuccess: async (txResult) => {
         console.log("[MintModuleTokens] Success!", txResult);
 
-        const moduleCount = courseModules.length;
-        toast.success("Modules Minted!", {
-          description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} minted on-chain`,
+        const moduleCount = moduleCodes.length;
+        const txHash = txResult.txHash;
+
+        // Show initial success message
+        toast.success("Transaction Submitted!", {
+          description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} minting - awaiting confirmation`,
           action: txResult.blockchainExplorerUrl
             ? {
                 label: "View Transaction",
@@ -141,6 +167,10 @@ export function MintModuleTokens({
             : undefined,
         });
 
+        // Note: PENDING_TX status is handled by transaction definition's onSubmit side effects
+        // Confirmation is handled by onConfirmation side effects or external polling
+
+        // Refresh data to show pending status
         await onSuccess?.();
       },
       onError: (txError) => {
@@ -184,15 +214,15 @@ export function MintModuleTokens({
       <AndamioCardContent className="space-y-4">
         {/* Modules to Mint */}
         {hasModules && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
               Modules to Mint ({courseModules.length})
             </AndamioText>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-3">
               {moduleHashes.map(({ moduleCode, hash, sltCount }) => (
                 <div
                   key={moduleCode}
-                  className="flex items-center justify-between rounded-md border p-2 bg-muted/30"
+                  className="rounded-md border p-3 bg-muted/30 space-y-2"
                 >
                   <div className="flex items-center gap-2">
                     <ModuleIcon className="h-4 w-4 text-muted-foreground" />
@@ -202,9 +232,13 @@ export function MintModuleTokens({
                     </AndamioBadge>
                   </div>
                   {hash && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <TransactionIcon className="h-3 w-3" />
-                      <code className="font-mono">{hash.slice(0, 8)}...</code>
+                    <div className="space-y-1">
+                      <AndamioText variant="small" className="text-[10px] text-muted-foreground">
+                        Token Name (SLT Hash)
+                      </AndamioText>
+                      <code className="block text-xs font-mono text-foreground bg-background/50 px-2 py-1 rounded border break-all">
+                        {hash}
+                      </code>
                     </div>
                   )}
                 </div>
@@ -230,10 +264,10 @@ export function MintModuleTokens({
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <TransactionIcon className="h-4 w-4 text-primary" />
-            <AndamioText className="font-medium">Tamper-Evident Design</AndamioText>
+            <AndamioText className="font-medium">Token Name = On-Chain Identifier</AndamioText>
           </div>
-          <AndamioText variant="small" className="text-xs">
-            Token names are hashes of SLT content, cryptographically proving the learning outcomes.
+          <AndamioText variant="small" className="text-xs leading-relaxed">
+            Each module&apos;s token name is a Blake2b-256 hash of its SLT content. This hash becomes the unique on-chain identifier for the credential — if the learning outcomes change, the hash changes, creating tamper-evident proof of what was taught.
           </AndamioText>
         </div>
 

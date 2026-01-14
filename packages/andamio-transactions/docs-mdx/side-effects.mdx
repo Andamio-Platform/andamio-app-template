@@ -1,0 +1,339 @@
+---
+title: "Side Effects"
+description: "Database updates and notifications on transaction submission and confirmation"
+icon: Zap
+---
+
+# Side Effects
+
+Side effects are declarative specifications for database updates that should occur when a transaction is submitted or confirmed on-chain. The `@andamio/transactions` package defines WHAT should happen; execution is handled by:
+
+- **Frontend (T3 App Template)** - Executes `onSubmit` side effects immediately after transaction submission
+- **Transaction Monitoring Service** - Executes `onConfirmation` side effects when confirmed on-chain
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Side Effect Execution                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  USER SUBMITS TRANSACTION                                        │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────┐                                            │
+│  │   onSubmit      │  ← T3 App Template executes                │
+│  │   Side Effects  │    - Update status to PENDING_TX           │
+│  │                 │    - Store pending tx hash                  │
+│  └────────┬────────┘                                            │
+│           │                                                      │
+│           ▼                                                      │
+│  [Transaction in Mempool...]                                     │
+│           │                                                      │
+│           ▼                                                      │
+│  TRANSACTION CONFIRMED ON-CHAIN                                  │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                            │
+│  │ onConfirmation  │  ← Monitoring Service executes             │
+│  │  Side Effects   │    - Finalize status (ON_CHAIN, etc.)      │
+│  │                 │    - Store on-chain data                    │
+│  └─────────────────┘                                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Side Effect Structure
+
+Each side effect specifies an API call:
+
+```typescript
+type SideEffect = {
+  def: string;                    // Human-readable description
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  endpoint: string;               // API endpoint with path params
+  pathParams?: Record<string, string>;  // Path parameter mapping
+  body?: Record<string, BodyField>;     // Request body mapping
+  critical?: boolean;             // Must succeed (default: false)
+  retry?: {
+    maxAttempts: number;
+    backoffMs: number;
+  };
+};
+```
+
+## Path Parameter Mapping
+
+Path parameters are extracted from the execution context:
+
+```typescript
+{
+  endpoint: "/course-modules/batch-update-status",
+  body: {
+    course_nft_policy_id: { source: "context", path: "buildInputs.courseId" },
+    modules: { source: "context", path: "buildInputs.batchUpdateBody.modules" },
+  }
+}
+```
+
+At execution time, the body is resolved with actual values from the context.
+
+## Body Field Mapping
+
+Three types of body field sources:
+
+### Literal Values
+
+Hardcoded values that don't change:
+
+```typescript
+body: {
+  status: { source: "literal", value: "PENDING_TX" }
+}
+```
+
+### Context Path
+
+Extract from execution context:
+
+```typescript
+body: {
+  pending_tx_hash: { source: "context", path: "txHash" },
+  course_nft_policy_id: { source: "context", path: "buildInputs.courseId" }
+}
+```
+
+### On-Chain Data Path
+
+Extract from confirmed transaction data (onConfirmation only):
+
+```typescript
+body: {
+  moduleHash: { source: "onChainData", path: "mints[0].assetName" }
+}
+```
+
+## Execution Context
+
+### SubmissionContext (onSubmit)
+
+Available when executing onSubmit side effects:
+
+```typescript
+type SubmissionContext = {
+  txHash: string;           // Submitted transaction hash
+  buildInputs: Record<string, unknown>;  // All validated inputs
+  timestamp: number;        // Submission timestamp
+};
+```
+
+### ConfirmationContext (onConfirmation)
+
+Available when executing onConfirmation side effects:
+
+```typescript
+type ConfirmationContext = {
+  txHash: string;           // Confirmed transaction hash
+  buildInputs: Record<string, unknown>;  // All validated inputs
+  blockHeight: number;      // Block where confirmed
+  blockTime: number;        // Block timestamp
+  onChainData?: {
+    mints?: Array<{ policyId: string; assetName: string; quantity: bigint }>;
+    outputs?: Array<{ address: string; value: unknown }>;
+    metadata?: unknown;
+  };
+};
+```
+
+## Example: Module Management
+
+The `COURSE_TEACHER_MODULES_MANAGE` transaction demonstrates the full pattern:
+
+```typescript
+// Definition (simplified)
+{
+  onSubmit: [{
+    def: "Set modules to PENDING_TX",
+    method: "POST",
+    endpoint: "/course-modules/batch-update-status",
+    body: {
+      course_nft_policy_id: { source: "context", path: "buildInputs.courseId" },
+      modules: { source: "context", path: "buildInputs.batchUpdateBody.modules" },
+    }
+  }],
+
+  onConfirmation: [{
+    def: "Confirm modules ON_CHAIN with hashes",
+    method: "POST",
+    endpoint: "/course-modules/batch-confirm-transaction",
+    body: {
+      course_nft_policy_id: { source: "context", path: "buildInputs.courseId" },
+      tx_hash: { source: "context", path: "txHash" },
+      modules: { source: "context", path: "buildInputs.batchConfirmBody.modules" },
+    }
+  }]
+}
+```
+
+## Executing Side Effects
+
+### Frontend (onSubmit)
+
+```typescript
+import { executeOnSubmit, getTransactionDefinition } from "@andamio/transactions";
+
+const txDef = getTransactionDefinition("COURSE_TEACHER_MODULES_MANAGE");
+
+// After submitting transaction
+const txHash = await wallet.submitTx(signedCbor);
+
+// Execute onSubmit side effects
+const context = {
+  txHash,
+  buildInputs: validatedInputs,
+  timestamp: Date.now(),
+};
+
+const result = await executeOnSubmit(txDef.onSubmit, context, {
+  apiBaseUrl: process.env.NEXT_PUBLIC_ANDAMIO_API_URL!,
+  authToken: session.token,
+});
+
+if (!result.success) {
+  console.warn("Some side effects failed:", result.errors);
+  // Non-critical failures are logged but don't block the user
+}
+```
+
+### Monitoring Service (onConfirmation)
+
+The monitoring service watches for confirmed transactions and executes `onConfirmation` side effects:
+
+```typescript
+// Pseudo-code for monitoring service
+async function processConfirmedTransaction(
+  txDef: AndamioTransactionDefinition,
+  txHash: string,
+  blockInfo: BlockInfo,
+  onChainData: OnChainData
+) {
+  const context: ConfirmationContext = {
+    txHash,
+    buildInputs: await getStoredBuildInputs(txHash),
+    blockHeight: blockInfo.height,
+    blockTime: blockInfo.time,
+    onChainData,
+  };
+
+  for (const sideEffect of txDef.onConfirmation) {
+    await executeWithRetry(sideEffect, context);
+  }
+}
+```
+
+## Critical vs Non-Critical
+
+### Non-Critical (default)
+
+- Failures are logged but don't block the user
+- Used for status updates that can be manually corrected
+- Example: Setting `PENDING_TX` status
+
+### Critical
+
+- Failures trigger retry logic
+- Used for essential data that must be recorded
+- Example: Recording the confirmed transaction hash
+
+```typescript
+{
+  critical: true,
+  retry: {
+    maxAttempts: 5,
+    backoffMs: 1000,  // Exponential backoff from this base
+  }
+}
+```
+
+## PENDING_TX Protection
+
+The database API implements `PENDING_TX` protection:
+
+1. When `network_status` is `PENDING_TX_*`, most updates are blocked
+2. Only confirmation endpoints with transaction hash proof can bypass
+3. This prevents race conditions between submission and confirmation
+
+```typescript
+// This would be blocked if status is PENDING_TX
+PATCH /assignment-commitments/{id}/evidence
+
+// This can always execute (has txHash proof)
+POST /assignment-commitments/confirm-transaction
+```
+
+## Conditional Side Effects
+
+Some transactions have conditional side effects based on input parameters:
+
+```typescript
+// COURSE_TEACHER_ASSIGNMENTS_ASSESS
+onSubmit: [{
+  def: "Update status based on assessment result",
+  method: "POST",
+  endpoint: "/assignment-commitments/update-status",
+  body: {
+    course_nft_policy_id: { source: "context", path: "buildInputs.courseId" },
+    module_code: { source: "context", path: "buildInputs.moduleCode" },
+    access_token_alias: { source: "context", path: "buildInputs.studentAccessTokenAlias" },
+    network_status: { source: "literal", value: "PENDING_TX_ASSIGNMENT_ACCEPTED" },
+  },
+  condition: { path: "assessmentResult", equals: "accept" },
+},
+{
+  def: "Update status for refused assessment",
+  method: "POST",
+  endpoint: "/assignment-commitments/update-status",
+  body: {
+    course_nft_policy_id: { source: "context", path: "buildInputs.courseId" },
+    module_code: { source: "context", path: "buildInputs.moduleCode" },
+    access_token_alias: { source: "context", path: "buildInputs.studentAccessTokenAlias" },
+    network_status: { source: "literal", value: "PENDING_TX_ASSIGNMENT_REFUSED" },
+  },
+  condition: { path: "assessmentResult", equals: "refuse" },
+}]
+```
+
+## Testing Side Effects
+
+The package includes testing utilities:
+
+```typescript
+import {
+  createMockSubmissionContext,
+  testSideEffect,
+} from "@andamio/transactions";
+
+const context = createMockSubmissionContext({
+  txHash: "abc123...",
+  buildInputs: {
+    courseId: "policy123...",
+    moduleCode: "MODULE_1",
+    studentAccessTokenAlias: "student1",
+  },
+});
+
+const sideEffect = txDef.onSubmit![0];
+const result = testSideEffect(sideEffect, context);
+
+console.log(result.resolvedEndpoint);
+// => "/assignment-commitments/update-status"
+
+console.log(result.requestBody);
+// => { course_nft_policy_id: "policy123...", module_code: "MODULE_1", ... }
+```
+
+## Related Documentation
+
+- [Getting Started](/docs/sdk/transactions/getting-started) - Basic usage
+- [V2 Transactions](/docs/sdk/transactions/v2) - Transaction reference with side effects
+- [Utilities](/docs/sdk/transactions/utilities) - Hash functions and helpers

@@ -1,0 +1,106 @@
+---
+title: "@andamio/transactions"
+description: "Unified transaction definition system for the Andamio platform"
+icon: Workflow
+---
+
+import { Code, Layers, Shield, Zap } from "lucide-react";
+
+# @andamio/transactions
+
+The `@andamio/transactions` package provides comprehensive specifications for all Andamio transactions, unifying protocol specs, API lifecycle, side effects, and UI metadata into a single authoritative source.
+
+## Overview
+
+Andamio transactions operate across three layers:
+
+1. **Protocol Layer** - On-chain transaction structure defined in YAML specs
+2. **API Layer** - Off-chain integration with build endpoints and side effects
+3. **UI Layer** - User-facing metadata and interface strings
+
+This package brings all three layers together in strongly-typed TypeScript definitions.
+
+## Features
+
+<Cards>
+  <Card title="Type-Safe Definitions" href="/docs/sdk/transactions/getting-started" icon={<Code />}>
+    Full TypeScript support with Zod validation for all transaction inputs
+  </Card>
+  <Card title="Input Helpers" href="/docs/sdk/transactions/input-helpers" icon={<Layers />}>
+    Format complex inputs with type-safe helper functions
+  </Card>
+  <Card title="Side Effects" href="/docs/sdk/transactions/side-effects" icon={<Zap />}>
+    Declarative database updates and notifications
+  </Card>
+  <Card title="Hash Utilities" href="/docs/sdk/transactions/utilities" icon={<Shield />}>
+    Compute module hashes and assignment info hashes
+  </Card>
+</Cards>
+
+## Quick Example
+
+```typescript
+import { getTransactionDefinition, computeSltHash } from "@andamio/transactions";
+
+// Get transaction definition
+const txDef = getTransactionDefinition("COURSE_TEACHER_MODULES_MANAGE");
+
+// Preview module hash before minting
+const slts = ["I can mint an access token.", "I can complete an assignment."];
+const moduleHash = computeSltHash(slts);
+console.log(`Module will have hash: ${moduleHash}`);
+
+// Access protocol specification
+console.log(txDef.protocolSpec.yamlPath);
+// "/yaml/transactions/v2/course/teacher/modules-manage.yaml"
+
+// Get estimated costs
+console.log(txDef.buildTxConfig.estimatedCost);
+// { txFee: 200000, minDeposit: 1860000 }
+```
+
+## Transaction Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Transaction Lifecycle                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. BUILD TRANSACTION                                            │
+│     └─> Atlas Tx API builds unsigned CBOR                        │
+│                                                                  │
+│  2. SIGN & SUBMIT                                                │
+│     └─> User signs with wallet, submits to chain                 │
+│     └─> onSubmit side effects execute (update DB to PENDING_TX)  │
+│                                                                  │
+│  3. CONFIRM ON-CHAIN                                             │
+│     └─> Transaction confirmed in block                           │
+│     └─> onConfirmation side effects execute (finalize DB state)  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Protocol Versions
+
+| Version | Status | Transactions | Description |
+|---------|--------|--------------|-------------|
+| **V2**  | Current | 8 | Consolidated role structure, recommended for new implementations |
+| V1      | Legacy  | 8 | Maintained for backward compatibility |
+
+V2 dramatically reduces transaction count compared to V1's original design (29 → 8 transactions) through:
+- Batch operations (manage multiple modules in one tx)
+- Unified assessment (accept/deny in one tx type)
+- Streamlined enrollment (initial commitment included)
+
+## Installation
+
+```bash
+npm install @andamio/transactions
+```
+
+## Next Steps
+
+- [Getting Started](/docs/sdk/transactions/getting-started) - Installation and basic usage
+- [V2 Transactions](/docs/sdk/transactions/v2) - Current production transactions
+- [Utilities](/docs/sdk/transactions/utilities) - Hash functions and helpers
+- [Side Effects](/docs/sdk/transactions/side-effects) - Database update patterns

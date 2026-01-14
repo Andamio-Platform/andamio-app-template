@@ -16,14 +16,21 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 
 ## Architecture
 
-### Monorepo Setup
-This template is part of the `andamio-platform` monorepo:
+### Repository Structure
+This template is a standalone repository with an embedded transactions package:
 ```
-andamio-platform/
-├── andamio-t3-app-template/  # This project
-├── packages/andamio-transactions/  # Transaction definitions
-└── andamio-db-api/     # ⚠️ DEPRECATED - Do not use
+andamio-t3-app-template/
+├── src/                              # Next.js app source
+├── packages/andamio-transactions/    # Transaction definitions (local package)
+└── .claude/skills/                   # AI-assisted development skills
 ```
+
+**Transaction Package**: The `@andamio/transactions` package is included locally at `packages/andamio-transactions/`. This allows:
+- Direct editing of transaction definitions
+- Immediate testing without publishing
+- Self-contained template that works after forking
+
+> **Note**: The main app's `package.json` references `"@andamio/transactions": "file:packages/andamio-transactions"` to use the local package.
 
 ### Database API (Go)
 The backend is a Go API deployed on Cloud Run:
@@ -755,6 +762,7 @@ This project uses Claude Skills for AI-assisted development workflows:
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API coverage across all 3 sub-systems + interview-based implementation planning |
 | `project-manager` | Track project status and roadmap |
+| `transaction-auditor` | Audit transaction definitions against Atlas TX API swagger and fix schema mismatches |
 
 Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
 

@@ -1,0 +1,296 @@
+---
+title: "Utilities"
+description: "Hash functions, CBOR decoder, and helper utilities"
+icon: Wrench
+---
+
+# Utilities
+
+The `@andamio/transactions` package includes utilities for computing content hashes, decoding transaction CBOR, and formatting complex inputs.
+
+## SLT Hash Utility
+
+Compute module token names (hashes) from Student Learning Targets (SLTs). This matches the on-chain Plutus validator computation exactly.
+
+### computeSltHash
+
+```typescript
+import { computeSltHash } from "@andamio/transactions";
+
+const slts = [
+  "I can mint an access token.",
+  "I can complete an assignment to earn a credential."
+];
+
+const moduleHash = computeSltHash(slts);
+// Returns: "8dcbe1b925d87e6c547bbd8071c23a712db4c32751454b0948f8c846e9246b5c"
+```
+
+### verifySltHash
+
+Verify a hash matches expected SLTs:
+
+```typescript
+import { verifySltHash } from "@andamio/transactions";
+
+const isValid = verifySltHash(slts, moduleHash);
+// Returns: true
+```
+
+### isValidSltHash
+
+Validate hash format (64 hex characters):
+
+```typescript
+import { isValidSltHash } from "@andamio/transactions";
+
+isValidSltHash(moduleHash);  // true
+isValidSltHash("invalid");   // false
+```
+
+### Algorithm
+
+The SLT hash algorithm:
+
+1. Convert each SLT string to UTF-8 bytes
+2. Encode as CBOR indefinite-length array of byte strings
+3. Hash with Blake2b-256 (32 bytes / 256 bits)
+
+This matches the Plutus on-chain computation:
+
+```haskell
+sltsToBbs MintModuleV2{slts} = blake2b_256 $ serialiseData $ toBuiltinData $ map stringToBuiltinByteString slts
+```
+
+### Use Cases
+
+- **Preview before minting** - Show users what their module's on-chain identifier will be
+- **Validate after confirmation** - Verify the on-chain mint matches expectations
+- **Look up existing modules** - Compute the hash to query if a module already exists
+- **Debug mismatches** - Compare expected vs actual hashes
+
+---
+
+## Assignment Info Hash Utility
+
+For assignment commitments, the `assignmentInfo` stored on-chain is a hash of the evidence content. The full evidence (Tiptap JSON) is stored in the database, while only the hash goes on-chain.
+
+### computeAssignmentInfoHash
+
+```typescript
+import { computeAssignmentInfoHash } from "@andamio/transactions";
+
+const evidence = {
+  type: "doc",
+  content: [
+    { type: "paragraph", content: [{ type: "text", text: "My submission..." }] }
+  ]
+};
+
+const assignmentInfoHash = computeAssignmentInfoHash(evidence);
+// Use this hash in the transaction's commitData.assignmentInfo
+```
+
+### verifyAssignmentInfoHash
+
+Verify database evidence matches on-chain commitment:
+
+```typescript
+import { verifyAssignmentInfoHash } from "@andamio/transactions";
+
+const isValid = verifyAssignmentInfoHash(dbEvidence, onChainHash);
+```
+
+### verifyEvidenceDetailed
+
+Get detailed verification results for debugging:
+
+```typescript
+import { verifyEvidenceDetailed } from "@andamio/transactions";
+
+const result = verifyEvidenceDetailed(dbEvidence, onChainHash);
+
+if (!result.isValid) {
+  console.log(result.message);
+  console.log("Expected:", result.expectedHash);
+  console.log("Actual:", result.actualHash);
+}
+```
+
+### Normalization Rules
+
+Evidence is normalized before hashing to ensure deterministic results:
+
+- Object keys sorted alphabetically
+- Strings trimmed of leading/trailing whitespace
+- Arrays preserve order, items normalized recursively
+- `undefined` converted to `null`
+
+---
+
+## CBOR Transaction Decoder
+
+Decode Cardano transaction CBOR to extract mints, outputs, inputs, and metadata. Uses `@meshsdk/core-cst` under the hood.
+
+### Who Uses This
+
+The **frontend (T3 App Template)** is the primary user. The transaction API returns `unsignedTxCBOR` in its response - this decoder lets the frontend inspect what's in it before asking the user to sign.
+
+**Who Does NOT Need This:**
+- **Transaction API** - It builds the CBOR, doesn't need to decode it
+- **DB API** - Only handles database records, never touches CBOR
+- **Transaction Monitoring Service** - Would query Koios/Blockfrost for confirmed tx data
+
+### decodeTransactionCbor
+
+Full transaction decode for preview UI:
+
+```typescript
+import { decodeTransactionCbor } from "@andamio/transactions";
+
+const { unsignedTxCBOR } = await txApiResponse.json();
+
+const decoded = decodeTransactionCbor(unsignedTxCBOR);
+
+console.log(`Fee: ${Number(decoded.fee) / 1_000_000} ADA`);
+console.log(`Minting ${decoded.mints.length} tokens`);
+console.log(`Outputs:`, decoded.outputs);
+console.log(`Inputs:`, decoded.inputs);
+```
+
+### extractMints
+
+Extract just the mints from a transaction:
+
+```typescript
+import { extractMints } from "@andamio/transactions";
+
+const mints = extractMints(unsignedTxCBOR);
+// => [{ policyId: "abc...", assetName: "moduleHash...", quantity: 1n }]
+```
+
+### extractMintsByPolicy
+
+Filter mints by policy ID:
+
+```typescript
+import { extractMintsByPolicy } from "@andamio/transactions";
+
+const moduleMints = extractMintsByPolicy(unsignedTxCBOR, modulePolicy);
+```
+
+### extractAssetNames
+
+Get just asset names (useful for module hashes):
+
+```typescript
+import { extractAssetNames } from "@andamio/transactions";
+
+const moduleHashes = extractAssetNames(unsignedTxCBOR, modulePolicy);
+// => ["8dcbe1b...", "a2f3c4d..."]
+```
+
+### extractTxId
+
+Get the transaction ID:
+
+```typescript
+import { extractTxId } from "@andamio/transactions";
+
+const txId = extractTxId(unsignedTxCBOR);
+```
+
+### Practical Reality
+
+For most Andamio transactions, the decoder is a **nice-to-have** rather than essential:
+
+- Module hashes can be pre-computed with `computeSltHash(slts)` before calling the tx API
+- Evidence hashes are computed with `computeAssignmentInfoHash(evidence)` before submission
+- Transaction ID comes back after signing
+
+The decoder is most valuable for **transaction preview UI** and **debugging**.
+
+---
+
+## Batch Module Management Helpers
+
+For `COURSE_TEACHER_MODULES_MANAGE`, helper functions format request bodies for batch operations.
+
+### formatBatchUpdateStatusBody
+
+Format body for setting modules to PENDING_TX:
+
+```typescript
+import { formatBatchUpdateStatusBody } from "@andamio/transactions";
+
+const updateBody = formatBatchUpdateStatusBody(
+  courseNftPolicyId,           // "abc123..."
+  ["MODULE_1", "MODULE_2"],    // module codes being managed
+  txHash                       // from wallet.submitTx()
+);
+
+await fetch('/api/course-modules/batch-update-status', {
+  method: 'POST',
+  body: JSON.stringify(updateBody),
+});
+```
+
+### formatBatchConfirmBody
+
+Format body for confirming modules with hashes:
+
+```typescript
+import { formatBatchConfirmBody, computeSltHash } from "@andamio/transactions";
+
+// Pre-compute hashes (preferred - known at submission time)
+const moduleHashes = modules.map(m => computeSltHash(m.slts.map(s => s.text)));
+
+const confirmBody = formatBatchConfirmBody(
+  courseNftPolicyId,           // "abc123..."
+  ["MODULE_1", "MODULE_2"],    // module codes (same order as minting)
+  txHash,                      // confirmed transaction hash
+  moduleHashes                 // array of module hashes (same order)
+);
+
+await fetch('/api/course-modules/batch-confirm-transaction', {
+  method: 'POST',
+  body: JSON.stringify(confirmBody),
+});
+```
+
+**Important:** Module codes and hashes must be passed in the same order as they appear in `module_infos`.
+
+---
+
+## Evidence Locking Behavior
+
+Once a student commits evidence to an assignment, the evidence becomes **immutable from a blockchain perspective**. The on-chain commitment stores a hash of the evidence, so any modification would cause a mismatch.
+
+### UX Implementation Requirements
+
+1. **Lock evidence editor after commitment** - When `network_status` transitions to `PENDING_TX_*` or any committed state, make the editor read-only.
+
+2. **Status-based editability:**
+
+```typescript
+const isEditable = (status: AssignmentCommitmentStatus) => {
+  return status === "DRAFT" || status === "NEEDS_REVISION";
+};
+```
+
+3. **Visual indicators:**
+   - Show a lock icon when evidence is committed
+   - Display the evidence hash for transparency
+   - Link to on-chain verification via Andamioscan
+
+### Why This Matters
+
+The assignment info hash creates a tamper-evident record. If someone edits database evidence after commitment, verification will fail because the hash won't match. This ensures the evidence a teacher assesses is exactly what the student committed.
+
+---
+
+## Related Documentation
+
+- [Getting Started](/docs/sdk/transactions/getting-started) - Basic usage
+- [V2 Transactions](/docs/sdk/transactions/v2) - Transaction reference
+- [Side Effects](/docs/sdk/transactions/side-effects) - Database update patterns

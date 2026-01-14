@@ -1,0 +1,13 @@
+{
+  "title": "@andamio/transactions",
+  "icon": "Workflow",
+  "pages": [
+    "index",
+    "getting-started",
+    "v2",
+    "utilities",
+    "side-effects",
+    "input-helpers"
+  ],
+  "defaultOpen": true
+}

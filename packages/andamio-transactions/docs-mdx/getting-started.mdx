@@ -1,0 +1,240 @@
+---
+title: "Getting Started"
+description: "Install and use @andamio/transactions in your project"
+icon: Rocket
+---
+
+# Getting Started
+
+This guide covers installation, basic usage, and common patterns for working with the `@andamio/transactions` package.
+
+## Installation
+
+```bash
+npm install @andamio/transactions
+```
+
+The package has peer dependencies on `zod` for schema validation:
+
+```bash
+npm install zod
+```
+
+## Basic Usage
+
+### Get a Transaction Definition
+
+```typescript
+import { getTransactionDefinition } from "@andamio/transactions";
+
+const txDef = getTransactionDefinition("COURSE_STUDENT_ASSIGNMENT_COMMIT");
+
+// Access protocol specification
+console.log(txDef.protocolSpec.yamlPath);
+// "/yaml/transactions/v2/course/student/enroll.yaml"
+
+// Access build configuration
+console.log(txDef.buildTxConfig.builder.endpoint);
+// "/tx/v2/student/course/enroll"
+
+// Access estimated costs
+console.log(txDef.buildTxConfig.estimatedCost);
+// { txFee: 200000, minDeposit: 2140000 }
+
+// Access UI metadata
+console.log(txDef.ui.title);
+// "Enroll in Course"
+```
+
+### Validate Transaction Inputs
+
+Each transaction definition includes a Zod schema for input validation:
+
+```typescript
+import { getTransactionDefinition } from "@andamio/transactions";
+
+const txDef = getTransactionDefinition("COURSE_STUDENT_ASSIGNMENT_COMMIT");
+
+// Validate inputs before building transaction
+const inputs = {
+  alias: "studentAlias",
+  courseId: "abc123def456...", // 56-char hex policy ID
+  commitData: {
+    sltHash: "moduleHash64chars...", // 64-char module hash
+    assignmentInfo: "evidenceHash...",
+  },
+};
+
+try {
+  const validatedInputs = txDef.buildTxConfig.inputSchema.parse(inputs);
+  // Inputs are valid, proceed with transaction
+} catch (error) {
+  // Handle validation errors
+  console.error("Invalid inputs:", error);
+}
+```
+
+### Build and Submit Transaction
+
+```typescript
+import { getTransactionDefinition, computeAssignmentInfoHash } from "@andamio/transactions";
+
+const txDef = getTransactionDefinition("COURSE_STUDENT_ASSIGNMENT_COMMIT");
+
+// 1. Validate inputs
+const inputs = txDef.buildTxConfig.inputSchema.parse({
+  alias: userAlias,
+  courseId: courseNftPolicyId,
+  commitData: {
+    sltHash: moduleHash, // 64-char Blake2b-256 hash
+    assignmentInfo: computeAssignmentInfoHash(evidenceContent),
+  },
+});
+
+// 2. Build transaction via Atlas Tx API
+const buildResponse = await fetch(
+  `${ATLAS_TX_API_URL}${txDef.buildTxConfig.builder.endpoint}`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(inputs),
+  }
+);
+
+const { unsignedTxCBOR } = await buildResponse.json();
+
+// 3. Sign with wallet (using Mesh SDK)
+const signedTx = await wallet.signTx(unsignedTxCBOR);
+
+// 4. Submit to chain
+const txHash = await wallet.submitTx(signedTx);
+
+// 5. Execute onSubmit side effects
+// (See Side Effects documentation)
+```
+
+## Transaction Types
+
+### By Protocol Version
+
+```typescript
+// Import V2 transactions (recommended)
+import { COURSE_STUDENT_ASSIGNMENT_COMMIT, COURSE_ADMIN_CREATE } from "@andamio/transactions";
+
+// Import V1 transactions explicitly
+import { v1 } from "@andamio/transactions";
+const { MINT_MODULE_TOKENS } = v1;
+
+// Get all transactions by version
+import { getTransactionsByVersion } from "@andamio/transactions";
+const allV2Transactions = getTransactionsByVersion("v2");
+```
+
+### By Role
+
+```typescript
+import { getTransactionsByRole } from "@andamio/transactions";
+
+const studentTxs = getTransactionsByRole("student");
+// [COURSE_STUDENT_ASSIGNMENT_COMMIT, COURSE_STUDENT_ASSIGNMENT_UPDATE, COURSE_STUDENT_CREDENTIAL_CLAIM]
+
+const teacherTxs = getTransactionsByRole("teacher");
+// [COURSE_TEACHER_MODULES_MANAGE, COURSE_TEACHER_ASSIGNMENTS_ASSESS]
+```
+
+### By Version and Role
+
+```typescript
+import { getTransactionsByVersionAndRole } from "@andamio/transactions";
+
+const v2StudentTxs = getTransactionsByVersionAndRole("v2", "student");
+const v1CourseCreatorTxs = getTransactionsByVersionAndRole("v1", "course-creator");
+```
+
+## Transaction Definition Structure
+
+Each transaction definition follows this structure:
+
+```typescript
+type AndamioTransactionDefinition = {
+  // Identifier
+  txType: string;
+  role: "admin" | "teacher" | "student" | "general";
+
+  // Protocol reference
+  protocolSpec: {
+    version: "v1" | "v2";
+    id: string;
+    yamlPath: string;
+    requiredTokens?: string[];
+  };
+
+  // Build configuration
+  buildTxConfig: {
+    txApiSchema?: ZodSchema;       // Transaction API inputs only
+    sideEffectSchema?: ZodSchema;  // Side effect parameters only
+    inputSchema: ZodSchema;        // Combined validation schema
+    builder: {
+      type: "api-endpoint";
+      endpoint: string;
+    };
+    estimatedCost?: {
+      txFee: number;
+      minDeposit?: number;
+    };
+    inputHelpers?: Record<string, InputHelperInfo>;
+  };
+
+  // Side effects
+  onSubmit?: SideEffect[];
+  onConfirmation: SideEffect[];
+
+  // UI metadata
+  ui: {
+    buttonText: string;
+    title: string;
+    description: string[];
+    successInfo: string;
+  };
+
+  // Documentation links
+  docs: {
+    protocolDocs: string;
+    apiDocs?: string;
+  };
+};
+```
+
+## Schema Separation
+
+V2 transactions separate transaction API parameters from side effect parameters:
+
+```typescript
+import { getTransactionDefinition } from "@andamio/transactions";
+
+const txDef = getTransactionDefinition("COURSE_TEACHER_ASSIGNMENTS_ASSESS");
+
+// What the transaction API endpoint needs
+const apiParams = txDef.buildTxConfig.txApiSchema;
+// { alias, courseId, assignmentDecisions[], walletData? }
+
+// What side effects need (but API doesn't)
+const sideEffectParams = txDef.buildTxConfig.sideEffectSchema;
+// { moduleCode, studentAccessTokenAlias, assessmentResult }
+
+// Combined validation (use this for full input validation)
+const allParams = txDef.buildTxConfig.inputSchema;
+// { alias, courseId, assignmentDecisions[], walletData?, moduleCode, studentAccessTokenAlias, assessmentResult }
+```
+
+This separation allows:
+- Clear documentation of what each parameter is for
+- Programmatic discovery of API vs side effect params
+- Third-party developers can build their own UIs knowing exactly what the API needs
+
+## Next Steps
+
+- [V2 Transactions](/docs/sdk/transactions/v2) - Complete reference for current transactions
+- [Utilities](/docs/sdk/transactions/utilities) - Hash functions and CBOR decoder
+- [Side Effects](/docs/sdk/transactions/side-effects) - Database update patterns
+- [Input Helpers](/docs/sdk/transactions/input-helpers) - Format complex inputs

@@ -214,8 +214,7 @@ Package extraction and community release.
 ### Template Publishing
 
 - Clean starter template for community
-- Remove monorepo config
-- Replace workspace imports with npm packages
+- Publish `@andamio/transactions` to npm
 - `npx create-andamio-app` CLI
 
 ---

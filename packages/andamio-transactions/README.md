@@ -956,15 +956,14 @@ When protocol specs change in andamio-docs:
 3. Update costs in `utils/protocol-reference.ts`
 4. Update side effects if on-chain structure changes (mints, outputs, etc.)
 
-## Migration Plan
+## Development
 
-This package is currently being developed in the monorepo at:
-`andamio-platform-monorepo/packages/andamio-transactions/`
+This package is embedded in the Andamio T3 App Template at:
+`andamio-t3-app-template/packages/andamio-transactions/`
 
-Once complete, it will be:
-1. Migrated to the `andamio-docs` repository
-2. Published to npm as `@andamio/transactions`
-3. Consumed by both `andamio-db-api` and `andamio-t3-app-template`
+This allows direct editing of transaction definitions without publishing. The main app's `package.json` references it via `"@andamio/transactions": "file:packages/andamio-transactions"`.
+
+**Future**: This package will be published to npm as `@andamio/transactions` for use in other projects.
 
 ## License
 

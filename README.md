@@ -4,80 +4,94 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.0-green.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-green.svg)](./CHANGELOG.md)
 
 A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
 
-**Version**: 0.4.0 | **Last Updated**: December 11, 2025 | [CHANGELOG](./CHANGELOG.md)
+**Version**: 0.5.0 | **Last Updated**: January 14, 2026 | [CHANGELOG](./CHANGELOG.md)
 
 ## Current Status
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| **Course & Learning** | ✅ Complete | 8 transactions, 129 tests, full lifecycle |
+| **Course & Learning** | ✅ Complete | 16 transactions, full learner/instructor lifecycle |
 | **Creator Studio** | ✅ Complete | Course/module editing, on-chain sync, rich text |
-| **Project System** | 🚧 In Progress | Treasury, tasks, commitments |
+| **Project System** | 🚧 In Progress | Treasury, tasks, commitments (9 tx components) |
 
-📊 **Detailed Status**: [STATUS.md](./docs/project/STATUS.md) | [ROADMAP.md](./docs/project/ROADMAP.md)
+📊 **Detailed Status**: [STATUS.md](./.claude/skills/project-manager/STATUS.md) | [ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md)
 
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router) + TypeScript
-- **API**: tRPC v11 + Andamio Database API
+- **API**: tRPC v11 + Andamio Database API (Go)
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Blockchain**: Cardano via Mesh SDK
 - **Editor**: Tiptap with custom extensions
+- **Transactions**: `@andamio/transactions` (embedded local package)
 
 ## Quick Start
 
 ```bash
-# From andamio-platform-monorepo root:
-./scripts/setup.sh
+# Clone the repository
+git clone https://github.com/Andamio-Platform/andamio-t3-app-template.git
+cd andamio-t3-app-template
 
-# Or manually:
+# Install dependencies
 npm install
+
+# Configure environment
 cp .env.example .env
+
+# Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
-**Prerequisites**: Node.js 20+, Andamio Database API running at `localhost:4000`
+**Prerequisites**: Node.js 20+
 
-## Project Structure
+The template connects to the deployed Andamio APIs by default (no local backend required).
+
+## Repository Structure
+
+This is a **standalone repository** with an embedded transactions package:
 
 ```
-src/
-├── app/(app)/                    # Pages with sidebar layout
-│   ├── dashboard/                # User dashboard
-│   ├── courses/                  # Course listing (grid/list/table views)
-│   ├── course/[coursenft]/       # Learner course views
-│   ├── studio/                   # Creator Studio
-│   │   ├── course/[coursenft]/   # Course editor (tabbed)
-│   │   └── project/[treasurynft]/ # Project editor (tabbed)
-│   └── project/[treasurynft]/    # Public project views
+andamio-t3-app-template/
+├── src/                              # Next.js app source
+│   ├── app/(app)/                    # Pages with sidebar layout
+│   │   ├── dashboard/                # User dashboard
+│   │   ├── course/[coursenft]/       # Learner course views
+│   │   ├── studio/                   # Creator Studio
+│   │   │   ├── course/[coursenft]/   # Course editor (tabbed)
+│   │   │   └── project/[treasurynft]/ # Project editor (tabbed)
+│   │   └── project/[treasurynft]/    # Public project views
+│   │
+│   ├── components/
+│   │   ├── andamio/                  # UI wrappers (68+ components)
+│   │   ├── auth/                     # Auth components + RequireAuth
+│   │   ├── editor/                   # Tiptap editor (see editor/README.md)
+│   │   ├── studio/                   # Studio components (StudioTabs)
+│   │   └── transactions/             # Transaction components (16+)
+│   │
+│   ├── hooks/
+│   │   ├── use-andamio-auth.ts       # Auth state + authenticatedFetch
+│   │   ├── use-andamio-fetch.ts      # Standardized data fetching
+│   │   └── use-pending-tx-watcher.ts # Transaction monitoring
+│   │
+│   └── lib/
+│       ├── cardano-utils.ts          # ADA/Lovelace utilities
+│       └── constants.ts              # UI timeouts, explorer URLs
 │
-├── components/
-│   ├── andamio/                  # UI wrappers (68+ components)
-│   ├── auth/                     # Auth components + RequireAuth
-│   ├── courses/                  # Course UI components
-│   ├── editor/                   # Tiptap editor (see editor/README.md)
-│   ├── studio/                   # Studio components (StudioTabs)
-│   └── transactions/             # Transaction components (10+)
+├── packages/
+│   └── andamio-transactions/         # Transaction definitions (local package)
+│       ├── src/definitions/          # All 16 transaction types
+│       └── README.md                 # Transaction package docs
 │
-├── hooks/
-│   ├── use-andamio-auth.ts       # Auth state + authenticatedFetch
-│   ├── use-andamio-fetch.ts      # Standardized data fetching
-│   ├── use-owned-courses.ts      # Course data with module counts
-│   ├── use-success-notification.ts # Auto-dismiss notifications
-│   └── use-pending-tx-watcher.ts # Transaction monitoring
-│
-└── lib/
-    ├── cardano-utils.ts          # ADA/Lovelace utilities
-    ├── constants.ts              # UI timeouts, limits, explorer URLs
-    ├── debug-logger.ts           # Conditional debug logging
-    └── api-utils.ts              # Error handling
+└── .claude/skills/                   # AI-assisted development skills
 ```
+
+The `@andamio/transactions` package is embedded locally, allowing direct editing of transaction definitions without publishing.
 
 ## Key Features
 
@@ -170,11 +184,12 @@ authLogger.error("Auth failed:", error);   // Errors always logged
 
 | Source | Purpose |
 |--------|---------|
-| **Andamio DB API** | Courses, users, assignments, off-chain data |
-| **Andamio Indexer** | UTXOs, datums, on-chain enrollment |
+| **Andamio DB API** (Go) | Courses, users, assignments, off-chain data |
+| **Andamioscan** | UTXOs, datums, on-chain enrollment |
+| **Atlas TX API** | Transaction building |
 | **Koios API** | Transaction confirmation |
 
-See [docs/architecture/DATA-SOURCES.md](./docs/architecture/DATA-SOURCES.md) for architecture details.
+All APIs are deployed and accessible via environment variables - no local backend required.
 
 ## Styling
 
@@ -234,18 +249,15 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 ## Documentation
 
 ### Getting Started
-- [docs/guides/GETTING-STARTED.md](./docs/guides/GETTING-STARTED.md) - **New? Start here**
-- [docs/README.md](./docs/README.md) - Documentation index (MOC)
+- [.claude/skills/project-manager/GETTING-STARTED.md](./.claude/skills/project-manager/GETTING-STARTED.md) - **New? Start here**
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
 - [CHANGELOG.md](./CHANGELOG.md) - Version history
 
 ### Reference
-- [docs/project/STATUS.md](./docs/project/STATUS.md) - Implementation status
-- [docs/project/ROADMAP.md](./docs/project/ROADMAP.md) - Development roadmap
-- [docs/api/API-ENDPOINT-REFERENCE.md](./docs/api/API-ENDPOINT-REFERENCE.md) - API endpoints
-- [docs/architecture/DATA-SOURCES.md](./docs/architecture/DATA-SOURCES.md) - Data architecture
-- [docs/styling/SEMANTIC-COLORS.md](./docs/styling/SEMANTIC-COLORS.md) - Color system
+- [.claude/skills/project-manager/STATUS.md](./.claude/skills/project-manager/STATUS.md) - Implementation status
+- [.claude/skills/project-manager/ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md) - Development roadmap
 - [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
+- [packages/andamio-transactions/README.md](./packages/andamio-transactions/README.md) - Transaction package docs
 - [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
 
 ## Resources

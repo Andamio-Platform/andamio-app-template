@@ -267,28 +267,24 @@ ui: {
 ## File Structure
 
 ```
-andamio-platform-monorepo/
+andamio-t3-app-template/
 ├── packages/
-│   └── andamio-transactions/          # Transaction definitions
+│   └── andamio-transactions/          # Transaction definitions (embedded)
 │       ├── src/
 │       │   ├── definitions/
-│       │   │   ├── course-creator/
-│       │   │   │   └── mint-module-tokens.ts  # Definition
-│       │   │   └── student/
+│       │   │   ├── course/            # Course transactions
+│       │   │   └── project/           # Project transactions
 │       │   └── types/
 │       │       └── schema.ts          # Type system
 │       └── README.md
 │
-└── andamio-t3-app-template/           # T3 App (Next.js)
-    └── src/
-        ├── components/
-        │   └── transactions/
-        │       ├── andamio-transaction.tsx    # Generic component
-        │       └── mint-module-tokens.tsx     # Specific component
-        └── app/
-            └── demo/
-                └── mint-module-tokens/
-                    └── page.tsx               # Demo page
+└── src/                               # Next.js app
+    ├── components/
+    │   └── transactions/
+    │       ├── course/                # Course transaction components
+    │       └── project/               # Project transaction components
+    └── app/
+        └── (app)/                     # App routes with sidebar
 ```
 
 ## Usage Example

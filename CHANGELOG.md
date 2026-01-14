@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Standalone Repository**: This template is now a standalone repository with embedded `@andamio/transactions` package
+  - Removed all monorepo references from documentation
+  - Updated Quick Start to use simple `git clone` workflow
+  - Transaction package now lives at `packages/andamio-transactions/` within this repo
+  - All deployed APIs are used by default - no local backend required
+  - Updated repository URLs in `packages/andamio-transactions/package.json`
+  - Updated file structure diagrams in documentation
+  - Fixed `audit-coverage.ts` script paths for standalone repo structure
+
 ### Added
 - **Transaction API Audit Report** (`.claude/skills/audit-api-coverage/tx-audit-report.md`): Comprehensive audit comparing all 16 Atlas TX API swagger schemas against `@andamio/transactions` definitions. Documents match status, fixes applied, and optional improvements.
 - **Public Course Credential Claim** (`/course/[coursenft]`): Enrolled students can now claim credentials directly from the public course page

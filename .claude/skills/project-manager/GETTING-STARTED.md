@@ -59,12 +59,6 @@ Before starting, ensure you have:
 ### 1. Clone and Install
 
 ```bash
-# If using the monorepo (recommended)
-git clone https://github.com/Andamio-Platform/andamio-platform-monorepo.git
-cd andamio-platform-monorepo
-./scripts/setup.sh
-
-# Or standalone
 git clone https://github.com/Andamio-Platform/andamio-t3-app-template.git
 cd andamio-t3-app-template
 npm install
@@ -76,20 +70,11 @@ npm install
 cp .env.example .env
 ```
 
-The default `.env` is configured for local development with preprod network.
+The default `.env` is configured to connect to deployed preprod APIs - no local backend required.
 
-### 3. Start the Database API (if using monorepo)
-
-```bash
-cd ../andamio-db-api
-npm run dev
-# API runs at http://localhost:4000
-```
-
-### 4. Start the Template
+### 3. Start the Template
 
 ```bash
-cd ../andamio-t3-app-template
 npm run dev
 # App runs at http://localhost:3000
 ```
@@ -303,4 +288,4 @@ const [content, setContent] = useState<JSONContent | null>(null);
 
 ---
 
-*Last Updated: December 11, 2025*
+*Last Updated: January 14, 2026*

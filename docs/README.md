@@ -10,9 +10,9 @@ This index organizes all documentation to help you find what you need quickly, w
 
 ### For Newcomers
 Start here to understand the project:
-1. **[Getting Started Guide](./guides/GETTING-STARTED.md)** - Setup instructions, pioneer program info
-2. [Project Status](./project/STATUS.md) - Current implementation status and what's complete
-3. [Project Roadmap](./project/ROADMAP.md) - Development phases and planned features
+1. **[Getting Started Guide](../.claude/skills/project-manager/GETTING-STARTED.md)** - Setup instructions, pioneer program info
+2. [Project Status](../.claude/skills/project-manager/STATUS.md) - Current implementation status
+3. [Project Roadmap](../.claude/skills/project-manager/ROADMAP.md) - Development phases and planned features
 4. [Responsive Design Guide](./styling/RESPONSIVE-DESIGN.md) - UI patterns and component usage
 5. [Semantic Colors](./styling/SEMANTIC-COLORS.md) - Color system and theming
 
@@ -40,14 +40,15 @@ Structured overview for navigation:
 
 ## Documentation Categories
 
-### Project (`docs/project/`)
+### Project (`.claude/skills/project-manager/`)
 
-High-level project tracking and planning documentation.
+High-level project tracking and planning documentation (moved to Claude Skills).
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [STATUS.md](./project/STATUS.md) | Implementation status tracking - what's complete (Phase 1: Course System), what's planned (Phase 2: Access Token, Phase 3: Projects) | All |
-| [ROADMAP.md](./project/ROADMAP.md) | Development roadmap with phases, timelines, and decision log | All |
+| [STATUS.md](../.claude/skills/project-manager/STATUS.md) | Implementation status tracking | All |
+| [ROADMAP.md](../.claude/skills/project-manager/ROADMAP.md) | Development roadmap with phases and decision log | All |
+| [GETTING-STARTED.md](../.claude/skills/project-manager/GETTING-STARTED.md) | Setup guide for pioneers and developers | All |
 
 ### Architecture (`docs/architecture/`)
 
@@ -191,4 +192,8 @@ When adding or updating documentation:
 
 ---
 
-*Last Updated: December 11, 2025*
+*Last Updated: January 14, 2026*
+
+---
+
+> **Note**: Primary documentation has moved to `.claude/skills/` directories. This folder contains legacy documentation that may be outdated.

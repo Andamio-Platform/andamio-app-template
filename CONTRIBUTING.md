@@ -38,17 +38,18 @@ Thank you for your interest in contributing! This document provides guidelines f
 5. **Open the app**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-### Running with Andamio Database API
+### API Configuration
 
-For full functionality, you need the Andamio Database API running:
+The template connects to deployed Andamio APIs by default. Check your `.env` file for the correct API URLs:
 
 ```bash
-# In the monorepo root (andamio-platform-monorepo)
-cd ../andamio-db-api
-npm run dev
+# Default: connects to preprod APIs
+NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.europe-west1.run.app/api/v0"
+ANDAMIOSCAN_API_URL="https://preprod.andamioscan.andamio.space"
+ATLAS_TX_API_URL="https://atlas-api-preprod-507341199760.us-central1.run.app"
 ```
 
-See the [Database API README](../andamio-db-api/README.md) for setup instructions.
+No local backend setup is required - all APIs are deployed and accessible.
 
 ## Development Workflow
 

@@ -84,10 +84,8 @@ const CONFIG = {
   },
 };
 
-// T3 app template root (where src/ lives)
+// T3 app template root (where src/ and packages/ live)
 const PROJECT_ROOT = path.resolve(__dirname, "../../../../");
-// Monorepo root (where packages/ lives)
-const MONOREPO_ROOT = path.resolve(PROJECT_ROOT, "..");
 const SKILLS_DIR = path.resolve(__dirname, "..");
 
 // =============================================================================
@@ -271,8 +269,8 @@ async function scanTxApiCoverage(): Promise<APICoverage> {
   const endpoints = extractEndpoints(spec);
   console.log(`  Found ${endpoints.length} endpoints in OpenAPI spec`);
 
-  // Scan transaction definitions (in monorepo root)
-  const txDir = path.join(MONOREPO_ROOT, "packages/andamio-transactions/src/definitions");
+  // Scan transaction definitions (embedded in this project)
+  const txDir = path.join(PROJECT_ROOT, "packages/andamio-transactions/src/definitions");
 
   if (!fs.existsSync(txDir)) {
     console.log("  ⚠️ Transaction definitions directory not found");
@@ -295,7 +293,7 @@ async function scanTxApiCoverage(): Promise<APICoverage> {
     if (file.includes("index.ts")) continue;
 
     const content = fs.readFileSync(file, "utf-8");
-    const relativePath = path.relative(MONOREPO_ROOT, file);
+    const relativePath = path.relative(PROJECT_ROOT, file);
 
     // Look for builder endpoint patterns in transaction definitions
     // Pattern 1: builderEndpoint: "/v2/tx/..."

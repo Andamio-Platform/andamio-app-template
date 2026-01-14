@@ -20,8 +20,6 @@ Current implementation status of the Andamio T3 App Template.
 
 ### API Source of Truth
 
-**IMPORTANT**: The `andamio-db-api/` directory in the monorepo is **deprecated** for reference purposes.
-
 **Always use the deployed API schema as the source of truth:**
 - **OpenAPI Spec**: https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json
 - **Swagger UI**: https://andamio-db-api-343753432212.us-central1.run.app/docs

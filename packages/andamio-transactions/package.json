@@ -17,13 +17,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Andamio-Platform/andamio-platform-monorepo.git",
+    "url": "https://github.com/Andamio-Platform/andamio-t3-app-template.git",
     "directory": "packages/andamio-transactions"
   },
   "bugs": {
-    "url": "https://github.com/Andamio-Platform/andamio-platform-monorepo/issues"
+    "url": "https://github.com/Andamio-Platform/andamio-t3-app-template/issues"
   },
-  "homepage": "https://github.com/Andamio-Platform/andamio-platform-monorepo/tree/main/packages/andamio-transactions#readme",
+  "homepage": "https://github.com/Andamio-Platform/andamio-t3-app-template/tree/main/packages/andamio-transactions#readme",
   "publishConfig": {
     "access": "public"
   },

@@ -15,7 +15,7 @@ This document tracks which API endpoints are implemented in the T3 App Template.
 | [Andamioscan](#andamioscan-34-endpoints) | 34 | 32 functions | **94%** |
 | **TOTAL** | **137** | **97** | **71%** |
 
-Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current counts.
+Run `node --import tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current counts.
 See [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) for the latest auto-generated report.
 
 ---
@@ -342,13 +342,14 @@ The Go API uses **role-based routing**:
 
 ## Related Documentation
 
-- [API-AUDIT-2026-01-10.md](./API-AUDIT-2026-01-10.md) - Complete migration report
-- [api-endpoint-reference.md](./api-endpoint-reference.md) - Full endpoint documentation
-- [db-api-endpoints.md](./db-api-endpoints.md) - Go API endpoint reference
-- [data-sources.md](./data-sources.md) - API systems overview
+- [SKILL.md](./SKILL.md) - Skill instructions and workflow
+- [db-api-endpoints.md](./db-api-endpoints.md) - DB API endpoint reference
+- [tx-api-endpoints.md](./tx-api-endpoints.md) - TX API endpoint reference
+- [andamioscan-endpoints.md](./andamioscan-endpoints.md) - Andamioscan endpoint reference
+- [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) - Auto-generated coverage report
 
 ---
 
-**Last Updated**: January 11, 2026
+**Last Updated**: January 14, 2026
 **Migration Status**: ✅ Complete
 **Maintained By**: Andamio Platform Team

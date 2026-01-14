@@ -20,10 +20,17 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 This template is part of the `andamio-platform` monorepo:
 ```
 andamio-platform/
-├── andamio-db-api/     # Database API (separate deployment)
 ├── andamio-t3-app-template/  # This project
-└── packages/andamio-transactions/  # Transaction definitions
+├── packages/andamio-transactions/  # Transaction definitions
+└── andamio-db-api/     # ⚠️ DEPRECATED - Do not use
 ```
+
+### Database API (Go)
+The backend is a Go API deployed on Cloud Run:
+- **Base URL**: `https://andamio-db-api-343753432212.us-central1.run.app`
+- **API Docs**: `https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json`
+
+> **CRITICAL**: Never reference or modify `andamio-db-api/` - it is deprecated.
 
 ### Type Safety
 **CRITICAL**: Always import types from `@andamio/db-api-types` package:
@@ -581,12 +588,15 @@ const navigation = [
 
 ### Adding New API Endpoint
 
-1. Import type from `andamio-db-api`:
+1. Import type from `@andamio/db-api-types`:
 ```typescript
-import { type YourOutputType } from "andamio-db-api";
+import { type YourOutputType } from "@andamio/db-api-types";
 ```
 
-2. Make authenticated request:
+2. Check the Go API docs for the endpoint schema:
+   - API Docs: `https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json`
+
+3. Make authenticated request:
 ```typescript
 const response = await authenticatedFetch(
   `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/your-endpoint`
@@ -594,7 +604,7 @@ const response = await authenticatedFetch(
 const data = (await response.json()) as YourOutputType;
 ```
 
-3. Build UI with shadcn/ui components.
+4. Build UI with shadcn/ui components.
 
 ## Key Files
 
@@ -757,12 +767,14 @@ Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation 
 - **UI Components**: shadcn/ui (default configuration)
 - **Blockchain**: Cardano (via Mesh SDK)
 - **State Management**: React hooks + tRPC
-- **Type Safety**: Direct imports from `andamio-db-api`
+- **Type Safety**: Types from `@andamio/db-api-types` package
+- **Backend**: Go API on Cloud Run (not local)
 
 ## Environment Variables
 
 ```bash
-NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api"
+# Production/Preprod (deployed Go API)
+NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.us-central1.run.app"
 ```
 
 ## Development Commands

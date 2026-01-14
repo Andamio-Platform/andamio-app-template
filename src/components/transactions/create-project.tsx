@@ -16,6 +16,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -57,6 +58,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   const [title, setTitle] = useState("");
   const [additionalManagers, setAdditionalManagers] = useState("");
   const [depositLovelace, setDepositLovelace] = useState("5000000"); // 5 ADA default
+  const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -102,7 +104,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         managers: managersList.length > 0 ? managersList : [user.accessTokenAlias],
-        course_prereqs: [], // No prerequisites by default
+        course_prereqs: coursePrereqs, // [[course_policy_id, [module_hash_1, ...]]]
         deposit_value: {
           lovelace: lovelaceAmount,
           native_assets: [],
@@ -258,6 +260,16 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
               Required deposit for contributors (1 ADA = 1,000,000 lovelace).
             </AndamioText>
           </div>
+        )}
+
+        {/* Course Prerequisites Selector */}
+        {hasAccessToken && hasInitiatorData && user?.accessTokenAlias && (
+          <CoursePrereqsSelector
+            userAlias={user.accessTokenAlias}
+            value={coursePrereqs}
+            onChange={setCoursePrereqs}
+            disabled={state !== "idle" && state !== "error"}
+          />
         )}
 
         {/* Transaction Status - Always show when not idle */}

@@ -210,7 +210,183 @@ Step 2 (Teachers Update):
 
 ---
 
+---
+
+# PROJECT LOOPS
+
+The following loops test the Project/Treasury system for bounties and task-based contributions.
+
+---
+
+## Loop P1: Create and Configure Project
+
+**Description:** An admin creates a new project treasury and optionally adds managers.
+
+**Roles:** 1-2 (Admin, optionally separate Manager(s))
+
+**Prerequisites:**
+- Admin has minted Access Token
+- If separate managers: Managers have minted Access Tokens
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Admin | `PROJECT_ADMIN_CREATE` | Create project treasury on-chain |
+| 2 | Admin | `PROJECT_ADMIN_MANAGERS_MANAGE` | Add manager aliases (optional) |
+
+**Side Effects:**
+
+Step 1 (Create):
+- onSubmit: Create project record with title and treasury NFT policy ID
+- onConfirmation: Set project status to live
+
+Step 2 (Managers Manage):
+- No database side effects (purely on-chain)
+- Manager access verified via Andamioscan API
+
+**Notes:**
+- Project creation requires `partialSign: true` for multi-sig
+- Admin who creates the project is automatically a manager
+- Treasury NFT policy ID comes from tx API response
+
+---
+
+## Loop P2: Publish Tasks
+
+**Description:** A manager creates and publishes tasks to the project for contributors.
+
+**Roles:** 1 (Manager)
+
+**Prerequisites:**
+- Project exists on-chain
+- User is a registered manager for the project
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Manager | `PROJECT_MANAGER_TASKS_MANAGE` | Mint/publish tasks on-chain |
+
+**Side Effects:**
+
+Step 1 (Tasks Manage - Mint):
+- onSubmit: Set tasks to `PENDING_TX`
+- onConfirmation: Set tasks to `ON_CHAIN` with task hash
+
+**Notes:**
+- Tasks need details defined in database before minting
+- Task hash computed from task content
+- Tasks can have expiration dates
+
+---
+
+## Loop P3: Earn Project Credential
+
+**Description:** A contributor enrolls in a project, commits to a task, gets approved by a manager, and claims their credential.
+
+**Roles:** 2 (Contributor, Manager)
+
+**Prerequisites:**
+- Both parties have minted Access Tokens
+- Project exists with at least one task on-chain
+- Manager is registered for the project
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Contributor | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Enroll and commit to task |
+| 2 | Manager | `PROJECT_MANAGER_TASKS_ASSESS` | Accept the submission |
+| 3 | Contributor | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Claim credential |
+
+**Side Effects:**
+
+Step 1 (Task Commit):
+- onSubmit: Create task commitment in database
+- onConfirmation: Set commitment status to `PENDING_APPROVAL`
+
+Step 2 (Tasks Assess - Accept):
+- onSubmit: Set status to `PENDING_TX_ACCEPTED`
+- onConfirmation: Set status to `ACCEPTED`
+
+Step 3 (Credential Claim):
+- No database side effects (purely on-chain)
+
+**Notes:**
+- Similar flow to Course credential claim
+- Contributor must prepare evidence before committing
+- Manager sees pending submissions in their dashboard
+
+---
+
+## Loop P4: Task Revision Flow
+
+**Description:** A contributor submits work, gets feedback requesting revisions, resubmits, and eventually earns the credential.
+
+**Roles:** 2 (Contributor, Manager)
+
+**Prerequisites:**
+- Both parties have minted Access Tokens
+- Project exists with at least one task on-chain
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Contributor | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Enroll and submit initial work |
+| 2 | Manager | `PROJECT_MANAGER_TASKS_ASSESS` | Refuse - needs revision |
+| 3 | Contributor | `PROJECT_CONTRIBUTOR_TASK_ACTION` | Resubmit with updated evidence |
+| 4 | Manager | `PROJECT_MANAGER_TASKS_ASSESS` | Accept the revision |
+| 5 | Contributor | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Claim credential |
+
+**Side Effects:**
+
+Step 2 (Assess - Refuse):
+- onSubmit: Set status to `PENDING_TX_REFUSED`
+- onConfirmation: Set status to `REFUSED`
+
+Step 3 (Task Action - Update):
+- onSubmit: Update evidence in database
+- onConfirmation: Set status to `PENDING_APPROVAL`
+
+**Notes:**
+- Tests the full feedback cycle for projects
+- Refused tasks can be revised and resubmitted
+
+---
+
+## Loop P5: Multi-Task Contribution
+
+**Description:** A contributor completes multiple tasks in a project before claiming credentials.
+
+**Roles:** 2 (Contributor, Manager)
+
+**Prerequisites:**
+- Both parties have minted Access Tokens
+- Project exists with 2+ tasks on-chain
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Contributor | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Enroll, commit to Task 1 |
+| 2 | Manager | `PROJECT_MANAGER_TASKS_ASSESS` | Accept Task 1 |
+| 3 | Contributor | `PROJECT_CONTRIBUTOR_TASK_ACTION` | Commit to Task 2 |
+| 4 | Manager | `PROJECT_MANAGER_TASKS_ASSESS` | Accept Task 2 |
+| ... | ... | ... | Repeat for additional tasks |
+| N | Contributor | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Claim credential |
+
+**Notes:**
+- Contributors can work on multiple tasks
+- Each accepted task can earn a separate credential
+- Good for testing task navigation and progress tracking
+
+---
+
 ## Quick Reference: All V2 Transactions
+
+### Course Transactions
 
 | Transaction | Role | Typical Cost | Has Side Effects |
 |-------------|------|--------------|------------------|
@@ -222,6 +398,19 @@ Step 2 (Teachers Update):
 | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Student | ~2.14 ADA | Yes |
 | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Student | ~0.33 ADA | Yes |
 | `COURSE_STUDENT_CREDENTIAL_CLAIM` | Student | ~-1.03 ADA | No |
+
+### Project Transactions
+
+| Transaction | Role | Typical Cost | Has Side Effects |
+|-------------|------|--------------|------------------|
+| `PROJECT_ADMIN_CREATE` | Admin | TBD | Yes |
+| `PROJECT_ADMIN_MANAGERS_MANAGE` | Admin | TBD | No |
+| `PROJECT_ADMIN_BLACKLIST_MANAGE` | Admin | TBD | No |
+| `PROJECT_MANAGER_TASKS_MANAGE` | Manager | TBD | Yes |
+| `PROJECT_MANAGER_TASKS_ASSESS` | Manager | TBD | Yes |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Contributor | TBD | Yes |
+| `PROJECT_CONTRIBUTOR_TASK_ACTION` | Contributor | TBD | Yes |
+| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Contributor | TBD | No |
 
 ---
 

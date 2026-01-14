@@ -20,11 +20,7 @@
  */
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getCourse,
-  getAllCourses,
-  type AndamioscanCourse,
-} from "~/lib/andamioscan";
+import { getCourse, getAllCourses } from "~/lib/andamioscan";
 
 // =============================================================================
 // Query Keys

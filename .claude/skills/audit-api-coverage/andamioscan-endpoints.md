@@ -1,9 +1,9 @@
 # Andamioscan API Endpoints
 
 > **Base URL**: `https://preprod.andamioscan.io/api`
-> **Docs**: [/api](https://preprod.andamioscan.io/api) (download OpenAPI Document)
+> **Docs**: [swagger.yaml](https://preprod.andamioscan.io/swagger.yaml)
 > **Total Endpoints**: 34
-> **Last Updated**: January 11, 2026
+> **Last Updated**: January 14, 2026
 
 ## Summary by Category
 

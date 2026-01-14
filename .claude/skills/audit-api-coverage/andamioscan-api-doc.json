@@ -500,6 +500,12 @@
         "alias": {
           "type": "string"
         },
+        "assets": {
+          "items": {
+            "$ref": "#/definitions/models.Asset"
+          },
+          "type": "array"
+        },
         "createdAt": {
           "type": "string"
         },
@@ -532,6 +538,12 @@
         "alias": {
           "type": "string"
         },
+        "assets": {
+          "items": {
+            "$ref": "#/definitions/models.Asset"
+          },
+          "type": "array"
+        },
         "lovelace": {
           "type": "integer"
         },
@@ -554,6 +566,12 @@
         },
         "project_id": {
           "type": "string"
+        },
+        "removed_tasks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "slot": {
           "type": "integer"
@@ -625,6 +643,14 @@
       "type": "object"
     },
     "models.ModulesDeleted": {
+      "properties": {
+        "assignment_id": {
+          "type": "string"
+        },
+        "deleted_by": {
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "models.ModulesUpdated": {

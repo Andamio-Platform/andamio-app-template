@@ -288,9 +288,9 @@ export default function ProjectDetailPage() {
 
         setProject(projectData);
 
-        // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
+        // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
         const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
         );
 
         if (!tasksResponse.ok) {

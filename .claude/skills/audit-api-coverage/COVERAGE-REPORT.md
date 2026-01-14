@@ -1,13 +1,13 @@
 # API Coverage Report
 
-> **Generated**: 2026-01-11T13:04:38.544Z
-> **Overall Coverage**: 71% (97/137 endpoints)
+> **Generated**: 2026-01-14T14:53:06.347Z
+> **Overall Coverage**: 77% (105/137 endpoints)
 
 ## Summary
 
 | API | Total | Implemented | Coverage |
 |-----|-------|-------------|----------|
-| Andamio DB API | 87 | 49 | **56%** |
+| Andamio DB API | 87 | 57 | **66%** |
 | Andamio Tx API | 16 | 16 | **100%** |
 | Andamioscan | 34 | 32 | **94%** |
 
@@ -16,7 +16,7 @@
 ## Andamio DB API
 
 **Base URL**: `https://andamio-db-api-343753432212.us-central1.run.app`
-**Coverage**: 49/87 (56%)
+**Coverage**: 57/87 (66%)
 
 ### Missing Endpoints
 
@@ -28,7 +28,6 @@
 | POST | `/course/owner/course/create` |
 | POST | `/course/owner/course/confirm-mint` |
 | GET | `/course/public/course-modules/assignment-summary/{policy_id}` |
-| POST | `/course/teacher/course-module/delete` |
 | POST | `/course/teacher/course-module/publish` |
 | POST | `/course/teacher/course-module/set-pending-tx` |
 | POST | `/course/teacher/course-module/confirm-tx` |
@@ -42,7 +41,8 @@
 | POST | `/course/teacher/introduction/publish` |
 | POST | `/course/teacher/introduction/delete` |
 | GET | `/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}` |
-| ... | *18 more endpoints* |
+| POST | `/course/teacher/assignment-commitment/review` |
+| ... | *10 more endpoints* |
 
 ---
 

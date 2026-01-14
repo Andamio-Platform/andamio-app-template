@@ -31,41 +31,61 @@ import { TaskIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 
 /**
- * Task to be added to the project
+ * ListValue - Array of [asset_class, quantity] tuples
+ *
+ * Format: [["policyId.tokenName", quantity], ...] or [["lovelace", quantity]]
+ * Example: [["lovelace", 5000000]] or [["ff80aaaf...474f4c44", 100]]
  */
-interface TaskToAdd {
-  project_content: string; // Task hash (64 char hex)
-  expiration_time: number; // Unix timestamp
+type ListValue = Array<[string, number]>;
+
+/**
+ * ProjectData - Task to add or remove from the project
+ *
+ * IMPORTANT: This matches the Atlas API ManageTasksTxRequest schema
+ * @see https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json
+ *
+ * @property project_content - Task content/description (max 140 chars, NOT a hash!)
+ * @property expiration_time - Unix timestamp in MILLISECONDS
+ * @property lovelace_amount - Reward amount in lovelace
+ * @property native_assets - ListValue array of [asset_class, quantity] tuples
+ */
+interface ProjectData {
+  project_content: string; // Task content text (max 140 chars)
+  expiration_time: number; // Unix timestamp in MILLISECONDS
   lovelace_amount: number;
-  native_assets: Array<{
-    policy_id: string;
-    assets: Array<{ asset_name: string; quantity: number }>;
-  }>;
+  native_assets: ListValue; // [["policyId.tokenName", qty], ...]
 }
 
 export interface TasksManageProps {
   /**
-   * Project NFT Policy ID
+   * Project NFT Policy ID (56 char hex)
    */
   projectNftPolicyId: string;
 
   /**
-   * Contributor state ID (required for task management)
+   * Contributor state policy ID (56 char hex) - REQUIRED
+   * Get this from Andamioscan API
    */
   contributorStateId: string;
 
   /**
-   * Pre-configured tasks to add (for advanced use cases)
+   * Pre-configured tasks to add (ProjectData objects)
    */
-  tasksToAdd?: TaskToAdd[];
+  tasksToAdd?: ProjectData[];
 
   /**
-   * Task hashes to remove (64 char hex)
+   * Tasks to remove (full ProjectData objects, NOT just hashes!)
    */
-  tasksToRemove?: string[];
+  tasksToRemove?: ProjectData[];
 
   /**
-   * Task codes for side effects
+   * Deposit value for the transaction (ListValue format)
+   * Required by the API. Example: [["lovelace", 5000000]]
+   */
+  depositValue?: ListValue;
+
+  /**
+   * Task codes for side effects (used to identify tasks in DB)
    */
   taskCodes?: string[];
 
@@ -80,20 +100,31 @@ export interface TasksManageProps {
  *
  * This component supports both simple (single task) and batch modes.
  *
+ * ## API Format (ManageTasksTxRequest)
+ * ```json
+ * {
+ *   "alias": "manager1",
+ *   "project_id": "56-char-hex",
+ *   "contributor_state_id": "56-char-hex",
+ *   "tasks_to_add": [{ project_content: "text", expiration_time: ms, lovelace_amount: n, native_assets: [] }],
+ *   "tasks_to_remove": [{ ... same ProjectData format ... }],
+ *   "deposit_value": [["lovelace", amount]]
+ * }
+ * ```
+ *
  * @example
  * ```tsx
- * // Simple mode - add single task via form
- * <TasksManage
- *   projectNftPolicyId="abc123..."
- *   contributorStateId="def456..."
- *   onSuccess={() => refetchTasks()}
- * />
- *
  * // Batch mode - pre-configured tasks
  * <TasksManage
  *   projectNftPolicyId="abc123..."
  *   contributorStateId="def456..."
- *   tasksToAdd={[{ project_content: "...", expiration_time: 1735689600, lovelace_amount: 5000000, native_assets: [] }]}
+ *   tasksToAdd={[{
+ *     project_content: "Complete the tutorial",  // max 140 chars
+ *     expiration_time: Date.now() + 30 * 24 * 60 * 60 * 1000,  // ms timestamp
+ *     lovelace_amount: 5000000,
+ *     native_assets: []
+ *   }]}
+ *   depositValue={[["lovelace", 5000000]]}
  *   taskCodes={["TASK_1"]}
  *   onSuccess={() => refetchTasks()}
  * />
@@ -104,6 +135,7 @@ export function TasksManage({
   contributorStateId,
   tasksToAdd: preConfiguredTasksToAdd,
   tasksToRemove: preConfiguredTasksToRemove,
+  depositValue: preConfiguredDepositValue,
   taskCodes: preConfiguredTaskCodes,
   onSuccess,
 }: TasksManageProps) {
@@ -123,72 +155,117 @@ export function TasksManage({
 
   const handleManageTasks = async () => {
     if (!user?.accessTokenAlias) {
+      console.warn("[TasksManage] No access token alias - user not authenticated");
       return;
     }
 
+    console.group("[TasksManage] 🚀 Starting Task Management Transaction");
+    console.log("User alias:", user.accessTokenAlias);
+    console.log("Project ID:", projectNftPolicyId);
+    console.log("Contributor State ID:", contributorStateId);
+
     // Use pre-configured values if provided, otherwise use form values
-    let tasks_to_add: TaskToAdd[] = [];
-    let tasks_to_remove: string[] = [];
+    let tasks_to_add: ProjectData[] = [];
+    let tasks_to_remove: ProjectData[] = [];
+    let deposit_value: ListValue = [];
     let task_codes: string[] = [];
 
     if (preConfiguredTasksToAdd || preConfiguredTasksToRemove) {
       // Batch mode - use pre-configured values
+      console.log("📦 Batch mode - using pre-configured tasks");
       tasks_to_add = preConfiguredTasksToAdd ?? [];
       tasks_to_remove = preConfiguredTasksToRemove ?? [];
+      deposit_value = preConfiguredDepositValue ?? [];
       task_codes = preConfiguredTaskCodes ?? [];
     } else if (action === "add") {
-      // Single task add mode
+      // Single task add mode via form
+      console.log("📝 Form mode - single task add");
+
       if (!taskHash.trim() || !taskCode.trim()) {
-        toast.error("Task hash and code are required");
+        toast.error("Task content and code are required");
+        console.groupEnd();
         return;
       }
 
-      if (taskHash.length !== 64) {
-        toast.error("Task hash must be 64 characters (hex)");
+      // Validate content length (max 140 chars per API spec)
+      if (taskHash.trim().length > 140) {
+        toast.error("Task content must be 140 characters or less");
+        console.groupEnd();
         return;
       }
 
       const daysUntilExpiry = parseInt(expirationDays, 10) || 30;
-      const expirationTimestamp = Math.floor(Date.now() / 1000) + daysUntilExpiry * 24 * 60 * 60;
+      // API expects milliseconds timestamp
+      const expirationTimestamp = Date.now() + daysUntilExpiry * 24 * 60 * 60 * 1000;
+      const lovelaceAmount = parseInt(rewardLovelace, 10) || 5000000;
 
       tasks_to_add = [
         {
           project_content: taskHash.trim(),
           expiration_time: expirationTimestamp,
-          lovelace_amount: parseInt(rewardLovelace, 10) || 5000000,
+          lovelace_amount: lovelaceAmount,
           native_assets: [],
         },
       ];
+
+      // Calculate deposit value (sum of all task lovelace amounts)
+      deposit_value = [["lovelace", lovelaceAmount]];
       task_codes = [taskCode.trim()];
     } else {
-      // Remove mode
-      const hashes = taskHashesToRemove
-        .split(",")
-        .map((h) => h.trim())
-        .filter((h) => h.length === 64);
-
-      if (hashes.length === 0) {
-        toast.error("Please enter valid task hashes (64 char hex)");
-        return;
-      }
-
-      tasks_to_remove = hashes;
+      // Remove mode - need full ProjectData, not just hashes
+      console.log("🗑️ Form mode - task removal");
+      toast.error("Task removal via form not yet implemented - use batch mode");
+      console.groupEnd();
+      return;
     }
+
+    // Calculate total deposit if not provided
+    if (deposit_value.length === 0 && tasks_to_add.length > 0) {
+      const totalLovelace = tasks_to_add.reduce((sum, t) => sum + t.lovelace_amount, 0);
+      deposit_value = [["lovelace", totalLovelace]];
+      console.log("💰 Auto-calculated deposit_value:", deposit_value);
+    }
+
+    // Build the final request params
+    const txParams = {
+      alias: user.accessTokenAlias,
+      project_id: projectNftPolicyId,
+      contributor_state_id: contributorStateId,
+      tasks_to_add,
+      tasks_to_remove,
+      deposit_value,
+    };
+
+    console.log("📤 Transaction Parameters (ManageTasksTxRequest):");
+    console.log(JSON.stringify(txParams, null, 2));
+
+    console.log("📋 Tasks to Add:", tasks_to_add.length);
+    tasks_to_add.forEach((task, i) => {
+      console.log(`  Task ${i + 1}:`, {
+        content: task.project_content.substring(0, 50) + (task.project_content.length > 50 ? "..." : ""),
+        expiration: new Date(task.expiration_time).toISOString(),
+        reward: `${task.lovelace_amount / 1_000_000} ADA`,
+      });
+    });
+
+    console.log("🗑️ Tasks to Remove:", tasks_to_remove.length);
+    console.log("💵 Deposit Value:", deposit_value);
+    console.log("🏷️ Task Codes (for side effects):", task_codes);
+    console.groupEnd();
 
     await execute({
       definition: PROJECT_MANAGER_TASKS_MANAGE,
       params: {
-        // Transaction API params (snake_case per V2 API)
-        alias: user.accessTokenAlias,
-        project_id: projectNftPolicyId,
-        contributor_state_id: contributorStateId,
-        tasks_to_add,
-        tasks_to_remove,
-        // Side effect params
+        ...txParams,
+        // Side effect params (not sent to API, used internally)
         task_codes,
       },
       onSuccess: async (txResult) => {
-        console.log("[TasksManage] Success!", txResult);
+        console.group("[TasksManage] ✅ Transaction Success!");
+        console.log("Transaction Hash:", txResult.txHash);
+        console.log("Explorer URL:", txResult.blockchainExplorerUrl);
+        console.log("Full Result:", txResult);
+        console.groupEnd();
 
         const actionText = action === "add" ? "added" : "removed";
         toast.success(`Tasks ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
@@ -209,7 +286,11 @@ export function TasksManage({
         await onSuccess?.();
       },
       onError: (txError) => {
-        console.error("[TasksManage] Error:", txError);
+        console.group("[TasksManage] ❌ Transaction Error");
+        console.error("Error:", txError);
+        console.error("Message:", txError.message);
+        console.groupEnd();
+
         toast.error("Task Management Failed", {
           description: txError.message || "Failed to manage tasks",
         });
@@ -228,10 +309,9 @@ export function TasksManage({
     // Batch mode
     (preConfiguredTasksToAdd && preConfiguredTasksToAdd.length > 0) ||
     (preConfiguredTasksToRemove && preConfiguredTasksToRemove.length > 0) ||
-    // Add mode
-    (action === "add" && taskHash.trim().length === 64 && taskCode.trim().length > 0) ||
-    // Remove mode
-    (action === "remove" && taskHashesToRemove.trim().length > 0)
+    // Add mode - need content (1-140 chars) and code
+    (action === "add" && taskHash.trim().length > 0 && taskHash.trim().length <= 140 && taskCode.trim().length > 0)
+    // Remove mode disabled for now - needs full ProjectData
   );
 
   // If pre-configured, show simplified UI
@@ -311,7 +391,7 @@ export function TasksManage({
               // Add task form
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <AndamioLabel htmlFor="taskCode">Task Code</AndamioLabel>
+                  <AndamioLabel htmlFor="taskCode">Task Code (for tracking)</AndamioLabel>
                   <AndamioInput
                     id="taskCode"
                     type="text"
@@ -320,21 +400,24 @@ export function TasksManage({
                     onChange={(e) => setTaskCode(e.target.value)}
                     disabled={state !== "idle" && state !== "error"}
                   />
+                  <AndamioText variant="small" className="text-xs">
+                    Internal identifier for side effects
+                  </AndamioText>
                 </div>
 
                 <div className="space-y-2">
-                  <AndamioLabel htmlFor="taskHash">Task Content Hash (64 char hex)</AndamioLabel>
+                  <AndamioLabel htmlFor="taskHash">Task Content (max 140 chars)</AndamioLabel>
                   <AndamioInput
                     id="taskHash"
                     type="text"
-                    placeholder="abc123def456..."
+                    placeholder="Complete the tutorial and submit your work"
                     value={taskHash}
                     onChange={(e) => setTaskHash(e.target.value)}
                     disabled={state !== "idle" && state !== "error"}
-                    maxLength={64}
+                    maxLength={140}
                   />
                   <AndamioText variant="small" className="text-xs">
-                    {taskHash.length}/64 characters
+                    {taskHash.length}/140 characters - This is the on-chain task description
                   </AndamioText>
                 </div>
 

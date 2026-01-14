@@ -10,15 +10,15 @@
 | Category | Count | Description |
 |----------|-------|-------------|
 | Health & Auth | 3 | Health check, login session, login validate |
-| User Management | 4 | Access token alias, unconfirmed tx, roles, pending transactions |
-| Course Public | 11 | Published courses, course details, module lists, SLTs, lessons |
+| User Management | 5 | Access token alias, unconfirmed tx (GET/POST), roles, pending transactions |
+| Course Public | 6 | Published courses, course details, module lists |
 | Course Owner | 6 | Create, update, delete, mint, confirm courses |
 | Course Teacher/Modules | 11 | Module CRUD, status updates, publishing, batch ops |
-| SLTs | 5 | SLT CRUD, reordering |
-| Lessons | 4 | Lesson CRUD, publishing |
-| Assignments | 4 | Assignment CRUD, publishing |
-| Assignment Commitments | 9 | Student/teacher/shared commitment workflows |
-| Module Introductions | 4 | Introduction CRUD |
+| SLTs | 7 | SLT CRUD, reordering (public + teacher) |
+| Lessons | 6 | Lesson CRUD, publishing (public + teacher) |
+| Assignments | 5 | Assignment CRUD, publishing (public + teacher) |
+| Assignment Commitments | 10 | Student/teacher/shared commitment workflows |
+| Module Introductions | 5 | Introduction CRUD (public + teacher) |
 | Student Course Status | 2 | Learner course data |
 | Project Public | 3 | Treasury list, tasks, prerequisites |
 | Project Owner | 4 | Treasury CRUD, mint, confirm |
@@ -118,7 +118,7 @@
 | POST | `/course/teacher/assignment/publish` | Toggle assignment live status |
 | POST | `/course/teacher/assignment/delete` | Delete assignment |
 
-## Assignment Commitments (9)
+## Assignment Commitments (10)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -203,4 +203,4 @@
 
 ---
 
-*Last Updated: January 11, 2026*
+*Last Updated: January 14, 2026*

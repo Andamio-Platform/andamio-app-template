@@ -22,6 +22,8 @@ A loop is **Validated** when:
 
 ## Loop Status
 
+### Course Loops
+
 | Loop | Status | Last Tested | Tester | Open Issues | Notes |
 |------|--------|-------------|--------|-------------|-------|
 | 1: Onboarding | Issues Found | 2026-01-12 | @robertom | #28, #30 | Access Token mints successfully but UI stuck, alert keeps flashing |
@@ -30,6 +32,16 @@ A loop is **Validated** when:
 | 4: Assignment Revision | Untested | - | - | - | - |
 | 5: Multi-Module Path | Untested | - | - | - | - |
 | 6: Team Teaching Setup | Untested | - | - | - | - |
+
+### Project Loops
+
+| Loop | Status | Last Tested | Tester | Open Issues | Notes |
+|------|--------|-------------|--------|-------------|-------|
+| P1: Create & Configure Project | Issues Found | 2026-01-14 | @james | - | Manager sync working, draft tasks working |
+| P2: Publish Tasks | Blocked | 2026-01-14 | @james | - | Needs `contributor_state_id` from Andamioscan |
+| P3: Earn Project Credential | Untested | - | - | - | - |
+| P4: Task Revision Flow | Untested | - | - | - | - |
+| P5: Multi-Task Contribution | Untested | - | - | - | - |
 
 ## Session Log
 

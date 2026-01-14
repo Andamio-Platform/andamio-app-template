@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 13, 2026 (Session 5 - Credential Claim + Dashboard Cleanup)
+> **Last Updated**: January 14, 2026 (Session 7 - Transaction Schema Audit + Design System)
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -63,6 +63,60 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 | **2026-02-06 (Fri)** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
 **Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+
+---
+
+## Session Notes (January 14, 2026) - Session 7: Transaction Schema Audit + Design System
+
+**Context**: Cleanup and compliance session before Pioneers demos.
+
+### Completed This Session
+
+| Task | Details |
+|------|---------|
+| **Atlas TX API Schema Audit** | Audited all 16 transaction definitions against swagger.json. Created comprehensive report at `tx-audit-report.md`. |
+| **PROJECT_MANAGER_TASKS_ASSESS Fix** | Fixed `task_decisions` schema: changed `task_hash` to `alias` to match `ProjectOutcome` swagger schema. |
+| **ShortText140 Validation** | Added `.max(140)` to 4 fields: `assignment_info` (2 files), `task_info`, `project_info`. |
+| **Design System Compliance** | Fixed hardcoded colors in `error.tsx` (`text-red-600` → `text-destructive`) and `pending-tx-popover.tsx` (`bg-yellow-500` → `bg-warning`). |
+| **Documentation** | Updated CHANGELOG.md, BACKLOG.md with completed items. |
+
+### Transaction Audit Summary
+
+| Status | Count | Notes |
+|--------|-------|-------|
+| ✅ Match | 12 | All course txs, most project txs |
+| ⚠️ Minor | 4 | Missing optional `initiator_data` (acceptable) |
+| ❌ Critical | 0 | All critical issues resolved |
+
+---
+
+## Session Notes (January 14, 2026) - Session 6: Public Course Credential Claim
+
+**Context**: Adding credential claim to public course page for enrolled students.
+
+### Completed This Session
+
+| Task | Details |
+|------|---------|
+| **Build Fixes** | Fixed ESLint errors: missing `useRouter` import in dashboard, unused variables in assignment-commitment.tsx, mint-module-tokens.tsx, and use-andamioscan.ts |
+| **Public Course Credential Claim** | Added `CredentialClaim` component to `UserCourseStatus` on public course page. Students can now claim credentials directly from `/course/[coursenft]` when enrolled. |
+| **Course Completion Detection** | Integrated `useCompletedCourses` hook to check if course credential already claimed. Uses database module count (not on-chain) for progress calculation consistency. |
+| **Early Credential Claiming** | Added understated "Ready to move on? Claim credential now" link for students with partial completion who want to claim early. |
+
+### Credential Claim States
+
+| Condition | UI Shown |
+|-----------|----------|
+| 100% complete + no credential | "Course Complete!" celebration + CredentialClaim |
+| <100% + some completions + no pending | Understated claim link (expands to CredentialClaim) |
+| Has pending assignment | "Pending Assessment" info |
+| No completions yet | "You're enrolled!" message |
+
+### Key Technical Details
+
+- **Progress calculation**: Uses database module count (`dbModules.length`) not on-chain module count (which may include legacy modules)
+- **Claim eligibility**: `completedCount >= totalModules && !hasCourseCredential && !hasCurrentCommitment`
+- **Early claim**: Same as above but `completedCount > 0 && completedCount < totalModules`
 
 ---
 

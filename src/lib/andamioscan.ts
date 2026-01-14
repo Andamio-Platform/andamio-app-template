@@ -640,6 +640,49 @@ export async function getCoursesOwnedByAliasWithDetails(
   return detailedCourses.filter((c): c is AndamioscanCourse => c !== null);
 }
 
+/**
+ * Get all courses a user can use as prerequisites (owner OR teacher)
+ *
+ * This fetches both owned courses (admin) and teaching courses, deduplicates them,
+ * and fetches full details including modules.
+ *
+ * @param alias - User's access token alias
+ * @returns Array of courses with full details including modules
+ *
+ * @example
+ * ```typescript
+ * const courses = await getTeachableCoursesWithDetails("alice");
+ * // Returns courses where Alice is either the owner/admin OR a teacher
+ * ```
+ */
+export async function getTeachableCoursesWithDetails(
+  alias: string
+): Promise<AndamioscanCourse[]> {
+  // Fetch both owned and teaching courses in parallel
+  const [ownedCourses, teachingCourses] = await Promise.all([
+    getOwnedCourses(alias),
+    getCoursesOwnedByAlias(alias),
+  ]);
+
+  // Deduplicate by course_id (user could be both owner and teacher)
+  const uniqueCourseIds = new Set<string>();
+  const allCourses: AndamioscanCourse[] = [];
+
+  for (const course of [...ownedCourses, ...teachingCourses]) {
+    if (!uniqueCourseIds.has(course.course_id)) {
+      uniqueCourseIds.add(course.course_id);
+      allCourses.push(course);
+    }
+  }
+
+  // Fetch full details for each unique course
+  const detailedCourses = await Promise.all(
+    allCourses.map((c) => getCourse(c.course_id))
+  );
+
+  return detailedCourses.filter((c): c is AndamioscanCourse => c !== null);
+}
+
 // =============================================================================
 // Teacher Endpoints
 // =============================================================================

@@ -223,7 +223,7 @@ export function PendingTxPopover({ className }: PendingTxPopoverProps) {
                     {/* Status Indicator */}
                     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-warning" />
                         <span>Awaiting confirmation</span>
                       </div>
                     </div>

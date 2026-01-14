@@ -163,12 +163,24 @@ export function useAndamioTransaction<TParams = unknown>() {
               const apiResponse = txResult.apiResponse;
               if (apiResponse) {
                 // Map common API response fields to buildInputs
-                // course_id -> course_nft_policy_id (used by INSTANCE_COURSE_CREATE)
                 // API returns snake_case, side effects expect snake_case
+
+                // Course: course_id -> course_nft_policy_id (used by INSTANCE_COURSE_CREATE)
                 if (apiResponse.course_id && typeof apiResponse.course_id === 'string') {
                   buildInputs.course_nft_policy_id = apiResponse.course_id;
                 }
-                // Add other API response mappings as needed
+
+                // Project: project_id -> project_nft_policy_id (used by INSTANCE_PROJECT_CREATE)
+                if (apiResponse.project_id && typeof apiResponse.project_id === 'string') {
+                  buildInputs.project_nft_policy_id = apiResponse.project_id;
+                }
+
+                // Also map to treasury_nft_policy_id for side effects that use that name
+                if (apiResponse.project_id && typeof apiResponse.project_id === 'string') {
+                  buildInputs.treasury_nft_policy_id = apiResponse.project_id;
+                }
+
+                // Module code mapping
                 if (apiResponse.module_code && typeof apiResponse.module_code === 'string') {
                   buildInputs.module_code = apiResponse.module_code;
                 }

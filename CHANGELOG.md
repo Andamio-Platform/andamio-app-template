@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Transaction API Audit Report** (`.claude/skills/audit-api-coverage/tx-audit-report.md`): Comprehensive audit comparing all 16 Atlas TX API swagger schemas against `@andamio/transactions` definitions. Documents match status, fixes applied, and optional improvements.
+- **Public Course Credential Claim** (`/course/[coursenft]`): Enrolled students can now claim credentials directly from the public course page
+  - "Course Complete!" celebration with `CredentialClaim` component when student has 100% progress
+  - Understated "Ready to move on? Claim credential now" link for students with partial completion
+  - Uses `useCompletedCourses` hook from Andamioscan to check if course credential already claimed
+  - Fetches database commitment status to show claim for accepted assignments
+  - `UserCourseStatus` component updated to support both full and early credential claiming
 - **Instructor Dashboard Assessment UI** (`/studio/course/[coursenft]/instructor`): Full teacher workflow for reviewing student assignment commitments
   - Accept/Refuse decision buttons with radio-style selection
   - Evidence display using ContentViewer for Tiptap content
@@ -44,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files updated: 36 files across hooks, components, and pages
 
 ### Fixed
+- **Transaction Schema Alignment** (`@andamio/transactions`): Fixed schema mismatches found during Atlas TX API audit
+  - `PROJECT_MANAGER_TASKS_ASSESS`: Changed `task_decisions` from `{task_hash, outcome}` to `{alias, outcome}` to match swagger `ProjectOutcome` schema
+  - Added `.max(140)` validation to all `ShortText140` fields: `assignment_info` (2 files), `task_info`, `project_info`
+- **Design System Compliance**: Fixed hardcoded Tailwind colors to use semantic variables
+  - `src/app/error.tsx`: Changed `text-red-600` → `text-destructive`, `text-gray-400` → `text-muted-foreground`, replaced raw button with `AndamioButton`
+  - `src/components/pending-tx-popover.tsx`: Changed `bg-yellow-500` → `bg-warning`
 - **Instructor Dashboard API Endpoint**: Fixed endpoint path from `/course/teacher/assignment-commitment/by-course` to `/course/teacher/assignment-commitments/list-by-course` (plural form). Fixed request body field `course_nft_policy_id` → `policy_id`.
 - **Assignment Commitment Field Names**: Fixed field name mapping across both instructor and student views to use the `network_*` prefix pattern from DB API:
   - `evidence` → `network_evidence` (Tiptap JSON content)

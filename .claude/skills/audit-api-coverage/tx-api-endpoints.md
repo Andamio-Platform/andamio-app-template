@@ -104,4 +104,4 @@ await executeSideEffects(txDef.onSubmit, txHash, context);
 
 ---
 
-*Last Updated: January 10, 2026*
+*Last Updated: January 14, 2026*

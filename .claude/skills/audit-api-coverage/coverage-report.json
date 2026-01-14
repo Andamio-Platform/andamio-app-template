@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-01-11T13:04:38.544Z",
+  "generatedAt": "2026-01-14T14:53:06.347Z",
   "summary": {
     "totalEndpoints": 137,
-    "implementedEndpoints": 97,
-    "overallCoverage": 71
+    "implementedEndpoints": 105,
+    "overallCoverage": 77
   },
   "apis": {
     "dbApi": {
       "name": "Andamio DB API",
       "baseUrl": "https://andamio-db-api-343753432212.us-central1.run.app",
       "totalEndpoints": 87,
-      "implementedEndpoints": 49,
-      "coveragePercent": 56,
+      "implementedEndpoints": 57,
+      "coveragePercent": 66,
       "endpoints": [
         {
           "path": "/health",
@@ -148,7 +148,8 @@
         {
           "path": "/course/teacher/course-module/delete",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/hooks/api/use-course-module.ts"
         },
         {
           "path": "/course/teacher/course-module/update-status",
@@ -272,7 +273,7 @@
           "path": "/course/teacher/assignment/create",
           "method": "POST",
           "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-assignment.tsx"
+          "implementationLocation": "src/components/studio/wizard/steps/step-credential.tsx"
         },
         {
           "path": "/course/teacher/assignment/update",
@@ -326,7 +327,8 @@
         {
           "path": "/course/teacher/assignment-commitments/list-by-course",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
         },
         {
           "path": "/course/teacher/assignment-commitment/review",
@@ -336,12 +338,14 @@
         {
           "path": "/course/student/assignment-commitments/list-by-course",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
         },
         {
           "path": "/course/student/assignment-commitment/create",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
         },
         {
           "path": "/course/student/assignment-commitment/update-evidence",
@@ -358,18 +362,19 @@
         {
           "path": "/course/shared/assignment-commitment/get",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/components/learner/user-course-status.tsx"
         },
         {
           "path": "/course/shared/assignment-commitment/update-status",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
+          "implemented": false
         },
         {
           "path": "/course/shared/assignment-commitment/confirm-transaction",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
         },
         {
           "path": "/course/student/courses",
@@ -402,7 +407,8 @@
         {
           "path": "/project/owner/treasury/mint",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/app/(app)/studio/project/page.tsx"
         },
         {
           "path": "/project/owner/treasury/confirm-mint",
@@ -412,7 +418,8 @@
         {
           "path": "/project/public/task/list/{treasury_nft_policy_id}",
           "method": "GET",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/page.tsx"
         },
         {
           "path": "/project/public/prerequisite/list",
@@ -450,13 +457,13 @@
         {
           "path": "/project/manager/commitment/update-status",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
+          "implemented": false
         },
         {
           "path": "/project/manager/commitment/confirm-transaction",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
         },
         {
           "path": "/project/shared/contributor/create",
@@ -472,7 +479,8 @@
         {
           "path": "/project/contributor/commitment/create",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
         },
         {
           "path": "/project/contributor/commitment/update-evidence",
@@ -483,8 +491,7 @@
         {
           "path": "/project/contributor/commitment/update-status",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
+          "implemented": false
         },
         {
           "path": "/project/contributor/commitment/delete",
@@ -495,7 +502,8 @@
         {
           "path": "/project/contributor/commitment/confirm-transaction",
           "method": "POST",
-          "implemented": false
+          "implemented": true,
+          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
         }
       ],
       "missingEndpoints": [
@@ -527,11 +535,6 @@
         {
           "path": "/course/public/course-modules/assignment-summary/{policy_id}",
           "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/delete",
-          "method": "POST",
           "implemented": false
         },
         {
@@ -600,32 +603,12 @@
           "implemented": false
         },
         {
-          "path": "/course/teacher/assignment-commitments/list-by-course",
-          "method": "POST",
-          "implemented": false
-        },
-        {
           "path": "/course/teacher/assignment-commitment/review",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/course/student/assignment-commitments/list-by-course",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/student/assignment-commitment/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/shared/assignment-commitment/get",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/shared/assignment-commitment/confirm-transaction",
+          "path": "/course/shared/assignment-commitment/update-status",
           "method": "POST",
           "implemented": false
         },
@@ -640,18 +623,8 @@
           "implemented": false
         },
         {
-          "path": "/project/owner/treasury/mint",
-          "method": "POST",
-          "implemented": false
-        },
-        {
           "path": "/project/owner/treasury/confirm-mint",
           "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project/public/task/list/{treasury_nft_policy_id}",
-          "method": "GET",
           "implemented": false
         },
         {
@@ -670,7 +643,7 @@
           "implemented": false
         },
         {
-          "path": "/project/manager/commitment/confirm-transaction",
+          "path": "/project/manager/commitment/update-status",
           "method": "POST",
           "implemented": false
         },
@@ -680,12 +653,7 @@
           "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project/contributor/commitment/confirm-transaction",
+          "path": "/project/contributor/commitment/update-status",
           "method": "POST",
           "implemented": false
         }

@@ -101,9 +101,9 @@ export default function NewTaskPage() {
       // Filter out empty acceptance criteria
       const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
 
-      // Go API: POST /project/owner/task/create
+      // Go API: POST /project/manager/task/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/task/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

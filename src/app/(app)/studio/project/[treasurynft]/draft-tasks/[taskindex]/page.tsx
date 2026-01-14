@@ -86,9 +86,9 @@ export default function EditTaskPage() {
       setLoadError(null);
 
       try {
-        // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
+        // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
         );
 
         if (!response.ok) {
@@ -163,9 +163,9 @@ export default function EditTaskPage() {
       // Filter out empty acceptance criteria
       const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
 
-      // Go API: POST /project/owner/task/update
+      // Go API: POST /project/manager/task/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/task/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

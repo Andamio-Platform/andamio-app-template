@@ -30,7 +30,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { env } from "~/env";
 import type { CourseModuleListResponse } from "@andamio/db-api-types";
 
 export interface MintModuleTokensProps {
@@ -132,7 +131,6 @@ export function MintModuleTokens({
       });
 
     const moduleCodes = modulesWithData.map((m) => m.moduleCode);
-    const moduleHashes = modulesWithData.map((m) => m.hash);
     const modules_to_mint = modulesWithData.map((m) => ({
       slts: m.slts,
       allowed_course_state_ids: [] as string[],
@@ -154,7 +152,6 @@ export function MintModuleTokens({
         console.log("[MintModuleTokens] Success!", txResult);
 
         const moduleCount = moduleCodes.length;
-        const txHash = txResult.txHash;
 
         // Show initial success message
         toast.success("Transaction Submitted!", {

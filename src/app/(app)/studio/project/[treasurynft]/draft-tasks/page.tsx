@@ -8,6 +8,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import {
   AndamioBadge,
+  AndamioButton,
   AndamioTable,
   AndamioTableBody,
   AndamioTableCell,
@@ -25,7 +26,7 @@ import {
   AndamioRowActions,
   AndamioErrorAlert,
 } from "~/components/andamio";
-import { TaskIcon } from "~/components/icons";
+import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { type TaskResponse } from "@andamio/db-api-types";
 import { formatLovelace } from "~/lib/cardano-utils";
 
@@ -57,13 +58,22 @@ export default function DraftTasksPage() {
     setError(null);
 
     try {
-      // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
+      // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
       );
 
       if (!response.ok) {
         const errorText = await response.text();
+        // Handle "no escrows" errors as empty state (new project, no on-chain activity yet)
+        // The API returns 400 when treasury exists but has no escrow records
+        const noEscrowsError = errorText.toLowerCase().includes("no escrow") ||
+                               errorText.toLowerCase().includes("escrow") && response.status === 400;
+        if (noEscrowsError) {
+          console.log("Project has no escrows yet - showing empty state");
+          setTasks([]);
+          return;
+        }
         console.error("Tasks fetch error:", errorText);
         throw new Error("Failed to fetch tasks");
       }
@@ -89,9 +99,9 @@ export default function DraftTasksPage() {
     setDeletingTaskIndex(taskIndex);
 
     try {
-      // Go API: POST /project/owner/task/delete
+      // Go API: POST /project/manager/task/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/task/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -199,7 +209,15 @@ export default function DraftTasksPage() {
       {/* Draft Tasks Section */}
       {draftTasks.length > 0 && (
         <div className="space-y-3">
-          <AndamioSectionHeader title="Draft Tasks" />
+          <div className="flex items-center justify-between">
+            <AndamioSectionHeader title="Draft Tasks" />
+            <Link href={`/studio/project/${treasuryNftPolicyId}/manage-treasury`}>
+              <AndamioButton variant="default" size="sm">
+                <OnChainIcon className="h-4 w-4 mr-2" />
+                Publish Tasks
+              </AndamioButton>
+            </Link>
+          </div>
           <AndamioText variant="small">These tasks are not yet published to the blockchain</AndamioText>
           <AndamioTableContainer>
             <AndamioTable>
@@ -213,8 +231,8 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {draftTasks.map((task) => (
-                  <AndamioTableRow key={task.task_index}>
+                {draftTasks.map((task, index) => (
+                  <AndamioTableRow key={task.task_hash ?? `draft-${task.task_index}-${index}`}>
                     <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                     <AndamioTableCell className="text-center">

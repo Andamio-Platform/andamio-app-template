@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { usePendingTxContext } from "~/components/pending-tx-watcher";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
@@ -20,6 +21,7 @@ import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summar
 import { AndamioPageHeader } from "~/components/andamio";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
   const { pendingTransactions } = usePendingTxContext();
 

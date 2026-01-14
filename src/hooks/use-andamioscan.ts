@@ -26,6 +26,7 @@ import {
   getUserGlobalState,
   getCoursesOwnedByAlias,
   getCoursesOwnedByAliasWithDetails,
+  getTeachableCoursesWithDetails,
   getPendingAssessments,
   getEnrolledCourses,
   getCompletedCourses,
@@ -332,6 +333,30 @@ export function useCoursesOwnedByAliasWithDetails(
 ): UseQueryResult<AndamioscanCourse[]> {
   return useQuery(
     async () => (alias ? getCoursesOwnedByAliasWithDetails(alias) : []),
+    [alias]
+  );
+}
+
+/**
+ * Hook to get all courses a user can use as prerequisites (owner OR teacher)
+ *
+ * This fetches courses where the user is either an owner/admin OR a listed teacher,
+ * then fetches full details including modules. Use this for prerequisite selection.
+ *
+ * @param alias - User's access token alias
+ * @returns Query result with array of courses with full details
+ *
+ * @example
+ * ```tsx
+ * const { data: courses, isLoading } = useTeachableCoursesWithDetails(userAlias);
+ * // Returns courses where user is owner OR teacher, with modules
+ * ```
+ */
+export function useTeachableCoursesWithDetails(
+  alias: string | undefined
+): UseQueryResult<AndamioscanCourse[]> {
+  return useQuery(
+    async () => (alias ? getTeachableCoursesWithDetails(alias) : []),
     [alias]
   );
 }

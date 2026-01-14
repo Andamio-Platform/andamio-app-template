@@ -111,7 +111,7 @@ interface Commitment {
 }
 
 export function AssignmentCommitment({
-  assignmentCode,
+  assignmentCode: _assignmentCode,
   assignmentTitle,
   courseNftPolicyId,
   moduleCode,
@@ -291,9 +291,6 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Calculate hash from normalized content
-      const evidenceHash = hashNormalizedContent(localEvidenceContent);
-
       // API: POST /course/student/assignment-commitment/update-evidence
       const response = await authenticatedFetch(
         `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,

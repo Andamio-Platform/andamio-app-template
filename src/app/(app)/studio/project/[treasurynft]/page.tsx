@@ -35,6 +35,7 @@ import {
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon } from "~/components/icons";
 import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
 import { ManagersManage, BlacklistManage } from "~/components/transactions";
+import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects } from "~/lib/andamioscan";
 
 type TaskListOutput = TaskResponse[];
@@ -164,9 +165,9 @@ export default function ProjectDashboardPage() {
       // Note: description, imageUrl, videoUrl are not in the list-owned response
       // They would need to be fetched from a separate endpoint if needed
 
-      // Go API: GET /project/public/tasks/list/{treasury_nft_policy_id}
+      // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
       const tasksResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/tasks/list/${treasuryNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
       );
 
       if (tasksResponse.ok) {
@@ -475,7 +476,10 @@ export default function ProjectDashboardPage() {
             </AndamioCardContent>
           </AndamioCard>
 
-          {/* Managers Management */}
+          {/* On-Chain Managers Sync */}
+          <ProjectManagersCard treasuryNftPolicyId={treasuryNftPolicyId} />
+
+          {/* Managers Management (On-Chain Transaction) */}
           <ManagersManage
             projectNftPolicyId={treasuryNftPolicyId}
             onSuccess={() => {

@@ -17,14 +17,15 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `color-system` | Manage and update the semantic color palette in globals.css | Low | Useful for theme iterations; the theme-expert skill covers usage but not modification |
 | `naming-convention-checker` | Validate naming conventions (module codes, SLT references) across components | Medium | New convention for `<module-code>.<module-index>` should be consistently applied |
 | `loading-state-auditor` | Verify loading states match page layouts (loadingVariant patterns) | Low | Prevents loading screen "flash" issues; check RequireCourseAccess usage, React Query patterns |
-| `transaction-auditor` | Verify transaction definitions match API endpoints and schemas | **Critical** | Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Should fetch swagger.json and validate all required fields. Caught COURSE_ADMIN_CREATE path mismatch and COURSE_TEACHER_MODULES_MANAGE schema drift (missing `allowed_course_state_ids`, `prereq_slt_hashes`). |
+| `transaction-auditor` | Verify transaction definitions match API endpoints and schemas | **Critical** | Atlas API schema evolves but `@andamio/transactions` definitions lag behind. Should fetch swagger.json and validate all required fields. **Concept validated 2026-01-14**: Manual audit found PROJECT_MANAGER_TASKS_ASSESS using wrong field (`task_hash` vs `alias`) and 4 fields missing `.max(140)`. See `tx-audit-report.md`. |
 | `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
 | `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
 | `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | High | 15 Event endpoints remain unimplemented. Would replace Koios polling with entity-specific confirmation. See GitHub issue #26 |
 | `api-migration-validator` | Validate T3 App endpoints match Go API swagger | **Critical** | Go API migration required updating 14 files. Would fetch swagger.json and compare all endpoint paths/methods against codebase. |
+| `learner-journey-guide` | Document and guide student/learner workflows through courses | Medium | New credential claim feature added complexity. Would help document the full learner journey: enroll → commit assignment → teacher review → claim credential. Could include state diagrams and testing scenarios. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-10 (updated type-auditor for new @andamio/db-api-types package)
+**Updated**: 2026-01-14 (transaction-auditor concept validated via manual audit)
 
 ---
 
@@ -142,3 +143,12 @@ Items that have been addressed and can be archived.
 | Create GitHub issue #34 | 2026-01-13 | Assessment button UX improvements |
 | Create GitHub issue #35 | 2026-01-13 | Andamioscan module token/SLT mismatch |
 | Update STATUS.md with session notes | 2026-01-13 | Session 4 instructor dashboard fixes |
+| Add public course credential claim to CHANGELOG.md | 2026-01-14 | New feature for enrolled students to claim credentials |
+| Update STATUS.md with Session 6 notes | 2026-01-14 | Public course credential claim feature |
+| Document credential claim states in STATUS.md | 2026-01-14 | Table showing all UI states for credential claiming |
+| Complete Atlas TX API schema audit | 2026-01-14 | Audited all 16 transactions against swagger.json |
+| Fix PROJECT_MANAGER_TASKS_ASSESS schema | 2026-01-14 | Changed task_hash to alias in task_decisions |
+| Add .max(140) to ShortText140 fields | 2026-01-14 | 4 transaction definitions updated |
+| Create tx-audit-report.md | 2026-01-14 | Comprehensive audit report in audit-api-coverage skill |
+| Fix error.tsx design system compliance | 2026-01-14 | Semantic colors, AndamioButton |
+| Fix pending-tx-popover.tsx design system compliance | 2026-01-14 | bg-yellow-500 → bg-warning |

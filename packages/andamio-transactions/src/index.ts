@@ -94,6 +94,8 @@ export {
   normalizeForHashing,
 } from "./utils/assignment-info-hash";
 export type { TiptapDoc, TiptapNode, TiptapMark, EvidenceVerificationResult } from "./utils/assignment-info-hash";
+export { computeTaskHash, verifyTaskHash, isValidTaskHash, debugTaskCBOR } from "./utils/task-hash";
+export type { TaskData } from "./utils/task-hash";
 
 // Export testing utilities
 export {

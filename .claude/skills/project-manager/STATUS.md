@@ -1,33 +1,112 @@
 # Project Status
 
-> **Last Updated**: January 14, 2026 (Session 9 - Contributor Transaction Model & Commitment Sync)
+> **Last Updated**: January 15, 2026 (Session 14 - Task Hash Utility Completed)
 
 Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## 🚨 CURRENT BLOCKER: Task Update/Delete API Bug
+## 🔄 CURRENT WORK: Task Commit Ready for Testing
 
-**Status**: Blocked on DB API fix
+**Status**: 🚀 Atlas TX API fix deploying - ready for end-to-end testing
 
-The `POST /project-v2/manager/task/update` and `POST /project-v2/manager/task/delete` endpoints return 404 "Task not found" for tasks that exist and can be listed.
+### Session 14 Summary
 
-**Evidence**:
-- Tasks successfully listed via `GET /project-v2/manager/tasks/{policy_id}` ✅
-- Task create works ✅
-- Task update returns 404 ❌
-- Task delete returns 404 ❌
+**Completed**: Task Hash Utility for on-chain task ID computation
 
-**Bug reported to DB API team**. Resume testing when fixed.
+The `@andamio/transactions` package now includes utilities to compute task hashes locally that match on-chain task IDs. This enables:
+- Pre-computing task IDs before transaction submission
+- Verifying on-chain task IDs match expected values
+- Linking TX request data to resulting on-chain assets
 
-### When Resuming This Session
+**New Exports** from `@andamio/transactions`:
+- `computeTaskHash(task)` - Compute Blake2b-256 hash matching on-chain format
+- `verifyTaskHash(task, expectedHash)` - Verify a hash matches
+- `isValidTaskHash(hash)` - Validate hash format (64-char hex)
+- `debugTaskCBOR(task)` - Debug: show CBOR encoding before hashing
+- `TaskData` type - Task data structure for hashing
 
-1. ⏳ Verify task update/delete API fix is deployed
-2. ⏳ Test task edit functionality
-3. ⏳ Test task delete functionality
-4. ⏳ Test Publish Tasks (mint to chain) workflow
-5. ⏳ Clean up debug console.log statements in draft-tasks pages
-6. ⏳ Commit all changes
+**Technical Details**:
+- Uses Plutus Constr 0 with indefinite-length arrays (0x9f...0xff)
+- Blake2b-256 hashing (32 bytes / 64 hex chars)
+- Validated against real on-chain transaction data
+
+**Files**:
+- `packages/andamio-transactions/src/utils/task-hash.ts` - Implementation
+- `packages/andamio-transactions/src/utils/__tests__/task-hash.test.ts` - 10 tests (all passing)
+
+### Session 13 Summary
+
+**Fixed**: Task commitment `contributor_state_policy_id` issue
+
+**Discovery**: Andamioscan issue #10 was fixed - now returns `contributor_state_policy_id` in each task object.
+
+**Implementation**:
+1. Updated `AndamioscanTask` type to include `contributor_state_policy_id`
+2. Added `contributorStatePolicyId` prop to `TaskCommit` component
+3. Updated task-commit transaction definition schema
+4. Added helper function `getOnChainContributorStatePolicyId()` in contributor page
+5. Task detail page now fetches on-chain task from Andamioscan for the policy ID
+
+**Files Changed**:
+- `src/lib/andamioscan.ts` - Updated types
+- `src/components/transactions/task-commit.tsx` - Added `contributorStatePolicyId` prop
+- `packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts` - Updated schema
+- `src/app/(app)/project/[projectid]/contributor/page.tsx` - Added helper and props
+- `src/app/(app)/project/[projectid]/[taskhash]/page.tsx` - Fetches on-chain task
+
+**Next Step**: Atlas TX API fix deploying soon. Once deployed, test task commit end-to-end.
+
+### Session 12 Summary (Previous)
+
+**Tested**: Second task commitment (contributor commits to new task after first task accepted)
+
+**Blocker Found**: Atlas TX API `/v2/tx/project/contributor/task/commit` has swagger/implementation mismatch.
+
+**Details**:
+- Swagger documents flat fields: `alias`, `project_id`, `contributor_state_id`, `task_hash`, `task_info`
+- Backend internally transforms these into a `tasks` array
+- Backend expects `contributor_state_policy_id` inside each task object
+- This field is NOT documented in swagger
+- We tested multiple variations but all fail with same error
+
+**Error Message**:
+```
+Error in $.tasks[0]: parsing API.ProjectInstance.Task(Task) failed, key "contributor_state_policy_id" not found
+```
+
+**Proxy Logs Confirm**: We send correct flat fields, but backend creates `tasks[]` internally and expects undocumented fields.
+
+**Resolution**: Andamioscan issue #10 provided the missing field. Client-side fix implemented in Session 13.
+
+### Previous Session (Session 11)
+
+**Manager Assess Transaction Fixed**:
+1. Fixed `task_decisions` array - changed `task_hash` to `alias` to match API schema
+2. Fixed DB API side effect - changed `decision` from lowercase (`accept`) to uppercase (`ACCEPTED`) to match API expectations
+3. Transaction now successfully submits on-chain AND updates DB
+
+**Task Matching for Pending Assessments**:
+- Andamioscan returns empty `task_id` in pending assessments (known issue #11)
+- Implemented fallback matching by `lovelace` or `content` to identify tasks
+- UI now shows matched task info instead of "Unknown Task"
+
+**Transaction Confirmation Flow**:
+- Added `confirmCommitmentTransaction()` function to sync DB after on-chain confirmation
+- Check Confirmation button now properly updates DB status from `PENDING_TX_SUBMIT` to `SUBMITTED`
+
+### Waiting For: Two Upstream Fixes
+
+**Blocker 1**: Atlas TX API - Task Commit swagger/implementation mismatch
+- `/v2/tx/project/contributor/task/commit` expects undocumented `contributor_state_policy_id` in tasks array
+- Blocks: Second/subsequent task commitments
+
+**Blocker 2**: Andamioscan Issue #11 - Empty `task_id`
+- `pending_assessments[].task.task_id` returns empty
+- `submissions[].task.task_id` returns empty
+- Blocks: Reliable task matching, assessment sync functionality
+
+**Decision**: Wait for upstream fixes before continuing. Manual DB cleanup acceptable for demos.
 
 ---
 
@@ -57,6 +136,8 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
+| **Atlas TX API Task Commit** | 🚀 **Deploying** | Client-side fix implemented + Atlas API fix deploying. Ready for end-to-end testing. |
+| **Andamioscan task_id Empty** | 🚨 **Blocking Sync** | Issue #11 - pending assessments/submissions return empty `task_id`. Workaround: match by lovelace/content. |
 | **Project V2 Task Update/Delete** | 🚨 **Blocking** | API returns 404 for existing tasks. Bug reported to DB API team. |
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
 | **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
@@ -87,6 +168,137 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 | **2026-02-06 (Fri)** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
 **Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+
+---
+
+## Session Notes (January 15, 2026) - Session 11: Manager Assess Transaction Fixes
+
+**Context**: Testing and fixing the Manager Assess transaction for Project V2.
+
+### Manager Assess Transaction Fixes
+
+**Problem 1**: Transaction API returned 400 Bad Request with "key 'alias' not found"
+- **Root Cause**: `task_decisions` array was sending `{ task_hash, outcome }` instead of `{ alias, outcome }`
+- **Fix**: Updated `tasks-assess.tsx` line 119 to use `alias: contributorAlias`
+
+**Problem 2**: DB API side effect returned 400 Bad Request
+- **Root Cause**: DB API expects uppercase decision values (`ACCEPTED`, `REFUSED`, `DENIED`) but code was sending lowercase (`accept`, `refuse`, `deny`)
+- **Fix**:
+  1. Updated transaction definition schema to use uppercase enum values
+  2. Added `outcomeToDbDecision` mapping in component
+  3. Component now sends `decision: outcomeToDbDecision[decision]`
+
+### Task Matching for Pending Assessments
+
+Andamioscan returns empty `task_id` in pending assessments (issue #11). Implemented workaround:
+
+```typescript
+const findMatchingTask = (assessment) => {
+  // Try by task_id first
+  if (assessment.task_id) return taskMap.get(assessment.task_id);
+  // Fallback: match by lovelace
+  if (assessment.task_lovelace > 0) return taskByLovelace.get(assessment.task_lovelace);
+  // Fallback: match by content
+  if (assessment.task_content) return taskByContent.get(assessment.task_content);
+  return undefined;
+};
+```
+
+### Files Modified
+
+**`packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts`**:
+- Updated `sideEffectParams.decision` enum to uppercase: `["ACCEPTED", "REFUSED", "DENIED"]`
+
+**`src/components/transactions/tasks-assess.tsx`**:
+- Fixed `task_decisions` to use `alias` instead of `task_hash`
+- Added `outcomeToDbDecision` mapping for uppercase conversion
+- Updated `decision` param to use mapping
+
+**`src/lib/andamioscan.ts`**:
+- Updated `RawApiProjectPendingAssessment` type to match actual API structure
+- Added `task_lovelace` and `task_content` fields to `AndamioscanProjectPendingAssessment`
+
+**`src/app/(app)/studio/project/[projectid]/commitments/page.tsx`**:
+- Added task matching maps (`taskByLovelace`, `taskByContent`)
+- Added `findMatchingTask()` and `getEffectiveTaskId()` functions
+- Updated table to show matched task info
+
+**`src/lib/project-commitment-sync.ts`**:
+- Added `confirmCommitmentTransaction()` function for DB sync after on-chain confirmation
+
+### Decision: Wait for Andamioscan Fix
+
+Assessment sync functionality deferred until https://github.com/Andamio-Platform/andamioscan/issues/11 is resolved. Manual cleanup is acceptable for now.
+
+---
+
+## Session Notes (January 15, 2026) - Session 10: Contributor Commitment Sync & API Field Fixes
+
+**Context**: Completing the contributor view for commitment sync and fixing Andamioscan API field names.
+
+### Andamioscan API Field Name Fixes
+
+Discovered the API uses different field names than expected. Updated `src/lib/andamioscan.ts`:
+
+| Expected Field | Actual API Field |
+|---------------|------------------|
+| `pending_submissions` | `tasks_submitted` |
+| `completed_tasks` | `tasks_accepted` |
+| `credentials` | `claimed_credentials` |
+
+### Contributor Sync UI Implementation
+
+Added sync UI to contributor page (`/project/[projectid]/contributor`) that:
+- Shows on-chain submission when DB record is missing
+- Matches submission to DB task by `task_hash` or `lovelace`
+- Provides sync button to create DB commitment from on-chain data
+
+### Manager Task Sync (Separation of Concerns)
+
+Initially implemented task hash sync in contributor view, but moved to Project Studio:
+- Contributor tried to sync but got 403 (no permission to list all tasks)
+- Task hash sync requires manager permissions
+- Now shows warning in Project Studio when tasks need hash sync
+- Contributors only sync their own commitments, not project tasks
+
+### DB API Issues Resolved
+
+**Issue**: `batch-status` endpoint rejected `ON_CHAIN` → `ON_CHAIN` transitions when just adding `task_hash`
+- Created GitHub issue #11 on andamio-db-api repo
+- User confirmed: "Resolved. We have a new endpoint on the way too"
+
+### GitHub Issues Created
+
+| Issue | Repository | Description |
+|-------|------------|-------------|
+| **#47** | andamio-t3-app-template | Auto-logout when wallet account changes (request to @zootechdrum) |
+| **#11** | andamio-db-api | batch-status should allow same-status transitions for task_hash updates |
+
+### Files Modified
+
+**`src/lib/andamioscan.ts`**:
+- Fixed contributor status field names
+- Added `AndamioscanTaskSubmission` type
+- Updated `AndamioscanContributorStatus` type with new fields
+
+**`src/app/(app)/project/[projectid]/contributor/page.tsx`**:
+- Added sync UI for on-chain submissions missing DB records
+- Better error message when task not found (tells user to ask manager to sync)
+- Matches on-chain submission to DB task for verification
+
+**`src/app/(app)/studio/project/[projectid]/page.tsx`**:
+- Enhanced sync warning to detect tasks needing hash sync
+- Added `tasksNeedingHashSync` count
+- More prominent warning explaining contributors are blocked until sync
+
+**`src/lib/project-commitment-sync.ts`**:
+- Added logging to `createCommitmentRecord`
+- Handle missing tx_hash gracefully
+
+### Testing Status
+
+- **User testing**: Contributor sync flow in progress
+- **New endpoint**: DB API deploying new task hash update endpoint
 
 ---
 

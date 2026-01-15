@@ -47,6 +47,7 @@ const txName = "GLOBAL_GENERAL_ACCESS_TOKEN_MINT";
 exports.GLOBAL_GENERAL_ACCESS_TOKEN_MINT = {
     txType: txName,
     role: "general",
+    partialSign: true, // Required for protocol transactions with validators
     protocolSpec: {
         ...(0, protocol_reference_1.createProtocolSpec)("v2", protocolId),
         requiredTokens: [], // No tokens required - this is the entry point

@@ -74,10 +74,11 @@ exports.PROJECT_MANAGER_TASKS_ASSESS = {
                 })),
             }),
             // Side effect parameters - matches DB API /project-v2/manager/commitment/assess
+            // Note: DB API expects uppercase decision values (ACCEPTED/REFUSED/DENIED)
             sideEffectParams: zod_1.z.object({
                 task_hash: zod_1.z.string().length(64), // Task hash being assessed
                 contributor_alias: zod_1.z.string().min(1).max(31), // Contributor's alias for the commitment
-                decision: zod_1.z.enum(["accept", "refuse", "deny"]), // Assessment decision
+                decision: zod_1.z.enum(["ACCEPTED", "REFUSED", "DENIED"]), // Assessment decision (uppercase for DB API)
             }),
         }),
         builder: { type: "api-endpoint", endpoint: "/v2/tx/project/manager/tasks/assess" },

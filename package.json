@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@andamio/db-api-types": "^1.3.3",
+    "@andamio/db-api-types": "^1.4.0",
     "@andamio/transactions": "file:packages/andamio-transactions",
     "@andamiojs/datum-utils": "^0.4.6",
     "@dnd-kit/core": "^6.3.1",

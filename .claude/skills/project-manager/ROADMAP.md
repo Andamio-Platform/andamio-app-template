@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 14, 2026
+> **Last Updated**: January 15, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -22,12 +22,16 @@ API COVERAGE AUDIT ────────────────────�
 V2 PREPROD ROLLOUT BEGINS ──────────────────────────────── 2026-01-12 (Mon) ✅
   │
   ▼
-ANDAMIO PIONEERS LAUNCH ────────────────────────────────── 2026-01-14 (Wed) ← TODAY
+ANDAMIO PIONEERS LAUNCH ────────────────────────────────── 2026-01-14 (Wed) ✅
   │
   │   Pioneers testing on preprod
-  │   Public course credential claim added
+  │   Contributor commitment sync implemented
   │
-  │   Pioneers testing on preprod
+  ▼
+CONTRIBUTOR SYNC TESTING ──────────────────────────────── 2026-01-15 (Wed) ← TODAY
+  │
+  │   Testing contributor flow with DB sync
+  │   New DB API endpoints being deployed
   │
   ▼
 FINAL DEMOS ────────────────────────────────────────────── 2026-01-16 (Fri)
@@ -52,7 +56,8 @@ MAINNET V2 LAUNCH ────────────────────�
 | 2026-01-10 (Sat) | API Coverage Audit | ✅ Complete |
 | 2026-01-12 (Mon) | V2 Preprod Rollout Begins | ✅ Complete |
 | 2026-01-13 (Tue) | Tx Loop 2 Complete, Instructor Fixes | ✅ Complete |
-| **2026-01-14 (Wed)** | **Andamio Pioneers Launch - TODAY** | 🚀 Live |
+| 2026-01-14 (Wed) | Andamio Pioneers Launch | ✅ Live |
+| **2026-01-15 (Wed)** | **Contributor Sync Testing - TODAY** | 🔄 In Progress |
 | **2026-01-16 (Fri)** | **Final Demos** | |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | |
@@ -70,22 +75,39 @@ This template continues as the **reference implementation** and will receive upd
 
 ## Current Focus
 
-### Pre-Pioneers Stabilization (4 Days to Pioneers)
+### Post-Pioneers: Blocked by Atlas TX API (Final Demos Tomorrow)
 
-**Goal**: Ensure stable, tested platform for Pioneers Program launch on Wednesday January 14.
+**Goal**: All Project V2 transactions tested and working.
 
-**Completed Today** (Session 4):
-- ✅ Go API RESTful migration (50+ endpoints)
-- ✅ Eternl wallet `partialSign` fix for project creation
-- ✅ Project dashboard role detection (owner vs manager)
-- ✅ Null safety fixes in PendingTxPopover
+**Completed** (Sessions 11-12):
+- ✅ Manager Assess transaction fixed (`alias` instead of `task_hash` in task_decisions)
+- ✅ DB API side effect fixed (uppercase decision values: `ACCEPTED`/`REFUSED`/`DENIED`)
+- ✅ Task matching for pending assessments (workaround for empty `task_id`)
+- ✅ Transaction confirmation flow with DB sync
+- ✅ Accepted task UI indicator (green border, non-selectable)
+- ✅ Clear evidence when selecting new task
 
-**Remaining Before Pioneers**:
-1. **Wallet Testing**: Test authentication with Nami, Flint, Yoroi, Lace, Vespr
-2. **Assignment System Hooks**: 12 DB API endpoints need React Query hooks for student interactions
-3. **Cache Invalidation Audit**: Verify `queryClient.invalidateQueries()` after transactions
+**Ready to Test - Atlas TX API Fix Deploying**:
 
-See `STATUS.md` for Monday Planning priorities.
+1. **Atlas TX API - Task Commit** ✅ Client-side fix implemented:
+   - Andamioscan issue #10 fixed - now returns `contributor_state_policy_id` per task
+   - Updated `TaskCommit` component with `contributorStatePolicyId` prop
+   - Transaction definition schema updated
+   - Atlas TX API fix deploying soon - will enable end-to-end testing
+
+**Remaining Blocker**:
+
+2. **Andamioscan Issue #11**: `task_id` empty in pending assessments/submissions
+   - Assessment sync deferred until fix is available
+
+**Next Steps**:
+1. ✅ ~~Fix Atlas TX API task commit~~ - Client-side fix implemented
+2. Test 2nd/Nth task commitment (returns rewards from prior commitment)
+3. Build assessment sync functionality (blocked by #11)
+4. Test `/v2/tx/project/contributor/credential/claim` endpoint
+5. Wallet compatibility testing (Nami, Flint, Yoroi, Lace, Vespr)
+
+See `STATUS.md` for detailed session notes.
 
 ---
 

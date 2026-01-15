@@ -30,6 +30,13 @@ import { toast } from "sonner";
 
 type AssessmentOutcome = "accept" | "refuse" | "deny";
 
+// Map lowercase TX API outcomes to uppercase DB API decisions
+const outcomeToDbDecision: Record<AssessmentOutcome, "ACCEPTED" | "REFUSED" | "DENIED"> = {
+  accept: "ACCEPTED",
+  refuse: "REFUSED",
+  deny: "DENIED",
+};
+
 export interface TasksAssessProps {
   /**
    * Project NFT Policy ID
@@ -116,12 +123,13 @@ export function TasksAssess({
         project_id: projectNftPolicyId,
         contributor_state_id: contributorStateId,
         task_decisions: [
-          { task_hash: taskHash, outcome: decision },
+          { alias: contributorAlias, outcome: decision },
         ],
         // Side effect params (matches /project-v2/manager/commitment/assess)
+        // Note: DB API expects uppercase decision values
         task_hash: taskHash,
         contributor_alias: contributorAlias,
-        decision: decision,
+        decision: outcomeToDbDecision[decision],
       },
       onSuccess: async (txResult) => {
         console.log("[TasksAssess] Success!", txResult);

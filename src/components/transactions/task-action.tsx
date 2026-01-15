@@ -61,8 +61,9 @@ export interface TaskActionProps {
 
   /**
    * Callback fired when action is successful
+   * @param result - Transaction result including txHash
    */
-  onSuccess?: () => void | Promise<void>;
+  onSuccess?: (result: { txHash: string }) => void | Promise<void>;
 }
 
 /**
@@ -112,7 +113,7 @@ export function TaskAction({
       return;
     }
 
-    // Compute evidence hash if evidence provided
+    // Compute evidence hash if evidence provided - this becomes the project_info
     const hash = taskEvidence && Object.keys(taskEvidence).length > 0
       ? computeAssignmentInfoHash(taskEvidence)
       : undefined;
@@ -121,13 +122,17 @@ export function TaskAction({
       setEvidenceHash(hash);
     }
 
+    // Use computed hash as project_info (evidence hash on-chain)
+    // Falls back to explicit projectInfo prop if no evidence provided
+    const projectInfoValue = hash ?? projectInfo;
+
     await execute({
       definition: PROJECT_CONTRIBUTOR_TASK_ACTION,
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
-        project_info: projectInfo,
+        project_info: projectInfoValue,
         // Side effect params (matches /project-v2/contributor/commitment/submit)
         task_hash: taskHash,
         evidence: taskEvidence,
@@ -145,7 +150,10 @@ export function TaskAction({
             : undefined,
         });
 
-        await onSuccess?.();
+        // Pass txHash to onSuccess callback
+        if (txResult.txHash) {
+          await onSuccess?.({ txHash: txResult.txHash });
+        }
       },
       onError: (txError) => {
         console.error("[TaskAction] Error:", txError);

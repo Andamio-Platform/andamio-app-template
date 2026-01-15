@@ -40,9 +40,16 @@ export interface TaskCommitProps {
   projectNftPolicyId: string;
 
   /**
-   * Contributor state ID (56 char hex)
+   * Contributor state ID (56 char hex) - used for top-level API param
    */
   contributorStateId: string;
+
+  /**
+   * Contributor state POLICY ID (56 char hex) - from Andamioscan task
+   * Required in tasks array for Atlas TX API
+   * @see https://github.com/Andamio-Platform/andamioscan/issues/10
+   */
+  contributorStatePolicyId: string;
 
   /**
    * Project title for display
@@ -121,6 +128,7 @@ export interface TaskCommitProps {
 export function TaskCommit({
   projectNftPolicyId,
   contributorStateId,
+  contributorStatePolicyId,
   projectTitle,
   taskHash,
   taskCode,
@@ -181,11 +189,21 @@ export function TaskCommit({
 
     const txParams = {
       // Transaction API params (snake_case per V2 API)
+      // NOTE: Swagger shows flat fields, but backend internally expects a `tasks` array
       alias: user.accessTokenAlias,
       project_id: projectNftPolicyId,
       contributor_state_id: contributorStateId,
       task_hash: taskHash,
-      task_info: hash,
+      task_info: hash, // Evidence hash (computed from taskEvidence)
+      // Backend expects tasks array with contributor_state_policy_id from Andamioscan
+      // @see https://github.com/Andamio-Platform/andamioscan/issues/10
+      tasks: [
+        {
+          task_hash: taskHash,
+          task_info: hash,
+          contributor_state_policy_id: contributorStatePolicyId, // From Andamioscan task
+        },
+      ],
       // Side effect params (matches /project-v2/contributor/commitment/submit)
       evidence: taskEvidence,
     };
@@ -196,10 +214,12 @@ export function TaskCommit({
       project_id_length: txParams.project_id.length,
       contributor_state_id: txParams.contributor_state_id,
       contributor_state_id_length: txParams.contributor_state_id.length,
+      contributor_state_policy_id: contributorStatePolicyId,
+      contributor_state_policy_id_length: contributorStatePolicyId.length,
       task_hash: txParams.task_hash,
       task_hash_length: txParams.task_hash.length,
       task_info: txParams.task_info,
-      task_info_length: txParams.task_info.length,
+      tasks: txParams.tasks,
       hasEvidence: !!txParams.evidence,
     });
 

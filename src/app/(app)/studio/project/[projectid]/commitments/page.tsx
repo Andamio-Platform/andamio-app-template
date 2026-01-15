@@ -93,15 +93,43 @@ export default function ProjectCommitmentsPage() {
   }, [allPendingAssessments, projectId]);
 
   // Map task_id to task details from on-chain project
-  const taskMap = useMemo(() => {
-    const map = new Map<string, AndamioscanTask>();
+  // Also create lovelace map for matching when task_id is empty
+  const { taskMap, taskByLovelace, taskByContent } = useMemo(() => {
+    const idMap = new Map<string, AndamioscanTask>();
+    const lovelaceMap = new Map<number, AndamioscanTask>();
+    const contentMap = new Map<string, AndamioscanTask>();
     if (onChainProject?.tasks) {
       for (const task of onChainProject.tasks) {
-        map.set(task.task_id, task);
+        idMap.set(task.task_id, task);
+        lovelaceMap.set(task.lovelace, task);
+        contentMap.set(task.content, task);
       }
     }
-    return map;
+    return { taskMap: idMap, taskByLovelace: lovelaceMap, taskByContent: contentMap };
   }, [onChainProject]);
+
+  /**
+   * Find task by ID, or fall back to matching by lovelace/content
+   * This is needed because pending assessments API often returns empty task_id
+   */
+  const findMatchingTask = useCallback((assessment: AndamioscanProjectPendingAssessment): AndamioscanTask | undefined => {
+    // First try by task_id if available
+    if (assessment.task_id) {
+      const byId = taskMap.get(assessment.task_id);
+      if (byId) return byId;
+    }
+    // Fall back to matching by lovelace
+    if (assessment.task_lovelace > 0) {
+      const byLovelace = taskByLovelace.get(assessment.task_lovelace);
+      if (byLovelace) return byLovelace;
+    }
+    // Fall back to matching by content
+    if (assessment.task_content) {
+      const byContent = taskByContent.get(assessment.task_content);
+      if (byContent) return byContent;
+    }
+    return undefined;
+  }, [taskMap, taskByLovelace, taskByContent]);
 
   // Selected assessment for management
   const [selectedAssessment, setSelectedAssessment] =
@@ -159,12 +187,18 @@ export default function ProjectCommitmentsPage() {
   }, [projectId]);
 
   // Check DB status for each pending assessment
+  // Must wait for onChainProject to load so we can match tasks
   useEffect(() => {
-    if (!pendingAssessments.length || !isAuthenticated) return;
+    if (!pendingAssessments.length || !isAuthenticated || !onChainProject) return;
 
     const checkAllDbStatus = async () => {
       for (const assessment of pendingAssessments) {
-        const taskId = assessment.task_id;
+        // Use matched task_id when available
+        const matchedTask = findMatchingTask(assessment);
+        const taskId = matchedTask?.task_id ?? assessment.task_id;
+
+        // Skip if no task_id available
+        if (!taskId) continue;
 
         // Skip if already checked or checking
         if (dbStatus.has(taskId)) continue;
@@ -187,7 +221,7 @@ export default function ProjectCommitmentsPage() {
 
     void checkAllDbStatus();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAssessments, isAuthenticated]);
+  }, [pendingAssessments, isAuthenticated, onChainProject]);
 
   // Format slot number to approximate date
   const formatSlot = (slot: number): string => {
@@ -197,24 +231,35 @@ export default function ProjectCommitmentsPage() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  // Get task title from task_id
-  const getTaskTitle = (taskId: string | undefined): string => {
-    if (!taskId) return "Unknown Task";
-    const task = taskMap.get(taskId);
-    return task?.lovelace
-      ? `Task ${taskId.slice(0, 8)}... (${(task.lovelace / 1_000_000).toFixed(0)} ADA)`
-      : `Task ${taskId.slice(0, 8)}...`;
-  };
+  // Get task title from assessment (uses matching)
+  const getTaskTitle = useCallback((assessment: AndamioscanProjectPendingAssessment): string => {
+    const task = findMatchingTask(assessment);
+    if (task) {
+      return `Task ${task.task_id.slice(0, 8)}... (${(task.lovelace / 1_000_000).toFixed(0)} ADA)`;
+    }
+    // Fallback if no match found - show lovelace if available
+    if (assessment.task_lovelace > 0) {
+      return `Unknown Task (${(assessment.task_lovelace / 1_000_000).toFixed(0)} ADA)`;
+    }
+    return "Unknown Task";
+  }, [findMatchingTask]);
+
+  // Get the effective task_id (matched or original)
+  const getEffectiveTaskId = useCallback((assessment: AndamioscanProjectPendingAssessment): string => {
+    const task = findMatchingTask(assessment);
+    return task?.task_id ?? assessment.task_id;
+  }, [findMatchingTask]);
 
   // Sync a single submission to DB
   const handleSyncSubmission = useCallback(async (assessment: AndamioscanProjectPendingAssessment) => {
-    const syncKey = `${assessment.task_id}-${assessment.contributor_alias}`;
+    const effectiveTaskId = getEffectiveTaskId(assessment);
+    const syncKey = `${effectiveTaskId}-${assessment.contributor_alias}`;
     setSyncingSubmissions((prev) => new Set(prev).add(syncKey));
 
     try {
-      // Sync directly from pending assessment data
+      // Sync directly from pending assessment data using matched task_id
       const result = await syncPendingAssessment(
-        assessment.task_id,
+        effectiveTaskId,
         assessment.content,
         assessment.submission_tx_hash,
         authenticatedFetch
@@ -224,7 +269,7 @@ export default function ProjectCommitmentsPage() {
           description: `${assessment.contributor_alias}'s submission is now ready for assessment`,
         });
         // Update DB status to show it now exists
-        setDbStatus((prev) => new Map(prev).set(assessment.task_id, {
+        setDbStatus((prev) => new Map(prev).set(effectiveTaskId, {
           exists: true,
           status: "SUBMITTED",
           checking: false
@@ -245,7 +290,7 @@ export default function ProjectCommitmentsPage() {
         return next;
       });
     }
-  }, [authenticatedFetch]);
+  }, [authenticatedFetch, getEffectiveTaskId]);
 
   // Not authenticated
   if (!isAuthenticated || !managerAlias) {
@@ -419,9 +464,11 @@ export default function ProjectCommitmentsPage() {
                   </AndamioTableRow>
                 </AndamioTableHeader>
                 <AndamioTableBody>
-                  {filteredAssessments.map((assessment) => (
+                  {filteredAssessments.map((assessment) => {
+                    const effectiveTaskId = getEffectiveTaskId(assessment);
+                    return (
                     <AndamioTableRow
-                      key={`${assessment.task_id}-${assessment.contributor_alias}`}
+                      key={`${effectiveTaskId}-${assessment.contributor_alias}`}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedAssessment(assessment)}
                     >
@@ -430,11 +477,11 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         <code className="text-xs font-mono truncate block max-w-[150px]">
-                          {getTaskTitle(assessment.task_id)}
+                          {getTaskTitle(assessment)}
                         </code>
                       </AndamioTableCell>
                       <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                        {formatSlot(assessment.submission_slot)}
+                        {assessment.submission_slot > 0 ? formatSlot(assessment.submission_slot) : "—"}
                       </AndamioTableCell>
                       <AndamioTableCell>
                         <AndamioText variant="small" className="max-w-[200px] truncate">
@@ -445,7 +492,7 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(assessment.task_id);
+                          const status = dbStatus.get(effectiveTaskId);
                           if (status?.checking) {
                             return <RefreshIcon className="h-4 w-4 animate-spin text-muted-foreground" />;
                           }
@@ -467,7 +514,7 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(assessment.task_id);
+                          const status = dbStatus.get(effectiveTaskId);
                           // Only show sync button if DB record is missing
                           if (status?.exists) {
                             return <span className="text-xs text-muted-foreground">—</span>;
@@ -480,9 +527,9 @@ export default function ProjectCommitmentsPage() {
                                 e.stopPropagation();
                                 void handleSyncSubmission(assessment);
                               }}
-                              disabled={syncingSubmissions.has(`${assessment.task_id}-${assessment.contributor_alias}`) || status?.checking}
+                              disabled={syncingSubmissions.has(`${effectiveTaskId}-${assessment.contributor_alias}`) || status?.checking}
                             >
-                              {syncingSubmissions.has(`${assessment.task_id}-${assessment.contributor_alias}`) ? (
+                              {syncingSubmissions.has(`${effectiveTaskId}-${assessment.contributor_alias}`) ? (
                                 <RefreshIcon className="h-3 w-3 animate-spin" />
                               ) : (
                                 <DatabaseIcon className="h-3 w-3" />
@@ -493,7 +540,8 @@ export default function ProjectCommitmentsPage() {
                         })()}
                       </AndamioTableCell>
                     </AndamioTableRow>
-                  ))}
+                    );
+                  })}
                 </AndamioTableBody>
               </AndamioTable>
             </AndamioTableContainer>
@@ -514,7 +562,10 @@ export default function ProjectCommitmentsPage() {
       </AndamioCard>
 
       {/* Selected Assessment Detail View */}
-      {selectedAssessment && (
+      {selectedAssessment && (() => {
+        const selectedEffectiveTaskId = getEffectiveTaskId(selectedAssessment);
+        const selectedMatchedTask = findMatchingTask(selectedAssessment);
+        return (
         <AndamioCard>
           <AndamioCardHeader>
             <div className="flex items-center justify-between">
@@ -545,13 +596,18 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Task</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.task_id ? `${selectedAssessment.task_id.slice(0, 16)}...` : "Unknown"}
+                  {selectedEffectiveTaskId ? `${selectedEffectiveTaskId.slice(0, 16)}...` : "Unknown"}
                 </AndamioText>
+                {selectedMatchedTask && (
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    {(selectedMatchedTask.lovelace / 1_000_000).toFixed(0)} ADA reward
+                  </AndamioText>
+                )}
               </div>
               <div>
                 <AndamioLabel>Submitted</AndamioLabel>
                 <AndamioText variant="small" className="mt-1 text-foreground">
-                  {formatSlot(selectedAssessment.submission_slot)}
+                  {selectedAssessment.submission_slot > 0 ? formatSlot(selectedAssessment.submission_slot) : "—"}
                 </AndamioText>
               </div>
               <div>
@@ -592,9 +648,9 @@ export default function ProjectCommitmentsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => void handleSyncSubmission(selectedAssessment)}
-                    disabled={syncingSubmissions.has(`${selectedAssessment.task_id}-${selectedAssessment.contributor_alias}`)}
+                    disabled={syncingSubmissions.has(`${selectedEffectiveTaskId}-${selectedAssessment.contributor_alias}`)}
                   >
-                    {syncingSubmissions.has(`${selectedAssessment.task_id}-${selectedAssessment.contributor_alias}`) ? (
+                    {syncingSubmissions.has(`${selectedEffectiveTaskId}-${selectedAssessment.contributor_alias}`) ? (
                       <>
                         <RefreshIcon className="h-4 w-4 mr-2 animate-spin" />
                         Syncing...
@@ -642,8 +698,8 @@ export default function ProjectCommitmentsPage() {
               projectNftPolicyId={projectId}
               contributorStateId={project.states?.[0]?.project_state_policy_id ?? ""}
               contributorAlias={selectedAssessment.contributor_alias}
-              taskHash={selectedAssessment.task_id}
-              taskCode={selectedAssessment.task_id.slice(0, 8)}
+              taskHash={selectedEffectiveTaskId}
+              taskCode={selectedEffectiveTaskId ? selectedEffectiveTaskId.slice(0, 8) : "TASK"}
               onSuccess={async () => {
                 await refetch();
                 setSelectedAssessment(null);
@@ -651,7 +707,8 @@ export default function ProjectCommitmentsPage() {
             />
           </AndamioCardContent>
         </AndamioCard>
-      )}
+        );
+      })()}
     </div>
   );
 }

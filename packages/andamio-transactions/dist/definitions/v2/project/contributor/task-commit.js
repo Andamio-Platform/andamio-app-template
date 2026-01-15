@@ -57,13 +57,21 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
     },
     buildTxConfig: {
         ...(0, schema_helpers_1.createSchemas)({
-            // Transaction API inputs - matches CommitTaskTxRequest
+            // Transaction API inputs - matches CommitTaskTxRequest from Atlas TX API
+            // NOTE: Swagger shows flat fields, but backend internally expects a `tasks` array
+            // with `contributor_state_policy_id` in each task object.
             txParams: zod_1.z.object({
                 alias: zod_1.z.string().min(1).max(31), // Contributor's alias
                 project_id: zod_1.z.string().length(56), // Project NFT policy ID (hex)
-                contributor_state_id: zod_1.z.string().length(56), // Contributor state ID
-                task_hash: zod_1.z.string().length(64), // Task hash to commit to
-                task_info: zod_1.z.string().max(140), // Task info (ShortText140, max 140 chars)
+                contributor_state_id: zod_1.z.string().length(56), // Contributor state ID (same as project_state_policy_id)
+                task_hash: zod_1.z.string().length(64), // Task hash to commit to (64 char hex)
+                task_info: zod_1.z.string().max(140), // Task info hash (ShortText140, max 140 chars)
+                // Backend expects tasks array even though swagger doesn't document it
+                tasks: zod_1.z.array(zod_1.z.object({
+                    task_hash: zod_1.z.string().length(64),
+                    task_info: zod_1.z.string().max(140),
+                    contributor_state_id: zod_1.z.string().length(56), // Try without _policy
+                })).min(1).max(1),
             }),
             // Side effect parameters - matches DB API task-commitments/create
             sideEffectParams: zod_1.z.object({
@@ -81,6 +89,9 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
             body: {
                 task_hash: { source: "context", path: "txParams.task_hash" },
             },
+            // Non-critical: Task may not exist in DB yet if task_hash wasn't synced
+            // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+            critical: false,
         },
         {
             def: "Submit Commitment for Review",
@@ -91,6 +102,8 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
                 evidence: { source: "context", path: "sideEffectParams.evidence" },
                 pending_tx_hash: { source: "context", path: "txHash" },
             },
+            // Non-critical: Depends on Create succeeding
+            critical: false,
         },
     ],
     onConfirmation: [
@@ -102,7 +115,9 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
                 task_hash: { source: "context", path: "txParams.task_hash" },
                 tx_hash: { source: "context", path: "txHash" },
             },
-            critical: true,
+            // Non-critical until task sync is implemented
+            // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+            critical: false,
         },
     ],
     ui: {

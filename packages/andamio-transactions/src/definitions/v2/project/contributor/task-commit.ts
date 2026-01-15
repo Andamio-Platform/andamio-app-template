@@ -57,13 +57,22 @@ export const PROJECT_CONTRIBUTOR_TASK_COMMIT: AndamioTransactionDefinition = {
   },
   buildTxConfig: {
     ...createSchemas({
-      // Transaction API inputs - matches CommitTaskTxRequest
+      // Transaction API inputs - matches CommitTaskTxRequest from Atlas TX API
+      // NOTE: Swagger shows flat fields, but backend internally expects a `tasks` array
+      // with `contributor_state_policy_id` in each task object.
       txParams: z.object({
         alias: z.string().min(1).max(31), // Contributor's alias
         project_id: z.string().length(56), // Project NFT policy ID (hex)
-        contributor_state_id: z.string().length(56), // Contributor state ID
-        task_hash: z.string().length(64), // Task hash to commit to
-        task_info: z.string().max(140), // Task info (ShortText140, max 140 chars)
+        contributor_state_id: z.string().length(56), // Contributor state ID (same as project_state_policy_id)
+        task_hash: z.string().length(64), // Task hash to commit to (64 char hex)
+        task_info: z.string().max(140), // Task info hash (ShortText140, max 140 chars)
+        // Backend expects tasks array with contributor_state_policy_id from Andamioscan
+        // @see https://github.com/Andamio-Platform/andamioscan/issues/10
+        tasks: z.array(z.object({
+          task_hash: z.string().length(64),
+          task_info: z.string().max(140),
+          contributor_state_policy_id: z.string().length(56), // From Andamioscan task
+        })).min(1).max(1),
       }),
       // Side effect parameters - matches DB API task-commitments/create
       sideEffectParams: z.object({

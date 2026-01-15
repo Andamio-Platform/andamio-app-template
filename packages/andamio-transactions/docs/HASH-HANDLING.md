@@ -37,10 +37,11 @@ The standard pattern for hash handling across transactions:
 
 ### 3. Hash Types in Use
 
-Currently, two primary hash patterns exist in Andamio v1:
+Three primary hash patterns exist in Andamio:
 
-- **Asset Name Hashes**: Used for token minting (e.g., module tokens)
+- **Asset Name Hashes**: Used for token minting (e.g., module tokens, task tokens)
 - **Data Hashes**: Used for content verification (e.g., assignment evidence)
+- **Task ID Hashes**: Used to identify project tasks on-chain (Project V2)
 
 ## Current Hash Usage
 
@@ -129,6 +130,47 @@ onConfirmation: [
   },
 ]
 ```
+
+### 3. Task ID Hashes (Project V2)
+
+**Transaction**: `PROJECT_MANAGER_TASKS_MANAGE` (`packages/andamio-transactions/src/definitions/v2/project/manager/tasks-manage.ts`)
+
+**Purpose**: Hash task data to create a unique, verifiable identifier for the task token. The `task_id` is the token name on-chain.
+
+**Hash Computation**:
+- Computed on-chain by the Plutus validator
+- Uses Plutus `Constr 0` with indefinite-length arrays
+- Input fields (in order): `project_content`, `expiration_time`, `lovelace_amount`, `native_assets`
+- Algorithm: Blake2b-256 (32 bytes / 64 hex chars)
+
+**Pre-computation**: Unlike other hashes, task IDs can be **pre-computed client-side** since all inputs are known before transaction submission. This enables linking transaction requests to resulting on-chain assets.
+
+**Client-Side Usage**:
+```typescript
+import { computeTaskHash, verifyTaskHash, type TaskData } from "@andamio/transactions";
+
+// Before submitting transaction
+const task: TaskData = {
+  project_content: "Open Task #1",
+  expiration_time: 1769027280000,
+  lovelace_amount: 15000000,
+  native_assets: []
+};
+
+// Pre-compute the task_id that will appear on-chain
+const expectedTaskId = computeTaskHash(task);
+
+// After transaction confirms, verify on-chain task matches
+const onChainTask = await getTaskFromAndamioscan(projectId, expectedTaskId);
+const isValid = verifyTaskHash(task, onChainTask.task_id);
+```
+
+**Database Storage**: `Task.task_hash` (synced from on-chain data via Andamioscan)
+
+**Note**: Task hashes follow a different pattern than module/evidence hashes. Since all task fields are known at submission time, the hash can be computed locally for verification purposes. This is particularly useful for:
+- Matching TX API request data to resulting on-chain assets
+- Verifying task creation succeeded with expected data
+- Building task-specific URLs before confirmation
 
 ## Adding Hash Support to New Transactions
 

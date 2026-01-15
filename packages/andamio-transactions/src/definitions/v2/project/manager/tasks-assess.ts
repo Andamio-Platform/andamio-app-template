@@ -76,10 +76,11 @@ export const PROJECT_MANAGER_TASKS_ASSESS: AndamioTransactionDefinition = {
         ),
       }),
       // Side effect parameters - matches DB API /project-v2/manager/commitment/assess
+      // Note: DB API expects uppercase decision values (ACCEPTED/REFUSED/DENIED)
       sideEffectParams: z.object({
         task_hash: z.string().length(64), // Task hash being assessed
         contributor_alias: z.string().min(1).max(31), // Contributor's alias for the commitment
-        decision: z.enum(["accept", "refuse", "deny"]), // Assessment decision
+        decision: z.enum(["ACCEPTED", "REFUSED", "DENIED"]), // Assessment decision (uppercase for DB API)
       }),
     }),
     builder: { type: "api-endpoint", endpoint: "/v2/tx/project/manager/tasks/assess" },

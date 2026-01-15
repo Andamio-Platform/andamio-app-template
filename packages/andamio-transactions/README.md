@@ -651,6 +651,55 @@ sltsToBbs MintModuleV2{slts} = blake2b_256 $ serialiseData $ toBuiltinData $ map
 
 The hash is **deterministic** - the same SLTs will always produce the same hash, matching exactly what the Plutus validator computes on-chain.
 
+### Task Hash Utility
+
+For Project V2 tasks, the `task_id` stored on-chain is a hash of the task data. This utility allows you to **pre-compute task IDs before running transactions** and verify on-chain task IDs match expected values.
+
+```typescript
+import {
+  computeTaskHash,
+  verifyTaskHash,
+  isValidTaskHash,
+  debugTaskCBOR,
+  type TaskData
+} from "@andamio/transactions";
+
+// Compute task ID before or after transaction
+const task: TaskData = {
+  project_content: "Open Task #1",
+  expiration_time: 1769027280000,
+  lovelace_amount: 15000000,
+  native_assets: []  // Array of [policyId.tokenName, quantity] tuples
+};
+const taskId = computeTaskHash(task);
+// Returns: "c4c6affd3a575d56dc98f0e172928b5c5dd170ce13b1db4a9ae82f2d07223cb2"
+
+// Verify a hash matches expected task data
+const isValid = verifyTaskHash(task, taskId);
+// Returns: true
+
+// Validate hash format (64 hex characters)
+const validFormat = isValidTaskHash(taskId);
+// Returns: true
+
+// Debug: inspect CBOR encoding before hashing
+const cbor = debugTaskCBOR(task);
+// Returns hex string of Plutus-serialized data
+```
+
+**Use Cases:**
+- **Pre-compute task IDs** - Know the on-chain identifier before publishing tasks
+- **Verify on-chain data** - Confirm published tasks have expected IDs
+- **Link TX requests to results** - Match transaction request data to resulting on-chain assets
+- **Debug hash mismatches** - Inspect CBOR encoding when troubleshooting
+
+**Algorithm:**
+1. Encode task as Plutus `Constr 0` with fields: `[project_content, expiration_time, lovelace_amount, native_assets]`
+2. Use indefinite-length CBOR arrays (matching Plutus serialization)
+3. Hash with Blake2b-256 (32 bytes / 64 hex chars)
+
+This matches the Plutus on-chain computation exactly - the same task data always produces the same hash.
+
 ### CBOR Transaction Decoder
 
 Decode Cardano transaction CBOR to extract mints, outputs, inputs, and metadata. Uses `@meshsdk/core-cst` under the hood.

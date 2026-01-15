@@ -16,6 +16,7 @@ import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icon
 import { type ProjectTaskV2Output, type CommitmentV2Output } from "@andamio/db-api-types";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { getProject, type AndamioscanTask } from "~/lib/andamioscan";
 import { ProjectEnroll, TaskCommit } from "~/components/transactions";
 
 /**
@@ -41,6 +42,9 @@ export default function TaskDetailPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [contributorStateId, _setContributorStateId] = useState<string | null>(null);
 
+  // On-chain task data from Andamioscan (for contributor_state_policy_id)
+  const [onChainTask, setOnChainTask] = useState<AndamioscanTask | null>(null);
+
   // Evidence editor state
   const [evidence, setEvidence] = useState<JSONContent | null>(null);
   const [isEditingEvidence, setIsEditingEvidence] = useState(false);
@@ -62,6 +66,20 @@ export default function TaskDetailPage() {
 
         const taskData = (await taskResponse.json()) as ProjectTaskV2Output;
         setTask(taskData);
+
+        // Fetch on-chain task from Andamioscan (for contributor_state_policy_id)
+        // The taskHash in the URL is the task_id in Andamioscan
+        try {
+          const projectDetails = await getProject(projectId);
+          if (projectDetails?.tasks) {
+            const matchingTask = projectDetails.tasks.find((t: AndamioscanTask) => t.task_id === taskHash);
+            if (matchingTask) {
+              setOnChainTask(matchingTask);
+            }
+          }
+        } catch (scanErr) {
+          console.warn("Failed to fetch on-chain task from Andamioscan:", scanErr);
+        }
 
         // If authenticated, fetch commitment status
         if (isAuthenticated) {
@@ -315,6 +333,7 @@ export default function TaskDetailPage() {
               <TaskCommit
                 projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
+                contributorStatePolicyId={onChainTask?.contributor_state_policy_id ?? "0".repeat(56)}
                 taskHash={taskHash}
                 taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}

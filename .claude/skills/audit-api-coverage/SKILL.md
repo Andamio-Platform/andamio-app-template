@@ -156,6 +156,73 @@ When the live APIs change:
 
 **Don't manually maintain endpoint lists** - let the audit script detect drift.
 
+## Reviewing Partnering Repos
+
+The Andamio platform consists of multiple repositories. When auditing API coverage, also review partnering repos for recent changes that may affect this template.
+
+### Partnering Repositories
+
+| Repo | Local Path | GitHub | Purpose |
+|------|------------|--------|---------|
+| **andamioscan** | `~/projects/01-projects/andamioscan` | `Andamio-Platform/andamioscan` | On-chain indexer |
+| **atlas-api** | (remote only) | `Andamio-Platform/atlas-api` | TX building API |
+| **andamio-db-api** | (remote only) | `Andamio-Platform/andamio-db-api` | Off-chain CRUD API |
+
+### Workflow: Check for API Changes
+
+**Step 1: Review recently closed GitHub issues**
+
+```bash
+# Andamioscan - see recently closed issues
+gh issue list --repo Andamio-Platform/andamioscan --state closed --limit 10
+
+# View specific issue details
+gh issue view <issue-number> --repo Andamio-Platform/andamioscan
+```
+
+**Step 2: Check local repo for recent commits (if available)**
+
+```bash
+# If local clone exists, check recent commits
+cd ~/projects/01-projects/andamioscan
+git log --oneline -10
+git diff HEAD~5..HEAD --stat
+```
+
+**Step 3: Refresh API specs**
+
+```bash
+# Download fresh swagger/OpenAPI specs
+curl -s https://preprod.andamioscan.io/swagger.yaml -o .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml
+npx js-yaml .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml > .claude/skills/audit-api-coverage/andamioscan-api-doc.json
+```
+
+**Step 4: Update types and implementations**
+
+After identifying API changes:
+1. Update TypeScript types in `src/lib/andamioscan.ts`
+2. Update transaction definitions in `packages/andamio-transactions/`
+3. Run type check to catch breaking changes
+
+### Key Issues to Track
+
+When reviewing GitHub issues, look for:
+- **New fields added** to API responses (need to update types)
+- **Deprecated fields** (need to remove usage)
+- **New endpoints** (potential new integrations)
+- **Bug fixes** that may unblock features
+
+### Example: Andamioscan Issue #10
+
+**Issue**: "Return contributor_state_id for tasks"
+**Impact**: Added `contributor_state_policy_id` to task objects
+
+**Actions taken**:
+1. Updated `AndamioscanPrerequisite` type with `project_state_policy_id`
+2. Updated `TaskCommit` component to pass `contributorStatePolicyId`
+3. Updated transaction definition schema
+4. Added helper function to extract value from on-chain task
+
 ## Current Stats (run script for latest)
 
 Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current coverage.

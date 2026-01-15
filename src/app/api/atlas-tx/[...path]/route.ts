@@ -27,7 +27,10 @@ async function proxyRequest(
     const queryString = searchParams.toString();
     const atlasUrl = `${env.ATLAS_TX_API_URL}/${atlasPath}${queryString ? `?${queryString}` : ""}`;
 
-    console.log(`[Atlas TX Proxy] Forwarding ${method} request to: ${atlasUrl}`);
+    console.log(`\n${"=".repeat(80)}`);
+    console.log(`[Atlas TX Proxy] ${new Date().toISOString()}`);
+    console.log(`[Atlas TX Proxy] ${method} → ${atlasUrl}`);
+    console.log(`${"=".repeat(80)}`);
 
     const fetchOptions: RequestInit = {
       method,
@@ -38,19 +41,35 @@ async function proxyRequest(
     };
 
     if (method === "POST") {
-      fetchOptions.body = await request.text();
-      console.log(`[Atlas TX Proxy] Request body:`, fetchOptions.body);
+      const bodyText = await request.text();
+      fetchOptions.body = bodyText;
+      // Parse and log the body to see what we're actually sending
+      try {
+        const parsed = JSON.parse(bodyText) as Record<string, unknown>;
+        console.log(`\n[Atlas TX Proxy] REQUEST BODY:`);
+        console.log(JSON.stringify(parsed, null, 2));
+
+        // Generate a curl command for easy testing
+        const curlCmd = `curl -X POST '${atlasUrl}' \\
+  -H 'Content-Type: application/json' \\
+  -d '${JSON.stringify(parsed)}'`;
+        console.log(`\n[Atlas TX Proxy] CURL COMMAND (copy-paste to test):`);
+        console.log(curlCmd);
+        console.log(`${"=".repeat(80)}\n`);
+      } catch {
+        console.log(`[Atlas TX Proxy] Request body (raw):`, bodyText);
+      }
     }
 
     const response = await fetch(atlasUrl, fetchOptions);
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(`[Atlas TX Proxy] Error response:`, {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorBody,
-      });
+      console.error(`\n${"!".repeat(80)}`);
+      console.error(`[Atlas TX Proxy] ❌ ERROR RESPONSE`);
+      console.error(`[Atlas TX Proxy] Status: ${response.status} ${response.statusText}`);
+      console.error(`[Atlas TX Proxy] Body:\n${errorBody}`);
+      console.error(`${"!".repeat(80)}\n`);
       return NextResponse.json(
         { error: `Atlas TX API error: ${response.status}`, details: errorBody },
         { status: response.status }
@@ -58,7 +77,7 @@ async function proxyRequest(
     }
 
     const data: unknown = await response.json();
-    console.log(`[Atlas TX Proxy] Success response from ${atlasPath}`);
+    console.log(`\n[Atlas TX Proxy] ✅ SUCCESS - Got unsigned transaction from ${atlasPath}`);
     return NextResponse.json(data);
   } catch (error) {
     console.error("[Atlas TX Proxy] Error:", error);

@@ -223,6 +223,13 @@ export async function createCommitmentRecord(
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log("[commitment-sync] Creating commitment record:", {
+      taskHash,
+      taskHashLength: taskHash?.length,
+      hasEvidence: !!evidence,
+      hasTxHash: !!txHash,
+    });
+
     // Step 1: Create the commitment
     const createResponse = await authenticatedFetch(
       `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/create`,
@@ -239,41 +246,53 @@ export async function createCommitmentRecord(
       return { success: false, error: `Create failed: ${errorText}` };
     }
 
-    // Step 2: Submit with evidence and tx hash
-    const submitResponse = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/submit`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_hash: taskHash,
-          evidence: evidence ? { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: evidence }] }] } : null,
-          pending_tx_hash: txHash,
-        }),
+    console.log("[commitment-sync] Create step completed (status:", createResponse.status, ")");
+
+    // Step 2: Submit with evidence and tx hash (only if we have a tx hash)
+    if (txHash) {
+      const submitResponse = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/submit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task_hash: taskHash,
+            evidence: evidence ? { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: evidence }] }] } : null,
+            pending_tx_hash: txHash,
+          }),
+        }
+      );
+
+      if (!submitResponse.ok) {
+        const errorText = await submitResponse.text();
+        return { success: false, error: `Submit failed: ${errorText}` };
       }
-    );
 
-    if (!submitResponse.ok) {
-      const errorText = await submitResponse.text();
-      return { success: false, error: `Submit failed: ${errorText}` };
-    }
+      console.log("[commitment-sync] Submit step completed");
 
-    // Step 3: Confirm the transaction
-    const confirmResponse = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/confirm-tx`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_hash: taskHash,
-          tx_hash: txHash,
-        }),
+      // Step 3: Confirm the transaction
+      const confirmResponse = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/confirm-tx`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task_hash: taskHash,
+            tx_hash: txHash,
+          }),
+        }
+      );
+
+      if (!confirmResponse.ok) {
+        const errorText = await confirmResponse.text();
+        return { success: false, error: `Confirm failed: ${errorText}` };
       }
-    );
 
-    if (!confirmResponse.ok) {
-      const errorText = await confirmResponse.text();
-      return { success: false, error: `Confirm failed: ${errorText}` };
+      console.log("[commitment-sync] Confirm step completed");
+    } else {
+      console.log("[commitment-sync] Skipping submit/confirm steps (no tx_hash available)");
+      // Just create worked - the record exists but isn't fully synced
+      // This is a partial sync - better than nothing
     }
 
     return { success: true };
@@ -302,6 +321,56 @@ export async function syncSubmission(
   console.log(`[commitment-sync] Syncing submission for task ${taskHash.slice(0, 16)}...`);
 
   return createCommitmentRecord(taskHash, evidence, txHash, authenticatedFetch);
+}
+
+/**
+ * Confirm a pending transaction for a commitment
+ *
+ * Transitions commitment from PENDING_TX_SUBMIT to SUBMITTED
+ * after the transaction has been confirmed on-chain.
+ *
+ * @param taskHash - Task hash (64 char hex)
+ * @param txHash - Confirmed transaction hash
+ * @param authenticatedFetch - Authenticated fetch function
+ */
+export async function confirmCommitmentTransaction(
+  taskHash: string,
+  txHash: string,
+  authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log("[commitment-sync] Confirming transaction:", {
+      taskHash: taskHash.slice(0, 16) + "...",
+      txHash: txHash.slice(0, 16) + "...",
+    });
+
+    const response = await authenticatedFetch(
+      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/confirm-tx`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_hash: taskHash,
+          tx_hash: txHash,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[commitment-sync] Confirm-tx failed:", errorText);
+      return { success: false, error: `Confirm failed: ${errorText}` };
+    }
+
+    console.log("[commitment-sync] Transaction confirmed in DB");
+    return { success: true };
+  } catch (err) {
+    console.error("[commitment-sync] Confirm-tx error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
 }
 
 /**

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Task Hash Utility** (`@andamio/transactions`): New utilities to compute Project V2 task IDs locally, matching on-chain Plutus validator computation
+  - `computeTaskHash(task)` - Compute Blake2b-256 hash matching on-chain task_id
+  - `verifyTaskHash(task, expectedHash)` - Verify a hash matches task data
+  - `isValidTaskHash(hash)` - Validate hash format (64-char hex)
+  - `debugTaskCBOR(task)` - Debug: show CBOR encoding before hashing
+  - `TaskData` type - Task data structure for hashing
+  - Uses Plutus Constr 0 with indefinite-length arrays (matching on-chain serialization)
+  - 10 tests validating against real on-chain transaction data
+  - Enables pre-computing task IDs before transaction submission
+  - Location: `packages/andamio-transactions/src/utils/task-hash.ts`
+
 ### Changed
 - **Project V2 API Migration** (January 14, 2026): Complete migration from V1 to V2 Project API endpoints
   - Route folders renamed from `[projectid]` to `[projectid]`

@@ -470,6 +470,17 @@ definitions:
       course_id:
         type: string
     type: object
+  models.PrerequisiteResponse:
+    properties:
+      assignment_ids:
+        items:
+          type: string
+        type: array
+      course_id:
+        type: string
+      project_state_policy_id:
+        type: string
+    type: object
   models.ProjectAggregateResponse:
     properties:
       assessments:
@@ -486,7 +497,7 @@ definitions:
         type: array
       prerequisites:
         items:
-          $ref: '#/definitions/models.Prerequisite'
+          $ref: '#/definitions/models.PrerequisiteResponse'
         type: array
       project_id:
         type: string

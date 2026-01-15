@@ -914,10 +914,13 @@ export type AndamioscanTreasuryFunding = {
 
 /**
  * Project prerequisite (course completion requirement)
+ * @see https://github.com/Andamio-Platform/andamioscan/issues/10
  */
 export type AndamioscanPrerequisite = {
   course_id: string;
   assignment_ids: string[];
+  /** Added in issue #10 - the project state policy ID for this prerequisite set */
+  project_state_policy_id: string;
 };
 
 /**
@@ -1117,6 +1120,20 @@ export async function getCompletedProjects(alias: string): Promise<AndamioscanPr
 // -----------------------------------------------------------------------------
 
 /**
+ * Task submission info from contributor status
+ */
+export type AndamioscanTaskSubmission = {
+  task_id: string;
+  created_by: string;
+  project_state_policy_id: string;
+  content: string;
+  expiration: string;
+  expiration_posix: number;
+  lovelace: number;
+  assets: AndamioscanAsset[];
+};
+
+/**
  * Contributor status in a project
  */
 export type AndamioscanContributorStatus = {
@@ -1124,29 +1141,45 @@ export type AndamioscanContributorStatus = {
   alias: string;
   /** Project ID */
   project_id: string;
+  /** When the contributor joined (slot) */
+  joined_at: number;
   /** Completed task IDs */
   completed_tasks: string[];
   /** Pending submission task IDs (awaiting assessment) */
   pending_tasks: string[];
+  /** Full pending task submission data */
+  tasks_submitted: AndamioscanTaskSubmission[];
+  /** Full accepted task data */
+  tasks_accepted: AndamioscanTaskSubmission[];
   /** Credentials earned from this project */
   credentials: AndamioscanAsset[];
 };
 
 /**
+ * Task submission from contributor status API
+ */
+type RawApiTaskSubmission = {
+  task_id: string;
+  created_by: string;
+  project_state_policy_id: string;
+  content: string;
+  expiration: string;
+  expiration_posix: number;
+  lovelace: number;
+  assets: AndamioscanAsset[];
+};
+
+/**
  * Raw contributor status from API
+ * Note: API uses tasks_submitted/tasks_accepted, not pending_submissions/completed_tasks
  */
 type RawApiContributorStatus = {
   alias: string;
   project_id: string;
-  completed_tasks: Array<{
-    task_id: string;
-    content: string;
-  }>;
-  pending_submissions: Array<{
-    task_id: string;
-    content: string;
-  }>;
-  credentials: AndamioscanAsset[];
+  joined_at: number;
+  tasks_submitted: RawApiTaskSubmission[];
+  tasks_accepted: RawApiTaskSubmission[];
+  claimed_credentials: AndamioscanAsset[];
 };
 
 /**
@@ -1177,9 +1210,12 @@ export async function getProjectContributorStatus(
     return {
       alias: raw.alias,
       project_id: raw.project_id,
-      completed_tasks: (raw.completed_tasks ?? []).map((t) => t.task_id),
-      pending_tasks: (raw.pending_submissions ?? []).map((t) => t.task_id),
-      credentials: raw.credentials ?? [],
+      joined_at: raw.joined_at,
+      completed_tasks: (raw.tasks_accepted ?? []).map((t) => t.task_id),
+      pending_tasks: (raw.tasks_submitted ?? []).map((t) => t.task_id),
+      tasks_submitted: raw.tasks_submitted ?? [],
+      tasks_accepted: raw.tasks_accepted ?? [],
+      credentials: raw.claimed_credentials ?? [],
     };
   } catch (error) {
     if (error instanceof Error && error.message.includes("404")) {
@@ -1199,28 +1235,44 @@ export async function getProjectContributorStatus(
 export type AndamioscanProjectPendingAssessment = {
   /** Project NFT Policy ID */
   project_id: string;
-  /** Task ID */
+  /** Task ID (may be empty from API - use task_lovelace/task_content to match) */
   task_id: string;
+  /** Task lovelace amount (for matching to known tasks) */
+  task_lovelace: number;
+  /** Task content hex (for matching to known tasks) */
+  task_content: string;
   /** Contributor's access token alias */
   contributor_alias: string;
   /** Submission content/evidence */
   content: string;
   /** Transaction hash of the submission */
   submission_tx_hash: string;
-  /** Slot number when submission occurred */
+  /** Slot number when submission occurred (0 if not available) */
   submission_slot: number;
 };
 
 /**
+ * Raw task object from pending assessment API
+ * Note: task_id is often empty in this response - match by lovelace/content instead
+ */
+type RawApiPendingAssessmentTask = {
+  task_id: string;
+  content: string;
+  lovelace: number;
+  expiration: string;
+  expiration_posix: number;
+};
+
+/**
  * Raw pending assessment from API
+ * Note: task.task_id is often empty - use lovelace/content to match
  */
 type RawApiProjectPendingAssessment = {
   project_id: string;
-  task_id: string;
-  contributor_alias: string;
+  task: RawApiPendingAssessmentTask;
+  submitted_by: string;
+  submission_tx_hash: string;
   content: string;
-  tx_hash: string;
-  slot: number;
 };
 
 /**
@@ -1246,11 +1298,14 @@ export async function getManagerPendingAssessments(
     );
     return raw.map((assessment) => ({
       project_id: assessment.project_id,
-      task_id: assessment.task_id,
-      contributor_alias: assessment.contributor_alias,
+      // task_id may be empty - consumer should match by lovelace/content
+      task_id: assessment.task?.task_id ?? "",
+      task_lovelace: assessment.task?.lovelace ?? 0,
+      task_content: assessment.task?.content ?? "",
+      contributor_alias: assessment.submitted_by,
       content: assessment.content,
-      submission_tx_hash: assessment.tx_hash,
-      submission_slot: assessment.slot,
+      submission_tx_hash: assessment.submission_tx_hash,
+      submission_slot: 0, // Not available in this API response
     }));
   } catch (error) {
     // Return empty array for 404s (no pending assessments)
@@ -1259,4 +1314,175 @@ export async function getManagerPendingAssessments(
     }
     throw error;
   }
+}
+
+// =============================================================================
+// Events API - Transaction Confirmation
+// =============================================================================
+
+/**
+ * Task Submit Event from Andamioscan
+ *
+ * Returned when a PROJECT_CONTRIBUTOR_TASK_ACTION transaction is confirmed.
+ * Used to verify transaction confirmation instead of Koios polling.
+ *
+ * @see .claude/skills/project-manager/ANDAMIOSCAN-EVENTS-CONFIRMATION.md
+ */
+export type AndamioscanTaskSubmitEvent = {
+  /** Transaction hash */
+  tx_hash: string;
+  /** Slot number when confirmed */
+  slot: number;
+  /** Contributor's access token alias */
+  alias: string;
+  /** Project NFT Policy ID (may be empty in some responses) */
+  project_id: string;
+  /** Task data */
+  task: AndamioscanTask;
+  /** Submission content (evidence hash, hex-encoded) */
+  content: string;
+};
+
+// NOTE: Additional event types (ProjectJoin, TaskAssess, ProjectCredentialClaim)
+// will be added after team alignment on the pattern.
+// See .claude/skills/project-manager/ANDAMIOSCAN-EVENTS-CONFIRMATION.md for full mapping.
+
+/**
+ * Mapping of transaction types to event endpoints
+ *
+ * Used by waitForEventConfirmation to determine which endpoint to poll.
+ */
+export const TX_TO_EVENT_MAP: Record<string, string> = {
+  // Global
+  GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "/v2/events/access-tokens/mint",
+
+  // Course
+  INSTANCE_COURSE_CREATE: "/v2/events/courses/create",
+  COURSE_OWNER_TEACHERS_MANAGE: "/v2/events/teachers/update",
+  COURSE_TEACHER_MODULES_MANAGE: "/v2/events/modules/manage",
+  COURSE_TEACHER_ASSIGNMENTS_ASSESS: "/v2/events/assessments/assess",
+  COURSE_STUDENT_ASSIGNMENT_COMMIT: "/v2/events/enrollments/enroll",
+  COURSE_STUDENT_ASSIGNMENT_UPDATE: "/v2/events/assignments/submit",
+  COURSE_STUDENT_CREDENTIAL_CLAIM: "/v2/events/credential-claims/claim",
+
+  // Project
+  INSTANCE_PROJECT_CREATE: "/v2/events/projects/create",
+  PROJECT_MANAGER_TASKS_MANAGE: "/v2/events/tasks/manage",
+  PROJECT_MANAGER_TASKS_ASSESS: "/v2/events/tasks/assess",
+  PROJECT_CONTRIBUTOR_TASK_COMMIT: "/v2/events/projects/join",
+  PROJECT_CONTRIBUTOR_TASK_ACTION: "/v2/events/tasks/submit",
+  PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: "/v2/events/credential-claims/project",
+};
+
+/**
+ * Get Task Submit Event by transaction hash
+ *
+ * Endpoint: GET /api/v2/events/tasks/submit/{tx_hash}
+ *
+ * @param txHash - Transaction hash to check
+ * @returns Event data if confirmed, null if not yet indexed
+ *
+ * @example
+ * ```typescript
+ * const event = await getTaskSubmitEvent(txHash);
+ * if (event) {
+ *   console.log(`Task ${event.task.task_id} confirmed at slot ${event.slot}`);
+ * }
+ * ```
+ */
+export async function getTaskSubmitEvent(
+  txHash: string
+): Promise<AndamioscanTaskSubmitEvent | null> {
+  try {
+    return await fetchAndamioscan<AndamioscanTaskSubmitEvent>(
+      `/v2/events/tasks/submit/${txHash}`
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("404")) {
+      return null; // Not confirmed yet
+    }
+    throw error;
+  }
+}
+
+// NOTE: Additional event fetch functions (getProjectJoinEvent, getTaskAssessEvent, etc.)
+// will be added after team alignment on the pattern.
+
+/**
+ * Generic event fetcher for any transaction type
+ *
+ * @param txType - Transaction type from TX_TO_EVENT_MAP
+ * @param txHash - Transaction hash to check
+ * @returns Event data if confirmed, null if not yet indexed
+ */
+export async function getEventByTxType(
+  txType: string,
+  txHash: string
+): Promise<unknown> {
+  const eventPath = TX_TO_EVENT_MAP[txType];
+  if (!eventPath) {
+    console.warn(`[andamioscan] No event endpoint mapped for tx type: ${txType}`);
+    return null;
+  }
+
+  try {
+    return await fetchAndamioscan(`${eventPath}/${txHash}`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("404")) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Wait for transaction confirmation via Andamioscan Events API
+ *
+ * Polls the appropriate event endpoint until the transaction is confirmed
+ * or the maximum number of attempts is reached.
+ *
+ * @param txType - Transaction type (e.g., "PROJECT_CONTRIBUTOR_TASK_ACTION")
+ * @param txHash - Transaction hash to wait for
+ * @param options - Polling options
+ * @returns Event data if confirmed, null if timeout
+ *
+ * @example
+ * ```typescript
+ * const event = await waitForEventConfirmation(
+ *   "PROJECT_CONTRIBUTOR_TASK_ACTION",
+ *   txHash,
+ *   { maxAttempts: 30, intervalMs: 2000 }
+ * );
+ * if (event) {
+ *   console.log("Transaction confirmed!");
+ * }
+ * ```
+ */
+export async function waitForEventConfirmation(
+  txType: string,
+  txHash: string,
+  options: {
+    maxAttempts?: number;
+    intervalMs?: number;
+    onPoll?: (attempt: number) => void;
+  } = {}
+): Promise<unknown> {
+  const { maxAttempts = 30, intervalMs = 2000, onPoll } = options;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    onPoll?.(attempt);
+
+    const event = await getEventByTxType(txType, txHash);
+    if (event) {
+      console.log(`[andamioscan] Transaction confirmed after ${attempt} attempts`);
+      return event;
+    }
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
+
+  console.warn(`[andamioscan] Transaction confirmation timeout after ${maxAttempts} attempts`);
+  return null;
 }

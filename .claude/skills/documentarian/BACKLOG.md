@@ -154,3 +154,6 @@ Items that have been addressed and can be archived.
 | Fix error.tsx design system compliance | 2026-01-14 | Semantic colors, AndamioButton |
 | Fix pending-tx-popover.tsx design system compliance | 2026-01-14 | bg-yellow-500 → bg-warning |
 | Complete Project V2 API migration documentation | 2026-01-14 | Updated 10+ docs: SITEMAP, ROADMAP, STATUS, route-reference, db-api-endpoints, api-coverage, README, CHANGELOG. Routes renamed [treasurynft] → [projectid], API endpoints /project/* → /project-v2/* |
+| Fix TaskCommit `contributor_state_policy_id` issue | 2026-01-15 | Andamioscan issue #10 provided missing field. Updated: andamioscan.ts types, TaskCommit component (new prop), task-commit.ts schema, contributor page (helper function), task detail page (fetch on-chain task). |
+| Add partnering repo review workflow to audit-api-coverage | 2026-01-15 | New section in SKILL.md for checking local repos and GitHub issues. Documents workflow for syncing with Andamioscan, Atlas API, and DB API repos. |
+| Add Task Hash utility to @andamio/transactions | 2026-01-15 | New utility for computing Project V2 task_id hashes locally. Added: task-hash.ts (implementation), task-hash.test.ts (10 tests), exports in index.ts. Updated docs: README.md, HASH-HANDLING.md, CHANGELOG.md, STATUS.md. |

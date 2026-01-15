@@ -47,6 +47,7 @@ const txName = "GLOBAL_GENERAL_ACCESS_TOKEN_MINT" as const;
 export const GLOBAL_GENERAL_ACCESS_TOKEN_MINT: AndamioTransactionDefinition = {
   txType: txName,
   role: "general",
+  partialSign: true, // Required for protocol transactions with validators
   protocolSpec: {
     ...createProtocolSpec("v2", protocolId),
     requiredTokens: [], // No tokens required - this is the entry point

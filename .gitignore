@@ -43,6 +43,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+dist/
 
 # idea files
 .idea

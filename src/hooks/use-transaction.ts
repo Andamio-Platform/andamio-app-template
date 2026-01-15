@@ -108,8 +108,9 @@ export function useTransaction<TParams = unknown>() {
         // V2 API uses unsigned_tx, legacy uses unsignedTxCBOR
         const unsignedCbor = unsignedTx.unsigned_tx ?? unsignedTx.unsignedTxCBOR;
         if (!unsignedCbor) {
+          console.error("[Transaction API] Missing CBOR in response. Response keys:", Object.keys(unsignedTx));
           txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
-          throw new Error("No CBOR returned from transaction API");
+          throw new Error(`No CBOR returned from transaction API. Response: ${JSON.stringify(unsignedTx)}`);
         }
 
         txLogger.buildResult(txType, true, unsignedTx);
@@ -125,6 +126,7 @@ export function useTransaction<TParams = unknown>() {
         config.onStateChange?.("submitting");
 
         const txHash = await wallet.submitTx(signedTx);
+        console.log("[Transaction] ✓ Submitted successfully. TxHash:", txHash);
 
         // Step 4: Success!
         setState("success");
@@ -145,9 +147,11 @@ export function useTransaction<TParams = unknown>() {
         // Call success callback
         await config.onSuccess?.(txResult);
       } catch (err) {
+        console.error("[Transaction] ✗ Transaction failed:", err);
         txLogger.txError(config.txType ?? config.endpoint, err);
 
         const errorMessage = err instanceof Error ? err.message : "Transaction failed";
+        console.error("[Transaction] Error message:", errorMessage);
 
         setError(errorMessage);
         setState("error");

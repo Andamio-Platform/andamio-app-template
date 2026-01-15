@@ -74,8 +74,6 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         alias: alias.trim(),
       },
       onSuccess: async (txResult) => {
-        console.log("[MintAccessToken] Success!", txResult);
-
         // Manually handle JWT storage since update-alias returns a new JWT
         // Note: The onSubmit side effect (set pending tx) is auto-executed by useAndamioTransaction
         // The onConfirmation side effects will be handled by the pending tx watcher
@@ -126,10 +124,11 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
               console.log("✅ Pending tx tracked for confirmation (5s polling)");
             }
           } else {
-            console.error("Failed to update access token alias:", await response.text());
+            const errorText = await response.text();
+            console.error("[MintAccessToken] ✗ Failed to update access token alias:", errorText);
           }
         } catch (dbError) {
-          console.error("Error updating access token alias:", dbError);
+          console.error("[MintAccessToken] ✗ Error updating access token alias:", dbError);
           // Don't fail the transaction if database update fails
         }
 
@@ -146,7 +145,7 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
         await onSuccess?.();
       },
       onError: (txError) => {
-        console.error("[MintAccessToken] Error:", txError);
+        console.error("[MintAccessToken] Transaction error:", txError);
 
         // Show error toast
         toast.error("Minting Failed", {
@@ -235,6 +234,8 @@ export function MintAccessToken({ onSuccess }: MintAccessTokenProps) {
               signing: "Sign in Wallet",
               submitting: "Minting on Blockchain...",
             }}
+            leftIcon={state === "idle" ? <AccessTokenIcon className="h-5 w-5" /> : undefined}
+            size="lg"
             className="w-full"
           />
         )}

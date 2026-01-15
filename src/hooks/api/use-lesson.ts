@@ -45,9 +45,9 @@ export function useLessons(
   return useQuery({
     queryKey: lessonKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/public/lessons/list/{policy_id}/{module_code}
+      // Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lessons/list/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
@@ -87,9 +87,9 @@ export function useLesson(
       moduleIndex ?? 0
     ),
     queryFn: async () => {
-      // Go API: GET /course/public/lesson/get/{policy_id}/{module_code}/{index}
+      // Go API: GET /course/user/lesson/get/{policy_id}/{module_code}/{index}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
       );
 
       if (!response.ok) {

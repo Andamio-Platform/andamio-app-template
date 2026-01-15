@@ -229,8 +229,8 @@ function OnChainProjectData({
  * Project detail page displaying project info and tasks list
  *
  * API Endpoints (V2):
- * - GET /project-v2/public/project/:project_id
- * - GET /project-v2/public/tasks/:project_state_policy_id
+ * - GET /project-v2/user/project/:project_id
+ * - GET /project-v2/user/tasks/:project_state_policy_id
  */
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -253,9 +253,9 @@ export default function ProjectDetailPage() {
       setError(null);
 
       try {
-        // V2 API: GET /project-v2/public/project/:project_id
+        // V2 API: GET /project-v2/user/project/:project_id
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
         );
 
         if (!projectResponse.ok) {
@@ -271,13 +271,13 @@ export default function ProjectDetailPage() {
         const projectData = (await projectResponse.json()) as ProjectV2Output;
         setProject(projectData);
 
-        // V2 API: GET /project-v2/public/tasks/:project_state_policy_id
+        // V2 API: GET /project-v2/user/tasks/:project_state_policy_id
         // Note: project_state_policy_id comes from the project's states array
         if (projectData.states && projectData.states.length > 0) {
           const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
           if (projectStatePolicyId) {
             const tasksResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/tasks/${projectStatePolicyId}`
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/tasks/${projectStatePolicyId}`
             );
 
             if (!tasksResponse.ok) {

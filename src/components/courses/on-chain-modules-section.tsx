@@ -447,9 +447,9 @@ export function OnChainModulesSection({ courseNftPolicyId }: OnChainModulesSecti
   const fetchDbModules = useCallback(async () => {
     setIsLoadingDb(true);
     try {
-      // Go API: GET /course/public/course-modules/list/{policy_id}
+      // Go API: GET /course/user/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-modules/list/${courseNftPolicyId}`
       );
       if (response.ok) {
         const data = (await response.json()) as CourseModuleListResponse;

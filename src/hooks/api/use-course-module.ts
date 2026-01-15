@@ -68,9 +68,9 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/public/course-modules/list/{policy_id}
+      // Go API: GET /course/user/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-modules/list/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -105,9 +105,9 @@ export function useCourseModule(
   return useQuery({
     queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
+      // Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {

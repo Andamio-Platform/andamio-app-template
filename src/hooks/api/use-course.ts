@@ -67,9 +67,9 @@ export function useCourse(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseKeys.detail(courseNftPolicyId ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/public/course/get/{policy_id}
+      // Go API: GET /course/user/course/get/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -104,9 +104,9 @@ export function usePublishedCourses() {
   return useQuery({
     queryKey: courseKeys.published(),
     queryFn: async () => {
-      // Go API endpoint: /course/public/courses/list
+      // Go API endpoint: /course/user/courses/list
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/courses/list`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/courses/list`
       );
 
       // 404 means no published courses exist yet - treat as empty state, not error

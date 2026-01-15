@@ -305,18 +305,18 @@ export default function SitemapPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Go API: GET /course/public/courses/list
+        // Go API: GET /course/user/courses/list
         const pubCourseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/courses/list`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/courses/list`
         );
         if (pubCourseResponse.ok) {
           const pubData = (await pubCourseResponse.json()) as CourseListResponse;
           setPublishedCourses(pubData ?? []);
         }
 
-        // V2 API: GET /project-v2/public/projects/list
+        // V2 API: GET /project-v2/user/projects/list
         const pubProjectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/projects/list`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/projects/list`
         );
         if (pubProjectResponse.ok) {
           const pubData = (await pubProjectResponse.json()) as ProjectV2Output[];

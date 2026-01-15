@@ -334,8 +334,8 @@ function ContributorDashboardContent() {
     setError(null);
 
     try {
-      // V2 API: GET /project-v2/public/project/:project_id
-      const projectUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`;
+      // V2 API: GET /project-v2/user/project/:project_id
+      const projectUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`;
       console.log("[Contributor] Fetching project from:", projectUrl);
       const projectResponse = await fetch(projectUrl);
 
@@ -355,14 +355,14 @@ function ContributorDashboardContent() {
       });
       setProject(projectData);
 
-      // V2 API: GET /project-v2/public/tasks/:project_state_policy_id
+      // V2 API: GET /project-v2/user/tasks/:project_state_policy_id
       if (projectData.states && projectData.states.length > 0) {
         const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
         console.log("[Contributor] Project state policy ID:", projectStatePolicyId, "length:", projectStatePolicyId?.length);
         if (projectStatePolicyId) {
           setContributorStateId(projectStatePolicyId);
 
-          const tasksUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/tasks/${projectStatePolicyId}`;
+          const tasksUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/tasks/${projectStatePolicyId}`;
           console.log("[Contributor] Fetching tasks from:", tasksUrl);
           const tasksResponse = await fetch(tasksUrl);
 

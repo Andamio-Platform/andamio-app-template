@@ -60,19 +60,19 @@
           "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
         },
         {
-          "path": "/course/public/courses/list",
+          "path": "/course/user/courses/list",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/api/use-course.ts"
         },
         {
-          "path": "/course/public/course/get/{policy_id}",
+          "path": "/course/user/course/get/{policy_id}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
         },
         {
-          "path": "/course/public/course/check/{code}",
+          "path": "/course/user/course/check/{code}",
           "method": "GET",
           "implemented": false
         },
@@ -111,19 +111,19 @@
           "implemented": false
         },
         {
-          "path": "/course/public/course-modules/list/{policy_id}",
+          "path": "/course/user/course-modules/list/{policy_id}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-hybrid-slts.ts"
         },
         {
-          "path": "/course/public/course-module/get/{policy_id}/{module_code}",
+          "path": "/course/user/course-module/get/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
         },
         {
-          "path": "/course/public/course-modules/assignment-summary/{policy_id}",
+          "path": "/course/user/course-modules/assignment-summary/{policy_id}",
           "method": "GET",
           "implemented": false
         },
@@ -189,13 +189,13 @@
           "implemented": false
         },
         {
-          "path": "/course/public/slts/list/{policy_id}/{module_code}",
+          "path": "/course/user/slts/list/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
         },
         {
-          "path": "/course/public/slt/get/{policy_id}/{module_code}/{index}",
+          "path": "/course/user/slt/get/{policy_id}/{module_code}/{index}",
           "method": "GET",
           "implemented": false
         },
@@ -230,13 +230,13 @@
           "implementationLocation": "src/components/studio/wizard/steps/step-slts.tsx"
         },
         {
-          "path": "/course/public/lessons/list/{policy_id}/{module_code}",
+          "path": "/course/user/lessons/list/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
         },
         {
-          "path": "/course/public/lesson/get/{policy_id}/{module_code}/{index}",
+          "path": "/course/user/lesson/get/{policy_id}/{module_code}/{index}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/api/use-lesson.ts"
@@ -264,7 +264,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/assignment/get/{policy_id}/{module_code}",
+          "path": "/course/user/assignment/get/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
@@ -292,7 +292,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/introduction/get/{policy_id}/{module_code}",
+          "path": "/course/user/introduction/get/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": true,
           "implementationLocation": "src/hooks/use-module-wizard-data.ts"
@@ -320,7 +320,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}",
+          "path": "/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": false
         },
@@ -387,27 +387,27 @@
           "implemented": false
         },
         {
-          "path": "/project-v2/public/projects/list",
+          "path": "/project-v2/user/projects/list",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/project/{project_id}",
+          "path": "/project-v2/user/project/{project_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/project-state/{project_state_policy_id}",
+          "path": "/project-v2/user/project-state/{project_state_policy_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/tasks/{project_state_policy_id}",
+          "path": "/project-v2/user/tasks/{project_state_policy_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/task/{task_hash}",
+          "path": "/project-v2/user/task/{task_hash}",
           "method": "GET",
           "implemented": false
         },
@@ -534,7 +534,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/course/check/{code}",
+          "path": "/course/user/course/check/{code}",
           "method": "GET",
           "implemented": false
         },
@@ -549,7 +549,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/course-modules/assignment-summary/{policy_id}",
+          "path": "/course/user/course-modules/assignment-summary/{policy_id}",
           "method": "GET",
           "implemented": false
         },
@@ -579,7 +579,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/slt/get/{policy_id}/{module_code}/{index}",
+          "path": "/course/user/slt/get/{policy_id}/{module_code}/{index}",
           "method": "GET",
           "implemented": false
         },
@@ -614,7 +614,7 @@
           "implemented": false
         },
         {
-          "path": "/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}",
+          "path": "/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}",
           "method": "GET",
           "implemented": false
         },
@@ -639,27 +639,27 @@
           "implemented": false
         },
         {
-          "path": "/project-v2/public/projects/list",
+          "path": "/project-v2/user/projects/list",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/project/{project_id}",
+          "path": "/project-v2/user/project/{project_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/project-state/{project_state_policy_id}",
+          "path": "/project-v2/user/project-state/{project_state_policy_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/tasks/{project_state_policy_id}",
+          "path": "/project-v2/user/tasks/{project_state_policy_id}",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project-v2/public/task/{task_hash}",
+          "path": "/project-v2/user/task/{task_hash}",
           "method": "GET",
           "implemented": false
         },

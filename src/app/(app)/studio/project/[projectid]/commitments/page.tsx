@@ -58,7 +58,7 @@ import { toast } from "sonner";
  * API Endpoints:
  * - Andamioscan: GET /api/v2/projects/managers/{alias}/assessments/pending
  * - Andamioscan: GET /api/v2/projects/{project_id}/details
- * - DB API: GET /project-v2/public/project/:project_id
+ * - DB API: GET /project-v2/user/project/:project_id
  */
 export default function ProjectCommitmentsPage() {
   const params = useParams();
@@ -157,7 +157,7 @@ export default function ProjectCommitmentsPage() {
       try {
         // Fetch DB API project
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
         );
 
         if (!projectResponse.ok) {

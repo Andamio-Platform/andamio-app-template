@@ -76,9 +76,9 @@ export default function LearnerAssignmentPage() {
       setError(null);
 
       try {
-        // Go API: GET /course/public/course/get/{policy_id}
+        // Go API: GET /course/user/course/get/{policy_id}
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
         );
 
         if (courseResponse.ok) {
@@ -86,9 +86,9 @@ export default function LearnerAssignmentPage() {
           setCourse(courseData);
         }
 
-        // Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
+        // Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (moduleResponse.ok) {
@@ -97,9 +97,9 @@ export default function LearnerAssignmentPage() {
         }
 
         // Fetch SLTs for the module
-        // Go API: GET /course/public/slts/list/{policy_id}/{module_code}
+        // Go API: GET /course/user/slts/list/{policy_id}/{module_code}
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (sltsResponse.ok) {
@@ -107,9 +107,9 @@ export default function LearnerAssignmentPage() {
           setSlts(sltsData);
         }
 
-        // Go API: GET /course/public/assignment/get/{policy_id}/{module_code}
+        // Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/assignment/get/${courseNftPolicyId}/${moduleCode}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (response.status === 404) {

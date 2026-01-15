@@ -20,7 +20,7 @@ import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-e
  * Shows eligibility status for authenticated users based on their
  * completed courses/credentials from Andamioscan.
  *
- * API Endpoint (V2): GET /project-v2/public/projects/list
+ * API Endpoint (V2): GET /project-v2/user/projects/list
  * Andamioscan: GET /api/v2/users/{alias}/state
  */
 export default function ProjectCatalogPage() {
@@ -51,9 +51,9 @@ export default function ProjectCatalogPage() {
       setError(null);
 
       try {
-        // V2 API: GET /project-v2/public/projects/list
+        // V2 API: GET /project-v2/user/projects/list
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/projects/list`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/projects/list`
         );
 
         // 404 means no published projects exist yet - treat as empty state, not error

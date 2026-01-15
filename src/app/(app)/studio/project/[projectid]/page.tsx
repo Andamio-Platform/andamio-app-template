@@ -110,7 +110,7 @@ export default function ProjectDashboardPage() {
 
       // Step 1: Try to fetch project directly (V2 API)
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
       );
 
       if (projectResponse.ok) {

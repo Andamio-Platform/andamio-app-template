@@ -114,41 +114,41 @@ export function ModuleWizard({
     setData((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Fetch SLTs - Go API: GET /course/public/slts/list/{policy_id}/{module_code}
+      // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
       const slts = sltsResponse.ok
         ? ((await sltsResponse.json()) as SLTListResponse)
         : [];
 
-      // Fetch assignment - Go API: GET /course/public/assignment/get/{policy_id}/{module_code}
+      // Fetch assignment - Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
       const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/assignment/get/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
       );
       const assignment = assignmentResponse.ok
         ? ((await assignmentResponse.json()) as AssignmentResponse)
         : null;
 
-      // Fetch introduction - Go API: GET /course/public/introduction/get/{policy_id}/{module_code}
+      // Fetch introduction - Go API: GET /course/user/introduction/get/{policy_id}/{module_code}
       const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/introduction/get/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/introduction/get/${courseNftPolicyId}/${moduleCode}`
       );
       const introduction = introResponse.ok
         ? ((await introResponse.json()) as IntroductionResponse)
         : null;
 
-      // Fetch lessons - Go API: GET /course/public/lessons/list/{policy_id}/{module_code}
+      // Fetch lessons - Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lessons/list/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
       const lessons = lessonsResponse.ok
         ? ((await lessonsResponse.json()) as LessonListResponse)
         : [];
 
-      // Refetch module for latest status - Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
+      // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
       const updatedModule = moduleResponse.ok
         ? ((await moduleResponse.json()) as CourseModuleResponse)

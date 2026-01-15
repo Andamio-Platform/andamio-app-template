@@ -23,7 +23,7 @@ import { ProjectEnroll, TaskCommit } from "~/components/transactions";
  * Task Detail Page - Public view of a task with commitment functionality
  *
  * API Endpoints (V2):
- * - GET /project-v2/public/task/:task_hash
+ * - GET /project-v2/user/task/:task_hash
  * - POST /project-v2/contributor/commitment/get (protected)
  */
 export default function TaskDetailPage() {
@@ -55,9 +55,9 @@ export default function TaskDetailPage() {
       setError(null);
 
       try {
-        // V2 API: GET /project-v2/public/task/:task_hash
+        // V2 API: GET /project-v2/user/task/:task_hash
         const taskResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/task/${taskHash}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/task/${taskHash}`
         );
 
         if (!taskResponse.ok) {

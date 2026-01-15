@@ -106,10 +106,10 @@ function ProjectListContent() {
     setError(null);
 
     try {
-      // V2 API: GET /project-v2/public/projects/list
+      // V2 API: GET /project-v2/user/projects/list
       // Returns all ON_CHAIN projects - we filter by ownership using Andamioscan data
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/projects/list`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/projects/list`
       );
 
       if (!response.ok) {

@@ -38,7 +38,7 @@ interface ApiError {
  * Create New Task Page
  *
  * API Endpoints (V2):
- * - GET /project-v2/public/project/:project_id - Get project with states
+ * - GET /project-v2/user/project/:project_id - Get project with states
  * - POST /project-v2/manager/task/create - Create new task
  */
 export default function NewTaskPage() {
@@ -76,9 +76,9 @@ export default function NewTaskPage() {
       setProjectError(null);
 
       try {
-        // V2 API: GET /project-v2/public/project/:project_id
+        // V2 API: GET /project-v2/user/project/:project_id
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
         );
 
         if (!response.ok) {

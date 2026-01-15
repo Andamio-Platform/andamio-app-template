@@ -11,7 +11,7 @@
 |----------|-------|-------------|
 | Health & Auth | 3 | Health check, login session, login validate |
 | User Management | 5 | Access token alias, unconfirmed tx (GET/POST), roles, pending transactions |
-| Course Public | 6 | Published courses, course details, module lists |
+| Course User | 6 | Published courses, course details, module lists |
 | Course Owner | 6 | Create, update, delete, mint, confirm courses |
 | Course Teacher/Modules | 11 | Module CRUD, status updates, publishing, batch ops |
 | SLTs | 7 | SLT CRUD, reordering (public + teacher) |
@@ -20,7 +20,7 @@
 | Assignment Commitments | 10 | Student/teacher/shared commitment workflows |
 | Module Introductions | 5 | Introduction CRUD (public + teacher) |
 | Student Course Status | 2 | Learner course data |
-| Project V2 Public | 3 | Projects list, project details, tasks |
+| Project V2 User | 3 | Projects list, project details, tasks |
 | Project V2 Admin | 3 | Project registration, list, update |
 | Project V2 Manager/Tasks | 3 | Task create, update, delete |
 | Project V2 Manager/Commitments | 2 | Manager commitment workflows |
@@ -46,16 +46,16 @@
 | POST | `/user/init-roles` | Creates all 5 roles for user |
 | GET | `/user/pending-transactions` | Returns all pending blockchain txs |
 
-## Course Public (6)
+## Course User (6)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/courses/list` | All published courses (with NFT policy ID) |
-| GET | `/course/public/course/get/{policy_id}` | Course details by NFT policy ID |
-| GET | `/course/public/course/check/{code}` | Check if course code is in use |
-| GET | `/course/public/course-modules/list/{policy_id}` | All modules for a course with SLT summaries |
-| GET | `/course/public/course-module/get/{policy_id}/{module_code}` | Single module with SLTs |
-| GET | `/course/public/course-modules/assignment-summary/{policy_id}` | Modules with has_assignment flag |
+| GET | `/course/user/courses/list` | All published courses (with NFT policy ID) |
+| GET | `/course/user/course/get/{policy_id}` | Course details by NFT policy ID |
+| GET | `/course/user/course/check/{code}` | Check if course code is in use |
+| GET | `/course/user/course-modules/list/{policy_id}` | All modules for a course with SLT summaries |
+| GET | `/course/user/course-module/get/{policy_id}/{module_code}` | Single module with SLTs |
+| GET | `/course/user/course-modules/assignment-summary/{policy_id}` | Modules with has_assignment flag |
 
 ## Course Owner (6)
 
@@ -88,8 +88,8 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/slts/list/{policy_id}/{module_code}` | All SLTs for a module |
-| GET | `/course/public/slt/get/{policy_id}/{module_code}/{index}` | Single SLT by module index |
+| GET | `/course/user/slts/list/{policy_id}/{module_code}` | All SLTs for a module |
+| GET | `/course/user/slt/get/{policy_id}/{module_code}/{index}` | Single SLT by module index |
 | POST | `/course/teacher/slt/create` | Create new SLT |
 | POST | `/course/teacher/slt/update` | Update SLT text |
 | POST | `/course/teacher/slt/update-index` | Update SLT module index (reorder) |
@@ -100,8 +100,8 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/lessons/list/{policy_id}/{module_code}` | All lessons for a module |
-| GET | `/course/public/lesson/get/{policy_id}/{module_code}/{index}` | Lesson by course/module/SLT index |
+| GET | `/course/user/lessons/list/{policy_id}/{module_code}` | All lessons for a module |
+| GET | `/course/user/lesson/get/{policy_id}/{module_code}/{index}` | Lesson by course/module/SLT index |
 | POST | `/course/teacher/lesson/create` | Create new lesson |
 | POST | `/course/teacher/lesson/update` | Update lesson content |
 | POST | `/course/teacher/lesson/publish` | Toggle lesson live status |
@@ -111,7 +111,7 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/assignment/get/{policy_id}/{module_code}` | Assignment with linked SLTs |
+| GET | `/course/user/assignment/get/{policy_id}/{module_code}` | Assignment with linked SLTs |
 | POST | `/course/teacher/assignment/create` | Create new assignment |
 | POST | `/course/teacher/assignment/update` | Update assignment content |
 | POST | `/course/teacher/assignment/publish` | Toggle assignment live status |
@@ -121,7 +121,7 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}` | Check if assignment has commitments |
+| GET | `/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}` | Check if assignment has commitments |
 | POST | `/course/teacher/assignment-commitments/list-by-course` | All commitments for course (teacher view) |
 | POST | `/course/teacher/assignment-commitment/review` | Approve/reject learner assignment |
 | POST | `/course/student/assignment-commitments/list-by-course` | Learner's commitments for course |
@@ -136,7 +136,7 @@
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/course/public/introduction/get/{policy_id}/{module_code}` | Introduction content for module |
+| GET | `/course/user/introduction/get/{policy_id}/{module_code}` | Introduction content for module |
 | POST | `/course/teacher/introduction/create` | Create new introduction |
 | POST | `/course/teacher/introduction/update` | Update introduction content |
 | POST | `/course/teacher/introduction/publish` | Toggle introduction live status |
@@ -149,13 +149,13 @@
 | POST | `/course/student/courses` | Courses learner is enrolled in |
 | POST | `/course/student/course-status` | Comprehensive course status for learner |
 
-## Project V2 Public (3)
+## Project V2 User (3)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/project-v2/public/projects/list` | All published projects |
-| GET | `/project-v2/public/project/{project_id}` | Get project with states |
-| GET | `/project-v2/public/tasks/{project_state_policy_id}` | All tasks for a project state |
+| GET | `/project-v2/user/projects/list` | All published projects |
+| GET | `/project-v2/user/project/{project_id}` | Get project with states |
+| GET | `/project-v2/user/tasks/{project_state_policy_id}` | All tasks for a project state |
 
 ## Project V2 Admin (3)
 

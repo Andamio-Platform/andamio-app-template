@@ -64,10 +64,10 @@ export function useModuleWizardData({
 
     if (isNewModuleFetch) {
       // For new modules, just fetch course info
-      // Go API: GET /course/public/course/get/{policy_id}
+      // Go API: GET /course/user/course/get/{policy_id}
       try {
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
         );
         const course = courseResponse.ok
           ? ((await courseResponse.json()) as CourseResponse)
@@ -103,49 +103,49 @@ export function useModuleWizardData({
     }
 
     try {
-      // Fetch course - Go API: GET /course/public/course/get/{policy_id}
+      // Fetch course - Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
       );
       const course = courseResponse.ok
         ? ((await courseResponse.json()) as CourseResponse)
         : null;
 
-      // Fetch module - Go API: GET /course/public/course-module/get/{policy_id}/{module_code}
+      // Fetch module - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course-module/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const courseModule = moduleResponse.ok
         ? ((await moduleResponse.json()) as CourseModuleResponse)
         : null;
 
-      // Fetch SLTs - Go API: GET /course/public/slts/list/{policy_id}/{module_code}
+      // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/slts/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const slts = sltsResponse.ok
         ? ((await sltsResponse.json()) as SLTListResponse)
         : [];
 
-      // Fetch assignment - Go API: GET /course/public/assignment/get/{policy_id}/{module_code}
+      // Fetch assignment - Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
       const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/assignment/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const assignment = assignmentResponse.ok
         ? ((await assignmentResponse.json()) as AssignmentResponse)
         : null;
 
-      // Fetch introduction - Go API: GET /course/public/introduction/get/{policy_id}/{module_code}
+      // Fetch introduction - Go API: GET /course/user/introduction/get/{policy_id}/{module_code}
       const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/introduction/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/introduction/get/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const introduction = introResponse.ok
         ? ((await introResponse.json()) as IntroductionResponse)
         : null;
 
-      // Fetch lessons - Go API: GET /course/public/lessons/list/{policy_id}/{module_code}
+      // Fetch lessons - Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/lessons/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const lessons = lessonsResponse.ok
         ? ((await lessonsResponse.json()) as LessonListResponse)

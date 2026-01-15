@@ -877,7 +877,7 @@ All transaction components now use `useAndamioTransaction` for standardized side
 
 **Example Changes**:
 - `POST /course/list` → `GET /course/owner/courses/list`
-- `POST /course/get` → `GET /course/public/course/get/{policy_id}`
+- `POST /course/get` → `GET /course/user/course/get/{policy_id}`
 - `POST /assignment-commitment/create` → `POST /course/student/assignment-commitment/create`
 
 **Files Updated**: 36 files across hooks, components, and pages. Full audit report at `.claude/skills/audit-api-coverage/API-AUDIT-2026-01-10.md`.

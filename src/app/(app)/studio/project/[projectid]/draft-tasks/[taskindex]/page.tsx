@@ -41,7 +41,7 @@ interface ApiError {
  * Edit Draft Task Page
  *
  * API Endpoints (V2):
- * - GET /project-v2/public/project/:project_id - Get project with states
+ * - GET /project-v2/user/project/:project_id - Get project with states
  * - GET /project-v2/manager/tasks/:project_state_policy_id - Get all tasks (including DRAFT)
  * - POST /project-v2/manager/task/update - Update draft task
  */
@@ -84,7 +84,7 @@ export default function EditTaskPage() {
       try {
         // V2 API: Get project first to get project_state_policy_id
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
         );
 
         if (!projectResponse.ok) {

@@ -94,7 +94,7 @@ export default function ManageTreasuryPage() {
     try {
       // V2 API: First get project to find project_state_policy_id
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {

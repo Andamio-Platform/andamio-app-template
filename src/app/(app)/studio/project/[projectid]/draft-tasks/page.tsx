@@ -41,7 +41,7 @@ interface ApiError {
  * Draft Tasks List - View and manage draft tasks for a project
  *
  * API Endpoints (V2):
- * - GET /project-v2/public/tasks/:project_state_policy_id - Get all tasks
+ * - GET /project-v2/user/tasks/:project_state_policy_id - Get all tasks
  * - POST /project-v2/manager/task/delete - Delete draft task
  */
 export default function DraftTasksPage() {
@@ -66,7 +66,7 @@ export default function DraftTasksPage() {
     try {
       // V2 API: First get project to find project_state_policy_id
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {

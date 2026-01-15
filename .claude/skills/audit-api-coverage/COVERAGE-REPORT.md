@@ -24,23 +24,23 @@
 |--------|------|
 | GET | `/health` |
 | POST | `/user/init-roles` |
-| GET | `/course/public/course/check/{code}` |
+| GET | `/course/user/course/check/{code}` |
 | POST | `/course/owner/course/create` |
 | POST | `/course/owner/course/confirm-mint` |
-| GET | `/course/public/course-modules/assignment-summary/{policy_id}` |
+| GET | `/course/user/course-modules/assignment-summary/{policy_id}` |
 | POST | `/course/teacher/course-module/publish` |
 | POST | `/course/teacher/course-module/set-pending-tx` |
 | POST | `/course/teacher/course-module/confirm-tx` |
 | POST | `/course/teacher/course-modules/batch-update-status` |
 | POST | `/course/teacher/course-modules/batch-confirm` |
-| GET | `/course/public/slt/get/{policy_id}/{module_code}/{index}` |
+| GET | `/course/user/slt/get/{policy_id}/{module_code}/{index}` |
 | POST | `/course/teacher/lesson/publish` |
 | POST | `/course/teacher/lesson/delete` |
 | POST | `/course/teacher/assignment/publish` |
 | POST | `/course/teacher/assignment/delete` |
 | POST | `/course/teacher/introduction/publish` |
 | POST | `/course/teacher/introduction/delete` |
-| GET | `/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}` |
+| GET | `/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}` |
 | POST | `/course/teacher/assignment-commitment/review` |
 | ... | *24 more endpoints* |
 

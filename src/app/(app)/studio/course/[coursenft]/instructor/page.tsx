@@ -139,9 +139,9 @@ export default function InstructorDashboardPage() {
     setError(null);
 
     try {
-      // Go API: GET /course/public/course/get/{policy_id}
+      // Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/public/course/get/${courseNftPolicyId}`
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
       );
 
       if (!courseResponse.ok) {

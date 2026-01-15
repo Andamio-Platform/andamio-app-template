@@ -135,7 +135,7 @@ The Go API uses **role-based routing**:
 ```
 
 **Systems**: `auth`, `user`, `course`, `project`
-**Roles**: `public`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
+**Roles**: `user`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
 
 ---
 
@@ -145,12 +145,12 @@ The Go API uses **role-based routing**:
 |----------|-----------------|-------------|--------|
 | Health & Authentication | 3 | 2 | ✅ Mostly Complete |
 | User Management | 4 | 3 | ✅ Migrated |
-| Course Public | 11 | 8 | ✅ Migrated |
+| Course User | 11 | 8 | ✅ Migrated |
 | Course Owner | 7 | 5 | ✅ Migrated |
 | Course Teacher | 22 | 14 | ✅ Migrated |
 | Course Student | 6 | 4 | ✅ Migrated |
 | Course Shared | 3 | 2 | ✅ Migrated |
-| Project V2 Public | 3 | 3 | ✅ Migrated |
+| Project V2 User | 3 | 3 | ✅ Migrated |
 | Project V2 Admin | 3 | 3 | ✅ Migrated |
 | Project V2 Manager | 5 | 3 | ✅ Migrated |
 | Project V2 Contributor | 6 | 1 | ⚠️ Partial |
@@ -178,23 +178,23 @@ The Go API uses **role-based routing**:
 | `/user/init-roles` | POST | `andamio-auth-context.tsx` | ✅ |
 | `/user/pending-transactions` | GET | `use-pending-transactions.ts` | ✅ |
 
-### Course Public ✅
+### Course User ✅
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/course/public/courses/list` | GET | `use-course.ts` | ✅ |
-| `/course/public/course/get/{id}` | GET | `use-course.ts` | ✅ |
-| `/course/public/course/check/{code}` | GET | - | ⏳ |
-| `/course/public/course-modules/list/{id}` | GET | `use-course-module.ts` | ✅ |
-| `/course/public/course-module/get/{id}/{code}` | GET | `use-course-module.ts` | ✅ |
-| `/course/public/course-modules/assignment-summary/{id}` | GET | - | ⏳ |
-| `/course/public/slts/list/{id}/{code}` | GET | `use-slt.ts` | ✅ |
-| `/course/public/slt/get/{id}/{code}/{index}` | GET | - | ⏳ |
-| `/course/public/lessons/list/{id}/{code}` | GET | `use-lesson.ts` | ✅ |
-| `/course/public/lesson/get/{id}/{code}/{index}` | GET | `use-lesson.ts` | ✅ |
-| `/course/public/assignment/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
-| `/course/public/introduction/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
-| `/course/public/assignment-commitment/has-commitments/{id}/{code}` | GET | - | ⏳ |
+| `/course/user/courses/list` | GET | `use-course.ts` | ✅ |
+| `/course/user/course/get/{id}` | GET | `use-course.ts` | ✅ |
+| `/course/user/course/check/{code}` | GET | - | ⏳ |
+| `/course/user/course-modules/list/{id}` | GET | `use-course-module.ts` | ✅ |
+| `/course/user/course-module/get/{id}/{code}` | GET | `use-course-module.ts` | ✅ |
+| `/course/user/course-modules/assignment-summary/{id}` | GET | - | ⏳ |
+| `/course/user/slts/list/{id}/{code}` | GET | `use-slt.ts` | ✅ |
+| `/course/user/slt/get/{id}/{code}/{index}` | GET | - | ⏳ |
+| `/course/user/lessons/list/{id}/{code}` | GET | `use-lesson.ts` | ✅ |
+| `/course/user/lesson/get/{id}/{code}/{index}` | GET | `use-lesson.ts` | ✅ |
+| `/course/user/assignment/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
+| `/course/user/introduction/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
+| `/course/user/assignment-commitment/has-commitments/{id}/{code}` | GET | - | ⏳ |
 
 ### Course Owner ✅
 
@@ -262,13 +262,13 @@ The Go API uses **role-based routing**:
 | `/course/shared/assignment-commitment/update-status` | POST | `use-pending-tx-watcher.ts` | ✅ |
 | `/course/shared/assignment-commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Project V2 Public ✅
+### Project V2 User ✅
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/project-v2/public/projects/list` | GET | `project/page.tsx` | ✅ |
-| `/project-v2/public/project/{project_id}` | GET | `[projectid]/page.tsx` | ✅ |
-| `/project-v2/public/tasks/{project_state_policy_id}` | GET | `[projectid]/page.tsx` | ✅ |
+| `/project-v2/user/projects/list` | GET | `project/page.tsx` | ✅ |
+| `/project-v2/user/project/{project_id}` | GET | `[projectid]/page.tsx` | ✅ |
+| `/project-v2/user/tasks/{project_state_policy_id}` | GET | `[projectid]/page.tsx` | ✅ |
 
 ### Project V2 Admin ✅
 
@@ -307,23 +307,23 @@ The Go API uses **role-based routing**:
 
 | Hook | Endpoints Used |
 |------|----------------|
-| `useCourse` | `/course/public/course/get/{id}` |
-| `usePublishedCourses` | `/course/public/courses/list` |
+| `useCourse` | `/course/user/course/get/{id}` |
+| `usePublishedCourses` | `/course/user/courses/list` |
 | `useOwnedCoursesQuery` | `/course/owner/courses/list` |
 | `useUpdateCourse` | `/course/owner/course/update` |
 | `useDeleteCourse` | `/course/owner/course/delete` |
-| `useCourseModules` | `/course/public/course-modules/list/{id}` |
-| `useCourseModule` | `/course/public/course-module/get/{id}/{code}` |
+| `useCourseModules` | `/course/user/course-modules/list/{id}` |
+| `useCourseModule` | `/course/user/course-module/get/{id}/{code}` |
 | `useCourseModuleMap` | `/course/teacher/course-modules/list` |
 | `useCreateCourseModule` | `/course/teacher/course-module/create` |
 | `useUpdateCourseModule` | `/course/teacher/course-module/update` |
 | `useUpdateCourseModuleStatus` | `/course/teacher/course-module/update-status` |
-| `useSLTs` | `/course/public/slts/list/{id}/{code}` |
+| `useSLTs` | `/course/user/slts/list/{id}/{code}` |
 | `useCreateSLT` | `/course/teacher/slt/create` |
 | `useUpdateSLT` | `/course/teacher/slt/update` |
 | `useDeleteSLT` | `/course/teacher/slt/delete` |
-| `useLessons` | `/course/public/lessons/list/{id}/{code}` |
-| `useLesson` | `/course/public/lesson/get/{id}/{code}/{index}` |
+| `useLessons` | `/course/user/lessons/list/{id}/{code}` |
+| `useLesson` | `/course/user/lesson/get/{id}/{code}/{index}` |
 | `useCreateLesson` | `/course/teacher/lesson/create` |
 | `usePendingTransactions` | `/user/pending-transactions` |
 

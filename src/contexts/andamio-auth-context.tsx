@@ -142,6 +142,7 @@ interface AndamioAuthContextType {
   isAuthenticating: boolean;
   authError: string | null;
   isWalletConnected: boolean;
+  popupBlocked: boolean;
 
   // Actions
   authenticate: () => Promise<void>;
@@ -165,6 +166,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   const [jwt, setJwt] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [popupBlocked, setPopupBlocked] = useState(false);
   // Track if we've attempted auto-auth for this wallet connection
   const [hasAttemptedAutoAuth, setHasAttemptedAutoAuth] = useState(false);
   // Track if JWT validation is in progress (to prevent race condition with auto-auth)
@@ -315,6 +317,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!connected) {
       setHasAttemptedAutoAuth(false);
+      setPopupBlocked(false);
       // Clear auth state but keep JWT for reconnection validation
       if (isAuthenticated) {
         authLogger.info("Wallet disconnected, clearing authenticated state (JWT kept for reconnection)");
@@ -399,6 +402,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setJwt(authResponse.jwt);
       setUser(authResponse.user);
       setIsAuthenticated(true);
+      setPopupBlocked(false);
 
       // Automatically register as Creator and Learner on first login
       await autoRegisterRoles(authResponse.jwt);
@@ -430,9 +434,15 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       console.groupEnd();
     } catch (error) {
       authLogger.error("Authentication failed:", error);
-      setAuthError(
-        error instanceof Error ? error.message : "Authentication failed",
-      );
+      const errorMessage = error instanceof Error ? error.message : "Authentication failed";
+
+      // Detect popup blocked error (Web3Services wallets use popups for signing)
+      if (errorMessage.includes("Failed to open window")) {
+        // Set popupBlocked instead of authError - user can click to retry
+        setPopupBlocked(true);
+      } else {
+        setAuthError(errorMessage);
+      }
       setIsAuthenticated(false);
     } finally {
       setIsAuthenticating(false);
@@ -548,6 +558,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         isAuthenticating,
         authError,
         isWalletConnected: connected,
+        popupBlocked,
         authenticate,
         logout,
         refreshAuth,

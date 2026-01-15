@@ -2,6 +2,7 @@
 
 import React from "react";
 import { CardanoWallet } from "@meshsdk/react";
+import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -19,15 +20,23 @@ import { LoadingIcon } from "~/components/icons";
  * - Authenticated state display
  */
 export function AndamioAuthButton() {
+  const [mounted, setMounted] = React.useState(false);
+  const { resolvedTheme } = useTheme();
   const {
     isAuthenticated,
     user,
     isAuthenticating,
     authError,
     isWalletConnected,
+    popupBlocked,
     authenticate,
     logout,
   } = useAndamioAuth();
+
+  // Prevent hydration mismatch - resolvedTheme is undefined during SSR
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Authenticated state
   if (isAuthenticated && user) {
@@ -61,10 +70,10 @@ export function AndamioAuthButton() {
   }
 
   // Wallet connected but not authenticated
-  // Possible states: authenticating, error, or idle (waiting for user action)
+  // Possible states: authenticating, error, popup blocked, or idle (waiting for user action)
   if (isWalletConnected) {
     // Determine the current state
-    const isIdle = !isAuthenticating && !authError;
+    const isIdle = !isAuthenticating && !authError && !popupBlocked;
 
     let title = "Authenticating...";
     let description = "Please sign the message in your wallet";
@@ -72,6 +81,10 @@ export function AndamioAuthButton() {
     if (authError) {
       title = "Authentication Failed";
       description = "Please try again or reconnect your wallet";
+    } else if (popupBlocked) {
+      // Popup was blocked - show friendly message to retry
+      title = "Sign to Continue";
+      description = "Click below to sign with your wallet";
     } else if (isIdle) {
       title = "Sign to Continue";
       description = "Sign a message with your wallet to authenticate";
@@ -99,13 +112,16 @@ export function AndamioAuthButton() {
               disabled={isAuthenticating}
               className="w-full"
             >
-              {authError ? "Try Again" : "Sign to Authenticate"}
+              {authError ? "Try Again" : "Sign to Continue"}
             </AndamioButton>
           )}
         </AndamioCardContent>
       </AndamioCard>
     );
   }
+
+  // Determine theme only after mounting to prevent hydration mismatch
+  const isDark = mounted && resolvedTheme === "dark";
 
   // No wallet connected
   return (
@@ -117,7 +133,12 @@ export function AndamioAuthButton() {
         </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <CardanoWallet />
+        <CardanoWallet isDark={isDark}
+        web3Services={{
+          networkId: 0,
+          projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
+        }}
+         />
       </AndamioCardContent>
     </AndamioCard>
   );

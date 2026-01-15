@@ -42,7 +42,7 @@ import {
   CloseIcon,
   BlockIcon,
 } from "~/components/icons";
-import { type TreasuryListResponse } from "@andamio/db-api-types";
+import { type ProjectV2Output } from "@andamio/db-api-types";
 import { TasksAssess } from "~/components/transactions";
 
 interface TaskSubmission {
@@ -82,10 +82,10 @@ const formatStatus = (status: string): string => {
  */
 export default function ManagerDashboardPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const projectId = params.projectid as string;
+  const { isAuthenticated } = useAndamioAuth();
 
-  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
+  const [project, setProject] = useState<ProjectV2Output | null>(null);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<TaskSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,24 +112,16 @@ export default function ManagerDashboardPage() {
     setError(null);
 
     try {
-      // Go API: POST /project/owner/treasury/list-owned
-      const projectResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-        }
+      // V2 API: GET /project-v2/public/project/:project_id
+      const projectResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
       );
 
       if (!projectResponse.ok) {
         throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
       }
 
-      const projectsData = (await projectResponse.json()) as TreasuryListResponse;
-      const projectData = projectsData.find(
-        (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-      );
+      const projectData = (await projectResponse.json()) as ProjectV2Output;
 
       if (!projectData) {
         throw new Error("Project not found or you don't have access");
@@ -145,7 +137,7 @@ export default function ManagerDashboardPage() {
       //   {
       //     method: "POST",
       //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
+      //     body: JSON.stringify({ project_id: projectId }),
       //   }
       // );
 
@@ -170,7 +162,7 @@ export default function ManagerDashboardPage() {
       void fetchData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, treasuryNftPolicyId]);
+  }, [isAuthenticated, projectId]);
 
   // Apply filters
   useEffect(() => {
@@ -194,7 +186,7 @@ export default function ManagerDashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioErrorAlert
           title="Authentication Required"
           error="Please connect your wallet to access the manager dashboard."
@@ -212,7 +204,7 @@ export default function ManagerDashboardPage() {
   if (error || !project) {
     return (
       <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioPageHeader title="Manager Dashboard" />
         <AndamioErrorAlert error={error ?? "Project not found"} />
       </div>
@@ -222,11 +214,11 @@ export default function ManagerDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+      <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
 
       <AndamioPageHeader
         title="Manager Dashboard"
-        description={project.title}
+        description={project.title ?? undefined}
       />
 
       {/* Stats Cards */}
@@ -446,7 +438,7 @@ export default function ManagerDashboardPage() {
 
             {/* TasksAssess Transaction Component */}
             <TasksAssess
-              projectNftPolicyId={treasuryNftPolicyId}
+              projectNftPolicyId={projectId}
               contributorStateId={selectedSubmission.contributor_state_id}
               contributorAlias={selectedSubmission.contributor_alias}
               taskHash={selectedSubmission.task_hash}

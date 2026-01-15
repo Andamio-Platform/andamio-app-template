@@ -33,8 +33,8 @@ import type { AndamioTransactionDefinition } from "../../../../types";
  *
  * ## Side Effects
  *
- * **onSubmit**: Create new task commitment with PENDING_TX_COMMITMENT_MADE status
- * **onConfirmation**: Confirm commitment, set status to PENDING_APPROVAL
+ * **onSubmit**: Create commitment and submit for review with evidence (direct commit + submit flow)
+ * **onConfirmation**: Confirm commitment, set status to SUBMITTED
  *
  * ## Critical Flag Pattern
  *

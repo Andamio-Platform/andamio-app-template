@@ -35,7 +35,12 @@ export interface TaskActionProps {
   projectNftPolicyId: string;
 
   /**
-   * Task code for side effects
+   * Task hash (64 char hex) - required for side effects
+   */
+  taskHash: string;
+
+  /**
+   * Task code for display
    */
   taskCode: string;
 
@@ -71,6 +76,7 @@ export interface TaskActionProps {
  * ```tsx
  * <TaskAction
  *   projectNftPolicyId="abc123..."
+ *   taskHash="def456..."
  *   taskCode="TASK_001"
  *   taskTitle="Create Documentation"
  *   taskEvidence={updatedContent}
@@ -80,6 +86,7 @@ export interface TaskActionProps {
  */
 export function TaskAction({
   projectNftPolicyId,
+  taskHash,
   taskCode,
   taskTitle,
   projectInfo,
@@ -121,10 +128,9 @@ export function TaskAction({
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
         project_info: projectInfo,
-        // Side effect params
-        task_code: taskCode,
-        task_evidence: taskEvidence,
-        task_evidence_hash: hash,
+        // Side effect params (matches /project-v2/contributor/commitment/submit)
+        task_hash: taskHash,
+        evidence: taskEvidence,
       },
       onSuccess: async (txResult) => {
         console.log("[TaskAction] Success!", txResult);

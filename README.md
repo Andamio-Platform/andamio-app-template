@@ -64,8 +64,8 @@ andamio-t3-app-template/
 │   │   ├── course/[coursenft]/       # Learner course views
 │   │   ├── studio/                   # Creator Studio
 │   │   │   ├── course/[coursenft]/   # Course editor (tabbed)
-│   │   │   └── project/[treasurynft]/ # Project editor (tabbed)
-│   │   └── project/[treasurynft]/    # Public project views
+│   │   │   └── project/[projectid]/  # Project editor (tabbed)
+│   │   └── project/[projectid]/      # Public project views
 │   │
 │   ├── components/
 │   │   ├── andamio/                  # UI wrappers (68+ components)

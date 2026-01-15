@@ -21,11 +21,12 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
 | `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
 | `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | High | 15 Event endpoints remain unimplemented. Would replace Koios polling with entity-specific confirmation. See GitHub issue #26 |
-| `api-migration-validator` | Validate T3 App endpoints match Go API swagger | **Critical** | Go API migration required updating 14 files. Would fetch swagger.json and compare all endpoint paths/methods against codebase. |
+| ~~`api-migration-validator`~~ | ~~Validate T3 App endpoints match Go API swagger~~ | ~~**Critical**~~ | **PARTIALLY ADDRESSED** 2026-01-14. Project V2 migration done manually. A validator skill would still be valuable for future API version changes. |
 | `learner-journey-guide` | Document and guide student/learner workflows through courses | Medium | New credential claim feature added complexity. Would help document the full learner journey: enroll → commit assignment → teacher review → claim credential. Could include state diagrams and testing scenarios. |
+| `project-v2-guide` | Guide implementation of Project V2 API integrations | Medium | Project V2 API introduced new patterns (project_state_policy_id fetch, states array). Would help document: two-step API pattern, V2 type usage (ProjectV2Output), route parameter conventions. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-14 (transaction-auditor concept validated via manual audit)
+**Updated**: 2026-01-14 (Project V2 migration documentation completed, project-v2-guide skill suggested)
 
 ---
 
@@ -91,12 +92,12 @@ Items that have been addressed and can be archived.
 | Build `global-style-checker` skill | 2025-12-31 | Created SKILL.md and global-overrides.md reference |
 | Add AndamioDashboardStat to extracted-components.md | 2026-01-07 | Documented with props table, usage examples |
 | Add AndamioSearchInput to extracted-components.md | 2026-01-07 | Documented with props table, usage examples |
-| Add Contributor Dashboard route to SITEMAP.md | 2026-01-07 | `/project/[treasurynft]/contributor` with API deps |
-| Add Manager Dashboard route to SITEMAP.md | 2026-01-07 | `/studio/project/[treasurynft]/manager` with API deps |
+| Add Contributor Dashboard route to SITEMAP.md | 2026-01-07 | `/project/[projectid]/contributor` with API deps |
+| Add Manager Dashboard route to SITEMAP.md | 2026-01-07 | `/studio/project/[projectid]/manager` with API deps |
 | Add project transaction components to CHANGELOG.md | 2026-01-07 | 8 new transaction components documented |
 | Add new dashboard components to CHANGELOG.md | 2026-01-07 | AndamioDashboardStat, AndamioSearchInput |
 | Add Task Detail Page Commitment Flow to CHANGELOG.md | 2026-01-07 | Full commitment workflow with evidence editor |
-| Add task detail route to SITEMAP.md | 2026-01-07 | Component details for `/project/[treasurynft]/[taskhash]` |
+| Add task detail route to SITEMAP.md | 2026-01-07 | Component details for `/project/[projectid]/[taskhash]` |
 | Review-styling task detail page | 2026-01-07 | Fixed 5 violations, added to Review History |
 | Update tx-loop-guide SKILL.md with critical behaviors | 2026-01-07 | Added section on automatic issue creation |
 | Add MintModuleTokens to On-Chain tab | 2026-01-07 | Fixed missing UI for module minting |
@@ -152,3 +153,4 @@ Items that have been addressed and can be archived.
 | Create tx-audit-report.md | 2026-01-14 | Comprehensive audit report in audit-api-coverage skill |
 | Fix error.tsx design system compliance | 2026-01-14 | Semantic colors, AndamioButton |
 | Fix pending-tx-popover.tsx design system compliance | 2026-01-14 | bg-yellow-500 → bg-warning |
+| Complete Project V2 API migration documentation | 2026-01-14 | Updated 10+ docs: SITEMAP, ROADMAP, STATUS, route-reference, db-api-endpoints, api-coverage, README, CHANGELOG. Routes renamed [treasurynft] → [projectid], API endpoints /project/* → /project-v2/* |

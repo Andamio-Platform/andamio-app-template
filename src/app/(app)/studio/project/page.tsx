@@ -44,13 +44,11 @@ import {
   SettingsIcon,
   AddIcon,
   SuccessIcon,
-  PendingIcon,
   RefreshIcon,
-  OnChainIcon,
   LoadingIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { type TreasuryListResponse } from "@andamio/db-api-types";
+import { type ProjectV2Output } from "@andamio/db-api-types";
 import { CreateProject } from "~/components/transactions";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
@@ -60,7 +58,7 @@ import { getTokenExplorerUrl } from "~/lib/constants";
  */
 interface HybridProjectStatus {
   projectId: string;
-  title: string | null;
+  title: string | null | undefined;
   /** Project exists in our database */
   inDb: boolean;
   /** Project found on-chain via Andamioscan */
@@ -72,7 +70,7 @@ interface HybridProjectStatus {
   /** Whether user is the admin/owner (vs just a manager) */
   isOwned: boolean;
   /** Full DB project data if available */
-  dbProject?: TreasuryListResponse[number];
+  dbProject?: ProjectV2Output;
 }
 
 /**
@@ -80,11 +78,11 @@ interface HybridProjectStatus {
  */
 function ProjectListContent() {
   const router = useRouter();
-  const { user, authenticatedFetch } = useAndamioAuth();
+  const { user } = useAndamioAuth();
   const alias = user?.accessTokenAlias ?? undefined;
 
   // DB projects (immediate after minting)
-  const [dbProjects, setDbProjects] = useState<TreasuryListResponse>([]);
+  const [dbProjects, setDbProjects] = useState<ProjectV2Output[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -108,108 +106,80 @@ function ProjectListContent() {
     setError(null);
 
     try {
-      // Go API: POST /project/owner/treasury/list-owned
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
+      // V2 API: GET /project-v2/public/projects/list
+      // Returns all ON_CHAIN projects - we filter by ownership using Andamioscan data
+      const response = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/projects/list`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as TreasuryListResponse;
+      const data = (await response.json()) as ProjectV2Output[];
       setDbProjects(data ?? []);
     } catch (err) {
-      console.error("Error fetching owned projects:", err);
+      console.error("Error fetching projects:", err);
       setError(err instanceof Error ? err.message : "Failed to load projects");
     } finally {
       setIsLoadingDb(false);
     }
-  }, [authenticatedFetch]);
+  }, []);
 
   useEffect(() => {
     void fetchDbProjects();
   }, [fetchDbProjects]);
 
-  // Merge and dedupe projects from both sources
+  // Merge projects from on-chain sources (owned + managed) with DB metadata
+  // Only shows projects where user has on-chain ownership or management role
   const hybridProjects = useMemo<HybridProjectStatus[]>(() => {
     const projectMap = new Map<string, HybridProjectStatus>();
 
-    // Create set of owned project IDs for quick lookup
-    const ownedProjectIds = new Set(
-      (ownedOnChainProjects ?? []).map((p) => p.project_id)
+    // Create lookup maps for DB projects
+    const dbProjectMap = new Map(
+      dbProjects
+        .filter((p): p is typeof p & { project_id: string } => !!p.project_id)
+        .map((p) => [p.project_id, p])
     );
 
-    // First, add all DB projects (these show up immediately after mint)
-    for (const dbProject of dbProjects) {
-      if (dbProject.treasury_nft_policy_id) {
-        projectMap.set(dbProject.treasury_nft_policy_id, {
-          projectId: dbProject.treasury_nft_policy_id,
-          title: dbProject.title,
-          inDb: true,
-          onChain: false,
-          admin: null,
-          managers: [],
-          isOwned: ownedProjectIds.has(dbProject.treasury_nft_policy_id),
+    // Add on-chain owned projects (user is admin)
+    if (ownedOnChainProjects) {
+      for (const onChainProject of ownedOnChainProjects) {
+        const dbProject = dbProjectMap.get(onChainProject.project_id);
+        projectMap.set(onChainProject.project_id, {
+          projectId: onChainProject.project_id,
+          title: dbProject?.title ?? null,
+          inDb: !!dbProject,
+          onChain: true,
+          admin: onChainProject.admin,
+          managers: onChainProject.managers,
+          isOwned: true,
           dbProject,
         });
       }
     }
 
-    // Then, merge in on-chain owned projects
-    if (ownedOnChainProjects) {
-      for (const onChainProject of ownedOnChainProjects) {
-        const existing = projectMap.get(onChainProject.project_id);
-        if (existing) {
-          existing.onChain = true;
-          existing.admin = onChainProject.admin;
-          existing.managers = onChainProject.managers;
-          existing.isOwned = true;
-        } else {
-          // On-chain project not in DB (needs registration)
-          projectMap.set(onChainProject.project_id, {
-            projectId: onChainProject.project_id,
-            title: null,
-            inDb: false,
-            onChain: true,
-            admin: onChainProject.admin,
-            managers: onChainProject.managers,
-            isOwned: true,
-          });
-        }
-      }
-    }
-
-    // Merge in on-chain managing projects (user is manager but not owner)
+    // Add on-chain managing projects (user is manager but not owner)
     if (managingOnChainProjects) {
       for (const onChainProject of managingOnChainProjects) {
-        const existing = projectMap.get(onChainProject.project_id);
-        if (existing) {
-          existing.onChain = true;
-          existing.admin = onChainProject.admin;
-          existing.managers = onChainProject.managers;
-          // Don't override isOwned if already set
-        } else {
-          // On-chain project not in DB
-          projectMap.set(onChainProject.project_id, {
-            projectId: onChainProject.project_id,
-            title: null,
-            inDb: false,
-            onChain: true,
-            admin: onChainProject.admin,
-            managers: onChainProject.managers,
-            isOwned: false, // User is manager, not owner
-          });
-        }
+        // Skip if already added as owned
+        if (projectMap.has(onChainProject.project_id)) continue;
+
+        const dbProject = dbProjectMap.get(onChainProject.project_id);
+        projectMap.set(onChainProject.project_id, {
+          projectId: onChainProject.project_id,
+          title: dbProject?.title ?? null,
+          inDb: !!dbProject,
+          onChain: true,
+          admin: onChainProject.admin,
+          managers: onChainProject.managers,
+          isOwned: false, // User is manager, not owner
+          dbProject,
+        });
       }
     }
 
-    // Sort: DB projects first, then by projectId
+    // Sort: DB projects first (have title), then by projectId
     return Array.from(projectMap.values()).sort((a, b) => {
       if (a.inDb && !b.inDb) return -1;
       if (!a.inDb && b.inDb) return 1;
@@ -231,9 +201,9 @@ function ProjectListContent() {
 
   // Stats
   const totalCount = hybridProjects.length;
-  const onChainCount = hybridProjects.filter((p) => p.onChain).length;
-  const pendingCount = hybridProjects.filter((p) => p.inDb && !p.onChain).length;
-  const unregisteredCount = hybridProjects.filter((p) => !p.inDb && p.onChain && p.isOwned).length;
+  const unregisteredCount = hybridProjects.filter((p) => !p.inDb && p.isOwned).length;
+  const ownedCount = hybridProjects.filter((p) => p.isOwned).length;
+  const managingCount = hybridProjects.filter((p) => !p.isOwned).length;
 
   // Loading state (only show when no data yet)
   if (isLoading && hybridProjects.length === 0) {
@@ -293,21 +263,15 @@ function ProjectListContent() {
             {/* Status badges */}
             {!isLoading && totalCount > 0 && (
               <div className="flex gap-2">
-                <AndamioBadge variant="secondary">
-                  {onChainCount} on-chain
-                </AndamioBadge>
-                {pendingCount > 0 && (
-                  <AndamioTooltip>
-                    <AndamioTooltipTrigger asChild>
-                      <AndamioBadge variant="outline" className="text-info border-info">
-                        <PendingIcon className="h-3 w-3 mr-1" />
-                        {pendingCount} syncing
-                      </AndamioBadge>
-                    </AndamioTooltipTrigger>
-                    <AndamioTooltipContent>
-                      <p>Waiting for blockchain indexer to confirm</p>
-                    </AndamioTooltipContent>
-                  </AndamioTooltip>
+                {ownedCount > 0 && (
+                  <AndamioBadge variant="default">
+                    {ownedCount} owned
+                  </AndamioBadge>
+                )}
+                {managingCount > 0 && (
+                  <AndamioBadge variant="secondary">
+                    {managingCount} managing
+                  </AndamioBadge>
                 )}
                 {unregisteredCount > 0 && (
                   <AndamioTooltip>
@@ -358,7 +322,7 @@ function ProjectListContent() {
             <AndamioTableRow>
               <AndamioTableHead className="w-[50px]">Status</AndamioTableHead>
               <AndamioTableHead>Title</AndamioTableHead>
-              <AndamioTableHead>Treasury NFT Policy ID</AndamioTableHead>
+              <AndamioTableHead>Project ID</AndamioTableHead>
               <AndamioTableHead className="text-center hidden md:table-cell">Role</AndamioTableHead>
               <AndamioTableHead className="text-right">Actions</AndamioTableHead>
             </AndamioTableRow>
@@ -390,20 +354,13 @@ function HybridProjectRow({
 }) {
   const truncatedId = `${project.projectId.slice(0, 8)}...${project.projectId.slice(-8)}`;
 
-  // Determine status icon
+  // Determine status icon - all projects are on-chain (that's the source of truth)
   const getStatusIcon = () => {
-    if (project.inDb && project.onChain) {
-      // Fully synced
+    if (project.inDb) {
+      // Registered in database
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
           <SuccessIcon className="h-4 w-4 text-success" />
-        </div>
-      );
-    } else if (project.inDb && !project.onChain) {
-      // In DB but not yet on-chain (syncing)
-      return (
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/10">
-          <PendingIcon className="h-4 w-4 text-info animate-pulse" />
         </div>
       );
     } else {
@@ -418,10 +375,8 @@ function HybridProjectRow({
 
   // Determine status text
   const getStatusText = () => {
-    if (project.inDb && project.onChain) {
-      return <span className="text-xs text-success">Confirmed</span>;
-    } else if (project.inDb && !project.onChain) {
-      return <span className="text-xs text-info">Syncing...</span>;
+    if (project.inDb) {
+      return <span className="text-xs text-success">Registered</span>;
     } else {
       return <span className="text-xs text-warning">Unregistered</span>;
     }
@@ -501,15 +456,16 @@ function RegisterProjectDrawer({
 
     setIsSubmitting(true);
     try {
-      // Go API: POST /project/owner/treasury/mint
+      // V2 API: POST /project-v2/admin/project/register
+      // Registers an existing on-chain project into the database with a title
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/mint`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/project/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            project_id: projectId,
             title: title.trim(),
-            treasury_nft_policy_id: projectId,
           }),
         }
       );
@@ -559,7 +515,7 @@ function RegisterProjectDrawer({
           <div className="space-y-4 px-4">
             {/* Project ID display */}
             <div className="rounded-lg border bg-muted/50 p-3">
-              <AndamioText variant="small" className="text-xs mb-1">Treasury NFT Policy ID</AndamioText>
+              <AndamioText variant="small" className="text-xs mb-1">Project ID</AndamioText>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-mono flex-1 truncate">
                   {truncatedId}
@@ -587,7 +543,7 @@ function RegisterProjectDrawer({
                 autoFocus
               />
               <AndamioText variant="small" className="text-xs">
-                You can change this later. This just gets your project registered.
+                You can change this later in project settings.
               </AndamioText>
             </div>
           </div>
@@ -625,8 +581,8 @@ function RegisterProjectDrawer({
 /**
  * Project Studio Page - Lists projects owned/managed by the authenticated user
  *
- * API Endpoint: POST /projects/list-owned (protected)
- * Type Reference: TreasuryListResponse from @andamio/db-api
+ * API Endpoint (V2): POST /project-v2/admin/projects/list
+ * Type Reference: ProjectV2Output from @andamio/db-api-types
  */
 export default function ProjectStudioPage() {
   return (

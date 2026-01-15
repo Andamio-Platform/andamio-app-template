@@ -31,6 +31,16 @@ const projectDataSchema = zod_1.z.object({
     native_assets: listValueSchema,
 });
 /**
+ * Prerequisite schema - Course completion requirements for project
+ *
+ * @property course_id - Course NFT policy ID (56 char hex)
+ * @property assignment_ids - Array of assignment/module hashes required
+ */
+const prerequisiteSchema = zod_1.z.object({
+    course_id: zod_1.z.string().length(56),
+    assignment_ids: zod_1.z.array(zod_1.z.string()),
+});
+/**
  * PROJECT_MANAGER_TASKS_MANAGE Transaction Definition
  *
  * Project managers add or remove tasks from a project.
@@ -43,7 +53,8 @@ const projectDataSchema = zod_1.z.object({
  * {
  *   "alias": "manager1",                  // Manager's access token alias
  *   "project_id": "abc123...",            // Project NFT policy ID (56 char hex)
- *   "contributor_state_id": "def456...",  // Contributor state policy ID (56 char hex) - from Andamioscan
+ *   "contributor_state_id": "def456...",  // Contributor state policy ID (56 char hex)
+ *   "prerequisites": [],                  // Course prerequisites (from Andamioscan, [] if none)
  *   "tasks_to_add": [{
  *     "project_content": "Task description text",  // Task content (max 140 chars)
  *     "expiration_time": 1735689600000,            // Unix timestamp in MILLISECONDS
@@ -107,7 +118,8 @@ exports.PROJECT_MANAGER_TASKS_MANAGE = {
             txParams: zod_1.z.object({
                 alias: zod_1.z.string().min(1).max(31), // Manager's alias
                 project_id: zod_1.z.string().length(56), // Project NFT policy ID (hex)
-                contributor_state_id: zod_1.z.string().length(56), // Contributor state ID (required - get from Andamioscan)
+                contributor_state_id: zod_1.z.string().length(56), // Contributor state ID
+                prerequisites: zod_1.z.array(prerequisiteSchema), // Course prerequisites ([] if none)
                 tasks_to_add: zod_1.z.array(projectDataSchema), // Array of ProjectData objects
                 tasks_to_remove: zod_1.z.array(projectDataSchema), // Array of ProjectData objects (NOT just hashes!)
                 deposit_value: listValueSchema, // Required ListValue array

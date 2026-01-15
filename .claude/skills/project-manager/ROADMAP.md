@@ -94,7 +94,7 @@ See `STATUS.md` for Monday Planning priorities.
 ```
 Phase 1: Course & Learning System ━━━━━━━━━━━━━━━━ ✅ Complete (15/15 routes)
 Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━━ ✅ Complete (Go API migrated)
-Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (6/13 routes, 9/9 tx)
+Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (10/13 routes, 9/9 tx)
 Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 
@@ -161,13 +161,17 @@ Full project/task/contributor workflow.
 
 ### What's Implemented
 
-**Routes** (6/13 complete):
+**Routes** (10/13 complete):
 - ✅ `/project` - Project catalog
-- ✅ `/project/[treasurynft]` - Project detail with role detection
-- ✅ `/project/[treasurynft]/contributor` - Contributor dashboard
+- ✅ `/project/[projectid]` - Project detail with role detection
+- ✅ `/project/[projectid]/contributor` - Contributor dashboard
+- ✅ `/project/[projectid]/[taskhash]` - Task detail with commitment
 - ✅ `/studio/project` - Project management
-- ✅ `/studio/project/[treasurynft]` - Project dashboard (owner/manager aware)
-- ✅ `/studio/project/[treasurynft]/manager` - Manager dashboard
+- ✅ `/studio/project/[projectid]` - Project dashboard (owner/manager aware)
+- ✅ `/studio/project/[projectid]/manager` - Manager dashboard
+- ✅ `/studio/project/[projectid]/draft-tasks` - Task list management
+- ✅ `/studio/project/[projectid]/draft-tasks/new` - Create new task
+- ✅ `/studio/project/[projectid]/draft-tasks/[taskindex]` - Edit task
 
 **Transaction Components** (9/9 complete):
 - ✅ `CreateProject` - Create project treasury
@@ -180,18 +184,12 @@ Full project/task/contributor workflow.
 - ✅ `ManagersManage` - Manager: manage managers
 - ✅ `BlacklistManage` - Manager: manage blacklist
 
-### Remaining Routes (7)
-
-**Public**:
-- `/project/[treasurynft]/[taskhash]` - Task detail with commitment
+### Remaining Routes (3)
 
 **Studio**:
-- `/studio/project/[treasurynft]/draft-tasks` - Task list management
-- `/studio/project/[treasurynft]/draft-tasks/new` - Create new task
-- `/studio/project/[treasurynft]/draft-tasks/[taskindex]` - Edit task
-- `/studio/project/[treasurynft]/manage-treasury` - Treasury management
-- `/studio/project/[treasurynft]/manage-contributors` - Contributor management
-- `/studio/project/[treasurynft]/commitments` - Commitment review
+- `/studio/project/[projectid]/manage-treasury` - Treasury management
+- `/studio/project/[projectid]/manage-contributors` - Contributor management
+- `/studio/project/[projectid]/commitments` - Commitment review
 
 ---
 

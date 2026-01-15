@@ -62,8 +62,9 @@ export interface ProjectEnrollProps {
 
   /**
    * Task evidence content (Tiptap JSON)
+   * May be null if user hasn't entered evidence yet
    */
-  taskEvidence: JSONContent;
+  taskEvidence: JSONContent | null;
 
   /**
    * Callback fired when enrollment is successful
@@ -119,30 +120,63 @@ export function ProjectEnroll({
   }, [taskEvidence]);
 
   const handleEnroll = async () => {
+    console.log("[ProjectEnroll] ========== HANDLE ENROLL START ==========");
+    console.log("[ProjectEnroll] Component props:", {
+      projectNftPolicyId,
+      projectNftPolicyId_length: projectNftPolicyId.length,
+      contributorStateId,
+      contributorStateId_length: contributorStateId.length,
+      taskHash,
+      taskHash_length: taskHash.length,
+      taskCode,
+      taskTitle,
+      hasEvidence: !!taskEvidence,
+      evidenceKeys: taskEvidence ? Object.keys(taskEvidence) : [],
+    });
+
     if (!user?.accessTokenAlias) {
+      console.error("[ProjectEnroll] No user access token alias");
       return;
     }
+    console.log("[ProjectEnroll] User alias:", user.accessTokenAlias);
 
     if (!taskEvidence || Object.keys(taskEvidence).length === 0) {
+      console.error("[ProjectEnroll] No task evidence provided");
       toast.error("Task evidence is required");
       return;
     }
 
     const hash = computeAssignmentInfoHash(taskEvidence);
+    console.log("[ProjectEnroll] Computed evidence hash:", hash, "length:", hash.length);
     setEvidenceHash(hash);
+
+    const txParams = {
+      // Transaction API params (snake_case per V2 API)
+      alias: user.accessTokenAlias,
+      project_id: projectNftPolicyId,
+      contributor_state_id: contributorStateId,
+      task_hash: taskHash,
+      task_info: hash,
+      // Side effect params
+      evidence: taskEvidence,
+    };
+
+    console.log("[ProjectEnroll] Transaction params:", {
+      alias: txParams.alias,
+      project_id: txParams.project_id,
+      project_id_length: txParams.project_id.length,
+      contributor_state_id: txParams.contributor_state_id,
+      contributor_state_id_length: txParams.contributor_state_id.length,
+      task_hash: txParams.task_hash,
+      task_hash_length: txParams.task_hash.length,
+      task_info: txParams.task_info,
+      task_info_length: txParams.task_info.length,
+      hasEvidence: !!txParams.evidence,
+    });
 
     await execute({
       definition: PROJECT_CONTRIBUTOR_TASK_COMMIT,
-      params: {
-        // Transaction API params (snake_case per V2 API)
-        alias: user.accessTokenAlias,
-        project_id: projectNftPolicyId,
-        contributor_state_id: contributorStateId,
-        task_hash: taskHash,
-        task_info: hash,
-        // Side effect params
-        evidence: taskEvidence,
-      },
+      params: txParams,
       onSuccess: async (txResult) => {
         console.log("[ProjectEnroll] Success!", txResult);
 

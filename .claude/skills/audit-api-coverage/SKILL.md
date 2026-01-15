@@ -54,6 +54,14 @@ This will:
 3. Scan `packages/andamio-transactions/` for TX API usage
 4. Generate `COVERAGE-REPORT.md` and `coverage-report.json`
 
+### Excluded Endpoints
+
+The audit script excludes deprecated endpoints from coverage tracking:
+
+- **V1 Project endpoints** (`/project/public/*`, `/project/owner/*`, etc.) - Deprecated in favor of V2 (`/project-v2/*`). The T3 App Template uses only V2 Project endpoints as of January 2026.
+
+To modify exclusions, edit `DB_API_EXCLUDE_PATTERNS` in `scripts/audit-coverage.ts`.
+
 ## Implementation Locations
 
 | API | Implementation | Pattern |

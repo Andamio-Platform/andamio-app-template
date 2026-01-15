@@ -12,29 +12,27 @@ import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioBac
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor } from "~/components/editor";
-import { SuccessIcon, PendingIcon, TokenIcon, TaskIcon, TeacherIcon, EditIcon } from "~/components/icons";
-import { type TaskResponse, type TaskCommitmentResponse } from "@andamio/db-api-types";
+import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icons";
+import { type ProjectTaskV2Output, type CommitmentV2Output } from "@andamio/db-api-types";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { ProjectEnroll, TaskCommit } from "~/components/transactions";
 
-type TaskListOutput = TaskResponse[];
-
 /**
  * Task Detail Page - Public view of a task with commitment functionality
  *
- * API Endpoints:
- * - POST /tasks/list (public) - Get task by filtering
- * - POST /task-commitments/get (protected) - Get user's commitment
+ * API Endpoints (V2):
+ * - GET /project-v2/public/task/:task_hash
+ * - POST /project-v2/contributor/commitment/get (protected)
  */
 export default function TaskDetailPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
   const taskHash = params.taskhash as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [task, setTask] = useState<TaskResponse | null>(null);
-  const [commitment, setCommitment] = useState<TaskCommitmentResponse | null>(null);
+  const [task, setTask] = useState<ProjectTaskV2Output | null>(null);
+  const [commitment, setCommitment] = useState<CommitmentV2Output | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,29 +51,23 @@ export default function TaskDetailPage() {
       setError(null);
 
       try {
-        // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-        const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
+        // V2 API: GET /project-v2/public/task/:task_hash
+        const taskResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/task/${taskHash}`
         );
 
-        if (!tasksResponse.ok) {
-          throw new Error("Failed to fetch tasks");
+        if (!taskResponse.ok) {
+          throw new Error("Failed to fetch task");
         }
 
-        const tasks = (await tasksResponse.json()) as TaskListOutput;
-        const taskData = tasks.find((t) => t.task_hash === taskHash);
-
-        if (!taskData) {
-          throw new Error("Task not found");
-        }
-
+        const taskData = (await taskResponse.json()) as ProjectTaskV2Output;
         setTask(taskData);
 
         // If authenticated, fetch commitment status
         if (isAuthenticated) {
           try {
             const commitmentResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -84,7 +76,7 @@ export default function TaskDetailPage() {
             );
 
             if (commitmentResponse.ok) {
-              const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
+              const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
               setCommitment(commitmentData);
             }
           } catch {
@@ -101,7 +93,7 @@ export default function TaskDetailPage() {
     };
 
     void fetchTaskAndCommitment();
-  }, [treasuryNftPolicyId, taskHash, isAuthenticated, authenticatedFetch]);
+  }, [projectId, taskHash, isAuthenticated, authenticatedFetch]);
 
   // Helper to format POSIX timestamp
   const formatTimestamp = (timestamp: string): string => {
@@ -133,7 +125,7 @@ export default function TaskDetailPage() {
   if (error || !task) {
     return (
       <div className="space-y-6">
-        <AndamioBackButton href={`/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/project/${projectId}`} label="Back to Project" />
         <AndamioErrorAlert error={error ?? "Task not found"} />
       </div>
     );
@@ -143,10 +135,10 @@ export default function TaskDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <AndamioBackButton href={`/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/project/${projectId}`} label="Back to Project" />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            #{task.task_index}
+            #{task.index}
           </AndamioBadge>
           <AndamioBadge variant="default">
             {task.status === "ON_CHAIN" ? "Live" : task.status}
@@ -157,11 +149,11 @@ export default function TaskDetailPage() {
       {/* Task Title and Description */}
       <AndamioPageHeader
         title={task.title}
-        description={task.description ?? undefined}
+        description={task.content ?? undefined}
       />
 
       {/* Task Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <AndamioDashboardStat
           icon={TokenIcon}
           label="Reward"
@@ -175,14 +167,9 @@ export default function TaskDetailPage() {
         />
         <AndamioDashboardStat
           icon={TeacherIcon}
-          label="Commitments"
-          value={`${task.num_allowed_commitments} / ${task.num_allowed_commitments}`}
+          label="Created By"
+          value={task.created_by?.slice(0, 12) + "..." || "Unknown"}
           iconColor="info"
-        />
-        <AndamioDashboardStat
-          icon={TaskIcon}
-          label="Criteria"
-          value={`${task.acceptance_criteria?.length ?? 0} items`}
         />
       </div>
 
@@ -205,25 +192,6 @@ export default function TaskDetailPage() {
         </AndamioCard>
       )}
 
-      {/* Acceptance Criteria */}
-      {task.acceptance_criteria && task.acceptance_criteria.length > 0 && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle>Acceptance Criteria</AndamioCardTitle>
-            <AndamioCardDescription>What you need to deliver to complete this task</AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <ul className="space-y-2">
-              {task.acceptance_criteria.map((criterion, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <SuccessIcon className="h-4 w-4 mt-1 text-muted-foreground" />
-                  <AndamioText as="span">{criterion}</AndamioText>
-                </li>
-              ))}
-            </ul>
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
 
       {/* Token Rewards (if any) */}
       {task.tokens && task.tokens.length > 0 && (
@@ -345,10 +313,10 @@ export default function TaskDetailPage() {
           {evidence && Object.keys(evidence).length > 0 && (
             isEnrolled ? (
               <TaskCommit
-                projectNftPolicyId={treasuryNftPolicyId}
+                projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
-                taskCode={`TASK_${task.task_index}`}
+                taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 onSuccess={async () => {
@@ -356,7 +324,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -364,7 +332,7 @@ export default function TaskDetailPage() {
                       }
                     );
                     if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
+                      const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
                       setCommitment(commitmentData);
                     }
                   } catch {
@@ -374,10 +342,10 @@ export default function TaskDetailPage() {
               />
             ) : (
               <ProjectEnroll
-                projectNftPolicyId={treasuryNftPolicyId}
+                projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
-                taskCode={`TASK_${task.task_index}`}
+                taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 onSuccess={async () => {
@@ -386,7 +354,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/contributor/task-commitment/get`,
+                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -394,7 +362,7 @@ export default function TaskDetailPage() {
                       }
                     );
                     if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as TaskCommitmentResponse;
+                      const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
                       setCommitment(commitmentData);
                     }
                   } catch {

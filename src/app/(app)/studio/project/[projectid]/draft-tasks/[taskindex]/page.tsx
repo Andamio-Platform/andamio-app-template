@@ -26,16 +26,12 @@ import {
   AndamioSaveButton,
   AndamioText,
   AndamioBackButton,
-  AndamioRemoveButton,
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { AddIcon } from "~/components/icons";
-import { type TaskResponse } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output, type ProjectV2Output } from "@andamio/db-api-types";
 import type { JSONContent } from "@tiptap/core";
-
-type TaskListOutput = TaskResponse[];
 
 interface ApiError {
   message?: string;
@@ -44,34 +40,34 @@ interface ApiError {
 /**
  * Edit Draft Task Page
  *
- * API Endpoints:
- * - POST /tasks/list (public) - Get task by index
- * - POST /tasks/update (protected) - Update draft task
+ * API Endpoints (V2):
+ * - GET /project-v2/public/project/:project_id - Get project with states
+ * - GET /project-v2/manager/tasks/:project_state_policy_id - Get all tasks (including DRAFT)
+ * - POST /project-v2/manager/task/update - Update draft task
  */
 export default function EditTaskPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
   const taskIndex = parseInt(params.taskindex as string);
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   // Task state
-  const [task, setTask] = useState<TaskResponse | null>(null);
+  const [task, setTask] = useState<ProjectTaskV2Output | null>(null);
+  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [content, setContent] = useState("");
   const [lovelace, setLovelace] = useState("1000000");
   const [expirationTime, setExpirationTime] = useState("");
-  const [acceptanceCriteria, setAcceptanceCriteria] = useState<string[]>([""]);
-  const [numAllowedCommitments, setNumAllowedCommitments] = useState(1);
 
   // Content state for editor
   const [contentJson, setContentJson] = useState<JSONContent | null>(null);
 
-  const handleContentChange = (content: JSONContent) => {
-    setContentJson(content);
+  const handleContentChange = (newContent: JSONContent) => {
+    setContentJson(newContent);
   };
 
   // Save state
@@ -86,17 +82,36 @@ export default function EditTaskPage() {
       setLoadError(null);
 
       try {
-        // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-        const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
+        // V2 API: Get project first to get project_state_policy_id
+        const projectResponse = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
         );
 
-        if (!response.ok) {
+        if (!projectResponse.ok) {
+          throw new Error("Failed to fetch project");
+        }
+
+        const project = (await projectResponse.json()) as ProjectV2Output;
+        const statePolicyId = project.states?.[0]?.project_state_policy_id;
+
+        if (!statePolicyId) {
+          throw new Error("Project has no states");
+        }
+
+        setProjectStatePolicyId(statePolicyId);
+
+        // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+        // Manager endpoint returns all tasks including DRAFT status
+        const tasksResponse = await authenticatedFetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${statePolicyId}`
+        );
+
+        if (!tasksResponse.ok) {
           throw new Error("Failed to fetch tasks");
         }
 
-        const tasks = (await response.json()) as TaskListOutput;
-        const taskData = tasks.find((t) => t.task_index === taskIndex);
+        const tasks = (await tasksResponse.json()) as ProjectTaskV2Output[];
+        const taskData = tasks.find((t) => t.index === taskIndex);
 
         if (!taskData) {
           throw new Error("Task not found");
@@ -108,11 +123,9 @@ export default function EditTaskPage() {
 
         setTask(taskData);
         setTitle(taskData.title);
-        setDescription(taskData.description ?? "");
+        setContent(taskData.content ?? "");
         setLovelace(taskData.lovelace);
         setExpirationTime(taskData.expiration_time);
-        setAcceptanceCriteria(taskData.acceptance_criteria && taskData.acceptance_criteria.length > 0 ? taskData.acceptance_criteria : [""]);
-        setNumAllowedCommitments(taskData.num_allowed_commitments);
         setContentJson((taskData.content_json as JSONContent) ?? null);
       } catch (err) {
         console.error("Error fetching task:", err);
@@ -123,24 +136,7 @@ export default function EditTaskPage() {
     };
 
     void fetchTask();
-  }, [treasuryNftPolicyId, taskIndex]);
-
-  // Acceptance criteria handlers
-  const addCriterion = () => {
-    setAcceptanceCriteria([...acceptanceCriteria, ""]);
-  };
-
-  const updateCriterion = (index: number, value: string) => {
-    const updated = [...acceptanceCriteria];
-    updated[index] = value;
-    setAcceptanceCriteria(updated);
-  };
-
-  const removeCriterion = (index: number) => {
-    if (acceptanceCriteria.length > 1) {
-      setAcceptanceCriteria(acceptanceCriteria.filter((_, i) => i !== index));
-    }
-  };
+  }, [projectId, taskIndex]);
 
   // Calculate ADA from lovelace
   const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
@@ -148,40 +144,34 @@ export default function EditTaskPage() {
   // Form validation
   const isValid =
     title.trim().length > 0 &&
-    description.trim().length > 0 &&
     parseInt(lovelace) >= 1000000 &&
-    expirationTime.trim().length > 0 &&
-    acceptanceCriteria.filter((c) => c.trim().length > 0).length > 0;
+    expirationTime.trim().length > 0;
 
   const handleSave = async () => {
-    if (!isAuthenticated || !isValid) return;
+    if (!isAuthenticated || !isValid || !projectStatePolicyId || !task) return;
 
     setIsSaving(true);
     setSaveError(null);
 
     try {
-      // Filter out empty acceptance criteria
-      const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
+      // V2 API: POST /project-v2/manager/task/update
+      // Use task.index from loaded task data, not URL param
+      const requestBody = {
+        project_state_policy_id: projectStatePolicyId,
+        index: task.index,
+        title: title.trim(),
+        content: content.trim() || undefined,
+        lovelace: lovelace,
+        expiration_time: expirationTime,
+        content_json: contentJson,
+      };
 
-      // Go API: POST /project/manager/task/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            treasury_nft_policy_id: treasuryNftPolicyId,
-            task_index: taskIndex,
-            data: {
-              title: title.trim(),
-              description: description.trim(),
-              lovelace: lovelace,
-              expiration_time: expirationTime,
-              acceptance_criteria: validCriteria,
-              num_allowed_commitments: numAllowedCommitments,
-              content_json: contentJson,
-            },
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -204,7 +194,7 @@ export default function EditTaskPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          href={`/studio/project/${projectId}/draft-tasks`}
           label="Back to Tasks"
         />
 
@@ -230,7 +220,7 @@ export default function EditTaskPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          href={`/studio/project/${projectId}/draft-tasks`}
           label="Back to Tasks"
         />
 
@@ -244,7 +234,7 @@ export default function EditTaskPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          href={`/studio/project/${projectId}/draft-tasks`}
           label="Back to Tasks"
         />
         <div className="flex items-center gap-2">
@@ -292,18 +282,18 @@ export default function EditTaskPage() {
             <AndamioText variant="small" className="text-xs">{title.length}/100 characters</AndamioText>
           </div>
 
-          {/* Description */}
+          {/* Content/Description */}
           <div className="space-y-2">
-            <AndamioLabel htmlFor="description">Description *</AndamioLabel>
+            <AndamioLabel htmlFor="content">Description</AndamioLabel>
             <AndamioTextarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               placeholder="Brief description of the task"
               maxLength={360}
               rows={3}
             />
-            <AndamioText variant="small" className="text-xs">{description.length}/360 characters</AndamioText>
+            <AndamioText variant="small" className="text-xs">{content.length}/360 characters</AndamioText>
           </div>
 
           {/* Rich Content */}
@@ -356,55 +346,9 @@ export default function EditTaskPage() {
             </AndamioText>
           </div>
 
-          {/* Number of Commitments */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="commitments">Number of Allowed Commitments</AndamioLabel>
-            <AndamioInput
-              id="commitments"
-              type="number"
-              value={numAllowedCommitments}
-              onChange={(e) => setNumAllowedCommitments(parseInt(e.target.value) || 1)}
-              min={1}
-            />
-            <AndamioText variant="small" className="text-xs">
-              How many contributors can commit to this task
-            </AndamioText>
-          </div>
-
-          {/* Acceptance Criteria */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <AndamioLabel>Acceptance Criteria *</AndamioLabel>
-              <AndamioButton variant="outline" size="sm" onClick={addCriterion}>
-                <AddIcon className="h-4 w-4 mr-1" />
-                Add
-              </AndamioButton>
-            </div>
-            <AndamioText variant="small" className="text-xs mb-2">
-              Define what contributors must deliver to complete the task
-            </AndamioText>
-            <div className="space-y-2">
-              {acceptanceCriteria.map((criterion, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <AndamioInput
-                    value={criterion}
-                    onChange={(e) => updateCriterion(index, e.target.value)}
-                    placeholder={`Criterion ${index + 1}`}
-                  />
-                  {acceptanceCriteria.length > 1 && (
-                    <AndamioRemoveButton
-                      onClick={() => removeCriterion(index)}
-                      ariaLabel={`Remove criterion ${index + 1}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Actions */}
           <AndamioActionFooter showBorder>
-            <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
+            <Link href={`/studio/project/${projectId}/draft-tasks`}>
               <AndamioButton variant="outline">Cancel</AndamioButton>
             </Link>
             <AndamioSaveButton

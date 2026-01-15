@@ -1,7 +1,7 @@
 # Application Sitemap
 
 > **Complete route and page mapping for Andamio T3 App Template**
-> Last Updated: January 8, 2026
+> Last Updated: January 14, 2026
 
 This document provides a comprehensive overview of all routes, their purpose, authentication requirements, and API dependencies.
 
@@ -61,9 +61,9 @@ This document provides a comprehensive overview of all routes, their purpose, au
 
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
-| `/project/[treasurynft]` | `app/(app)/project/[treasurynft]/page.tsx` | No | Project detail with tasks |
-| `/project/[treasurynft]/contributor` | `app/(app)/project/[treasurynft]/contributor/page.tsx` | Yes | Contributor dashboard - enroll, commit tasks, claim credentials |
-| `/project/[treasurynft]/[taskhash]` | `app/(app)/project/[treasurynft]/[taskhash]/page.tsx` | No | Task detail and commitment |
+| `/project/[projectid]` | `app/(app)/project/[projectid]/page.tsx` | No | Project detail with tasks |
+| `/project/[projectid]/contributor` | `app/(app)/project/[projectid]/contributor/page.tsx` | Yes | Contributor dashboard - enroll, commit tasks, claim credentials |
+| `/project/[projectid]/[taskhash]` | `app/(app)/project/[projectid]/[taskhash]/page.tsx` | No | Task detail and commitment |
 
 ### Creator Studio - Course Routes
 
@@ -83,11 +83,12 @@ This document provides a comprehensive overview of all routes, their purpose, au
 
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
-| `/studio/project/[treasurynft]` | `app/(app)/studio/project/[treasurynft]/page.tsx` | Yes | Project dashboard |
-| `/studio/project/[treasurynft]/manager` | `app/(app)/studio/project/[treasurynft]/manager/page.tsx` | Yes | Manager dashboard - review task submissions, accept/deny |
-| `/studio/project/[treasurynft]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
-| `/studio/project/[treasurynft]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
-| `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
+| `/studio/project/[projectid]` | `app/(app)/studio/project/[projectid]/page.tsx` | Yes | Project dashboard |
+| `/studio/project/[projectid]/manager` | `app/(app)/studio/project/[projectid]/manager/page.tsx` | Yes | Manager dashboard - review task submissions, accept/deny |
+| `/studio/project/[projectid]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
+| `/studio/project/[projectid]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
+| `/studio/project/[projectid]/commitments` | `app/(app)/studio/project/.../commitments/page.tsx` | Yes | Manager view - pending assessments, DB sync |
 
 ---
 
@@ -134,13 +135,13 @@ POST /assignment-commitment/list Get learner's commitments (if auth)
 POST /projects/list              List all published projects
 ```
 
-#### `/project/[treasurynft]` - Project Detail
+#### `/project/[projectid]` - Project Detail
 ```
 POST /projects/list              Filter to specific project
 POST /tasks/list                 Get tasks for project
 ```
 
-#### `/project/[treasurynft]/[taskhash]` - Task Detail
+#### `/project/[projectid]/[taskhash]` - Task Detail
 ```
 POST /tasks/list                 Filter to specific task
 POST /task-commitments/get       Get commitment if exists (if auth)
@@ -245,14 +246,14 @@ POST /lesson/publish             Toggle live status
 POST /projects/list-owned        Get owned projects
 ```
 
-#### `/studio/project/[treasurynft]` - Project Dashboard
+#### `/studio/project/[projectid]` - Project Dashboard
 ```
 POST /projects/list-owned        Filter to specific project
 POST /tasks/list                 Get tasks for project
 POST /projects/update            Update project metadata
 ```
 
-#### `/studio/project/[treasurynft]/manager` - Manager Dashboard
+#### `/studio/project/[projectid]/manager` - Manager Dashboard
 ```
 POST /projects/list              Get project details
 POST /task-submissions/list      Get all task submissions for project
@@ -260,7 +261,7 @@ POST /task-submissions/accept    Accept a task submission
 POST /task-submissions/deny      Deny a task submission
 ```
 
-#### `/project/[treasurynft]/contributor` - Contributor Dashboard
+#### `/project/[projectid]/contributor` - Contributor Dashboard
 ```
 POST /projects/list              Get project details
 POST /tasks/list                 Get available tasks
@@ -318,7 +319,7 @@ Studio → Courses → Course Title → Module Title → Content Type
 ### Studio Project Routes (Protected)
 ```
 Studio → Projects → Project Title → Tasks
-/studio/project → [treasurynft] → draft-tasks → new/[taskindex]
+/studio/project → [projectid] → draft-tasks → new/[taskindex]
 ```
 
 ---

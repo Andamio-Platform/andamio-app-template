@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Project V2 API Migration** (January 14, 2026): Complete migration from V1 to V2 Project API endpoints
+  - Route folders renamed from `[projectid]` to `[projectid]`
+  - Types changed from `TreasuryResponse`/`TreasuryListResponse` to `ProjectV2Output`
+  - API endpoints changed from `/project/*` to `/project-v2/*`:
+    - `/project/public/treasury/list` → `GET /project-v2/public/projects/list`
+    - `/project/owner/treasury/list-owned` → `POST /project-v2/admin/projects/list`
+    - `/project/manager/task/create` → `POST /project-v2/manager/task/create` (now requires `project_state_policy_id`)
+    - `/project/manager/task/delete` → `POST /project-v2/manager/task/delete` (uses `index` not `task_index`)
+  - Field renames: `treasury_nft_policy_id` → `project_id`, `task_index` → `index`, `description` → `content`
+  - Removed V1-only fields from task creation: `acceptance_criteria`, `num_allowed_commitments`
+  - Two-step API pattern: fetch project first to get `project_state_policy_id`, then fetch/create tasks
 - **Standalone Repository**: This template is now a standalone repository with embedded `@andamio/transactions` package
   - Removed all monorepo references from documentation
   - Updated Quick Start to use simple `git clone` workflow
@@ -48,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `WelcomeHero` accepts `isPendingMint` and `pendingAlias` props for pending UI state
   - On confirmation, uses `refreshAuth()` instead of full page reload for instant UI update
 - **Partial Signing Support**: Added `partialSign` property to `AndamioTransactionDefinition` type and `TransactionConfig` for multi-sig transactions. When `true`, `wallet.signTx(cbor, true)` preserves existing signatures in the CBOR. `INSTANCE_PROJECT_CREATE` now sets `partialSign: true` to fix Eternl wallet errors.
-- **Project Dashboard Role Detection**: `/studio/project/[treasurynft]` now detects both owner and manager roles. Owners see an info banner explaining their role, managers can fully manage the project. Uses Andamioscan `getManagingProjects` to check manager status.
+- **Project Dashboard Role Detection**: `/studio/project/[projectid]` now detects both owner and manager roles. Owners see an info banner explaining their role, managers can fully manage the project. Uses Andamioscan `getManagingProjects` to check manager status.
 - **Design System Skill**: Consolidated 3 skills (`review-styling`, `global-style-checker`, `theme-expert`) into unified `design-system` skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns)
 
 ### Changed
@@ -133,9 +144,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Credentials Page** (`/credentials`): New page displaying all earned on-chain credentials with verification indicator
 - **InstructorIcon**: Added Crown icon to entity icons for course ownership indicator
 - **Studio Course Ownership Indicator**: Crown badge on courses the user owns vs teaches
-- **Task Detail Page Commitment Flow** (`/project/[treasurynft]/[taskhash]`): Full task commitment workflow with evidence editor, stats grid using `AndamioDashboardStat`, and `ProjectEnroll`/`TaskCommit` transaction components
-- **Contributor Dashboard** (`/project/[treasurynft]/contributor`): New dashboard for project contributors to enroll, commit to tasks, and claim credentials
-- **Manager Dashboard** (`/studio/project/[treasurynft]/manager`): New dashboard for project managers to review task submissions and accept/deny
+- **Task Detail Page Commitment Flow** (`/project/[projectid]/[taskhash]`): Full task commitment workflow with evidence editor, stats grid using `AndamioDashboardStat`, and `ProjectEnroll`/`TaskCommit` transaction components
+- **Contributor Dashboard** (`/project/[projectid]/contributor`): New dashboard for project contributors to enroll, commit to tasks, and claim credentials
+- **Manager Dashboard** (`/studio/project/[projectid]/manager`): New dashboard for project managers to review task submissions and accept/deny
 - **AndamioDashboardStat Component**: Extracted reusable KPI stat card with icon, label, value, optional description, and semantic color support
 - **AndamioSearchInput Component**: Search input with integrated SearchIcon, supports default and compact (`sm`) size variants
 - **Project Transaction Components**: New transaction components for project workflows

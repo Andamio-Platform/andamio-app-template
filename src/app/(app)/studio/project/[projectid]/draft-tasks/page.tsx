@@ -26,11 +26,12 @@ import {
   AndamioRowActions,
   AndamioErrorAlert,
 } from "~/components/andamio";
-import { TaskIcon, OnChainIcon } from "~/components/icons";
-import { type TaskResponse } from "@andamio/db-api-types";
+import { TaskIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { type ProjectTaskV2Output } from "@andamio/db-api-types";
 import { formatLovelace } from "~/lib/cardano-utils";
-
-type TaskListOutput = TaskResponse[];
+import { getProject } from "~/lib/andamioscan";
+import { syncProjectTasks } from "~/lib/project-task-sync";
+import { toast } from "sonner";
 
 interface ApiError {
   message?: string;
@@ -39,47 +40,77 @@ interface ApiError {
 /**
  * Draft Tasks List - View and manage draft tasks for a project
  *
- * API Endpoints:
- * - POST /tasks/list (public) - Get all tasks for project
- * - POST /tasks/delete (protected) - Delete draft task
+ * API Endpoints (V2):
+ * - GET /project-v2/public/tasks/:project_state_policy_id - Get all tasks
+ * - POST /project-v2/manager/task/delete - Delete draft task
  */
 export default function DraftTasksPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [tasks, setTasks] = useState<TaskListOutput>([]);
+  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
+  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingTaskIndex, setDeletingTaskIndex] = useState<number | null>(null);
+
+  // On-chain status tracking
+  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchTasks = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
+      // V2 API: First get project to find project_state_policy_id
+      const projectResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        // Handle "no escrows" errors as empty state (new project, no on-chain activity yet)
-        // The API returns 400 when treasury exists but has no escrow records
-        const noEscrowsError = errorText.toLowerCase().includes("no escrow") ||
-                               errorText.toLowerCase().includes("escrow") && response.status === 400;
-        if (noEscrowsError) {
-          console.log("Project has no escrows yet - showing empty state");
+      if (!projectResponse.ok) {
+        throw new Error("Failed to fetch project");
+      }
+
+      const projectData = await projectResponse.json() as { states?: Array<{ project_state_policy_id?: string }> };
+      const statePolicyId = projectData.states?.[0]?.project_state_policy_id;
+
+      if (!statePolicyId) {
+        // No states yet - empty state
+        setProjectStatePolicyId(null);
+        setTasks([]);
+        return;
+      }
+
+      setProjectStatePolicyId(statePolicyId);
+
+      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // Manager endpoint returns all tasks including DRAFT status
+      const tasksResponse = await authenticatedFetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${statePolicyId}`
+      );
+
+      if (!tasksResponse.ok) {
+        // 404 means no tasks yet
+        if (tasksResponse.status === 404) {
           setTasks([]);
           return;
         }
-        console.error("Tasks fetch error:", errorText);
         throw new Error("Failed to fetch tasks");
       }
 
-      const data = (await response.json()) as TaskListOutput;
+      const data = (await tasksResponse.json()) as ProjectTaskV2Output[];
       setTasks(data ?? []);
+
+      // Fetch on-chain task count from Andamioscan
+      try {
+        const projectDetails = await getProject(projectId);
+        setOnChainTaskCount(projectDetails?.tasks?.length ?? 0);
+      } catch {
+        // If Andamioscan fails, just ignore - we'll show DB count only
+        setOnChainTaskCount(0);
+      }
     } catch (err) {
       console.error("Error fetching tasks:", err);
       setError(err instanceof Error ? err.message : "Failed to load tasks");
@@ -91,23 +122,23 @@ export default function DraftTasksPage() {
   useEffect(() => {
     void fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [treasuryNftPolicyId]);
+  }, [projectId]);
 
   const handleDeleteTask = async (taskIndex: number) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !projectStatePolicyId) return;
 
     setDeletingTaskIndex(taskIndex);
 
     try {
-      // Go API: POST /project/manager/task/delete
+      // V2 API: POST /project-v2/manager/task/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/delete`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            treasury_nft_policy_id: treasuryNftPolicyId,
-            task_index: taskIndex,
+            project_state_policy_id: projectStatePolicyId,
+            index: taskIndex,
           }),
         }
       );
@@ -124,6 +155,45 @@ export default function DraftTasksPage() {
       setError(err instanceof Error ? err.message : "Failed to delete task");
     } finally {
       setDeletingTaskIndex(null);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!projectStatePolicyId) {
+      toast.error("Cannot sync: missing project state policy ID");
+      return;
+    }
+
+    setIsSyncing(true);
+    toast.info("Syncing with blockchain...");
+
+    try {
+      const syncResult = await syncProjectTasks(
+        projectId,
+        projectStatePolicyId,
+        "", // Empty txHash - will be fetched from treasury_fundings
+        authenticatedFetch,
+        false // Not a dry run
+      );
+
+      if (syncResult.confirmed > 0) {
+        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
+      } else if (syncResult.errors.length > 0) {
+        toast.error("Sync failed", {
+          description: syncResult.errors[0],
+        });
+      } else {
+        toast.success("Database is in sync with blockchain");
+      }
+
+      // Refresh data
+      await fetchTasks();
+    } catch (err) {
+      toast.error("Sync failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -147,7 +217,7 @@ export default function DraftTasksPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}`}
+          href={`/studio/project/${projectId}`}
           label="Back to Project"
         />
 
@@ -173,7 +243,7 @@ export default function DraftTasksPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}`}
+          href={`/studio/project/${projectId}`}
           label="Back to Project"
         />
 
@@ -192,26 +262,67 @@ export default function DraftTasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}`}
+          href={`/studio/project/${projectId}`}
           label="Back to Project"
         />
 
-        <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
+        <Link href={`/studio/project/${projectId}/draft-tasks/new`}>
           <AndamioAddButton label="New Task" />
         </Link>
       </div>
 
       <AndamioPageHeader
         title="Tasks"
-        description={`Manage tasks for this project - ${draftTasks.length} draft, ${liveTasks.length} live`}
+        description="Manage tasks for this project"
       />
+
+      {/* Status Badges */}
+      <div className="flex flex-wrap items-center gap-3">
+        <AndamioBadge variant="secondary">
+          {draftTasks.length} Draft
+        </AndamioBadge>
+        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+          <OnChainIcon className="h-3 w-3 mr-1" />
+          {liveTasks.length} Live (DB)
+        </AndamioBadge>
+        {onChainTaskCount > 0 && (
+          <AndamioBadge variant="outline">
+            <OnChainIcon className="h-3 w-3 mr-1" />
+            {onChainTaskCount} On-Chain
+          </AndamioBadge>
+        )}
+      </div>
+
+      {/* Sync Warning - show when on-chain count doesn't match DB live count */}
+      {onChainTaskCount > liveTasks.length && (
+        <div className="flex items-center justify-between rounded-lg border border-warning bg-warning/10 p-4">
+          <div className="flex items-center gap-3">
+            <OnChainIcon className="h-5 w-5 text-warning" />
+            <div>
+              <AndamioText className="font-medium">Database out of sync</AndamioText>
+              <AndamioText variant="small">
+                {onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks.length} marked as live in database.
+              </AndamioText>
+            </div>
+          </div>
+          <AndamioButton
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={isSyncing}
+          >
+            <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing..." : "Sync Now"}
+          </AndamioButton>
+        </div>
+      )}
 
       {/* Draft Tasks Section */}
       {draftTasks.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <AndamioSectionHeader title="Draft Tasks" />
-            <Link href={`/studio/project/${treasuryNftPolicyId}/manage-treasury`}>
+            <Link href={`/studio/project/${projectId}/manage-treasury`}>
               <AndamioButton variant="default" size="sm">
                 <OnChainIcon className="h-4 w-4 mr-2" />
                 Publish Tasks
@@ -232,8 +343,8 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {draftTasks.map((task, index) => (
-                  <AndamioTableRow key={task.task_hash ?? `draft-${task.task_index}-${index}`}>
-                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_hash ?? `draft-${task.index}-${index}`}>
+                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                     <AndamioTableCell className="text-center">
                       <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
@@ -243,11 +354,11 @@ export default function DraftTasksPage() {
                     </AndamioTableCell>
                     <AndamioTableCell className="text-right">
                       <AndamioRowActions
-                        editHref={`/studio/project/${treasuryNftPolicyId}/draft-tasks/${task.task_index}`}
-                        onDelete={() => handleDeleteTask(task.task_index)}
+                        editHref={`/studio/project/${projectId}/draft-tasks/${task.index}`}
+                        onDelete={() => handleDeleteTask(task.index)}
                         itemName="task"
                         deleteDescription={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-                        isDeleting={deletingTaskIndex === task.task_index}
+                        isDeleting={deletingTaskIndex === task.index}
                       />
                     </AndamioTableCell>
                   </AndamioTableRow>
@@ -276,11 +387,11 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {liveTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.task_index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_hash ?? task.index}>
+                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">
                       <Link
-                        href={`/project/${treasuryNftPolicyId}/${task.task_hash}`}
+                        href={`/project/${projectId}/${task.task_hash}`}
                         className="hover:underline"
                       >
                         {task.title}
@@ -293,7 +404,10 @@ export default function DraftTasksPage() {
                       <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
                     </AndamioTableCell>
                     <AndamioTableCell className="text-center">
-                      <AndamioBadge variant={getStatusVariant(task.status)}>Live</AndamioBadge>
+                      <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                        <OnChainIcon className="h-3 w-3 mr-1" />
+                        On-Chain
+                      </AndamioBadge>
                     </AndamioTableCell>
                   </AndamioTableRow>
                 ))}
@@ -319,8 +433,8 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {otherTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.task_index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.task_index}</AndamioTableCell>
+                  <AndamioTableRow key={task.task_hash ?? task.index}>
+                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
                     <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                     <AndamioTableCell className="text-center">
                       <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
@@ -343,7 +457,7 @@ export default function DraftTasksPage() {
           title="No tasks yet"
           description="Create your first task to get started"
           action={
-            <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks/new`}>
+            <Link href={`/studio/project/${projectId}/draft-tasks/new`}>
               <AndamioAddButton label="Create Task" />
             </Link>
           }

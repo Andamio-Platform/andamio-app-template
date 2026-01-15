@@ -44,10 +44,10 @@ const txName = "PROJECT_MANAGER_TASKS_ASSESS";
  *
  * ## Side Effects
  *
- * **onSubmit**: Update task commitment status to pending assessment state
- * (PENDING_TX_TASK_ACCEPTED, PENDING_TX_TASK_REFUSED, or PENDING_TX_TASK_DENIED)
+ * **onSubmit**: Call assess endpoint with decision (accept/refuse/deny)
+ * Sets commitment to PENDING_TX_ASSESS status
  *
- * **onConfirmation**: Confirm assessment, finalize task commitment status
+ * **onConfirmation**: Confirm assessment, finalize commitment status to ACCEPTED/REFUSED/DENIED
  *
  * ## Critical Flag Pattern
  *
@@ -73,58 +73,37 @@ exports.PROJECT_MANAGER_TASKS_ASSESS = {
                     outcome: zod_1.z.enum(["accept", "refuse", "deny"]),
                 })),
             }),
-            // Side effect parameters - matches DB API task-commitments/update-status
+            // Side effect parameters - matches DB API /project-v2/manager/commitment/assess
             sideEffectParams: zod_1.z.object({
                 task_hash: zod_1.z.string().length(64), // Task hash being assessed
-                assessment_result: zod_1.z.enum(["accept", "refuse", "deny"]),
+                contributor_alias: zod_1.z.string().min(1).max(31), // Contributor's alias for the commitment
+                decision: zod_1.z.enum(["accept", "refuse", "deny"]), // Assessment decision
             }),
         }),
         builder: { type: "api-endpoint", endpoint: "/v2/tx/project/manager/tasks/assess" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
-    // Conditional side effects based on assessment_result
     onSubmit: [
         {
-            def: "Update Task Commitment to Pending Accept",
+            def: "Assess Task Commitment",
             method: "POST",
-            endpoint: "/project/manager/commitment/update-status",
+            endpoint: "/project-v2/manager/commitment/assess",
             body: {
                 task_hash: { source: "context", path: "sideEffectParams.task_hash" },
-                status: { source: "literal", value: "PENDING_TX_TASK_ACCEPTED" },
+                contributor_alias: { source: "context", path: "sideEffectParams.contributor_alias" },
+                decision: { source: "context", path: "sideEffectParams.decision" },
                 pending_tx_hash: { source: "context", path: "txHash" },
             },
-            condition: { path: "assessment_result", equals: "accept" },
-        },
-        {
-            def: "Update Task Commitment to Pending Refuse",
-            method: "POST",
-            endpoint: "/project/manager/commitment/update-status",
-            body: {
-                task_hash: { source: "context", path: "sideEffectParams.task_hash" },
-                status: { source: "literal", value: "PENDING_TX_TASK_REFUSED" },
-                pending_tx_hash: { source: "context", path: "txHash" },
-            },
-            condition: { path: "assessment_result", equals: "refuse" },
-        },
-        {
-            def: "Update Task Commitment to Pending Deny",
-            method: "POST",
-            endpoint: "/project/manager/commitment/update-status",
-            body: {
-                task_hash: { source: "context", path: "sideEffectParams.task_hash" },
-                status: { source: "literal", value: "PENDING_TX_TASK_DENIED" },
-                pending_tx_hash: { source: "context", path: "txHash" },
-            },
-            condition: { path: "assessment_result", equals: "deny" },
         },
     ],
     onConfirmation: [
         {
             def: "Confirm Task Assessment",
             method: "POST",
-            endpoint: "/project/manager/commitment/confirm-transaction",
+            endpoint: "/project-v2/manager/commitment/confirm-assess",
             body: {
                 task_hash: { source: "context", path: "sideEffectParams.task_hash" },
+                contributor_alias: { source: "context", path: "sideEffectParams.contributor_alias" },
                 tx_hash: { source: "context", path: "txHash" },
             },
             critical: true,

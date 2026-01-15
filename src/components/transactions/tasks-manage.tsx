@@ -56,6 +56,14 @@ interface ProjectData {
   native_assets: ListValue; // [["policyId.tokenName", qty], ...]
 }
 
+/**
+ * Prerequisite - Course completion requirement
+ */
+interface Prerequisite {
+  course_id: string;
+  assignment_ids: string[];
+}
+
 export interface TasksManageProps {
   /**
    * Project NFT Policy ID (56 char hex)
@@ -64,9 +72,14 @@ export interface TasksManageProps {
 
   /**
    * Contributor state policy ID (56 char hex) - REQUIRED
-   * Get this from Andamioscan API
    */
   contributorStateId: string;
+
+  /**
+   * Course prerequisites for the project (from Andamioscan)
+   * Pass [] if none
+   */
+  prerequisites: Prerequisite[];
 
   /**
    * Pre-configured tasks to add (ProjectData objects)
@@ -91,8 +104,9 @@ export interface TasksManageProps {
 
   /**
    * Callback fired when tasks are successfully managed
+   * @param txHash - The transaction hash from the blockchain
    */
-  onSuccess?: () => void | Promise<void>;
+  onSuccess?: (txHash: string) => void | Promise<void>;
 }
 
 /**
@@ -133,6 +147,7 @@ export interface TasksManageProps {
 export function TasksManage({
   projectNftPolicyId,
   contributorStateId,
+  prerequisites,
   tasksToAdd: preConfiguredTasksToAdd,
   tasksToRemove: preConfiguredTasksToRemove,
   depositValue: preConfiguredDepositValue,
@@ -155,14 +170,8 @@ export function TasksManage({
 
   const handleManageTasks = async () => {
     if (!user?.accessTokenAlias) {
-      console.warn("[TasksManage] No access token alias - user not authenticated");
       return;
     }
-
-    console.group("[TasksManage] 🚀 Starting Task Management Transaction");
-    console.log("User alias:", user.accessTokenAlias);
-    console.log("Project ID:", projectNftPolicyId);
-    console.log("Contributor State ID:", contributorStateId);
 
     // Use pre-configured values if provided, otherwise use form values
     let tasks_to_add: ProjectData[] = [];
@@ -172,25 +181,20 @@ export function TasksManage({
 
     if (preConfiguredTasksToAdd || preConfiguredTasksToRemove) {
       // Batch mode - use pre-configured values
-      console.log("📦 Batch mode - using pre-configured tasks");
       tasks_to_add = preConfiguredTasksToAdd ?? [];
       tasks_to_remove = preConfiguredTasksToRemove ?? [];
       deposit_value = preConfiguredDepositValue ?? [];
       task_codes = preConfiguredTaskCodes ?? [];
     } else if (action === "add") {
       // Single task add mode via form
-      console.log("📝 Form mode - single task add");
-
       if (!taskHash.trim() || !taskCode.trim()) {
         toast.error("Task content and code are required");
-        console.groupEnd();
         return;
       }
 
       // Validate content length (max 140 chars per API spec)
       if (taskHash.trim().length > 140) {
         toast.error("Task content must be 140 characters or less");
-        console.groupEnd();
         return;
       }
 
@@ -213,9 +217,7 @@ export function TasksManage({
       task_codes = [taskCode.trim()];
     } else {
       // Remove mode - need full ProjectData, not just hashes
-      console.log("🗑️ Form mode - task removal");
       toast.error("Task removal via form not yet implemented - use batch mode");
-      console.groupEnd();
       return;
     }
 
@@ -223,7 +225,6 @@ export function TasksManage({
     if (deposit_value.length === 0 && tasks_to_add.length > 0) {
       const totalLovelace = tasks_to_add.reduce((sum, t) => sum + t.lovelace_amount, 0);
       deposit_value = [["lovelace", totalLovelace]];
-      console.log("💰 Auto-calculated deposit_value:", deposit_value);
     }
 
     // Build the final request params
@@ -231,27 +232,11 @@ export function TasksManage({
       alias: user.accessTokenAlias,
       project_id: projectNftPolicyId,
       contributor_state_id: contributorStateId,
+      prerequisites,
       tasks_to_add,
       tasks_to_remove,
       deposit_value,
     };
-
-    console.log("📤 Transaction Parameters (ManageTasksTxRequest):");
-    console.log(JSON.stringify(txParams, null, 2));
-
-    console.log("📋 Tasks to Add:", tasks_to_add.length);
-    tasks_to_add.forEach((task, i) => {
-      console.log(`  Task ${i + 1}:`, {
-        content: task.project_content.substring(0, 50) + (task.project_content.length > 50 ? "..." : ""),
-        expiration: new Date(task.expiration_time).toISOString(),
-        reward: `${task.lovelace_amount / 1_000_000} ADA`,
-      });
-    });
-
-    console.log("🗑️ Tasks to Remove:", tasks_to_remove.length);
-    console.log("💵 Deposit Value:", deposit_value);
-    console.log("🏷️ Task Codes (for side effects):", task_codes);
-    console.groupEnd();
 
     await execute({
       definition: PROJECT_MANAGER_TASKS_MANAGE,
@@ -261,12 +246,6 @@ export function TasksManage({
         task_codes,
       },
       onSuccess: async (txResult) => {
-        console.group("[TasksManage] ✅ Transaction Success!");
-        console.log("Transaction Hash:", txResult.txHash);
-        console.log("Explorer URL:", txResult.blockchainExplorerUrl);
-        console.log("Full Result:", txResult);
-        console.groupEnd();
-
         const actionText = action === "add" ? "added" : "removed";
         toast.success(`Tasks ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
           description: `Task(s) have been ${actionText} successfully`,
@@ -283,14 +262,9 @@ export function TasksManage({
         setTaskCode("");
         setTaskHashesToRemove("");
 
-        await onSuccess?.();
+        await onSuccess?.(txResult.txHash);
       },
       onError: (txError) => {
-        console.group("[TasksManage] ❌ Transaction Error");
-        console.error("Error:", txError);
-        console.error("Message:", txError.message);
-        console.groupEnd();
-
         toast.error("Task Management Failed", {
           description: txError.message || "Failed to manage tasks",
         });

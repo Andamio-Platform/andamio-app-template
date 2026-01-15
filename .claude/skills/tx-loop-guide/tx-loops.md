@@ -259,8 +259,9 @@ Step 2 (Managers Manage):
 **Roles:** 1 (Manager)
 
 **Prerequisites:**
-- Project exists on-chain
+- Project exists on-chain (P1 completed)
 - User is a registered manager for the project
+- Draft tasks created in database with title, lovelace amount, expiration time
 
 **Transactions:**
 
@@ -268,16 +269,134 @@ Step 2 (Managers Manage):
 |------|------|-------------|-------------|
 | 1 | Manager | `PROJECT_MANAGER_TASKS_MANAGE` | Mint/publish tasks on-chain |
 
+**API Request Format:**
+```json
+{
+  "alias": "manager-alias",
+  "project_id": "56-char-hex (treasury NFT policy ID)",
+  "contributor_state_id": "56-char-hex (= project_state_policy_id)",
+  "prerequisites": [],
+  "tasks_to_add": [{
+    "project_content": "Task description (max 140 chars)",
+    "expiration_time": 1735689600000,
+    "lovelace_amount": 5000000,
+    "native_assets": []
+  }],
+  "tasks_to_remove": [],
+  "deposit_value": [["lovelace", 5000000]]
+}
+```
+
 **Side Effects:**
 
 Step 1 (Tasks Manage - Mint):
 - onSubmit: Set tasks to `PENDING_TX`
-- onConfirmation: Set tasks to `ON_CHAIN` with task hash
+- onConfirmation: Sync with Andamioscan to get `task_id`, store as `task_hash` in DB
+
+**Post-Transaction Sync:**
+After transaction confirmation, call `syncProjectTasks()` to:
+1. Fetch on-chain tasks from Andamioscan API
+2. Decode hex content and match to DB task titles
+3. Update DB via `/project-v2/manager/task/confirm-tx` with on-chain `task_id`
 
 **Notes:**
-- Tasks need details defined in database before minting
-- Task hash computed from task content
-- Tasks can have expiration dates
+- `contributor_state_id` = `project_state_policy_id` from DB (no Andamioscan lookup needed)
+- `prerequisites` field is REQUIRED by Atlas API (undocumented) - use `[]` if none
+- On-chain task content is hex-encoded UTF-8 (max 140 chars)
+- Task matching uses decoded hex content compared to DB task title
+- `task_id` from Andamioscan is stored as `task_hash` in DB
+
+**Routes:**
+- `/studio/project/[projectid]/draft-tasks` — View/create draft tasks
+- `/studio/project/[projectid]/draft-tasks/[taskindex]` — Edit individual task
+- `/studio/project/[projectid]/manage-treasury` — Publish tasks on-chain
+
+---
+
+## Combined: Project Manager Loop (P1 + P2)
+
+**Description:** The complete workflow for a project manager to create a project, define tasks in the database, and publish them on-chain for contributors.
+
+**Roles:** 1 (Admin/Manager)
+
+**Prerequisites:**
+- User has minted Access Token
+
+**Flow Overview:**
+
+```
+1. Create Project (P1)     →  Project exists on-chain with project_state_policy_id
+                ↓
+2. Draft Tasks (DB only)   →  Tasks created in database with DRAFT status
+                ↓
+3. Publish Tasks (P2)      →  Tasks minted on-chain, synced back to DB
+```
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | Admin | `PROJECT_ADMIN_CREATE` | Create project treasury on-chain |
+| 2 | Manager | (Database) | Create draft tasks via UI/API |
+| 3 | Manager | `PROJECT_MANAGER_TASKS_MANAGE` | Publish tasks on-chain |
+
+**Step-by-Step:**
+
+### Step 1: Create Project
+
+**Route:** `/studio/new/project`
+
+- Fill in project metadata (title, description)
+- Submit `PROJECT_ADMIN_CREATE` transaction
+- On confirmation: Project record created with `project_state_policy_id`
+
+### Step 2: Draft Tasks (No Transaction)
+
+**Routes:**
+- `/studio/project/[projectid]/draft-tasks` — Task list
+- `/studio/project/[projectid]/draft-tasks/new` — Create task
+- `/studio/project/[projectid]/draft-tasks/[taskindex]` — Edit task
+
+**Task Fields:**
+- Title (becomes `project_content` on-chain, max 140 chars)
+- Description (stored in DB, not on-chain)
+- Lovelace amount (reward)
+- Expiration time (POSIX timestamp in milliseconds)
+- Rich content (optional, stored as JSON in DB)
+
+**Status:** Tasks start with `DRAFT` status
+
+### Step 3: Publish Tasks
+
+**Route:** `/studio/project/[projectid]/manage-treasury`
+
+1. View draft tasks in table
+2. Select tasks to publish
+3. Submit `PROJECT_MANAGER_TASKS_MANAGE` transaction
+4. On confirmation: `syncProjectTasks()` runs automatically
+5. Tasks updated from `DRAFT` → `ON_CHAIN` with `task_hash`
+
+**Data Flow:**
+
+```
+UI Form → DB (DRAFT) → Tx API → Blockchain → Andamioscan → Sync → DB (ON_CHAIN)
+           ↑                                                         ↓
+     project_state_policy_id                                   task_hash (= task_id)
+```
+
+**Key Identifiers:**
+
+| ID | Source | Purpose |
+|----|--------|---------|
+| `project_id` | Tx response | Treasury NFT policy ID (56 char hex) |
+| `project_state_policy_id` | DB API | State tracking, also used as `contributor_state_id` |
+| `task_hash` | Andamioscan | On-chain task identifier (stored after sync) |
+
+**Notes:**
+- Admin who creates project is automatically a manager
+- `project_state_policy_id` IS the `contributor_state_id` for transactions
+- Prerequisites fetched from Andamioscan, use `[]` if null
+- Sync function matches tasks by decoded hex content vs DB title
 
 ---
 

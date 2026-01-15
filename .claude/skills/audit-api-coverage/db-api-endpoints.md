@@ -20,12 +20,11 @@
 | Assignment Commitments | 10 | Student/teacher/shared commitment workflows |
 | Module Introductions | 5 | Introduction CRUD (public + teacher) |
 | Student Course Status | 2 | Learner course data |
-| Project Public | 3 | Treasury list, tasks, prerequisites |
-| Project Owner | 4 | Treasury CRUD, mint, confirm |
-| Project Manager/Tasks | 5 | Task CRUD, batch operations |
-| Project Manager/Commitments | 2 | Manager commitment workflows |
-| Project Contributor/Commitments | 6 | Contributor commitment workflows |
-| Contributor Management | 1 | Create contributor role |
+| Project V2 Public | 3 | Projects list, project details, tasks |
+| Project V2 Admin | 3 | Project registration, list, update |
+| Project V2 Manager/Tasks | 3 | Task create, update, delete |
+| Project V2 Manager/Commitments | 2 | Manager commitment workflows |
+| Project V2 Contributor/Commitments | 6 | Contributor commitment workflows |
 
 ---
 
@@ -150,56 +149,47 @@
 | POST | `/course/student/courses` | Courses learner is enrolled in |
 | POST | `/course/student/course-status` | Comprehensive course status for learner |
 
-## Project Public (3)
+## Project V2 Public (3)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/project/public/treasury/list` | All published treasury projects |
-| GET | `/project/public/task/list/{treasury_nft_policy_id}` | All tasks for a treasury |
-| GET | `/project/public/prerequisite/list` | All ON_CHAIN contributor prerequisites |
+| GET | `/project-v2/public/projects/list` | All published projects |
+| GET | `/project-v2/public/project/{project_id}` | Get project with states |
+| GET | `/project-v2/public/tasks/{project_state_policy_id}` | All tasks for a project state |
 
-## Project Owner (4)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/project/owner/treasury/list-owned` | Projects owned by user |
-| POST | `/project/owner/treasury/update` | Update project metadata |
-| POST | `/project/owner/treasury/mint` | Create project on mint tx submit |
-| POST | `/project/owner/treasury/confirm-mint` | Confirm project after blockchain |
-
-## Project Manager - Tasks (5)
+## Project V2 Admin (3)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/project/manager/task/create` | Create new task (requires Manager role) |
-| POST | `/project/manager/task/update` | Update DRAFT task |
-| POST | `/project/manager/task/delete` | Delete DRAFT task |
-| POST | `/project/manager/task/batch-update-status` | Update status for multiple tasks |
-| POST | `/project/manager/task/batch-confirm` | Confirm multiple tasks after blockchain |
+| POST | `/project-v2/admin/projects/list` | List owned/managed projects |
+| POST | `/project-v2/admin/project/register` | Register new project |
+| POST | `/project-v2/admin/project/update` | Update project metadata |
 
-## Project Manager - Commitments (2)
+## Project V2 Manager - Tasks (3)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/project/manager/commitment/update-status` | Manager updates commitment status |
-| POST | `/project/manager/commitment/confirm-transaction` | Confirm commitment tx |
+| POST | `/project-v2/manager/task/create` | Create new task (requires project_state_policy_id) |
+| POST | `/project-v2/manager/task/update` | Update DRAFT task |
+| POST | `/project-v2/manager/task/delete` | Delete DRAFT task (uses index not task_index) |
 
-## Project Contributor - Commitments (6)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/project/contributor/commitment/get` | Get commitment by task_hash |
-| POST | `/project/contributor/commitment/create` | Create task commitment |
-| POST | `/project/contributor/commitment/update-evidence` | Update commitment evidence |
-| POST | `/project/contributor/commitment/update-status` | Update commitment status |
-| POST | `/project/contributor/commitment/delete` | Delete commitment |
-| POST | `/project/contributor/commitment/confirm-transaction` | Confirm commitment tx |
-
-## Contributor Management (1)
+## Project V2 Manager - Commitments (2)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/project/shared/contributor/create` | Create contributor role for user |
+| POST | `/project-v2/manager/commitment/update-status` | Manager updates commitment status |
+| POST | `/project-v2/manager/commitment/confirm-transaction` | Confirm commitment tx |
+
+## Project V2 Contributor - Commitments (6)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/project-v2/contributor/commitment/get` | Get commitment by task_hash |
+| POST | `/project-v2/contributor/commitment/create` | Create task commitment |
+| POST | `/project-v2/contributor/commitment/update-evidence` | Update commitment evidence |
+| POST | `/project-v2/contributor/commitment/update-status` | Update commitment status |
+| POST | `/project-v2/contributor/commitment/delete` | Delete commitment |
+| POST | `/project-v2/contributor/commitment/confirm-transaction` | Confirm commitment tx |
 
 ---
 

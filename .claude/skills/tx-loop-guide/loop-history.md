@@ -37,8 +37,8 @@ A loop is **Validated** when:
 
 | Loop | Status | Last Tested | Tester | Open Issues | Notes |
 |------|--------|-------------|--------|-------------|-------|
-| P1: Create & Configure Project | Issues Found | 2026-01-14 | @james | - | Manager sync working, draft tasks working |
-| P2: Publish Tasks | Blocked | 2026-01-14 | @james | - | Needs `contributor_state_id` from Andamioscan |
+| P1: Create & Configure Project | Validated | 2026-01-14 | @james | - | Manager sync working, draft tasks working |
+| P2: Publish Tasks | Validated | 2026-01-14 | @james | - | Full loop working with sync |
 | P3: Earn Project Credential | Untested | - | - | - | - |
 | P4: Task Revision Flow | Untested | - | - | - | - |
 | P5: Multi-Task Contribution | Untested | - | - | - | - |
@@ -137,6 +137,53 @@ Record each testing session here.
 - [x] Database teachers visible after sync
 - [x] Sync status comparison working ("In Sync" badge)
 - [ ] Module minting data flow — not yet tested
+
+---
+
+### 2026-01-14 — Loop P1+P2: Project Manager Loop (Create → Draft → Publish)
+
+**Tester:** @james
+**Result:** Validated
+
+**Transactions:**
+- [x] PROJECT_ADMIN_CREATE — Previously completed (project exists on-chain)
+- [x] PROJECT_MANAGER_TASKS_MANAGE — Success (tasks published on-chain)
+
+**Issues Created:**
+- None (all issues resolved during session)
+
+**Notes:**
+This was the first complete Project Manager loop validation. Key findings:
+
+**Resolved Issues:**
+1. **Draft tasks not visible**: Manage Treasury page was using public endpoint (only returns ON_CHAIN tasks). Fixed by switching to manager endpoint with authenticatedFetch.
+
+2. **Missing contributor_state_id**: Discovered that `project_state_policy_id` from DB IS the `contributor_state_id` for Atlas TX API. No longer need to wait for Andamioscan.
+
+3. **Prerequisites null error (500)**: Atlas TX API requires `prerequisites` field even though undocumented. When null in Andamioscan, use empty array `[]`. When present, map course/assignment IDs to TX API format.
+
+4. **DB not syncing after publish**: Created `syncProjectTasks()` function in `src/lib/project-task-sync.ts` to:
+   - Fetch on-chain tasks from Andamioscan
+   - Match to DB tasks by decoding hex content → compare to title
+   - Update DB via `/project-v2/manager/task/confirm-tx` with on-chain `task_id`
+
+**API Discoveries:**
+- Prerequisites format: `[{ course_id: string, assignment_ids: string[] }]`
+- On-chain task content is hex-encoded UTF-8 (max 140 chars)
+- `task_id` from Andamioscan is stored as `task_hash` in DB
+
+**Data Flow Validated:**
+- [x] Project created with project_state_policy_id
+- [x] Draft tasks visible in manager endpoint
+- [x] Tasks published on-chain successfully
+- [x] On-chain tasks visible in Andamioscan
+- [x] DB synced with on-chain task_ids
+- [x] Task status updated from DRAFT → ON_CHAIN
+
+**Routes Tested:**
+- `/studio/project/[projectid]/draft-tasks` — Create/edit draft tasks
+- `/studio/project/[projectid]/draft-tasks/[taskindex]` — Individual task editor
+- `/studio/project/[projectid]/manage-treasury` — Publish tasks on-chain
 
 ---
 

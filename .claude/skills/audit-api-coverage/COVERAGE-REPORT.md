@@ -1,13 +1,13 @@
 # API Coverage Report
 
-> **Generated**: 2026-01-14T14:53:06.347Z
-> **Overall Coverage**: 77% (105/137 endpoints)
+> **Generated**: 2026-01-14T19:50:07.968Z
+> **Overall Coverage**: 68% (96/142 endpoints)
 
 ## Summary
 
 | API | Total | Implemented | Coverage |
 |-----|-------|-------------|----------|
-| Andamio DB API | 87 | 57 | **66%** |
+| Andamio DB API | 92 | 48 | **52%** |
 | Andamio Tx API | 16 | 16 | **100%** |
 | Andamioscan | 34 | 32 | **94%** |
 
@@ -16,7 +16,7 @@
 ## Andamio DB API
 
 **Base URL**: `https://andamio-db-api-343753432212.us-central1.run.app`
-**Coverage**: 57/87 (66%)
+**Coverage**: 48/92 (52%)
 
 ### Missing Endpoints
 
@@ -42,7 +42,7 @@
 | POST | `/course/teacher/introduction/delete` |
 | GET | `/course/public/assignment-commitment/has-commitments/{policy_id}/{module_code}` |
 | POST | `/course/teacher/assignment-commitment/review` |
-| ... | *10 more endpoints* |
+| ... | *24 more endpoints* |
 
 ---
 

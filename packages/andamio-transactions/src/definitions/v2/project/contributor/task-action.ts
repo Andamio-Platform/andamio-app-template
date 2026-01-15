@@ -72,21 +72,21 @@ export const PROJECT_CONTRIBUTOR_TASK_ACTION: AndamioTransactionDefinition = {
   },
   onSubmit: [
     {
-      def: "Update Task Status to Pending",
+      def: "Submit Task Evidence",
       method: "POST",
-      endpoint: "/project/contributor/commitment/update-status",
+      endpoint: "/project-v2/contributor/commitment/submit",
       body: {
         task_hash: { source: "context", path: "sideEffectParams.task_hash" },
-        status: { source: "literal", value: "PENDING_TX_ADD_INFO" },
+        evidence: { source: "context", path: "sideEffectParams.evidence" },
         pending_tx_hash: { source: "context", path: "txHash" },
       },
     },
   ],
   onConfirmation: [
     {
-      def: "Confirm Task Action",
+      def: "Confirm Task Submission",
       method: "POST",
-      endpoint: "/project/contributor/commitment/confirm-transaction",
+      endpoint: "/project-v2/contributor/commitment/confirm-tx",
       body: {
         task_hash: { source: "context", path: "sideEffectParams.task_hash" },
         tx_hash: { source: "context", path: "txHash" },

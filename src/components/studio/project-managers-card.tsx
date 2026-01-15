@@ -25,13 +25,13 @@ import {
 import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 
-interface ProjectManagersCardProps {
-  treasuryNftPolicyId: string;
+export interface ProjectManagersCardProps {
+  projectId: string;
   className?: string;
 }
 
 interface SyncManagersResponse {
-  treasury_nft_policy_id: string;
+  project_id: string;
   managers_synced: string[];
   success: boolean;
 }
@@ -41,7 +41,7 @@ interface SyncManagersResponse {
  * with ability to sync to database
  */
 export function ProjectManagersCard({
-  treasuryNftPolicyId,
+  projectId,
   className,
 }: ProjectManagersCardProps) {
   const { user, authenticatedFetch } = useAndamioAuth();
@@ -67,10 +67,10 @@ export function ProjectManagersCard({
 
   // Find this specific project in owned or managing lists
   const ownedProject = ownedProjects?.find(
-    (p) => p.project_id === treasuryNftPolicyId
+    (p) => p.project_id === projectId
   );
   const managingProject = managingProjects?.find(
-    (p) => p.project_id === treasuryNftPolicyId
+    (p) => p.project_id === projectId
   );
   const onChainProject = ownedProject ?? managingProject;
 
@@ -84,12 +84,13 @@ export function ProjectManagersCard({
     setLastSyncSuccess(null);
 
     try {
+      // V2 API: POST /project-v2/admin/managers/sync
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/sync-managers`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/managers/sync`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
+          body: JSON.stringify({ project_id: projectId }),
         }
       );
 

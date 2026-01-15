@@ -38,10 +38,8 @@ import {
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
-import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
+import { type ProjectV2Output, type ProjectTaskV2Output } from "@andamio/db-api-types";
 import { formatLovelace } from "~/lib/cardano-utils";
-
-type TaskListOutput = TaskResponse[];
 
 import type { AndamioscanProjectDetails } from "~/lib/andamioscan";
 
@@ -230,16 +228,16 @@ function OnChainProjectData({
 /**
  * Project detail page displaying project info and tasks list
  *
- * API Endpoints:
- * - POST /projects/list (public) - with treasury_nft_policy_id filter
- * - POST /tasks/list (public) - tasks for this project
+ * API Endpoints (V2):
+ * - GET /project-v2/public/project/:project_id
+ * - GET /project-v2/public/tasks/:project_state_policy_id
  */
 export default function ProjectDetailPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
 
-  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
-  const [tasks, setTasks] = useState<TaskListOutput>([]);
+  const [project, setProject] = useState<ProjectV2Output | null>(null);
+  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -247,7 +245,7 @@ export default function ProjectDetailPage() {
   const {
     data: onChainProject,
     isLoading: isOnChainLoading,
-  } = useProject(treasuryNftPolicyId);
+  } = useProject(projectId);
 
   useEffect(() => {
     const fetchProjectAndTasks = async () => {
@@ -255,14 +253,9 @@ export default function ProjectDetailPage() {
       setError(null);
 
       try {
-        // Go API: POST /project/public/treasury/list
+        // V2 API: GET /project-v2/public/project/:project_id
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
         );
 
         if (!projectResponse.ok) {
@@ -275,36 +268,32 @@ export default function ProjectDetailPage() {
           throw new Error(`Project not found (${projectResponse.status})`);
         }
 
-        const projectsData = (await projectResponse.json()) as TreasuryListResponse;
-
-        // Find the specific project by treasury_nft_policy_id
-        const projectData = projectsData.find(
-          (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-        );
-
-        if (!projectData) {
-          throw new Error("Project not found");
-        }
-
+        const projectData = (await projectResponse.json()) as ProjectV2Output;
         setProject(projectData);
 
-        // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-        const tasksResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
-        );
+        // V2 API: GET /project-v2/public/tasks/:project_state_policy_id
+        // Note: project_state_policy_id comes from the project's states array
+        if (projectData.states && projectData.states.length > 0) {
+          const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
+          if (projectStatePolicyId) {
+            const tasksResponse = await fetch(
+              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/tasks/${projectStatePolicyId}`
+            );
 
-        if (!tasksResponse.ok) {
-          const errorText = await tasksResponse.text();
-          console.error("Tasks fetch error:", {
-            status: tasksResponse.status,
-            statusText: tasksResponse.statusText,
-            body: errorText,
-          });
-          // Don't throw - project might have no tasks yet
-          console.warn("Failed to fetch tasks:", errorText);
-        } else {
-          const tasksData = (await tasksResponse.json()) as TaskListOutput;
-          setTasks(tasksData ?? []);
+            if (!tasksResponse.ok) {
+              const errorText = await tasksResponse.text();
+              console.error("Tasks fetch error:", {
+                status: tasksResponse.status,
+                statusText: tasksResponse.statusText,
+                body: errorText,
+              });
+              // Don't throw - project might have no tasks yet
+              console.warn("Failed to fetch tasks:", errorText);
+            } else {
+              const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
+              setTasks(tasksData ?? []);
+            }
+          }
         }
       } catch (err) {
         console.error("Error fetching project and tasks:", err);
@@ -315,7 +304,7 @@ export default function ProjectDetailPage() {
     };
 
     void fetchProjectAndTasks();
-  }, [treasuryNftPolicyId]);
+  }, [projectId]);
 
   // Helper to check if a task is expired
   const isTaskExpired = (expirationTime: string | null): boolean => {
@@ -364,10 +353,10 @@ export default function ProjectDetailPage() {
       <div className="space-y-6">
         <AndamioBackButton href="/project" label="Back to Projects" />
 
-        <AndamioPageHeader title={project.title} />
+        <AndamioPageHeader title={project.title ?? "Project"} />
         <div className="flex flex-wrap items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            {project.treasury_nft_policy_id?.slice(0, 16)}...
+            {project.project_id?.slice(0, 16)}...
           </AndamioBadge>
         </div>
 
@@ -392,9 +381,9 @@ export default function ProjectDetailPage() {
       <AndamioBackButton href="/project" label="Back to Projects" />
 
       <AndamioPageHeader
-        title={project.title}
+        title={project.title ?? "Project"}
         action={
-          <Link href={`/project/${treasuryNftPolicyId}/contributor`}>
+          <Link href={`/project/${projectId}/contributor`}>
             <AndamioButton>
               <ContributorIcon className="h-4 w-4 mr-2" />
               Contribute
@@ -404,7 +393,7 @@ export default function ProjectDetailPage() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {project.treasury_nft_policy_id?.slice(0, 16)}...
+          {project.project_id?.slice(0, 16)}...
         </AndamioBadge>
       </div>
 
@@ -429,14 +418,14 @@ export default function ProjectDetailPage() {
             </AndamioTableHeader>
             <AndamioTableBody>
               {liveTasks.map((task) => (
-                <AndamioTableRow key={task.task_hash ?? task.task_index}>
+                <AndamioTableRow key={task.task_hash ?? task.index}>
                   <AndamioTableCell className="font-mono text-xs">
-                    {task.task_index}
+                    {task.index}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     {task.task_hash ? (
                       <Link
-                        href={`/project/${treasuryNftPolicyId}/${task.task_hash}`}
+                        href={`/project/${projectId}/${task.task_hash}`}
                         className="font-medium hover:underline"
                       >
                         {task.title}
@@ -446,7 +435,7 @@ export default function ProjectDetailPage() {
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
-                    {task.description}
+                    {task.content}
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
                     <AndamioBadge variant="outline">

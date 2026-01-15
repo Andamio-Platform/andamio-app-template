@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { env } from "~/env";
@@ -18,16 +18,17 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
   AndamioPageHeader,
+  AndamioPageLoading,
   AndamioText,
   AndamioBackButton,
   AndamioAddButton,
-  AndamioRemoveButton,
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { AddIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
+import { type ProjectV2Output } from "@andamio/db-api-types";
+import { toast } from "sonner";
 
 interface ApiError {
   message?: string;
@@ -36,49 +37,72 @@ interface ApiError {
 /**
  * Create New Task Page
  *
- * API Endpoint: POST /tasks/create (protected)
+ * API Endpoints (V2):
+ * - GET /project-v2/public/project/:project_id - Get project with states
+ * - POST /project-v2/manager/task/create - Create new task
  */
 export default function NewTaskPage() {
   const params = useParams();
   const router = useRouter();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  // Project state - need to fetch to get project_state_policy_id
+  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
+  const [projectError, setProjectError] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [content, setContent] = useState("");
   const [lovelace, setLovelace] = useState("1000000"); // Default 1 ADA
   const [expirationTime, setExpirationTime] = useState("");
-  const [acceptanceCriteria, setAcceptanceCriteria] = useState<string[]>([""]);
-  const [numAllowedCommitments, setNumAllowedCommitments] = useState(1);
 
   // Content state for editor
   const [contentJson, setContentJson] = useState<JSONContent | null>(null);
 
-  const handleContentChange = (content: JSONContent) => {
-    setContentJson(content);
+  const handleContentChange = (newContent: JSONContent) => {
+    setContentJson(newContent);
   };
 
   // Save state
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Acceptance criteria handlers
-  const addCriterion = () => {
-    setAcceptanceCriteria([...acceptanceCriteria, ""]);
-  };
+  // Fetch project to get project_state_policy_id
+  useEffect(() => {
+    const fetchProject = async () => {
+      setIsLoadingProject(true);
+      setProjectError(null);
 
-  const updateCriterion = (index: number, value: string) => {
-    const updated = [...acceptanceCriteria];
-    updated[index] = value;
-    setAcceptanceCriteria(updated);
-  };
+      try {
+        // V2 API: GET /project-v2/public/project/:project_id
+        const response = await fetch(
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+        );
 
-  const removeCriterion = (index: number) => {
-    if (acceptanceCriteria.length > 1) {
-      setAcceptanceCriteria(acceptanceCriteria.filter((_, i) => i !== index));
-    }
-  };
+        if (!response.ok) {
+          throw new Error("Failed to fetch project");
+        }
+
+        const projectData = (await response.json()) as ProjectV2Output;
+        const statePolicyId = projectData.states?.[0]?.project_state_policy_id;
+
+        if (!statePolicyId) {
+          throw new Error("Project has no on-chain state yet. Please ensure the project is minted first.");
+        }
+
+        setProjectStatePolicyId(statePolicyId);
+      } catch (err) {
+        console.error("Error fetching project:", err);
+        setProjectError(err instanceof Error ? err.message : "Failed to load project");
+      } finally {
+        setIsLoadingProject(false);
+      }
+    };
+
+    void fetchProject();
+  }, [projectId]);
 
   // Calculate ADA from lovelace
   const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
@@ -86,47 +110,63 @@ export default function NewTaskPage() {
   // Form validation
   const isValid =
     title.trim().length > 0 &&
-    description.trim().length > 0 &&
     parseInt(lovelace) >= 1000000 &&
-    expirationTime.trim().length > 0 &&
-    acceptanceCriteria.filter((c) => c.trim().length > 0).length > 0;
+    expirationTime.trim().length > 0;
 
   const handleCreate = async () => {
-    if (!isAuthenticated || !isValid) return;
+    if (!isAuthenticated) {
+      setError("You must be authenticated to create tasks");
+      return;
+    }
+    if (!projectStatePolicyId) {
+      setError("Project state not found. Please ensure the project is minted on-chain.");
+      return;
+    }
+    if (!isValid) {
+      setError("Please fill in all required fields: title, reward amount (min 1 ADA), and expiration time.");
+      return;
+    }
 
     setIsSaving(true);
     setError(null);
 
     try {
-      // Filter out empty acceptance criteria
-      const validCriteria = acceptanceCriteria.filter((c) => c.trim().length > 0);
-
-      // Go API: POST /project/manager/task/create
+      // V2 API: POST /project-v2/manager/task/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/manager/task/create`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            treasury_nft_policy_id: treasuryNftPolicyId,
+            project_state_policy_id: projectStatePolicyId,
             title: title.trim(),
-            description: description.trim(),
+            content: content.trim() || undefined,
             lovelace: lovelace,
             expiration_time: expirationTime,
-            acceptance_criteria: validCriteria,
-            num_allowed_commitments: numAllowedCommitments,
             content_json: contentJson,
           }),
         }
       );
 
       if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to create task");
+        const errorText = await response.text();
+        let errorMessage = "Failed to create task";
+        try {
+          const errorData = JSON.parse(errorText) as ApiError;
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
+      toast.success("Task Created!", {
+        description: `"${title.trim()}" saved as draft.`,
+      });
+
       // Redirect to draft tasks list
-      router.push(`/studio/project/${treasuryNftPolicyId}/draft-tasks`);
+      router.push(`/studio/project/${projectId}/draft-tasks`);
+      router.refresh();
     } catch (err) {
       console.error("Error creating task:", err);
       setError(err instanceof Error ? err.message : "Failed to create task");
@@ -140,7 +180,7 @@ export default function NewTaskPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          href={`/studio/project/${projectId}/draft-tasks`}
           label="Back to Tasks"
         />
 
@@ -156,12 +196,30 @@ export default function NewTaskPage() {
     );
   }
 
+  // Loading project state
+  if (isLoadingProject) {
+    return <AndamioPageLoading variant="content" />;
+  }
+
+  // Project error state
+  if (projectError || !projectStatePolicyId) {
+    return (
+      <div className="space-y-6">
+        <AndamioBackButton
+          href={`/studio/project/${projectId}/draft-tasks`}
+          label="Back to Tasks"
+        />
+        <AndamioErrorAlert error={projectError ?? "Project not ready for tasks"} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <AndamioBackButton
-          href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}
+          href={`/studio/project/${projectId}/draft-tasks`}
           label="Back to Tasks"
         />
         <AndamioBadge variant="secondary">Draft</AndamioBadge>
@@ -197,18 +255,18 @@ export default function NewTaskPage() {
             <AndamioText variant="small" className="text-xs">{title.length}/100 characters</AndamioText>
           </div>
 
-          {/* Description */}
+          {/* Content/Description */}
           <div className="space-y-2">
-            <AndamioLabel htmlFor="description">Description *</AndamioLabel>
+            <AndamioLabel htmlFor="content">Description</AndamioLabel>
             <AndamioTextarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               placeholder="Brief description of the task"
               maxLength={360}
               rows={3}
             />
-            <AndamioText variant="small" className="text-xs">{description.length}/360 characters</AndamioText>
+            <AndamioText variant="small" className="text-xs">{content.length}/360 characters</AndamioText>
           </div>
 
           {/* Rich Content */}
@@ -261,58 +319,13 @@ export default function NewTaskPage() {
             </AndamioText>
           </div>
 
-          {/* Number of Commitments */}
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="commitments">Number of Allowed Commitments</AndamioLabel>
-            <AndamioInput
-              id="commitments"
-              type="number"
-              value={numAllowedCommitments}
-              onChange={(e) => setNumAllowedCommitments(parseInt(e.target.value) || 1)}
-              min={1}
-            />
-            <AndamioText variant="small" className="text-xs">
-              How many contributors can commit to this task
-            </AndamioText>
-          </div>
-
-          {/* Acceptance Criteria */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <AndamioLabel>Acceptance Criteria *</AndamioLabel>
-              <AndamioButton variant="outline" size="sm" onClick={addCriterion}>
-                <AddIcon className="h-4 w-4 mr-1" />
-                Add
-              </AndamioButton>
-            </div>
-            <AndamioText variant="small" className="text-xs mb-2">
-              Define what contributors must deliver to complete the task
-            </AndamioText>
-            <div className="space-y-2">
-              {acceptanceCriteria.map((criterion, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <AndamioInput
-                    value={criterion}
-                    onChange={(e) => updateCriterion(index, e.target.value)}
-                    placeholder={`Criterion ${index + 1}`}
-                  />
-                  {acceptanceCriteria.length > 1 && (
-                    <AndamioRemoveButton
-                      onClick={() => removeCriterion(index)}
-                      ariaLabel={`Remove criterion ${index + 1}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Actions */}
           <AndamioActionFooter showBorder>
-            <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
-              <AndamioButton variant="outline">Cancel</AndamioButton>
+            <Link href={`/studio/project/${projectId}/draft-tasks`}>
+              <AndamioButton variant="outline" type="button">Cancel</AndamioButton>
             </Link>
             <AndamioAddButton
+              type="button"
               onClick={handleCreate}
               isLoading={isSaving}
               disabled={!isValid}

@@ -37,10 +37,10 @@ import type { AndamioTransactionDefinition } from "../../../../types";
  *
  * ## Side Effects
  *
- * **onSubmit**: Update task commitment status to pending assessment state
- * (PENDING_TX_TASK_ACCEPTED, PENDING_TX_TASK_REFUSED, or PENDING_TX_TASK_DENIED)
+ * **onSubmit**: Call assess endpoint with decision (accept/refuse/deny)
+ * Sets commitment to PENDING_TX_ASSESS status
  *
- * **onConfirmation**: Confirm assessment, finalize task commitment status
+ * **onConfirmation**: Confirm assessment, finalize commitment status to ACCEPTED/REFUSED/DENIED
  *
  * ## Critical Flag Pattern
  *

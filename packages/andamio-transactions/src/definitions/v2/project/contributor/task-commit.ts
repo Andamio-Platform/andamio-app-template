@@ -40,8 +40,8 @@ const txName = "PROJECT_CONTRIBUTOR_TASK_COMMIT" as const;
  *
  * ## Side Effects
  *
- * **onSubmit**: Create new task commitment with PENDING_TX_COMMITMENT_MADE status
- * **onConfirmation**: Confirm commitment, set status to PENDING_APPROVAL
+ * **onSubmit**: Create commitment and submit for review with evidence (direct commit + submit flow)
+ * **onConfirmation**: Confirm commitment, set status to SUBMITTED
  *
  * ## Critical Flag Pattern
  *
@@ -77,25 +77,39 @@ export const PROJECT_CONTRIBUTOR_TASK_COMMIT: AndamioTransactionDefinition = {
     {
       def: "Create Task Commitment",
       method: "POST",
-      endpoint: "/project/contributor/commitment/create",
+      endpoint: "/project-v2/contributor/commitment/create",
+      body: {
+        task_hash: { source: "context", path: "txParams.task_hash" },
+      },
+      // Non-critical: Task may not exist in DB yet if task_hash wasn't synced
+      // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+      critical: false,
+    },
+    {
+      def: "Submit Commitment for Review",
+      method: "POST",
+      endpoint: "/project-v2/contributor/commitment/submit",
       body: {
         task_hash: { source: "context", path: "txParams.task_hash" },
         evidence: { source: "context", path: "sideEffectParams.evidence" },
-        status: { source: "literal", value: "PENDING_TX_COMMITMENT_MADE" },
         pending_tx_hash: { source: "context", path: "txHash" },
       },
+      // Non-critical: Depends on Create succeeding
+      critical: false,
     },
   ],
   onConfirmation: [
     {
       def: "Confirm Task Commitment",
       method: "POST",
-      endpoint: "/project/contributor/commitment/confirm-transaction",
+      endpoint: "/project-v2/contributor/commitment/confirm-tx",
       body: {
         task_hash: { source: "context", path: "txParams.task_hash" },
         tx_hash: { source: "context", path: "txHash" },
       },
-      critical: true,
+      // Non-critical until task sync is implemented
+      // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+      critical: false,
     },
   ],
   ui: {

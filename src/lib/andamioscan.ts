@@ -1177,9 +1177,9 @@ export async function getProjectContributorStatus(
     return {
       alias: raw.alias,
       project_id: raw.project_id,
-      completed_tasks: raw.completed_tasks.map((t) => t.task_id),
-      pending_tasks: raw.pending_submissions.map((t) => t.task_id),
-      credentials: raw.credentials,
+      completed_tasks: (raw.completed_tasks ?? []).map((t) => t.task_id),
+      pending_tasks: (raw.pending_submissions ?? []).map((t) => t.task_id),
+      credentials: raw.credentials ?? [],
     };
   } catch (error) {
     if (error instanceof Error && error.message.includes("404")) {

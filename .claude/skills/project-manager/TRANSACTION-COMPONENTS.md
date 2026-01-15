@@ -122,7 +122,7 @@ All 16 V2 transaction definitions from `@andamio/transactions` are implemented. 
 | `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist-manage.tsx` | project-owner |
 | `PROJECT_MANAGER_TASKS_MANAGE` | `tasks-manage.tsx` | project-manager |
 | `PROJECT_MANAGER_TASKS_ASSESS` | `tasks-assess.tsx` | project-manager |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `project-enroll.tsx`, `task-commit.tsx` | project-contributor |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task-commit.tsx` | project-contributor |
 | `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` | project-contributor |
 | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` | project-contributor |
 
@@ -212,21 +212,38 @@ All 16 V2 transaction definitions from `@andamio/transactions` are implemented. 
 
 ---
 
-### Project Enrollment
+### Project Contributor Transactions (V2 Model)
 
 **Status**: ✅ Active
 
-**Purpose**: Enroll a contributor in a project with initial task commitment
+The Project Contributor flow uses **only 3 transactions** for the entire lifecycle:
 
-**Definition**: `PROJECT_CONTRIBUTOR_TASK_COMMIT`
+| Transaction | API Endpoint | Purpose |
+|-------------|--------------|---------|
+| **COMMIT** | `/v2/tx/project/contributor/task/commit` | Enroll + Claim Previous Rewards + Commit to New Task |
+| **ACTION** | `/v2/tx/project/contributor/task/action` | Update Evidence OR Cancel Commitment |
+| **CLAIM** | `/v2/tx/project/contributor/credential/claim` | Unenroll + Get Credential + Claim Final Rewards |
+
+**Key Insight**: There is NO separate "enroll" transaction. COMMIT handles:
+1. Enrolling the contributor (if not already enrolled)
+2. Claiming rewards from previous approved task (if any)
+3. Committing to a new task
+
+**Reward Distribution**:
+- Rewards are claimed automatically with COMMIT (continue contributing) or CLAIM (leave project)
+- No separate "claim rewards" transaction needed
 
 **Components**:
-- `src/components/transactions/project-enroll.tsx` - Initial project enrollment
-- `src/components/transactions/task-commit.tsx` - Subsequent task commitments
+- `src/components/transactions/task-commit.tsx` - Enrollment AND subsequent commits (single component)
+- `src/components/transactions/task-action.tsx` - Update evidence or cancel commitment
+- `src/components/transactions/project-credential-claim.tsx` - Leave project and get credential
+
+**Note**: `project-enroll.tsx` is **deprecated** - use `task-commit.tsx` for all commit scenarios.
 
 **Used In**:
-- `/project/[treasurynft]/contributor` - Contributor dashboard
-- `/project/[treasurynft]/[taskhash]` - Task detail page
+- `/project/[projectid]/contributor` - Contributor dashboard
+
+**See Also**: `.claude/skills/project-manager/CONTRIBUTOR-TRANSACTION-MODEL.md` for full documentation
 
 ---
 

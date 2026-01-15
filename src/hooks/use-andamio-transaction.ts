@@ -80,10 +80,27 @@ export function useAndamioTransaction<TParams = unknown>() {
 
   const execute = useCallback(
     async (config: AndamioTransactionConfig<TParams>) => {
+      console.log("[useAndamioTransaction] ========== EXECUTE START ==========");
+      console.log("[useAndamioTransaction] Definition:", config.definition.txType);
+
       // Filter params to only include txParams (not sideEffectParams)
       // The transaction API should only receive parameters defined in txApiSchema
       const txApiSchema = config.definition.buildTxConfig.txApiSchema;
       const allParams = config.params as Record<string, unknown>;
+
+      console.log("[useAndamioTransaction] All params received:", {
+        keys: Object.keys(allParams),
+        alias: allParams.alias,
+        project_id: allParams.project_id,
+        project_id_length: typeof allParams.project_id === 'string' ? allParams.project_id.length : 'N/A',
+        contributor_state_id: allParams.contributor_state_id,
+        contributor_state_id_length: typeof allParams.contributor_state_id === 'string' ? allParams.contributor_state_id.length : 'N/A',
+        task_hash: allParams.task_hash,
+        task_hash_length: typeof allParams.task_hash === 'string' ? allParams.task_hash.length : 'N/A',
+        task_info: allParams.task_info,
+        task_info_length: typeof allParams.task_info === 'string' ? allParams.task_info.length : 'N/A',
+        hasEvidence: !!allParams.evidence,
+      });
 
       // Extract only the keys that are in txApiSchema
       let txApiParams: Record<string, unknown> = {};
@@ -91,28 +108,61 @@ export function useAndamioTransaction<TParams = unknown>() {
       try {
         // Try to parse the params with txApiSchema to get only valid keys
         if (txApiSchema) {
+          console.log("[useAndamioTransaction] Validating with txApiSchema...");
           const parsed = txApiSchema.parse(allParams) as Record<string, unknown>;
+          console.log("[useAndamioTransaction] Schema validation PASSED");
           txApiParams = parsed;
         } else {
+          console.log("[useAndamioTransaction] No txApiSchema, using all params");
           // Fallback: if no schema, use all params
           txApiParams = allParams;
         }
-      } catch {
+      } catch (zodError) {
+        console.error("[useAndamioTransaction] Schema validation FAILED:", zodError);
+        // Log detailed zod error info
+        if (zodError && typeof zodError === 'object' && 'errors' in zodError) {
+          const errors = (zodError as { errors: Array<{ path: string[]; message: string; code: string }> }).errors;
+          console.error("[useAndamioTransaction] Zod validation errors:", errors);
+          errors.forEach((err, idx) => {
+            console.error(`[useAndamioTransaction] Error ${idx + 1}:`, {
+              path: err.path,
+              message: err.message,
+              code: err.code,
+            });
+          });
+        }
+
         // If parsing fails, try to extract keys manually
         // This handles partial matches where not all txApiSchema fields are provided
         const schemaShape = (txApiSchema as unknown as { shape?: Record<string, unknown> })?.shape;
         if (schemaShape) {
+          console.log("[useAndamioTransaction] Falling back to manual key extraction");
           const txApiKeys = Object.keys(schemaShape);
+          console.log("[useAndamioTransaction] Expected keys from schema:", txApiKeys);
           for (const key of txApiKeys) {
             if (key in allParams) {
               txApiParams[key] = allParams[key];
+              const paramValue = allParams[key];
+              console.log(`[useAndamioTransaction] Extracted key '${key}':`, {
+                value: typeof paramValue === 'string' ? `${paramValue.slice(0, 20)}... (${paramValue.length} chars)` : paramValue,
+              });
+            } else {
+              console.warn(`[useAndamioTransaction] Missing key '${key}' in params`);
             }
           }
         } else {
+          console.log("[useAndamioTransaction] No schema shape, using all params");
           // Last fallback: use all params
           txApiParams = allParams;
         }
       }
+
+      console.log("[useAndamioTransaction] Final txApiParams:", {
+        keys: Object.keys(txApiParams),
+        paramLengths: Object.fromEntries(
+          Object.entries(txApiParams).map(([k, v]) => [k, typeof v === 'string' ? v.length : typeof v])
+        ),
+      });
 
       await transaction.execute({
         endpoint: config.definition.buildTxConfig.builder.endpoint!,

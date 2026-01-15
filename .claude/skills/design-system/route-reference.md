@@ -69,8 +69,8 @@ Sidebar navigation with scrollable content area.
 | Route | Purpose | Page Pattern |
 |-------|---------|--------------|
 | `/project` | Project list | Standard with cards |
-| `/project/[treasurynft]` | Project detail | Detail page |
-| `/project/[treasurynft]/[taskhash]` | Task detail | Detail page |
+| `/project/[projectid]` | Project detail | Detail page |
+| `/project/[projectid]/[taskhash]` | Task detail | Detail page |
 
 #### Studio Hub (App Layout)
 | Route | Purpose | Page Pattern |
@@ -78,10 +78,10 @@ Sidebar navigation with scrollable content area.
 | `/studio` | Studio hub | Card grid |
 | `/studio/course/[coursenft]/instructor` | Instructor management | Standard |
 | `/studio/project` | Project studio list | Standard |
-| `/studio/project/[treasurynft]` | Project studio detail | Standard |
-| `/studio/project/[treasurynft]/draft-tasks` | Draft tasks list | Standard |
-| `/studio/project/[treasurynft]/draft-tasks/new` | New draft task | Form |
-| `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | Edit draft task | Form |
+| `/studio/project/[projectid]` | Project studio detail | Standard |
+| `/studio/project/[projectid]/draft-tasks` | Draft tasks list | Standard |
+| `/studio/project/[projectid]/draft-tasks/new` | New draft task | Form |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | Edit draft task | Form |
 
 ---
 
@@ -124,8 +124,8 @@ Sidebar + StudioHeader with dense workspace for content creation.
 | `/dashboard` | App Shell | Standard |
 | `/editor` | App Shell | Standard |
 | `/project` | App Shell | Standard |
-| `/project/[treasurynft]` | App Shell | Detail |
-| `/project/[treasurynft]/[taskhash]` | App Shell | Detail |
+| `/project/[projectid]` | App Shell | Detail |
+| `/project/[projectid]/[taskhash]` | App Shell | Detail |
 | `/sitemap` | App Shell | Standard |
 | `/studio` | App Shell | Card Grid |
 | `/studio/course` | **Studio Shell** | Master-Detail |
@@ -133,10 +133,10 @@ Sidebar + StudioHeader with dense workspace for content creation.
 | `/studio/course/[coursenft]/[modulecode]` | **Studio Shell** | Wizard |
 | `/studio/course/[coursenft]/instructor` | App Shell | Standard |
 | `/studio/project` | App Shell | Standard |
-| `/studio/project/[treasurynft]` | App Shell | Standard |
-| `/studio/project/[treasurynft]/draft-tasks` | App Shell | Standard |
-| `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | App Shell | Form |
-| `/studio/project/[treasurynft]/draft-tasks/new` | App Shell | Form |
+| `/studio/project/[projectid]` | App Shell | Standard |
+| `/studio/project/[projectid]/draft-tasks` | App Shell | Standard |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | App Shell | Form |
+| `/studio/project/[projectid]/draft-tasks/new` | App Shell | Form |
 
 ---
 

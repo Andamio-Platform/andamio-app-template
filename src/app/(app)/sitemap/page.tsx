@@ -30,7 +30,7 @@ import {
   WarningIcon,
   ServerIcon,
 } from "~/components/icons";
-import { type CourseListResponse, type TreasuryListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse, type ProjectV2Output } from "@andamio/db-api-types";
 import type { RouteCategory } from "~/types/ui";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -235,20 +235,20 @@ const dynamicRouteTemplates: RouteCategory[] = [
     icon: ProjectIcon,
     routes: [
       {
-        path: "/project/[treasuryNftPolicyId]",
+        path: "/project/[projectid]",
         label: "Project Detail",
         description: "View project overview and available tasks (Contributor view)",
         requiresAuth: false,
         dynamic: true,
-        params: ["treasuryNftPolicyId"],
+        params: ["projectid"],
       },
       {
-        path: "/project/[treasuryNftPolicyId]/[taskHash]",
+        path: "/project/[projectid]/[taskHash]",
         label: "Task Detail",
         description: "View task details and commit to work (Contributor view)",
         requiresAuth: false,
         dynamic: true,
-        params: ["treasuryNftPolicyId", "taskHash"],
+        params: ["projectid", "taskHash"],
       },
     ],
   },
@@ -257,36 +257,36 @@ const dynamicRouteTemplates: RouteCategory[] = [
     icon: DraftIcon,
     routes: [
       {
-        path: "/studio/project/[treasuryNftPolicyId]",
+        path: "/studio/project/[projectid]",
         label: "Project Dashboard",
         description: "Project management dashboard (Creator view)",
         requiresAuth: true,
         dynamic: true,
-        params: ["treasuryNftPolicyId"],
+        params: ["projectid"],
       },
       {
-        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks",
+        path: "/studio/project/[projectid]/draft-tasks",
         label: "Manage Tasks",
         description: "View and manage draft and live tasks",
         requiresAuth: true,
         dynamic: true,
-        params: ["treasuryNftPolicyId"],
+        params: ["projectid"],
       },
       {
-        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks/new",
+        path: "/studio/project/[projectid]/draft-tasks/new",
         label: "Create Task",
         description: "Create a new task for the project",
         requiresAuth: true,
         dynamic: true,
-        params: ["treasuryNftPolicyId"],
+        params: ["projectid"],
       },
       {
-        path: "/studio/project/[treasuryNftPolicyId]/draft-tasks/[taskIndex]",
+        path: "/studio/project/[projectid]/draft-tasks/[taskIndex]",
         label: "Edit Task",
         description: "Edit an existing draft task",
         requiresAuth: true,
         dynamic: true,
-        params: ["treasuryNftPolicyId", "taskIndex"],
+        params: ["projectid", "taskIndex"],
       },
     ],
   },
@@ -296,8 +296,8 @@ export default function SitemapPage() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [ownedCourses, setOwnedCourses] = useState<CourseListResponse>([]);
   const [publishedCourses, setPublishedCourses] = useState<CourseListResponse>([]);
-  const [publishedProjects, setPublishedProjects] = useState<TreasuryListResponse>([]);
-  const [ownedProjects, setOwnedProjects] = useState<TreasuryListResponse>([]);
+  const [publishedProjects, setPublishedProjects] = useState<ProjectV2Output[]>([]);
+  const [ownedProjects, setOwnedProjects] = useState<ProjectV2Output[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch courses and projects for dynamic route examples
@@ -314,17 +314,12 @@ export default function SitemapPage() {
           setPublishedCourses(pubData ?? []);
         }
 
-        // Go API: POST /project/public/treasury/list
+        // V2 API: GET /project-v2/public/projects/list
         const pubProjectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }
+          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/projects/list`
         );
         if (pubProjectResponse.ok) {
-          const pubData = (await pubProjectResponse.json()) as TreasuryListResponse;
+          const pubData = (await pubProjectResponse.json()) as ProjectV2Output[];
           setPublishedProjects(pubData ?? []);
         }
 
@@ -344,9 +339,9 @@ export default function SitemapPage() {
             setOwnedCourses(ownedData ?? []);
           }
 
-          // Go API: POST /project/owner/treasury/list-owned
+          // V2 API: POST /project-v2/admin/projects/list
           const ownedProjectResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/projects/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -354,7 +349,7 @@ export default function SitemapPage() {
             }
           );
           if (ownedProjectResponse.ok) {
-            const ownedData = (await ownedProjectResponse.json()) as TreasuryListResponse;
+            const ownedData = (await ownedProjectResponse.json()) as ProjectV2Output[];
             setOwnedProjects(ownedData ?? []);
           }
         }
@@ -528,14 +523,14 @@ export default function SitemapPage() {
                     category.category === "Contributor Project Pages" &&
                     examplePublishedProject
                   ) {
-                    const treasuryNftPolicyId = examplePublishedProject.treasury_nft_policy_id;
-                    if (treasuryNftPolicyId) {
-                      if (route.path === "/project/[treasuryNftPolicyId]") {
-                        exampleUrl = `/project/${treasuryNftPolicyId}`;
+                    const projectid = examplePublishedProject.project_id;
+                    if (projectid) {
+                      if (route.path === "/project/[projectid]") {
+                        exampleUrl = `/project/${projectid}`;
                         canNavigate = true;
                       } else if (route.path.includes("[taskHash]")) {
                         exampleUrl = route.path
-                          .replace("[treasuryNftPolicyId]", treasuryNftPolicyId)
+                          .replace("[projectid]", projectid)
                           .replace("[taskHash]", "example-task-hash");
                         canNavigate = false; // Task might not exist
                       }
@@ -544,20 +539,20 @@ export default function SitemapPage() {
                     category.category === "Creator Studio Project Pages" &&
                     exampleOwnedProject
                   ) {
-                    const treasuryNftPolicyId = exampleOwnedProject.treasury_nft_policy_id;
-                    if (treasuryNftPolicyId) {
-                      if (route.path === "/studio/project/[treasuryNftPolicyId]") {
-                        exampleUrl = `/studio/project/${treasuryNftPolicyId}`;
+                    const projectid = exampleOwnedProject.project_id;
+                    if (projectid) {
+                      if (route.path === "/studio/project/[projectid]") {
+                        exampleUrl = `/studio/project/${projectid}`;
                         canNavigate = true;
-                      } else if (route.path === "/studio/project/[treasuryNftPolicyId]/draft-tasks") {
-                        exampleUrl = `/studio/project/${treasuryNftPolicyId}/draft-tasks`;
+                      } else if (route.path === "/studio/project/[projectid]/draft-tasks") {
+                        exampleUrl = `/studio/project/${projectid}/draft-tasks`;
                         canNavigate = true;
-                      } else if (route.path === "/studio/project/[treasuryNftPolicyId]/draft-tasks/new") {
-                        exampleUrl = `/studio/project/${treasuryNftPolicyId}/draft-tasks/new`;
+                      } else if (route.path === "/studio/project/[projectid]/draft-tasks/new") {
+                        exampleUrl = `/studio/project/${projectid}/draft-tasks/new`;
                         canNavigate = true;
                       } else if (route.path.includes("[taskIndex]")) {
                         exampleUrl = route.path
-                          .replace("[treasuryNftPolicyId]", treasuryNftPolicyId)
+                          .replace("[projectid]", projectid)
                           .replace("[taskIndex]", "1");
                         canNavigate = false; // Task might not exist
                       }

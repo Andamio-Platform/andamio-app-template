@@ -150,11 +150,10 @@ The Go API uses **role-based routing**:
 | Course Teacher | 22 | 14 | ✅ Migrated |
 | Course Student | 6 | 4 | ✅ Migrated |
 | Course Shared | 3 | 2 | ✅ Migrated |
-| Project Public | 3 | 2 | ✅ Migrated |
-| Project Owner | 4 | 3 | ✅ Migrated |
-| Project Manager | 7 | 4 | ✅ Migrated |
-| Project Contributor | 6 | 2 | ⚠️ Partial |
-| Project Shared | 1 | 0 | ⏳ Not Started |
+| Project V2 Public | 3 | 3 | ✅ Migrated |
+| Project V2 Admin | 3 | 3 | ✅ Migrated |
+| Project V2 Manager | 5 | 3 | ✅ Migrated |
+| Project V2 Contributor | 6 | 1 | ⚠️ Partial |
 | **TOTAL** | **88** | **50** | **57%** |
 
 *Run the automated coverage script for precise, up-to-date counts.*
@@ -263,52 +262,42 @@ The Go API uses **role-based routing**:
 | `/course/shared/assignment-commitment/update-status` | POST | `use-pending-tx-watcher.ts` | ✅ |
 | `/course/shared/assignment-commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Project Public ✅
+### Project V2 Public ✅
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/project/public/treasury/list` | POST | `project/page.tsx` | ✅ |
-| `/project/public/tasks/list/{id}` | GET | `[treasurynft]/page.tsx` | ✅ |
-| `/project/public/prerequisite/list` | GET | - | ⏳ |
+| `/project-v2/public/projects/list` | GET | `project/page.tsx` | ✅ |
+| `/project-v2/public/project/{project_id}` | GET | `[projectid]/page.tsx` | ✅ |
+| `/project-v2/public/tasks/{project_state_policy_id}` | GET | `[projectid]/page.tsx` | ✅ |
 
-### Project Owner ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/project/owner/treasury/list-owned` | POST | `studio/project/page.tsx` | ✅ |
-| `/project/owner/treasury/update` | POST | `[treasurynft]/page.tsx` | ✅ |
-| `/project/owner/treasury/mint` | POST | - | ⏳ |
-| `/project/owner/treasury/confirm-mint` | POST | - | ⏳ |
-| `/project/owner/task/delete` | POST | `draft-tasks/page.tsx` | ✅ |
-
-### Project Manager ✅
+### Project V2 Admin ✅
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/project/manager/task/create` | POST | `draft-tasks/new/page.tsx` | ✅ |
-| `/project/manager/task/update` | POST | `[taskindex]/page.tsx` | ✅ |
-| `/project/manager/task/delete` | POST | - | ⏳ |
-| `/project/manager/task/batch-update-status` | POST | - | ⏳ |
-| `/project/manager/task/batch-confirm` | POST | - | ⏳ |
-| `/project/manager/commitment/update-status` | POST | - | ⏳ |
-| `/project/manager/commitment/confirm-transaction` | POST | - | ⏳ |
+| `/project-v2/admin/projects/list` | POST | `studio/project/page.tsx` | ✅ |
+| `/project-v2/admin/project/register` | POST | `studio/project/page.tsx` | ✅ |
+| `/project-v2/admin/project/update` | POST | `[projectid]/page.tsx` | ✅ |
 
-### Project Contributor ⚠️
+### Project V2 Manager ✅
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/project/contributor/commitment/get` | POST | `[taskhash]/page.tsx` | ✅ |
-| `/project/contributor/commitment/create` | POST | - | ⏳ |
-| `/project/contributor/commitment/update-evidence` | POST | - | ⏳ |
-| `/project/contributor/commitment/update-status` | POST | - | ⏳ |
-| `/project/contributor/commitment/delete` | POST | - | ⏳ |
-| `/project/contributor/commitment/confirm-transaction` | POST | - | ⏳ |
+| `/project-v2/manager/task/create` | POST | `draft-tasks/new/page.tsx` | ✅ |
+| `/project-v2/manager/task/update` | POST | `[taskindex]/page.tsx` | ✅ |
+| `/project-v2/manager/task/delete` | POST | `draft-tasks/page.tsx` | ✅ |
+| `/project-v2/manager/commitment/update-status` | POST | - | ⏳ |
+| `/project-v2/manager/commitment/confirm-transaction` | POST | - | ⏳ |
 
-### Project Shared ⏳
+### Project V2 Contributor ⚠️
 
 | Endpoint | Method | Hook/File | Status |
 |----------|--------|-----------|--------|
-| `/project/shared/contributor/create` | POST | - | ⏳ |
+| `/project-v2/contributor/commitment/get` | POST | `[taskhash]/page.tsx` | ✅ |
+| `/project-v2/contributor/commitment/create` | POST | - | ⏳ |
+| `/project-v2/contributor/commitment/update-evidence` | POST | - | ⏳ |
+| `/project-v2/contributor/commitment/update-status` | POST | - | ⏳ |
+| `/project-v2/contributor/commitment/delete` | POST | - | ⏳ |
+| `/project-v2/contributor/commitment/confirm-transaction` | POST | - | ⏳ |
 
 ---
 

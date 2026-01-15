@@ -118,10 +118,10 @@ export function TasksAssess({
         task_decisions: [
           { task_hash: taskHash, outcome: decision },
         ],
-        // Side effect params
+        // Side effect params (matches /project-v2/manager/commitment/assess)
+        task_hash: taskHash,
         contributor_alias: contributorAlias,
-        task_code: taskCode,
-        assessment_result: decision,
+        decision: decision,
       },
       onSuccess: async (txResult) => {
         console.log("[TasksAssess] Success!", txResult);

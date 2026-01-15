@@ -32,13 +32,13 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon } from "~/components/icons";
-import { type TreasuryListResponse, type TaskResponse } from "@andamio/db-api-types";
+import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { type ProjectV2Output, type ProjectTaskV2Output } from "@andamio/db-api-types";
 import { ManagersManage, BlacklistManage } from "~/components/transactions";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
-import { getManagingProjects } from "~/lib/andamioscan";
-
-type TaskListOutput = TaskResponse[];
+import { getManagingProjects, getProject } from "~/lib/andamioscan";
+import { syncProjectTasks } from "~/lib/project-task-sync";
+import { toast } from "sonner";
 
 interface ApiError {
   message?: string;
@@ -48,7 +48,7 @@ interface ApiError {
  * Project Dashboard - Edit project details and access management areas
  *
  * API Endpoints:
- * - POST /projects/list-owned (protected) - with treasury_nft_policy_id filter
+ * - POST /projects/list-owned (protected) - with project_id filter
  * - POST /projects/update (protected) - Update project metadata
  * - POST /tasks/list (public) - Get task summary
  */
@@ -57,7 +57,7 @@ export default function ProjectDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
+  const projectId = params.projectid as string;
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
 
   // URL-based tab persistence
@@ -71,12 +71,17 @@ export default function ProjectDashboardPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const [project, setProject] = useState<TreasuryListResponse[0] | null>(null);
-  const [tasks, setTasks] = useState<TaskListOutput>([]);
+  const [project, setProject] = useState<ProjectV2Output | null>(null);
+  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Track user's role: "owner" can view but not manage, "manager" can manage
   const [userRole, setUserRole] = useState<"owner" | "manager" | null>(null);
+
+  // On-chain status tracking
+  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
+  const [onChainContributorCount, setOnChainContributorCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -100,55 +105,32 @@ export default function ProjectDashboardPage() {
     setUserRole(null);
 
     try {
-      let projectData: TreasuryListResponse[0] | null = null;
+      let projectData: ProjectV2Output | null = null;
       let detectedRole: "owner" | "manager" | null = null;
 
-      // Step 1: Try to fetch as owner first
-      const projectResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/list-owned`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-        }
+      // Step 1: Try to fetch project directly (V2 API)
+      const projectResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
       );
 
       if (projectResponse.ok) {
-        const projectsData = (await projectResponse.json()) as TreasuryListResponse;
-        projectData = projectsData.find(
-          (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-        ) ?? null;
-        if (projectData) {
+        projectData = (await projectResponse.json()) as ProjectV2Output;
+        // Check if user is admin/owner
+        if (user?.accessTokenAlias && projectData.admin_alias === user.accessTokenAlias) {
           detectedRole = "owner";
         }
       }
 
-      // Step 2: If not found as owner, check if user is a manager via Andamioscan
-      if (!projectData && user?.accessTokenAlias) {
+      // Step 2: If not owner, check if user is a manager via Andamioscan
+      if (detectedRole !== "owner" && user?.accessTokenAlias) {
         try {
           const managingProjects = await getManagingProjects(user.accessTokenAlias);
           const isManager = managingProjects.some(
-            (p) => p.project_id === treasuryNftPolicyId
+            (p) => p.project_id === projectId
           );
 
           if (isManager) {
             detectedRole = "manager";
-            // Fetch project data via public endpoint since managers can access
-            const publicProjectResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/treasury/list`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ treasury_nft_policy_id: treasuryNftPolicyId }),
-              }
-            );
-
-            if (publicProjectResponse.ok) {
-              const publicProjectsData = (await publicProjectResponse.json()) as TreasuryListResponse;
-              projectData = publicProjectsData.find(
-                (p) => p.treasury_nft_policy_id === treasuryNftPolicyId
-              ) ?? null;
-            }
           }
         } catch (scanErr) {
           console.warn("Andamioscan check failed, continuing:", scanErr);
@@ -162,17 +144,37 @@ export default function ProjectDashboardPage() {
       setProject(projectData);
       setUserRole(detectedRole);
       setTitle(projectData.title ?? "");
-      // Note: description, imageUrl, videoUrl are not in the list-owned response
-      // They would need to be fetched from a separate endpoint if needed
+      setDescription(projectData.description ?? "");
+      setImageUrl(projectData.image_url ?? "");
+      // Note: video_url not available in V2 API
 
-      // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-      const tasksResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`
-      );
+      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // Manager endpoint returns all tasks including DRAFT status
+      if (projectData.states && projectData.states.length > 0) {
+        const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
+        if (projectStatePolicyId) {
+          const tasksResponse = await authenticatedFetch(
+            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${projectStatePolicyId}`
+          );
 
-      if (tasksResponse.ok) {
-        const tasksData = (await tasksResponse.json()) as TaskListOutput;
-        setTasks(tasksData ?? []);
+          if (tasksResponse.ok) {
+            const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
+            setTasks(tasksData ?? []);
+          }
+        }
+      }
+
+      // Fetch on-chain data from Andamioscan
+      try {
+        const onChainProject = await getProject(projectId);
+        if (onChainProject) {
+          setOnChainTaskCount(onChainProject.tasks?.length ?? 0);
+          setOnChainContributorCount(onChainProject.contributors?.length ?? 0);
+        }
+      } catch {
+        // If Andamioscan fails, just ignore - we'll show DB data only
+        setOnChainTaskCount(0);
+        setOnChainContributorCount(0);
       }
     } catch (err) {
       console.error("Error fetching project:", err);
@@ -185,7 +187,7 @@ export default function ProjectDashboardPage() {
   useEffect(() => {
     void fetchProjectAndTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, treasuryNftPolicyId, user?.accessTokenAlias]);
+  }, [isAuthenticated, projectId, user?.accessTokenAlias]);
 
   const handleSave = async () => {
     if (!isAuthenticated || !project) {
@@ -197,20 +199,18 @@ export default function ProjectDashboardPage() {
     setSaveError(null);
 
     try {
-      // Go API: POST /project/owner/treasury/update
+      // V2 API: POST /project-v2/admin/project/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/owner/treasury/update`,
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/project/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            treasury_nft_policy_id: treasuryNftPolicyId,
-            data: {
-              title: title || undefined,
-              description: description || undefined,
-              image_url: imageUrl || undefined,
-              video_url: videoUrl || undefined,
-            },
+            project_id: projectId,
+            title: title || undefined,
+            description: description || undefined,
+            image_url: imageUrl || undefined,
+            video_url: videoUrl || undefined,
           }),
         }
       );
@@ -226,6 +226,46 @@ export default function ProjectDashboardPage() {
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSync = async () => {
+    const projectStatePolicyId = project?.states?.[0]?.project_state_policy_id;
+    if (!projectStatePolicyId) {
+      toast.error("Cannot sync: missing project state policy ID");
+      return;
+    }
+
+    setIsSyncing(true);
+    toast.info("Syncing with blockchain...");
+
+    try {
+      const syncResult = await syncProjectTasks(
+        projectId,
+        projectStatePolicyId,
+        "", // Empty txHash - will be fetched from treasury_fundings
+        authenticatedFetch,
+        false // Not a dry run
+      );
+
+      if (syncResult.confirmed > 0) {
+        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
+      } else if (syncResult.errors.length > 0) {
+        toast.error("Sync failed", {
+          description: syncResult.errors[0],
+        });
+      } else {
+        toast.success("Database is in sync with blockchain");
+      }
+
+      // Refresh data
+      await fetchProjectAndTasks();
+    } catch (err) {
+      toast.error("Sync failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -270,7 +310,7 @@ export default function ProjectDashboardPage() {
         <AndamioBackButton href="/studio/project" label="Back to Projects" />
         <div className="flex items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            {treasuryNftPolicyId.slice(0, 16)}...
+            {projectId.slice(0, 16)}...
           </AndamioBadge>
           {userRole === "owner" && (
             <AndamioBadge variant="secondary">Owner</AndamioBadge>
@@ -342,6 +382,30 @@ export default function ProjectDashboardPage() {
 
         {/* Overview Tab */}
         <AndamioTabsContent value="overview" className="mt-6 space-y-4">
+          {/* Sync Warning - show when on-chain count doesn't match DB */}
+          {onChainTaskCount > liveTasks && (
+            <div className="flex items-center justify-between rounded-lg border border-warning bg-warning/10 p-4">
+              <div className="flex items-center gap-3">
+                <OnChainIcon className="h-5 w-5 text-warning" />
+                <div>
+                  <AndamioText className="font-medium">Database out of sync</AndamioText>
+                  <AndamioText variant="small">
+                    {onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks} marked as live in database.
+                  </AndamioText>
+                </div>
+              </div>
+              <AndamioButton
+                variant="outline"
+                size="sm"
+                onClick={handleSync}
+                disabled={isSyncing}
+              >
+                <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Syncing..." : "Sync Now"}
+              </AndamioButton>
+            </div>
+          )}
+
           {/* Project Stats */}
           <AndamioCard>
             <AndamioCardHeader>
@@ -355,17 +419,32 @@ export default function ProjectDashboardPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold">{tasks.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Tasks</div>
+                  <div className="text-sm text-muted-foreground">Total Tasks (DB)</div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold">{draftTasks}</div>
                   <div className="text-sm text-muted-foreground">Draft Tasks</div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{liveTasks}</div>
-                  <div className="text-sm text-muted-foreground">Live Tasks</div>
+                  <div className="text-2xl font-bold text-success">{liveTasks}</div>
+                  <div className="text-sm text-muted-foreground">Live Tasks (DB)</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold flex items-center justify-center gap-1">
+                    <OnChainIcon className="h-5 w-5" />
+                    {onChainTaskCount}
+                  </div>
+                  <div className="text-sm text-muted-foreground">On-Chain Tasks</div>
                 </div>
               </div>
+              {onChainContributorCount > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <OnChainIcon className="h-4 w-4" />
+                    {onChainContributorCount} contributor{onChainContributorCount !== 1 ? "s" : ""} on-chain
+                  </div>
+                </div>
+              )}
             </AndamioCardContent>
           </AndamioCard>
 
@@ -384,14 +463,14 @@ export default function ProjectDashboardPage() {
                   <div className="text-sm text-muted-foreground">Treasury Management</div>
                   <div className="text-lg font-medium">Configure project treasury settings</div>
                 </div>
-                <Link href={`/studio/project/${treasuryNftPolicyId}/manage-treasury`}>
+                <Link href={`/studio/project/${projectId}/manage-treasury`}>
                   <AndamioButton variant="outline">
                     <TreasuryIcon className="h-4 w-4 mr-2" />
                     Manage Treasury
                   </AndamioButton>
                 </Link>
               </div>
-              <Link href={`/studio/project/${treasuryNftPolicyId}/transaction-history`}>
+              <Link href={`/studio/project/${projectId}/transaction-history`}>
                 <AndamioButton variant="outline" className="w-full justify-start">
                   <HistoryIcon className="h-4 w-4 mr-2" />
                   View Transaction History
@@ -412,7 +491,7 @@ export default function ProjectDashboardPage() {
               <AndamioCardDescription>Create and manage project tasks</AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-3">
-              <Link href={`/studio/project/${treasuryNftPolicyId}/draft-tasks`}>
+              <Link href={`/studio/project/${projectId}/draft-tasks`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
                   <TaskIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
@@ -424,7 +503,7 @@ export default function ProjectDashboardPage() {
                 </AndamioButton>
               </Link>
 
-              <Link href={`/studio/project/${treasuryNftPolicyId}/commitments`}>
+              <Link href={`/studio/project/${projectId}/commitments`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
                   <AssignmentIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
@@ -436,7 +515,7 @@ export default function ProjectDashboardPage() {
                 </AndamioButton>
               </Link>
 
-              <Link href={`/studio/project/${treasuryNftPolicyId}/manager`}>
+              <Link href={`/studio/project/${projectId}/manager`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
                   <ManagerIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
@@ -462,7 +541,7 @@ export default function ProjectDashboardPage() {
               <AndamioCardDescription>Manage project contributors</AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent>
-              <Link href={`/studio/project/${treasuryNftPolicyId}/manage-contributors`}>
+              <Link href={`/studio/project/${projectId}/manage-contributors`}>
                 <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
                   <TeacherIcon className="h-5 w-5 mr-3" />
                   <div className="text-left">
@@ -477,11 +556,11 @@ export default function ProjectDashboardPage() {
           </AndamioCard>
 
           {/* On-Chain Managers Sync */}
-          <ProjectManagersCard treasuryNftPolicyId={treasuryNftPolicyId} />
+          <ProjectManagersCard projectId={projectId} />
 
           {/* Managers Management (On-Chain Transaction) */}
           <ManagersManage
-            projectNftPolicyId={treasuryNftPolicyId}
+            projectNftPolicyId={projectId}
             onSuccess={() => {
               // Refresh project data
               void fetchProjectAndTasks();
@@ -492,7 +571,7 @@ export default function ProjectDashboardPage() {
         {/* Blacklist Tab */}
         <AndamioTabsContent value="blacklist" className="mt-6 space-y-4">
           <BlacklistManage
-            projectNftPolicyId={treasuryNftPolicyId}
+            projectNftPolicyId={projectId}
             onSuccess={() => {
               // Refresh project data
               void fetchProjectAndTasks();
@@ -514,7 +593,7 @@ export default function ProjectDashboardPage() {
               {/* Treasury NFT Policy ID (Read-only) */}
               <div className="space-y-2">
                 <AndamioLabel htmlFor="treasuryNft">Treasury NFT Policy ID</AndamioLabel>
-                <AndamioInput id="treasuryNft" value={treasuryNftPolicyId} disabled />
+                <AndamioInput id="treasuryNft" value={projectId} disabled />
                 <AndamioText variant="small">Policy ID cannot be changed</AndamioText>
               </div>
 

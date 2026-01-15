@@ -117,10 +117,21 @@ function loadLocalSpec(relativePath: string): OpenAPISpec | null {
   }
 }
 
-function extractEndpoints(spec: OpenAPISpec): EndpointInfo[] {
+// Patterns to exclude from DB API coverage (deprecated endpoints)
+const DB_API_EXCLUDE_PATTERNS = [
+  // V1 Project endpoints are deprecated - only V2 (/project-v2/*) should be tracked
+  /^\/project\/(public|owner|manager|contributor|shared)\//,
+];
+
+function extractEndpoints(spec: OpenAPISpec, excludePatterns: RegExp[] = []): EndpointInfo[] {
   const endpoints: EndpointInfo[] = [];
 
   for (const [pathStr, methods] of Object.entries(spec.paths)) {
+    // Skip excluded patterns
+    if (excludePatterns.some((pattern) => pattern.test(pathStr))) {
+      continue;
+    }
+
     for (const method of Object.keys(methods)) {
       if (["get", "post", "put", "patch", "delete"].includes(method.toLowerCase())) {
         endpoints.push({
@@ -170,8 +181,9 @@ async function scanDbApiCoverage(): Promise<APICoverage> {
     return createEmptyCoverage(CONFIG.dbApi.name, CONFIG.dbApi.baseUrl);
   }
 
-  const endpoints = extractEndpoints(spec);
-  console.log(`  Found ${endpoints.length} endpoints in OpenAPI spec`);
+  // Extract endpoints, excluding deprecated V1 project endpoints
+  const endpoints = extractEndpoints(spec, DB_API_EXCLUDE_PATTERNS);
+  console.log(`  Found ${endpoints.length} endpoints in OpenAPI spec (excluding deprecated V1 project endpoints)`);
 
   // Scan implementation files
   const srcDir = path.join(PROJECT_ROOT, "src");

@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-01-14T14:53:06.347Z",
+  "generatedAt": "2026-01-14T19:50:07.968Z",
   "summary": {
-    "totalEndpoints": 137,
-    "implementedEndpoints": 105,
-    "overallCoverage": 77
+    "totalEndpoints": 142,
+    "implementedEndpoints": 96,
+    "overallCoverage": 68
   },
   "apis": {
     "dbApi": {
       "name": "Andamio DB API",
       "baseUrl": "https://andamio-db-api-343753432212.us-central1.run.app",
-      "totalEndpoints": 87,
-      "implementedEndpoints": 57,
-      "coveragePercent": 66,
+      "totalEndpoints": 92,
+      "implementedEndpoints": 48,
+      "coveragePercent": 52,
       "endpoints": [
         {
           "path": "/health",
@@ -387,123 +387,139 @@
           "implemented": false
         },
         {
-          "path": "/project/public/treasury/list",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/page.tsx"
-        },
-        {
-          "path": "/project/owner/treasury/list-owned",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/page.tsx"
-        },
-        {
-          "path": "/project/owner/treasury/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/page.tsx"
-        },
-        {
-          "path": "/project/owner/treasury/mint",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/page.tsx"
-        },
-        {
-          "path": "/project/owner/treasury/confirm-mint",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project/public/task/list/{treasury_nft_policy_id}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/page.tsx"
-        },
-        {
-          "path": "/project/public/prerequisite/list",
+          "path": "/project-v2/public/projects/list",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project/manager/task/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/draft-tasks/new/page.tsx"
+          "path": "/project-v2/public/project/{project_id}",
+          "method": "GET",
+          "implemented": false
         },
         {
-          "path": "/project/manager/task/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/draft-tasks/[taskindex]/page.tsx"
+          "path": "/project-v2/public/project-state/{project_state_policy_id}",
+          "method": "GET",
+          "implemented": false
         },
         {
-          "path": "/project/manager/task/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/project/[treasurynft]/draft-tasks/page.tsx"
+          "path": "/project-v2/public/tasks/{project_state_policy_id}",
+          "method": "GET",
+          "implemented": false
         },
         {
-          "path": "/project/manager/task/batch-update-status",
+          "path": "/project-v2/public/task/{task_hash}",
+          "method": "GET",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/admin/project/create",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/manager/task/batch-confirm",
+          "path": "/project-v2/admin/project/update",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/manager/commitment/update-status",
+          "path": "/project-v2/admin/project/confirm-tx",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/manager/commitment/confirm-transaction",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
-        },
-        {
-          "path": "/project/shared/contributor/create",
+          "path": "/project-v2/admin/project/sync",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/get",
+          "path": "/project-v2/admin/managers/sync",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/project/[treasurynft]/[taskhash]/page.tsx"
+          "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/create",
+          "path": "/project-v2/manager/task/create",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/update",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/delete",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/tasks/batch-status",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/confirm-tx",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/commitment/assess",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/commitment/confirm-assess",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/create",
           "method": "POST",
           "implemented": true,
           "implementationLocation": "src/components/learner/assignment-commitment.tsx"
         },
         {
-          "path": "/project/contributor/commitment/update-evidence",
+          "path": "/project-v2/contributor/commitment/update",
           "method": "POST",
           "implemented": true,
           "implementationLocation": "src/components/learner/assignment-commitment.tsx"
         },
         {
-          "path": "/project/contributor/commitment/update-status",
+          "path": "/project-v2/contributor/commitment/delete",
+          "method": "POST",
+          "implemented": true,
+          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
+        },
+        {
+          "path": "/project-v2/contributor/commitment/submit",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/delete",
+          "path": "/project-v2/contributor/commitment/claim",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
+          "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/confirm-transaction",
+          "path": "/project-v2/contributor/commitment/leave",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/confirm-tx",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitments/list",
           "method": "POST",
           "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
+          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
+        },
+        {
+          "path": "/project-v2/contributor/commitment/get",
+          "method": "POST",
+          "implemented": true,
+          "implementationLocation": "src/components/learner/user-course-status.tsx"
         }
       ],
       "missingEndpoints": [
@@ -623,37 +639,107 @@
           "implemented": false
         },
         {
-          "path": "/project/owner/treasury/confirm-mint",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project/public/prerequisite/list",
+          "path": "/project-v2/public/projects/list",
           "method": "GET",
           "implemented": false
         },
         {
-          "path": "/project/manager/task/batch-update-status",
+          "path": "/project-v2/public/project/{project_id}",
+          "method": "GET",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/public/project-state/{project_state_policy_id}",
+          "method": "GET",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/public/tasks/{project_state_policy_id}",
+          "method": "GET",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/public/task/{task_hash}",
+          "method": "GET",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/admin/project/create",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/manager/task/batch-confirm",
+          "path": "/project-v2/admin/project/update",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/manager/commitment/update-status",
+          "path": "/project-v2/admin/project/confirm-tx",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/shared/contributor/create",
+          "path": "/project-v2/admin/project/sync",
           "method": "POST",
           "implemented": false
         },
         {
-          "path": "/project/contributor/commitment/update-status",
+          "path": "/project-v2/admin/managers/sync",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/create",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/update",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/delete",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/tasks/batch-status",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/task/confirm-tx",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/commitment/assess",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/manager/commitment/confirm-assess",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/submit",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/claim",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/leave",
+          "method": "POST",
+          "implemented": false
+        },
+        {
+          "path": "/project-v2/contributor/commitment/confirm-tx",
           "method": "POST",
           "implemented": false
         }

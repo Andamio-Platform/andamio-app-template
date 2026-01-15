@@ -26,13 +26,14 @@ import {
   AndamioText,
   AndamioCheckbox,
 } from "~/components/andamio";
-import { TaskIcon, TreasuryIcon } from "~/components/icons";
-import { type TaskResponse } from "@andamio/db-api-types";
+import { TaskIcon, TreasuryIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { type ProjectTaskV2Output } from "@andamio/db-api-types";
 import { TasksManage } from "~/components/transactions";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject } from "~/lib/andamioscan";
-
-type TaskListOutput = TaskResponse[];
+import { getProject, type AndamioscanPrerequisite } from "~/lib/andamioscan";
+import { syncProjectTasks } from "~/lib/project-task-sync";
+import { toast } from "sonner";
 
 /**
  * ListValue - Array of [asset_class, quantity] tuples
@@ -66,10 +67,10 @@ interface ProjectData {
  */
 export default function ManageTreasuryPage() {
   const params = useParams();
-  const treasuryNftPolicyId = params.treasurynft as string;
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const projectId = params.projectid as string;
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [tasks, setTasks] = useState<TaskListOutput>([]);
+  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,77 +80,92 @@ export default function ManageTreasuryPage() {
   // Contributor state ID (needed for transaction)
   const [contributorStateId, setContributorStateId] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    console.group("[ManageTreasury] 📥 Fetching data");
-    console.log("Treasury NFT Policy ID:", treasuryNftPolicyId);
+  // Prerequisites from Andamioscan (needed for transaction)
+  const [prerequisites, setPrerequisites] = useState<AndamioscanPrerequisite[]>([]);
 
+  // On-chain task count from Andamioscan (to detect sync issues)
+  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchData = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Go API: GET /project/public/task/list/{treasury_nft_policy_id}
-      const apiUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project/public/task/list/${treasuryNftPolicyId}`;
-      console.log("Fetching tasks from:", apiUrl);
+      // V2 API: First get project to find project_state_policy_id
+      const projectResponse = await fetch(
+        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/public/project/${projectId}`
+      );
 
-      const tasksResponse = await fetch(apiUrl);
+      if (!projectResponse.ok) {
+        throw new Error("Failed to fetch project");
+      }
+
+      const projectData = await projectResponse.json() as { states?: Array<{ project_state_policy_id?: string }> };
+      const projectStatePolicyId = projectData.states?.[0]?.project_state_policy_id;
+
+      if (!projectStatePolicyId) {
+        setTasks([]);
+        return;
+      }
+
+      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // Manager endpoint returns all tasks including DRAFT status
+      const apiUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${projectStatePolicyId}`;
+
+      const tasksResponse = await authenticatedFetch(apiUrl);
 
       if (!tasksResponse.ok) {
-        const errorText = await tasksResponse.text();
-        console.log("Task fetch error:", tasksResponse.status, errorText);
-
-        // Handle "no escrows" errors as empty state
-        const noEscrowsError = errorText.toLowerCase().includes("no escrow") ||
-                               errorText.toLowerCase().includes("escrow") && tasksResponse.status === 400;
-        if (noEscrowsError) {
-          console.log("No escrows found - treating as empty task list");
+        // 404 means no tasks yet
+        if (tasksResponse.status === 404) {
           setTasks([]);
-          console.groupEnd();
           return;
         }
         throw new Error("Failed to fetch tasks");
       }
 
-      const tasksData = (await tasksResponse.json()) as TaskListOutput;
-      console.log("Tasks fetched:", tasksData?.length ?? 0);
-      console.log("Draft tasks:", tasksData?.filter(t => t.status === "DRAFT").length ?? 0);
-      console.log("Live tasks:", tasksData?.filter(t => t.status === "ON_CHAIN").length ?? 0);
+      const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
+      console.log("[manage-treasury] Fetched DB tasks:", {
+        count: tasksData?.length ?? 0,
+        tasks: tasksData?.map((t) => ({
+          index: t.index,
+          title: t.title,
+          status: t.status,
+          task_hash: t.task_hash,
+        })),
+      });
       setTasks(tasksData ?? []);
 
-      // Try to get project details from Andamioscan for contributor state ID
-      console.log("Fetching project details from Andamioscan...");
-      try {
-        const projectDetails = await getProject(treasuryNftPolicyId);
-        if (projectDetails) {
-          console.log("Andamioscan project details:", {
-            contributors: projectDetails.contributors?.length ?? 0,
-            tasks: projectDetails.tasks?.length ?? 0,
-            submissions: projectDetails.submissions?.length ?? 0,
-          });
+      // The project_state_policy_id IS the contributor_state_id for the Atlas TX API
+      setContributorStateId(projectStatePolicyId);
 
-          if (projectDetails.tasks.length > 0) {
-            // Get the contributor_state_policy_id from an existing task
-            const existingTask = projectDetails.tasks[0];
-            if (existingTask) {
-              console.log("Found contributor_state_policy_id:", existingTask.contributor_state_policy_id);
-              setContributorStateId(existingTask.contributor_state_policy_id);
-            }
-          } else {
-            console.log("No on-chain tasks found - contributor_state_id will be omitted (it's optional)");
-          }
+      // Fetch prerequisites and on-chain tasks from Andamioscan
+      try {
+        const projectDetails = await getProject(projectId);
+        console.log("[manage-treasury] Fetched Andamioscan data:", {
+          taskCount: projectDetails?.tasks?.length ?? 0,
+          tasks: projectDetails?.tasks?.map((t) => ({
+            task_id: t.task_id,
+            lovelace: t.lovelace,
+          })),
+        });
+        if (projectDetails?.prerequisites) {
+          setPrerequisites(projectDetails.prerequisites);
         } else {
-          console.log("Project not found on Andamioscan - may not be indexed yet");
+          setPrerequisites([]);
         }
-      } catch (scanErr) {
-        console.warn("Could not fetch project details from Andamioscan:", scanErr);
-        // Not critical - we can still show the UI
+        // Track on-chain task count to detect sync issues
+        setOnChainTaskCount(projectDetails?.tasks?.length ?? 0);
+      } catch {
+        // If Andamioscan fails, use empty prerequisites
+        setPrerequisites([]);
+        setOnChainTaskCount(0);
       }
 
     } catch (err) {
-      console.error("Error fetching data:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setIsLoading(false);
-      console.groupEnd();
     }
   };
 
@@ -158,7 +174,7 @@ export default function ManageTreasuryPage() {
       void fetchData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, treasuryNftPolicyId]);
+  }, [isAuthenticated, projectId]);
 
   const handleToggleTask = (taskIndex: number) => {
     setSelectedTaskIndices((prev) => {
@@ -179,7 +195,77 @@ export default function ManageTreasuryPage() {
       setSelectedTaskIndices(new Set());
     } else {
       // Select all draft tasks
-      setSelectedTaskIndices(new Set(draftTasks.map((t) => t.task_index)));
+      setSelectedTaskIndices(new Set(draftTasks.map((t) => t.index)));
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!contributorStateId) {
+      toast.error("Cannot sync: missing contributor state ID");
+      return;
+    }
+
+    console.log("[manage-treasury] Starting manual sync...");
+    console.log("[manage-treasury] projectId:", projectId);
+    console.log("[manage-treasury] contributorStateId:", contributorStateId);
+    console.log("[manage-treasury] Current state - tasks:", tasks.length, "onChainTaskCount:", onChainTaskCount);
+
+    setIsSyncing(true);
+    toast.info("Syncing with blockchain...");
+
+    try {
+      // Sync tasks - the function will automatically get tx_hash from treasury_fundings
+      const syncResult = await syncProjectTasks(
+        projectId,
+        contributorStateId,
+        "", // Empty txHash - will be fetched from treasury_fundings automatically
+        authenticatedFetch,
+        false // Not a dry run - actually sync
+      );
+
+      console.log("[manage-treasury] Sync result:", {
+        confirmed: syncResult.confirmed,
+        matchedCount: syncResult.matched.length,
+        unmatchedDbCount: syncResult.unmatchedDb.length,
+        unmatchedOnChainCount: syncResult.unmatchedOnChain.length,
+        errors: syncResult.errors,
+      });
+
+      if (syncResult.confirmed > 0) {
+        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`, {
+          description: `${syncResult.confirmed} task(s) updated to ON_CHAIN status`,
+        });
+      } else if (syncResult.matched.length > 0 && syncResult.errors.length > 0) {
+        // Matched but couldn't confirm
+        toast.warning(`Found ${syncResult.matched.length} matching task(s)`, {
+          description: syncResult.errors[0],
+          duration: 8000,
+        });
+      } else if (syncResult.unmatchedOnChain.length > 0 && syncResult.unmatchedDb.length === 0) {
+        // On-chain tasks exist but no matching DB tasks
+        toast.warning("On-chain tasks don't match database", {
+          description: `Found ${syncResult.unmatchedOnChain.length} on-chain task(s) with no matching database entries. This may happen if tasks were created directly on-chain.`,
+          duration: 8000,
+        });
+      } else if (syncResult.errors.length > 0) {
+        toast.error("Sync failed", {
+          description: syncResult.errors[0],
+        });
+      } else {
+        toast.success("Database is in sync with blockchain");
+      }
+
+      // Refresh data to get latest state
+      console.log("[manage-treasury] Refreshing data after sync...");
+      await fetchData();
+      console.log("[manage-treasury] Data refreshed - tasks:", tasks.length);
+    } catch (err) {
+      console.error("[manage-treasury] Sync error:", err);
+      toast.error("Sync failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -187,7 +273,7 @@ export default function ManageTreasuryPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioErrorAlert
           title="Authentication Required"
           error="Please connect your wallet to manage the treasury."
@@ -205,7 +291,7 @@ export default function ManageTreasuryPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioErrorAlert error={error} />
       </div>
     );
@@ -216,14 +302,14 @@ export default function ManageTreasuryPage() {
   const liveTasks = tasks.filter((t) => t.status === "ON_CHAIN");
 
   // Get selected tasks
-  const selectedTasks = draftTasks.filter((t) => selectedTaskIndices.has(t.task_index));
+  const selectedTasks = draftTasks.filter((t) => selectedTaskIndices.has(t.index));
 
   // Convert selected tasks to ProjectData format for the transaction
   // IMPORTANT: project_content is the task description (max 140 chars), NOT a hash!
   // expiration_time must be in MILLISECONDS
   const tasksToAdd: ProjectData[] = selectedTasks.map((task) => {
     // Use task title/description as project_content (truncate to 140 chars)
-    const projectContent = (task.title ?? task.description ?? "Task").substring(0, 140);
+    const projectContent = (task.title ?? task.content ?? "Task").substring(0, 140);
 
     // Ensure expiration_time is in milliseconds
     // If it's a small number (< year 2000 in ms), it might be in seconds
@@ -240,15 +326,6 @@ export default function ManageTreasuryPage() {
       native_assets: [], // Empty for now - could add native tokens later
     };
 
-    console.log(`[ManageTreasury] Converting task ${task.task_index}:`, {
-      title: task.title,
-      project_content: projectData.project_content,
-      expiration_time: projectData.expiration_time,
-      expiration_date: new Date(projectData.expiration_time).toISOString(),
-      lovelace_amount: projectData.lovelace_amount,
-      ada_amount: projectData.lovelace_amount / 1_000_000,
-    });
-
     return projectData;
   });
 
@@ -257,23 +334,12 @@ export default function ManageTreasuryPage() {
   const depositValue: ListValue = totalLovelace > 0 ? [["lovelace", totalLovelace]] : [];
 
   // Task codes for side effects
-  const taskCodes = selectedTasks.map((t) => `TASK_${t.task_index}`);
-
-  // Log the conversion summary
-  if (selectedTasks.length > 0) {
-    console.group("[ManageTreasury] 📋 Task Conversion Summary");
-    console.log("Selected tasks:", selectedTasks.length);
-    console.log("Total deposit:", `${totalLovelace / 1_000_000} ADA`);
-    console.log("Deposit value (ListValue format):", depositValue);
-    console.log("Task codes:", taskCodes);
-    console.log("ProjectData array:", JSON.stringify(tasksToAdd, null, 2));
-    console.groupEnd();
-  }
+  const taskCodes = selectedTasks.map((t) => `TASK_${t.index}`);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <AndamioBackButton href={`/studio/project/${treasuryNftPolicyId}`} label="Back to Project" />
+      <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
 
       <AndamioPageHeader
         title="Manage Treasury"
@@ -281,12 +347,17 @@ export default function ManageTreasuryPage() {
       />
 
       {/* Stats */}
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <AndamioBadge variant="secondary">
           {draftTasks.length} Draft Task{draftTasks.length !== 1 ? "s" : ""}
         </AndamioBadge>
-        <AndamioBadge variant="default">
+        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+          <OnChainIcon className="h-3 w-3 mr-1" />
           {liveTasks.length} Live Task{liveTasks.length !== 1 ? "s" : ""}
+        </AndamioBadge>
+        <AndamioBadge variant="outline">
+          <OnChainIcon className="h-3 w-3 mr-1" />
+          {onChainTaskCount} On-Chain (Andamioscan)
         </AndamioBadge>
         {selectedTasks.length > 0 && (
           <AndamioBadge variant="outline" className="bg-primary/10">
@@ -294,6 +365,31 @@ export default function ManageTreasuryPage() {
           </AndamioBadge>
         )}
       </div>
+
+      {/* Sync Warning - show when on-chain count doesn't match DB live count */}
+      {onChainTaskCount > liveTasks.length && (
+        <div className="flex items-center justify-between rounded-lg border border-warning bg-warning/10 p-4">
+          <div className="flex items-center gap-3">
+            <OnChainIcon className="h-5 w-5 text-warning" />
+            <div>
+              <AndamioText className="font-medium">Database out of sync</AndamioText>
+              <AndamioText variant="small">
+                {onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks.length} marked as live in database.
+                {" "}Click Sync Now to update the database.
+              </AndamioText>
+            </div>
+          </div>
+          <AndamioButton
+            variant="outline"
+            size="sm"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+          >
+            <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing..." : "Sync Now"}
+          </AndamioButton>
+        </div>
+      )}
 
       {/* Draft Tasks for Publishing */}
       {draftTasks.length > 0 ? (
@@ -330,25 +426,25 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {draftTasks.map((task) => {
-                    const isSelected = selectedTaskIndices.has(task.task_index);
+                    const isSelected = selectedTaskIndices.has(task.index);
                     // Task is valid if it has a title (used as project_content)
                     const isValid = task.title && task.title.length > 0 && task.title.length <= 140;
 
                     return (
                       <AndamioTableRow
-                        key={task.task_hash ?? `draft-${task.task_index}`}
+                        key={task.task_hash ?? `draft-${task.index}`}
                         className={isSelected ? "bg-primary/5" : ""}
                       >
                         <AndamioTableCell>
                           <AndamioCheckbox
                             checked={isSelected}
-                            onCheckedChange={() => handleToggleTask(task.task_index)}
+                            onCheckedChange={() => handleToggleTask(task.index)}
                             disabled={!isValid}
-                            aria-label={`Select task ${task.task_index}`}
+                            aria-label={`Select task ${task.index}`}
                           />
                         </AndamioTableCell>
                         <AndamioTableCell className="font-mono text-xs">
-                          {task.task_index}
+                          {task.index}
                         </AndamioTableCell>
                         <AndamioTableCell>
                           <div>
@@ -374,39 +470,46 @@ export default function ManageTreasuryPage() {
             </AndamioTableContainer>
 
             {/* TasksManage Transaction - only show when tasks are selected */}
-            {selectedTasks.length > 0 && (
+            {selectedTasks.length > 0 && contributorStateId && (
               <>
-                {/* Debug info for developers */}
+                {/* Transaction preview */}
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
                   <div><strong>Transaction Preview:</strong></div>
                   <div>Tasks to add: {tasksToAdd.length}</div>
                   <div>Total deposit: {totalLovelace / 1_000_000} ADA</div>
-                  <div>Contributor State ID: {contributorStateId ?? "⚠️ MISSING - waiting for Andamioscan endpoint"}</div>
+                  <div>Contributor State ID: {contributorStateId}</div>
                 </div>
 
-                {contributorStateId ? (
-                  <TasksManage
-                    projectNftPolicyId={treasuryNftPolicyId}
-                    contributorStateId={contributorStateId}
-                    tasksToAdd={tasksToAdd}
-                    depositValue={depositValue}
-                    taskCodes={taskCodes}
-                    onSuccess={async () => {
-                      console.log("[ManageTreasury] ✅ Tasks published successfully!");
-                      // Clear selection and refresh
-                      setSelectedTaskIndices(new Set());
-                      await fetchData();
-                    }}
-                  />
-                ) : (
-                  <div className="rounded-md border border-warning bg-warning/10 p-4 text-sm">
-                    <div className="font-medium text-warning-foreground">🚧 Blocked: Missing Contributor State ID</div>
-                    <div className="text-muted-foreground mt-1">
-                      Task publishing requires a <code className="text-xs bg-muted px-1 rounded">contributor_state_id</code> from Andamioscan.
-                      Waiting for updated endpoint from the Andamioscan team.
-                    </div>
-                  </div>
-                )}
+                <TasksManage
+                  projectNftPolicyId={projectId}
+                  contributorStateId={contributorStateId}
+                  prerequisites={prerequisites}
+                  tasksToAdd={tasksToAdd}
+                  depositValue={depositValue}
+                  taskCodes={taskCodes}
+                  onSuccess={async (txHash) => {
+                    // Sync on-chain tasks with DB
+                    toast.info("Syncing tasks with blockchain...");
+                    const syncResult = await syncProjectTasks(
+                      projectId,
+                      contributorStateId,
+                      txHash,
+                      authenticatedFetch
+                    );
+
+                    if (syncResult.confirmed > 0) {
+                      toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
+                    } else if (syncResult.errors.length > 0) {
+                      toast.warning("Sync completed with errors", {
+                        description: syncResult.errors[0],
+                      });
+                    }
+
+                    // Clear selection and refresh
+                    setSelectedTaskIndices(new Set());
+                    await fetchData();
+                  }}
+                />
               </>
             )}
           </AndamioCardContent>
@@ -445,9 +548,9 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {liveTasks.map((task) => (
-                    <AndamioTableRow key={task.task_hash ?? task.task_index}>
+                    <AndamioTableRow key={task.task_hash ?? task.index}>
                       <AndamioTableCell className="font-mono text-xs">
-                        {task.task_index}
+                        {task.index}
                       </AndamioTableCell>
                       <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
                       <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
@@ -457,7 +560,10 @@ export default function ManageTreasuryPage() {
                         <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="default">Live</AndamioBadge>
+                        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                          <OnChainIcon className="h-3 w-3 mr-1" />
+                          On-Chain
+                        </AndamioBadge>
                       </AndamioTableCell>
                     </AndamioTableRow>
                   ))}

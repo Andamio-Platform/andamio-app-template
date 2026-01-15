@@ -1,8 +1,33 @@
 # Project Status
 
-> **Last Updated**: January 14, 2026 (Session 7 - Transaction Schema Audit + Design System)
+> **Last Updated**: January 14, 2026 (Session 9 - Contributor Transaction Model & Commitment Sync)
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## 🚨 CURRENT BLOCKER: Task Update/Delete API Bug
+
+**Status**: Blocked on DB API fix
+
+The `POST /project-v2/manager/task/update` and `POST /project-v2/manager/task/delete` endpoints return 404 "Task not found" for tasks that exist and can be listed.
+
+**Evidence**:
+- Tasks successfully listed via `GET /project-v2/manager/tasks/{policy_id}` ✅
+- Task create works ✅
+- Task update returns 404 ❌
+- Task delete returns 404 ❌
+
+**Bug reported to DB API team**. Resume testing when fixed.
+
+### When Resuming This Session
+
+1. ⏳ Verify task update/delete API fix is deployed
+2. ⏳ Test task edit functionality
+3. ⏳ Test task delete functionality
+4. ⏳ Test Publish Tasks (mint to chain) workflow
+5. ⏳ Clean up debug console.log statements in draft-tasks pages
+6. ⏳ Commit all changes
 
 ---
 
@@ -32,6 +57,7 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
+| **Project V2 Task Update/Delete** | 🚨 **Blocking** | API returns 404 for existing tasks. Bug reported to DB API team. |
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
 | **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
 | **Wallet Authentication** | ✅ **Eternl Fixed** | Eternl auth working; other wallets need testing |
@@ -61,6 +87,133 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 | **2026-02-06 (Fri)** | Andamio V2 Mainnet Launch | Feature backlog resumes |
 
 **Note**: During Jan 16 → Feb 6, primary dev focus is on app.andamio.io (production fork). This template remains the reference implementation.
+
+---
+
+## Session Notes (January 14, 2026) - Session 9: Contributor Transaction Model & Commitment Sync
+
+**Context**: Documenting the Contributor transaction model and implementing commitment sync for manager view.
+
+### Key Documentation Created
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| **CONTRIBUTOR-TRANSACTION-MODEL.md** | `.claude/skills/project-manager/` | Complete documentation of 3-transaction contributor lifecycle (COMMIT, ACTION, CLAIM) |
+
+### New Features Implemented
+
+| Feature | Files | Description |
+|---------|-------|-------------|
+| **Commitments Page** | `src/app/(app)/studio/project/[projectid]/commitments/page.tsx` | Manager view for pending task assessments |
+| **Commitment Sync Utility** | `src/lib/project-commitment-sync.ts` | Sync on-chain submissions to DB commitment records |
+| **Project Eligibility** | `src/lib/project-eligibility.ts` | Check contributor eligibility for tasks |
+| **DB Status Check** | Added to commitments page | Shows which commitments exist in DB vs on-chain only |
+
+### Commitment Sync Flow
+
+When on-chain submissions exist but DB records are missing (due to failed side effects during original commit):
+
+1. Manager views pending assessments from Andamioscan
+2. "DB Status" column shows ✅ (exists) or ⚠️ "Missing"
+3. Click "Sync" button to create DB record from on-chain data
+4. Calls: `create` → `submit` → `confirm-tx` endpoints
+5. Assessment can then proceed normally
+
+### Key API Endpoints Used
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /v2/projects/managers/{alias}/assessments/pending` | Andamioscan: pending assessments |
+| `POST /project-v2/contributor/commitment/get` | Check if DB record exists |
+| `POST /project-v2/contributor/commitment/create` | Create commitment record |
+| `POST /project-v2/contributor/commitment/submit` | Submit with evidence |
+| `POST /project-v2/contributor/commitment/confirm-tx` | Confirm transaction |
+
+### Transaction Component Updates
+
+| Component | Change |
+|-----------|--------|
+| `task-commit.ts` | Made side effects non-critical (Issue #44) |
+| `task-action.ts` | Updated for evidence update flow |
+| `tasks-assess.ts` | Fixed schema: `task_hash` → `alias` in task_decisions |
+
+### Files Changed (Uncommitted)
+
+**New Files**:
+- `src/app/(app)/studio/project/[projectid]/commitments/page.tsx`
+- `src/lib/project-commitment-sync.ts`
+- `src/lib/project-eligibility.ts`
+- `.claude/skills/project-manager/CONTRIBUTOR-TRANSACTION-MODEL.md`
+
+**Modified Transaction Definitions**:
+- `packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts`
+- `packages/andamio-transactions/src/definitions/v2/project/contributor/task-action.ts`
+- `packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts`
+
+**Modified Components**:
+- `src/components/transactions/task-commit.tsx`
+- `src/components/transactions/task-action.tsx`
+- `src/components/transactions/tasks-assess.tsx`
+- `src/components/transactions/project-enroll.tsx`
+
+### Known Issues / Bugs Remaining
+
+1. **Sync button may fail** - Need to test with actual pending assessments
+2. **DB status check** - Currently checks via contributor endpoint (may need manager endpoint)
+3. **Task hash validation** - Some edge cases with task_hash not in DB
+
+### GitHub Issues
+
+| Issue | Title |
+|-------|-------|
+| **#43** | Task hash validation fails when task not synced to DB |
+| **#44** | Make side effects non-critical until task sync implemented |
+
+---
+
+## Session Notes (January 14, 2026) - Session 8: Project V2 API Integration Testing
+
+**Context**: Testing Project V2 API endpoints with live preprod data.
+
+### Completed This Session
+
+| Task | Details |
+|------|---------|
+| **Project Register Endpoint** | Requested and integrated new `POST /project-v2/admin/project/register` endpoint. Allows registering on-chain projects to DB with title. |
+| **Managers Sync** | Tested `POST /project-v2/admin/managers/sync` - working correctly. |
+| **Task Create** | `POST /project-v2/manager/task/create` working - created 4 draft tasks. |
+| **Manager Tasks List Endpoint** | Requested and integrated new `GET /project-v2/manager/tasks/{policy_id}` - returns all tasks including DRAFT status. |
+| **Draft Tasks Page Fix** | Updated to use manager endpoint (was using public endpoint that only returns ON_CHAIN tasks). |
+| **Project Dashboard Fix** | Updated task fetch to use manager endpoint for accurate task counts. |
+| **Edit Task Page Fix** | Updated to use manager endpoint for loading draft tasks. |
+
+### API Endpoints Requested & Deployed
+
+| Endpoint | Version | Purpose |
+|----------|---------|---------|
+| `POST /project-v2/admin/project/register` | v1.3.1 | Register on-chain project to DB with title |
+| `GET /project-v2/manager/tasks/{policy_id}` | v1.3.3 | List all tasks including DRAFT status |
+
+### Project V2 Testing Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Project Register | ✅ Working | Owner can register on-chain project with title |
+| Managers Sync | ✅ Working | Syncs on-chain managers to DB |
+| Task Create | ✅ Working | Manager can create draft tasks |
+| Task List | ✅ Working | Shows all tasks including drafts |
+| Task Update | ❌ Blocked | API returns 404 "Task not found" |
+| Task Delete | ❌ Blocked | API returns 404 "Task not found" |
+| Publish Tasks | ⏳ Pending | Waiting for update/delete fix |
+
+### Files Modified (Uncommitted)
+
+- `package.json` / `package-lock.json` - @andamio/db-api-types v1.3.3
+- `src/app/(app)/studio/project/page.tsx` - Register endpoint integration
+- `src/app/(app)/studio/project/[projectid]/page.tsx` - Manager tasks endpoint
+- `src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx` - Manager tasks endpoint
+- `src/app/(app)/studio/project/[projectid]/draft-tasks/new/page.tsx` - Better error handling, toast
+- `src/app/(app)/studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` - Manager tasks endpoint
 
 ---
 
@@ -267,7 +420,7 @@ Verify `queryClient.invalidateQueries()` called with correct keys in:
 | Area | Status | Progress |
 |------|--------|----------|
 | Course System | Stable | 15/15 routes |
-| Project System | In Progress | 6/13 routes, 9 transaction components |
+| Project System | In Progress | 10/13 routes, 9 transaction components |
 | DB API Coverage | **57%** | 50/88 endpoints |
 | Tx API Coverage | **100%** | 16/16 definitions |
 | Andamioscan Coverage | **94%** | 32/34 endpoints |
@@ -443,38 +596,46 @@ All transaction components now use `useAndamioTransaction` for standardized side
 
 **Recent Progress**: Contributor and Manager dashboards implemented (January 2026)
 
-### Routes: 2/13 Implemented
+### Routes: 10/13 Implemented
 
-**Public (Contributor)** - 2/3 routes:
+**Public (Contributor)** - 4/4 routes:
 - `/project` - ✅ Project catalog
-- `/project/[treasurynft]` - ✅ Project detail with tasks
-- `/project/[treasurynft]/contributor` - ✅ **NEW** Contributor dashboard (enroll, commit, claim)
-- `/project/[treasurynft]/[taskhash]` - Task detail with commitment
+- `/project/[projectid]` - ✅ Project detail with tasks
+- `/project/[projectid]/contributor` - ✅ Contributor dashboard (enroll, commit, claim)
+- `/project/[projectid]/[taskhash]` - ✅ Task detail with commitment
 
-**Studio (Manager)** - 1/10 routes:
+**Studio (Manager)** - 6/9 routes:
 - `/studio/project` - ✅ Project management
-- `/studio/project/[treasurynft]` - ✅ Project dashboard
-- `/studio/project/[treasurynft]/manager` - ✅ **NEW** Manager dashboard (review submissions)
-- `/studio/project/[treasurynft]/draft-tasks` - ✅ Task list management
-- `/studio/project/[treasurynft]/draft-tasks/new` - ✅ Create new task
-- `/studio/project/[treasurynft]/draft-tasks/[taskindex]` - ✅ Edit existing task
-- `/studio/project/[treasurynft]/manage-treasury` - Planned
-- `/studio/project/[treasurynft]/manage-contributors` - Planned
-- `/studio/project/[treasurynft]/commitments` - Planned
-- `/studio/project/[treasurynft]/transaction-history` - Planned
+- `/studio/project/[projectid]` - ✅ Project dashboard
+- `/studio/project/[projectid]/manager` - ✅ Manager dashboard (review submissions)
+- `/studio/project/[projectid]/draft-tasks` - ✅ Task list management
+- `/studio/project/[projectid]/draft-tasks/new` - ✅ Create new task
+- `/studio/project/[projectid]/draft-tasks/[taskindex]` - ✅ Edit existing task
+- `/studio/project/[projectid]/manage-treasury` - Planned
+- `/studio/project/[projectid]/manage-contributors` - Planned
+- `/studio/project/[projectid]/commitments` - Planned
 
 ### Transaction Components: 8 Created
 
+**Contributor Transactions** (3 total for entire lifecycle):
+| Component | Definition | Purpose | Status |
+|-----------|------------|---------|--------|
+| `TaskCommit` | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Enroll + Claim Rewards + Commit to Task | Active |
+| `TaskAction` | `PROJECT_CONTRIBUTOR_TASK_ACTION` | Update Evidence OR Cancel Commitment | Active |
+| `ProjectCredentialClaim` | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Unenroll + Get Credential + Claim Rewards | Active |
+
+**Key Model**: COMMIT handles enrollment automatically. Rewards claimed with next COMMIT or CLAIM.
+
+**Manager/Owner Transactions**:
 | Component | Purpose | Status |
 |-----------|---------|--------|
-| `ProjectEnroll` | Enroll in project + initial task commit | Active |
-| `TaskCommit` | Commit to a task with evidence | Active |
-| `ProjectCredentialClaim` | Claim earned project credentials | Active |
 | `TasksAssess` | Manager: assess task submissions | Active |
 | `TasksManage` | Manager: manage project tasks | Active |
 | `ManagersManage` | Manager: manage project managers | Active |
 | `BlacklistManage` | Manager: manage blacklist | Active |
 | `CreateProject` | Create new project treasury | Active |
+
+**Deprecated**: `ProjectEnroll` - use `TaskCommit` for all commit scenarios including first enrollment.
 
 16 API endpoints mapped, implementation ongoing.
 
@@ -812,7 +973,7 @@ All transaction components now use `useAndamioTransaction` for standardized side
 2. **Side Effect Parameter Mapping**: The `useAndamioTransaction` hook's API response mapping is fragile. API returns snake_case, but mappings have been inconsistent. Consider standardizing or adding explicit mapping functions.
 3. **Cache Invalidation After Transactions**: Some routes require manual refresh after transactions complete. Need to audit all transaction `onSuccess` callbacks to ensure `queryClient.invalidateQueries()` is called with correct query keys. Affected: course creation, module minting, enrollment, assignment commits.
 4. **Low Hook Coverage**: Most pages use `useState`/`useEffect` instead of React Query
-5. **Project Routes Partial**: 6/13 routes implemented, remaining 7 routes pending (manage-treasury, manage-contributors, commitments, etc.)
+5. **Project Routes Partial**: 10/13 routes implemented, remaining 3 routes pending (manage-treasury, manage-contributors, commitments)
 6. **User Endpoints Unused**: 0% of user-related API endpoints integrated
 7. **Duplicate Routes**: `/courses` and `/studio/course` show same data
 

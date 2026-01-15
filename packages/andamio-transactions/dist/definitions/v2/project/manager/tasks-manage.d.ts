@@ -12,7 +12,8 @@ import type { AndamioTransactionDefinition } from "../../../../types";
  * {
  *   "alias": "manager1",                  // Manager's access token alias
  *   "project_id": "abc123...",            // Project NFT policy ID (56 char hex)
- *   "contributor_state_id": "def456...",  // Contributor state policy ID (56 char hex) - from Andamioscan
+ *   "contributor_state_id": "def456...",  // Contributor state policy ID (56 char hex)
+ *   "prerequisites": [],                  // Course prerequisites (from Andamioscan, [] if none)
  *   "tasks_to_add": [{
  *     "project_content": "Task description text",  // Task content (max 140 chars)
  *     "expiration_time": 1735689600000,            // Unix timestamp in MILLISECONDS

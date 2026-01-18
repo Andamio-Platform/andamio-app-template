@@ -1,18 +1,20 @@
 /**
- * TasksManage Transaction Component (V2)
+ * TasksManage Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for project managers to add or remove tasks from a project.
- * Uses PROJECT_MANAGER_TASKS_MANAGE transaction definition.
+ * Uses PROJECT_MANAGER_TASKS_MANAGE transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/manager/tasks-manage.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { PROJECT_MANAGER_TASKS_MANAGE } from "@andamio/transactions";
+import { computeTaskHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -27,8 +29,9 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TaskIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
+import { TaskIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 /**
  * ListValue - Array of [asset_class, quantity] tuples
@@ -45,13 +48,13 @@ type ListValue = Array<[string, number]>;
  * @see https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json
  *
  * @property project_content - Task content/description (max 140 chars, NOT a hash!)
- * @property expiration_time - Unix timestamp in MILLISECONDS
+ * @property expiration_posix - Unix timestamp in MILLISECONDS
  * @property lovelace_amount - Reward amount in lovelace
  * @property native_assets - ListValue array of [asset_class, quantity] tuples
  */
 interface ProjectData {
   project_content: string; // Task content text (max 140 chars)
-  expiration_time: number; // Unix timestamp in MILLISECONDS
+  expiration_posix: number; // Unix timestamp in MILLISECONDS
   lovelace_amount: number;
   native_assets: ListValue; // [["policyId.tokenName", qty], ...]
 }
@@ -62,6 +65,15 @@ interface ProjectData {
 interface Prerequisite {
   course_id: string;
   assignment_ids: string[];
+}
+
+/**
+ * Computed task hash with its associated task index
+ */
+export interface ComputedTaskHash {
+  taskIndex: number;
+  taskHash: string;
+  projectContent: string;
 }
 
 export interface TasksManageProps {
@@ -99,14 +111,22 @@ export interface TasksManageProps {
 
   /**
    * Task codes for side effects (used to identify tasks in DB)
+   * These should match the indices of tasksToAdd (e.g., ["TASK_1", "TASK_2"])
    */
   taskCodes?: string[];
 
   /**
+   * Task indices corresponding to tasksToAdd (from DB)
+   * Used to map computed hashes back to DB tasks
+   */
+  taskIndices?: number[];
+
+  /**
    * Callback fired when tasks are successfully managed
    * @param txHash - The transaction hash from the blockchain
+   * @param computedHashes - Pre-computed task hashes (can be used to update DB immediately)
    */
-  onSuccess?: (txHash: string) => void | Promise<void>;
+  onSuccess?: (txHash: string, computedHashes?: ComputedTaskHash[]) => void | Promise<void>;
 }
 
 /**
@@ -152,10 +172,11 @@ export function TasksManage({
   tasksToRemove: preConfiguredTasksToRemove,
   depositValue: preConfiguredDepositValue,
   taskCodes: preConfiguredTaskCodes,
+  taskIndices: preConfiguredTaskIndices,
   onSuccess,
 }: TasksManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [action, setAction] = useState<"add" | "remove">("add");
 
@@ -167,6 +188,40 @@ export function TasksManage({
 
   // Form state for removing tasks
   const [taskHashesToRemove, setTaskHashesToRemove] = useState("");
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[TasksManage] TX confirmed and DB updated by gateway");
+
+          const actionText = action === "add" ? "added" : "removed";
+          toast.success(`Tasks ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
+            description: `Task(s) have been ${actionText} successfully`,
+          });
+
+          // Clear form
+          setTaskHash("");
+          setTaskCode("");
+          setTaskHashesToRemove("");
+
+          // Note: We can't pass computed hashes here since onComplete doesn't have access to them
+          // The parent should handle this via the initial onSuccess callback
+          if (result?.txHash) {
+            void onSuccess?.(result.txHash, undefined);
+          }
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Task Management Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.PROJECT_MANAGER_TASKS_MANAGE;
 
   const handleManageTasks = async () => {
     if (!user?.accessTokenAlias) {
@@ -206,7 +261,7 @@ export function TasksManage({
       tasks_to_add = [
         {
           project_content: taskHash.trim(),
-          expiration_time: expirationTimestamp,
+          expiration_posix: expirationTimestamp,
           lovelace_amount: lovelaceAmount,
           native_assets: [],
         },
@@ -227,6 +282,47 @@ export function TasksManage({
       deposit_value = [["lovelace", totalLovelace]];
     }
 
+    // =========================================================================
+    // COMPUTE TASK HASHES CLIENT-SIDE
+    // =========================================================================
+    // The task_hash (on-chain identifier) is deterministic and can be computed
+    // before submitting to the blockchain. This allows us to update the DB
+    // immediately with the correct hash.
+    const computedHashes: ComputedTaskHash[] = tasks_to_add.map((task, index) => {
+      // Get the task index from the pre-configured array, or fall back to loop index
+      const taskIndex = preConfiguredTaskIndices?.[index] ?? index;
+
+      // Compute the on-chain task hash using Blake2b-256
+      // Note: computeTaskHash expects expiration_time, API uses expiration_posix (same value)
+      const taskHashValue = computeTaskHash({
+        project_content: task.project_content,
+        expiration_time: task.expiration_posix, // Map API field to hash function field
+        lovelace_amount: task.lovelace_amount,
+        native_assets: task.native_assets,
+      });
+
+      console.log("[TasksManage] Computed task hash:", {
+        taskIndex,
+        projectContent: task.project_content.slice(0, 50) + (task.project_content.length > 50 ? "..." : ""),
+        expiration_posix: task.expiration_posix,
+        lovelace_amount: task.lovelace_amount,
+        computedHash: taskHashValue,
+      });
+
+      return {
+        taskIndex,
+        taskHash: taskHashValue,
+        projectContent: task.project_content,
+      };
+    });
+
+    if (computedHashes.length > 0) {
+      console.log("[TasksManage] All computed hashes:", computedHashes.map(h => ({
+        index: h.taskIndex,
+        hash: h.taskHash.slice(0, 16) + "...",
+      })));
+    }
+
     // Build the final request params
     const txParams = {
       alias: user.accessTokenAlias,
@@ -239,35 +335,20 @@ export function TasksManage({
     };
 
     await execute({
-      definition: PROJECT_MANAGER_TASKS_MANAGE,
+      txType: "PROJECT_MANAGER_TASKS_MANAGE",
       params: {
         ...txParams,
         // Side effect params (not sent to API, used internally)
         task_codes,
       },
       onSuccess: async (txResult) => {
-        const actionText = action === "add" ? "added" : "removed";
-        toast.success(`Tasks ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
-          description: `Task(s) have been ${actionText} successfully`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Clear form
-        setTaskHash("");
-        setTaskCode("");
-        setTaskHashesToRemove("");
-
-        await onSuccess?.(txResult.txHash);
+        console.log("[TasksManage] TX submitted successfully!", txResult);
+        // Pass computed hashes to parent immediately after submission
+        // They can use these to optimistically update the DB
+        await onSuccess?.(txResult.txHash, computedHashes);
       },
       onError: (txError) => {
-        toast.error("Task Management Failed", {
-          description: txError.message || "Failed to manage tasks",
-        });
+        console.error("[TasksManage] Error:", txError);
       },
     });
   };
@@ -299,7 +380,7 @@ export function TasksManage({
             <TaskIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Manage Project Tasks</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Add or remove tasks from this project
             </AndamioCardDescription>
@@ -450,21 +531,55 @@ export function TasksManage({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: "Tasks managed successfully!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Tasks Managed Successfully!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  Task changes have been recorded on-chain.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleManageTasks}

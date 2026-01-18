@@ -31,8 +31,9 @@ export interface TransactionResult {
 
 /**
  * API backend options for transaction building
+ * V2: Uses unified "gateway" backend for all services
  */
-export type TxApiBackend = "atlas-tx" | "andamioscan";
+export type TxApiBackend = "gateway";
 
 /**
  * Configuration for a transaction
@@ -59,9 +60,8 @@ export interface TransactionConfig<TParams = unknown> {
 
   /**
    * API backend to use for transaction building
-   * - atlas-tx: Atlas Transaction API (default, for building transactions)
-   * - andamioscan: Andamioscan API (for on-chain data queries)
-   * @default "atlas-tx"
+   * Uses the unified gateway for all services
+   * @default "gateway"
    */
   apiBackend?: TxApiBackend;
 

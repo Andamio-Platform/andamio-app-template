@@ -8,7 +8,6 @@
  * so we need to check each submission individually.
  */
 
-import { env } from "~/env";
 import {
   getProject,
   type AndamioscanSubmission,
@@ -73,7 +72,7 @@ export async function checkCommitmentExists(
     // Try the manager assess endpoint with a "check" - this will fail gracefully
     // if the commitment doesn't exist
     const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
+      `/api/gateway/api/v2/project/contributor/commitment/get`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,7 +231,7 @@ export async function createCommitmentRecord(
 
     // Step 1: Create the commitment
     const createResponse = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/create`,
+      `/api/gateway/api/v2/project/contributor/commitment/create`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -251,7 +250,7 @@ export async function createCommitmentRecord(
     // Step 2: Submit with evidence and tx hash (only if we have a tx hash)
     if (txHash) {
       const submitResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/submit`,
+        `/api/gateway/api/v2/project/contributor/commitment/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -272,7 +271,7 @@ export async function createCommitmentRecord(
 
       // Step 3: Confirm the transaction
       const confirmResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/confirm-tx`,
+        `/api/gateway/api/v2/project/contributor/commitment/confirm-tx`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -345,7 +344,7 @@ export async function confirmCommitmentTransaction(
     });
 
     const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/confirm-tx`,
+      `/api/gateway/api/v2/project/contributor/commitment/confirm-tx`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -1,0 +1,524 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useWallet } from "@meshsdk/react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import { Badge } from "~/components/ui/badge";
+import { Separator } from "~/components/ui/separator";
+import { AndamioPageHeader } from "~/components/andamio";
+import {
+  SuccessIcon,
+  ErrorIcon,
+  LoadingIcon,
+  CopyIcon,
+  KeyIcon,
+  WalletIcon,
+  UserIcon,
+} from "~/components/icons";
+import { env } from "~/env";
+import { extractAliasFromUnit } from "~/lib/access-token-utils";
+import {
+  registerWithGateway,
+  loginWithGateway,
+  requestApiKey,
+  type ApiKeyResponse,
+  type AuthResponse,
+} from "~/lib/andamio-auth";
+import { useCopyFeedback } from "~/hooks/use-success-notification";
+
+type SetupStep = "connect" | "register" | "api-key" | "complete";
+
+interface WalletInfo {
+  address: string;
+  alias: string | null;
+  accessTokenUnit: string | null;
+}
+
+export default function ApiSetupPage() {
+  const { connected, wallet } = useWallet();
+  const { isCopied, copy } = useCopyFeedback();
+
+  const [currentStep, setCurrentStep] = useState<SetupStep>("connect");
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [gatewayJwt, setGatewayJwt] = useState<string | null>(null);
+
+  // Debug: log current step on each render
+  console.log("[API Setup] Current step:", currentStep, "JWT:", gatewayJwt ? "set" : "null");
+  const [apiKey, setApiKey] = useState<ApiKeyResponse | null>(null);
+  const [apiKeyName, setApiKeyName] = useState("andamio-app");
+
+  // Detect wallet and access token
+  useEffect(() => {
+    async function detectWallet() {
+      if (!connected || !wallet) {
+        setWalletInfo(null);
+        setCurrentStep("connect");
+        return;
+      }
+
+      try {
+        const addresses = await wallet.getUsedAddresses();
+        const address = addresses[0] ?? (await wallet.getChangeAddress());
+
+        const assets = await wallet.getAssets();
+        const accessTokenPolicyId = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
+        const accessToken = assets.find((asset) =>
+          asset.unit.startsWith(accessTokenPolicyId)
+        );
+
+        let alias: string | null = null;
+        if (accessToken) {
+          alias = extractAliasFromUnit(accessToken.unit, accessTokenPolicyId);
+        }
+
+        setWalletInfo({
+          address,
+          alias,
+          accessTokenUnit: accessToken?.unit ?? null,
+        });
+
+        // Move to register step if wallet is connected and has access token
+        if (alias) {
+          setCurrentStep("register");
+        }
+      } catch (err) {
+        console.error("Failed to detect wallet:", err);
+        setError("Failed to read wallet information");
+      }
+    }
+
+    void detectWallet();
+  }, [connected, wallet]);
+
+  // Try to login first (in case already registered)
+  const handleCheckRegistration = async () => {
+    if (!walletInfo?.alias || !walletInfo.address) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await loginWithGateway({
+        alias: walletInfo.alias,
+        walletAddress: walletInfo.address,
+      });
+
+      // Already registered - skip to API key step
+      console.log("[API Setup] Login successful, setting JWT and moving to api-key step");
+      setGatewayJwt(response.jwt);
+      setCurrentStep("api-key");
+      console.log("[API Setup] State updates called");
+    } catch (err) {
+      // Not registered yet - stay on register step
+      console.log("[API Setup] Login failed, staying on register step");
+      console.log("[API Setup] Error details:", err instanceof Error ? err.message : err);
+      setCurrentStep("register");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Register with gateway (or login if already registered)
+  const handleRegister = async () => {
+    if (!walletInfo?.alias || !walletInfo.address) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response: AuthResponse = await registerWithGateway({
+        alias: walletInfo.alias,
+        email,
+        walletAddress: walletInfo.address,
+      });
+
+      setGatewayJwt(response.jwt);
+      setCurrentStep("api-key");
+    } catch (err) {
+      // If already registered (409 Conflict), try to login instead
+      const errorMessage = err instanceof Error ? err.message : "";
+      if (errorMessage.includes("409") || errorMessage.toLowerCase().includes("already") || errorMessage.toLowerCase().includes("conflict")) {
+        try {
+          const loginResponse = await loginWithGateway({
+            alias: walletInfo.alias,
+            walletAddress: walletInfo.address,
+          });
+          setGatewayJwt(loginResponse.jwt);
+          setCurrentStep("api-key");
+          return;
+        } catch (loginErr) {
+          setError(loginErr instanceof Error ? loginErr.message : "Login failed after registration conflict");
+          return;
+        }
+      }
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate API key
+  const handleGenerateApiKey = async () => {
+    if (!gatewayJwt || !apiKeyName.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await requestApiKey(gatewayJwt, apiKeyName.trim());
+      setApiKey(response);
+      setCurrentStep("complete");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate API key");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <AndamioPageHeader
+        title="Gateway API Setup"
+        description="Register with the Andamio API Gateway and generate an API key"
+      />
+
+      {/* Progress indicator */}
+      <div className="flex items-center gap-2">
+        <StepIndicator
+          step={1}
+          label="Connect"
+          active={currentStep === "connect"}
+          complete={currentStep !== "connect"}
+        />
+        <Separator className="flex-1" />
+        <StepIndicator
+          step={2}
+          label="Register"
+          active={currentStep === "register"}
+          complete={currentStep === "api-key" || currentStep === "complete"}
+        />
+        <Separator className="flex-1" />
+        <StepIndicator
+          step={3}
+          label="API Key"
+          active={currentStep === "api-key"}
+          complete={currentStep === "complete"}
+        />
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <ErrorIcon className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Step 1: Connect Wallet */}
+      {currentStep === "connect" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <WalletIcon className="h-5 w-5" />
+              Connect Wallet
+            </CardTitle>
+            <CardDescription>
+              Connect your wallet with an Andamio Access Token to get started
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!connected ? (
+              <Alert>
+                <WalletIcon className="h-4 w-4" />
+                <AlertTitle>Wallet Required</AlertTitle>
+                <AlertDescription>
+                  Please connect your wallet using the button in the sidebar.
+                  Your wallet must contain an Andamio Access Token.
+                </AlertDescription>
+              </Alert>
+            ) : walletInfo && !walletInfo.alias ? (
+              <Alert variant="destructive">
+                <ErrorIcon className="h-4 w-4" />
+                <AlertTitle>No Access Token Found</AlertTitle>
+                <AlertDescription>
+                  Your wallet does not contain an Andamio Access Token.
+                  You need to mint an access token first before registering with the gateway.
+                </AlertDescription>
+              </Alert>
+            ) : walletInfo?.alias ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Wallet Address</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                      {walletInfo.address.slice(0, 20)}...{walletInfo.address.slice(-10)}
+                    </code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Access Token Alias</span>
+                    <Badge variant="secondary">{walletInfo.alias}</Badge>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleCheckRegistration}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                  Continue to Registration
+                </Button>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 2: Register */}
+      {currentStep === "register" && walletInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserIcon className="h-5 w-5" />
+              Register with Gateway
+            </CardTitle>
+            <CardDescription>
+              Create your account on the Andamio API Gateway
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Alias</span>
+                <Badge variant="secondary">{walletInfo.alias}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Wallet</span>
+                <code className="text-xs bg-muted px-2 py-1 rounded">
+                  {walletInfo.address.slice(0, 15)}...
+                </code>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Required for account recovery and notifications
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleRegister}
+                disabled={isLoading || !email}
+                className="w-full"
+              >
+                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                Register Account
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleCheckRegistration}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                Already registered? Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3: Generate API Key */}
+      {currentStep === "api-key" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyIcon className="h-5 w-5" />
+              Generate API Key
+            </CardTitle>
+            <CardDescription>
+              Create an API key for programmatic access to the Andamio Gateway
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <SuccessIcon className="h-4 w-4" />
+              <AlertTitle>Registration Complete</AlertTitle>
+              <AlertDescription>
+                Your account has been created. You can now generate an API key.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label htmlFor="apiKeyName">API Key Name</Label>
+              <Input
+                id="apiKeyName"
+                type="text"
+                placeholder="my-app-key"
+                value={apiKeyName}
+                onChange={(e) => setApiKeyName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                A label to identify this API key (e.g., &quot;my-app&quot;, &quot;dev-testing&quot;)
+              </p>
+            </div>
+
+            <Button
+              onClick={handleGenerateApiKey}
+              disabled={isLoading || !apiKeyName.trim()}
+              className="w-full"
+            >
+              {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+              Generate API Key
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Complete */}
+      {currentStep === "complete" && apiKey && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              Setup Complete
+            </CardTitle>
+            <CardDescription>
+              Your API key has been generated. Store it securely - it won&apos;t be shown again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <ErrorIcon className="h-4 w-4" />
+              <AlertTitle>Save Your API Key</AlertTitle>
+              <AlertDescription>
+                This is the only time your API key will be displayed. Copy it now and store it securely.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label>API Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={apiKey.apiKey}
+                  className="font-mono text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copy(apiKey.apiKey)}
+                >
+                  {isCopied ? (
+                    <SuccessIcon className="h-4 w-4 text-success" />
+                  ) : (
+                    <CopyIcon className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Expires At</Label>
+              <Input
+                readOnly
+                value={new Date(apiKey.expiresAt).toLocaleString()}
+                className="text-sm"
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>Usage</Label>
+              <p className="text-sm text-muted-foreground">
+                Add this key to your environment variables:
+              </p>
+              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                ANDAMIO_API_KEY=&quot;{apiKey.apiKey}&quot;
+              </pre>
+              <p className="text-sm text-muted-foreground">
+                Or use it in API requests as a header:
+              </p>
+              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                X-API-Key: {apiKey.apiKey}
+              </pre>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Info card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">About Gateway Registration</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            The Andamio API Gateway provides unified access to all Andamio services.
+            Registration requires an on-chain Access Token to verify your identity.
+          </p>
+          <p>
+            Your API key can be used for programmatic access to the gateway APIs,
+            including transaction building, course/project data, and more.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function StepIndicator({
+  step,
+  label,
+  active,
+  complete
+}: {
+  step: number;
+  label: string;
+  active: boolean;
+  complete: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`
+          w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+          ${complete ? "bg-success text-success-foreground" : ""}
+          ${active ? "bg-primary text-primary-foreground" : ""}
+          ${!active && !complete ? "bg-muted text-muted-foreground" : ""}
+        `}
+      >
+        {complete ? <SuccessIcon className="h-4 w-4" /> : step}
+      </div>
+      <span className={`text-sm ${active ? "font-medium" : "text-muted-foreground"}`}>
+        {label}
+      </span>
+    </div>
+  );
+}

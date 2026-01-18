@@ -1,5 +1,5 @@
 /**
- * CredentialClaim Transaction Component (V2)
+ * CredentialClaim Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * Elegant UI for students to claim their credential token after completing
  * all required assignments for a course module.
@@ -7,17 +7,16 @@
  * This is the culmination of the learning journey - a tamper-evident,
  * on-chain proof of achievement.
  *
- * Uses COURSE_STUDENT_CREDENTIAL_CLAIM transaction definition from @andamio/transactions.
- *
- * @see packages/andamio-transactions/src/definitions/v2/course/student/credential-claim.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React from "react";
-import { COURSE_STUDENT_CREDENTIAL_CLAIM } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -29,8 +28,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialIcon, ShieldIcon } from "~/components/icons";
+import { CredentialIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface CredentialClaimProps {
   /**
@@ -87,7 +87,31 @@ export function CredentialClaim({
   onSuccess,
 }: CredentialClaimProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[CredentialClaim] TX confirmed and DB updated by gateway");
+
+          toast.success("Credential Claimed!", {
+            description: `You've earned your credential for ${moduleTitle ?? moduleCode}`,
+          });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Claim Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.COURSE_STUDENT_CREDENTIAL_CLAIM;
 
   const handleClaim = async () => {
     if (!user?.accessTokenAlias) {
@@ -95,33 +119,16 @@ export function CredentialClaim({
     }
 
     await execute({
-      definition: COURSE_STUDENT_CREDENTIAL_CLAIM,
+      txType: "COURSE_STUDENT_CREDENTIAL_CLAIM",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
-        // Note: Credentials are claimed for the entire course
       },
       onSuccess: async (txResult) => {
-        console.log("[CredentialClaim] Success!", txResult);
-
-        toast.success("Credential Claimed!", {
-          description: `You've earned your credential for ${moduleTitle ?? moduleCode}`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.();
+        console.log("[CredentialClaim] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[CredentialClaim] Error:", txError);
-        toast.error("Claim Failed", {
-          description: txError.message || "Failed to claim credential",
-        });
       },
     });
   };
@@ -140,7 +147,7 @@ export function CredentialClaim({
             <CredentialIcon className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Claim Your Credential</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Mint your credential token for completing this module
             </AndamioCardDescription>
@@ -173,27 +180,61 @@ export function CredentialClaim({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: "Your credential has been minted to your wallet!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Credential Claimed!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  Your credential has been minted to your wallet!
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Claim Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleClaim}
             disabled={!hasAccessToken}
             stateText={{
-              idle: "Claim Credential",
+              idle: ui.buttonText,
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
               submitting: "Minting Credential...",

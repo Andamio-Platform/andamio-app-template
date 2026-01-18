@@ -3,10 +3,9 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { usePendingTxContext } from "~/components/pending-tx-watcher";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { MyLearning } from "~/components/learner/my-learning";
-import { MintAccessToken } from "~/components/transactions";
+import { MintAccessTokenSimple } from "~/components/transactions";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-token-confirmation-alert";
@@ -23,13 +22,9 @@ import { AndamioPageHeader } from "~/components/andamio";
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
-  const { pendingTransactions } = usePendingTxContext();
 
-  // Check if there's a pending access token minting transaction
-  const pendingAccessTokenTx = pendingTransactions.find(
-    (tx) => tx.entityType === "access-token"
-  );
-  const isPendingAccessTokenMint = !!pendingAccessTokenTx;
+  // TODO: Re-enable pending tx tracking after basic API is working
+  const isPendingAccessTokenMint = false;
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -68,7 +63,7 @@ export default function DashboardPage() {
       <WelcomeHero
         accessTokenAlias={user.accessTokenAlias}
         isPendingMint={isPendingAccessTokenMint}
-        pendingAlias={pendingAccessTokenTx?.entityId}
+        pendingAlias={undefined}
       />
 
       {/* Access Token Confirmation Alert - Shows during pending mint */}
@@ -84,7 +79,7 @@ export default function DashboardPage() {
 
       {/* Mint Access Token - Only show when user doesn't have one and not pending */}
       {!hasAccessToken && !isPendingAccessTokenMint && (
-        <MintAccessToken />
+        <MintAccessTokenSimple onSuccess={() => router.refresh()} />
       )}
 
       {/* My Learning Section - Only show if user has access token */}

@@ -81,7 +81,7 @@ exports.PROJECT_MANAGER_TASKS_ASSESS = {
                 decision: zod_1.z.enum(["ACCEPTED", "REFUSED", "DENIED"]), // Assessment decision (uppercase for DB API)
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/project/manager/tasks/assess" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/manager/tasks/assess" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     onSubmit: [
@@ -122,6 +122,6 @@ exports.PROJECT_MANAGER_TASKS_ASSESS = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/manager/tasks-assess",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_manager_tasks_assess",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_manager_tasks_assess",
     },
 };

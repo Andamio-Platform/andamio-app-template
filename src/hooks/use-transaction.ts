@@ -7,9 +7,8 @@
  * 3. Submit signed transaction to blockchain
  * 4. Handle confirmation and callbacks
  *
- * Supports multiple API backends:
- * - atlas-tx: Atlas Transaction API (for building transactions)
- * - andamioscan: Andamioscan API (for on-chain data)
+ * Supports the unified gateway API backend:
+ * - gateway: Unified Andamio API Gateway (consolidates all services)
  *
  * Will be extracted to @andamio/transactions package.
  */
@@ -64,7 +63,7 @@ export function useTransaction<TParams = unknown>() {
 
         const txType = config.txType ?? config.endpoint;
         const method = config.method ?? "POST";
-        const apiBackend = config.apiBackend ?? "atlas-tx";
+        const apiBackend = config.apiBackend ?? "gateway";
 
         // Build URL based on API backend
         let url = `/api/${apiBackend}${config.endpoint}`;

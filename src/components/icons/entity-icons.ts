@@ -49,6 +49,9 @@ export { Crown as InstructorIcon } from "lucide-react";
 /** Access Token - user's on-chain identity */
 export { Key as AccessTokenIcon } from "lucide-react";
 
+/** API Key - authentication key for programmatic access */
+export { KeyRound as KeyIcon } from "lucide-react";
+
 /** Wallet - user's blockchain wallet */
 export { Wallet as WalletIcon } from "lucide-react";
 

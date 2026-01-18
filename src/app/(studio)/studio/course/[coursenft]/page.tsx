@@ -47,14 +47,12 @@ import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialo
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/use-course";
 import { useCourseModules, useDeleteCourseModule } from "~/hooks/api/use-course-module";
-import { useAndamioscanCourse } from "~/hooks/api/use-andamioscan";
 import { MintModuleTokens } from "~/components/transactions/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/transactions/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
-import type { CourseModuleResponse } from "@andamio/db-api-types";
-import type { AndamioscanModule } from "~/lib/andamioscan";
+import type { CourseModuleResponse, OrchestrationCourseModule } from "~/types/generated";
 import { computeSltHashDefinite } from "@andamio/transactions";
 
 // =============================================================================
@@ -81,7 +79,7 @@ interface HybridModule {
   dbStoredHash: string | null;
   /** Hash computed from current DB SLTs (for verification) */
   dbComputedHash: string | null;
-  /** On-chain hash (assignment_id from Andamioscan) */
+  /** On-chain hash (assignment_id from merged API) */
   onChainHash: string | null;
   /** Title from database */
   title: string | null;
@@ -94,7 +92,7 @@ interface HybridModule {
   /** Database record (if exists) */
   dbModule: CourseModuleResponse | null;
   /** On-chain data (if exists) */
-  onChainModule: AndamioscanModule | null;
+  onChainModule: OrchestrationCourseModule | null;
   /** SLTs from database */
   dbSlts: string[];
   /** SLTs from on-chain (source of truth when on-chain) */
@@ -223,14 +221,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { setBreadcrumbs, setTitle, setActions } = useStudioHeader();
 
   // React Query hooks - Database
-  const { data: course, isLoading: isLoadingCourse, error: courseError } = useCourse(courseNftPolicyId);
+  const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useCourseModules(courseNftPolicyId);
 
-  // Andamioscan hook - On-chain data
-  const { data: onChainCourse, isLoading: isLoadingOnChain, refetch: refetchOnChain } = useAndamioscanCourse(courseNftPolicyId);
-
-  // Memoize on-chain modules to prevent dependency changes on every render
-  const onChainModules = useMemo(() => onChainCourse?.modules ?? [], [onChainCourse?.modules]);
+  // On-chain modules from merged course data
+  const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
 
   // Helper to get sorted SLT texts from a DB module
   const getDbSlts = (dbModule: CourseModuleResponse): string[] => {
@@ -257,7 +252,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       const dbComputedHash = dbSlts.length > 0 ? computeSltHashDefinite(dbSlts) : null;
 
       // Try to find matching on-chain module
-      let matchedOnChain: AndamioscanModule | null = null;
+      let matchedOnChain: OrchestrationCourseModule | null = null;
       let matchType: MatchType = "none";
       let hashMismatch = false;
 
@@ -266,7 +261,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         const hashMatch = onChainModules.find(
           (m) => m.assignment_id === dbModule.module_hash
         );
-        if (hashMatch) {
+        if (hashMatch?.assignment_id) {
           matchedOnChain = hashMatch;
           matchType = "hash";
           matchedOnChainIds.add(hashMatch.assignment_id);
@@ -278,7 +273,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         const computedHashMatch = onChainModules.find(
           (m) => m.assignment_id === dbComputedHash
         );
-        if (computedHashMatch && !matchedOnChainIds.has(computedHashMatch.assignment_id)) {
+        if (computedHashMatch?.assignment_id && !matchedOnChainIds.has(computedHashMatch.assignment_id)) {
           matchedOnChain = computedHashMatch;
           matchType = "hash";
           matchedOnChainIds.add(computedHashMatch.assignment_id);
@@ -288,9 +283,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       // If still no match, try SLT content matching
       if (!matchedOnChain && dbSlts.length > 0) {
         for (const onChainModule of onChainModules) {
-          if (matchedOnChainIds.has(onChainModule.assignment_id)) continue;
+          if (!onChainModule.assignment_id || matchedOnChainIds.has(onChainModule.assignment_id)) continue;
 
-          if (sltsMatch(dbSlts, onChainModule.slts)) {
+          if (sltsMatch(dbSlts, onChainModule.slts ?? [])) {
             matchedOnChain = onChainModule;
             matchType = "slt-content";
             hashMismatch = true; // SLTs match but hashes don't
@@ -318,13 +313,14 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
     // Step 2: Add any unmatched on-chain modules (orphans)
     for (const onChainModule of onChainModules) {
-      if (matchedOnChainIds.has(onChainModule.assignment_id)) continue;
+      const assignmentId = onChainModule.assignment_id;
+      if (!assignmentId || matchedOnChainIds.has(assignmentId)) continue;
 
       result.push({
-        moduleCode: `hash:${onChainModule.assignment_id.slice(0, 8)}`,
+        moduleCode: `hash:${assignmentId.slice(0, 8)}`,
         dbStoredHash: null,
         dbComputedHash: null,
-        onChainHash: onChainModule.assignment_id,
+        onChainHash: assignmentId,
         title: null,
         syncStatus: "onchain-only",
         matchType: "none",
@@ -332,7 +328,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         dbModule: null,
         onChainModule,
         dbSlts: [],
-        onChainSlts: onChainModule.slts,
+        onChainSlts: onChainModule.slts ?? [],
       });
     }
 
@@ -348,7 +344,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Modules that are APPROVED in DB but NOT yet on-chain (truly ready to mint)
   const modulesReadyToMint = useMemo(() =>
     modules.filter((m) =>
-      (m.status as string) === "APPROVED" && !syncedModuleCodes.has(m.module_code)
+      m.status === "APPROVED" && !syncedModuleCodes.has(m.module_code)
     ),
     [modules, syncedModuleCodes]
   );
@@ -367,7 +363,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     // Cast status to string to handle extended statuses like APPROVED
     dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
     dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
-    dbApproved: modules.filter((m) => (m.status as string) === "APPROVED").length,
+    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
     dbDraft: modules.filter((m) => m.status === "DRAFT").length,
     // Truly ready to mint: APPROVED but not yet on-chain
     readyToMint: modulesReadyToMint.length,
@@ -421,10 +417,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Sync form state when course data loads
   useEffect(() => {
     if (course && !formInitialized) {
-      setFormTitle(course.title ?? "");
-      setFormDescription(course.description ?? "");
-      setFormImageUrl(course.image_url ?? "");
-      setFormVideoUrl(course.video_url ?? "");
+      setFormTitle(course.content?.title ?? "");
+      setFormDescription(course.content?.description ?? "");
+      setFormImageUrl(course.content?.image_url ?? "");
+      // Note: video_url not available in merged OrchestrationCourseContent
+      setFormVideoUrl("");
       setFormInitialized(true);
     }
   }, [course, formInitialized]);
@@ -432,10 +429,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Update header when course loads
   useEffect(() => {
     if (course) {
-      setTitle(course.title ?? "Untitled Course");
+      setTitle(course.content?.title ?? "Untitled Course");
       setBreadcrumbs([
         { label: "Course Studio", href: "/studio/course" },
-        { label: course.title ?? "Course" },
+        { label: course.content?.title ?? "Course" },
       ]);
     }
   }, [course, setBreadcrumbs, setTitle]);
@@ -516,12 +513,13 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   };
 
   // Computed values
-  const isLoading = isLoadingCourse || isLoadingModules || isLoadingOnChain;
+  const isLoading = isLoadingCourse || isLoadingModules;
+  // Note: video_url comparison is always vs "" since it's not in merged type
   const hasChanges = course && (
-    formTitle !== (course.title ?? "") ||
-    formDescription !== (course.description ?? "") ||
-    formImageUrl !== (course.image_url ?? "") ||
-    formVideoUrl !== (course.video_url ?? "")
+    formTitle !== (course.content?.title ?? "") ||
+    formDescription !== (course.content?.description ?? "") ||
+    formImageUrl !== (course.content?.image_url ?? "") ||
+    formVideoUrl !== ""
   );
 
   // Loading state
@@ -558,9 +556,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-mono text-muted-foreground">
-                      {course.course_code}
+                      {course.content?.code ?? courseNftPolicyId.slice(0, 12) + "..."}
                     </span>
-                    {course.course_nft_policy_id && (
+                    {course.course_id && (
                       <AndamioBadge variant="default" className="text-[10px]">
                         <OnChainIcon className="h-2.5 w-2.5 mr-1" />
                         Published
@@ -568,11 +566,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     )}
                   </div>
                   <h1 className="text-2xl font-bold text-foreground mb-1">
-                    {course.title ?? "Untitled Course"}
+                    {course.content?.title ?? "Untitled Course"}
                   </h1>
-                  {course.description && (
+                  {course.content?.description && (
                     <AndamioText variant="muted" className="line-clamp-2">
-                      {course.description}
+                      {course.content.description}
                     </AndamioText>
                   )}
                 </div>
@@ -606,9 +604,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <div className="text-center mb-10">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    {course.course_code}
+                    {course.content?.code ?? courseNftPolicyId.slice(0, 12) + "..."}
                   </span>
-                  {course.course_nft_policy_id && (
+                  {course.course_id && (
                     <AndamioBadge variant="default" className="text-[10px]">
                       <OnChainIcon className="h-2.5 w-2.5 mr-1" />
                       Published
@@ -616,11 +614,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   )}
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-                  {course.title ?? "Untitled Course"}
+                  {course.content?.title ?? "Untitled Course"}
                 </h1>
-                {course.description && (
+                {course.content?.description && (
                   <AndamioText variant="muted" className="mt-2 max-w-lg mx-auto">
-                    {course.description}
+                    {course.content.description}
                   </AndamioText>
                 )}
               </div>
@@ -1061,7 +1059,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   courseModules={modulesReadyToMint}
                   onSuccess={async () => {
                     await refetchModules();
-                    await refetchOnChain();
+                    await refetchCourse();
                   }}
                 />
               )}
@@ -1074,7 +1072,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   onClearSelection={clearBurnSelection}
                   onSuccess={async () => {
                     await refetchModules();
-                    await refetchOnChain();
+                    await refetchCourse();
                   }}
                 />
               )}
@@ -1115,7 +1113,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <StudioFormSection title="Course Code">
                 <div className="space-y-2">
                   <AndamioInput
-                    value={course.course_code}
+                    value={course.content?.code ?? ""}
                     disabled
                     className="font-mono"
                   />
@@ -1141,7 +1139,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       </AndamioButton>
                     }
                     title="Delete Course"
-                    description={`Are you sure you want to delete "${course.title}"? This will remove all modules, lessons, and assignments.`}
+                    description={`Are you sure you want to delete "${course.content?.title ?? "this course"}"? This will remove all modules, lessons, and assignments.`}
                     confirmText="Delete Course"
                     variant="destructive"
                     onConfirm={handleDelete}

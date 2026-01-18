@@ -61,8 +61,9 @@ export function buildApiUrl(
   endpoint: string,
   params?: Record<string, string | number | boolean | undefined>
 ): string {
-  const baseUrl = process.env.NEXT_PUBLIC_ANDAMIO_API_URL ?? "";
-  const url = new URL(endpoint, baseUrl);
+  // Use gateway proxy for API calls
+  const baseUrl = "/api/gateway/api/v2";
+  const url = new URL(`${baseUrl}${endpoint}`, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {

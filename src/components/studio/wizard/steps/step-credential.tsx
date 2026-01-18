@@ -25,7 +25,6 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useCreateCourseModule, useUpdateCourseModule, useCourseModules } from "~/hooks/api/use-course-module";
 import { useCreateSLT } from "~/hooks/api/use-slt";
 import { useCreateLesson } from "~/hooks/api/use-lesson";
-import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 
 interface StepCredentialProps {
@@ -94,7 +93,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   );
 
   // Check if module is locked (approved or on-chain)
-  const moduleStatus = data.courseModule?.status as string | undefined;
+  const moduleStatus = data.courseModule?.status;
   const isModuleLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
 
   const hasChanges =
@@ -185,7 +184,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       // 3. Copy assignment (if exists) - use direct API call
       if (data.assignment) {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/create`,
+          `/api/gateway/api/v2/course/teacher/assignment/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -218,7 +217,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       // 5. Copy introduction (if exists) - use direct API call
       if (data.introduction) {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/create`,
+          `/api/gateway/api/v2/course/teacher/introduction/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

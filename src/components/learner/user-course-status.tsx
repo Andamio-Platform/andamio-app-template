@@ -1,400 +1,160 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCourseStudent, useCourse as useOnChainCourse, useCompletedCourses } from "~/hooks/use-andamioscan";
-import { useCourse, useCourseModules } from "~/hooks/api";
-import { env } from "~/env";
+import { useCourse, useCourseModules, useStudentCourses } from "~/hooks/api";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioCardLoading } from "~/components/andamio/andamio-loading";
-import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialClaim } from "~/components/transactions/credential-claim";
 import {
   SuccessIcon,
-  PendingIcon,
   OnChainIcon,
   ModuleIcon,
+  CourseIcon,
 } from "~/components/icons";
 
 /**
  * User Course Status Component
  *
- * Displays the authenticated learner's on-chain progress in a course.
- * Uses Andamioscan API for real-time blockchain data.
+ * Displays the authenticated learner's enrollment status in a course.
+ * Uses the V2 merged API endpoints.
  *
- * Data Sources:
- * - Andamioscan: GET /v2/courses/{course_id}/students/{alias}/status
- * - Andamioscan: GET /v2/courses/{course_id}/details (for module mapping)
- * - Database: Course modules (for module code/title display)
+ * Note: Detailed per-module progress is not available in V2 API.
+ * This component shows enrollment and completion status only.
  */
 
 interface UserCourseStatusProps {
   courseNftPolicyId: string;
 }
 
-// Response from /course/shared/assignment-commitment/get
-interface CommitmentApiResponse {
-  policy_id: string;
-  module_code: string;
-  assignment_code: string;
-  access_token_alias: string;
-  network_status: string;
-  network_evidence: Record<string, unknown> | null;
-  network_evidence_hash: string | null;
-  pending_tx_hash: string | null;
-}
-
 export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
-  const { isAuthenticated, user, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
-  // Fetch on-chain student status from Andamioscan
-  const {
-    data: studentStatus,
-    isLoading: studentLoading,
-    refetch: refetchStudent,
-  } = useCourseStudent(courseNftPolicyId, user?.accessTokenAlias ?? undefined);
+  // Fetch merged course data
+  const { data: course, isLoading: courseLoading } = useCourse(courseNftPolicyId);
 
-  // Fetch on-chain course data for module hash mapping
-  const { data: onChainCourse, isLoading: courseLoading } = useOnChainCourse(courseNftPolicyId);
-
-  // Fetch database course for title
-  const { data: dbCourse } = useCourse(courseNftPolicyId);
-
-  // Fetch database modules for module code/title mapping
+  // Fetch database modules for count
   const { data: dbModules } = useCourseModules(courseNftPolicyId);
 
-  // Fetch user's completed courses to check if course credential has been claimed
-  const { data: completedCourses, refetch: refetchCompletedCourses } = useCompletedCourses(user?.accessTokenAlias ?? undefined);
+  // Fetch user's enrolled/completed courses
+  const { data: studentCourses, isLoading: studentLoading, refetch: refetchStudent } = useStudentCourses();
 
-  // State for current commitment database status
-  const [commitmentStatus, setCommitmentStatus] = useState<string | null>(null);
-  const [isLoadingCommitment, setIsLoadingCommitment] = useState(false);
-
-  // State for early credential claim expansion
-  const [showEarlyClaim, setShowEarlyClaim] = useState(false);
-
-  // Map module hashes to module codes for display
-  const moduleHashToInfo = useMemo(() => {
-    const map = new Map<string, { code: string; title: string }>();
-    if (!onChainCourse || !dbModules) return map;
-
-    // For each on-chain module, try to find matching DB module by SLT overlap
-    for (const onChainModule of onChainCourse.modules) {
-      const onChainSlts = new Set(onChainModule.slts);
-
-      for (const dbModule of dbModules) {
-        const dbSltTexts = new Set(dbModule.slts.map((s) => s.slt_text));
-        const intersection = [...dbSltTexts].filter((t) => onChainSlts.has(t));
-
-        // Match if significant overlap
-        if (intersection.length > 0 && intersection.length >= onChainModule.slts.length * 0.5) {
-          map.set(onChainModule.assignment_id, {
-            code: dbModule.module_code,
-            title: dbModule.title,
-          });
-          break;
-        }
-      }
-    }
-
-    return map;
-  }, [onChainCourse, dbModules]);
-
-  // Fetch commitment status from database when there's a current on-chain commitment
-  const fetchCommitmentStatus = useCallback(async (moduleCode: string) => {
-    if (!isAuthenticated || !user?.accessTokenAlias) return;
-
-    setIsLoadingCommitment(true);
-    try {
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            access_token_alias: user.accessTokenAlias,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = (await response.json()) as CommitmentApiResponse;
-        setCommitmentStatus(data.network_status);
-      } else {
-        setCommitmentStatus(null);
-      }
-    } catch {
-      setCommitmentStatus(null);
-    } finally {
-      setIsLoadingCommitment(false);
-    }
-  }, [isAuthenticated, authenticatedFetch, user?.accessTokenAlias, courseNftPolicyId]);
-
-  // Get module info by hash
-  const getModuleInfo = (hash: unknown) => {
-    // Handle case where hash might be an object with assignment_id
-    const hashStr = typeof hash === "string"
-      ? hash
-      : (hash as { assignment_id?: string })?.assignment_id ?? String(hash);
-    return moduleHashToInfo.get(hashStr) ?? { code: hashStr.slice(0, 8) + "...", title: "Module" };
-  };
-
-  // Effect to fetch commitment status when there's a current on-chain commitment
-  useEffect(() => {
-    const currentHash = studentStatus?.current;
-    if (currentHash && moduleHashToInfo.size > 0) {
-      const moduleInfo = moduleHashToInfo.get(currentHash);
-      if (moduleInfo) {
-        void fetchCommitmentStatus(moduleInfo.code);
-      }
-    } else {
-      setCommitmentStatus(null);
-    }
-  }, [studentStatus, moduleHashToInfo, fetchCommitmentStatus]);
-
-  // Check if assignment is accepted and user can claim credential
-  const canClaimCredential = commitmentStatus === "ASSIGNMENT_ACCEPTED";
+  // Find this course in student's courses
+  const studentCourseStatus = useMemo(() => {
+    if (!studentCourses) return null;
+    return studentCourses.find((c) => c.course_id === courseNftPolicyId);
+  }, [studentCourses, courseNftPolicyId]);
 
   if (!isAuthenticated) {
     return null;
   }
 
-  const isLoading = studentLoading || courseLoading || isLoadingCommitment;
+  const isLoading = courseLoading || studentLoading;
 
   if (isLoading) {
     return <AndamioCardLoading title="Your Progress" lines={3} />;
   }
 
-  // If not enrolled (no student status), don't show anything
-  // Enrollment happens implicitly when submitting first assignment commitment
-  if (!studentStatus) {
-    return null;
+  // If not enrolled, show enrollment prompt
+  if (!studentCourseStatus) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <div className="flex items-center gap-2">
+            <CourseIcon className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <AndamioCardTitle>Get Started</AndamioCardTitle>
+              <AndamioCardDescription>
+                Begin your learning journey in {course?.content?.title ?? "this course"}
+              </AndamioCardDescription>
+            </div>
+          </div>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+            <ModuleIcon className="h-4 w-4 text-muted-foreground" />
+            <AndamioText variant="small">
+              Commit to a module assignment to start tracking your progress.
+            </AndamioText>
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
+    );
   }
 
-  // Calculate progress - use database modules count for total
+  const isCompleted = studentCourseStatus.enrollment_status === "completed";
   const totalModules = dbModules?.length ?? 0;
-  const completedCount = studentStatus.completed.length;
-  const hasCurrentCommitment = studentStatus.current !== null;
-  const progress = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
+  const courseTitle = course?.content?.title ?? "this course";
 
-  // Check if student can claim course completion credential
-  // Note: We use DB module count (totalModules) for consistency with the progress UI,
-  // not on-chain module count which may include legacy/removed modules
-  const hasCompletedAllModules = totalModules > 0 && completedCount >= totalModules;
-  const hasCourseCredential = completedCourses?.some(c => c.course_id === courseNftPolicyId) ?? false;
+  // Completed state
+  if (isCompleted) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <div className="flex items-center gap-2">
+            <SuccessIcon className="h-5 w-5 text-success" />
+            <div>
+              <AndamioCardTitle>Course Complete!</AndamioCardTitle>
+              <AndamioCardDescription>
+                You&apos;ve earned your credential for {courseTitle}
+              </AndamioCardDescription>
+            </div>
+          </div>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 border rounded-md bg-success/10 border-success/20">
+            <div className="flex items-center gap-2">
+              <OnChainIcon className="h-4 w-4 text-success" />
+              <AndamioText className="text-sm font-medium">Credential Earned</AndamioText>
+            </div>
+            <AndamioBadge status="success">Verified</AndamioBadge>
+          </div>
 
-  // Can claim if: completed all modules, no pending assignments, hasn't claimed yet
-  const canClaimCourseCredential = hasCompletedAllModules && !hasCourseCredential && !hasCurrentCommitment;
+          {totalModules > 0 && (
+            <AndamioText variant="small" className="text-muted-foreground">
+              All {totalModules} modules completed
+            </AndamioText>
+          )}
 
-  // Can claim early if: has some completions, no pending, hasn't claimed, but NOT 100%
-  const canClaimEarly = !hasCompletedAllModules && completedCount > 0 && !hasCourseCredential && !hasCurrentCommitment;
+          <Link href="/credentials">
+            <AndamioButton variant="outline" size="sm">
+              View All Credentials
+            </AndamioButton>
+          </Link>
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
 
-  // Get current commitment info
-  const currentModuleInfo = hasCurrentCommitment
-    ? getModuleInfo(studentStatus.current!)
-    : null;
-
+  // Enrolled (in progress) state
   return (
     <AndamioCard>
       <AndamioCardHeader>
         <div className="flex items-center gap-2">
-          <OnChainIcon className="h-5 w-5 text-success" />
+          <OnChainIcon className="h-5 w-5 text-primary" />
           <div>
-            <AndamioCardTitle>Your Progress</AndamioCardTitle>
+            <AndamioCardTitle>Enrolled</AndamioCardTitle>
             <AndamioCardDescription>
-              On-chain enrollment in {dbCourse?.title ?? "this course"}
+              You&apos;re enrolled in {courseTitle}
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {/* Overall Progress */}
+        <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+          <ModuleIcon className="h-4 w-4 text-muted-foreground" />
+          <AndamioText variant="small">
+            Continue working through the modules to earn your course credential.
+          </AndamioText>
+        </div>
+
         {totalModules > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Overall Completion</span>
-              <span className="text-muted-foreground">
-                {completedCount} / {totalModules} modules
-              </span>
-            </div>
-            <AndamioProgress value={progress} className="h-2" />
-            <AndamioText variant="small" className="text-xs">
-              {Math.round(progress)}% complete
-            </AndamioText>
-          </div>
-        )}
-
-        {/* Current Commitment - Show Credential Claim if accepted, otherwise Pending Assessment */}
-        {hasCurrentCommitment && currentModuleInfo && (
-          canClaimCredential ? (
-            // Assignment accepted - show credential claim
-            <div className="space-y-3">
-              <div className="p-3 border rounded-md bg-success/10 border-success/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <SuccessIcon className="h-4 w-4 text-success" />
-                  <AndamioText className="text-sm font-medium">Assignment Accepted!</AndamioText>
-                </div>
-                <div className="flex items-center gap-2">
-                  <AndamioBadge variant="outline" className="font-mono text-xs">
-                    {currentModuleInfo.code}
-                  </AndamioBadge>
-                  <AndamioText variant="small">
-                    {currentModuleInfo.title}
-                  </AndamioText>
-                </div>
-                <AndamioText variant="small" className="text-xs mt-2 text-muted-foreground">
-                  Your teacher has approved your work. Claim your credential below!
-                </AndamioText>
-              </div>
-              <CredentialClaim
-                courseNftPolicyId={courseNftPolicyId}
-                moduleCode={currentModuleInfo.code}
-                moduleTitle={currentModuleInfo.title}
-                courseTitle={dbCourse?.title}
-                onSuccess={() => {
-                  void refetchStudent();
-                  setCommitmentStatus(null);
-                }}
-              />
-            </div>
-          ) : (
-            // Pending assessment
-            <div className="p-3 border rounded-md bg-info/10 border-info/20">
-              <div className="flex items-center gap-2 mb-2">
-                <PendingIcon className="h-4 w-4 text-info" />
-                <AndamioText className="text-sm font-medium">Pending Assessment</AndamioText>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <AndamioBadge variant="outline" className="font-mono text-xs">
-                    {currentModuleInfo.code}
-                  </AndamioBadge>
-                  <AndamioText variant="small" className="mt-1">
-                    {currentModuleInfo.title}
-                  </AndamioText>
-                </div>
-                <Link href={`/course/${courseNftPolicyId}/${currentModuleInfo.code}/assignment`}>
-                  <AndamioButton size="sm" variant="outline">
-                    View
-                  </AndamioButton>
-                </Link>
-              </div>
-              <AndamioText variant="small" className="text-xs mt-2 text-muted-foreground">
-                Your assignment is awaiting teacher review
-              </AndamioText>
-            </div>
-          )
-        )}
-
-        {/* Completed Modules */}
-        {studentStatus.completed.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <SuccessIcon className="h-4 w-4 text-success" />
-              <AndamioText className="text-sm font-medium">
-                Completed ({studentStatus.completed.length})
-              </AndamioText>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {studentStatus.completed.map((hash) => {
-                const info = getModuleInfo(hash);
-                return (
-                  <Link
-                    key={hash}
-                    href={`/course/${courseNftPolicyId}/${info.code}`}
-                  >
-                    <AndamioBadge
-                      variant="outline"
-                      className="font-mono text-xs hover:bg-accent cursor-pointer"
-                    >
-                      <SuccessIcon className="h-3 w-3 mr-1 text-success" />
-                      {info.code}
-                    </AndamioBadge>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Early credential claim option - understated */}
-            {canClaimEarly && (
-              <div className="pt-2">
-                {!showEarlyClaim ? (
-                  <button
-                    onClick={() => setShowEarlyClaim(true)}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                  >
-                    Ready to move on? Claim credential now →
-                  </button>
-                ) : (
-                  <div className="space-y-2 pt-2 border-t border-dashed">
-                    <div className="flex items-center justify-between">
-                      <AndamioText variant="small" className="text-muted-foreground">
-                        Claim your credential for completed modules
-                      </AndamioText>
-                      <button
-                        onClick={() => setShowEarlyClaim(false)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    <CredentialClaim
-                      courseNftPolicyId={courseNftPolicyId}
-                      moduleCode="PARTIAL_COMPLETION"
-                      moduleTitle={`${completedCount} of ${totalModules} modules`}
-                      courseTitle={dbCourse?.title}
-                      onSuccess={() => {
-                        void refetchStudent();
-                        void refetchCompletedCourses();
-                        setShowEarlyClaim(false);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Course Completion Credential Claim - Full celebration for 100% */}
-        {canClaimCourseCredential && (
-          <div className="space-y-3">
-            <div className="p-3 border rounded-md bg-success/10 border-success/20">
-              <div className="flex items-center gap-2 mb-2">
-                <SuccessIcon className="h-4 w-4 text-success" />
-                <AndamioText className="text-sm font-medium">Course Complete!</AndamioText>
-              </div>
-              <AndamioText variant="small" className="text-muted-foreground">
-                You&apos;ve completed all modules. Claim your course credential to finalize your achievement on-chain.
-              </AndamioText>
-            </div>
-            <CredentialClaim
-              courseNftPolicyId={courseNftPolicyId}
-              moduleCode="COURSE_COMPLETION"
-              moduleTitle="Course Completion"
-              courseTitle={dbCourse?.title}
-              onSuccess={() => {
-                void refetchStudent();
-                void refetchCompletedCourses();
-              }}
-            />
-          </div>
-        )}
-
-        {/* Not started state */}
-        {!hasCurrentCommitment && studentStatus.completed.length === 0 && (
-          <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-            <ModuleIcon className="h-4 w-4 text-muted-foreground" />
-            <AndamioText variant="small">
-              You&apos;re enrolled! Start by completing your first module assignment.
-            </AndamioText>
-          </div>
+          <AndamioText variant="small" className="text-muted-foreground">
+            This course has {totalModules} {totalModules === 1 ? "module" : "modules"}
+          </AndamioText>
         )}
 
         {/* Refresh button */}

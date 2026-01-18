@@ -19,7 +19,7 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { usePendingAssessments } from "~/hooks/use-andamioscan";
+import { useTeacherCommitments } from "~/hooks/api";
 
 interface PendingReviewsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -31,15 +31,15 @@ interface PendingReviewsSummaryProps {
  * Displays a summary of assignments awaiting teacher review.
  * Shows on the dashboard for users who teach courses.
  *
+ * Uses the merged teacher commitments endpoint for pending assessment data.
+ *
  * UX States:
  * - Loading: Skeleton cards
  * - Empty: Informative "All caught up!" message
  * - Error: Inline alert with retry button
  */
 export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummaryProps) {
-  const { data: pendingAssessments, isLoading, error, refetch } = usePendingAssessments(
-    accessTokenAlias ?? undefined
-  );
+  const { data: pendingAssessments, isLoading, error, refetch } = useTeacherCommitments();
 
   // No access token - don't show this component
   if (!accessTokenAlias) {
@@ -76,7 +76,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={TeacherIcon} title="Pending Reviews" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -92,7 +92,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
             <AndamioText variant="small" className="text-xs mt-1 max-w-[200px]">
               {error.message}
             </AndamioText>
-            <AndamioButton variant="outline" size="sm" onClick={refetch} className="mt-3">
+            <AndamioButton variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
               <RefreshIcon className="mr-2 h-3 w-3" />
               Retry
             </AndamioButton>
@@ -109,7 +109,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={TeacherIcon} title="Pending Reviews" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -153,7 +153,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
             <AndamioBadge variant="secondary" className="text-xs">
               {pendingAssessments.length} pending
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

@@ -18,6 +18,12 @@ import { env } from "~/env";
 /**
  * Detect and sync access token from wallet to database
  * Called when wallet is connected and we have a valid JWT
+ *
+ * NOTE: With the unified Gateway auth model, this sync is typically not needed
+ * because users register their alias during gateway registration. This function
+ * exists for legacy DB API compatibility but will silently skip if:
+ * - User already has an alias (from gateway auth)
+ * - The legacy endpoint doesn't exist (404)
  */
 async function syncAccessTokenFromWallet(
   wallet: {
@@ -29,8 +35,16 @@ async function syncAccessTokenFromWallet(
 ): Promise<void> {
   if (!currentUser || !wallet) return;
 
+  // Check if we need to update the database
+  // If user already has this alias (from gateway auth), skip entirely
+  if (currentUser.accessTokenAlias) {
+    authLogger.info("Access token already set (gateway auth):", currentUser.accessTokenAlias);
+    return;
+  }
+
+  // First, detect the access token in wallet (outside try-catch for API call)
+  let alias: string | undefined;
   try {
-    // Get wallet assets
     const assets = await wallet.getAssets();
     const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
 
@@ -43,19 +57,18 @@ async function syncAccessTokenFromWallet(
     }
 
     // Extract alias from token unit (policy ID + hex-encoded name)
-    const alias = extractAliasFromUnit(accessToken.unit, ACCESS_TOKEN_POLICY_ID);
+    alias = extractAliasFromUnit(accessToken.unit, ACCESS_TOKEN_POLICY_ID);
+    authLogger.info("Detected access token in wallet:", { unit: accessToken.unit, alias });
+  } catch (error) {
+    authLogger.warn("Failed to detect access token in wallet:", error);
+    return;
+  }
 
-    // Check if we need to update the database
-    // If user already has this alias in the database, skip
-    if (currentUser.accessTokenAlias) {
-      authLogger.info("Access token already synced:", currentUser.accessTokenAlias);
-      return;
-    }
+  // Now try to sync with API
+  try {
+    authLogger.info("Syncing access token alias to database:", alias);
 
-    authLogger.info("Syncing access token to database:", accessToken.unit);
-    authLogger.info("Extracted alias:", alias);
-
-    const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/access-token-alias`, {
+    const response = await fetch(`/api/gateway/api/v2/user/access-token-alias`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -65,6 +78,16 @@ async function syncAccessTokenFromWallet(
         access_token_alias: alias,
       }),
     });
+
+    // Handle 404 gracefully - endpoint may not exist in new unified gateway
+    if (response.status === 404) {
+      authLogger.info("Sync endpoint not available, updating local state only");
+      updateUser({
+        ...currentUser,
+        accessTokenAlias: alias,
+      });
+      return;
+    }
 
     if (response.ok) {
       const data = (await response.json()) as { success: boolean; user: AuthUser; jwt: string };
@@ -76,10 +99,23 @@ async function syncAccessTokenFromWallet(
       // Update local user state
       updateUser(data.user);
     } else {
-      authLogger.error("Failed to sync access token:", await response.text());
+      // API failed, but we still detected the alias from wallet - update local state
+      authLogger.warn("Access token sync API failed (non-critical):", response.status);
+      authLogger.info("Updating local user state with detected alias:", alias);
+      updateUser({
+        ...currentUser,
+        accessTokenAlias: alias,
+      });
     }
   } catch (error) {
-    authLogger.error("Error syncing access token:", error);
+    // Log but don't throw - sync failures shouldn't break the app
+    authLogger.warn("Access token sync error (non-critical):", error);
+    // Still update local state with detected alias
+    authLogger.info("Updating local user state with detected alias despite error:", alias);
+    updateUser({
+      ...currentUser,
+      accessTokenAlias: alias,
+    });
   }
 }
 
@@ -95,7 +131,7 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
   try {
     // Register as Creator
-    const creatorResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/creator/create`, {
+    const creatorResponse = await fetch(`/api/gateway/api/v2/creator/create`, {
       method: "POST",
       headers,
       body: JSON.stringify({}),
@@ -115,7 +151,7 @@ async function autoRegisterRoles(jwt: string): Promise<void> {
 
   try {
     // Register as Learner
-    const learnerResponse = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/learner/create`, {
+    const learnerResponse = await fetch(`/api/gateway/api/v2/learner/create`, {
       method: "POST",
       headers,
       body: JSON.stringify({}),
@@ -290,7 +326,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         console.log("\nTo use in API requests:");
         console.log(`Authorization: Bearer ${storedJWT}`);
         console.log("\nCurl example:");
-        console.log(`curl -X POST "${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/sync-teachers" \\
+        console.log(`curl -X POST "/api/gateway/api/v2/course/owner/course/sync-teachers" \\
   -H "Authorization: Bearer ${storedJWT}" \\
   -H "Content-Type: application/json" \\
   -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
@@ -332,6 +368,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
    * Authenticate with connected wallet
    */
   const authenticate = useCallback(async () => {
+    authLogger.info("authenticate() called", { connected, hasWallet: !!wallet });
+
     if (!connected || !wallet) {
       setAuthError("Please connect your wallet first");
       return;
@@ -398,14 +436,20 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       });
 
       // Store JWT and update state
+      authLogger.info("Auth response received:", {
+        hasJwt: !!authResponse.jwt,
+        user: authResponse.user,
+      });
       storeJWT(authResponse.jwt);
       setJwt(authResponse.jwt);
       setUser(authResponse.user);
       setIsAuthenticated(true);
       setPopupBlocked(false);
+      authLogger.info("Auth state updated: isAuthenticated=true");
 
+      // TODO: Re-enable after API endpoints exist
       // Automatically register as Creator and Learner on first login
-      await autoRegisterRoles(authResponse.jwt);
+      // await autoRegisterRoles(authResponse.jwt);
 
       // Sync access token from wallet to database (in case it wasn't detected during auth)
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
@@ -427,7 +471,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       console.log("\nTo use in API requests:");
       console.log(`Authorization: Bearer ${authResponse.jwt}`);
       console.log("\nCurl example:");
-      console.log(`curl -X POST "${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/sync-teachers" \\
+      console.log(`curl -X POST "/api/gateway/api/v2/course/owner/course/sync-teachers" \\
   -H "Authorization: Bearer ${authResponse.jwt}" \\
   -H "Content-Type: application/json" \\
   -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
@@ -451,6 +495,16 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
   // Auto-authenticate when wallet connects (combines connect + sign into one step)
   useEffect(() => {
+    // Debug: log all conditions
+    authLogger.info("Auto-auth check:", {
+      connected,
+      hasWallet: !!wallet,
+      isAuthenticated,
+      isAuthenticating,
+      hasAttemptedAutoAuth,
+      isValidatingJWTRef: isValidatingJWTRef.current,
+    });
+
     // Only auto-auth if:
     // 1. Wallet is connected
     // 2. Not already authenticated
@@ -571,14 +625,42 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 }
 
 /**
+ * Default context value for when provider hasn't loaded yet (during dynamic import)
+ */
+const defaultContextValue: AndamioAuthContextType = {
+  isAuthenticated: false,
+  user: null,
+  jwt: null,
+  isAuthenticating: false,
+  authError: null,
+  isWalletConnected: false,
+  popupBlocked: false,
+  authenticate: async () => {
+    console.warn("[Auth] Provider not loaded yet");
+  },
+  logout: () => {
+    console.warn("[Auth] Provider not loaded yet");
+  },
+  refreshAuth: () => {
+    console.warn("[Auth] Provider not loaded yet");
+  },
+  authenticatedFetch: async () => {
+    console.warn("[Auth] Provider not loaded yet");
+    return new Response(null, { status: 503 });
+  },
+};
+
+/**
  * Hook for accessing Andamio authentication state
  *
- * Must be used within an AndamioAuthProvider
+ * Returns a loading state if provider hasn't loaded yet (during dynamic import)
  */
 export function useAndamioAuth() {
   const context = useContext(AndamioAuthContext);
+  // Return default loading state if provider hasn't loaded yet
+  // This handles the brief period during dynamic import of AuthProvider
   if (context === undefined) {
-    throw new Error("useAndamioAuth must be used within AndamioAuthProvider");
+    return defaultContextValue;
   }
   return context;
 }

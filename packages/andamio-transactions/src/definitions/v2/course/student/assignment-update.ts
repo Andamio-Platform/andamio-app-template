@@ -83,7 +83,7 @@ export const COURSE_STUDENT_ASSIGNMENT_UPDATE: AndamioTransactionDefinition = {
         network_evidence_hash: z.string(), // Hash of the evidence
       }),
     }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/course/student/assignment/update" },
+    builder: { type: "api-endpoint", endpoint: "/api/v2/tx/course/student/assignment/update" },
     estimatedCost: getProtocolCost(protocolId),
   },
   onSubmit: [
@@ -129,6 +129,6 @@ export const COURSE_STUDENT_ASSIGNMENT_UPDATE: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/student/assignment/update",
-    apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/swagger/index.html#/default/post_v2_tx_course_student_assignment_update",
+    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_student_assignment_update",
   },
 };

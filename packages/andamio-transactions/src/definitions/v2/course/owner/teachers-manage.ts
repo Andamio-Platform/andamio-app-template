@@ -74,7 +74,7 @@ export const COURSE_OWNER_TEACHERS_MANAGE: AndamioTransactionDefinition = {
       // No side effect parameters - purely on-chain action
       sideEffectParams: z.object({}),
     }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/course/owner/teachers/manage" },
+    builder: { type: "api-endpoint", endpoint: "/api/v2/tx/course/owner/teachers/manage" },
     estimatedCost: getProtocolCost(protocolId),
   },
   // No side effects - teacher access is determined on-chain via Course Governance UTxO
@@ -92,6 +92,6 @@ export const COURSE_OWNER_TEACHERS_MANAGE: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/owner/teachers/manage",
-    apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/swagger/index.html#/default/post_v2_tx_course_owner_teachers_manage",
+    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_owner_teachers_manage",
   },
 };

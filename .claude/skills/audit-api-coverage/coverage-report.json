@@ -1,1075 +1,540 @@
 {
-  "generatedAt": "2026-01-14T19:50:07.968Z",
+  "generatedAt": "2026-01-16T18:06:40.494Z",
+  "gatewayUrl": "https://andamio-api-gateway-168705267033.us-central1.run.app",
   "summary": {
-    "totalEndpoints": 142,
-    "implementedEndpoints": 96,
-    "overallCoverage": 68
+    "totalEndpoints": 45,
+    "implementedEndpoints": 25,
+    "overallCoverage": 56
   },
-  "apis": {
-    "dbApi": {
-      "name": "Andamio DB API",
-      "baseUrl": "https://andamio-db-api-343753432212.us-central1.run.app",
-      "totalEndpoints": 92,
-      "implementedEndpoints": 48,
-      "coveragePercent": 52,
+  "categories": {
+    "auth": {
+      "name": "Authentication",
+      "totalEndpoints": 2,
+      "implementedEndpoints": 1,
+      "coveragePercent": 50,
       "endpoints": [
         {
-          "path": "/health",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/auth/login/session",
+          "path": "/auth/login",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamio-auth.ts"
-        },
-        {
-          "path": "/auth/login/validate",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamio-auth.ts"
-        },
-        {
-          "path": "/user/access-token-alias",
-          "method": "POST",
+          "category": "auth",
           "implemented": true,
           "implementationLocation": "src/contexts/andamio-auth-context.tsx"
         },
         {
-          "path": "/user/unconfirmed-tx",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
-        },
-        {
-          "path": "/user/unconfirmed-tx",
+          "path": "/auth/register",
           "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
-        },
-        {
-          "path": "/user/init-roles",
-          "method": "POST",
+          "category": "auth",
           "implemented": false
-        },
-        {
-          "path": "/user/pending-transactions",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
-        },
-        {
-          "path": "/course/user/courses/list",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course.ts"
-        },
-        {
-          "path": "/course/user/course/get/{policy_id}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/user/course/check/{code}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/owner/courses/list",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-owned-courses.ts"
-        },
-        {
-          "path": "/course/owner/course/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/owner/course/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course.ts"
-        },
-        {
-          "path": "/course/owner/course/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course.ts"
-        },
-        {
-          "path": "/course/owner/course/mint",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/courses/on-chain-courses-section.tsx"
-        },
-        {
-          "path": "/course/owner/course/confirm-mint",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/course-modules/list/{policy_id}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-hybrid-slts.ts"
-        },
-        {
-          "path": "/course/user/course-module/get/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/user/course-modules/assignment-summary/{policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-modules/list",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-owned-courses.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course-module.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course-module.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course-module.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/update-status",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course-module.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/update-code",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-course-module.ts"
-        },
-        {
-          "path": "/course/teacher/course-module/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/set-pending-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-modules/batch-update-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-modules/batch-confirm",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/slts/list/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/user/slt/get/{policy_id}/{module_code}/{index}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/slt/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-slt.ts"
-        },
-        {
-          "path": "/course/teacher/slt/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-slt.ts"
-        },
-        {
-          "path": "/course/teacher/slt/update-index",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-slt.ts"
-        },
-        {
-          "path": "/course/teacher/slt/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-slt.ts"
-        },
-        {
-          "path": "/course/teacher/slts/batch-update-indexes",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-slts.tsx"
-        },
-        {
-          "path": "/course/user/lessons/list/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/user/lesson/get/{policy_id}/{module_code}/{index}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-lesson.ts"
-        },
-        {
-          "path": "/course/teacher/lesson/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/api/use-lesson.ts"
-        },
-        {
-          "path": "/course/teacher/lesson/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-lessons.tsx"
-        },
-        {
-          "path": "/course/teacher/lesson/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/lesson/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/assignment/get/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/teacher/assignment/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-credential.tsx"
-        },
-        {
-          "path": "/course/teacher/assignment/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-assignment.tsx"
-        },
-        {
-          "path": "/course/teacher/assignment/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/assignment/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/introduction/get/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-module-wizard-data.ts"
-        },
-        {
-          "path": "/course/teacher/introduction/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-introduction.tsx"
-        },
-        {
-          "path": "/course/teacher/introduction/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/studio/wizard/steps/step-introduction.tsx"
-        },
-        {
-          "path": "/course/teacher/introduction/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/introduction/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/assignment-commitments/list-by-course",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
-        },
-        {
-          "path": "/course/teacher/assignment-commitment/review",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/student/assignment-commitments/list-by-course",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
-        },
-        {
-          "path": "/course/student/assignment-commitment/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/course/student/assignment-commitment/update-evidence",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/course/student/assignment-commitment/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/course/shared/assignment-commitment/get",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/user-course-status.tsx"
-        },
-        {
-          "path": "/course/shared/assignment-commitment/update-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/shared/assignment-commitment/confirm-transaction",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/hooks/use-pending-tx-watcher.ts"
-        },
-        {
-          "path": "/course/student/courses",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/student/course-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/projects/list",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/project/{project_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/project-state/{project_state_policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/tasks/{project_state_policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/task/{task_hash}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/update",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/sync",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/managers/sync",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/update",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/tasks/batch-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/commitment/assess",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/commitment/confirm-assess",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/create",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/project-v2/contributor/commitment/update",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/project-v2/contributor/commitment/delete",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/assignment-commitment.tsx"
-        },
-        {
-          "path": "/project-v2/contributor/commitment/submit",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/claim",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/leave",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitments/list",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/app/(app)/studio/course/[coursenft]/instructor/page.tsx"
-        },
-        {
-          "path": "/project-v2/contributor/commitment/get",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "src/components/learner/user-course-status.tsx"
         }
       ],
       "missingEndpoints": [
         {
-          "path": "/health",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/user/init-roles",
+          "path": "/auth/register",
           "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/course/check/{code}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/owner/course/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/owner/course/confirm-mint",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/course-modules/assignment-summary/{policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/set-pending-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-module/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-modules/batch-update-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/course-modules/batch-confirm",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/slt/get/{policy_id}/{module_code}/{index}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/lesson/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/lesson/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/assignment/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/assignment/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/introduction/publish",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/introduction/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/user/assignment-commitment/has-commitments/{policy_id}/{module_code}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/course/teacher/assignment-commitment/review",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/shared/assignment-commitment/update-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/student/courses",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/course/student/course-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/projects/list",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/project/{project_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/project-state/{project_state_policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/tasks/{project_state_policy_id}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/user/task/{task_hash}",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/update",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/project/sync",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/admin/managers/sync",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/create",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/update",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/delete",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/tasks/batch-status",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/task/confirm-tx",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/commitment/assess",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/manager/commitment/confirm-assess",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/submit",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/claim",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/leave",
-          "method": "POST",
-          "implemented": false
-        },
-        {
-          "path": "/project-v2/contributor/commitment/confirm-tx",
-          "method": "POST",
+          "category": "auth",
           "implemented": false
         }
       ]
     },
-    "txApi": {
-      "name": "Andamio Tx API",
-      "baseUrl": "https://atlas-api-preprod-507341199760.us-central1.run.app",
-      "totalEndpoints": 16,
-      "implementedEndpoints": 16,
+    "user": {
+      "name": "User Management",
+      "totalEndpoints": 5,
+      "implementedEndpoints": 1,
+      "coveragePercent": 20,
+      "endpoints": [
+        {
+          "path": "/user/delete",
+          "method": "POST",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/me",
+          "method": "GET",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/usage",
+          "method": "GET",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/usage/daily",
+          "method": "POST",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/v2/users/{alias}/state",
+          "method": "GET",
+          "category": "user",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/user/delete",
+          "method": "POST",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/me",
+          "method": "GET",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/usage",
+          "method": "GET",
+          "category": "user",
+          "implemented": false
+        },
+        {
+          "path": "/user/usage/daily",
+          "method": "POST",
+          "category": "user",
+          "implemented": false
+        }
+      ]
+    },
+    "apikey": {
+      "name": "API Key Management",
+      "totalEndpoints": 3,
+      "implementedEndpoints": 0,
+      "coveragePercent": 0,
+      "endpoints": [
+        {
+          "path": "/apikey/delete",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        },
+        {
+          "path": "/apikey/request",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        },
+        {
+          "path": "/apikey/rotate",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/apikey/delete",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        },
+        {
+          "path": "/apikey/request",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        },
+        {
+          "path": "/apikey/rotate",
+          "method": "POST",
+          "category": "apikey",
+          "implemented": false
+        }
+      ]
+    },
+    "admin": {
+      "name": "Admin Functions",
+      "totalEndpoints": 3,
+      "implementedEndpoints": 0,
+      "coveragePercent": 0,
+      "endpoints": [
+        {
+          "path": "/admin/set-user-role",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        },
+        {
+          "path": "/admin/usage/any-user-daily-api-usage",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        },
+        {
+          "path": "/admin/usage/user-api-usage",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/admin/set-user-role",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        },
+        {
+          "path": "/admin/usage/any-user-daily-api-usage",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        },
+        {
+          "path": "/admin/usage/user-api-usage",
+          "method": "POST",
+          "category": "admin",
+          "implemented": false
+        }
+      ]
+    },
+    "merged-courses": {
+      "name": "Merged Courses",
+      "totalEndpoints": 3,
+      "implementedEndpoints": 0,
+      "coveragePercent": 0,
+      "endpoints": [
+        {
+          "path": "/api/v2/course/student/course-status",
+          "method": "POST",
+          "category": "merged-courses",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/course/user/course/get/{policy_id}",
+          "method": "GET",
+          "category": "merged-courses",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/course/user/courses/list",
+          "method": "GET",
+          "category": "merged-courses",
+          "implemented": false
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/api/v2/course/student/course-status",
+          "method": "POST",
+          "category": "merged-courses",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/course/user/course/get/{policy_id}",
+          "method": "GET",
+          "category": "merged-courses",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/course/user/courses/list",
+          "method": "GET",
+          "category": "merged-courses",
+          "implemented": false
+        }
+      ]
+    },
+    "merged-projects": {
+      "name": "Merged Projects",
+      "totalEndpoints": 3,
+      "implementedEndpoints": 0,
+      "coveragePercent": 0,
+      "endpoints": [
+        {
+          "path": "/api/v2/project/contributor/status/{project_id}/{alias}",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/project/user/project/{project_id}",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/project/user/projects/list",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/api/v2/project/contributor/status/{project_id}/{alias}",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/project/user/project/{project_id}",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        },
+        {
+          "path": "/api/v2/project/user/projects/list",
+          "method": "GET",
+          "category": "merged-projects",
+          "implemented": false
+        }
+      ]
+    },
+    "scan-courses": {
+      "name": "Scan: Courses",
+      "totalEndpoints": 4,
+      "implementedEndpoints": 4,
       "coveragePercent": 100,
       "endpoints": [
         {
-          "path": "/v2/tx/global/general/access-token/mint",
-          "method": "POST",
+          "path": "/v2/courses",
+          "method": "GET",
+          "category": "scan-courses",
           "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/global/general/access-token-mint.ts"
+          "implementationLocation": "src/lib/andamioscan.ts"
         },
         {
-          "path": "/v2/tx/instance/owner/course/create",
-          "method": "POST",
+          "path": "/v2/courses/teachers/{alias}/assessments/pending",
+          "method": "GET",
+          "category": "scan-courses",
           "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/instance/course-create.ts"
+          "implementationLocation": "src/lib/andamioscan.ts"
         },
         {
-          "path": "/v2/tx/instance/owner/project/create",
-          "method": "POST",
+          "path": "/v2/courses/{course_id}/details",
+          "method": "GET",
+          "category": "scan-courses",
           "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/instance/project-create.ts"
+          "implementationLocation": "src/lib/andamioscan.ts"
         },
+        {
+          "path": "/v2/courses/{course_id}/students/{student_alias}/status",
+          "method": "GET",
+          "category": "scan-courses",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        }
+      ],
+      "missingEndpoints": []
+    },
+    "scan-projects": {
+      "name": "Scan: Projects",
+      "totalEndpoints": 4,
+      "implementedEndpoints": 4,
+      "coveragePercent": 100,
+      "endpoints": [
+        {
+          "path": "/v2/projects",
+          "method": "GET",
+          "category": "scan-projects",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        },
+        {
+          "path": "/v2/projects/managers/{alias}/assessments/pending",
+          "method": "GET",
+          "category": "scan-projects",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        },
+        {
+          "path": "/v2/projects/{project_id}/contributors/{contributor_alias}/status",
+          "method": "GET",
+          "category": "scan-projects",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        },
+        {
+          "path": "/v2/projects/{project_id}/details",
+          "method": "GET",
+          "category": "scan-projects",
+          "implemented": true,
+          "implementationLocation": "src/lib/andamioscan.ts"
+        }
+      ],
+      "missingEndpoints": []
+    },
+    "scan-transactions": {
+      "name": "Scan: Transactions",
+      "totalEndpoints": 1,
+      "implementedEndpoints": 0,
+      "coveragePercent": 0,
+      "endpoints": [
+        {
+          "path": "/v2/transactions",
+          "method": "GET",
+          "category": "scan-transactions",
+          "implemented": false
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/v2/transactions",
+          "method": "GET",
+          "category": "scan-transactions",
+          "implemented": false
+        }
+      ]
+    },
+    "tx-courses": {
+      "name": "TX: Courses",
+      "totalEndpoints": 6,
+      "implementedEndpoints": 6,
+      "coveragePercent": 100,
+      "endpoints": [
         {
           "path": "/v2/tx/course/owner/teachers/manage",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
           "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/owner/teachers-manage.ts"
         },
         {
-          "path": "/v2/tx/course/teacher/modules/manage",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/teacher/modules-manage.ts"
-        },
-        {
-          "path": "/v2/tx/course/teacher/assignments/assess",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/teacher/assignments-assess.ts"
-        },
-        {
           "path": "/v2/tx/course/student/assignment/commit",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
           "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/student/assignment-commit.ts"
         },
         {
           "path": "/v2/tx/course/student/assignment/update",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
           "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/student/assignment-update.ts"
         },
         {
           "path": "/v2/tx/course/student/credential/claim",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
           "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/student/credential-claim.ts"
         },
         {
-          "path": "/v2/tx/project/owner/managers/manage",
+          "path": "/v2/tx/course/teacher/assignments/assess",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/owner/managers-manage.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/teacher/assignments-assess.ts"
         },
         {
-          "path": "/v2/tx/project/owner/contributor-blacklist/manage",
+          "path": "/v2/tx/course/teacher/modules/manage",
           "method": "POST",
+          "category": "tx-courses",
           "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/owner/blacklist-manage.ts"
-        },
-        {
-          "path": "/v2/tx/project/manager/tasks/manage",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/manager/tasks-manage.ts"
-        },
-        {
-          "path": "/v2/tx/project/manager/tasks/assess",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts"
-        },
-        {
-          "path": "/v2/tx/project/contributor/task/commit",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts"
-        },
-        {
-          "path": "/v2/tx/project/contributor/task/action",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/task-action.ts"
-        },
-        {
-          "path": "/v2/tx/project/contributor/credential/claim",
-          "method": "POST",
-          "implemented": true,
-          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/credential-claim.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/course/teacher/modules-manage.ts"
         }
       ],
       "missingEndpoints": []
     },
-    "andamioscan": {
-      "name": "Andamioscan",
-      "baseUrl": "https://preprod.andamioscan.io/api",
-      "totalEndpoints": 34,
-      "implementedEndpoints": 32,
-      "coveragePercent": 94,
+    "tx-projects": {
+      "name": "TX: Projects",
+      "totalEndpoints": 8,
+      "implementedEndpoints": 7,
+      "coveragePercent": 88,
       "endpoints": [
         {
-          "path": "/api/v2/courses",
-          "method": "GET",
+          "path": "/v2/tx/project/contributor/credential/claim",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/credential-claim.ts"
         },
         {
-          "path": "/api/v2/courses/{course_id}/details",
-          "method": "GET",
+          "path": "/v2/tx/project/contributor/task/action",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/task-action.ts"
         },
         {
-          "path": "/api/v2/courses/{course_id}/students/{student_alias}/status",
-          "method": "GET",
+          "path": "/v2/tx/project/contributor/task/commit",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts"
         },
         {
-          "path": "/api/v2/courses/teachers/{alias}/assessments/pending",
-          "method": "GET",
+          "path": "/v2/tx/project/manager/tasks/assess",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts"
         },
         {
-          "path": "/api/v2/events/access-tokens/mint/{tx_hash}",
-          "method": "GET",
+          "path": "/v2/tx/project/manager/tasks/manage",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/manager/tasks-manage.ts"
         },
         {
-          "path": "/api/v2/events/assessments/assess/{tx_hash}",
-          "method": "GET",
+          "path": "/v2/tx/project/owner/contributor-blacklist/manage",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/owner/blacklist-manage.ts"
         },
         {
-          "path": "/api/v2/events/assignments/submit/{tx_hash}",
-          "method": "GET",
+          "path": "/v2/tx/project/owner/managers/manage",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/project/owner/managers-manage.ts"
         },
         {
-          "path": "/api/v2/events/courses/create/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/credential-claims/claim/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/credential-claims/project/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/enrollments/enroll/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/modules/manage/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/projects/create/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/projects/join/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/tasks/assess/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/tasks/manage/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/tasks/submit/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/teachers/update/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/events/treasury/fund/{tx_hash}",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/projects",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/projects/{project_id}/contributors/{contributor_alias}/status",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/projects/{project_id}/details",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/projects/managers/{alias}/assessments/pending",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/transactions",
-          "method": "GET",
-          "implemented": false
-        },
-        {
-          "path": "/api/v2/users/{alias}/courses/completed",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/courses/enrolled",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/courses/owned",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/courses/teaching",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/projects/completed",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/projects/contributing",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/projects/managing",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/projects/owned",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/api/v2/users/{alias}/state",
-          "method": "GET",
-          "implemented": true,
-          "implementationLocation": "src/lib/andamioscan.ts"
-        },
-        {
-          "path": "/health",
-          "method": "GET",
+          "path": "/v2/tx/project/user/treasury/add-funds",
+          "method": "POST",
+          "category": "tx-projects",
           "implemented": false
         }
       ],
       "missingEndpoints": [
         {
-          "path": "/api/v2/transactions",
-          "method": "GET",
+          "path": "/v2/tx/project/user/treasury/add-funds",
+          "method": "POST",
+          "category": "tx-projects",
+          "implemented": false
+        }
+      ]
+    },
+    "tx-instance": {
+      "name": "TX: Instance/Global",
+      "totalEndpoints": 3,
+      "implementedEndpoints": 2,
+      "coveragePercent": 67,
+      "endpoints": [
+        {
+          "path": "/v2/tx/global/user/access-token/mint",
+          "method": "POST",
+          "category": "tx-instance",
           "implemented": false
         },
         {
-          "path": "/health",
-          "method": "GET",
+          "path": "/v2/tx/instance/owner/course/create",
+          "method": "POST",
+          "category": "tx-instance",
+          "implemented": true,
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/instance/course-create.ts"
+        },
+        {
+          "path": "/v2/tx/instance/owner/project/create",
+          "method": "POST",
+          "category": "tx-instance",
+          "implemented": true,
+          "implementationLocation": "packages/andamio-transactions/src/definitions/v2/instance/project-create.ts"
+        }
+      ],
+      "missingEndpoints": [
+        {
+          "path": "/v2/tx/global/user/access-token/mint",
+          "method": "POST",
+          "category": "tx-instance",
           "implemented": false
         }
       ]

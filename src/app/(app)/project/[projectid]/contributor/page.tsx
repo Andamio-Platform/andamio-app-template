@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
@@ -31,12 +30,13 @@ import {
   SuccessIcon,
   PendingIcon,
 } from "~/components/icons";
-import { type ProjectV2Output, type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/transactions";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
 import { createCommitmentRecord, hexToText, confirmCommitmentTransaction } from "~/lib/project-commitment-sync";
+import { computeTaskHash, type TaskData } from "@andamio/transactions";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";
@@ -57,7 +57,7 @@ type CommitmentV2Status =
   | "PENDING_TX_LEAVE"
   | "ABANDONED";
 
-// DB Commitment output type (from /project-v2/contributor/commitment/get)
+// DB Commitment output type (from /project/contributor/commitment/get)
 type CommitmentV2Output = {
   task_hash: string;
   contributor_alias: string;
@@ -130,11 +130,22 @@ function ContributorDashboardContent() {
   const [taskEvidence, setTaskEvidence] = useState<JSONContent | null>(null);
 
   /**
+   * Compute task hash from DB task data.
+   * Uses the same algorithm as on-chain to reliably match DB tasks to on-chain tasks.
+   */
+  const computeTaskHashFromDb = (dbTask: ProjectTaskV2Output): string => {
+    const taskData: TaskData = {
+      project_content: dbTask.title ?? "",
+      expiration_time: parseInt(dbTask.expiration_time) || 0,
+      lovelace_amount: parseInt(dbTask.lovelace) || 0,
+      native_assets: [],
+    };
+    return computeTaskHash(taskData);
+  };
+
+  /**
    * Get the on-chain task_id for a selected task.
-   * Matches DB task with on-chain task by:
-   * 1. Existing task_hash (if already in DB)
-   * 2. Lovelace amount (if unique)
-   * 3. Task index (fallback)
+   * Uses computeTaskHash for reliable matching instead of lovelace/index fallbacks.
    */
   const getOnChainTaskId = (dbTask: ProjectTaskV2Output | null): string => {
     if (!dbTask) return "";
@@ -144,73 +155,47 @@ function ContributorDashboardContent() {
       return dbTask.task_hash;
     }
 
-    // Try to match with on-chain task
-    if (onChainTasks.length === 0) return "";
+    // Compute the task hash from DB data
+    const computedHash = computeTaskHashFromDb(dbTask);
 
-    // Match by lovelace amount (most reliable if unique)
-    const matchByLovelace = onChainTasks.find(
-      (t) => t.lovelace === Number(dbTask.lovelace)
-    );
-    if (matchByLovelace) {
-      console.log("[Contributor] Matched task by lovelace:", {
-        dbLovelace: dbTask.lovelace,
-        onChainTaskId: matchByLovelace.task_id,
+    // Verify it exists on-chain
+    const onChainTask = onChainTasks.find(t => t.task_id === computedHash);
+    if (onChainTask) {
+      console.log("[Contributor] Matched task by computed hash:", {
+        computedHash: computedHash.slice(0, 16) + "...",
+        title: dbTask.title,
       });
-      return matchByLovelace.task_id;
+      return computedHash;
     }
 
-    // Fallback: match by index (assuming same order)
-    const taskIndex = dbTask.index ?? 0;
-    if (taskIndex < onChainTasks.length) {
-      const matchByIndex = onChainTasks[taskIndex];
-      if (matchByIndex) {
-        console.log("[Contributor] Matched task by index:", {
-          index: taskIndex,
-          onChainTaskId: matchByIndex.task_id,
-        });
-        return matchByIndex.task_id;
-      }
-    }
-
-    return "";
+    // Fallback: return computed hash even if not found on-chain yet
+    console.log("[Contributor] Using computed hash (not yet on-chain):", {
+      computedHash: computedHash.slice(0, 16) + "...",
+      title: dbTask.title,
+    });
+    return computedHash;
   };
 
   /**
    * Get the contributor_state_policy_id from the matching on-chain task.
    * This is required by the Atlas TX API for task commits.
-   * @see https://github.com/Andamio-Platform/andamioscan/issues/10
+   * Uses computeTaskHash for reliable matching.
    */
   const getOnChainContributorStatePolicyId = (dbTask: ProjectTaskV2Output | null): string => {
     if (!dbTask) return "";
 
-    // If DB already has task_hash, find the matching on-chain task
-    if (dbTask.task_hash?.length === 64) {
-      const matchByHash = onChainTasks.find(t => t.task_id === dbTask.task_hash);
-      if (matchByHash) {
-        return matchByHash.contributor_state_policy_id;
-      }
+    // Use existing task_hash or compute it
+    const taskHash = dbTask.task_hash?.length === 64
+      ? dbTask.task_hash
+      : computeTaskHashFromDb(dbTask);
+
+    // Find matching on-chain task
+    const matchedTask = onChainTasks.find(t => t.task_id === taskHash);
+    if (matchedTask) {
+      return matchedTask.contributor_state_policy_id;
     }
 
-    // Try to match with on-chain task by lovelace
-    if (onChainTasks.length === 0) return "";
-
-    const matchByLovelace = onChainTasks.find(
-      (t) => t.lovelace === Number(dbTask.lovelace)
-    );
-    if (matchByLovelace) {
-      return matchByLovelace.contributor_state_policy_id;
-    }
-
-    // Fallback: match by index
-    const taskIndex = dbTask.index ?? 0;
-    if (taskIndex < onChainTasks.length) {
-      const matchByIndex = onChainTasks[taskIndex];
-      if (matchByIndex) {
-        return matchByIndex.contributor_state_policy_id;
-      }
-    }
-
-    // Ultimate fallback: use the first task's policy ID (all tasks in same state should have same ID)
+    // Fallback: use the first task's policy ID (all tasks in same project share the policy ID)
     if (onChainTasks.length > 0 && onChainTasks[0]) {
       return onChainTasks[0].contributor_state_policy_id;
     }
@@ -234,7 +219,7 @@ function ContributorDashboardContent() {
   const fetchDbCommitment = async (taskHash: string): Promise<CommitmentV2Output | null> => {
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
+        `/api/gateway/api/v2/project/contributor/commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -334,8 +319,8 @@ function ContributorDashboardContent() {
     setError(null);
 
     try {
-      // V2 API: GET /project-v2/user/project/:project_id
-      const projectUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`;
+      // V2 API: GET /project/user/project/:project_id
+      const projectUrl = `/api/gateway/api/v2/project/user/project/${projectId}`;
       console.log("[Contributor] Fetching project from:", projectUrl);
       const projectResponse = await fetch(projectUrl);
 
@@ -355,16 +340,20 @@ function ContributorDashboardContent() {
       });
       setProject(projectData);
 
-      // V2 API: GET /project-v2/user/tasks/:project_state_policy_id
+      // V2 API: POST /project/user/tasks/list with {project_id} in body
       if (projectData.states && projectData.states.length > 0) {
         const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
         console.log("[Contributor] Project state policy ID:", projectStatePolicyId, "length:", projectStatePolicyId?.length);
         if (projectStatePolicyId) {
           setContributorStateId(projectStatePolicyId);
 
-          const tasksUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/tasks/${projectStatePolicyId}`;
+          const tasksUrl = `/api/gateway/api/v2/project/user/tasks/list`;
           console.log("[Contributor] Fetching tasks from:", tasksUrl);
-          const tasksResponse = await fetch(tasksUrl);
+          const tasksResponse = await fetch(tasksUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_id: projectStatePolicyId }),
+          });
 
           if (tasksResponse.ok) {
             const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { ContentViewer } from "~/components/editor";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -17,7 +16,7 @@ import {
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { getCourse } from "~/lib/andamioscan";
-import { type CourseResponse, type CourseModuleResponse } from "@andamio/db-api-types";
+import { type CourseResponse, type CourseModuleResponse } from "~/types/generated";
 import { computeSltHashDefinite } from "@andamio/transactions";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
@@ -78,7 +77,7 @@ export default function LearnerAssignmentPage() {
       try {
         // Go API: GET /course/user/course/get/{policy_id}
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
+          `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
         );
 
         if (courseResponse.ok) {
@@ -88,7 +87,7 @@ export default function LearnerAssignmentPage() {
 
         // Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
         const moduleResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
+          `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (moduleResponse.ok) {
@@ -99,7 +98,7 @@ export default function LearnerAssignmentPage() {
         // Fetch SLTs for the module
         // Go API: GET /course/user/slts/list/{policy_id}/{module_code}
         const sltsResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
+          `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (sltsResponse.ok) {
@@ -109,7 +108,7 @@ export default function LearnerAssignmentPage() {
 
         // Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
+          `/api/gateway/api/v2/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (response.status === 404) {

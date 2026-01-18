@@ -1,14 +1,13 @@
 "use client";
 
-import { MeshProvider as MeshProviderBase } from "@meshsdk/react";
-import { type ReactNode } from "react";
+import { type ReactNode, useState, useEffect, type ComponentType } from "react";
 
 /**
  * MeshProvider wrapper for Next.js App Router
  *
  * This component wraps the Mesh SDK's MeshProvider to make it compatible
- * with Next.js App Router. It must be a client component ("use client")
- * and can be imported into the root layout.
+ * with Next.js App Router. It dynamically imports the provider client-side
+ * to avoid SSR compatibility issues with @fabianbormann/cardano-peer-connect.
  *
  * Usage:
  * - Wrap your app in this provider in the root layout
@@ -32,5 +31,20 @@ import { type ReactNode } from "react";
  * ```
  */
 export function MeshProvider({ children }: { children: ReactNode }) {
-  return <MeshProviderBase>{children}</MeshProviderBase>;
+  const [Provider, setProvider] = useState<ComponentType<{ children: ReactNode }> | null>(null);
+
+  useEffect(() => {
+    // Dynamically import MeshProvider only on client-side to avoid
+    // "Cannot redefine property: chunk" error from cardano-peer-connect
+    void import("@meshsdk/react").then((mod) => {
+      setProvider(() => mod.MeshProvider);
+    });
+  }, []);
+
+  // Render children without MeshProvider during SSR/loading
+  if (!Provider) {
+    return <>{children}</>;
+  }
+
+  return <Provider>{children}</Provider>;
 }

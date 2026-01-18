@@ -1,23 +1,26 @@
 /**
- * ProjectCredentialClaim Transaction Component (V2)
+ * ProjectCredentialClaim Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for contributors to claim credential tokens after completing project tasks.
- * Uses PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM transaction definition.
+ * Uses PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM transaction type with gateway auto-confirmation.
  *
- * This transaction has no database side effects because:
+ * This transaction has no additional database side effects because:
  * 1. By the time a contributor claims credentials, all task completions have already been recorded.
  * 2. The credential token itself IS the proof of completion.
  * 3. Credential ownership is verified via blockchain queries, not database lookups.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/contributor/credential-claim.ts
+ * The gateway still tracks the transaction for analytics and state updates.
+ *
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React from "react";
-import { PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -29,8 +32,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialIcon, ShieldIcon, ProjectIcon } from "~/components/icons";
+import { CredentialIcon, ShieldIcon, ProjectIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface ProjectCredentialClaimProps {
   /**
@@ -77,7 +81,33 @@ export function ProjectCredentialClaim({
   onSuccess,
 }: ProjectCredentialClaimProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[ProjectCredentialClaim] TX confirmed and tracked by gateway");
+
+          toast.success("Credentials Claimed!", {
+            description: projectTitle
+              ? `You've earned your credentials from ${projectTitle}`
+              : "Your project credentials have been minted",
+          });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Claim Failed", {
+            description: status.last_error ?? "Transaction failed on-chain. Please try again.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM;
 
   const handleClaim = async () => {
     if (!user?.accessTokenAlias) {
@@ -85,7 +115,7 @@ export function ProjectCredentialClaim({
     }
 
     await execute({
-      definition: PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM,
+      txType: "PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM",
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
@@ -93,21 +123,7 @@ export function ProjectCredentialClaim({
         contributor_state_id: contributorStateId,
       },
       onSuccess: async (txResult) => {
-        console.log("[ProjectCredentialClaim] Success!", txResult);
-
-        toast.success("Credentials Claimed!", {
-          description: projectTitle
-            ? `You've earned your credentials from ${projectTitle}`
-            : "Your project credentials have been minted",
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.();
+        console.log("[ProjectCredentialClaim] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[ProjectCredentialClaim] Error:", txError);
@@ -162,27 +178,61 @@ export function ProjectCredentialClaim({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: "Your credentials have been minted to your wallet!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing credential mint"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Credentials Claimed Successfully!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  Your credential tokens have been minted to your wallet
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Claim Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleClaim}
             disabled={!hasAccessToken}
             stateText={{
-              idle: "Claim Credentials",
+              idle: ui.buttonText,
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
               submitting: "Minting Credentials...",

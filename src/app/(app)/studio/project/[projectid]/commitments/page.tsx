@@ -2,10 +2,8 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useManagerPendingAssessments } from "~/hooks/use-andamioscan";
-import { getProject, type AndamioscanProjectDetails, type AndamioscanTask } from "~/lib/andamioscan";
+import { useManagerCommitments, useProject, type ManagerCommitment } from "~/hooks/api";
 import { syncPendingAssessment, checkCommitmentExists } from "~/lib/project-commitment-sync";
 import {
   AndamioBadge,
@@ -44,9 +42,8 @@ import {
   TaskIcon,
   DatabaseIcon,
 } from "~/components/icons";
-import { type ProjectV2Output } from "@andamio/db-api-types";
+import { type ProjectV2Output, type OrchestrationProjectTaskOnChain } from "~/types/generated";
 import { TasksAssess } from "~/components/transactions";
-import type { AndamioscanProjectPendingAssessment } from "~/lib/andamioscan";
 import { toast } from "sonner";
 
 /**
@@ -58,7 +55,7 @@ import { toast } from "sonner";
  * API Endpoints:
  * - Andamioscan: GET /api/v2/projects/managers/{alias}/assessments/pending
  * - Andamioscan: GET /api/v2/projects/{project_id}/details
- * - DB API: GET /project-v2/user/project/:project_id
+ * - DB API: GET /project/user/project/:project_id
  */
 export default function ProjectCommitmentsPage() {
   const params = useParams();
@@ -66,11 +63,12 @@ export default function ProjectCommitmentsPage() {
   const { isAuthenticated, user, authenticatedFetch } = useAndamioAuth();
   const managerAlias = user?.accessTokenAlias;
 
-  // Project data from DB API and Andamioscan
-  const [project, setProject] = useState<ProjectV2Output | null>(null);
-  const [onChainProject, setOnChainProject] = useState<AndamioscanProjectDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Project data from merged API
+  const {
+    data: project,
+    isLoading,
+    error: projectError,
+  } = useProject(projectId);
 
   // Sync state - track which submissions are being synced
   const [syncingSubmissions, setSyncingSubmissions] = useState<Set<string>>(new Set());
@@ -78,62 +76,40 @@ export default function ProjectCommitmentsPage() {
   // DB status for each commitment (task_id -> { exists, status })
   const [dbStatus, setDbStatus] = useState<Map<string, { exists: boolean; status?: string; checking?: boolean }>>(new Map());
 
-  // Pending assessments from Andamioscan
+  // Pending assessments from merged API
   const {
     data: allPendingAssessments,
     isLoading: isLoadingAssessments,
     error: assessmentsError,
     refetch,
-  } = useManagerPendingAssessments(managerAlias ?? undefined);
+  } = useManagerCommitments(projectId);
 
-  // Filter pending assessments to this project
-  const pendingAssessments = useMemo(() => {
-    if (!allPendingAssessments) return [];
-    return allPendingAssessments.filter((a) => a.project_id === projectId);
-  }, [allPendingAssessments, projectId]);
+  // Pending assessments are already filtered by projectId in the hook
+  const pendingAssessments = allPendingAssessments ?? [];
 
-  // Map task_id to task details from on-chain project
-  // Also create lovelace map for matching when task_id is empty
-  const { taskMap, taskByLovelace, taskByContent } = useMemo(() => {
-    const idMap = new Map<string, AndamioscanTask>();
-    const lovelaceMap = new Map<number, AndamioscanTask>();
-    const contentMap = new Map<string, AndamioscanTask>();
-    if (onChainProject?.tasks) {
-      for (const task of onChainProject.tasks) {
-        idMap.set(task.task_id, task);
-        lovelaceMap.set(task.lovelace, task);
-        contentMap.set(task.content, task);
+  // Map task_id to task details from merged project data
+  const taskMap = useMemo(() => {
+    const map = new Map<string, OrchestrationProjectTaskOnChain>();
+    if (project?.tasks) {
+      for (const task of project.tasks) {
+        if (task.task_id) {
+          map.set(task.task_id, task);
+        }
       }
     }
-    return { taskMap: idMap, taskByLovelace: lovelaceMap, taskByContent: contentMap };
-  }, [onChainProject]);
+    return map;
+  }, [project?.tasks]);
 
   /**
-   * Find task by ID, or fall back to matching by lovelace/content
-   * This is needed because pending assessments API often returns empty task_id
+   * Find task by ID
    */
-  const findMatchingTask = useCallback((assessment: AndamioscanProjectPendingAssessment): AndamioscanTask | undefined => {
-    // First try by task_id if available
-    if (assessment.task_id) {
-      const byId = taskMap.get(assessment.task_id);
-      if (byId) return byId;
-    }
-    // Fall back to matching by lovelace
-    if (assessment.task_lovelace > 0) {
-      const byLovelace = taskByLovelace.get(assessment.task_lovelace);
-      if (byLovelace) return byLovelace;
-    }
-    // Fall back to matching by content
-    if (assessment.task_content) {
-      const byContent = taskByContent.get(assessment.task_content);
-      if (byContent) return byContent;
-    }
-    return undefined;
-  }, [taskMap, taskByLovelace, taskByContent]);
+  const findMatchingTask = useCallback((commitment: ManagerCommitment): OrchestrationProjectTaskOnChain | undefined => {
+    return taskMap.get(commitment.task_id);
+  }, [taskMap]);
 
   // Selected assessment for management
   const [selectedAssessment, setSelectedAssessment] =
-    useState<AndamioscanProjectPendingAssessment | null>(null);
+    useState<ManagerCommitment | null>(null);
 
   // Filtering state
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,57 +124,13 @@ export default function ProjectCommitmentsPage() {
     );
   }, [pendingAssessments, searchQuery]);
 
-  // Fetch project data
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Fetch DB API project
-        const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
-        );
-
-        if (!projectResponse.ok) {
-          throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
-        }
-
-        const projectData = (await projectResponse.json()) as ProjectV2Output;
-        setProject(projectData);
-
-        // Fetch on-chain project details for task info
-        try {
-          const onChainData = await getProject(projectId);
-          setOnChainProject(onChainData);
-        } catch {
-          // On-chain data optional - continue without it
-          console.warn("Could not fetch on-chain project data");
-        }
-      } catch (err) {
-        console.error("Error fetching project:", err);
-        setError(err instanceof Error ? err.message : "Failed to load project");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [projectId]);
-
   // Check DB status for each pending assessment
-  // Must wait for onChainProject to load so we can match tasks
   useEffect(() => {
-    if (!pendingAssessments.length || !isAuthenticated || !onChainProject) return;
+    if (!pendingAssessments.length || !isAuthenticated) return;
 
     const checkAllDbStatus = async () => {
       for (const assessment of pendingAssessments) {
-        // Use matched task_id when available
-        const matchedTask = findMatchingTask(assessment);
-        const taskId = matchedTask?.task_id ?? assessment.task_id;
-
-        // Skip if no task_id available
-        if (!taskId) continue;
+        const taskId = assessment.task_id;
 
         // Skip if already checked or checking
         if (dbStatus.has(taskId)) continue;
@@ -221,7 +153,7 @@ export default function ProjectCommitmentsPage() {
 
     void checkAllDbStatus();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAssessments, isAuthenticated, onChainProject]);
+  }, [pendingAssessments, isAuthenticated]);
 
   // Format slot number to approximate date
   const formatSlot = (slot: number): string => {
@@ -231,45 +163,38 @@ export default function ProjectCommitmentsPage() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  // Get task title from assessment (uses matching)
-  const getTaskTitle = useCallback((assessment: AndamioscanProjectPendingAssessment): string => {
-    const task = findMatchingTask(assessment);
-    if (task) {
+  // Get task title from commitment
+  const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
+    const task = findMatchingTask(commitment);
+    if (task?.task_id && task?.lovelace) {
       return `Task ${task.task_id.slice(0, 8)}... (${(task.lovelace / 1_000_000).toFixed(0)} ADA)`;
     }
-    // Fallback if no match found - show lovelace if available
-    if (assessment.task_lovelace > 0) {
-      return `Unknown Task (${(assessment.task_lovelace / 1_000_000).toFixed(0)} ADA)`;
-    }
-    return "Unknown Task";
-  }, [findMatchingTask]);
-
-  // Get the effective task_id (matched or original)
-  const getEffectiveTaskId = useCallback((assessment: AndamioscanProjectPendingAssessment): string => {
-    const task = findMatchingTask(assessment);
-    return task?.task_id ?? assessment.task_id;
+    // Task not found in project
+    return `Task ${commitment.task_id.slice(0, 8)}...`;
   }, [findMatchingTask]);
 
   // Sync a single submission to DB
-  const handleSyncSubmission = useCallback(async (assessment: AndamioscanProjectPendingAssessment) => {
-    const effectiveTaskId = getEffectiveTaskId(assessment);
-    const syncKey = `${effectiveTaskId}-${assessment.contributor_alias}`;
+  const handleSyncSubmission = useCallback(async (commitment: ManagerCommitment) => {
+    const taskId = commitment.task_id;
+    const syncKey = `${taskId}-${commitment.contributor_alias}`;
     setSyncingSubmissions((prev) => new Set(prev).add(syncKey));
 
     try {
-      // Sync directly from pending assessment data using matched task_id
+      // Sync directly from pending commitment data
+      // Use on_chain_content or content.evidence_text
+      const contentText = commitment.on_chain_content ?? commitment.content?.evidence_text ?? "";
       const result = await syncPendingAssessment(
-        effectiveTaskId,
-        assessment.content,
-        assessment.submission_tx_hash,
+        taskId,
+        contentText,
+        commitment.submission_tx_hash ?? "",
         authenticatedFetch
       );
       if (result.success) {
         toast.success("Commitment synced to database", {
-          description: `${assessment.contributor_alias}'s submission is now ready for assessment`,
+          description: `${commitment.contributor_alias}'s submission is now ready for assessment`,
         });
         // Update DB status to show it now exists
-        setDbStatus((prev) => new Map(prev).set(effectiveTaskId, {
+        setDbStatus((prev) => new Map(prev).set(taskId, {
           exists: true,
           status: "SUBMITTED",
           checking: false
@@ -290,7 +215,7 @@ export default function ProjectCommitmentsPage() {
         return next;
       });
     }
-  }, [authenticatedFetch, getEffectiveTaskId]);
+  }, [authenticatedFetch]);
 
   // Not authenticated
   if (!isAuthenticated || !managerAlias) {
@@ -311,12 +236,12 @@ export default function ProjectCommitmentsPage() {
   }
 
   // Error state
-  if (error || !project) {
+  if (projectError || !project) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioPageHeader title="Task Commitments" />
-        <AndamioErrorAlert error={error ?? "Project not found"} />
+        <AndamioErrorAlert error={projectError?.message ?? "Project not found"} />
       </div>
     );
   }
@@ -328,7 +253,7 @@ export default function ProjectCommitmentsPage() {
 
       <AndamioPageHeader
         title="Task Commitments"
-        description={`Review and assess contributor submissions for ${project.title}`}
+        description={`Review and assess contributor submissions for ${project.content?.title ?? "this project"}`}
       />
 
       {/* Stats Cards */}
@@ -343,12 +268,12 @@ export default function ProjectCommitmentsPage() {
         <AndamioDashboardStat
           icon={ManagerIcon}
           label="Total Tasks"
-          value={onChainProject?.tasks.length ?? 0}
+          value={project.tasks?.length ?? 0}
         />
         <AndamioDashboardStat
           icon={SuccessIcon}
           label="Contributors"
-          value={onChainProject?.contributors.length ?? 0}
+          value={project.contributors?.length ?? 0}
           valueColor="success"
           iconColor="success"
         />
@@ -465,10 +390,10 @@ export default function ProjectCommitmentsPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {filteredAssessments.map((assessment) => {
-                    const effectiveTaskId = getEffectiveTaskId(assessment);
+                    const taskId = assessment.task_id;
                     return (
                     <AndamioTableRow
-                      key={`${effectiveTaskId}-${assessment.contributor_alias}`}
+                      key={`${taskId}-${assessment.contributor_alias}`}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedAssessment(assessment)}
                     >
@@ -481,18 +406,22 @@ export default function ProjectCommitmentsPage() {
                         </code>
                       </AndamioTableCell>
                       <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                        {assessment.submission_slot > 0 ? formatSlot(assessment.submission_slot) : "—"}
+                        {assessment.submission_slot && assessment.submission_slot > 0
+                          ? formatSlot(assessment.submission_slot)
+                          : assessment.content?.submitted_at
+                            ? new Date(assessment.content.submitted_at).toLocaleDateString()
+                            : "—"}
                       </AndamioTableCell>
                       <AndamioTableCell>
                         <AndamioText variant="small" className="max-w-[200px] truncate">
-                          {assessment.content || (
+                          {assessment.on_chain_content ?? assessment.content?.evidence_text ?? (
                             <span className="italic text-muted-foreground">No content</span>
                           )}
                         </AndamioText>
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(effectiveTaskId);
+                          const status = dbStatus.get(taskId);
                           if (status?.checking) {
                             return <RefreshIcon className="h-4 w-4 animate-spin text-muted-foreground" />;
                           }
@@ -514,7 +443,7 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(effectiveTaskId);
+                          const status = dbStatus.get(taskId);
                           // Only show sync button if DB record is missing
                           if (status?.exists) {
                             return <span className="text-xs text-muted-foreground">—</span>;
@@ -527,9 +456,9 @@ export default function ProjectCommitmentsPage() {
                                 e.stopPropagation();
                                 void handleSyncSubmission(assessment);
                               }}
-                              disabled={syncingSubmissions.has(`${effectiveTaskId}-${assessment.contributor_alias}`) || status?.checking}
+                              disabled={syncingSubmissions.has(`${taskId}-${assessment.contributor_alias}`) || status?.checking}
                             >
-                              {syncingSubmissions.has(`${effectiveTaskId}-${assessment.contributor_alias}`) ? (
+                              {syncingSubmissions.has(`${taskId}-${assessment.contributor_alias}`) ? (
                                 <RefreshIcon className="h-3 w-3 animate-spin" />
                               ) : (
                                 <DatabaseIcon className="h-3 w-3" />
@@ -563,7 +492,7 @@ export default function ProjectCommitmentsPage() {
 
       {/* Selected Assessment Detail View */}
       {selectedAssessment && (() => {
-        const selectedEffectiveTaskId = getEffectiveTaskId(selectedAssessment);
+        const selectedTaskId = selectedAssessment.task_id;
         const selectedMatchedTask = findMatchingTask(selectedAssessment);
         return (
         <AndamioCard>
@@ -596,9 +525,9 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Task</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedEffectiveTaskId ? `${selectedEffectiveTaskId.slice(0, 16)}...` : "Unknown"}
+                  {selectedTaskId ? `${selectedTaskId.slice(0, 16)}...` : "Unknown"}
                 </AndamioText>
-                {selectedMatchedTask && (
+                {selectedMatchedTask?.lovelace && (
                   <AndamioText variant="small" className="text-muted-foreground">
                     {(selectedMatchedTask.lovelace / 1_000_000).toFixed(0)} ADA reward
                   </AndamioText>
@@ -607,13 +536,19 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Submitted</AndamioLabel>
                 <AndamioText variant="small" className="mt-1 text-foreground">
-                  {selectedAssessment.submission_slot > 0 ? formatSlot(selectedAssessment.submission_slot) : "—"}
+                  {selectedAssessment.submission_slot && selectedAssessment.submission_slot > 0
+                    ? formatSlot(selectedAssessment.submission_slot)
+                    : selectedAssessment.content?.submitted_at
+                      ? new Date(selectedAssessment.content.submitted_at).toLocaleDateString()
+                      : "—"}
                 </AndamioText>
               </div>
               <div>
                 <AndamioLabel>Submission TX</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.submission_tx_hash.slice(0, 16)}...
+                  {selectedAssessment.submission_tx_hash
+                    ? `${selectedAssessment.submission_tx_hash.slice(0, 16)}...`
+                    : "—"}
                 </AndamioText>
               </div>
             </div>
@@ -623,7 +558,7 @@ export default function ProjectCommitmentsPage() {
               <AndamioLabel>Submitted Evidence</AndamioLabel>
               <div className="mt-2 rounded-md border bg-muted/30 p-4">
                 <AndamioText variant="small" className="whitespace-pre-wrap">
-                  {selectedAssessment.content || (
+                  {selectedAssessment.on_chain_content ?? selectedAssessment.content?.evidence_text ?? (
                     <span className="italic text-muted-foreground">
                       No evidence content submitted
                     </span>
@@ -648,9 +583,9 @@ export default function ProjectCommitmentsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => void handleSyncSubmission(selectedAssessment)}
-                    disabled={syncingSubmissions.has(`${selectedEffectiveTaskId}-${selectedAssessment.contributor_alias}`)}
+                    disabled={syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.contributor_alias}`)}
                   >
-                    {syncingSubmissions.has(`${selectedEffectiveTaskId}-${selectedAssessment.contributor_alias}`) ? (
+                    {syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.contributor_alias}`) ? (
                       <>
                         <RefreshIcon className="h-4 w-4 mr-2 animate-spin" />
                         Syncing...
@@ -696,10 +631,10 @@ export default function ProjectCommitmentsPage() {
             {/* TasksAssess Transaction Component */}
             <TasksAssess
               projectNftPolicyId={projectId}
-              contributorStateId={project.states?.[0]?.project_state_policy_id ?? ""}
+              contributorStateId={project.contributor_state_id ?? ""}
               contributorAlias={selectedAssessment.contributor_alias}
-              taskHash={selectedEffectiveTaskId}
-              taskCode={selectedEffectiveTaskId ? selectedEffectiveTaskId.slice(0, 8) : "TASK"}
+              taskHash={selectedTaskId}
+              taskCode={selectedTaskId ? selectedTaskId.slice(0, 8) : "TASK"}
               onSuccess={async () => {
                 await refetch();
                 setSelectedAssessment(null);

@@ -4,8 +4,19 @@
  * Generic transaction component that works with any AndamioTransactionDefinition.
  * Automatically renders UI metadata and handles the transaction flow.
  *
- * This component is the key bridge between @andamio/transactions definitions
- * and the T3 App UX.
+ * @deprecated This component uses the V1 pattern (useAndamioTransaction + definition objects).
+ * V2 uses specific transaction components with useSimpleTransaction + useTxWatcher.
+ *
+ * **Migration Guide:**
+ * - Use specific transaction components instead (e.g., EnrollInCourse, TaskCommit, etc.)
+ * - Or create a new component using the V2 pattern:
+ *   1. useSimpleTransaction for execution
+ *   2. useTxWatcher for gateway auto-confirmation
+ *   3. TRANSACTION_UI config for UI strings
+ *
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/config/transaction-ui.ts
  */
 
 "use client";

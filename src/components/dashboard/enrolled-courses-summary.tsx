@@ -18,7 +18,7 @@ import {
   CourseIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useEnrolledCourses } from "~/hooks/use-andamioscan";
+import { useStudentCourses } from "~/hooks/api";
 
 interface EnrolledCoursesSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -27,7 +27,7 @@ interface EnrolledCoursesSummaryProps {
 /**
  * Enrolled Courses Summary Card
  *
- * Displays a summary of courses the user is enrolled in (on-chain data).
+ * Displays a summary of courses the user is enrolled in (merged on-chain + DB data).
  * Shows on the dashboard for authenticated users.
  *
  * UX States:
@@ -36,9 +36,7 @@ interface EnrolledCoursesSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSummaryProps) {
-  const { data: enrolledCourses, isLoading, error, refetch } = useEnrolledCourses(
-    accessTokenAlias ?? undefined
-  );
+  const { data: enrolledCourses, isLoading, error, refetch } = useStudentCourses();
 
   // Log errors silently (per user preference)
   React.useEffect(() => {
@@ -82,7 +80,7 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={LearnerIcon} title="My Enrollments" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -120,7 +118,7 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
             <AndamioBadge variant="secondary" className="text-xs">
               {enrolledCourses.length} enrolled
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -140,17 +138,21 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
 
         {/* Course list */}
         <div className="space-y-1.5">
-          {enrolledCourses.slice(0, 3).map((course) => (
+          {enrolledCourses.slice(0, 3).map((course, index) => (
             <Link
-              key={course.course_id}
-              href={`/course/${course.course_id}`}
+              key={course.course_id ?? index}
+              href={`/course/${course.course_id ?? ""}`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <CourseIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {course.course_id.slice(0, 16)}...
-                </code>
+                {course.content?.title ? (
+                  <span className="text-xs truncate">{course.content.title}</span>
+                ) : (
+                  <code className="text-xs font-mono truncate">
+                    {course.course_id?.slice(0, 16) ?? "Unknown"}...
+                  </code>
+                )}
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Link>

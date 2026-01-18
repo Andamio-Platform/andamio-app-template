@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCourse } from "~/hooks/use-andamioscan";
+import { useCourse } from "~/hooks/api";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -22,7 +22,7 @@ import {
   AlertIcon,
   OnChainIcon,
 } from "~/components/icons";
-import { type AndamioscanModule } from "~/lib/andamioscan";
+import { type OrchestrationCourseModule } from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
 // =============================================================================
@@ -37,7 +37,7 @@ interface OnChainSltsViewerProps {
 }
 
 interface OnChainModuleCardProps {
-  module: AndamioscanModule;
+  module: OrchestrationCourseModule;
   compact?: boolean;
 }
 
@@ -49,7 +49,11 @@ interface OnChainModuleCardProps {
  * Card displaying a single on-chain module's SLTs
  */
 function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) {
-  const truncatedHash = `${module.assignment_id.slice(0, 8)}...${module.assignment_id.slice(-8)}`;
+  const assignmentId = module.assignment_id ?? "";
+  const slts = module.slts ?? [];
+  const truncatedHash = assignmentId
+    ? `${assignmentId.slice(0, 8)}...${assignmentId.slice(-8)}`
+    : "Unknown";
 
   if (compact) {
     return (
@@ -64,7 +68,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
           <code className="text-xs font-mono text-muted-foreground">{truncatedHash}</code>
         </div>
         <ul className="space-y-1.5">
-          {module.slts.map((slt, index) => (
+          {slts.map((slt, index) => (
             <li key={index} className="flex items-start gap-2 text-sm">
               <AndamioBadge variant="outline" className="shrink-0 text-xs">
                 {index + 1}
@@ -99,14 +103,14 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
               </AndamioBadge>
             </AndamioTooltipTrigger>
             <AndamioTooltipContent>
-              <p>Module Hash: {module.assignment_id}</p>
+              <p>Module Hash: {assignmentId}</p>
             </AndamioTooltipContent>
           </AndamioTooltip>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent>
         <div className="space-y-3">
-          {module.slts.map((slt, index) => (
+          {slts.map((slt, index) => (
             <div
               key={index}
               className="flex items-start gap-3 p-3 rounded-lg border bg-background"
@@ -124,10 +128,12 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
 
         {/* Module metadata */}
         <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <div>
-            <span className="font-medium">Created by:</span> {module.created_by}
-          </div>
-          {module.prerequisites.length > 0 && (
+          {module.created_by && (
+            <div>
+              <span className="font-medium">Created by:</span> {module.created_by}
+            </div>
+          )}
+          {module.prerequisites && module.prerequisites.length > 0 && (
             <div>
               <span className="font-medium">Prerequisites:</span>{" "}
               {module.prerequisites.map((p, i) => (
@@ -177,7 +183,7 @@ export function OnChainSltsViewer({
     );
   }
 
-  // No course on-chain
+  // No course data
   if (!course) {
     return (
       <AndamioAlert>
@@ -189,8 +195,11 @@ export function OnChainSltsViewer({
     );
   }
 
+  // Get on-chain modules from merged data
+  const onChainModules = course.modules ?? [];
+
   // No modules on-chain
-  if (course.modules.length === 0) {
+  if (onChainModules.length === 0) {
     return (
       <AndamioAlert>
         <OnChainIcon className="h-4 w-4" />
@@ -203,8 +212,8 @@ export function OnChainSltsViewer({
 
   // Filter to specific module if hash provided
   const modulesToShow = moduleHash
-    ? course.modules.filter((m) => m.assignment_id === moduleHash)
-    : course.modules;
+    ? onChainModules.filter((m) => m.assignment_id === moduleHash)
+    : onChainModules;
 
   if (moduleHash && modulesToShow.length === 0) {
     return (
@@ -219,10 +228,10 @@ export function OnChainSltsViewer({
 
   return (
     <div className="space-y-4">
-      {modulesToShow.map((module) => (
+      {modulesToShow.map((courseModule, index) => (
         <OnChainModuleCard
-          key={module.assignment_id}
-          module={module}
+          key={courseModule.assignment_id ?? index}
+          module={courseModule}
           compact={compact}
         />
       ))}
@@ -244,11 +253,15 @@ export function OnChainSltsBadge({
     return <AndamioSkeleton className="h-5 w-24" />;
   }
 
-  if (!course || course.modules.length === 0) {
+  const onChainModules = course?.modules ?? [];
+  if (onChainModules.length === 0) {
     return null;
   }
 
-  const totalSlts = course.modules.reduce((sum, m) => sum + m.slts.length, 0);
+  const totalSlts = onChainModules.reduce(
+    (sum: number, m) => sum + (m.slts?.length ?? 0),
+    0
+  );
 
   return (
     <AndamioTooltip>
@@ -260,7 +273,7 @@ export function OnChainSltsBadge({
       </AndamioTooltipTrigger>
       <AndamioTooltipContent>
         <p>
-          {course.modules.length} modules with {totalSlts} SLTs verified on Cardano
+          {onChainModules.length} modules with {totalSlts} SLTs verified on Cardano
         </p>
       </AndamioTooltipContent>
     </AndamioTooltip>

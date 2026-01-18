@@ -33,6 +33,8 @@ export { mergeSchemas, createSchemas } from "./utils/schema-helpers";
 export { computeSltHash, computeSltHashDefinite, verifySltHash, isValidSltHash, } from "./utils/slt-hash";
 export { computeAssignmentInfoHash, verifyAssignmentInfoHash, isValidAssignmentInfoHash, verifyEvidenceDetailed, normalizeForHashing, } from "./utils/assignment-info-hash";
 export type { TiptapDoc, TiptapNode, TiptapMark, EvidenceVerificationResult } from "./utils/assignment-info-hash";
+export { computeTaskHash, verifyTaskHash, isValidTaskHash, debugTaskCBOR } from "./utils/task-hash";
+export type { TaskData } from "./utils/task-hash";
 export { resolvePathParams, constructRequestBody, getValueFromPath, validateSideEffect, createMockSubmissionContext, createMockConfirmationContext, testSideEffect, } from "./testing";
 export { executeSideEffect, executeOnSubmit, checkSideEffectCondition, shouldExecuteSideEffect, getExecutableSideEffects, } from "./execution";
 export type { SideEffectExecutionResult, ExecuteOnSubmitResult, ExecuteSideEffectOptions, SideEffectRequestLog, SideEffectResultLog, } from "./execution";

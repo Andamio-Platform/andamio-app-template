@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { IconComponent } from "~/types/ui";
-import type { CourseModuleResponse, CourseResponse, SLTListResponse, AssignmentResponse, IntroductionResponse, LessonListResponse } from "@andamio/db-api-types";
+import type { CourseModuleResponse, CourseResponse, SLTListResponse, AssignmentResponse, IntroductionResponse, LessonListResponse } from "~/types/generated";
 
 /**
  * Wizard step identifiers

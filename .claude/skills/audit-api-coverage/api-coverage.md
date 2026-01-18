@@ -1,344 +1,250 @@
 # API Coverage Status
 
-> **Cross-reference of all Andamio API endpoints vs T3 App Template implementation**
-> Last Updated: January 11, 2026
-> **Status**: ✅ Go API Migration Complete
+> **Cross-reference of Unified API Gateway endpoints vs T3 App Template implementation**
+> Last Updated: January 16, 2026
+> **Status**: 🔄 Migration In Progress
 
 This document tracks which API endpoints are implemented in the T3 App Template.
 
 ## Quick Reference
 
-| API | Total | Implemented | Coverage |
-|-----|-------|-------------|----------|
-| [Andamio DB API](#andamio-db-api-87-endpoints) | 87 | 49 endpoints | **56%** |
-| [Andamio Tx API](#andamio-tx-api-16-endpoints) | 16 | 16 definitions | **100%** |
-| [Andamioscan](#andamioscan-34-endpoints) | 34 | 32 functions | **94%** |
-| **TOTAL** | **137** | **97** | **71%** |
+| Category | Total | Implemented | Coverage |
+|----------|-------|-------------|----------|
+| [Authentication](#authentication-2-endpoints) | 2 | 0 | **0%** |
+| [User Management](#user-management-4-endpoints) | 4 | 0 | **0%** |
+| [API Key Management](#api-key-management-3-endpoints) | 3 | 0 | **0%** |
+| [Admin Functions](#admin-functions-3-endpoints) | 3 | 0 | **0%** |
+| [Merged Courses](#merged-courses-3-endpoints) | 3 | 0 | **0%** |
+| [Merged Projects](#merged-projects-3-endpoints) | 3 | 0 | **0%** |
+| [Scan: Courses](#scan-courses-4-endpoints) | 4 | 4 | **100%** |
+| [Scan: Projects](#scan-projects-4-endpoints) | 4 | 4 | **100%** |
+| [Scan: Transactions](#scan-transactions-1-endpoint) | 1 | 0 | **0%** |
+| [TX: Courses](#tx-course-operations-6-endpoints) | 6 | 6 | **100%** |
+| [TX: Projects](#tx-project-operations-4-endpoints) | 4 | 4 | **100%** |
+| [TX: Instance/Global](#tx-instanceglobal-operations-3-endpoints) | 3 | 3 | **100%** |
+| **TOTAL** | **40** | **21** | **53%** |
 
-Run `node --import tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current counts.
-See [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) for the latest auto-generated report.
+Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current counts.
 
 ---
 
-## Go API Migration Status
+## Migration Status
 
-**✅ COMPLETE** - All endpoints in the T3 App Template have been migrated to use the new Go API RESTful structure.
-
-### Migration Summary
+The T3 App Template is migrating from 3 separate APIs to the Unified API Gateway.
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 1 | Core hooks (course, module, SLT, lesson) | ✅ Complete |
-| Phase 2 | Wizard step components | ✅ Complete |
-| Phase 3 | Project page endpoints | ✅ Complete |
-| Phase 4 | Learner component endpoints | ✅ Complete |
-| Phase 5 | Misc endpoints | ✅ Complete |
+| Phase 0 | Rewrite audit-api-coverage skill | ✅ Complete |
+| Phase 1 | Environment configuration | ⏳ Pending |
+| Phase 2 | Authentication flow migration | ⏳ Pending |
+| Phase 3 | API client migration | ⏳ Pending |
+| Phase 4 | Transaction definitions update | ⏳ Pending |
+| Phase 5 | Documentation updates | ⏳ Pending |
 
 ---
 
-## Andamio Tx API (16 Endpoints)
+## Authentication (2 endpoints)
 
-**Status**: **100% Complete**
+**Status**: ⏳ **Not migrated** - Still using old DB API auth flow
 
-All transaction types have definitions in `@andamio/transactions` and UI components in `src/components/transactions/`.
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/auth/login` | POST | - | ⏳ |
+| `/auth/register` | POST | - | ⏳ |
 
-| Transaction | Component |
-|-------------|-----------|
-| `GLOBAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` |
-| `COURSE_ADMIN_CREATE` | `create-course.tsx` |
-| `COURSE_ADMIN_TEACHERS_MANAGE` | `teachers-update.tsx` |
-| `COURSE_TEACHER_MODULES_MANAGE` | `mint-module-tokens.tsx` |
-| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assess-assignment.tsx` |
-| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `enroll-in-course.tsx` |
-| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment-update.tsx` |
-| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential-claim.tsx` |
-| `PROJECT_ADMIN_CREATE` | `create-project.tsx` |
-| `PROJECT_ADMIN_MANAGERS_MANAGE` | `managers-manage.tsx` |
-| `PROJECT_ADMIN_BLACKLIST_MANAGE` | `blacklist-manage.tsx` |
-| `PROJECT_MANAGER_TASKS_MANAGE` | `tasks-manage.tsx` |
-| `PROJECT_MANAGER_TASKS_ASSESS` | `tasks-assess.tsx` |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task-commit.tsx` |
-| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` |
-| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` |
+**Notes**:
+- Current auth uses 2-step flow (session → validate)
+- New unified endpoint uses single `/auth/login`
+- Migration requires updating `src/lib/andamio-auth.ts`
 
 ---
 
-## Andamioscan (34 Endpoints)
+## User Management (4 endpoints)
 
-**Status**: **94% Complete** (32/34)
+**Status**: ⏳ **Not migrated**
 
-Implementation in `src/lib/andamioscan.ts`. Hooks in `src/hooks/use-andamioscan.ts`.
-
-### Implemented (32)
-
-**Core Data Endpoints (17)**
-
-| Endpoint | Function |
-|----------|----------|
-| `/api/v2/courses` | `getAllCourses()` |
-| `/api/v2/courses/{id}/details` | `getCourse(id)` |
-| `/api/v2/courses/{id}/students/{alias}/status` | `getCourseStudent(id, alias)` |
-| `/api/v2/courses/teachers/{alias}/assessments/pending` | `getPendingAssessments(alias)` |
-| `/api/v2/projects` | `getAllProjects()` |
-| `/api/v2/projects/{id}/details` | `getProject(id)` |
-| `/api/v2/projects/{id}/contributors/{alias}/status` | `getProjectContributorStatus(id, alias)` |
-| `/api/v2/projects/managers/{alias}/assessments/pending` | `getManagerPendingAssessments(alias)` |
-| `/api/v2/users/{alias}/state` | `getUserGlobalState(alias)` |
-| `/api/v2/users/{alias}/courses/teaching` | `getCoursesOwnedByAlias(alias)` |
-| `/api/v2/users/{alias}/courses/enrolled` | `getEnrolledCourses(alias)` |
-| `/api/v2/users/{alias}/courses/completed` | `getCompletedCourses(alias)` |
-| `/api/v2/users/{alias}/courses/owned` | `getOwnedCourses(alias)` |
-| `/api/v2/users/{alias}/projects/contributing` | `getContributingProjects(alias)` |
-| `/api/v2/users/{alias}/projects/managing` | `getManagingProjects(alias)` |
-| `/api/v2/users/{alias}/projects/owned` | `getOwnedProjects(alias)` |
-| `/api/v2/users/{alias}/projects/completed` | `getCompletedProjects(alias)` |
-
-**Event Confirmation Endpoints (15)** - Used via polling patterns
-
-| Endpoint | Transaction Type |
-|----------|------------------|
-| `/api/v2/events/access-tokens/mint/{tx_hash}` | GLOBAL_ACCESS_TOKEN_MINT |
-| `/api/v2/events/courses/create/{tx_hash}` | COURSE_ADMIN_CREATE |
-| `/api/v2/events/teachers/update/{tx_hash}` | COURSE_ADMIN_TEACHERS_MANAGE |
-| `/api/v2/events/modules/manage/{tx_hash}` | COURSE_TEACHER_MODULES_MANAGE |
-| `/api/v2/events/enrollments/enroll/{tx_hash}` | COURSE_STUDENT_ASSIGNMENT_COMMIT |
-| `/api/v2/events/assignments/submit/{tx_hash}` | COURSE_STUDENT_ASSIGNMENT_UPDATE |
-| `/api/v2/events/assessments/assess/{tx_hash}` | COURSE_TEACHER_ASSIGNMENTS_ASSESS |
-| `/api/v2/events/credential-claims/claim/{tx_hash}` | COURSE_STUDENT_CREDENTIAL_CLAIM |
-| `/api/v2/events/projects/create/{tx_hash}` | PROJECT_ADMIN_CREATE |
-| `/api/v2/events/projects/join/{tx_hash}` | PROJECT_CONTRIBUTOR_TASK_COMMIT |
-| `/api/v2/events/tasks/manage/{tx_hash}` | PROJECT_MANAGER_TASKS_MANAGE |
-| `/api/v2/events/tasks/submit/{tx_hash}` | PROJECT_CONTRIBUTOR_TASK_ACTION |
-| `/api/v2/events/tasks/assess/{tx_hash}` | PROJECT_MANAGER_TASKS_ASSESS |
-| `/api/v2/events/credential-claims/project/{tx_hash}` | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM |
-| `/api/v2/events/treasury/fund/{tx_hash}` | Treasury funding |
-
-### Not Implemented (2)
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/v2/transactions` | Paginated transaction list |
-| `/health` | Health check endpoint |
-
-Note: All 15 event endpoints are now considered implemented via the `src/lib/andamioscan.ts` client polling patterns.
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/user/me` | GET | - | ⏳ |
+| `/user/delete` | POST | - | ⏳ |
+| `/user/usage` | GET | - | ⏳ |
+| `/user/usage/daily` | POST | - | ⏳ |
 
 ---
 
-## Andamio DB API (87 Endpoints)
+## API Key Management (3 endpoints)
 
-**Status**: **56% Implemented** (49/87)
+**Status**: ⏳ **New capability** - Not yet implemented
 
-The Go API uses **role-based routing**:
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/apikey/request` | POST | - | ⏳ |
+| `/apikey/delete` | POST | - | ⏳ |
+| `/apikey/rotate` | POST | - | ⏳ |
 
-```
-/{system}/{role}/{resource}/{action}
-```
-
-**Systems**: `auth`, `user`, `course`, `project`
-**Roles**: `user`, `owner`, `teacher`, `student`, `shared`, `manager`, `contributor`
-
----
-
-## Coverage Summary
-
-| Category | Total Endpoints | Implemented | Status |
-|----------|-----------------|-------------|--------|
-| Health & Authentication | 3 | 2 | ✅ Mostly Complete |
-| User Management | 4 | 3 | ✅ Migrated |
-| Course User | 11 | 8 | ✅ Migrated |
-| Course Owner | 7 | 5 | ✅ Migrated |
-| Course Teacher | 22 | 14 | ✅ Migrated |
-| Course Student | 6 | 4 | ✅ Migrated |
-| Course Shared | 3 | 2 | ✅ Migrated |
-| Project V2 User | 3 | 3 | ✅ Migrated |
-| Project V2 Admin | 3 | 3 | ✅ Migrated |
-| Project V2 Manager | 5 | 3 | ✅ Migrated |
-| Project V2 Contributor | 6 | 1 | ⚠️ Partial |
-| **TOTAL** | **88** | **50** | **57%** |
-
-*Run the automated coverage script for precise, up-to-date counts.*
+**Notes**: New feature for programmatic API access.
 
 ---
 
-## Endpoint Implementation Status
+## Admin Functions (3 endpoints)
 
-### Authentication ✅
+**Status**: ⏳ **New capability** - Not yet implemented
 
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/auth/login/session` | POST | `andamio-auth.ts` | ✅ |
-| `/auth/login/validate` | POST | `andamio-auth.ts` | ✅ |
-
-### User Management ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/user/access-token-alias` | POST | `andamio-auth-context.tsx` | ✅ |
-| `/user/unconfirmed-tx` | GET/POST | `use-andamio-transaction.ts` | ✅ |
-| `/user/init-roles` | POST | `andamio-auth-context.tsx` | ✅ |
-| `/user/pending-transactions` | GET | `use-pending-transactions.ts` | ✅ |
-
-### Course User ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/course/user/courses/list` | GET | `use-course.ts` | ✅ |
-| `/course/user/course/get/{id}` | GET | `use-course.ts` | ✅ |
-| `/course/user/course/check/{code}` | GET | - | ⏳ |
-| `/course/user/course-modules/list/{id}` | GET | `use-course-module.ts` | ✅ |
-| `/course/user/course-module/get/{id}/{code}` | GET | `use-course-module.ts` | ✅ |
-| `/course/user/course-modules/assignment-summary/{id}` | GET | - | ⏳ |
-| `/course/user/slts/list/{id}/{code}` | GET | `use-slt.ts` | ✅ |
-| `/course/user/slt/get/{id}/{code}/{index}` | GET | - | ⏳ |
-| `/course/user/lessons/list/{id}/{code}` | GET | `use-lesson.ts` | ✅ |
-| `/course/user/lesson/get/{id}/{code}/{index}` | GET | `use-lesson.ts` | ✅ |
-| `/course/user/assignment/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
-| `/course/user/introduction/get/{id}/{code}` | GET | `use-module-wizard-data.ts` | ✅ |
-| `/course/user/assignment-commitment/has-commitments/{id}/{code}` | GET | - | ⏳ |
-
-### Course Owner ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/course/owner/courses/list` | POST | `use-course.ts`, `use-owned-courses.ts` | ✅ |
-| `/course/owner/course/create` | POST | - | ⏳ |
-| `/course/owner/course/update` | POST | `use-course.ts` | ✅ |
-| `/course/owner/course/delete` | POST | `use-course.ts` | ✅ |
-| `/course/owner/course/mint` | POST | `on-chain-courses-section.tsx` | ✅ |
-| `/course/owner/course/confirm-mint` | POST | - | ⏳ |
-| `/course/owner/course/sync-teachers` | POST | `course-teachers-card.tsx` | ✅ |
-
-### Course Teacher ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/course/teacher/course-modules/list` | POST | `use-course-module.ts` | ✅ |
-| `/course/teacher/course-module/create` | POST | `use-course-module.ts` | ✅ |
-| `/course/teacher/course-module/update` | POST | `use-course-module.ts` | ✅ |
-| `/course/teacher/course-module/delete` | POST | - | ⏳ |
-| `/course/teacher/course-module/update-status` | POST | `use-course-module.ts` | ✅ |
-| `/course/teacher/course-module/update-code` | POST | - | ⏳ |
-| `/course/teacher/course-module/publish` | POST | - | ⏳ |
-| `/course/teacher/course-module/set-pending-tx` | POST | - | ⏳ |
-| `/course/teacher/course-module/confirm-tx` | POST | `use-pending-tx-watcher.ts` | ✅ |
-| `/course/teacher/course-modules/batch-update-status` | POST | - | ⏳ |
-| `/course/teacher/course-modules/batch-confirm` | POST | - | ⏳ |
-| `/course/teacher/slt/create` | POST | `use-slt.ts` | ✅ |
-| `/course/teacher/slt/update` | POST | `use-slt.ts` | ✅ |
-| `/course/teacher/slt/update-index` | POST | - | ⏳ |
-| `/course/teacher/slt/delete` | POST | `use-slt.ts` | ✅ |
-| `/course/teacher/slts/batch-update-indexes` | POST | `step-slts.tsx` | ✅ |
-| `/course/teacher/lesson/create` | POST | `use-lesson.ts` | ✅ |
-| `/course/teacher/lesson/update` | POST | `step-lessons.tsx` | ✅ |
-| `/course/teacher/lesson/publish` | POST | - | ⏳ |
-| `/course/teacher/lesson/delete` | POST | - | ⏳ |
-| `/course/teacher/assignment/create` | POST | `step-assignment.tsx` | ✅ |
-| `/course/teacher/assignment/update` | POST | `step-assignment.tsx` | ✅ |
-| `/course/teacher/assignment/publish` | POST | - | ⏳ |
-| `/course/teacher/assignment/delete` | POST | - | ⏳ |
-| `/course/teacher/introduction/create` | POST | `step-introduction.tsx` | ✅ |
-| `/course/teacher/introduction/update` | POST | `step-introduction.tsx` | ✅ |
-| `/course/teacher/introduction/publish` | POST | - | ⏳ |
-| `/course/teacher/introduction/delete` | POST | - | ⏳ |
-| `/course/teacher/assignment-commitments/list-by-course` | POST | `instructor/page.tsx` | ✅ |
-| `/course/teacher/assignment-commitment/review` | POST | - | ⏳ |
-
-### Course Student ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/course/student/courses` | POST | `my-learning.tsx` | ✅ |
-| `/course/student/course-status` | POST | `user-course-status.tsx` | ✅ |
-| `/course/student/assignment-commitments/list-by-course` | POST | `assignment-commitment.tsx` | ✅ |
-| `/course/student/assignment-commitment/create` | POST | - | ⏳ |
-| `/course/student/assignment-commitment/update-evidence` | POST | `assignment-commitment.tsx` | ✅ |
-| `/course/student/assignment-commitment/delete` | POST | `assignment-commitment.tsx` | ✅ |
-
-### Course Shared ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/course/shared/assignment-commitment/get` | POST | - | ⏳ |
-| `/course/shared/assignment-commitment/update-status` | POST | `use-pending-tx-watcher.ts` | ✅ |
-| `/course/shared/assignment-commitment/confirm-transaction` | POST | - | ⏳ |
-
-### Project V2 User ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/project-v2/user/projects/list` | GET | `project/page.tsx` | ✅ |
-| `/project-v2/user/project/{project_id}` | GET | `[projectid]/page.tsx` | ✅ |
-| `/project-v2/user/tasks/{project_state_policy_id}` | GET | `[projectid]/page.tsx` | ✅ |
-
-### Project V2 Admin ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/project-v2/admin/projects/list` | POST | `studio/project/page.tsx` | ✅ |
-| `/project-v2/admin/project/register` | POST | `studio/project/page.tsx` | ✅ |
-| `/project-v2/admin/project/update` | POST | `[projectid]/page.tsx` | ✅ |
-
-### Project V2 Manager ✅
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/project-v2/manager/task/create` | POST | `draft-tasks/new/page.tsx` | ✅ |
-| `/project-v2/manager/task/update` | POST | `[taskindex]/page.tsx` | ✅ |
-| `/project-v2/manager/task/delete` | POST | `draft-tasks/page.tsx` | ✅ |
-| `/project-v2/manager/commitment/update-status` | POST | - | ⏳ |
-| `/project-v2/manager/commitment/confirm-transaction` | POST | - | ⏳ |
-
-### Project V2 Contributor ⚠️
-
-| Endpoint | Method | Hook/File | Status |
-|----------|--------|-----------|--------|
-| `/project-v2/contributor/commitment/get` | POST | `[taskhash]/page.tsx` | ✅ |
-| `/project-v2/contributor/commitment/create` | POST | - | ⏳ |
-| `/project-v2/contributor/commitment/update-evidence` | POST | - | ⏳ |
-| `/project-v2/contributor/commitment/update-status` | POST | - | ⏳ |
-| `/project-v2/contributor/commitment/delete` | POST | - | ⏳ |
-| `/project-v2/contributor/commitment/confirm-transaction` | POST | - | ⏳ |
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/admin/set-user-role` | POST | - | ⏳ |
+| `/admin/usage/user-api-usage` | POST | - | ⏳ |
+| `/admin/usage/any-user-daily-api-usage` | POST | - | ⏳ |
 
 ---
 
-## Hook Reference
+## Merged Courses (3 endpoints)
 
-### Implemented Hooks (Updated for Go API)
+**Status**: ⏳ **Not migrated** - New unified endpoints
 
-| Hook | Endpoints Used |
-|------|----------------|
-| `useCourse` | `/course/user/course/get/{id}` |
-| `usePublishedCourses` | `/course/user/courses/list` |
-| `useOwnedCoursesQuery` | `/course/owner/courses/list` |
-| `useUpdateCourse` | `/course/owner/course/update` |
-| `useDeleteCourse` | `/course/owner/course/delete` |
-| `useCourseModules` | `/course/user/course-modules/list/{id}` |
-| `useCourseModule` | `/course/user/course-module/get/{id}/{code}` |
-| `useCourseModuleMap` | `/course/teacher/course-modules/list` |
-| `useCreateCourseModule` | `/course/teacher/course-module/create` |
-| `useUpdateCourseModule` | `/course/teacher/course-module/update` |
-| `useUpdateCourseModuleStatus` | `/course/teacher/course-module/update-status` |
-| `useSLTs` | `/course/user/slts/list/{id}/{code}` |
-| `useCreateSLT` | `/course/teacher/slt/create` |
-| `useUpdateSLT` | `/course/teacher/slt/update` |
-| `useDeleteSLT` | `/course/teacher/slt/delete` |
-| `useLessons` | `/course/user/lessons/list/{id}/{code}` |
-| `useLesson` | `/course/user/lesson/get/{id}/{code}/{index}` |
-| `useCreateLesson` | `/course/teacher/lesson/create` |
-| `usePendingTransactions` | `/user/pending-transactions` |
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/api/v2/course/user/courses/list` | GET | - | ⏳ |
+| `/api/v2/course/user/course/get/{policy_id}` | GET | - | ⏳ |
+| `/api/v2/course/student/course-status` | POST | - | ⏳ |
+
+**Notes**:
+- These merge DB API + Andamioscan data
+- Will replace separate calls to both APIs
+- Requires new hooks in `src/hooks/api/`
+
+---
+
+## Merged Projects (3 endpoints)
+
+**Status**: ⏳ **Not migrated** - New unified endpoints
+
+| Endpoint | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| `/api/v2/project/user/projects/list` | GET | - | ⏳ |
+| `/api/v2/project/user/project/{project_id}` | GET | - | ⏳ |
+| `/api/v2/project/contributor/status/{project_id}/{alias}` | GET | - | ⏳ |
+
+---
+
+## Scan: Courses (4 endpoints)
+
+**Status**: ✅ **Implemented** via `src/lib/andamioscan.ts`
+
+| Endpoint | Method | Function | Status |
+|----------|--------|----------|--------|
+| `/v2/courses` | GET | `getAllCourses()` | ✅ |
+| `/v2/courses/{course_id}/details` | GET | `getCourse()` | ✅ |
+| `/v2/courses/{course_id}/students/{student_alias}/status` | GET | `getCourseStudent()` | ✅ |
+| `/v2/courses/teachers/{alias}/assessments/pending` | GET | `getPendingAssessments()` | ✅ |
+
+**Notes**: These are passthrough to Andamioscan. Base URL needs updating to gateway.
+
+---
+
+## Scan: Projects (4 endpoints)
+
+**Status**: ✅ **Implemented** via `src/lib/andamioscan.ts`
+
+| Endpoint | Method | Function | Status |
+|----------|--------|----------|--------|
+| `/v2/projects` | GET | `getAllProjects()` | ✅ |
+| `/v2/projects/{project_id}/details` | GET | `getProject()` | ✅ |
+| `/v2/projects/{project_id}/contributors/{contributor_alias}/status` | GET | `getProjectContributorStatus()` | ✅ |
+| `/v2/projects/managers/{alias}/assessments/pending` | GET | `getManagerPendingAssessments()` | ✅ |
+
+---
+
+## Scan: Transactions (1 endpoint)
+
+**Status**: ⏳ **Not implemented**
+
+| Endpoint | Method | Function | Status |
+|----------|--------|----------|--------|
+| `/v2/transactions` | GET | - | ⏳ |
+
+---
+
+## TX: Course Operations (6 endpoints)
+
+**Status**: ✅ **Complete** - All transaction definitions exist
+
+| Endpoint | Method | Transaction Type | Component |
+|----------|--------|------------------|-----------|
+| `/v2/tx/course/student/assignment/commit` | POST | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `enroll-in-course.tsx` |
+| `/v2/tx/course/student/assignment/update` | POST | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment-update.tsx` |
+| `/v2/tx/course/student/credential/claim` | POST | `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential-claim.tsx` |
+| `/v2/tx/course/teacher/assignments/assess` | POST | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assess-assignment.tsx` |
+| `/v2/tx/course/teacher/modules/manage` | POST | `COURSE_TEACHER_MODULES_MANAGE` | `mint-module-tokens.tsx` |
+| `/v2/tx/course/owner/teachers/manage` | POST | `COURSE_OWNER_TEACHERS_MANAGE` | `teachers-update.tsx` |
+
+---
+
+## TX: Project Operations (4 endpoints)
+
+**Status**: ✅ **Complete** - All transaction definitions exist
+
+| Endpoint | Method | Transaction Type | Component |
+|----------|--------|------------------|-----------|
+| `/v2/tx/project/contributor/task/commit` | POST | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task-commit.tsx` |
+| `/v2/tx/project/contributor/task/action` | POST | `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` |
+| `/v2/tx/project/contributor/credential/claim` | POST | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` |
+| `/v2/tx/project/manager/tasks/assess` | POST | `PROJECT_MANAGER_TASKS_ASSESS` | `tasks-assess.tsx` |
+
+### Additional TX Endpoints (not yet in gateway)
+
+These transaction types have definitions but may not be exposed via gateway yet:
+
+| Transaction Type | Component | Gateway Status |
+|------------------|-----------|----------------|
+| `PROJECT_OWNER_MANAGERS_MANAGE` | `managers-manage.tsx` | ⏳ TBD |
+| `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist-manage.tsx` | ⏳ TBD |
+| `PROJECT_MANAGER_TASKS_MANAGE` | `tasks-manage.tsx` | ⏳ TBD |
+
+---
+
+## TX: Instance/Global Operations (3 endpoints)
+
+**Status**: ✅ **Complete**
+
+| Endpoint | Method | Transaction Type | Component |
+|----------|--------|------------------|-----------|
+| `/v2/tx/global/user/access-token/mint` | POST | `GLOBAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` |
+| `/v2/tx/instance/owner/course/create` | POST | `INSTANCE_COURSE_CREATE` | `create-course.tsx` |
+| `/v2/tx/instance/owner/project/create` | POST | `INSTANCE_PROJECT_CREATE` | `create-project.tsx` |
+
+---
+
+## Implementation Reference
+
+### Current Implementation Locations
+
+| Category | Location | Notes |
+|----------|----------|-------|
+| Auth | `src/lib/andamio-auth.ts`, `src/contexts/andamio-auth-context.tsx` | Needs migration |
+| Scan Client | `src/lib/andamioscan.ts` | Update base URL |
+| API Hooks | `src/hooks/api/*.ts` | Add merged endpoint hooks |
+| TX Definitions | `packages/andamio-transactions/src/definitions/v2/` | Base URL only |
+| TX Components | `src/components/transactions/` | No changes needed |
+
+### Environment Variable Migration
+
+| Before | After |
+|--------|-------|
+| `NEXT_PUBLIC_ANDAMIO_API_URL` | `NEXT_PUBLIC_ANDAMIO_GATEWAY_URL` |
+| `ANDAMIOSCAN_API_URL` (server) | Remove |
+| `ATLAS_TX_API_URL` (server) | Remove |
 
 ---
 
 ## Related Documentation
 
 - [SKILL.md](./SKILL.md) - Skill instructions and workflow
-- [db-api-endpoints.md](./db-api-endpoints.md) - DB API endpoint reference
-- [tx-api-endpoints.md](./tx-api-endpoints.md) - TX API endpoint reference
-- [andamioscan-endpoints.md](./andamioscan-endpoints.md) - Andamioscan endpoint reference
+- [unified-api-endpoints.md](./unified-api-endpoints.md) - All gateway endpoints
 - [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) - Auto-generated coverage report
 
 ---
 
-**Last Updated**: January 14, 2026
-**Migration Status**: ✅ Complete
+**Last Updated**: January 16, 2026
+**Migration Status**: 🔄 In Progress
 **Maintained By**: Andamio Platform Team

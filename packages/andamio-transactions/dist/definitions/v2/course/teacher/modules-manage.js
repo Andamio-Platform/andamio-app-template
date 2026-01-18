@@ -114,7 +114,7 @@ exports.COURSE_TEACHER_MODULES_MANAGE = {
                 })),
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/course/teacher/modules/manage" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/course/teacher/modules/manage" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
         inputHelpers: {
             modules_pending: {
@@ -172,7 +172,7 @@ const sideEffectParams = { modules_pending: [], modules_confirm };`,
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/teacher/modules/manage",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_course_teacher_modules_manage",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_teacher_modules_manage",
     },
 };
 /**

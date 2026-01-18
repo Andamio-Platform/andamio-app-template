@@ -3,7 +3,7 @@
 import React from "react";
 import { AndamioDashboardStat } from "~/components/andamio";
 import { CourseIcon, LessonIcon, ModuleIcon } from "~/components/icons";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 import { calculateCourseStats } from "~/lib/course-filters";
 
 interface CourseStatsDashboardProps {

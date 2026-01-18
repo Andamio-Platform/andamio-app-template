@@ -1,5 +1,5 @@
 /**
- * AssignmentUpdate Transaction Component (V2)
+ * AssignmentUpdate Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * Elegant UI for students to submit or update assignment evidence.
  * Supports two modes: updating existing submission or committing to a new module.
@@ -8,20 +8,17 @@
  * - COURSE_STUDENT_ASSIGNMENT_UPDATE for updating existing submissions
  * - COURSE_STUDENT_ASSIGNMENT_COMMIT for committing to a new module
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-update.ts
- * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-commit.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
-import {
-  COURSE_STUDENT_ASSIGNMENT_UPDATE,
-  COURSE_STUDENT_ASSIGNMENT_COMMIT,
-  computeAssignmentInfoHash,
-} from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -33,8 +30,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { SendIcon, EditIcon, ShieldIcon, TransactionIcon } from "~/components/icons";
+import { SendIcon, EditIcon, ShieldIcon, TransactionIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
 
 export interface AssignmentUpdateProps {
@@ -103,8 +101,31 @@ export function AssignmentUpdate({
   onSuccess,
 }: AssignmentUpdateProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[AssignmentUpdate] TX confirmed and DB updated by gateway");
+
+          const actionText = isNewCommitment ? "committed" : "updated";
+          toast.success("Submission Recorded!", {
+            description: `Your evidence has been ${actionText} on-chain`,
+          });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Submission Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Compute evidence hash for display
   const computedHash = useMemo(() => {
@@ -114,6 +135,10 @@ export function AssignmentUpdate({
       return null;
     }
   }, [evidence]);
+
+  const ui = isNewCommitment
+    ? TRANSACTION_UI.COURSE_STUDENT_ASSIGNMENT_COMMIT
+    : TRANSACTION_UI.COURSE_STUDENT_ASSIGNMENT_UPDATE;
 
   const handleSubmit = async () => {
     if (!user?.accessTokenAlias || !evidence) {
@@ -132,10 +157,10 @@ export function AssignmentUpdate({
     const hash = computeAssignmentInfoHash(evidence);
     setEvidenceHash(hash);
 
-    // Select transaction definition and build params based on mode
-    const definition = isNewCommitment
-      ? COURSE_STUDENT_ASSIGNMENT_COMMIT
-      : COURSE_STUDENT_ASSIGNMENT_UPDATE;
+    // Select transaction type based on mode
+    const txType = isNewCommitment
+      ? "COURSE_STUDENT_ASSIGNMENT_COMMIT"
+      : "COURSE_STUDENT_ASSIGNMENT_UPDATE";
 
     // Build txParams based on transaction type
     const txParams = isNewCommitment
@@ -159,32 +184,16 @@ export function AssignmentUpdate({
     };
 
     await execute({
-      definition,
+      txType,
       params: {
         ...txParams,
         ...sideEffectParams,
       },
       onSuccess: async (txResult) => {
-        console.log("[AssignmentUpdate] Success!", txResult);
-
-        const actionText = isNewCommitment ? "committed to" : "updated";
-        toast.success("Submission Recorded!", {
-          description: `Your evidence has been ${actionText} on-chain`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.();
+        console.log("[AssignmentUpdate] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[AssignmentUpdate] Error:", txError);
-        toast.error("Submission Failed", {
-          description: txError.message || "Failed to record submission",
-        });
       },
     });
   };
@@ -210,9 +219,7 @@ export function AssignmentUpdate({
             )}
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>
-              {isNewCommitment ? "Commit to Module" : "Update Submission"}
-            </AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               {isNewCommitment
                 ? `Start working on ${moduleTitle ?? moduleCode}`
@@ -251,29 +258,63 @@ export function AssignmentUpdate({
           )}
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: evidenceHash
-                ? `Your submission is now recorded with hash ${evidenceHash.slice(0, 16)}...`
-                : "Your submission has been recorded on-chain!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Submission Recorded!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {evidenceHash
+                    ? `Hash: ${evidenceHash.slice(0, 16)}...`
+                    : "Your evidence has been recorded on-chain"}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleSubmit}
             disabled={!canSubmit}
             stateText={{
-              idle: isNewCommitment ? "Commit & Submit" : "Update Submission",
+              idle: ui.buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Recording on Blockchain...",

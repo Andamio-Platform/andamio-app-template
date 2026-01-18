@@ -1,19 +1,28 @@
 /**
- * CreateProject Transaction Component (V2)
+ * CreateProject Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for creating a new Andamio Project on-chain.
- * Uses INSTANCE_PROJECT_CREATE transaction definition from @andamio/transactions.
+ * Uses INSTANCE_PROJECT_CREATE transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/instance/project-create.ts
+ * ## TX Lifecycle
+ *
+ * 1. User enters title, managers, deposit, and prerequisites
+ * 2. `useSimpleTransaction` builds, signs, submits, and registers TX
+ * 3. `useTxWatcher` polls gateway for confirmation status
+ * 4. When status is "updated", gateway has completed DB updates
+ * 5. UI shows success and calls onSuccess callback
+ *
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
-import { INSTANCE_PROJECT_CREATE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
@@ -28,8 +37,9 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ProjectIcon, ManagerIcon, AlertIcon } from "~/components/icons";
+import { ProjectIcon, ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface CreateProjectProps {
   /**
@@ -42,7 +52,7 @@ export interface CreateProjectProps {
 /**
  * CreateProject - Full UI for creating a project on-chain (V2)
  *
- * Uses INSTANCE_PROJECT_CREATE transaction definition with automatic side effects.
+ * Uses useSimpleTransaction with gateway auto-confirmation.
  *
  * @example
  * ```tsx
@@ -52,13 +62,39 @@ export interface CreateProjectProps {
 export function CreateProject({ onSuccess }: CreateProjectProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
   const [additionalManagers, setAdditionalManagers] = useState("");
   const [depositLovelace, setDepositLovelace] = useState("5000000"); // 5 ADA default
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[CreateProject] TX confirmed and DB updated by gateway");
+
+          toast.success("Project Created!", {
+            description: `"${title.trim()}" is now live on-chain`,
+          });
+
+          // Call parent callback with the project ID
+          if (projectId) {
+            void onSuccess?.(projectId);
+          }
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Project Creation Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -84,6 +120,8 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
     void fetchWalletData();
   }, [wallet, connected]);
 
+  const ui = TRANSACTION_UI.INSTANCE_PROJECT_CREATE;
+
   const handleCreateProject = async () => {
     if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
@@ -99,51 +137,28 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
     const lovelaceAmount = parseInt(depositLovelace, 10) || 5000000;
 
     await execute({
-      definition: INSTANCE_PROJECT_CREATE,
+      txType: "INSTANCE_PROJECT_CREATE",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         managers: managersList.length > 0 ? managersList : [user.accessTokenAlias],
-        course_prereqs: coursePrereqs, // [[course_policy_id, [module_hash_1, ...]]]
-        deposit_value: {
-          lovelace: lovelaceAmount,
-          native_assets: [],
-        },
+        course_prereqs: coursePrereqs,
+        deposit_value: [["lovelace", lovelaceAmount]],
         initiator_data: initiatorData,
-        // Side effect params
+      },
+      metadata: {
         title: title.trim(),
-        // project_nft_policy_id will be extracted from API response (project_id)
       },
       onSuccess: async (txResult) => {
-        console.log("[CreateProject] Success!", txResult);
+        console.log("[CreateProject] TX submitted successfully!", txResult);
 
-        // Extract project_id from the V2 API response
-        const apiResponse = txResult.apiResponse;
-        const extractedProjectId = apiResponse?.project_id as string | undefined;
-
-        // Show success toast
-        toast.success("Project Created!", {
-          description: `"${title.trim()}" has been created on-chain`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Call the parent's onSuccess callback with the projectNftPolicyId
+        // Extract project_id from the API response for later use
+        const extractedProjectId = txResult.apiResponse?.project_id as string | undefined;
         if (extractedProjectId) {
-          await onSuccess?.(extractedProjectId);
+          setProjectId(extractedProjectId);
         }
       },
       onError: (txError) => {
         console.error("[CreateProject] Error:", txError);
-
-        // Show error toast
-        toast.error("Project Creation Failed", {
-          description: txError.message || "Failed to create project",
-        });
       },
     });
   };
@@ -166,7 +181,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
             <ProjectIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Create Project On-Chain</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Mint a Project NFT to start managing contributors on-chain
             </AndamioCardDescription>
@@ -263,38 +278,69 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         )}
 
         {/* Course Prerequisites Selector */}
-        {hasAccessToken && hasInitiatorData && user?.accessTokenAlias && (
+        {hasAccessToken && hasInitiatorData && (
           <CoursePrereqsSelector
-            userAlias={user.accessTokenAlias}
             value={coursePrereqs}
             onChange={setCoursePrereqs}
             disabled={state !== "idle" && state !== "error"}
           />
         )}
 
-        {/* Transaction Status - Always show when not idle */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing, not for final success */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
-            onRetry={() => {
-              reset();
-            }}
+            error={error?.message ?? null}
+            onRetry={() => reset()}
             messages={{
-              success: "Your project has been created on-chain!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Project Created!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  &quot;{title}&quot; is now live on-chain.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create Button - Hide after success */}
-        {state !== "success" && canCreate && (
+        {state !== "success" && !txConfirmed && canCreate && (
           <TransactionButton
             txState={state}
             onClick={handleCreateProject}
             disabled={!canCreate}
             stateText={{
-              idle: "Create Project",
+              idle: ui.buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Creating on Blockchain...",

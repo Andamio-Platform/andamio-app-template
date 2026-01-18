@@ -27,13 +27,11 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { usePendingAssessments } from "~/hooks/use-andamioscan";
-import type { AndamioscanPendingAssessment } from "~/lib/andamioscan";
+import { useTeacherCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
 
 interface PendingReviewsListProps {
-  accessTokenAlias: string | null | undefined;
   courseId?: string; // Optional: filter to specific course
-  onSelectAssessment?: (assessment: AndamioscanPendingAssessment) => void;
+  onSelectAssessment?: (assessment: TeacherAssignmentCommitment) => void;
 }
 
 /**
@@ -48,13 +46,10 @@ interface PendingReviewsListProps {
  * - Error: Inline alert with retry button
  */
 export function PendingReviewsList({
-  accessTokenAlias,
   courseId,
   onSelectAssessment,
 }: PendingReviewsListProps) {
-  const { data: allPendingAssessments, isLoading, error, refetch } = usePendingAssessments(
-    accessTokenAlias ?? undefined
-  );
+  const { data: allPendingAssessments, isLoading, error, refetch } = useTeacherCommitments();
 
   // Filter by course if courseId is provided
   const pendingAssessments = React.useMemo(() => {
@@ -62,11 +57,6 @@ export function PendingReviewsList({
     if (!courseId) return allPendingAssessments;
     return allPendingAssessments.filter((a) => a.course_id === courseId);
   }, [allPendingAssessments, courseId]);
-
-  // No access token - don't show this component
-  if (!accessTokenAlias) {
-    return null;
-  }
 
   // Loading state - skeleton table
   if (isLoading) {
@@ -108,7 +98,7 @@ export function PendingReviewsList({
               title="On-Chain Pending Assessments"
               description="Assignments awaiting review from blockchain data"
             />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => void refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -124,7 +114,7 @@ export function PendingReviewsList({
             <AndamioText variant="small" className="text-xs mt-1 max-w-[250px]">
               {error.message}
             </AndamioText>
-            <AndamioButton variant="outline" size="sm" onClick={refetch} className="mt-4">
+            <AndamioButton variant="outline" size="sm" onClick={() => void refetch()} className="mt-4">
               <RefreshIcon className="mr-2 h-4 w-4" />
               Retry
             </AndamioButton>
@@ -145,7 +135,7 @@ export function PendingReviewsList({
               title="On-Chain Pending Assessments"
               description="Assignments awaiting review from blockchain data"
             />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => void refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -167,13 +157,18 @@ export function PendingReviewsList({
     );
   }
 
-  // Format slot number to approximate date
-  const formatSlot = (slot: number): string => {
-    // Preprod genesis time: 2022-04-01T00:00:00Z = 1648771200
-    // Slot duration: 1 second
-    const genesisTime = 1648771200;
-    const timestamp = (genesisTime + slot) * 1000;
-    return new Date(timestamp).toLocaleDateString();
+  // Format submission date - prefer submitted_at, fall back to slot
+  const formatSubmissionDate = (assessment: TeacherAssignmentCommitment): string => {
+    if (assessment.submitted_at) {
+      return new Date(assessment.submitted_at).toLocaleDateString();
+    }
+    if (assessment.submission_slot) {
+      // Preprod genesis time: 2022-04-01T00:00:00Z = 1648771200
+      const genesisTime = 1648771200;
+      const timestamp = (genesisTime + assessment.submission_slot) * 1000;
+      return new Date(timestamp).toLocaleDateString();
+    }
+    return "Unknown";
   };
 
   return (
@@ -189,7 +184,7 @@ export function PendingReviewsList({
             <AndamioBadge variant="secondary">
               {pendingAssessments.length} pending
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => void refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -230,7 +225,7 @@ export function PendingReviewsList({
                     </AndamioTableCell>
                   )}
                   <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                    {formatSlot(assessment.submission_slot)}
+                    {formatSubmissionDate(assessment)}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardFooter, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 import {
   CourseStatusBadge,
   CourseStatusIcon,

@@ -21,13 +21,13 @@ const listValueSchema = z.array(
  * ProjectData schema - Task to add or remove
  *
  * @property project_content - Task content/description text (max 140 chars, NOT a hash)
- * @property expiration_time - Unix timestamp in milliseconds
+ * @property expiration_posix - Unix timestamp in milliseconds
  * @property lovelace_amount - Reward in lovelace
  * @property native_assets - ListValue array of [asset_class, quantity] tuples
  */
 const projectDataSchema = z.object({
   project_content: z.string().max(140), // Task content text (max 140 chars)
-  expiration_time: z.number(), // Unix timestamp in milliseconds
+  expiration_posix: z.number(), // Unix timestamp in milliseconds
   lovelace_amount: z.number(),
   native_assets: listValueSchema,
 });
@@ -60,13 +60,13 @@ const prerequisiteSchema = z.object({
  *   "prerequisites": [],                  // Course prerequisites (from Andamioscan, [] if none)
  *   "tasks_to_add": [{
  *     "project_content": "Task description text",  // Task content (max 140 chars)
- *     "expiration_time": 1735689600000,            // Unix timestamp in MILLISECONDS
+ *     "expiration_posix": 1735689600000,           // Unix timestamp in MILLISECONDS
  *     "lovelace_amount": 5000000,
  *     "native_assets": []                          // ListValue: [["policy.name", qty], ...]
  *   }],
  *   "tasks_to_remove": [{                 // Full ProjectData objects, NOT just hashes!
  *     "project_content": "Task to remove",
- *     "expiration_time": 1735689600000,
+ *     "expiration_posix": 1735689600000,
  *     "lovelace_amount": 5000000,
  *     "native_assets": []
  *   }],
@@ -146,7 +146,7 @@ export const PROJECT_MANAGER_TASKS_MANAGE: AndamioTransactionDefinition = {
         ),
       }),
     }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/project/manager/tasks/manage" },
+    builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/manager/tasks/manage" },
     estimatedCost: getProtocolCost(protocolId),
     inputHelpers: {
       tasks_pending: {
@@ -204,7 +204,7 @@ const sideEffectParams = { tasks_pending: [], tasks_confirm };`,
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/manager/tasks-manage",
-    apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_manager_tasks_manage",
+    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_manager_tasks_manage",
   },
 };
 

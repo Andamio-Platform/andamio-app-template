@@ -66,11 +66,12 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
                 contributor_state_id: zod_1.z.string().length(56), // Contributor state ID (same as project_state_policy_id)
                 task_hash: zod_1.z.string().length(64), // Task hash to commit to (64 char hex)
                 task_info: zod_1.z.string().max(140), // Task info hash (ShortText140, max 140 chars)
-                // Backend expects tasks array even though swagger doesn't document it
+                // Backend expects tasks array with contributor_state_policy_id from Andamioscan
+                // @see https://github.com/Andamio-Platform/andamioscan/issues/10
                 tasks: zod_1.z.array(zod_1.z.object({
                     task_hash: zod_1.z.string().length(64),
                     task_info: zod_1.z.string().max(140),
-                    contributor_state_id: zod_1.z.string().length(56), // Try without _policy
+                    contributor_state_policy_id: zod_1.z.string().length(56), // From Andamioscan task
                 })).min(1).max(1),
             }),
             // Side effect parameters - matches DB API task-commitments/create
@@ -78,7 +79,7 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
                 evidence: zod_1.z.any().optional(), // Initial evidence as Tiptap JSON document
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/project/contributor/task/commit" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/contributor/task/commit" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     onSubmit: [
@@ -132,6 +133,6 @@ exports.PROJECT_CONTRIBUTOR_TASK_COMMIT = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/task-commit",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_contributor_task_commit",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_contributor_task_commit",
     },
 };

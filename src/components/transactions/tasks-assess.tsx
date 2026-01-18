@@ -1,18 +1,19 @@
 /**
- * TasksAssess Transaction Component (V2)
+ * TasksAssess Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for project managers to assess (accept/refuse/deny) contributor task submissions.
- * Uses PROJECT_MANAGER_TASKS_ASSESS transaction definition.
+ * Uses PROJECT_MANAGER_TASKS_ASSESS transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/manager/tasks-assess.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { PROJECT_MANAGER_TASKS_ASSESS } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -25,8 +26,9 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AssessIcon, SuccessIcon, ErrorIcon, AlertIcon, BlockIcon } from "~/components/icons";
+import { AssessIcon, SuccessIcon, ErrorIcon, AlertIcon, BlockIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 type AssessmentOutcome = "accept" | "refuse" | "deny";
 
@@ -104,9 +106,42 @@ export function TasksAssess({
   onSuccess,
 }: TasksAssessProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [assessmentResult, setAssessmentResult] = useState<AssessmentOutcome | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[TasksAssess] TX confirmed and DB updated by gateway");
+
+          const actionText =
+            assessmentResult === "accept"
+              ? "accepted"
+              : assessmentResult === "refuse"
+                ? "refused"
+                : "denied";
+
+          toast.success(`Task ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
+            description: `${contributorAlias}'s submission has been ${actionText}`,
+          });
+
+          if (assessmentResult) {
+            void onSuccess?.(assessmentResult);
+          }
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Assessment Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.PROJECT_MANAGER_TASKS_ASSESS;
 
   const handleAssess = async (decision: AssessmentOutcome) => {
     if (!user?.accessTokenAlias) {
@@ -116,7 +151,7 @@ export function TasksAssess({
     setAssessmentResult(decision);
 
     await execute({
-      definition: PROJECT_MANAGER_TASKS_ASSESS,
+      txType: "PROJECT_MANAGER_TASKS_ASSESS",
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
@@ -125,40 +160,18 @@ export function TasksAssess({
         task_decisions: [
           { alias: contributorAlias, outcome: decision },
         ],
-        // Side effect params (matches /project-v2/manager/commitment/assess)
+        // Side effect params (matches /project/manager/commitment/assess)
         // Note: DB API expects uppercase decision values
         task_hash: taskHash,
         contributor_alias: contributorAlias,
         decision: outcomeToDbDecision[decision],
       },
       onSuccess: async (txResult) => {
-        console.log("[TasksAssess] Success!", txResult);
-
-        const actionText =
-          decision === "accept"
-            ? "accepted"
-            : decision === "refuse"
-              ? "refused"
-              : "denied";
-
-        toast.success(`Task ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
-          description: `${contributorAlias}'s submission has been ${actionText}`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.(decision);
+        console.log("[TasksAssess] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[TasksAssess] Error:", txError);
         setAssessmentResult(null);
-        toast.error("Assessment Failed", {
-          description: txError.message || "Failed to submit assessment",
-        });
       },
     });
   };
@@ -177,7 +190,7 @@ export function TasksAssess({
             <AssessIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Assess Task Submission</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Review and assess {contributorAlias}&apos;s task submission
             </AndamioCardDescription>
@@ -222,30 +235,62 @@ export function TasksAssess({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => {
               setAssessmentResult(null);
               reset();
             }}
             messages={{
-              success: `Task ${
-                assessmentResult === "accept"
-                  ? "accepted"
-                  : assessmentResult === "refuse"
-                    ? "refused"
-                    : "denied"
-              } successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Assessment Recorded!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {assessmentResult === "accept"
+                    ? `${contributorAlias}'s submission accepted`
+                    : assessmentResult === "refuse"
+                      ? `${contributorAlias}'s submission refused`
+                      : `${contributorAlias}'s submission denied`}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Assessment Buttons */}
-        {state === "idle" && hasAccessToken && (
+        {state === "idle" && hasAccessToken && !txConfirmed && (
           <div className="flex gap-2">
             <AndamioButton
               variant="default"
@@ -275,7 +320,7 @@ export function TasksAssess({
         )}
 
         {/* In-progress state */}
-        {state !== "idle" && state !== "success" && state !== "error" && (
+        {state !== "idle" && state !== "success" && state !== "error" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={() => undefined}

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
@@ -30,7 +29,7 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { type ProjectTaskV2Output, type ProjectV2Output } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output, type ProjectV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
 
 interface ApiError {
@@ -41,9 +40,9 @@ interface ApiError {
  * Edit Draft Task Page
  *
  * API Endpoints (V2):
- * - GET /project-v2/user/project/:project_id - Get project with states
- * - GET /project-v2/manager/tasks/:project_state_policy_id - Get all tasks (including DRAFT)
- * - POST /project-v2/manager/task/update - Update draft task
+ * - GET /project/user/project/:project_id - Get project with states
+ * - GET /project/manager/tasks/:project_state_policy_id - Get all tasks (including DRAFT)
+ * - POST /project/manager/task/update - Update draft task
  */
 export default function EditTaskPage() {
   const params = useParams();
@@ -84,7 +83,7 @@ export default function EditTaskPage() {
       try {
         // V2 API: Get project first to get project_state_policy_id
         const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+          `/api/gateway/api/v2/project/user/project/${projectId}`
         );
 
         if (!projectResponse.ok) {
@@ -100,10 +99,15 @@ export default function EditTaskPage() {
 
         setProjectStatePolicyId(statePolicyId);
 
-        // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+        // V2 API: POST /project/manager/tasks/list with {project_id} in body
         // Manager endpoint returns all tasks including DRAFT status
         const tasksResponse = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${statePolicyId}`
+          `/api/gateway/api/v2/project/manager/tasks/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_id: statePolicyId }),
+          }
         );
 
         if (!tasksResponse.ok) {
@@ -136,7 +140,7 @@ export default function EditTaskPage() {
     };
 
     void fetchTask();
-  }, [projectId, taskIndex]);
+  }, [projectId, taskIndex, authenticatedFetch]);
 
   // Calculate ADA from lovelace
   const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
@@ -154,7 +158,7 @@ export default function EditTaskPage() {
     setSaveError(null);
 
     try {
-      // V2 API: POST /project-v2/manager/task/update
+      // V2 API: POST /project/manager/task/update
       // Use task.index from loaded task data, not URL param
       const requestBody = {
         project_state_policy_id: projectStatePolicyId,
@@ -167,7 +171,7 @@ export default function EditTaskPage() {
       };
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/update`,
+        `/api/gateway/api/v2/project/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

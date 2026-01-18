@@ -18,17 +18,26 @@ import {
   CourseIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useCompletedCourses } from "~/hooks/use-andamioscan";
+import { useStudentCourses, type StudentCourse } from "~/hooks/api";
 
 interface CredentialsSummaryProps {
   accessTokenAlias: string | null | undefined;
 }
 
 /**
+ * Check if a course is completed
+ */
+function isCompleted(course: StudentCourse): boolean {
+  return course.enrollment_status === "completed";
+}
+
+/**
  * Credentials Summary Card
  *
- * Displays a summary of credentials the user has earned (on-chain data).
+ * Displays a summary of credentials the user has earned (completed courses).
  * Shows on the dashboard for authenticated users.
+ *
+ * Uses the merged student courses endpoint and filters for completed courses.
  *
  * UX States:
  * - Loading: Skeleton cards
@@ -36,8 +45,12 @@ interface CredentialsSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps) {
-  const { data: completedCourses, isLoading, error, refetch } = useCompletedCourses(
-    accessTokenAlias ?? undefined
+  const { data: allCourses, isLoading, error, refetch } = useStudentCourses();
+
+  // Filter for completed courses (all modules finished)
+  const completedCourses = React.useMemo(
+    () => allCourses?.filter(isCompleted) ?? [],
+    [allCourses]
   );
 
   // Log errors silently (per user preference)
@@ -82,7 +95,7 @@ export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={CredentialIcon} title="My Credentials" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -120,7 +133,7 @@ export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps
             <AndamioBadge status="success" className="text-xs">
               {completedCourses.length} earned
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -140,17 +153,21 @@ export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps
 
         {/* Credential list */}
         <div className="space-y-1.5">
-          {completedCourses.slice(0, 3).map((course) => (
+          {completedCourses.slice(0, 3).map((course, index) => (
             <Link
-              key={course.course_id}
-              href={`/course/${course.course_id}`}
+              key={course.course_id ?? index}
+              href={`/course/${course.course_id ?? ""}`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <CredentialIcon className="h-3.5 w-3.5 text-success shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {course.course_id.slice(0, 16)}...
-                </code>
+                {course.content?.title ? (
+                  <span className="text-xs truncate">{course.content.title}</span>
+                ) : (
+                  <code className="text-xs font-mono truncate">
+                    {course.course_id?.slice(0, 16) ?? "Unknown"}...
+                  </code>
+                )}
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Link>

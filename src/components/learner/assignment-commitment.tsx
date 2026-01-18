@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
-import { useCourseStudent } from "~/hooks/use-andamioscan";
-import { env } from "~/env";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -121,25 +119,21 @@ export function AssignmentCommitment({
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
   const { trackPendingTx } = useTrackPendingTx();
 
-  // Check on-chain student status from Andamioscan
-  const {
-    data: onChainStudent,
-    isLoading: onChainLoading,
-    refetch: refetchOnChain,
-  } = useCourseStudent(courseNftPolicyId, user?.accessTokenAlias ?? undefined);
+  // TODO: Implement proper on-chain student state hook using V2 merged API
+  // For now, these features are disabled until we have the equivalent endpoint
+  // The original useCourseStudent returned { current: string, completed: string[], currentContent: string }
+  const onChainLoading = false;
 
   // Check if user has a current commitment for THIS module on-chain
-  const hasOnChainCommitment = useMemo(() => {
-    if (!onChainStudent || !sltHash) return false;
-    // current is the module hash of the pending commitment
-    return onChainStudent.current === sltHash;
-  }, [onChainStudent, sltHash]);
+  // TODO: Re-enable when V2 student state endpoint is available
+  const hasOnChainCommitment = false;
 
   // Check if user has already completed THIS module on-chain
-  const hasCompletedOnChain = useMemo(() => {
-    if (!onChainStudent || !sltHash) return false;
-    return onChainStudent.completed.includes(sltHash);
-  }, [onChainStudent, sltHash]);
+  // TODO: Re-enable when V2 student state endpoint is available
+  const hasCompletedOnChain = false;
+
+  // Stub refetch function
+  const refetchOnChain = async () => { /* No-op until V2 endpoint is available */ };
 
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,7 +188,7 @@ export function AssignmentCommitment({
       // Use the shared endpoint to get commitment for this specific module
       // POST /course/shared/assignment-commitment/get
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/get`,
+        `/api/gateway/api/v2/course/shared/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -293,7 +287,7 @@ export function AssignmentCommitment({
     try {
       // API: POST /course/student/assignment-commitment/update-evidence
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,
+        `/api/gateway/api/v2/course/student/assignment-commitment/update-evidence`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -331,7 +325,7 @@ export function AssignmentCommitment({
     try {
       // API: POST /course/student/assignment-commitment/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/delete`,
+        `/api/gateway/api/v2/course/student/assignment-commitment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -487,33 +481,8 @@ export function AssignmentCommitment({
               </div>
             </div>
 
-            {/* Display on-chain evidence hash */}
-            {onChainStudent?.currentContent && (
-              <div className="space-y-2">
-                <AndamioLabel>On-Chain Evidence Hash</AndamioLabel>
-                <div className="p-3 border rounded-md bg-muted/20">
-                  <AndamioText variant="small" className="text-muted-foreground mb-1">
-                    Your evidence hash is verified on-chain:
-                  </AndamioText>
-                  <span className="text-xs font-mono break-all">
-                    {/* Decode hex to get actual hash */}
-                    {(() => {
-                      try {
-                        const hex = onChainStudent.currentContent;
-                        // Decode hex string to ASCII
-                        let decoded = "";
-                        for (let i = 0; i < hex.length; i += 2) {
-                          decoded += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
-                        }
-                        return decoded;
-                      } catch {
-                        return onChainStudent.currentContent;
-                      }
-                    })()}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Display on-chain evidence hash - disabled until V2 student state endpoint is available */}
+            {/* TODO: Re-enable when V2 endpoint provides currentContent */}
 
             <AndamioSeparator />
 
@@ -562,7 +531,7 @@ export function AssignmentCommitment({
                     // Step 1: Create the commitment record
                     // API: POST /course/student/assignment-commitment/create
                     const createResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/create`,
+                      `/api/gateway/api/v2/course/student/assignment-commitment/create`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -583,7 +552,7 @@ export function AssignmentCommitment({
                     // Step 2: Update the evidence
                     // API: POST /course/student/assignment-commitment/update-evidence
                     const updateResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/student/assignment-commitment/update-evidence`,
+                      `/api/gateway/api/v2/course/student/assignment-commitment/update-evidence`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

@@ -3,7 +3,7 @@
 import React from "react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 import {
   CourseStatusBadge,
   CourseStatusIcon,

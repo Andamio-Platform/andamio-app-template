@@ -72,7 +72,7 @@ exports.COURSE_STUDENT_CREDENTIAL_CLAIM = {
             }),
             // No sideEffectParams - this transaction has no database side effects
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/course/student/credential/claim" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/course/student/credential/claim" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     // No side effects - see JSDoc above for rationale
@@ -90,6 +90,6 @@ exports.COURSE_STUDENT_CREDENTIAL_CLAIM = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/student/credential/claim",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_course_student_credential_claim",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_student_credential_claim",
     },
 };

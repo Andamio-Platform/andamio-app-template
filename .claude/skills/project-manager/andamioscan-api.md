@@ -316,17 +316,17 @@ All endpoints have typed client functions in `src/lib/andamioscan.ts`:
 ## Environment Configuration
 
 ```bash
-# .env.local (server-side only)
-ANDAMIOSCAN_API_URL="https://preprod.andamioscan.io/api"
+# .env.local
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+ANDAMIO_API_KEY="your-api-key-here"
 ```
 
-The API is accessed via a Next.js proxy route at `/api/andamioscan/[...path]` to avoid CORS issues.
+The Andamioscan API is now accessed via the unified V2 Gateway at `/api/gateway/v2/*` endpoints. On-chain data passthrough routes use `/v2/courses/*`, `/v2/projects/*`, etc.
 
 ---
 
 ## Related Documentation
 
-- **Andamio DB API Endpoints**: `course-local-state.md` - Local database CRUD operations
-- **Atlas Tx API**: [andamio-docs](https://docs.andamio.io) - Transaction building
+- **V2 Gateway API**: `.claude/skills/audit-api-coverage/unified-api-endpoints.md` - Full endpoint reference
 - **@andamio/transactions**: Hash utilities (`computeSltHash`, `computeAssignmentInfoHash`)
-- **Swagger UI**: https://preprod.andamioscan.io/api - Interactive API documentation
+- **API Docs**: https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json

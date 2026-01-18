@@ -76,7 +76,7 @@ exports.INSTANCE_COURSE_CREATE = {
                 course_nft_policy_id: zod_1.z.string().length(56), // Extracted from API response course_id
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/instance/owner/course/create" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/instance/owner/course/create" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     onSubmit: [
@@ -114,6 +114,6 @@ exports.INSTANCE_COURSE_CREATE = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/instance/owner/course/create",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/swagger/index.html#/default/post_v2_tx_instance_owner_course_create",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_instance_owner_course_create",
     },
 };

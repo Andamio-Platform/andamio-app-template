@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { env } from "~/env";
 import type {
   CourseModuleResponse,
+  CourseModuleListResponse,
   CourseResponse,
   SLTListResponse,
   AssignmentResponse,
   IntroductionResponse,
   LessonListResponse,
-} from "@andamio/db-api-types";
+} from "~/types/generated";
 import type { WizardData, StepCompletion } from "~/components/studio/wizard/types";
 
 interface UseModuleWizardDataProps {
@@ -67,7 +67,7 @@ export function useModuleWizardData({
       // Go API: GET /course/user/course/get/{policy_id}
       try {
         const courseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
+          `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
         );
         const course = courseResponse.ok
           ? ((await courseResponse.json()) as CourseResponse)
@@ -105,23 +105,25 @@ export function useModuleWizardData({
     try {
       // Fetch course - Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
       );
       const course = courseResponse.ok
         ? ((await courseResponse.json()) as CourseResponse)
         : null;
 
-      // Fetch module - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
-      const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${effectiveModuleCode}`
+      // V2: GET /course/user/course-module/get was removed
+      // Use list endpoint and filter client-side
+      const modulesResponse = await fetch(
+        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
       );
-      const courseModule = moduleResponse.ok
-        ? ((await moduleResponse.json()) as CourseModuleResponse)
-        : null;
+      const modules = modulesResponse.ok
+        ? ((await modulesResponse.json()) as CourseModuleListResponse)
+        : [];
+      const courseModule = modules.find((m) => m.module_code === effectiveModuleCode) ?? null;
 
       // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const slts = sltsResponse.ok
         ? ((await sltsResponse.json()) as SLTListResponse)
@@ -129,7 +131,7 @@ export function useModuleWizardData({
 
       // Fetch assignment - Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
       const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/assignment/get/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const assignment = assignmentResponse.ok
         ? ((await assignmentResponse.json()) as AssignmentResponse)
@@ -137,7 +139,7 @@ export function useModuleWizardData({
 
       // Fetch introduction - Go API: GET /course/user/introduction/get/{policy_id}/{module_code}
       const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/introduction/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/introduction/get/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const introduction = introResponse.ok
         ? ((await introResponse.json()) as IntroductionResponse)
@@ -145,7 +147,7 @@ export function useModuleWizardData({
 
       // Fetch lessons - Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/lessons/list/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const lessons = lessonsResponse.ok
         ? ((await lessonsResponse.json()) as LessonListResponse)

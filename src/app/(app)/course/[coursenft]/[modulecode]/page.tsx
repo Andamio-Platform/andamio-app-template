@@ -14,7 +14,6 @@ import {
 } from "~/components/andamio";
 import { SettingsIcon, LessonIcon, OnChainIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourse as useOnChainCourse } from "~/hooks/use-andamioscan";
 import { useCourse, useCourseModule, useSLTs, useLessons } from "~/hooks/api";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
@@ -38,6 +37,7 @@ export default function ModuleLessonsPage() {
   const { isAuthenticated } = useAndamioAuth();
 
   // React Query hooks - data is cached and shared across components
+  // useCourse returns merged data with both on-chain and off-chain content
   const { data: course } = useCourse(courseNftPolicyId);
   const {
     data: courseModule,
@@ -47,8 +47,8 @@ export default function ModuleLessonsPage() {
   const { data: slts, isLoading: sltsLoading } = useSLTs(courseNftPolicyId, moduleCode);
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseNftPolicyId, moduleCode);
 
-  // Fetch on-chain course data to check SLT status
-  const { data: onChainCourse } = useOnChainCourse(courseNftPolicyId);
+  // Get on-chain modules from the merged course data
+  const onChainModules = course?.modules ?? [];
 
   // Combine SLTs and Lessons - derived from query data
   const combinedData = useMemo<CombinedSLTLesson[]>(() => {
@@ -75,21 +75,22 @@ export default function ModuleLessonsPage() {
 
   // Find matching on-chain module by SLT content overlap
   const onChainModule = useMemo(() => {
-    if (!onChainCourse || combinedData.length === 0) return null;
+    if (onChainModules.length === 0 || combinedData.length === 0) return null;
 
     const dbSltTexts = new Set(combinedData.map((s) => s.slt_text));
 
-    for (const mod of onChainCourse.modules) {
-      const onChainTexts = new Set(mod.slts);
+    for (const mod of onChainModules) {
+      const modSlts = mod.slts ?? [];
+      const onChainTexts = new Set(modSlts);
       // Check if there's significant overlap
       const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
-      if (intersection.length > 0 && intersection.length >= mod.slts.length * 0.5) {
+      if (intersection.length > 0 && modSlts.length > 0 && intersection.length >= modSlts.length * 0.5) {
         return mod;
       }
     }
 
     return null;
-  }, [onChainCourse, combinedData]);
+  }, [onChainModules, combinedData]);
 
   // Combined loading state
   const isLoading = moduleLoading || sltsLoading || lessonsLoading;
@@ -115,7 +116,7 @@ export default function ModuleLessonsPage() {
       {course && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+          course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
           courseModule={{ code: courseModule.module_code, title: courseModule.title }}
           currentPage="module"
         />

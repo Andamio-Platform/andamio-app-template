@@ -64,10 +64,21 @@ const PendingTxContext = createContext<PendingTxContextValue | null>(null);
  * }
  * ```
  */
+// Stub context for when provider isn't available
+const stubContext: PendingTxContextValue = {
+  pendingTransactions: [],
+  addPendingTx: () => console.warn("[PendingTx] Context not available - addPendingTx ignored"),
+  removePendingTx: () => console.warn("[PendingTx] Context not available - removePendingTx ignored"),
+  isChecking: false,
+  checkNow: async () => console.warn("[PendingTx] Context not available - checkNow ignored"),
+};
+
 export function usePendingTxContext() {
   const context = useContext(PendingTxContext);
+  // Return stub if context not available (provider not mounted)
+  // TODO: Re-enable error throwing after pending tx context is restored
   if (!context) {
-    throw new Error("usePendingTxContext must be used within PendingTxWatcher");
+    return stubContext;
   }
   return context;
 }

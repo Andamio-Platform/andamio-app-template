@@ -64,7 +64,7 @@ export const PROJECT_OWNER_BLACKLIST_MANAGE: AndamioTransactionDefinition = {
       // No side effect parameters - purely on-chain action
       sideEffectParams: z.object({}),
     }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/project/owner/contributor-blacklist/manage" },
+    builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/owner/contributor-blacklist/manage" },
     estimatedCost: getProtocolCost(protocolId),
   },
   // No side effects - blacklist status is determined on-chain
@@ -82,6 +82,6 @@ export const PROJECT_OWNER_BLACKLIST_MANAGE: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/owner/blacklist-manage",
-    apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_owner_contributor_blacklist_manage",
+    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_owner_contributor_blacklist_manage",
   },
 };

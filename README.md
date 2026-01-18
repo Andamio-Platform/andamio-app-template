@@ -23,7 +23,7 @@ A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadc
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router) + TypeScript
-- **API**: tRPC v11 + Andamio Database API (Go)
+- **API**: tRPC v11 + Unified Andamio API Gateway
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Blockchain**: Cardano via Mesh SDK
 - **Editor**: Tiptap with custom extensions
@@ -117,16 +117,18 @@ import { RequireAuth } from "~/components/auth/require-auth";
 ```
 
 ### Type-Safe API Calls
-Types imported from `@andamio/db-api-types` package:
+Types are generated from the gateway OpenAPI spec:
 
 ```typescript
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseResponse } from "~/types/generated";
 
-const { data, isLoading, error } = useAndamioFetch<CourseListResponse>({
-  endpoint: "/courses/owned",
+const { data, isLoading, error } = useAndamioFetch<CourseResponse[]>({
+  endpoint: "/course/owner/courses/list",
   authenticated: true,
 });
 ```
+
+Regenerate types when the API changes: `npm run generate:types`
 
 ### Rich Text Editor
 Two components for all content needs:
@@ -182,12 +184,16 @@ authLogger.error("Auth failed:", error);   // Errors always logged
 
 ## Data Sources
 
-| Source | Purpose |
-|--------|---------|
-| **Andamio DB API** (Go) | Courses, users, assignments, off-chain data |
-| **Andamioscan** | UTXOs, datums, on-chain enrollment |
-| **Atlas TX API** | Transaction building |
-| **Koios API** | Transaction confirmation |
+The app uses the **Unified Andamio API Gateway** which combines all backend services:
+
+| Endpoint Category | Purpose |
+|-------------------|---------|
+| **Merged** (`/api/v2/*`) | Combined off-chain + on-chain data |
+| **On-chain** (`/v2/*`) | Indexed blockchain data (passthrough to Andamioscan) |
+| **Transactions** (`/v2/tx/*`) | Build unsigned transactions |
+| **Auth** (`/auth/*`) | User authentication |
+
+A legacy DB API is also available for some endpoints during migration.
 
 All APIs are deployed and accessible via environment variables - no local backend required.
 

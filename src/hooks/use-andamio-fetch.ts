@@ -95,7 +95,7 @@
  *   const fetchData = async () => {
  *     setIsLoading(true);
  *     try {
- *       const response = await fetch(`${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/get?course_nft_policy_id=${id}`);
+ *       const response = await fetch(`/api/gateway/api/v2/course/get?course_nft_policy_id=${id}`);
  *       if (!response.ok) throw new Error("Failed");
  *       setData(await response.json());
  *     } catch (err) {
@@ -133,13 +133,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { env } from "~/env";
 import { useAndamioAuth } from "./use-andamio-auth";
 import { parseApiError, type ApiErrorResponse } from "~/lib/api-utils";
 
 export interface UseAndamioFetchOptions<TBody = unknown> {
   /**
-   * API endpoint path (relative to NEXT_PUBLIC_ANDAMIO_API_URL)
+   * API endpoint path (relative to /api/gateway/api/v2)
    * @example "/courses/owned"
    */
   endpoint: string;
@@ -247,7 +246,7 @@ export function useAndamioFetch<TData, TBody = unknown>(
     setErrorDetails(null);
 
     try {
-      const url = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}${endpoint}`;
+      const url = `/api/gateway/api/v2${endpoint}`;
       const fetchOptions: RequestInit = {
         method,
         headers: {

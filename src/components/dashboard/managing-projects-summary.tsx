@@ -18,7 +18,7 @@ import {
   ProjectIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useManagingProjects } from "~/hooks/use-andamioscan";
+import { useManagerProjects } from "~/hooks/api";
 
 interface ManagingProjectsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -27,7 +27,7 @@ interface ManagingProjectsSummaryProps {
 /**
  * Managing Projects Summary Card
  *
- * Displays a summary of projects the user is managing (on-chain data).
+ * Displays a summary of projects the user is managing (merged on-chain + DB data).
  * Shows on the dashboard for authenticated users who are project managers.
  *
  * UX States:
@@ -36,9 +36,7 @@ interface ManagingProjectsSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSummaryProps) {
-  const { data: managingProjects, isLoading, error, refetch } = useManagingProjects(
-    accessTokenAlias ?? undefined
-  );
+  const { data: managingProjects, isLoading, error, refetch } = useManagerProjects();
 
   // Log errors silently (per user preference)
   React.useEffect(() => {
@@ -89,7 +87,7 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
             <AndamioBadge variant="secondary" className="text-xs">
               {managingProjects.length} active
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

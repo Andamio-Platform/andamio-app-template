@@ -23,7 +23,6 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
 import { computeSltHashDefinite } from "@andamio/transactions";
 import type { WizardStepConfig } from "../types";
 
@@ -48,8 +47,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isUnapproving, setIsUnapproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Note: "APPROVED" status exists in DB API but types may not be updated yet
-  const moduleStatus = data.courseModule?.status as string | undefined;
+  const moduleStatus = data.courseModule?.status;
   const [isApproved, setIsApproved] = useState(moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN");
 
   const slts = data.slts;
@@ -117,7 +115,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
       // Go API: POST /course/teacher/course-module/update-status
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
+        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -153,7 +151,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     try {
       // Go API: POST /course/teacher/course-module/update-status
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
+        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

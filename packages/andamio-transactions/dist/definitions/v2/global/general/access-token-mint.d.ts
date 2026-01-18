@@ -6,7 +6,7 @@ import type { AndamioTransactionDefinition } from "../../../../types";
  * This is the entry point for all users.
  *
  * ## API Endpoint
- * POST /v2/tx/global/general/access-token/mint
+ * POST /v2/tx/global/user/access-token/mint
  *
  * ## Request Body (MintAccessTokenTxRequest)
  * ```json

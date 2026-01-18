@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -44,7 +43,7 @@ import type { JSONContent } from "@tiptap/core";
 import {
   type CourseResponse,
   type AssignmentCommitmentResponse,
-} from "@andamio/db-api-types";
+} from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { COURSE_TEACHER_ASSIGNMENTS_ASSESS } from "@andamio/transactions";
@@ -58,7 +57,7 @@ import { PendingReviewsList } from "~/components/instructor/pending-reviews-list
  * View all student assignment commitments for a course
  *
  * API Endpoint:
- * - POST /course/teacher/assignment-commitments/list-by-course (protected)
+ * - POST /course/teacher/assignment-commitments/list (protected)
  *   Body: { policy_id: string }
  */
 
@@ -141,7 +140,7 @@ export default function InstructorDashboardPage() {
     try {
       // Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
       );
 
       if (!courseResponse.ok) {
@@ -156,9 +155,9 @@ export default function InstructorDashboardPage() {
         throw new Error("You must be authenticated to view assignment commitments");
       }
 
-      // Go API: POST /course/teacher/assignment-commitments/list-by-course
+      // Go API: POST /course/teacher/assignment-commitments/list
       const commitmentsResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment-commitments/list-by-course`,
+        `/api/gateway/api/v2/course/teacher/assignment-commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -212,7 +211,7 @@ export default function InstructorDashboardPage() {
       console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
 
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/get`,
+        `/api/gateway/api/v2/course/shared/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -326,9 +325,8 @@ export default function InstructorDashboardPage() {
         <AndamioDashboardStat icon={SuccessIcon} label="On Chain" value={stats.onChain} valueColor="success" iconColor="success" />
       </div>
 
-      {/* On-Chain Pending Assessments - Live data from Andamioscan */}
+      {/* On-Chain Pending Assessments - Live data from merged API */}
       <PendingReviewsList
-        accessTokenAlias={user?.accessTokenAlias}
         courseId={courseNftPolicyId}
       />
 

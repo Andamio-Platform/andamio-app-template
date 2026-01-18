@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -13,18 +12,18 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor } from "~/components/editor";
 import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icons";
-import { type ProjectTaskV2Output, type CommitmentV2Output } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output, type CommitmentV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanTask } from "~/lib/andamioscan";
-import { ProjectEnroll, TaskCommit } from "~/components/transactions";
+import { TaskCommit } from "~/components/transactions";
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality
  *
  * API Endpoints (V2):
- * - GET /project-v2/user/task/:task_hash
- * - POST /project-v2/contributor/commitment/get (protected)
+ * - GET /project/user/task/:task_hash
+ * - POST /project/contributor/commitment/get (protected)
  */
 export default function TaskDetailPage() {
   const params = useParams();
@@ -55,9 +54,9 @@ export default function TaskDetailPage() {
       setError(null);
 
       try {
-        // V2 API: GET /project-v2/user/task/:task_hash
+        // V2 API: GET /project/user/task/:task_hash
         const taskResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/task/${taskHash}`
+          `/api/gateway/api/v2/project/user/task/${taskHash}`
         );
 
         if (!taskResponse.ok) {
@@ -85,7 +84,7 @@ export default function TaskDetailPage() {
         if (isAuthenticated) {
           try {
             const commitmentResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
+              `/api/gateway/api/v2/project/contributor/commitment/get`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -343,7 +342,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
+                      `/api/gateway/api/v2/project/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -360,20 +359,22 @@ export default function TaskDetailPage() {
                 }}
               />
             ) : (
-              <ProjectEnroll
+              <TaskCommit
                 projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
+                contributorStatePolicyId={onChainTask?.contributor_state_policy_id ?? "0".repeat(56)}
                 taskHash={taskHash}
                 taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
+                isFirstCommit={true}
                 onSuccess={async () => {
                   setIsEnrolled(true);
                   setIsEditingEvidence(false);
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/contributor/commitment/get`,
+                      `/api/gateway/api/v2/project/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

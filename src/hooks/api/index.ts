@@ -87,10 +87,54 @@ export {
   lessonKeys,
 } from "./use-lesson";
 
-// Andamioscan (on-chain) hooks
+// Project hooks (public access)
 export {
-  useAndamioscanCourse,
-  useAndamioscanAllCourses,
-  useInvalidateAndamioscan,
-  andamioscanKeys,
-} from "./use-andamioscan";
+  useProject,
+  useProjects,
+  useInvalidateProjects,
+  projectKeys,
+} from "./use-project";
+
+// Teacher courses (merged data for studio)
+export {
+  useTeacherCourses,
+  useTeacherCommitments,
+  useTeacherCoursesWithModules,
+  useInvalidateTeacherCourses,
+  teacherCourseKeys,
+  type TeacherCourse,
+  type TeacherCoursesResponse,
+  type TeacherAssignmentCommitment,
+  type TeacherAssignmentCommitmentsResponse,
+  type TeacherCourseWithModules,
+} from "./use-teacher-courses";
+
+// Manager projects (merged data for studio)
+export {
+  useManagerProjects,
+  useManagerCommitments,
+  useInvalidateManagerProjects,
+  managerProjectKeys,
+  type ManagerProject,
+  type ManagerProjectsResponse,
+  type ManagerCommitment,
+  type ManagerCommitmentsResponse,
+} from "./use-manager-projects";
+
+// Student courses (merged data for learners)
+export {
+  useStudentCourses,
+  useInvalidateStudentCourses,
+  studentCourseKeys,
+  type StudentCourse,
+  type StudentCoursesResponse,
+} from "./use-student-courses";
+
+// Contributor projects (merged data for contributors)
+export {
+  useContributorProjects,
+  useInvalidateContributorProjects,
+  contributorProjectKeys,
+  type ContributorProject,
+  type ContributorProjectsResponse,
+} from "./use-contributor-projects";

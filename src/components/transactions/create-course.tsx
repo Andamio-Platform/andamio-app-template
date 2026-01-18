@@ -1,19 +1,28 @@
 /**
- * CreateCourse Transaction Component (V2)
+ * CreateCourse Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for creating a new Andamio Course on-chain.
- * Uses INSTANCE_COURSE_CREATE transaction definition from @andamio/transactions.
+ * Uses INSTANCE_COURSE_CREATE transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/instance/course-create.ts
+ * ## TX Lifecycle
+ *
+ * 1. User enters title and optional teachers, clicks "Create Course"
+ * 2. `useSimpleTransaction` builds, signs, submits, and registers TX
+ * 3. `useTxWatcher` polls gateway for confirmation status
+ * 4. When status is "updated", gateway has completed DB updates
+ * 5. UI shows success and calls onSuccess callback
+ *
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
-import { INSTANCE_COURSE_CREATE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -27,8 +36,9 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseIcon, TeacherIcon, AlertIcon } from "~/components/icons";
+import { CourseIcon, TeacherIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface CreateCourseProps {
   /**
@@ -41,7 +51,7 @@ export interface CreateCourseProps {
 /**
  * CreateCourse - Full UI for creating a course on-chain (V2)
  *
- * Uses INSTANCE_COURSE_CREATE transaction definition with automatic side effects.
+ * Uses useSimpleTransaction with gateway auto-confirmation.
  *
  * @example
  * ```tsx
@@ -51,11 +61,37 @@ export interface CreateCourseProps {
 export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
   const [additionalTeachers, setAdditionalTeachers] = useState("");
+  const [courseId, setCourseId] = useState<string | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[CreateCourse] TX confirmed and DB updated by gateway");
+
+          toast.success("Course Created!", {
+            description: `"${title.trim()}" is now live on-chain`,
+          });
+
+          // Call parent callback with the course ID
+          if (courseId) {
+            void onSuccess?.(courseId);
+          }
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Course Creation Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -81,6 +117,8 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
     void fetchWalletData();
   }, [wallet, connected]);
 
+  const ui = TRANSACTION_UI.INSTANCE_COURSE_CREATE;
+
   const handleCreateCourse = async () => {
     if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
@@ -96,47 +134,26 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
     const allTeachers = [user.accessTokenAlias, ...teachersList.filter((t) => t !== user.accessTokenAlias)];
 
     await execute({
-      definition: INSTANCE_COURSE_CREATE,
+      txType: "INSTANCE_COURSE_CREATE",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         teachers: allTeachers,
         initiator_data: initiatorData,
-        // Side effect params
+      },
+      metadata: {
         title: title.trim(),
-        // course_nft_policy_id will be extracted from API response (course_id)
-        // and added to buildInputs by useAndamioTransaction hook
       },
       onSuccess: async (txResult) => {
-        console.log("[CreateCourse] Success!", txResult);
+        console.log("[CreateCourse] TX submitted successfully!", txResult);
 
-        // Extract course_id from the API response
-        const apiResponse = txResult.apiResponse;
-        const extractedCourseId = apiResponse?.course_id as string | undefined;
-
-        // Show success toast
-        toast.success("Course Created!", {
-          description: `"${title.trim()}" has been created on-chain`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Call the parent's onSuccess callback with the courseNftPolicyId
+        // Extract course_id from the API response for later use
+        const extractedCourseId = txResult.apiResponse?.course_id as string | undefined;
         if (extractedCourseId) {
-          await onSuccess?.(extractedCourseId);
+          setCourseId(extractedCourseId);
         }
       },
       onError: (txError) => {
         console.error("[CreateCourse] Error:", txError);
-
-        // Show error toast
-        toast.error("Course Creation Failed", {
-          description: txError.message || "Failed to create course",
-        });
       },
     });
   };
@@ -159,7 +176,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
             <CourseIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Create Course On-Chain</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Mint a Course NFT to start managing learners on-chain
             </AndamioCardDescription>
@@ -236,29 +253,61 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           </div>
         )}
 
-        {/* Transaction Status - Always show when not idle */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing, not for final success */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
-            onRetry={() => {
-              reset();
-            }}
+            error={error?.message ?? null}
+            onRetry={() => reset()}
             messages={{
-              success: "Your course has been created on-chain!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Course Created!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  &quot;{title}&quot; is now live on-chain.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create Button - Hide after success */}
-        {state !== "success" && canCreate && (
+        {state !== "success" && !txConfirmed && canCreate && (
           <TransactionButton
             txState={state}
             onClick={handleCreateCourse}
             disabled={!canCreate}
             stateText={{
-              idle: "Create Course",
+              idle: ui.buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Creating on Blockchain...",

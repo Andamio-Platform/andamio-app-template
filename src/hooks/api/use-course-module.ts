@@ -14,12 +14,11 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
   type CourseModuleResponse,
   type CourseModuleListResponse,
-} from "@andamio/db-api-types";
+} from "~/types/generated";
 
 /**
  * Input for creating a course module
@@ -70,7 +69,7 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
     queryFn: async () => {
       // Go API: GET /course/user/course-modules/list/{policy_id}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -85,6 +84,9 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
 
 /**
  * Fetch a single module by course and module code
+ *
+ * NOTE: The single-module GET endpoint was removed in V2.
+ * This now fetches the module list and filters client-side.
  *
  * @example
  * ```tsx
@@ -105,16 +107,24 @@ export function useCourseModule(
   return useQuery({
     queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
+      // V2: GET /course/user/course-module/get was removed
+      // Use list endpoint and filter client-side
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch module: ${response.statusText}`);
+        throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleResponse>;
+      const modules = (await response.json()) as CourseModuleListResponse;
+      const courseModule = modules.find((m) => m.module_code === moduleCode);
+
+      if (!courseModule) {
+        throw new Error(`Module ${moduleCode} not found`);
+      }
+
+      return courseModule;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });
@@ -148,7 +158,7 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
     queryFn: async () => {
       // Go API: POST /course/teacher/course-modules/list - returns modules grouped by policy ID
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-modules/list`,
+        `/api/gateway/api/v2/course/teacher/course-modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -203,7 +213,7 @@ export function useCreateCourseModule() {
       // Go API: POST /course/teacher/course-module/create
       // API expects "policy_id" not "course_nft_policy_id"
       const { course_nft_policy_id, ...rest } = input;
-      const url = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/create`;
+      const url = `/api/gateway/api/v2/course/teacher/course-module/create`;
       const body = {
         policy_id: course_nft_policy_id,
         ...rest,
@@ -258,7 +268,7 @@ export function useUpdateCourseModule() {
       // Go API: POST /course/teacher/course-module/update
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update`,
+        `/api/gateway/api/v2/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -312,7 +322,7 @@ export function useUpdateCourseModuleStatus() {
       // Go API: POST /course/teacher/course-module/update-status
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
+        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -385,7 +395,7 @@ export function useDeleteCourseModule() {
     }) => {
       // Go API: POST /course/teacher/course-module/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/delete`,
+        `/api/gateway/api/v2/course/teacher/course-module/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

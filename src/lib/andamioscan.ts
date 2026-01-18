@@ -1,12 +1,22 @@
 /**
- * Andamioscan API Client
+ * Andamioscan API Client (On-Chain Data)
  *
- * Provides typed access to Andamioscan V2 endpoints for on-chain course and user data.
- * Uses the Next.js API proxy at /api/andamioscan to avoid CORS issues.
+ * Provides typed access to Andamioscan V2 endpoints for on-chain indexed data.
+ * These are passthrough endpoints to the blockchain indexer.
  *
- * API Base: https://preprod.andamioscan.io/api
+ * Uses the Next.js API proxy at /api/gateway which forwards to the
+ * Unified Andamio API Gateway.
  *
- * @see .claude/skills/project-manager/andamioscan-api.md for full endpoint documentation
+ * Gateway Base: https://andamio-api-gateway-168705267033.us-central1.run.app
+ * Proxy Base: /api/gateway
+ *
+ * Endpoint Paths: /api/v2/* (on-chain indexed data)
+ *
+ * For MERGED data (combining DB + on-chain), use andamio-gateway.ts instead:
+ * - getMergedCoursesList() - Courses with both DB metadata and on-chain state
+ * - getMergedProjectsList() - Projects with both DB metadata and on-chain state
+ *
+ * @see .claude/skills/audit-api-coverage/unified-api-endpoints.md
  */
 
 // =============================================================================
@@ -254,7 +264,7 @@ function normalizeUserState(raw: RawApiUserState): AndamioscanUserGlobalState {
 // API Client
 // =============================================================================
 
-const PROXY_BASE = "/api/andamioscan";
+const PROXY_BASE = "/api/gateway";
 
 /**
  * Fetch wrapper with error handling for Andamioscan API
@@ -305,7 +315,7 @@ type RawApiCourseListItem = {
  * ```
  */
 export async function getAllCourses(): Promise<AndamioscanCourse[]> {
-  const raw = await fetchAndamioscan<RawApiCourseListItem[]>("/v2/courses");
+  const raw = await fetchAndamioscan<RawApiCourseListItem[]>("/api/v2/courses");
   // List endpoint doesn't include modules - return basic course info
   return raw.map((course) => ({
     course_id: course.course_id,
@@ -335,7 +345,7 @@ export async function getAllCourses(): Promise<AndamioscanCourse[]> {
 export async function getCourse(courseId: string): Promise<AndamioscanCourse | null> {
   try {
     const raw = await fetchAndamioscan<RawApiCourseDetails>(
-      `/v2/courses/${courseId}/details`
+      `/api/v2/courses/${courseId}/details`
     );
     return normalizeCourseDetails(raw);
   } catch (error) {
@@ -390,7 +400,7 @@ export async function getCourseStudent(
 ): Promise<AndamioscanStudent | null> {
   try {
     const raw = await fetchAndamioscan<RawApiStudentStatus>(
-      `/v2/courses/${courseId}/students/${alias}/status`
+      `/api/v2/courses/${courseId}/students/${alias}/status`
     );
     return normalizeStudentStatus(raw);
   } catch (error) {
@@ -421,7 +431,7 @@ export async function getCourseStudent(
  * ```
  */
 export async function getUserGlobalState(alias: string): Promise<AndamioscanUserGlobalState> {
-  const raw = await fetchAndamioscan<RawApiUserState>(`/v2/users/${alias}/state`);
+  const raw = await fetchAndamioscan<RawApiUserState>(`/api/v2/users/${alias}/state`);
   return normalizeUserState(raw);
 }
 
@@ -496,7 +506,7 @@ export async function isModuleOnChain(courseId: string, moduleHash: string): Pro
  */
 export async function getCoursesOwnedByAlias(alias: string): Promise<AndamioscanCourse[]> {
   const raw = await fetchAndamioscan<RawApiCourseListItem[]>(
-    `/v2/users/${alias}/courses/teaching`
+    `/api/v2/users/${alias}/courses/teaching`
   );
   return raw.map((course) => ({
     course_id: course.course_id,
@@ -527,7 +537,7 @@ export async function getCoursesOwnedByAlias(alias: string): Promise<Andamioscan
 export async function getEnrolledCourses(alias: string): Promise<AndamioscanCourse[]> {
   try {
     const raw = await fetchAndamioscan<RawApiCourseListItem[]>(
-      `/v2/users/${alias}/courses/enrolled`
+      `/api/v2/users/${alias}/courses/enrolled`
     );
     return raw.map((course) => ({
       course_id: course.course_id,
@@ -565,7 +575,7 @@ export async function getEnrolledCourses(alias: string): Promise<AndamioscanCour
 export async function getCompletedCourses(alias: string): Promise<AndamioscanCourse[]> {
   try {
     const raw = await fetchAndamioscan<RawApiCourseListItem[]>(
-      `/v2/users/${alias}/courses/completed`
+      `/api/v2/users/${alias}/courses/completed`
     );
     return raw.map((course) => ({
       course_id: course.course_id,
@@ -603,7 +613,7 @@ export async function getCompletedCourses(alias: string): Promise<AndamioscanCou
 export async function getOwnedCourses(alias: string): Promise<AndamioscanCourse[]> {
   try {
     const raw = await fetchAndamioscan<RawApiCourseListItem[]>(
-      `/v2/users/${alias}/courses/owned`
+      `/api/v2/users/${alias}/courses/owned`
     );
     return raw.map((course) => ({
       course_id: course.course_id,
@@ -724,7 +734,7 @@ export async function getPendingAssessments(
 ): Promise<AndamioscanPendingAssessment[]> {
   try {
     return await fetchAndamioscan<AndamioscanPendingAssessment[]>(
-      `/v2/courses/teachers/${alias}/assessments/pending`
+      `/api/v2/courses/teachers/${alias}/assessments/pending`
     );
   } catch (error) {
     // Return empty array for 404s (no pending assessments)
@@ -787,7 +797,7 @@ export type AndamioscanProject = {
  */
 export async function getAllProjects(): Promise<AndamioscanProject[]> {
   try {
-    const raw = await fetchAndamioscan<RawApiProjectListItem[]>("/v2/projects");
+    const raw = await fetchAndamioscan<RawApiProjectListItem[]>("/api/v2/projects");
     return raw.map((project) => ({
       project_id: project.project_id,
       project_address: project.project_address,
@@ -957,7 +967,7 @@ export type AndamioscanProjectDetails = {
 export async function getProject(projectId: string): Promise<AndamioscanProjectDetails | null> {
   try {
     return await fetchAndamioscan<AndamioscanProjectDetails>(
-      `/v2/projects/${projectId}/details`
+      `/api/v2/projects/${projectId}/details`
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes("404")) {
@@ -984,7 +994,7 @@ export async function getProject(projectId: string): Promise<AndamioscanProjectD
 export async function getContributingProjects(alias: string): Promise<AndamioscanProject[]> {
   try {
     const raw = await fetchAndamioscan<RawApiProjectListItem[]>(
-      `/v2/users/${alias}/projects/contributing`
+      `/api/v2/users/${alias}/projects/contributing`
     );
     return raw.map((project) => ({
       project_id: project.project_id,
@@ -1021,7 +1031,7 @@ export async function getContributingProjects(alias: string): Promise<Andamiosca
 export async function getManagingProjects(alias: string): Promise<AndamioscanProject[]> {
   try {
     const raw = await fetchAndamioscan<RawApiProjectListItem[]>(
-      `/v2/users/${alias}/projects/managing`
+      `/api/v2/users/${alias}/projects/managing`
     );
     return raw.map((project) => ({
       project_id: project.project_id,
@@ -1058,7 +1068,7 @@ export async function getManagingProjects(alias: string): Promise<AndamioscanPro
 export async function getOwnedProjects(alias: string): Promise<AndamioscanProject[]> {
   try {
     const raw = await fetchAndamioscan<RawApiProjectListItem[]>(
-      `/v2/users/${alias}/projects/owned`
+      `/api/v2/users/${alias}/projects/owned`
     );
     return raw.map((project) => ({
       project_id: project.project_id,
@@ -1095,7 +1105,7 @@ export async function getOwnedProjects(alias: string): Promise<AndamioscanProjec
 export async function getCompletedProjects(alias: string): Promise<AndamioscanProject[]> {
   try {
     const raw = await fetchAndamioscan<RawApiProjectListItem[]>(
-      `/v2/users/${alias}/projects/completed`
+      `/api/v2/users/${alias}/projects/completed`
     );
     return raw.map((project) => ({
       project_id: project.project_id,
@@ -1205,7 +1215,7 @@ export async function getProjectContributorStatus(
 ): Promise<AndamioscanContributorStatus | null> {
   try {
     const raw = await fetchAndamioscan<RawApiContributorStatus>(
-      `/v2/projects/${projectId}/contributors/${alias}/status`
+      `/api/v2/projects/${projectId}/contributors/${alias}/status`
     );
     return {
       alias: raw.alias,
@@ -1235,11 +1245,11 @@ export async function getProjectContributorStatus(
 export type AndamioscanProjectPendingAssessment = {
   /** Project NFT Policy ID */
   project_id: string;
-  /** Task ID (may be empty from API - use task_lovelace/task_content to match) */
+  /** Task ID (always populated as of Andamioscan issue #11 fix, Jan 16 2026) */
   task_id: string;
-  /** Task lovelace amount (for matching to known tasks) */
+  /** Task lovelace amount */
   task_lovelace: number;
-  /** Task content hex (for matching to known tasks) */
+  /** Task content hex */
   task_content: string;
   /** Contributor's access token alias */
   contributor_alias: string;
@@ -1253,7 +1263,7 @@ export type AndamioscanProjectPendingAssessment = {
 
 /**
  * Raw task object from pending assessment API
- * Note: task_id is often empty in this response - match by lovelace/content instead
+ * Note: task_id is now always populated (Andamioscan issue #11 fix, Jan 16 2026)
  */
 type RawApiPendingAssessmentTask = {
   task_id: string;
@@ -1265,7 +1275,6 @@ type RawApiPendingAssessmentTask = {
 
 /**
  * Raw pending assessment from API
- * Note: task.task_id is often empty - use lovelace/content to match
  */
 type RawApiProjectPendingAssessment = {
   project_id: string;
@@ -1294,11 +1303,10 @@ export async function getManagerPendingAssessments(
 ): Promise<AndamioscanProjectPendingAssessment[]> {
   try {
     const raw = await fetchAndamioscan<RawApiProjectPendingAssessment[]>(
-      `/v2/projects/managers/${alias}/assessments/pending`
+      `/api/v2/projects/managers/${alias}/assessments/pending`
     );
     return raw.map((assessment) => ({
       project_id: assessment.project_id,
-      // task_id may be empty - consumer should match by lovelace/content
       task_id: assessment.task?.task_id ?? "",
       task_lovelace: assessment.task?.lovelace ?? 0,
       task_content: assessment.task?.content ?? "",
@@ -1354,24 +1362,24 @@ export type AndamioscanTaskSubmitEvent = {
  */
 export const TX_TO_EVENT_MAP: Record<string, string> = {
   // Global
-  GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "/v2/events/access-tokens/mint",
+  GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "/api/v2/events/access-tokens/mint",
 
   // Course
-  INSTANCE_COURSE_CREATE: "/v2/events/courses/create",
-  COURSE_OWNER_TEACHERS_MANAGE: "/v2/events/teachers/update",
-  COURSE_TEACHER_MODULES_MANAGE: "/v2/events/modules/manage",
-  COURSE_TEACHER_ASSIGNMENTS_ASSESS: "/v2/events/assessments/assess",
-  COURSE_STUDENT_ASSIGNMENT_COMMIT: "/v2/events/enrollments/enroll",
-  COURSE_STUDENT_ASSIGNMENT_UPDATE: "/v2/events/assignments/submit",
-  COURSE_STUDENT_CREDENTIAL_CLAIM: "/v2/events/credential-claims/claim",
+  INSTANCE_COURSE_CREATE: "/api/v2/events/courses/create",
+  COURSE_OWNER_TEACHERS_MANAGE: "/api/v2/events/teachers/update",
+  COURSE_TEACHER_MODULES_MANAGE: "/api/v2/events/modules/manage",
+  COURSE_TEACHER_ASSIGNMENTS_ASSESS: "/api/v2/events/assessments/assess",
+  COURSE_STUDENT_ASSIGNMENT_COMMIT: "/api/v2/events/enrollments/enroll",
+  COURSE_STUDENT_ASSIGNMENT_UPDATE: "/api/v2/events/assignments/submit",
+  COURSE_STUDENT_CREDENTIAL_CLAIM: "/api/v2/events/credential-claims/claim",
 
   // Project
-  INSTANCE_PROJECT_CREATE: "/v2/events/projects/create",
-  PROJECT_MANAGER_TASKS_MANAGE: "/v2/events/tasks/manage",
-  PROJECT_MANAGER_TASKS_ASSESS: "/v2/events/tasks/assess",
-  PROJECT_CONTRIBUTOR_TASK_COMMIT: "/v2/events/projects/join",
-  PROJECT_CONTRIBUTOR_TASK_ACTION: "/v2/events/tasks/submit",
-  PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: "/v2/events/credential-claims/project",
+  INSTANCE_PROJECT_CREATE: "/api/v2/events/projects/create",
+  PROJECT_MANAGER_TASKS_MANAGE: "/api/v2/events/tasks/manage",
+  PROJECT_MANAGER_TASKS_ASSESS: "/api/v2/events/tasks/assess",
+  PROJECT_CONTRIBUTOR_TASK_COMMIT: "/api/v2/events/projects/join",
+  PROJECT_CONTRIBUTOR_TASK_ACTION: "/api/v2/events/tasks/submit",
+  PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: "/api/v2/events/credential-claims/project",
 };
 
 /**
@@ -1395,7 +1403,7 @@ export async function getTaskSubmitEvent(
 ): Promise<AndamioscanTaskSubmitEvent | null> {
   try {
     return await fetchAndamioscan<AndamioscanTaskSubmitEvent>(
-      `/v2/events/tasks/submit/${txHash}`
+      `/api/v2/events/tasks/submit/${txHash}`
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes("404")) {

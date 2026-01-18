@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
   AndamioBadge,
@@ -28,10 +27,10 @@ import {
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output } from "~/types/generated";
 import { TasksManage } from "~/components/transactions";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject, type AndamioscanPrerequisite } from "~/lib/andamioscan";
+import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan";
 import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 
@@ -48,15 +47,29 @@ type ListValue = Array<[string, number]>;
  * @see https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json
  *
  * @property project_content - Task content text (max 140 chars, NOT a hash!)
- * @property expiration_time - Unix timestamp in MILLISECONDS
+ * @property expiration_posix - Unix timestamp in MILLISECONDS
  * @property lovelace_amount - Reward amount in lovelace
  * @property native_assets - ListValue array of [asset_class, quantity] tuples
  */
 interface ProjectData {
   project_content: string; // Task content text (max 140 chars)
-  expiration_time: number; // Unix timestamp in MILLISECONDS
+  expiration_posix: number; // Unix timestamp in MILLISECONDS
   lovelace_amount: number;
   native_assets: ListValue; // [["policyId.tokenName", qty], ...]
+}
+
+/**
+ * Decode hex string to UTF-8 text
+ */
+function hexToText(hex: string): string {
+  try {
+    const bytes = new Uint8Array(
+      hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
+    );
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -83,9 +96,13 @@ export default function ManageTreasuryPage() {
   // Prerequisites from Andamioscan (needed for transaction)
   const [prerequisites, setPrerequisites] = useState<AndamioscanPrerequisite[]>([]);
 
-  // On-chain task count from Andamioscan (to detect sync issues)
-  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
+  // On-chain tasks from Andamioscan (for removal)
+  const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
+  const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Derived: on-chain task count
+  const onChainTaskCount = onChainTasks.length;
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -94,7 +111,7 @@ export default function ManageTreasuryPage() {
     try {
       // V2 API: First get project to find project_state_policy_id
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+        `/api/gateway/api/v2/project/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {
@@ -109,11 +126,16 @@ export default function ManageTreasuryPage() {
         return;
       }
 
-      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // V2 API: POST /project/manager/tasks/list with {project_id} in body
       // Manager endpoint returns all tasks including DRAFT status
-      const apiUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${projectStatePolicyId}`;
-
-      const tasksResponse = await authenticatedFetch(apiUrl);
+      const tasksResponse = await authenticatedFetch(
+        `/api/gateway/api/v2/project/manager/tasks/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: projectStatePolicyId }),
+        }
+      );
 
       if (!tasksResponse.ok) {
         // 404 means no tasks yet
@@ -147,6 +169,7 @@ export default function ManageTreasuryPage() {
           tasks: projectDetails?.tasks?.map((t) => ({
             task_id: t.task_id,
             lovelace: t.lovelace,
+            content: hexToText(t.content),
           })),
         });
         if (projectDetails?.prerequisites) {
@@ -154,12 +177,12 @@ export default function ManageTreasuryPage() {
         } else {
           setPrerequisites([]);
         }
-        // Track on-chain task count to detect sync issues
-        setOnChainTaskCount(projectDetails?.tasks?.length ?? 0);
+        // Store full on-chain tasks for removal feature
+        setOnChainTasks(projectDetails?.tasks ?? []);
       } catch {
         // If Andamioscan fails, use empty prerequisites
         setPrerequisites([]);
-        setOnChainTaskCount(0);
+        setOnChainTasks([]);
       }
 
     } catch (err) {
@@ -196,6 +219,28 @@ export default function ManageTreasuryPage() {
     } else {
       // Select all draft tasks
       setSelectedTaskIndices(new Set(draftTasks.map((t) => t.index)));
+    }
+  };
+
+  const handleToggleOnChainTask = (taskId: string) => {
+    setSelectedOnChainTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllOnChain = () => {
+    if (selectedOnChainTaskIds.size === onChainTasks.length) {
+      // Deselect all
+      setSelectedOnChainTaskIds(new Set());
+    } else {
+      // Select all on-chain tasks
+      setSelectedOnChainTaskIds(new Set(onChainTasks.map((t) => t.task_id)));
     }
   };
 
@@ -306,12 +351,12 @@ export default function ManageTreasuryPage() {
 
   // Convert selected tasks to ProjectData format for the transaction
   // IMPORTANT: project_content is the task description (max 140 chars), NOT a hash!
-  // expiration_time must be in MILLISECONDS
+  // expiration_posix must be in MILLISECONDS
   const tasksToAdd: ProjectData[] = selectedTasks.map((task) => {
     // Use task title/description as project_content (truncate to 140 chars)
     const projectContent = (task.title ?? task.content ?? "Task").substring(0, 140);
 
-    // Ensure expiration_time is in milliseconds
+    // Ensure expiration_posix is in milliseconds
     // If it's a small number (< year 2000 in ms), it might be in seconds
     let expirationMs = parseInt(task.expiration_time) || 0;
     if (expirationMs < 946684800000) {
@@ -321,7 +366,7 @@ export default function ManageTreasuryPage() {
 
     const projectData: ProjectData = {
       project_content: projectContent,
-      expiration_time: expirationMs,
+      expiration_posix: expirationMs,
       lovelace_amount: parseInt(task.lovelace) || 5000000,
       native_assets: [], // Empty for now - could add native tokens later
     };
@@ -329,12 +374,40 @@ export default function ManageTreasuryPage() {
     return projectData;
   });
 
-  // Calculate total deposit value (sum of all lovelace amounts)
-  const totalLovelace = tasksToAdd.reduce((sum, t) => sum + t.lovelace_amount, 0);
-  const depositValue: ListValue = totalLovelace > 0 ? [["lovelace", totalLovelace]] : [];
 
-  // Task codes for side effects
+  // Task codes and indices for side effects
   const taskCodes = selectedTasks.map((t) => `TASK_${t.index}`);
+  const taskIndices = selectedTasks.map((t) => t.index);
+
+  // Convert selected on-chain tasks to ProjectData format for removal
+  // IMPORTANT: tasks_to_remove requires full ProjectData objects, NOT just hashes!
+  const selectedOnChainTasks = onChainTasks.filter((t) => selectedOnChainTaskIds.has(t.task_id));
+  const tasksToRemove: ProjectData[] = selectedOnChainTasks.map((task) => {
+    // Decode hex content to text
+    const projectContent = hexToText(task.content);
+
+    // Andamioscan's expiration_posix is already in milliseconds (despite the name)
+    // Atlas API also expects milliseconds
+    const expirationMs = task.expiration_posix;
+
+    return {
+      project_content: projectContent,
+      expiration_posix: expirationMs,
+      lovelace_amount: task.lovelace,
+      native_assets: [], // On-chain tasks from Andamioscan don't include native_assets yet
+    };
+  });
+
+  // Net deposit: add lovelace for new tasks, subtract for removed tasks
+  const addLovelace = tasksToAdd.reduce((sum, t) => sum + t.lovelace_amount, 0);
+  const removeLovelace = tasksToRemove.reduce((sum, t) => sum + t.lovelace_amount, 0);
+  const netDeposit = addLovelace - removeLovelace;
+
+  // Calculate deposit value (only if net positive - i.e., adding more than removing)
+  const depositValue: ListValue = netDeposit > 0 ? [["lovelace", netDeposit]] : [];
+
+  // Show transaction UI if any tasks are selected (to add or remove)
+  const hasTasksToManage = tasksToAdd.length > 0 || tasksToRemove.length > 0;
 
   return (
     <div className="space-y-6">
@@ -469,14 +542,21 @@ export default function ManageTreasuryPage() {
               </AndamioTable>
             </AndamioTableContainer>
 
-            {/* TasksManage Transaction - only show when tasks are selected */}
-            {selectedTasks.length > 0 && contributorStateId && (
+            {/* TasksManage Transaction - show when any tasks are selected (add or remove) */}
+            {hasTasksToManage && contributorStateId && (
               <>
                 {/* Transaction preview */}
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
                   <div><strong>Transaction Preview:</strong></div>
-                  <div>Tasks to add: {tasksToAdd.length}</div>
-                  <div>Total deposit: {totalLovelace / 1_000_000} ADA</div>
+                  {tasksToAdd.length > 0 && (
+                    <div className="text-success">+ Adding: {tasksToAdd.length} task(s) ({addLovelace / 1_000_000} ADA)</div>
+                  )}
+                  {tasksToRemove.length > 0 && (
+                    <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
+                  )}
+                  <div className={netDeposit >= 0 ? "" : "text-success"}>
+                    Net deposit: {netDeposit >= 0 ? `${netDeposit / 1_000_000} ADA` : `${Math.abs(netDeposit) / 1_000_000} ADA returned`}
+                  </div>
                   <div>Contributor State ID: {contributorStateId}</div>
                 </div>
 
@@ -485,28 +565,98 @@ export default function ManageTreasuryPage() {
                   contributorStateId={contributorStateId}
                   prerequisites={prerequisites}
                   tasksToAdd={tasksToAdd}
+                  tasksToRemove={tasksToRemove}
                   depositValue={depositValue}
                   taskCodes={taskCodes}
-                  onSuccess={async (txHash) => {
-                    // Sync on-chain tasks with DB
-                    toast.info("Syncing tasks with blockchain...");
-                    const syncResult = await syncProjectTasks(
-                      projectId,
-                      contributorStateId,
-                      txHash,
-                      authenticatedFetch
-                    );
+                  taskIndices={taskIndices}
+                  onSuccess={async (txHash, computedHashes) => {
+                    // Update DB with computed task hashes immediately
+                    if (computedHashes && computedHashes.length > 0 && contributorStateId) {
+                      console.log("[manage-treasury] Updating DB with computed hashes:", computedHashes);
+                      toast.info("Saving task hashes to database...");
 
-                    if (syncResult.confirmed > 0) {
-                      toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
-                    } else if (syncResult.errors.length > 0) {
-                      toast.warning("Sync completed with errors", {
-                        description: syncResult.errors[0],
-                      });
+                      let successCount = 0;
+                      let errorCount = 0;
+
+                      for (const computed of computedHashes) {
+                        try {
+                          // First, set task to PENDING_TX status
+                          const pendingResponse = await authenticatedFetch(
+                            `/api/gateway/api/v2/project/manager/task/batch-status`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                project_state_policy_id: contributorStateId,
+                                tasks: [{
+                                  index: computed.taskIndex,
+                                  status: "PENDING_TX",
+                                }],
+                              }),
+                            }
+                          );
+
+                          if (!pendingResponse.ok) {
+                            console.warn(`[manage-treasury] Failed to set PENDING_TX for task ${computed.taskIndex}`);
+                          }
+
+                          // Then, call confirm-tx with the computed hash
+                          const confirmResponse = await authenticatedFetch(
+                            `/api/gateway/api/v2/project/manager/task/confirm-tx`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                project_state_policy_id: contributorStateId,
+                                index: computed.taskIndex,
+                                tx_hash: txHash,
+                                task_hash: computed.taskHash,
+                              }),
+                            }
+                          );
+
+                          if (confirmResponse.ok) {
+                            console.log(`[manage-treasury] Successfully saved task_hash for task ${computed.taskIndex}: ${computed.taskHash.slice(0, 16)}...`);
+                            successCount++;
+                          } else {
+                            const errorData = await confirmResponse.json().catch(() => ({}));
+                            console.error(`[manage-treasury] Failed to save task_hash for task ${computed.taskIndex}:`, errorData);
+                            errorCount++;
+                          }
+                        } catch (err) {
+                          console.error(`[manage-treasury] Error saving task_hash for task ${computed.taskIndex}:`, err);
+                          errorCount++;
+                        }
+                      }
+
+                      if (successCount > 0) {
+                        toast.success(`Saved ${successCount} task hash(es) to database`);
+                      }
+                      if (errorCount > 0) {
+                        toast.warning(`Failed to save ${errorCount} task hash(es)`);
+                      }
+                    } else {
+                      // Fall back to old sync behavior for tasks_to_remove or if no computed hashes
+                      toast.info("Syncing tasks with blockchain...");
+                      const syncResult = await syncProjectTasks(
+                        projectId,
+                        contributorStateId,
+                        txHash,
+                        authenticatedFetch
+                      );
+
+                      if (syncResult.confirmed > 0) {
+                        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
+                      } else if (syncResult.errors.length > 0) {
+                        toast.warning("Sync completed with errors", {
+                          description: syncResult.errors[0],
+                        });
+                      }
                     }
 
-                    // Clear selection and refresh
+                    // Clear selections and refresh
                     setSelectedTaskIndices(new Set());
+                    setSelectedOnChainTaskIds(new Set());
                     await fetchData();
                   }}
                 />
@@ -522,16 +672,119 @@ export default function ManageTreasuryPage() {
         />
       )}
 
-      {/* Live Tasks (read-only) */}
+      {/* On-Chain Tasks - can be selected for removal */}
+      {onChainTasks.length > 0 && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <AndamioCardTitle className="flex items-center gap-2">
+                  <OnChainIcon className="h-5 w-5" />
+                  On-Chain Tasks (from Andamioscan)
+                </AndamioCardTitle>
+                <AndamioCardDescription>
+                  Select tasks to remove from the project. Removed tasks return their deposit.
+                </AndamioCardDescription>
+              </div>
+              <AndamioCheckbox
+                checked={selectedOnChainTaskIds.size === onChainTasks.length && onChainTasks.length > 0}
+                onCheckedChange={handleSelectAllOnChain}
+                aria-label="Select all on-chain tasks"
+              />
+            </div>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <AndamioTableContainer>
+              <AndamioTable>
+                <AndamioTableHeader>
+                  <AndamioTableRow>
+                    <AndamioTableHead className="w-12"></AndamioTableHead>
+                    <AndamioTableHead>Content</AndamioTableHead>
+                    <AndamioTableHead className="hidden md:table-cell">Task ID</AndamioTableHead>
+                    <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
+                    <AndamioTableHead className="hidden sm:table-cell w-32 text-center">Expires</AndamioTableHead>
+                  </AndamioTableRow>
+                </AndamioTableHeader>
+                <AndamioTableBody>
+                  {onChainTasks.map((task) => {
+                    const isSelected = selectedOnChainTaskIds.has(task.task_id);
+                    const decodedContent = hexToText(task.content);
+                    const expirationDate = new Date(task.expiration_posix);
+
+                    return (
+                      <AndamioTableRow
+                        key={task.task_id}
+                        className={isSelected ? "bg-destructive/5" : ""}
+                      >
+                        <AndamioTableCell>
+                          <AndamioCheckbox
+                            checked={isSelected}
+                            onCheckedChange={() => handleToggleOnChainTask(task.task_id)}
+                            aria-label={`Select task for removal`}
+                          />
+                        </AndamioTableCell>
+                        <AndamioTableCell>
+                          <AndamioText as="div" className="font-medium">
+                            {decodedContent || "(empty content)"}
+                          </AndamioText>
+                        </AndamioTableCell>
+                        <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
+                          {task.task_id.slice(0, 16)}...
+                        </AndamioTableCell>
+                        <AndamioTableCell className="text-center">
+                          <AndamioBadge variant="outline">{formatLovelace(String(task.lovelace))}</AndamioBadge>
+                        </AndamioTableCell>
+                        <AndamioTableCell className="hidden sm:table-cell text-center text-xs text-muted-foreground">
+                          {expirationDate.toLocaleDateString()}
+                        </AndamioTableCell>
+                      </AndamioTableRow>
+                    );
+                  })}
+                </AndamioTableBody>
+              </AndamioTable>
+            </AndamioTableContainer>
+
+            {/* Show transaction UI if tasks selected for removal (and no draft tasks selected) */}
+            {tasksToRemove.length > 0 && tasksToAdd.length === 0 && contributorStateId && (
+              <>
+                <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1 mt-4">
+                  <div><strong>Transaction Preview:</strong></div>
+                  <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
+                  <div>Contributor State ID: {contributorStateId}</div>
+                </div>
+
+                <TasksManage
+                  projectNftPolicyId={projectId}
+                  contributorStateId={contributorStateId}
+                  prerequisites={prerequisites}
+                  tasksToAdd={[]}
+                  tasksToRemove={tasksToRemove}
+                  depositValue={[]}
+                  taskCodes={[]}
+                  taskIndices={[]}
+                  onSuccess={async (_txHash, _computedHashes) => {
+                    // No computed hashes for removal - just refresh
+                    toast.success("Tasks removed successfully!");
+                    setSelectedOnChainTaskIds(new Set());
+                    await fetchData();
+                  }}
+                />
+              </>
+            )}
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
+
+      {/* DB Live Tasks (read-only info) */}
       {liveTasks.length > 0 && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle className="flex items-center gap-2">
               <TreasuryIcon className="h-5 w-5" />
-              Published Tasks
+              Database Status
             </AndamioCardTitle>
             <AndamioCardDescription>
-              These tasks are live on-chain and cannot be modified
+              Tasks marked as ON_CHAIN in the database
             </AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>

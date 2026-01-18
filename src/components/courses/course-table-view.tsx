@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { SettingsIcon } from "~/components/icons";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 import {
   CourseStatusIcon,
   CourseModuleCount,

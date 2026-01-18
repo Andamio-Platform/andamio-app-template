@@ -3,7 +3,6 @@
 import React, { useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { env } from "~/env";
 import { WizardStepper, WIZARD_STEPS } from "./wizard-stepper";
 import { WizardHeader } from "./wizard-navigation";
 import { AndamioStudioLoading } from "~/components/andamio/andamio-loading";
@@ -22,7 +21,7 @@ import type {
   AssignmentResponse,
   IntroductionResponse,
   LessonListResponse,
-} from "@andamio/db-api-types";
+} from "~/types/generated";
 
 // Step components (will be created next)
 import { StepCredential } from "./steps/step-credential";
@@ -116,7 +115,7 @@ export function ModuleWizard({
     try {
       // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
       const slts = sltsResponse.ok
         ? ((await sltsResponse.json()) as SLTListResponse)
@@ -124,7 +123,7 @@ export function ModuleWizard({
 
       // Fetch assignment - Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
       const assignmentResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
       );
       const assignment = assignmentResponse.ok
         ? ((await assignmentResponse.json()) as AssignmentResponse)
@@ -132,7 +131,7 @@ export function ModuleWizard({
 
       // Fetch introduction - Go API: GET /course/user/introduction/get/{policy_id}/{module_code}
       const introResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/introduction/get/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/introduction/get/${courseNftPolicyId}/${moduleCode}`
       );
       const introduction = introResponse.ok
         ? ((await introResponse.json()) as IntroductionResponse)
@@ -140,7 +139,7 @@ export function ModuleWizard({
 
       // Fetch lessons - Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const lessonsResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
       const lessons = lessonsResponse.ok
         ? ((await lessonsResponse.json()) as LessonListResponse)
@@ -148,7 +147,7 @@ export function ModuleWizard({
 
       // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
       const updatedModule = moduleResponse.ok
         ? ((await moduleResponse.json()) as CourseModuleResponse)

@@ -1,23 +1,25 @@
 /**
- * TaskCommit Transaction Component (V2)
+ * TaskCommit Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * Unified UI for all task commitments. The COMMIT transaction handles:
  * 1. Enrolling the contributor (if not already enrolled)
  * 2. Claiming rewards from previous approved task (if any)
  * 3. Committing to a new task
  *
- * Uses PROJECT_CONTRIBUTOR_TASK_COMMIT transaction definition.
+ * Uses PROJECT_CONTRIBUTOR_TASK_COMMIT transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/contributor/task-commit.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  * @see .claude/skills/project-manager/CONTRIBUTOR-TRANSACTION-MODEL.md
  */
 
 "use client";
 
 import React, { useMemo } from "react";
-import { PROJECT_CONTRIBUTOR_TASK_COMMIT, computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -29,8 +31,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon } from "~/components/icons";
+import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
 
 export interface TaskCommitProps {
@@ -139,7 +142,39 @@ export function TaskCommit({
   onSuccess,
 }: TaskCommitProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[TaskCommit] TX confirmed and DB updated by gateway");
+
+          const successTitle = isFirstCommit
+            ? "Welcome to the Project!"
+            : willClaimRewards
+              ? "Committed & Rewards Claimed!"
+              : "Task Commitment Recorded!";
+
+          const successDescription = isFirstCommit
+            ? `You're now enrolled in ${projectTitle ?? "this project"}`
+            : willClaimRewards
+              ? `You've committed to ${taskTitle ?? taskCode} and claimed your rewards`
+              : `You've committed to ${taskTitle ?? taskCode}`;
+
+          toast.success(successTitle, { description: successDescription });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Commitment Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Compute evidence hash for display
   const computedHash = useMemo(() => {
@@ -150,6 +185,8 @@ export function TaskCommit({
       return null;
     }
   }, [taskEvidence]);
+
+  const ui = TRANSACTION_UI.PROJECT_CONTRIBUTOR_TASK_COMMIT;
 
   const handleCommit = async () => {
     console.log("[TaskCommit] ========== HANDLE COMMIT START ==========");
@@ -204,7 +241,7 @@ export function TaskCommit({
           contributor_state_policy_id: contributorStatePolicyId, // From Andamioscan task
         },
       ],
-      // Side effect params (matches /project-v2/contributor/commitment/submit)
+      // Side effect params (matches /project/contributor/commitment/submit)
       evidence: taskEvidence,
     };
 
@@ -224,40 +261,13 @@ export function TaskCommit({
     });
 
     await execute({
-      definition: PROJECT_CONTRIBUTOR_TASK_COMMIT,
+      txType: "PROJECT_CONTRIBUTOR_TASK_COMMIT",
       params: txParams,
       onSuccess: async (txResult) => {
-        console.log("[TaskCommit] Success!", txResult);
-
-        const successTitle = isFirstCommit
-          ? "Welcome to the Project!"
-          : willClaimRewards
-            ? "Committed & Rewards Claimed!"
-            : "Task Commitment Recorded!";
-
-        const successDescription = isFirstCommit
-          ? `You're now enrolled in ${projectTitle ?? "this project"}`
-          : willClaimRewards
-            ? `You've committed to ${taskTitle ?? taskCode} and claimed your rewards`
-            : `You've committed to ${taskTitle ?? taskCode}`;
-
-        toast.success(successTitle, {
-          description: successDescription,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.();
+        console.log("[TaskCommit] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[TaskCommit] Error:", txError);
-        toast.error("Commitment Failed", {
-          description: txError.message || "Failed to commit to task",
-        });
       },
     });
   };
@@ -272,7 +282,7 @@ export function TaskCommit({
   const canCommit = hasAccessToken && hasEvidence && hasValidTaskHash;
 
   // Dynamic title and description based on context
-  const cardTitle = isFirstCommit ? "Enroll & Commit" : "Commit to Task";
+  const cardTitle = isFirstCommit ? "Enroll & Commit" : ui.title;
   const cardDescription = isFirstCommit
     ? projectTitle
       ? `Join ${projectTitle} and start contributing`
@@ -287,7 +297,7 @@ export function TaskCommit({
     ? "Enroll & Commit"
     : willClaimRewards
       ? "Commit & Claim Rewards"
-      : "Commit to Task";
+      : ui.buttonText;
 
   return (
     <AndamioCard>
@@ -357,21 +367,59 @@ export function TaskCommit({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: isFirstCommit
-                ? `You're now enrolled in ${projectTitle ?? "this project"}!`
-                : willClaimRewards
-                  ? `Committed to ${taskTitle ?? taskCode} and claimed rewards!`
-                  : `You've committed to ${taskTitle ?? taskCode}!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
+        )}
+
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  {isFirstCommit
+                    ? "Welcome to the Project!"
+                    : willClaimRewards
+                      ? "Committed & Rewards Claimed!"
+                      : "Task Commitment Recorded!"}
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {isFirstCommit
+                    ? `You're now enrolled in ${projectTitle ?? "this project"}`
+                    : willClaimRewards
+                      ? `Committed to ${taskTitle ?? taskCode} and claimed rewards`
+                      : `You've committed to ${taskTitle ?? taskCode}`}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Invalid Task Hash Warning */}
@@ -385,7 +433,7 @@ export function TaskCommit({
         )}
 
         {/* Commit Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleCommit}

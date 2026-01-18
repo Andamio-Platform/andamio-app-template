@@ -1,14 +1,285 @@
 # Project Status
 
-> **Last Updated**: January 15, 2026 (Session 14 - Task Hash Utility Completed)
+> **Last Updated**: January 18, 2026 (V2 Gateway API Migration on `update/andamioscan` branch)
 
 Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## 🔄 CURRENT WORK: Task Commit Ready for Testing
+## ✅ COMPLETED: V2 Gateway API Migration
 
-**Status**: 🚀 Atlas TX API fix deploying - ready for end-to-end testing
+**Status**: Complete on `update/andamioscan` branch - Ready for merge to main
+
+The unified V2 Gateway API consolidates all 3 subsystems (DB API, Andamioscan, TX API) into a single gateway. Migration completed January 17-18, 2026.
+
+### Branch Status
+
+**Current Branch**: `update/andamioscan` (5 commits ahead of `main`)
+
+**Key Commits**:
+1. `708c786` - use doc.json to update to API V2
+2. `2c8cace` - fix "owner" role from "admin"
+3. `22df8f1` - prepare for API V2
+4. `96802d5` - wip: migrate to Andamio API
+5. `3019cc7` - wip: task management updates
+
+### What Was Completed
+
+**Infrastructure**:
+- ✅ Created unified gateway proxy: `/api/gateway/[...path]/route.ts`
+- ✅ Created gateway client: `src/lib/gateway.ts`
+- ✅ Removed old proxy routes (`/api/andamioscan/`, `/api/atlas-tx/`)
+- ✅ Removed `NEXT_PUBLIC_ANDAMIO_API_URL` env var (legacy DB API URL)
+- ✅ Deleted `src/hooks/use-andamioscan.ts` and `src/hooks/api/use-andamioscan.ts` (merged into gateway)
+
+**Auth Endpoints (v1 → v2)**:
+- ✅ `/api/v1/auth/login` → `/api/v2/auth/login`
+- ✅ `/api/v1/auth/register` → `/api/v2/auth/register`
+- ✅ `/api/v1/apikey/*` → `/api/v2/apikey/*`
+- ✅ Legacy auth (session/validate) now uses gateway: `/api/v2/auth/login/session`
+
+**Type Generation**:
+- ✅ Removed `@andamio/db-api-types` NPM dependency
+- ✅ Added `npm run generate:types` script (uses `swagger-typescript-api`)
+- ✅ Types generated from `doc.json` to `src/types/generated/gateway.ts`
+- ✅ Strict type re-exports in `src/types/generated/index.ts`
+
+**All API Calls Migrated**:
+- ✅ 60+ files updated to use `/api/gateway/api/v2/*` paths
+- ✅ All hooks, components, and pages now use gateway proxy
+- ✅ Side effects use gateway base URL
+- ✅ New hooks created: `use-contributor-projects.ts`, `use-manager-projects.ts`, `use-project.ts`, `use-student-courses.ts`, `use-teacher-courses.ts`
+
+**New Provider Components**:
+- ✅ `src/components/providers/auth-provider.tsx` - Auth context wrapper
+- ✅ `src/components/providers/pending-tx-provider.tsx` - Pending transaction context
+
+---
+
+## 🔄 CURRENT WORK: V2 Transaction Migration
+
+**Status**: In Progress - Migrating transaction components to gateway auto-confirmation
+
+### Session 18 Summary (January 18, 2026)
+
+**Completed**: V2 Transaction Hook + Gateway Auto-Confirmation
+
+Created new simplified transaction system that leverages gateway auto-confirmation instead of client-side Koios polling.
+
+**New Files Created**:
+1. `src/hooks/use-simple-transaction.ts` - Simplified TX hook (BUILD → SIGN → SUBMIT → REGISTER)
+2. `src/hooks/use-tx-watcher.ts` - Gateway status polling hook + TX registration helper
+3. `src/components/transactions/mint-access-token-simple.tsx` - Reference implementation
+4. `src/config/transaction-ui.ts` - Added `requiresDBUpdate` flag to all 17 TX types
+5. `src/config/transaction-schemas.ts` - Zod validation schemas for TX params
+6. `.claude/skills/audit-api-coverage/tx-state-machine.md` - Full API documentation
+7. `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md` - Step-by-step migration guide
+
+**Key Changes**:
+- Added `requiresDBUpdate: boolean` to `TransactionUIConfig` interface
+- Access Token Mint uses `requiresDBUpdate: false` (pure on-chain, no DB tracking)
+- All other TXs use `requiresDBUpdate: true` (gateway monitors and updates DB)
+- `useSimpleTransaction` only registers TXs that need DB updates
+- `useTxWatcher` polls `/api/v2/tx/status/:hash` for confirmation status
+
+**TX State Machine States**:
+- `pending` → TX submitted, awaiting confirmation
+- `confirmed` → TX on-chain, processing DB updates
+- `updated` → Success (terminal)
+- `failed` / `expired` → Error (terminal)
+
+**Gateway Endpoints Used**:
+- `POST /api/v2/tx/register` - Register TX after wallet submit
+- `GET /api/v2/tx/status/:tx_hash` - Poll individual TX status
+
+**Testing Results**:
+- ✅ Access Token Mint transaction builds successfully
+- ✅ Wallet signing works
+- ✅ TX submits to blockchain
+- ✅ UI shows success immediately for pure on-chain TXs
+- ✅ No more "stuck" registering state for Access Token Mint
+
+**Migration Checklist** (see TX-MIGRATION-GUIDE.md for full details):
+| TX Type | requiresDBUpdate | Migrated |
+|---------|------------------|----------|
+| GLOBAL_GENERAL_ACCESS_TOKEN_MINT | `false` | ✅ |
+| INSTANCE_COURSE_CREATE | `true` | ✅ |
+| INSTANCE_PROJECT_CREATE | `true` | ✅ |
+| COURSE_OWNER_TEACHERS_MANAGE | `true` | ✅ |
+| COURSE_TEACHER_MODULES_MANAGE | `true` | ✅ |
+| COURSE_TEACHER_ASSIGNMENTS_ASSESS | `true` | ✅ |
+| COURSE_STUDENT_ASSIGNMENT_COMMIT | `true` | ✅ |
+| COURSE_STUDENT_ASSIGNMENT_UPDATE | `true` | ✅ |
+| COURSE_STUDENT_CREDENTIAL_CLAIM | `true` | ✅ |
+| PROJECT_OWNER_MANAGERS_MANAGE | `true` | ✅ |
+| PROJECT_OWNER_BLACKLIST_MANAGE | `true` | ✅ |
+| PROJECT_MANAGER_TASKS_MANAGE | `true` | ✅ |
+| PROJECT_MANAGER_TASKS_ASSESS | `true` | ✅ |
+| PROJECT_CONTRIBUTOR_TASK_COMMIT | `true` | ✅ |
+| PROJECT_CONTRIBUTOR_TASK_ACTION | `true` | ✅ |
+| PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM | `true` | ✅ |
+| PROJECT_USER_TREASURY_ADD_FUNDS | `true` | ⏳ |
+
+**Status**: ✅ **COMPLETE** (January 18, 2026) - All 16 core transaction components migrated to V2.
+
+**Next Steps**:
+1. Treasury transactions pending backend implementation
+2. ~~Consider deprecating `useAndamioTransaction` hook (V1)~~ ✅ Done (Session 19)
+
+### Session 19 Summary (January 18, 2026)
+
+**Completed**: V2 Transaction Migration Finalization + V1 Deprecation
+
+Migrated remaining transaction components to V2 pattern and added deprecation notices to V1 patterns.
+
+**Components Migrated to V2**:
+| Component | TX Type | Change |
+|-----------|---------|--------|
+| `BurnModuleTokens` | `COURSE_TEACHER_MODULES_MANAGE` | Changed to `useSimpleTransaction` + `useTxWatcher` |
+| `ProjectCredentialClaim` | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Changed to `useSimpleTransaction` + `useTxWatcher` |
+| `CreateCourseDialog` | `INSTANCE_COURSE_CREATE` | Changed to `useSimpleTransaction` |
+
+**Key Clarification**: `BurnModuleTokens` uses the unified `/api/v2/tx/course/teacher/modules/manage` endpoint - there is no separate burn endpoint. The same endpoint handles mint, update, AND burn operations.
+
+**Deprecation Notices Added**:
+| Component/Hook | Status | Replacement |
+|----------------|--------|-------------|
+| `useAndamioTransaction` | `@deprecated` | `useSimpleTransaction` + `useTxWatcher` |
+| `AndamioTransaction` | `@deprecated` | Specific TX components (e.g., `TaskCommit`, `EnrollInCourse`) |
+| `PendingTxIndicator` | `@deprecated` | Individual component TX tracking via `useTxWatcher` |
+
+**Bug Fixed**:
+- `burn-module-tokens.tsx` line 94: Fixed "Promise-returning function provided to property where a void return was expected" error by changing async callback to void pattern
+
+**Pages Still Using V1 Wrapper** (working correctly with V2 APIs):
+- `src/app/(app)/studio/course/[coursenft]/instructor/page.tsx` - Uses `AndamioTransaction` with `COURSE_TEACHER_ASSIGNMENTS_ASSESS`
+- `src/components/learner/assignment-commitment.tsx` - Uses `AndamioTransaction` with `COURSE_STUDENT_ASSIGNMENT_*`
+
+**Build Status**: ✅ TypeScript passes with no errors
+
+**Remaining Task**:
+- React-query cache invalidation audit (from original todo list)
+
+### Session 18 Summary (January 18, 2026)
+
+**Completed**: V2 Transaction System Migration Complete
+
+Migrated all 16 remaining transaction components from V1 (`useAndamioTransaction` + client-side Koios polling) to V2 (`useSimpleTransaction` + `useTxWatcher` + gateway auto-confirmation).
+
+**Components Migrated**:
+- `mint-module-tokens.tsx` - COURSE_TEACHER_MODULES_MANAGE
+- `enroll-in-course.tsx` - COURSE_STUDENT_ASSIGNMENT_COMMIT
+- `assignment-update.tsx` - COURSE_STUDENT_ASSIGNMENT_UPDATE/COMMIT
+- `task-commit.tsx` - PROJECT_CONTRIBUTOR_TASK_COMMIT
+- `task-action.tsx` - PROJECT_CONTRIBUTOR_TASK_ACTION
+- `tasks-manage.tsx` - PROJECT_MANAGER_TASKS_MANAGE
+- `tasks-assess.tsx` - PROJECT_MANAGER_TASKS_ASSESS
+
+**Schema Updates** (`~/config/transaction-schemas.ts`):
+- Added optional side effect params to all Zod schemas
+- Params like `module_code`, `network_evidence`, `task_hash`, `evidence` now properly typed
+- Enables gateway to process DB updates via TxTypeRegistry
+
+**Documentation Updated**:
+- `TX-MIGRATION-GUIDE.md` - Marked all TX types as ✅
+- `TRANSACTION-COMPONENTS.md` - Rewrote for V2 architecture
+- `BACKLOG.md` - Marked `tx-migration-guide` skill as complete
+- `STATUS.md` - This summary
+
+---
+
+### Session 17 Summary (January 18, 2026)
+
+**Completed**: V2 API Migration Fixes - Import Errors Resolved
+
+Fixed remaining TypeScript errors after the V2 Gateway API migration. All components now use the correct V2 hooks with merged API types.
+
+**Files Modified**:
+1. `src/components/instructor/pending-reviews-list.tsx`
+   - Changed `usePendingAssessments` → `useTeacherCommitments` hook
+   - Removed `accessTokenAlias` prop (hook uses auth context internally)
+   - Updated type from `OrchestrationTeacherAssignmentCommitmentItem` → `TeacherAssignmentCommitment`
+
+2. `src/app/(app)/studio/project/[projectid]/commitments/page.tsx`
+   - Rewrote to use `useManagerCommitments` and `useProject` hooks
+   - Removed manual `useEffect` fetch pattern
+   - Fixed `project.states?.[0]?.project_state_policy_id` → `project.contributor_state_id`
+   - Updated type to `OrchestrationProjectTaskOnChain`
+
+3. `src/components/transactions/course-prereqs-selector.tsx`
+   - Changed `useTeachableCoursesWithDetails` → `useTeacherCoursesWithModules` hook
+   - Removed `userAlias` prop
+
+4. `src/components/transactions/create-project.tsx`
+   - Removed `userAlias` prop from `CoursePrereqsSelector` usage
+
+5. `src/app/(app)/studio/course/[coursenft]/instructor/page.tsx`
+   - Removed `accessTokenAlias` prop from `PendingReviewsList` usage
+
+**New Hooks Added**:
+- `useManagerCommitments(projectId?)` - Fetch pending task commitments for managers
+- `useTeacherCoursesWithModules()` - Fetch teacher courses with module details for prereq selection
+
+**New Types Exported**:
+- `ManagerCommitment` - Task commitment data for managers
+- `ManagerCommitmentsResponse` - Response wrapper
+- `TeacherCourseWithModules` - Course with module array for prereq selector
+
+**Build Status**: ✅ TypeScript passes with no errors
+
+### Session 16 Summary (January 18, 2026)
+
+**Completed**: Full V2 Gateway API Migration
+
+This session completed the comprehensive migration from 3 separate APIs to the unified V2 Gateway API.
+
+**Files Changed** (~160 files):
+- Infrastructure: New gateway proxy, client, types
+- Hooks: Migrated all API hooks to gateway endpoints
+- Components: Updated all transaction and data-fetching components
+- Pages: Updated all route pages to use new API paths
+- Providers: Added new auth and pending-tx provider components
+
+**Key Changes**:
+1. **Single Gateway Proxy** - All API calls now route through `/api/gateway/[...path]`
+2. **Generated Types** - Types now generated from `doc.json` OpenAPI spec via `npm run generate:types`
+3. **Role Naming** - Fixed "admin" → "owner" role naming in project TX endpoints
+4. **Merged Endpoints** - Frontend now uses merged endpoints that combine DB + on-chain data
+5. **Removed Legacy Code** - Deleted old Andamioscan hooks, separate proxy routes
+
+**New Files Created**:
+- `src/lib/gateway.ts` - Gateway client functions
+- `src/lib/andamio-gateway.ts` - Merged endpoint helpers
+- `src/types/generated/gateway.ts` - Auto-generated types (1672+ lines)
+- `src/types/generated/index.ts` - Strict type re-exports (301 lines)
+- `src/hooks/api/use-contributor-projects.ts`
+- `src/hooks/api/use-manager-projects.ts`
+- `src/hooks/api/use-project.ts`
+- `src/hooks/api/use-student-courses.ts`
+- `src/hooks/api/use-teacher-courses.ts`
+- `src/components/providers/auth-provider.tsx`
+- `src/components/providers/pending-tx-provider.tsx`
+
+**Deleted Files**:
+- `src/app/api/andamioscan/[...path]/route.ts`
+- `src/app/api/atlas-tx/[...path]/route.ts`
+- `src/hooks/use-andamioscan.ts`
+- `src/hooks/api/use-andamioscan.ts`
+
+### Session 15 Summary (January 16, 2026)
+
+**Resolved**: Andamioscan issue #11 - `task_id` now populated
+
+The blocker that was preventing reliable task matching in pending assessments and submissions has been fixed upstream. This unblocks:
+- Assessment sync functionality
+- Reliable task matching (no more lovelace/content fallback needed)
+- Full contributor flow testing
+
+**What's Now Possible**:
+1. ✅ Pending assessments show correct `task_id`
+2. ✅ Submissions show correct `task_id`
+3. ✅ Assessment sync can use direct task lookup
+4. ✅ End-to-end contributor flow can be fully tested
 
 ### Session 14 Summary
 
@@ -95,18 +366,18 @@ Error in $.tasks[0]: parsing API.ProjectInstance.Task(Task) failed, key "contrib
 - Added `confirmCommitmentTransaction()` function to sync DB after on-chain confirmation
 - Check Confirmation button now properly updates DB status from `PENDING_TX_SUBMIT` to `SUBMITTED`
 
-### Waiting For: Two Upstream Fixes
+### Upstream Fixes: All Resolved ✅
 
-**Blocker 1**: Atlas TX API - Task Commit swagger/implementation mismatch
-- `/v2/tx/project/contributor/task/commit` expects undocumented `contributor_state_policy_id` in tasks array
-- Blocks: Second/subsequent task commitments
+**Blocker 1**: Atlas TX API - Task Commit ✅ **RESOLVED**
+- Client-side fix implemented (Session 13)
+- Andamioscan issue #10 fixed - now returns `contributor_state_policy_id` per task
 
-**Blocker 2**: Andamioscan Issue #11 - Empty `task_id`
-- `pending_assessments[].task.task_id` returns empty
-- `submissions[].task.task_id` returns empty
-- Blocks: Reliable task matching, assessment sync functionality
+**Blocker 2**: Andamioscan Issue #11 - Empty `task_id` ✅ **RESOLVED (Jan 16)**
+- `pending_assessments[].task.task_id` now populated
+- `submissions[].task.task_id` now populated
+- Assessment sync functionality unblocked
 
-**Decision**: Wait for upstream fixes before continuing. Manual DB cleanup acceptable for demos.
+**Status**: All major blockers resolved. Full end-to-end testing possible.
 
 ---
 
@@ -136,8 +407,8 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
-| **Atlas TX API Task Commit** | 🚀 **Deploying** | Client-side fix implemented + Atlas API fix deploying. Ready for end-to-end testing. |
-| **Andamioscan task_id Empty** | 🚨 **Blocking Sync** | Issue #11 - pending assessments/submissions return empty `task_id`. Workaround: match by lovelace/content. |
+| **Atlas TX API Task Commit** | ✅ **Resolved** | Client-side fix implemented. End-to-end testing ready. |
+| **Andamioscan task_id Empty** | ✅ **Resolved (Jan 16)** | Issue #11 fixed - `task_id` now populated in pending assessments/submissions. |
 | **Project V2 Task Update/Delete** | 🚨 **Blocking** | API returns 404 for existing tasks. Bug reported to DB API team. |
 | **@andamio/transactions NPM Publish** | Waiting | Latest V2 definitions available locally via workspace link, but NPM package not yet published |
 | **Andamio DB API (Go Rewrite)** | ✅ **Deployed** | Go API now live on Cloud Run; T3 App endpoints migrated |
@@ -391,8 +662,8 @@ When on-chain submissions exist but DB records are missing (due to failed side e
 
 | Task | Details |
 |------|---------|
-| **Project Register Endpoint** | Requested and integrated new `POST /project-v2/admin/project/register` endpoint. Allows registering on-chain projects to DB with title. |
-| **Managers Sync** | Tested `POST /project-v2/admin/managers/sync` - working correctly. |
+| **Project Register Endpoint** | Requested and integrated new `POST /project-v2/owner/project/register` endpoint. Allows registering on-chain projects to DB with title. |
+| **Managers Sync** | Tested `POST /project-v2/owner/managers/sync` - working correctly. |
 | **Task Create** | `POST /project-v2/manager/task/create` working - created 4 draft tasks. |
 | **Manager Tasks List Endpoint** | Requested and integrated new `GET /project-v2/manager/tasks/{policy_id}` - returns all tasks including DRAFT status. |
 | **Draft Tasks Page Fix** | Updated to use manager endpoint (was using public endpoint that only returns ON_CHAIN tasks). |
@@ -403,7 +674,7 @@ When on-chain submissions exist but DB records are missing (due to failed side e
 
 | Endpoint | Version | Purpose |
 |----------|---------|---------|
-| `POST /project-v2/admin/project/register` | v1.3.1 | Register on-chain project to DB with title |
+| `POST /project-v2/owner/project/register` | v1.3.1 | Register on-chain project to DB with title |
 | `GET /project-v2/manager/tasks/{policy_id}` | v1.3.3 | List all tasks including DRAFT status |
 
 ### Project V2 Testing Status

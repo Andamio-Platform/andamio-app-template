@@ -62,7 +62,7 @@ exports.PROJECT_OWNER_MANAGERS_MANAGE = {
             // No side effect parameters - purely on-chain action
             sideEffectParams: zod_1.z.object({}),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/project/owner/managers/manage" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/owner/managers/manage" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     // No side effects - manager access is determined on-chain via Project Governance UTxO
@@ -80,6 +80,6 @@ exports.PROJECT_OWNER_MANAGERS_MANAGE = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/owner/managers-manage",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_owner_managers_manage",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_owner_managers_manage",
     },
 };

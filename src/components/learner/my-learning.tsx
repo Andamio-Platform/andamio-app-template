@@ -3,45 +3,34 @@
 import React from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useEnrolledCourses } from "~/hooks/use-andamioscan";
-import { useCourse } from "~/hooks/api";
+import { useStudentCourses, type StudentCourse } from "~/hooks/api";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AlertIcon, CourseIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
-import type { AndamioscanCourse } from "~/lib/andamioscan";
 
 /**
  * My Learning component - Shows learner's enrolled courses
  *
  * Data Source:
- * - Andamioscan API: GET /v2/users/{alias}/courses/enrolled
+ * - Merged API: POST /api/v2/course/student/courses/list
  *
- * Shows on-chain enrollment data directly from the blockchain indexer.
+ * Returns courses with both on-chain enrollment status and DB content (title, description).
  */
 
 /**
- * Individual course card that fetches title from database
+ * Individual course card - title comes from merged API response
  */
-function EnrolledCourseCard({ course }: { course: AndamioscanCourse }) {
-  const { data: dbCourse, isLoading } = useCourse(course.course_id);
-
-  if (isLoading) {
-    return (
-      <div className="border rounded-lg p-4">
-        <AndamioSkeleton className="h-6 w-48 mb-2" />
-        <AndamioSkeleton className="h-4 w-32" />
-      </div>
-    );
-  }
-
-  const title = dbCourse?.title ?? `Course ${course.course_id.slice(0, 8)}...`;
+function EnrolledCourseCard({ course }: { course: StudentCourse }) {
+  const courseId = course.course_id ?? "";
+  const title = course.content?.title ?? `Course ${courseId.slice(0, 8)}...`;
+  const description = course.content?.description;
 
   return (
     <Link
-      href={`/course/${course.course_id}`}
+      href={`/course/${courseId}`}
       className="block border rounded-lg p-4 hover:bg-accent transition-colors"
     >
       <div className="flex items-start justify-between gap-4">
@@ -50,13 +39,13 @@ function EnrolledCourseCard({ course }: { course: AndamioscanCourse }) {
             <OnChainIcon className="h-4 w-4 text-success shrink-0" />
             <h3 className="font-semibold truncate">{title}</h3>
           </div>
-          {dbCourse?.description && (
+          {description && (
             <AndamioText variant="small" className="line-clamp-2 mb-2">
-              {dbCourse.description}
+              {description}
             </AndamioText>
           )}
           <code className="text-xs text-muted-foreground font-mono">
-            {course.course_id.slice(0, 16)}...
+            {courseId.slice(0, 16)}...
           </code>
         </div>
         <AndamioButton size="sm" variant="ghost">
@@ -70,10 +59,8 @@ function EnrolledCourseCard({ course }: { course: AndamioscanCourse }) {
 export function MyLearning() {
   const { isAuthenticated, user } = useAndamioAuth();
 
-  // Fetch on-chain enrolled courses from Andamioscan
-  const { data: enrolledCourses, isLoading, error, refetch } = useEnrolledCourses(
-    user?.accessTokenAlias ?? undefined
-  );
+  // Fetch enrolled courses from merged API
+  const { data: enrolledCourses, isLoading, error, refetch } = useStudentCourses();
 
   // Not authenticated or no access token
   if (!isAuthenticated || !user?.accessTokenAlias) {

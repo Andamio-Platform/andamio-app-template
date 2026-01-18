@@ -15,12 +15,13 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
   type CourseResponse,
   type CourseListResponse,
-} from "@andamio/db-api-types";
+  type OrchestrationMergedCourseDetail,
+  type MergedHandlersMergedCourseDetailResponse,
+} from "~/types/generated";
 
 // =============================================================================
 // Query Keys
@@ -45,10 +46,10 @@ export const courseKeys = {
 // =============================================================================
 
 /**
- * Fetch a single course by NFT policy ID
+ * Fetch a single course by ID (merged endpoint)
  *
- * Data is cached and shared across all components using the same courseNftPolicyId.
- * Stale time: 30 seconds (matches QueryClient default)
+ * Returns both on-chain data (modules, teachers, students) and off-chain content.
+ * Data is cached and shared across all components using the same courseId.
  *
  * @example
  * ```tsx
@@ -59,26 +60,38 @@ export const courseKeys = {
  *   if (error) return <ErrorAlert message={error.message} />;
  *   if (!course) return <NotFound />;
  *
- *   return <h1>{course.title}</h1>;
+ *   return <h1>{course.content?.title}</h1>;
  * }
  * ```
  */
-export function useCourse(courseNftPolicyId: string | undefined) {
+export function useCourse(courseId: string | undefined) {
   return useQuery({
-    queryKey: courseKeys.detail(courseNftPolicyId ?? ""),
-    queryFn: async () => {
-      // Go API: GET /course/user/course/get/{policy_id}
+    queryKey: courseKeys.detail(courseId ?? ""),
+    queryFn: async (): Promise<OrchestrationMergedCourseDetail | null> => {
+      // Merged endpoint: GET /api/v2/course/user/course/get/{course_id}
+      // Returns both on-chain and off-chain data
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/course/get/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/course/get/${courseId}`
       );
+
+      if (response.status === 404) {
+        return null;
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch course: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseResponse>;
+      const result = await response.json() as MergedHandlersMergedCourseDetailResponse;
+
+      if (result.warning) {
+        console.warn("[useCourse] API warning:", result.warning);
+      }
+
+      return result.data ?? null;
     },
-    enabled: !!courseNftPolicyId,
+    enabled: !!courseId,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -106,7 +119,7 @@ export function usePublishedCourses() {
     queryFn: async () => {
       // Go API endpoint: /course/user/courses/list
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/courses/list`
+        `/api/gateway/api/v2/course/user/courses/list`
       );
 
       // 404 means no published courses exist yet - treat as empty state, not error
@@ -149,7 +162,7 @@ export function useOwnedCoursesQuery() {
     queryFn: async () => {
       // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+        `/api/gateway/api/v2/course/owner/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -213,7 +226,7 @@ export function useUpdateCourse() {
     }) => {
       // Go API: POST /course/owner/course/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/update`,
+        `/api/gateway/api/v2/course/owner/course/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -273,7 +286,7 @@ export function useDeleteCourse() {
     mutationFn: async (courseNftPolicyId: string) => {
       // Go API: POST /course/owner/course/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/delete`,
+        `/api/gateway/api/v2/course/owner/course/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

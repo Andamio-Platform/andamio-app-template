@@ -25,9 +25,8 @@ import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
-import type { SLTListResponse } from "@andamio/db-api-types";
+import type { SLTListResponse } from "~/types/generated";
 import { AndamioInput } from "~/components/andamio";
 
 interface StepSLTsProps {
@@ -68,8 +67,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   const inputId = useId();
 
   // Check if SLTs are locked (module is approved or on-chain)
-  // Note: "APPROVED" status exists in DB API but types may not be updated yet
-  const moduleStatus = data.courseModule?.status as string | undefined;
+  const moduleStatus = data.courseModule?.status;
   const isLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
 
   // Local state for optimistic updates - use LocalSLT with stable IDs
@@ -121,7 +119,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       // Go API: POST /course/teacher/slt/create
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
+        `/api/gateway/api/v2/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -172,7 +170,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       // Go API: POST /course/teacher/slt/update
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/update`,
+        `/api/gateway/api/v2/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -220,7 +218,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     try {
       // Step 1: Delete the SLT
       const deleteResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/delete`,
+        `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -244,7 +242,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
         if (reorderData.length > 0) {
           const reorderResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slts/batch-update-indexes`,
+            `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -337,9 +335,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     }
 
     try {
-      // Go API: POST /course/teacher/slts/batch-update-indexes
+      // Go API: POST /course/teacher/slts/batch-reorder
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slts/batch-update-indexes`,
+        `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

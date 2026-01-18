@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import {
@@ -27,7 +26,7 @@ import {
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
-import { type ProjectV2Output } from "@andamio/db-api-types";
+import { type ProjectV2Output } from "~/types/generated";
 import { toast } from "sonner";
 
 interface ApiError {
@@ -38,8 +37,8 @@ interface ApiError {
  * Create New Task Page
  *
  * API Endpoints (V2):
- * - GET /project-v2/user/project/:project_id - Get project with states
- * - POST /project-v2/manager/task/create - Create new task
+ * - GET /project/user/project/:project_id - Get project with states
+ * - POST /project/manager/task/create - Create new task
  */
 export default function NewTaskPage() {
   const params = useParams();
@@ -76,9 +75,9 @@ export default function NewTaskPage() {
       setProjectError(null);
 
       try {
-        // V2 API: GET /project-v2/user/project/:project_id
+        // V2 API: GET /project/user/project/:project_id
         const response = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+          `/api/gateway/api/v2/project/user/project/${projectId}`
         );
 
         if (!response.ok) {
@@ -131,9 +130,9 @@ export default function NewTaskPage() {
     setError(null);
 
     try {
-      // V2 API: POST /project-v2/manager/task/create
+      // V2 API: POST /project/manager/task/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/create`,
+        `/api/gateway/api/v2/project/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -1,18 +1,19 @@
 /**
- * TeachersUpdate Transaction Component (V2)
+ * TeachersUpdate Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for adding or removing teachers from a course.
- * Uses COURSE_OWNER_TEACHERS_MANAGE transaction definition - purely on-chain, no side effects.
+ * Uses COURSE_OWNER_TEACHERS_MANAGE transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/owner/teachers-manage.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { COURSE_OWNER_TEACHERS_MANAGE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -27,8 +28,9 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
+import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface TeachersUpdateProps {
   /**
@@ -65,10 +67,39 @@ export function TeachersUpdate({
   onSuccess,
 }: TeachersUpdateProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [teacherInput, setTeacherInput] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[TeachersUpdate] TX confirmed and DB updated by gateway");
+
+          const actionText = action === "add" ? "added to" : "removed from";
+          toast.success("Teachers Updated!", {
+            description: `Teachers ${actionText} course`,
+          });
+
+          // Clear input
+          setTeacherInput("");
+
+          // Call callback
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Update Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.COURSE_OWNER_TEACHERS_MANAGE;
 
   const handleUpdateTeachers = async () => {
     if (!user?.accessTokenAlias || !teacherInput.trim()) {
@@ -91,40 +122,18 @@ export function TeachersUpdate({
     const teachers_to_remove = action === "remove" ? teacherAliases : [];
 
     await execute({
-      definition: COURSE_OWNER_TEACHERS_MANAGE,
+      txType: "COURSE_OWNER_TEACHERS_MANAGE",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
         teachers_to_add,
         teachers_to_remove,
       },
       onSuccess: async (txResult) => {
-        console.log("[TeachersUpdate] Success!", txResult);
-
-        // Show success toast
-        const actionText = action === "add" ? "added to" : "removed from";
-        toast.success("Teachers Updated!", {
-          description: `${teacherAliases.join(", ")} ${actionText} course`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Clear input
-        setTeacherInput("");
-
-        // Call callback
-        await onSuccess?.();
+        console.log("[TeachersUpdate] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[TeachersUpdate] Error:", txError);
-        toast.error("Update Failed", {
-          description: txError.message || "Failed to update teachers",
-        });
       },
     });
   };
@@ -145,7 +154,7 @@ export function TeachersUpdate({
             <TeacherIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Manage Teachers</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Add or remove teachers from this course
             </AndamioCardDescription>
@@ -219,21 +228,55 @@ export function TeachersUpdate({
           </div>
         )}
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: `Teachers ${action === "add" ? "added" : "removed"} successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Teachers Updated!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {action === "add" ? "Teachers added to" : "Teachers removed from"} course.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleUpdateTeachers}

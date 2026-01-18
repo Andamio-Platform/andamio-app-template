@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCoursesOwnedByAlias, useOwnedCourses } from "~/hooks/use-andamioscan";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
 import {
@@ -13,13 +12,11 @@ import {
   AndamioResizableHandle,
 } from "~/components/andamio/andamio-resizable";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
-import { useOwnedCoursesQuery } from "~/hooks/api";
+import { useTeacherCourses, type TeacherCourse } from "~/hooks/api";
 import {
   AndamioButton,
   AndamioBadge,
   AndamioSkeleton,
-  AndamioStatusIcon,
-  getCourseStatus,
   AndamioInput,
   AndamioLabel,
   AndamioDrawer,
@@ -46,11 +43,9 @@ import {
   LoadingIcon,
   AddIcon,
   ExternalLinkIcon,
-  InstructorIcon,
 } from "~/components/icons";
 import { getTokenExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
-import { type HybridCourseStatus } from "~/components/studio/studio-course-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourseModules } from "~/hooks/api/use-course-module";
 import { cn } from "~/lib/utils";
@@ -59,112 +54,43 @@ import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 /**
  * Studio Course List Page
  * Split-pane layout: courses list on left, preview on right
+ *
+ * Uses merged teacher courses endpoint for clean, single-source data.
  */
 export default function StudioCourseListPage() {
-  const { user, isAuthenticated } = useAndamioAuth();
-  const alias = user?.accessTokenAlias ?? undefined;
+  const { isAuthenticated } = useAndamioAuth();
   const { setActions } = useStudioHeader();
 
   // Local UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-  // React Query: Fetch DB courses (cached, deduplicated)
+  // Single merged API call for teacher courses
   const {
-    data: dbCourses = [],
-    isLoading: isLoadingDb,
-    refetch: refetchDbCourses,
-  } = useOwnedCoursesQuery();
-
-  // Fetch on-chain courses (where user is teacher)
-  const {
-    data: onChainCourses,
-    isLoading: isLoadingOnChain,
-    refetch: refetchOnChain,
-  } = useCoursesOwnedByAlias(alias);
-
-  // Fetch owned courses (where user is admin/creator)
-  const {
-    data: ownedCourses,
-    isLoading: isLoadingOwned,
-    refetch: refetchOwned,
-  } = useOwnedCourses(alias);
-
-  // Create a Set of owned course IDs for quick lookup
-  const ownedCourseIds = useMemo(() => {
-    if (!ownedCourses) return new Set<string>();
-    return new Set(ownedCourses.map((c) => c.course_id));
-  }, [ownedCourses]);
-
-  // Merge and dedupe courses
-  const hybridCourses = useMemo<HybridCourseStatus[]>(() => {
-    const courseMap = new Map<string, HybridCourseStatus>();
-
-    for (const dbCourse of dbCourses) {
-      if (dbCourse.course_nft_policy_id) {
-        courseMap.set(dbCourse.course_nft_policy_id, {
-          courseId: dbCourse.course_nft_policy_id,
-          title: dbCourse.title,
-          inDb: true,
-          onChain: false,
-          onChainModuleCount: 0,
-          isOwned: ownedCourseIds.has(dbCourse.course_nft_policy_id),
-          dbCourse,
-        });
-      }
-    }
-
-    if (onChainCourses) {
-      for (const onChainCourse of onChainCourses) {
-        const existing = courseMap.get(onChainCourse.course_id);
-        if (existing) {
-          existing.onChain = true;
-          existing.onChainModuleCount = onChainCourse.modules?.length ?? 0;
-        } else {
-          courseMap.set(onChainCourse.course_id, {
-            courseId: onChainCourse.course_id,
-            title: null,
-            inDb: false,
-            onChain: true,
-            onChainModuleCount: onChainCourse.modules?.length ?? 0,
-            isOwned: ownedCourseIds.has(onChainCourse.course_id),
-          });
-        }
-      }
-    }
-
-    return Array.from(courseMap.values()).sort((a, b) => {
-      if (a.inDb && !b.inDb) return -1;
-      if (!a.inDb && b.inDb) return 1;
-      return a.courseId.localeCompare(b.courseId);
-    });
-  }, [dbCourses, onChainCourses, ownedCourseIds]);
-
-  // No auto-select - show welcome screen initially
+    data: courses = [],
+    isLoading,
+    refetch,
+  } = useTeacherCourses();
 
   // Filter by search
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return hybridCourses;
+    if (!searchQuery.trim()) return courses;
     const query = searchQuery.toLowerCase();
-    return hybridCourses.filter(
+    return courses.filter(
       (c) =>
         c.title?.toLowerCase().includes(query) ||
-        c.courseId.toLowerCase().includes(query)
+        c.course_id.toLowerCase().includes(query)
     );
-  }, [hybridCourses, searchQuery]);
-
-  const isLoading = isLoadingOnChain || isLoadingDb || isLoadingOwned;
+  }, [courses, searchQuery]);
 
   const handleRefresh = useCallback(() => {
-    void refetchDbCourses();
-    void refetchOnChain();
-    void refetchOwned();
-  }, [refetchDbCourses, refetchOnChain, refetchOwned]);
+    void refetch();
+  }, [refetch]);
 
   // Get selected course
   const selectedCourse = useMemo(
-    () => hybridCourses.find((c) => c.courseId === selectedCourseId) ?? null,
-    [hybridCourses, selectedCourseId]
+    () => courses.find((c) => c.course_id === selectedCourseId) ?? null,
+    [courses, selectedCourseId]
   );
 
   // Update studio header with contextual actions
@@ -209,7 +135,7 @@ export default function StudioCourseListPage() {
           {/* Course List */}
           <AndamioScrollArea className="flex-1">
             <div className="flex flex-col gap-3 p-3">
-              {isLoading && hybridCourses.length === 0 &&
+              {isLoading && courses.length === 0 &&
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-lg bg-muted/30">
                     <AndamioSkeleton className="h-8 w-8 rounded-md" />
@@ -221,7 +147,7 @@ export default function StudioCourseListPage() {
                 ))
               }
 
-              {!isLoading && hybridCourses.length === 0 && (
+              {!isLoading && courses.length === 0 && (
                 <div className="py-8 text-center">
                   <CourseIcon className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
                   <AndamioText className="text-sm font-medium">No courses yet</AndamioText>
@@ -234,14 +160,14 @@ export default function StudioCourseListPage() {
 
               {filteredCourses.map((course) => (
                 <CourseListItem
-                  key={course.courseId}
+                  key={course.course_id}
                   course={course}
-                  isSelected={course.courseId === selectedCourseId}
-                  onClick={() => setSelectedCourseId(course.courseId)}
+                  isSelected={course.course_id === selectedCourseId}
+                  onClick={() => setSelectedCourseId(course.course_id)}
                 />
               ))}
 
-              {!isLoading && hybridCourses.length > 0 && filteredCourses.length === 0 && (
+              {!isLoading && courses.length > 0 && filteredCourses.length === 0 && (
                 <div className="py-8 text-center">
                   <SearchIcon className="h-6 w-6 text-muted-foreground/30 mx-auto mb-2" />
                   <AndamioText variant="small">No matches</AndamioText>
@@ -273,7 +199,7 @@ export default function StudioCourseListPage() {
         {selectedCourse ? (
           <CoursePreviewPanel course={selectedCourse} onImportSuccess={handleRefresh} />
         ) : (
-          <WelcomePanel courseCount={hybridCourses.length} />
+          <WelcomePanel courseCount={courses.length} />
         )}
       </AndamioResizablePanel>
     </AndamioResizablePanelGroup>
@@ -285,12 +211,16 @@ export default function StudioCourseListPage() {
 // =============================================================================
 
 interface CourseListItemProps {
-  course: HybridCourseStatus;
+  course: TeacherCourse;
   isSelected: boolean;
   onClick: () => void;
 }
 
 function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
+  // Determine status based on source field from API
+  const hasDbContent = course.title !== undefined && course.title !== null;
+  const isOnChain = course.source === "merged" || course.source === "on-chain-only";
+
   return (
     <button
       type="button"
@@ -300,11 +230,22 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
         isSelected
           ? "bg-primary/10 border-primary/30 shadow-sm"
           : "bg-transparent border-transparent hover:bg-muted/50 hover:border-border active:bg-muted/70",
-        !course.inDb && "opacity-60"
+        !hasDbContent && "opacity-60"
       )}
     >
-      {/* Status icon */}
-      <AndamioStatusIcon status={getCourseStatus(course)} />
+      {/* Status indicator */}
+      <div className={cn(
+        "h-8 w-8 rounded-md flex items-center justify-center",
+        isOnChain && hasDbContent ? "bg-success/10" : hasDbContent ? "bg-warning/10" : "bg-muted"
+      )}>
+        {isOnChain && hasDbContent ? (
+          <SuccessIcon className="h-4 w-4 text-success" />
+        ) : hasDbContent ? (
+          <PendingIcon className="h-4 w-4 text-warning" />
+        ) : (
+          <AlertIcon className="h-4 w-4 text-muted-foreground" />
+        )}
+      </div>
 
       {/* Course info */}
       <div className="flex-1 min-w-0">
@@ -318,17 +259,11 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] text-muted-foreground font-mono truncate">
-            {course.courseId.slice(0, 8)}…{course.courseId.slice(-6)}
+            {course.course_id.slice(0, 8)}…{course.course_id.slice(-6)}
           </span>
-          {course.isOwned && (
-            <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-warning/10 border-warning/30 text-warning">
-              <InstructorIcon className="h-2.5 w-2.5" />
-            </AndamioBadge>
-          )}
-          {course.onChain && course.onChainModuleCount > 0 && (
+          {isOnChain && (
             <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-background/50">
-              <OnChainIcon className="h-2.5 w-2.5 mr-0.5" />
-              {course.onChainModuleCount}
+              <OnChainIcon className="h-2.5 w-2.5" />
             </AndamioBadge>
           )}
         </div>
@@ -345,33 +280,26 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
   );
 }
 
-type CourseStatus = "synced" | "syncing" | "onchain-only";
-
-function getStatusFromCourse(course: HybridCourseStatus): CourseStatus {
-  if (course.inDb && course.onChain) return "synced";
-  if (course.inDb && !course.onChain) return "syncing";
-  return "onchain-only";
-}
-
 // =============================================================================
 // Course Preview Panel
 // =============================================================================
 
 interface CoursePreviewPanelProps {
-  course: HybridCourseStatus;
+  course: TeacherCourse;
   onImportSuccess?: () => void;
 }
 
 function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps) {
   const router = useRouter();
 
-  // Fetch modules for this course
-  const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(
-    course.inDb ? course.courseId : undefined
-  );
+  // Determine status from merged data
+  const hasDbContent = course.title !== undefined && course.title !== null;
+  const isOnChain = course.source === "merged" || course.source === "on-chain-only";
 
-  const status = getStatusFromCourse(course);
-  const dbCourse = course.dbCourse;
+  // Fetch modules for this course (only if we have DB content)
+  const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(
+    hasDbContent ? course.course_id : undefined
+  );
 
   // Module stats
   const moduleStats = useMemo(() => {
@@ -383,7 +311,8 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
     return { total, onChain, draft, approved, totalSlts };
   }, [modules]);
 
-  if (!course.inDb) {
+  // Show register UI if on-chain but no DB content
+  if (!hasDbContent) {
     return (
       <StudioEditorPane padding="normal">
         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -394,7 +323,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           </AndamioText>
           <div className="mt-4">
             <RegisterCourseDrawer
-              courseId={course.courseId}
+              courseId={course.course_id}
               onSuccess={onImportSuccess}
             />
           </div>
@@ -410,7 +339,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
         <div className="max-w-xl w-full text-center">
           {/* Status Badge */}
           <div className="mb-6">
-            <StatusLabel status={status} />
+            <CourseStatusBadge isOnChain={isOnChain} hasDbContent={hasDbContent} />
           </div>
 
           {/* Course Title - Large & Prominent */}
@@ -419,9 +348,9 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           </h1>
 
           {/* Course Description */}
-          {dbCourse?.description && (
+          {course.description && (
             <AndamioText variant="muted" className="text-base leading-relaxed mb-8 max-w-md mx-auto">
-              {dbCourse.description}
+              {course.description}
             </AndamioText>
           )}
 
@@ -474,7 +403,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           <AndamioButton
             size="lg"
             className="px-8 h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
-            onClick={() => router.push(`/studio/course/${course.courseId}`)}
+            onClick={() => router.push(`/studio/course/${course.course_id}`)}
           >
             Open Course
             <NextIcon className="h-5 w-5 ml-2" />
@@ -483,15 +412,15 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           {/* Secondary Actions */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <Link
-              href={`/course/${course.courseId}`}
+              href={`/course/${course.course_id}`}
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <PreviewIcon className="h-3.5 w-3.5" />
               <span>Preview as Learner</span>
             </Link>
-            {course.onChain && (
+            {isOnChain && (
               <a
-                href={`https://preprod.cardanoscan.io/token/${course.courseId}`}
+                href={`https://preprod.cardanoscan.io/token/${course.course_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -523,7 +452,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
           {/* Course Team Card */}
           <CourseTeachersCard
-            courseNftPolicyId={course.courseId}
+            courseNftPolicyId={course.course_id}
             className="mt-8 max-w-sm mx-auto text-left"
           />
         </div>
@@ -611,29 +540,28 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
   );
 }
 
-function StatusLabel({ status }: { status: CourseStatus }) {
-  switch (status) {
-    case "synced":
-      return (
-        <AndamioBadge variant="default" className="text-[10px] h-5">
-          <SuccessIcon className="h-2.5 w-2.5 mr-1" />
-          Live
-        </AndamioBadge>
-      );
-    case "syncing":
-      return (
-        <AndamioBadge variant="secondary" className="text-[10px] h-5">
-          <PendingIcon className="h-2.5 w-2.5 mr-1" />
-          Syncing
-        </AndamioBadge>
-      );
-    case "onchain-only":
-      return (
-        <AndamioBadge variant="outline" className="text-[10px] h-5">
-          Unregistered
-        </AndamioBadge>
-      );
+function CourseStatusBadge({ isOnChain, hasDbContent }: { isOnChain: boolean; hasDbContent: boolean }) {
+  if (isOnChain && hasDbContent) {
+    return (
+      <AndamioBadge variant="default" className="text-[10px] h-5">
+        <SuccessIcon className="h-2.5 w-2.5 mr-1" />
+        Live
+      </AndamioBadge>
+    );
   }
+  if (hasDbContent && !isOnChain) {
+    return (
+      <AndamioBadge variant="secondary" className="text-[10px] h-5">
+        <PendingIcon className="h-2.5 w-2.5 mr-1" />
+        Draft
+      </AndamioBadge>
+    );
+  }
+  return (
+    <AndamioBadge variant="outline" className="text-[10px] h-5">
+      Unregistered
+    </AndamioBadge>
+  );
 }
 
 // =============================================================================
@@ -656,15 +584,15 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
 
     setIsSubmitting(true);
     try {
-      // Go API: POST /course/owner/course/mint
+      // Go API: POST /course/owner/course/register
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/mint`,
+        `/api/gateway/api/v2/course/owner/course/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: title.trim(),
-            course_nft_policy_id: courseId,
+            course_id: courseId,
           }),
         }
       );

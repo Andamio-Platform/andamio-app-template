@@ -18,7 +18,7 @@ import {
   ProjectIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useContributingProjects } from "~/hooks/use-andamioscan";
+import { useContributorProjects } from "~/hooks/api";
 
 interface ContributingProjectsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -27,7 +27,7 @@ interface ContributingProjectsSummaryProps {
 /**
  * Contributing Projects Summary Card
  *
- * Displays a summary of projects the user is contributing to (on-chain data).
+ * Displays a summary of projects the user is contributing to (merged on-chain + DB data).
  * Shows on the dashboard for authenticated users.
  *
  * UX States:
@@ -36,9 +36,7 @@ interface ContributingProjectsSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function ContributingProjectsSummary({ accessTokenAlias }: ContributingProjectsSummaryProps) {
-  const { data: contributingProjects, isLoading, error, refetch } = useContributingProjects(
-    accessTokenAlias ?? undefined
-  );
+  const { data: contributingProjects, isLoading, error, refetch } = useContributorProjects();
 
   // Log errors silently (per user preference)
   React.useEffect(() => {
@@ -82,7 +80,7 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={ContributorIcon} title="My Contributions" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -120,7 +118,7 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
             <AndamioBadge variant="secondary" className="text-xs">
               {contributingProjects.length} active
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

@@ -8,8 +8,9 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
-    ANDAMIOSCAN_API_URL: z.string().url(),
-    ATLAS_TX_API_URL: z.string().url(),
+    // API key for server-side requests to Andamio Gateway
+    // This key is used for all proxied requests - usage is billed to the app developer
+    ANDAMIO_API_KEY: z.string().min(1),
   },
 
   /**
@@ -18,7 +19,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    NEXT_PUBLIC_ANDAMIO_API_URL: z.string().url(),
+    // Unified API Gateway - combines DB API, Andamioscan, and TX API
+    NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: z.string().url(),
     NEXT_PUBLIC_CARDANO_NETWORK: z.enum(["mainnet", "preprod", "preview"]).default("preprod"),
     NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: z.string().length(56),
   },
@@ -29,9 +31,8 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    ANDAMIOSCAN_API_URL: process.env.ANDAMIOSCAN_API_URL,
-    ATLAS_TX_API_URL: process.env.ATLAS_TX_API_URL,
-    NEXT_PUBLIC_ANDAMIO_API_URL: process.env.NEXT_PUBLIC_ANDAMIO_API_URL,
+    ANDAMIO_API_KEY: process.env.ANDAMIO_API_KEY,
+    NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: process.env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL,
     NEXT_PUBLIC_CARDANO_NETWORK: process.env.NEXT_PUBLIC_CARDANO_NETWORK,
     NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: process.env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID,
   },

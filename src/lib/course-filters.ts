@@ -3,7 +3,7 @@
  * Used by Course Creator interface for managing course data
  */
 
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 
 // View mode options
 export type CourseViewMode = "grid" | "table" | "list";

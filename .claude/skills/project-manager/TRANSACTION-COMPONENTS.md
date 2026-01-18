@@ -1,6 +1,6 @@
 # Andamio Template Transaction Components
 
-> Last Updated: January 9, 2026
+> Last Updated: January 18, 2026
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
@@ -8,35 +8,35 @@ This document describes the transaction component architecture for the T3 App Te
 
 **Design Philosophy**:
 - Minimal, consistent transaction UX using shadcn/ui and Andamio components
-- Type-safe transaction definitions with declarative side effects
-- Automatic pending transaction monitoring
+- Type-safe transaction parameters with Zod validation
+- Gateway auto-confirmation for DB updates (no client-side polling)
 
 ## Initial Rules
 
-1. **Andamioscan** returns unsigned CBOR that the user needs to sign
+1. **Gateway API** returns unsigned CBOR that the user needs to sign
 2. We hit the tx endpoints with nice fetch requests, just like any other data
-3. Completed transactions need to update our database
+3. Completed transactions need to update our database via **gateway auto-confirmation**
 
 ---
 
-## Transaction Architecture
+## Transaction Architecture (V2)
+
+All transaction components use the V2 architecture with gateway auto-confirmation.
 
 ### Core Components
 
-**1. Transaction Hook (`useAndamioTransaction`)**
-- Wraps `useTransaction` and adds automatic side effect execution
-- Accepts `AndamioTransactionDefinition` from `@andamio/transactions`
-- Filters params based on definition's `txApiSchema`
-- Executes `onSubmit` side effects after transaction submission
+**1. Transaction Hook (`useSimpleTransaction`)**
+- Simplified hook for transaction lifecycle: build → sign → submit → register
+- Validates params using Zod schemas from `~/config/transaction-schemas.ts`
+- Registers TXs with gateway for auto-confirmation (when `requiresDBUpdate: true`)
 - Manages transaction state (idle, fetching, signing, submitting, success, error)
-- Provides callbacks for success/error handling
-- Supports partial signing via underlying `useTransaction`
+- Returns `result.requiresDBUpdate` flag for UI conditional rendering
 
-**2. Base Transaction Hook (`useTransaction`)**
-- Low-level hook for transaction lifecycle: fetch → sign → submit
-- Integrates with Mesh SDK for wallet signing
-- Supports partial signing for multi-sig transactions via `partialSign` option
-- Used directly only when custom transaction handling is needed
+**2. TX Watcher Hook (`useTxWatcher`)**
+- Polls gateway `/api/v2/tx/status/:hash` for confirmation status
+- Handles TX state machine: `pending → confirmed → updated`
+- Provides `isSuccess` boolean and `status` object
+- Calls `onComplete` callback when TX reaches terminal state
 
 **3. Transaction Button Component (`TransactionButton`)**
 - Reusable button for initiating transactions
@@ -52,31 +52,42 @@ This document describes the transaction component architecture for the T3 App Te
 - Uses semantic colors (success, error, info)
 - Accepts custom messages for each transaction state
 
-### Transaction Flow
+### Transaction Flow (V2)
 
 ```
 1. User clicks TransactionButton
    ↓
-2. useTransaction fetches unsigned CBOR from Andamioscan endpoint
+2. useSimpleTransaction validates params with Zod schema
    ↓
-3. User signs transaction with wallet (Mesh SDK)
+3. Fetch unsigned CBOR from gateway endpoint
    ↓
-4. useTransaction submits signed tx to blockchain
+4. User signs transaction with wallet (Mesh SDK)
    ↓
-5. On success: update database + show success state
+5. Submit signed tx to blockchain
    ↓
-6. Display tx hash and Cardano explorer link
+6. Register TX with gateway (if requiresDBUpdate)
+   ↓
+7. useTxWatcher polls for confirmation status
+   ↓
+8. Gateway auto-updates DB when confirmed
+   ↓
+9. Display success state
 ```
 
-### Andamioscan Transaction Endpoints
+### Gateway Transaction Endpoints
 
-Transaction endpoints can use different HTTP methods:
-- **GET**: Parameters sent as query string (e.g., mint access token)
-- **POST**: Parameters sent as JSON body (e.g., submit assignment)
+Transaction endpoints are accessed via the unified gateway proxy:
+- **Method**: POST (all transaction endpoints)
+- **Parameters**: Sent as JSON body
 - **Response**: Unsigned CBOR (hex string)
-- **Endpoint**: `/api/andamioscan/tx/{transaction-name}`
+- **Endpoint**: `/api/gateway/v2/tx/{category}/{role}/{transaction-name}`
 
-The `useTransaction` hook automatically handles both methods based on the `method` parameter in the transaction config.
+Example endpoint paths:
+- `/api/gateway/v2/tx/global/user/access-token/mint`
+- `/api/gateway/v2/tx/course/student/assignment/commit`
+- `/api/gateway/v2/tx/project/contributor/task/commit`
+
+The `useTransaction` hook handles transaction building and submission via the gateway.
 
 ### Partial Signing (Multi-Sig Support)
 
@@ -100,10 +111,11 @@ When `partialSign: true`:
 
 ## Implemented Transactions (V2)
 
-All 16 V2 transaction definitions from `@andamio/transactions` are implemented. Each component uses the `useAndamioTransaction` hook which:
-- Executes `onSubmit` side effects automatically after transaction submission
-- Filters transaction params based on definition schema
+All 16 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useSimpleTransaction` + `useTxWatcher` which:
+- Validates params using Zod schemas from `~/config/transaction-schemas.ts`
+- Registers TXs with gateway for automatic DB updates
 - Provides consistent state management and error handling
+- Displays gateway confirmation status (pending → confirmed → updated)
 
 ### Transaction Component Matrix
 
@@ -145,20 +157,20 @@ All 16 V2 transaction definitions from `@andamio/transactions` are implemented. 
 **Flow**:
 1. User enters desired alias on dashboard
 2. Click "Mint Access Token" button
-3. `useAndamioTransaction` fetches unsigned CBOR from Atlas API
+3. `useSimpleTransaction` validates params and fetches unsigned CBOR from gateway
 4. User signs with wallet
 5. Transaction submitted to blockchain
-6. `onSubmit` side effects executed (set pending tx)
+6. No gateway registration (pure on-chain TX with `requiresDBUpdate: false`)
 7. Manual JWT handling updates user's alias and stores new JWT
 8. Auth context refreshed
 
 **Components**:
-- `src/hooks/use-andamio-transaction.ts` - Transaction hook with side effects
+- `src/hooks/use-simple-transaction.ts` - Simplified transaction hook
 - `src/components/transactions/transaction-button.tsx` - Reusable tx button
 - `src/components/transactions/transaction-status.tsx` - Status display
 - `src/components/transactions/mint-access-token.tsx` - Mint token UI
 
-**Special Note**: Uses hybrid approach - `useAndamioTransaction` for standardized side effects, but manually handles JWT storage since the endpoint returns a new JWT.
+**Special Note**: This is a pure on-chain transaction (`requiresDBUpdate: false`). No gateway registration or polling needed - success is shown immediately after wallet submission.
 
 **Used In**:
 - Dashboard page - for users without access token
@@ -185,9 +197,11 @@ All 16 V2 transaction definitions from `@andamio/transactions` are implemented. 
 1. User visits course page and selects a module
 2. User provides initial evidence for the module
 3. Click "Enroll & Submit" button
-4. `useAndamioTransaction` builds and submits transaction
-5. Course state token minted to user's wallet
-6. Side effects update database with enrollment record
+4. `useSimpleTransaction` validates params and builds transaction
+5. User signs with wallet, TX submitted to blockchain
+6. TX registered with gateway for auto-confirmation
+7. `useTxWatcher` polls until status is "updated"
+8. Gateway auto-updates database with enrollment record
 
 **Components**:
 - `src/components/transactions/enroll-in-course.tsx` - Enrollment UI with module selection
@@ -249,34 +263,30 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 
 ## Package Architecture
 
-**`@andamio/transactions` Package** (already exists):
-- Transaction definitions with schemas and side effects
-- Side effect execution utilities (`executeOnSubmit`, `executeOnConfirmation`)
-- Input helper functions (hash computation, etc.)
-- Types for definitions and contexts
+**`@andamio/transactions` Package** (local package):
+- Utility functions for hash computation
+- Input helper functions (`computeAssignmentInfoHash`, `computeSltHashDefinite`, etc.)
 
 **T3 App Template** (this app):
-- `useAndamioTransaction` hook - integrates definitions with wallet
-- `useTransaction` hook - base transaction lifecycle
+- `useSimpleTransaction` hook - transaction lifecycle (build → sign → submit → register)
+- `useTxWatcher` hook - gateway confirmation polling
+- `~/config/transaction-ui.ts` - UI strings, endpoints, `requiresDBUpdate` flags
+- `~/config/transaction-schemas.ts` - Zod validation schemas for params
 - `TransactionButton`, `TransactionStatus` - UI components
 - 16 transaction-specific components
 
-**Exports from `@andamio/transactions`**:
+**Key Files**:
 ```typescript
-// V2 Definitions (16 total)
-export { GLOBAL_GENERAL_ACCESS_TOKEN_MINT } from "./definitions/v2/global";
-export { INSTANCE_COURSE_CREATE, INSTANCE_PROJECT_CREATE } from "./definitions/v2/instance";
-export { COURSE_OWNER_TEACHERS_MANAGE, ... } from "./definitions/v2/course";
-export { PROJECT_OWNER_MANAGERS_MANAGE, ... } from "./definitions/v2/project";
+// Transaction hooks (V2)
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 
-// Execution utilities
-export { executeOnSubmit, executeOnConfirmation } from "./execution";
+// Configuration
+import { TRANSACTION_UI, TRANSACTION_ENDPOINTS } from "~/config/transaction-ui";
+import { txSchemas, type TxParams } from "~/config/transaction-schemas";
 
-// Input helpers
-export { computeAssignmentInfoHash, computeModuleInfoHash } from "./utils";
-
-// Types
-export type { AndamioTransactionDefinition, SubmissionContext } from "./types";
+// Utility functions from @andamio/transactions
+import { computeAssignmentInfoHash, computeSltHashDefinite } from "@andamio/transactions";
 ```
 
 ---

@@ -125,7 +125,7 @@ export declare function executeSideEffect(sideEffect: SideEffect, context: Submi
  *   MINT_MODULE_TOKENS.onSubmit,
  *   context,
  *   {
- *     apiBaseUrl: process.env.NEXT_PUBLIC_ANDAMIO_API_URL,
+ *     apiBaseUrl: "/api/gateway/api/v2",
  *     authToken: session.token,
  *   }
  * );

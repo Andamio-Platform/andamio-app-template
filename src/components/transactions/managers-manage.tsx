@@ -1,18 +1,19 @@
 /**
- * ManagersManage Transaction Component (V2)
+ * ManagersManage Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for adding or removing managers from a project.
- * Uses PROJECT_OWNER_MANAGERS_MANAGE transaction definition - purely on-chain, no side effects.
+ * Uses PROJECT_OWNER_MANAGERS_MANAGE transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/owner/managers-manage.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { PROJECT_OWNER_MANAGERS_MANAGE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -27,8 +28,9 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ManagerIcon, AddIcon, DeleteIcon, AlertIcon } from "~/components/icons";
+import { ManagerIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface ManagersManageProps {
   /**
@@ -65,10 +67,39 @@ export function ManagersManage({
   onSuccess,
 }: ManagersManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [managerInput, setManagerInput] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[ManagersManage] TX confirmed and DB updated by gateway");
+
+          const actionText = action === "add" ? "added to" : "removed from";
+          toast.success("Managers Updated!", {
+            description: `Managers ${actionText} project`,
+          });
+
+          // Clear input
+          setManagerInput("");
+
+          // Call callback
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Update Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.PROJECT_OWNER_MANAGERS_MANAGE;
 
   const handleUpdateManagers = async () => {
     if (!user?.accessTokenAlias || !managerInput.trim()) {
@@ -91,40 +122,18 @@ export function ManagersManage({
     const managers_to_remove = action === "remove" ? managerAliases : [];
 
     await execute({
-      definition: PROJECT_OWNER_MANAGERS_MANAGE,
+      txType: "PROJECT_OWNER_MANAGERS_MANAGE",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
         managers_to_add,
         managers_to_remove,
       },
       onSuccess: async (txResult) => {
-        console.log("[ManagersManage] Success!", txResult);
-
-        // Show success toast
-        const actionText = action === "add" ? "added to" : "removed from";
-        toast.success("Managers Updated!", {
-          description: `${managerAliases.join(", ")} ${actionText} project`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Clear input
-        setManagerInput("");
-
-        // Call callback
-        await onSuccess?.();
+        console.log("[ManagersManage] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[ManagersManage] Error:", txError);
-        toast.error("Update Failed", {
-          description: txError.message || "Failed to update managers",
-        });
       },
     });
   };
@@ -145,7 +154,7 @@ export function ManagersManage({
             <ManagerIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Manage Project Managers</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Add or remove managers from this project
             </AndamioCardDescription>
@@ -219,21 +228,55 @@ export function ManagersManage({
           </div>
         )}
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: `Managers ${action === "add" ? "added" : "removed"} successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Managers Updated!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {action === "add" ? "Managers added to" : "Managers removed from"} project.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleUpdateManagers}

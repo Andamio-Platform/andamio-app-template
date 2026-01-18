@@ -13,7 +13,6 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 
@@ -63,7 +62,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
       if (introduction) {
         // Go API: POST /course/teacher/introduction/update
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/update`,
+          `/api/gateway/api/v2/course/teacher/introduction/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -82,7 +81,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
       } else {
         // Go API: POST /course/teacher/introduction/create
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/introduction/create`,
+          `/api/gateway/api/v2/course/teacher/introduction/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

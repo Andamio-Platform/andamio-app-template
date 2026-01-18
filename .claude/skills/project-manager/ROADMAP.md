@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 15, 2026
+> **Last Updated**: January 18, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -28,16 +28,32 @@ ANDAMIO PIONEERS LAUNCH ──────────────────�
   │   Contributor commitment sync implemented
   │
   ▼
-CONTRIBUTOR SYNC TESTING ──────────────────────────────── 2026-01-15 (Wed) ← TODAY
+CONTRIBUTOR SYNC TESTING ──────────────────────────────── 2026-01-15 (Wed) ✅
   │
   │   Testing contributor flow with DB sync
-  │   New DB API endpoints being deployed
+  │   Andamioscan issue #11 resolved!
   │
   ▼
-FINAL DEMOS ────────────────────────────────────────────── 2026-01-16 (Fri)
+FINAL DEMOS ────────────────────────────────────────────── 2026-01-16 (Fri) ✅
   │
   │   V1 → V2 Migration Features
   │   (app.andamio.io focus, not this template)
+  │
+  ▼
+V2 GATEWAY API MIGRATION ──────────────────────────────── 2026-01-17/18 ✅
+  │
+  │   Unified Gateway consolidates all 3 APIs
+  │   All API calls use /api/gateway/ proxy
+  │   Types generated from OpenAPI spec
+  │   Legacy DB API URL removed
+  │   60+ files migrated, new hooks created
+  │   Branch: update/andamioscan (ready for merge)
+  │
+  ▼
+POST-MIGRATION TESTING ─────────────────────────────────── 2026-01-18 🔄
+  │
+  │   Test all routes with new gateway
+  │   Merge to main when verified
   │
   ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
@@ -57,10 +73,11 @@ MAINNET V2 LAUNCH ────────────────────�
 | 2026-01-12 (Mon) | V2 Preprod Rollout Begins | ✅ Complete |
 | 2026-01-13 (Tue) | Tx Loop 2 Complete, Instructor Fixes | ✅ Complete |
 | 2026-01-14 (Wed) | Andamio Pioneers Launch | ✅ Live |
-| **2026-01-15 (Wed)** | **Contributor Sync Testing - TODAY** | 🔄 In Progress |
-| **2026-01-16 (Fri)** | **Final Demos** | |
-| 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | |
-| 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | |
+| 2026-01-15 (Wed) | Contributor Sync Testing + Issue #11 Resolved | ✅ Complete |
+| 2026-01-16 (Fri) | Final Demos | ✅ Complete |
+| **2026-01-17/18** | **V2 Gateway API Migration** | ✅ Complete (on branch) |
+| 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
+| 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 
 ### Note on Template vs Production App
 
@@ -75,37 +92,28 @@ This template continues as the **reference implementation** and will receive upd
 
 ## Current Focus
 
-### Post-Pioneers: Blocked by Atlas TX API (Final Demos Tomorrow)
+### 🔄 Post-Migration Testing (January 18, 2026)
 
-**Goal**: All Project V2 transactions tested and working.
+**Goal**: Verify all routes work correctly with the new V2 Gateway API.
 
-**Completed** (Sessions 11-12):
-- ✅ Manager Assess transaction fixed (`alias` instead of `task_hash` in task_decisions)
-- ✅ DB API side effect fixed (uppercase decision values: `ACCEPTED`/`REFUSED`/`DENIED`)
-- ✅ Task matching for pending assessments (workaround for empty `task_id`)
-- ✅ Transaction confirmation flow with DB sync
-- ✅ Accepted task UI indicator (green border, non-selectable)
-- ✅ Clear evidence when selecting new task
+**Migration Completed**:
+- ✅ All API calls now use unified gateway proxy
+- ✅ Types generated from OpenAPI spec
+- ✅ Legacy code removed (old proxy routes, deprecated hooks)
+- ✅ New role-based hooks created
+- ✅ Auth endpoints migrated to v2
 
-**Ready to Test - Atlas TX API Fix Deploying**:
+**Testing Needed**:
+1. Verify all course routes work with gateway
+2. Verify all project routes work with gateway
+3. Test transaction flows (mint, commit, assess, claim)
+4. Wallet compatibility testing (Nami, Flint, Yoroi, Lace, Vespr)
+5. Auth flow testing (login, register, session restore)
 
-1. **Atlas TX API - Task Commit** ✅ Client-side fix implemented:
-   - Andamioscan issue #10 fixed - now returns `contributor_state_policy_id` per task
-   - Updated `TaskCommit` component with `contributorStatePolicyId` prop
-   - Transaction definition schema updated
-   - Atlas TX API fix deploying soon - will enable end-to-end testing
-
-**Remaining Blocker**:
-
-2. **Andamioscan Issue #11**: `task_id` empty in pending assessments/submissions
-   - Assessment sync deferred until fix is available
-
-**Next Steps**:
-1. ✅ ~~Fix Atlas TX API task commit~~ - Client-side fix implemented
-2. Test 2nd/Nth task commitment (returns rewards from prior commitment)
-3. Build assessment sync functionality (blocked by #11)
-4. Test `/v2/tx/project/contributor/credential/claim` endpoint
-5. Wallet compatibility testing (Nami, Flint, Yoroi, Lace, Vespr)
+**Ready for Merge**:
+- Branch `update/andamioscan` contains all migration changes
+- 5 commits ahead of `main`
+- ~160 files changed
 
 See `STATUS.md` for detailed session notes.
 
@@ -117,6 +125,7 @@ See `STATUS.md` for detailed session notes.
 Phase 1: Course & Learning System ━━━━━━━━━━━━━━━━ ✅ Complete (15/15 routes)
 Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━━ ✅ Complete (Go API migrated)
 Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (10/13 routes, 9/9 tx)
+Phase 3.5: V2 Gateway Migration   ━━━━━━━━━━━━━━━━ ✅ Complete (all APIs unified)
 Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 
@@ -212,6 +221,56 @@ Full project/task/contributor workflow.
 - `/studio/project/[projectid]/manage-treasury` - Treasury management
 - `/studio/project/[projectid]/manage-contributors` - Contributor management
 - `/studio/project/[projectid]/commitments` - Commitment review
+
+---
+
+## ✅ Phase 3.5: V2 Gateway API Migration (Complete)
+
+All API access now goes through the unified V2 Gateway.
+
+**Completed**: January 17, 2026
+
+### What Was Done
+
+**Infrastructure**:
+- ✅ Created unified gateway proxy: `src/app/api/gateway/[...path]/route.ts`
+- ✅ Created gateway client: `src/lib/gateway.ts`
+- ✅ Removed old proxy routes (`/api/andamioscan/`, `/api/atlas-tx/`)
+- ✅ Removed `NEXT_PUBLIC_ANDAMIO_API_URL` env var
+
+**Type Generation**:
+- ✅ Removed `@andamio/db-api-types` NPM dependency
+- ✅ Added `npm run generate:types` script (uses `swagger-typescript-api`)
+- ✅ Types generated to `src/types/generated/gateway.ts`
+- ✅ Strict type re-exports in `src/types/generated/index.ts`
+
+**Auth Endpoints (v1 → v2)**:
+- ✅ All auth endpoints migrated to v2
+- ✅ Legacy auth (session/validate) now uses gateway
+
+**API Calls Migrated**:
+- ✅ 50+ files updated to use `/api/gateway/api/v2/*` paths
+- ✅ All hooks, components, and pages now use gateway proxy
+
+### Architecture (Current)
+
+```
+┌────────────────────────────────────────────────────┐
+│              V2 Gateway (92 endpoints)              │
+│  • Merged endpoints (on-chain + off-chain data)    │
+│  • Auth (/api/v2/auth/*)                           │
+│  • Data (/api/v2/course/*, /api/v2/project/*)     │
+│  • Transactions (/v2/tx/*)                         │
+└────────────────────────┬───────────────────────────┘
+                         │
+                         ▼
+┌────────────────────────────────────────────────────┐
+│ Frontend: /api/gateway/[...path] proxy             │
+│ • Hides gateway URL from client                    │
+│ • Adds API key header server-side                  │
+│ • 30-second cache for GET requests                 │
+└────────────────────────────────────────────────────┘
+```
 
 ---
 

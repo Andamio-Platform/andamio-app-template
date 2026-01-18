@@ -1,5 +1,5 @@
 /**
- * EnrollInCourse Transaction Component (V2)
+ * EnrollInCourse Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for enrolling in a course with an initial assignment commitment.
  * In V2 protocol, enrollment requires committing to a module with evidence.
@@ -8,18 +8,20 @@
  * - First-time enrollment (mints course-state token)
  * - Initial assignment commitment (records evidence on-chain)
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/student/assignment-commit.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { COURSE_STUDENT_ASSIGNMENT_COMMIT, computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
-import { MintAccessToken } from "./mint-access-token";
+import { MintAccessTokenSimple } from "./mint-access-token-simple";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -29,8 +31,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { LearnerIcon, CourseIcon, TransactionIcon } from "~/components/icons";
+import { LearnerIcon, CourseIcon, TransactionIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
 
 export interface EnrollInCourseProps {
@@ -101,8 +104,30 @@ export function EnrollInCourse({
   onSuccess,
 }: EnrollInCourseProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[EnrollInCourse] TX confirmed and DB updated by gateway");
+
+          toast.success("Successfully Enrolled!", {
+            description: `You're now enrolled in ${courseTitle ?? "this course"}`,
+          });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Enrollment Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Check if we have valid evidence content
   const hasValidEvidence = evidence && Object.keys(evidence).length > 0;
@@ -120,6 +145,8 @@ export function EnrollInCourse({
     }
   }, [evidence, hasValidEvidence]);
 
+  const ui = TRANSACTION_UI.COURSE_STUDENT_ASSIGNMENT_COMMIT;
+
   const handleEnroll = async () => {
     if (!user?.accessTokenAlias || !hasRequiredData || !evidence || !moduleCode || !sltHash) {
       return;
@@ -130,7 +157,7 @@ export function EnrollInCourse({
     setEvidenceHash(hash);
 
     await execute({
-      definition: COURSE_STUDENT_ASSIGNMENT_COMMIT,
+      txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
@@ -143,25 +170,10 @@ export function EnrollInCourse({
         network_evidence_hash: hash,
       },
       onSuccess: async (txResult) => {
-        console.log("[EnrollInCourse] Success!", txResult);
-
-        toast.success("Successfully Enrolled!", {
-          description: `You're now enrolled and your first submission is recorded`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.();
+        console.log("[EnrollInCourse] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[EnrollInCourse] Error:", txError);
-        toast.error("Enrollment Failed", {
-          description: txError.message || "Failed to enroll in course",
-        });
       },
     });
   };
@@ -198,7 +210,7 @@ export function EnrollInCourse({
             </AndamioCardDescription>
           </AndamioCardHeader>
         </AndamioCard>
-        <MintAccessToken />
+        <MintAccessTokenSimple />
       </div>
     );
   }
@@ -211,7 +223,7 @@ export function EnrollInCourse({
             <LearnerIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               {courseTitle
                 ? `Begin your learning journey in ${courseTitle}`
@@ -245,28 +257,62 @@ export function EnrollInCourse({
               )}
             </div>
 
-            {/* Transaction Status */}
-            {state !== "idle" && (
+            {/* Transaction Status - Only show during processing */}
+            {state !== "idle" && !txConfirmed && (
               <TransactionStatus
                 state={state}
                 result={result}
-                error={error}
+                error={error?.message ?? null}
                 onRetry={() => reset()}
                 messages={{
-                  success: evidenceHash
-                    ? `Enrolled with submission hash ${evidenceHash.slice(0, 16)}...`
-                    : `You are now enrolled in ${courseTitle ?? "this course"}!`,
+                  success: "Transaction submitted! Waiting for confirmation...",
                 }}
               />
             )}
 
+            {/* Gateway Confirmation Status */}
+            {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="flex items-center gap-3">
+                  <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                  <div className="flex-1">
+                    <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                      {txStatus?.state === "confirmed" && "Processing database updates"}
+                      {!txStatus && "Registering transaction..."}
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Success */}
+            {txConfirmed && (
+              <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                <div className="flex items-center gap-3">
+                  <SuccessIcon className="h-5 w-5 text-success" />
+                  <div className="flex-1">
+                    <AndamioText className="font-medium text-success">
+                      Successfully Enrolled!
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      {evidenceHash
+                        ? `Your submission hash: ${evidenceHash.slice(0, 16)}...`
+                        : `You are now enrolled in ${courseTitle ?? "this course"}`}
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Enroll Button */}
-            {state !== "success" && (
+            {state !== "success" && !txConfirmed && (
               <TransactionButton
                 txState={state}
                 onClick={handleEnroll}
                 stateText={{
-                  idle: "Enroll & Submit",
+                  idle: ui.buttonText,
                   fetching: "Preparing Transaction...",
                   signing: "Sign in Wallet",
                   submitting: "Enrolling on Blockchain...",

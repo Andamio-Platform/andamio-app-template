@@ -100,7 +100,7 @@ exports.INSTANCE_PROJECT_CREATE = {
                 project_nft_policy_id: zod_1.z.string().length(56), // Extracted from API response project_id
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/instance/owner/project/create" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/instance/owner/project/create" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     onSubmit: [
@@ -138,6 +138,6 @@ exports.INSTANCE_PROJECT_CREATE = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/instance/owner/project/create",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_instance_owner_project_create",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_instance_owner_project_create",
     },
 };

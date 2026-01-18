@@ -16,13 +16,13 @@ import type { AndamioTransactionDefinition } from "../../../../types";
  *   "prerequisites": [],                  // Course prerequisites (from Andamioscan, [] if none)
  *   "tasks_to_add": [{
  *     "project_content": "Task description text",  // Task content (max 140 chars)
- *     "expiration_time": 1735689600000,            // Unix timestamp in MILLISECONDS
+ *     "expiration_posix": 1735689600000,           // Unix timestamp in MILLISECONDS
  *     "lovelace_amount": 5000000,
  *     "native_assets": []                          // ListValue: [["policy.name", qty], ...]
  *   }],
  *   "tasks_to_remove": [{                 // Full ProjectData objects, NOT just hashes!
  *     "project_content": "Task to remove",
- *     "expiration_time": 1735689600000,
+ *     "expiration_posix": 1735689600000,
  *     "lovelace_amount": 5000000,
  *     "native_assets": []
  *   }],

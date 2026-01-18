@@ -1,18 +1,19 @@
 /**
- * AssessAssignment Transaction Component (V2)
+ * AssessAssignment Transaction Component (V2 - Gateway Auto-Confirmation)
  *
- * UI for teachers to assess (accept/deny) student assignment submissions.
- * Uses COURSE_TEACHER_ASSIGNMENTS_ASSESS transaction definition from @andamio/transactions.
+ * UI for teachers to assess (accept/refuse) student assignment submissions.
+ * Uses COURSE_TEACHER_ASSIGNMENTS_ASSESS transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/teacher/assignments-assess.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { COURSE_TEACHER_ASSIGNMENTS_ASSESS } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -25,8 +26,9 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { SuccessIcon, ErrorIcon, AssessIcon, AlertIcon } from "~/components/icons";
+import { SuccessIcon, ErrorIcon, AssessIcon, AlertIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface AssessAssignmentProps {
   /**
@@ -56,7 +58,7 @@ export interface AssessAssignmentProps {
 }
 
 /**
- * AssessAssignment - Teacher UI for accepting/denying student submissions (V2)
+ * AssessAssignment - Teacher UI for accepting/refusing student submissions (V2)
  *
  * @example
  * ```tsx
@@ -76,9 +78,34 @@ export function AssessAssignment({
   onSuccess,
 }: AssessAssignmentProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [assessmentResult, setAssessmentResult] = useState<"accept" | "refuse" | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[AssessAssignment] TX confirmed and DB updated by gateway");
+
+          const actionText = assessmentResult === "accept" ? "accepted" : "refused";
+          toast.success(`Assignment ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
+            description: `${studentAlias}'s submission has been ${actionText}`,
+          });
+
+          void onSuccess?.(assessmentResult!);
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Assessment Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
+
+  const ui = TRANSACTION_UI.COURSE_TEACHER_ASSIGNMENTS_ASSESS;
 
   const handleAssess = async (decision: "accept" | "refuse") => {
     if (!user?.accessTokenAlias) {
@@ -88,42 +115,20 @@ export function AssessAssignment({
     setAssessmentResult(decision);
 
     await execute({
-      definition: COURSE_TEACHER_ASSIGNMENTS_ASSESS,
+      txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
         assignment_decisions: [
           { alias: studentAlias, outcome: decision },
         ],
-        // Side effect params
-        module_code: moduleCode,
-        student_access_token_alias: studentAlias,
-        assessment_result: decision,
       },
       onSuccess: async (txResult) => {
-        console.log("[AssessAssignment] Success!", txResult);
-
-        // Show success toast
-        const actionText = decision === "accept" ? "accepted" : "refused";
-        toast.success(`Assignment ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
-          description: `${studentAlias}'s submission has been ${actionText}`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        await onSuccess?.(decision);
+        console.log("[AssessAssignment] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[AssessAssignment] Error:", txError);
         setAssessmentResult(null);
-        toast.error("Assessment Failed", {
-          description: txError.message || "Failed to submit assessment",
-        });
       },
     });
   };
@@ -142,7 +147,7 @@ export function AssessAssignment({
             <AssessIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Assess Submission</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Review and assess {studentAlias}&apos;s assignment
             </AndamioCardDescription>
@@ -168,20 +173,54 @@ export function AssessAssignment({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => {
               setAssessmentResult(null);
               reset();
             }}
             messages={{
-              success: `Assignment ${assessmentResult === "accept" ? "accepted" : "refused"} successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
+        )}
+
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Assessment Recorded!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {studentAlias}&apos;s submission has been {assessmentResult === "accept" ? "accepted" : "refused"}.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Assessment Buttons */}

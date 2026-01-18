@@ -31,7 +31,7 @@ import {
   NextIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import type { CourseModuleResponse, CourseResponse } from "@andamio/db-api-types";
+import type { CourseModuleResponse, CourseResponse } from "~/types/generated";
 
 // Import wizard step components
 import { StepCredential } from "~/components/studio/wizard/steps/step-credential";

@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCourse } from "~/hooks/use-andamioscan";
-import { env } from "~/env";
+import { useCourse } from "~/hooks/api";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -46,20 +45,18 @@ export function CourseTeachersCard({
 }: CourseTeachersCardProps) {
   const { authenticatedFetch } = useAndamioAuth();
   const {
-    data: onChainCourse,
-    isLoading: isLoadingOnChain,
-    error: onChainError,
-    refetch: refetchOnChain,
+    data: course,
+    isLoading: isLoadingCourse,
+    error: courseError,
+    refetch: refetchCourse,
   } = useCourse(courseNftPolicyId);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [dbTeachers, setDbTeachers] = useState<string[] | null>(null);
   const [lastSyncSuccess, setLastSyncSuccess] = useState<boolean | null>(null);
 
-  // Get owner from on-chain data (admin field from list endpoint)
-  // Note: The course details endpoint doesn't include admin, so we'd need
-  // to fetch from the list endpoint or add it to the details response
-  const onChainTeachers = onChainCourse?.teachers ?? [];
+  // Get teachers from merged course data
+  const onChainTeachers = course?.teachers ?? [];
 
   const handleSyncTeachers = async () => {
     setIsSyncing(true);
@@ -67,7 +64,7 @@ export function CourseTeachersCard({
 
     try {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/course/sync-teachers`,
+        `/api/gateway/api/v2/course/owner/course/sync-teachers`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -88,8 +85,8 @@ export function CourseTeachersCard({
         description: `${result.teachers_synced.length} teacher(s) synced from on-chain data`,
       });
 
-      // Refresh on-chain data to ensure we're showing latest
-      void refetchOnChain();
+      // Refresh course data to ensure we're showing latest
+      void refetchCourse();
     } catch (err) {
       console.error("Error syncing teachers:", err);
       setLastSyncSuccess(false);
@@ -105,7 +102,7 @@ export function CourseTeachersCard({
   const teachersMatch =
     dbTeachers !== null &&
     onChainTeachers.length === dbTeachers.length &&
-    onChainTeachers.every((t) => dbTeachers.includes(t));
+    onChainTeachers.every((t: string) => dbTeachers.includes(t));
 
   return (
     <AndamioCard className={cn("", className)}>
@@ -119,7 +116,7 @@ export function CourseTeachersCard({
             variant="outline"
             size="sm"
             onClick={handleSyncTeachers}
-            disabled={isSyncing || isLoadingOnChain}
+            disabled={isSyncing || isLoadingCourse}
             className="h-7 text-xs"
           >
             {isSyncing ? (
@@ -146,12 +143,12 @@ export function CourseTeachersCard({
             </AndamioText>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {isLoadingOnChain ? (
+            {isLoadingCourse ? (
               <>
                 <AndamioSkeleton className="h-6 w-20" />
                 <AndamioSkeleton className="h-6 w-16" />
               </>
-            ) : onChainError ? (
+            ) : courseError ? (
               <AndamioText variant="small" className="text-destructive">
                 Failed to load on-chain data
               </AndamioText>
@@ -160,7 +157,7 @@ export function CourseTeachersCard({
                 No teachers found on-chain
               </AndamioText>
             ) : (
-              onChainTeachers.map((teacher) => (
+              onChainTeachers.map((teacher: string) => (
                 <AndamioBadge
                   key={teacher}
                   variant="secondary"
@@ -221,7 +218,7 @@ export function CourseTeachersCard({
         )}
 
         {/* Sync hint when DB teachers not yet loaded */}
-        {dbTeachers === null && !isLoadingOnChain && (
+        {dbTeachers === null && !isLoadingCourse && (
           <AndamioText variant="small" className="text-muted-foreground">
             Click &quot;Sync from Chain&quot; to sync teachers to the database
           </AndamioText>

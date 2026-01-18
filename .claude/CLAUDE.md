@@ -11,8 +11,8 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 - Mesh SDK for Cardano wallet integration
 - shadcn/ui component library (full suite installed)
 - Full-screen app layout with sidebar navigation
-- Wallet-based authentication with Andamio Database API
-- Type-safe API integration via `@andamio/db-api-types` package
+- Wallet-based authentication with Andamio Gateway API
+- Type-safe API integration via generated types from OpenAPI spec
 
 ## Architecture
 
@@ -32,34 +32,55 @@ andamio-t3-app-template/
 
 > **Note**: The main app's `package.json` references `"@andamio/transactions": "file:packages/andamio-transactions"` to use the local package.
 
-### Database API (Go)
-The backend is a Go API deployed on Cloud Run:
-- **Base URL**: `https://andamio-db-api-343753432212.us-central1.run.app`
-- **API Docs**: `https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json`
+### Unified API Gateway
+The app uses the Unified Andamio API Gateway which combines all backend services:
+- **Gateway URL**: `https://andamio-api-gateway-168705267033.us-central1.run.app`
+- **API Docs**: `https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json`
 
-> **CRITICAL**: Never reference or modify `andamio-db-api/` - it is deprecated.
+The gateway provides:
+- **Merged Endpoints** (`/api/v2/*`): Combined off-chain (DB) + on-chain data
+- **On-chain Data** (`/v2/*`): Passthrough to Andamioscan indexer
+- **Transaction Building** (`/v2/tx/*`): Build unsigned transactions
+- **Authentication** (`/auth/*`): User login and registration
+
+### Unified Proxy Route
+All API calls go through a single Next.js proxy at `/api/gateway/`:
+- **Proxy Route**: `src/app/api/gateway/[...path]/route.ts`
+- **Gateway Client**: `src/lib/gateway.ts`
+- **Caching**: GET requests cached for 30 seconds server-side
+
+> **Note**: All API calls now use the unified gateway. The legacy DB API URL has been removed.
 
 ### Type Safety
-**CRITICAL**: Always import types from `@andamio/db-api-types` package:
+**CRITICAL**: Always import types from the generated types at `~/types/generated`:
 
 ```typescript
-// ✅ Correct
-import { type CourseListResponse, type CourseResponse } from "@andamio/db-api-types";
+// ✅ Correct - Import from generated types
+import { type CourseListResponse, type CourseResponse } from "~/types/generated";
 
 // ❌ Wrong - Never define API types locally
 interface Course { ... }
 ```
 
-This ensures zero type drift between the API and the app.
+**Regenerating Types**: When the API changes, regenerate types with:
+```bash
+npm run generate:types
+```
 
-**Common Type Names** (as of v1.1.0):
-- `CourseListResponse` - List of courses
-- `CourseResponse` - Single course
-- `CourseModuleResponse` - Course module
-- `CourseModuleListResponse` - List of modules
-- `LessonResponse` - Lesson data
-- `SLTResponse` - Student Learning Target
-- `AssignmentCommitmentResponse` - Assignment commitment
+This fetches the latest OpenAPI spec from the gateway and generates TypeScript types.
+
+**Type Files**:
+- `src/types/generated/gateway.ts` - Raw auto-generated types (all fields optional)
+- `src/types/generated/index.ts` - Strict type re-exports with required fields
+
+**Common Type Names**:
+- `CourseResponse` / `CourseListResponse` - Course data
+- `CourseModuleResponse` / `CourseModuleListResponse` - Module data
+- `SLTResponse` / `SLTListResponse` - Student Learning Targets
+- `LessonResponse` / `LessonListResponse` - Lesson data
+- `ProjectV2Output` / `ProjectListResponse` - Project data
+- `ProjectTaskV2Output` - Task data
+- `AssignmentCommitmentResponse` - Assignment commitments
 
 ## Coding Conventions
 
@@ -287,13 +308,22 @@ Lists courses owned by the authenticated user.
 
 ## Authentication Flow
 
-The authentication flow combines wallet connection and signing into a single seamless step:
+The authentication uses a **hybrid approach** that automatically chooses the best method:
 
+### For Users WITH Access Tokens (Gateway Auth)
 1. User connects Cardano wallet (Mesh SDK)
-2. **Auto-authenticate** - Signing prompt appears automatically after wallet connects
-3. User signs nonce with wallet (session creation + validation happens automatically)
-4. JWT stored in localStorage
-5. JWT included in all authenticated requests
+2. Access token detected in wallet → alias extracted
+3. **Gateway login**: POST `/auth/login` with `{alias, wallet_address}`
+4. JWT returned directly (no signing required)
+5. JWT stored in localStorage
+
+### For Users WITHOUT Access Tokens (Legacy Auth)
+1. User connects Cardano wallet (Mesh SDK)
+2. No access token found → fall back to legacy flow
+3. **Create session**: POST `/auth/login/session` → get nonce
+4. **Sign nonce**: User signs with wallet
+5. **Validate**: POST `/auth/login/validate` → get JWT
+6. JWT stored in localStorage
 
 **Logout**: Clears JWT AND disconnects wallet, returning user to initial state.
 
@@ -522,27 +552,88 @@ Tailwind v4 silently ignores color definitions that conflict with HTML element n
 
 ## API Integration
 
+### API Clients
+
+The app uses a unified gateway client:
+
+| Client | File | Purpose |
+|--------|------|---------|
+| `gateway.ts` | `src/lib/gateway.ts` | **Primary** - All gateway API calls |
+| `andamio-auth.ts` | `src/lib/andamio-auth.ts` | Authentication (hybrid gateway/legacy) |
+| `andamioscan.ts` | `src/lib/andamioscan.ts` | On-chain indexed data (uses gateway proxy) |
+
+### Gateway Client (Recommended)
+Use the gateway client for all API calls:
+
+```typescript
+import { gateway, gatewayPost, gatewayAuth, gatewayAuthPost } from "~/lib/gateway";
+import type { CourseResponse, ProjectV2Output } from "~/types/generated";
+
+// GET request (no auth)
+const courses = await gateway<CourseResponse[]>("/api/v2/course/user/courses/list");
+
+// POST request (no auth)
+const result = await gatewayPost<ProjectV2Output>(
+  "/api/v2/project/user/project/get",
+  { project_id: "..." }
+);
+
+// Authenticated GET
+const myCourses = await gatewayAuth<CourseResponse[]>(
+  "/api/v2/course/owner/courses/list",
+  jwt
+);
+
+// Authenticated POST
+const newCourse = await gatewayAuthPost<CourseResponse>(
+  "/api/v2/course/owner/course/create",
+  jwt,
+  { title: "My Course", course_id: "..." }
+);
+```
+
+### V2 Endpoint Patterns
+The gateway uses consistent endpoint patterns:
+
+| Role | Course Pattern | Project Pattern |
+|------|----------------|-----------------|
+| Public | `/course/user/*` | `/project/user/*` |
+| Owner | `/course/owner/*` | `/project/owner/*` |
+| Teacher | `/course/teacher/*` | - |
+| Student | `/course/student/*` | `/project/contributor/*` |
+| Manager | - | `/project/manager/*` |
+
 ### Authenticated Requests
-Use the `authenticatedFetch` helper from `useAndamioAuth`:
+For authenticated requests, use `authenticatedFetch` with the gateway proxy:
 
 ```typescript
 const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
-const response = await authenticatedFetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/your-endpoint`
-);
-const data = (await response.json()) as YourTypeFromDatabaseAPI;
+const response = await authenticatedFetch("/api/gateway/api/v2/your-endpoint");
+const data = (await response.json()) as YourType;
 ```
 
-### Andamio Database API Endpoints
+### Key Endpoints
 
-**Authentication**:
-- `POST /auth/login/session` - Get nonce
-- `POST /auth/login/validate` - Validate signature, get JWT
+**Gateway - Merged Data**:
+- `GET /api/v2/course/user/courses/list` - Courses with on-chain state
+- `GET /api/v2/course/user/course/get/{id}` - Course detail with on-chain state
+- `GET /api/v2/project/user/projects/list` - Projects with on-chain state
 
-**Courses**:
-- `GET /courses/owned` - List owned courses (requires JWT)
-  - Returns `CourseListResponse` type
+**Gateway - On-Chain (Passthrough)**:
+- `GET /v2/courses` - All on-chain courses
+- `GET /v2/courses/{id}/details` - Course on-chain details
+- `GET /v2/projects` - All on-chain projects
+
+**Gateway - Transactions**:
+- `POST /v2/tx/global/user/access-token/mint` - Mint access token
+- `POST /v2/tx/course/student/assignment/commit` - Enroll in course
+- See `.claude/skills/audit-api-coverage/unified-api-endpoints.md` for full list
+
+**Legacy DB API**:
+- `POST /auth/login/session` - Get nonce (legacy auth)
+- `POST /auth/login/validate` - Validate signature (legacy auth)
+- `GET /courses/owned` - List owned courses
 
 ## Adding New Features
 
@@ -595,23 +686,23 @@ const navigation = [
 
 ### Adding New API Endpoint
 
-1. Import type from `@andamio/db-api-types`:
+1. Import type from generated types:
 ```typescript
-import { type YourOutputType } from "@andamio/db-api-types";
+import { type YourOutputType } from "~/types/generated";
 ```
 
-2. Check the Go API docs for the endpoint schema:
-   - API Docs: `https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json`
+2. Check the Gateway API docs for the endpoint schema:
+   - API Docs: `https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json`
 
-3. Make authenticated request:
+3. Make authenticated request via gateway proxy:
 ```typescript
-const response = await authenticatedFetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/your-endpoint`
-);
+const response = await authenticatedFetch("/api/gateway/api/v2/your-endpoint");
 const data = (await response.json()) as YourOutputType;
 ```
 
 4. Build UI with shadcn/ui components.
+
+5. If the API schema changed, regenerate types: `npm run generate:types`
 
 ## Key Files
 
@@ -627,8 +718,34 @@ const data = (await response.json()) as YourOutputType;
 
 **Auth**:
 - `src/hooks/use-andamio-auth.ts` - Auth hook
-- `src/lib/andamio-auth.ts` - Auth service functions
+- `src/lib/andamio-auth.ts` - Auth service (hybrid gateway/legacy)
 - `src/components/auth/andamio-auth-button.tsx` - Auth UI
+- `src/contexts/andamio-auth-context.tsx` - Auth context provider
+
+**API Clients**:
+- `src/lib/gateway.ts` - **Primary** - Unified gateway client
+- `src/lib/andamio-gateway.ts` - Merged endpoints helper functions
+- `src/lib/andamioscan.ts` - On-chain indexed data helper functions
+- `src/app/api/gateway/[...path]/route.ts` - Unified gateway proxy (single route for all API calls)
+
+**Generated Types**:
+- `src/types/generated/gateway.ts` - Auto-generated from OpenAPI spec
+- `src/types/generated/index.ts` - Strict type re-exports
+
+**API Hooks** (V2 Gateway):
+- `src/hooks/api/use-course.ts` - Course queries + mutations
+- `src/hooks/api/use-course-module.ts` - Module queries + mutations
+- `src/hooks/api/use-slt.ts` - SLT queries + mutations
+- `src/hooks/api/use-lesson.ts` - Lesson queries + mutations
+- `src/hooks/api/use-project.ts` - Project queries
+- `src/hooks/api/use-contributor-projects.ts` - Contributor project queries
+- `src/hooks/api/use-manager-projects.ts` - Manager project queries
+- `src/hooks/api/use-student-courses.ts` - Student course queries
+- `src/hooks/api/use-teacher-courses.ts` - Teacher course queries
+
+**Providers**:
+- `src/components/providers/auth-provider.tsx` - Auth context wrapper
+- `src/components/providers/pending-tx-provider.tsx` - Pending transaction context
 
 **Courses**:
 - `src/components/courses/owned-courses-list.tsx` - Course list component
@@ -775,15 +892,26 @@ Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation 
 - **UI Components**: shadcn/ui (default configuration)
 - **Blockchain**: Cardano (via Mesh SDK)
 - **State Management**: React hooks + tRPC
-- **Type Safety**: Types from `@andamio/db-api-types` package
+- **Type Safety**: Types generated from gateway OpenAPI spec
 - **Backend**: Go API on Cloud Run (not local)
 
 ## Environment Variables
 
 ```bash
-# Production/Preprod (deployed Go API)
-NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.us-central1.run.app"
+# Unified API Gateway (combines all services)
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+
+# API Key for server-side gateway requests
+ANDAMIO_API_KEY="your-api-key-here"
+
+# Cardano Network
+NEXT_PUBLIC_CARDANO_NETWORK="preprod"
+
+# Access Token Policy ID (for your network)
+NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="4758613867a8a7aa500b5d57a0e877f01a8e63c1365469589b12063c"
 ```
+
+See `.env.example` for full documentation of each variable.
 
 ## Development Commands
 
@@ -793,4 +921,5 @@ npm run build        # Build for production
 npm run typecheck    # TypeScript type check
 npm run lint         # ESLint
 npm run lint:fix     # Fix linting errors
+npm run generate:types  # Regenerate API types from gateway OpenAPI spec
 ```

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import {
@@ -27,7 +26,7 @@ import {
   AndamioErrorAlert,
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
-import { type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject } from "~/lib/andamioscan";
 import { syncProjectTasks } from "~/lib/project-task-sync";
@@ -41,8 +40,8 @@ interface ApiError {
  * Draft Tasks List - View and manage draft tasks for a project
  *
  * API Endpoints (V2):
- * - GET /project-v2/user/tasks/:project_state_policy_id - Get all tasks
- * - POST /project-v2/manager/task/delete - Delete draft task
+ * - GET /project/user/tasks/:project_state_policy_id - Get all tasks
+ * - POST /project/manager/task/delete - Delete draft task
  */
 export default function DraftTasksPage() {
   const params = useParams();
@@ -66,7 +65,7 @@ export default function DraftTasksPage() {
     try {
       // V2 API: First get project to find project_state_policy_id
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+        `/api/gateway/api/v2/project/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {
@@ -85,10 +84,15 @@ export default function DraftTasksPage() {
 
       setProjectStatePolicyId(statePolicyId);
 
-      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // V2 API: POST /project/manager/tasks/list with {project_id} in body
       // Manager endpoint returns all tasks including DRAFT status
       const tasksResponse = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${statePolicyId}`
+        `/api/gateway/api/v2/project/manager/tasks/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: statePolicyId }),
+        }
       );
 
       if (!tasksResponse.ok) {
@@ -130,9 +134,9 @@ export default function DraftTasksPage() {
     setDeletingTaskIndex(taskIndex);
 
     try {
-      // V2 API: POST /project-v2/manager/task/delete
+      // V2 API: POST /project/manager/task/delete
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/task/delete`,
+        `/api/gateway/api/v2/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

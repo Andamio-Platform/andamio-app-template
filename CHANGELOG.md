@@ -8,6 +8,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **V2 API Migration Fixes** (January 18, 2026): Added new React Query hooks for merged API data
+  - `useManagerCommitments(projectId?)` - Fetch pending task commitments for project managers
+  - `useTeacherCoursesWithModules()` - Fetch teacher courses with module details for course prerequisite selection
+  - New types exported: `ManagerCommitment`, `ManagerCommitmentsResponse`, `TeacherCourseWithModules`
+- **V2 Gateway API Migration Complete** (January 17, 2026): All API calls now use the unified gateway
+  - Created unified proxy: `src/app/api/gateway/[...path]/route.ts`
+  - Created gateway client: `src/lib/gateway.ts` with typed helper functions
+  - Generated types from OpenAPI spec: `src/types/generated/gateway.ts`
+  - Added `npm run generate:types` script using `swagger-typescript-api`
+  - All auth endpoints migrated to v2 (`/api/v2/auth/*`)
+  - Updated 50+ files to use gateway proxy paths
+
+### Changed
+- **V2 API Migration Component Updates** (January 18, 2026): Updated components to use auth context internally instead of accepting alias props
+  - `PendingReviewsList` - Removed `accessTokenAlias` prop, now uses `useTeacherCommitments` hook internally
+  - `CoursePrereqsSelector` - Removed `userAlias` prop, now uses `useTeacherCoursesWithModules` hook internally
+  - `ProjectCommitmentsPage` - Rewrote to use `useManagerCommitments` and `useProject` hooks instead of manual fetch
+  - All components now use generated types from `~/types/generated` for V2 merged API responses
+
+### Removed
+- **Legacy API Infrastructure** (January 17, 2026):
+  - Removed `NEXT_PUBLIC_ANDAMIO_API_URL` environment variable
+  - Removed `@andamio/db-api-types` NPM dependency
+  - Removed `/api/andamioscan/` proxy route
+  - Removed `/api/atlas-tx/` proxy route
+
+### Changed
+- **V2 API Migration Planning** (January 17, 2026): Comprehensive planning for V2 Gateway API migration (92 endpoints)
+  - Architecture decisions documented: single gateway proxy, react-query for all calls, hard cutover
+  - Key changes tracked: endpoint renames, method changes (GET→POST), removed endpoints, merged endpoints
+  - Payload field name standardization: `course_id` and `project_id` used consistently
+- **Unified API Gateway Integration** (January 16, 2026): Migrated to the Unified Andamio API Gateway which combines all backend services
+  - Gateway URL: `https://andamio-api-gateway-168705267033.us-central1.run.app`
+  - New API client at `src/lib/andamio-gateway.ts` for merged endpoints
+  - Updated `src/lib/andamioscan.ts` to use gateway passthrough
+  - Updated `src/lib/andamio-auth.ts` for hybrid authentication (gateway + legacy)
+  - API proxy routes updated to use gateway with `ANDAMIO_API_KEY`
+  - New environment variables: `NEXT_PUBLIC_ANDAMIO_GATEWAY_URL`, `ANDAMIO_API_KEY`
+  - Gateway provides: merged endpoints (`/api/v2/*`), on-chain data (`/v2/*`), transactions (`/v2/tx/*`), auth (`/auth/*`)
+- **API Setup Page** (`/api-setup`): New page for configuring and testing API connections
 - **Task Hash Utility** (`@andamio/transactions`): New utilities to compute Project V2 task IDs locally, matching on-chain Plutus validator computation
   - `computeTaskHash(task)` - Compute Blake2b-256 hash matching on-chain task_id
   - `verifyTaskHash(task, expectedHash)` - Verify a hash matches task data

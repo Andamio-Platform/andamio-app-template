@@ -1,6 +1,17 @@
 /**
  * useAndamioTransaction Hook
  *
+ * @deprecated This hook uses the V1 pattern with definition objects from @andamio/transactions.
+ * Use `useSimpleTransaction` instead, which works with the V2 gateway auto-confirmation flow.
+ *
+ * **V2 Migration:**
+ * - Use `useSimpleTransaction` + `useTxWatcher` instead
+ * - Transaction types are now strings (e.g., "COURSE_STUDENT_ASSIGNMENT_COMMIT")
+ * - Side effects are handled automatically by the gateway
+ * - See ~/config/transaction-ui.ts for UI config
+ *
+ * ---
+ *
  * Enhanced transaction hook that includes side effect execution.
  * Wraps useTransaction and adds automatic onSubmit side effect execution
  * after transaction submission.
@@ -19,8 +30,8 @@
  *
  * This prevents UTxO conflicts from rapid transaction submissions.
  *
- * @see andamio-db-api/src/routers/user.ts - API endpoint documentation
- * @see pending-tx-watcher.tsx - Polling component that clears on confirmation
+ * @see ~/hooks/use-simple-transaction.ts - V2 replacement
+ * @see ~/hooks/use-tx-watcher.ts - V2 gateway confirmation tracking
  */
 
 import { useCallback } from "react";
@@ -33,7 +44,6 @@ import {
   type SideEffectRequestLog,
   type SideEffectResultLog,
 } from "@andamio/transactions";
-import { env } from "~/env";
 import { toast } from "sonner";
 import { txLogger } from "~/lib/tx-logger";
 
@@ -173,7 +183,7 @@ export function useAndamioTransaction<TParams = unknown>() {
         partialSign: config.definition.partialSign,
         onSuccess: async (txResult) => {
           // Update user's unconfirmedTx (blocks further transactions until confirmed)
-          const unconfirmedTxUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
+          const unconfirmedTxUrl = `/api/gateway/api/v2/user/unconfirmed-tx`;
           const unconfirmedTxBody = { tx_hash: txResult.txHash };
           txLogger.sideEffectRequest("onSubmit", "Set User Unconfirmed Tx", "POST", unconfirmedTxUrl, unconfirmedTxBody);
           try {
@@ -284,7 +294,7 @@ export function useAndamioTransaction<TParams = unknown>() {
                 config.definition.onSubmit,
                 submissionContext,
                 {
-                  apiBaseUrl: env.NEXT_PUBLIC_ANDAMIO_API_URL,
+                  apiBaseUrl: "/api/gateway/api/v2",
                   authToken: jwt ?? "",
                   onRequest: (log: SideEffectRequestLog) => {
                     txLogger.sideEffectRequest(log.phase, log.description, log.method, log.endpoint, log.body);

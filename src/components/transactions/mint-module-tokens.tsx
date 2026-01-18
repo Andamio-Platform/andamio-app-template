@@ -1,22 +1,24 @@
 /**
- * MintModuleTokens Transaction Component (V2)
+ * MintModuleTokens Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * Teacher UI for minting/updating course module tokens.
- * Uses COURSE_TEACHER_MODULES_MANAGE transaction definition from @andamio/transactions.
+ * Uses COURSE_TEACHER_MODULES_MANAGE transaction with gateway auto-confirmation.
  * V2 uses batch operations for multiple modules in a single transaction.
  *
  * Module token names are Blake2b-256 hashes of the SLT content,
  * creating tamper-evident on-chain credentials.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/teacher/modules-manage.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useMemo, useCallback } from "react";
-import { COURSE_TEACHER_MODULES_MANAGE, computeSltHashDefinite } from "@andamio/transactions";
+import { computeSltHashDefinite } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -28,9 +30,10 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon } from "~/components/icons";
+import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
-import type { CourseModuleListResponse } from "@andamio/db-api-types";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
+import type { CourseModuleListResponse } from "~/types/generated";
 
 export interface MintModuleTokensProps {
   /**
@@ -81,7 +84,31 @@ export function MintModuleTokens({
   onError,
 }: MintModuleTokensProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[MintModuleTokens] TX confirmed and DB updated by gateway");
+
+          const moduleCount = courseModules.length;
+          toast.success("Module Tokens Minted!", {
+            description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} minted successfully`,
+          });
+
+          void onSuccess?.();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Minting Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+          onError?.(new Error(status.last_error ?? "Unknown error"));
+        }
+      },
+    }
+  );
 
   // Helper to get sorted SLT texts (by module_index for consistent ordering)
   const getSortedSltTexts = useCallback((slts: typeof courseModules[0]["slts"]) => {
@@ -112,6 +139,8 @@ export function MintModuleTokens({
     });
   }, [courseModules, getSortedSltTexts]);
 
+  const ui = TRANSACTION_UI.COURSE_TEACHER_MODULES_MANAGE;
+
   const handleMintModules = async () => {
     if (!user?.accessTokenAlias || courseModules.length === 0) {
       return;
@@ -130,51 +159,26 @@ export function MintModuleTokens({
         };
       });
 
-    const moduleCodes = modulesWithData.map((m) => m.moduleCode);
     const modules_to_mint = modulesWithData.map((m) => ({
       slts: m.slts,
       allowed_course_state_ids: [] as string[],
       prereq_slt_hashes: [] as string[],
     }));
 
-    const txRequest = {
-      alias: user.accessTokenAlias,
-      course_id: courseNftPolicyId,
-      modules_to_mint,
-      modules_to_update: [],
-      modules_to_burn: [],
-    };
-
     await execute({
-      definition: COURSE_TEACHER_MODULES_MANAGE,
-      params: txRequest,
+      txType: "COURSE_TEACHER_MODULES_MANAGE",
+      params: {
+        alias: user.accessTokenAlias,
+        course_id: courseNftPolicyId,
+        modules_to_mint,
+        modules_to_update: [],
+        modules_to_burn: [],
+      },
       onSuccess: async (txResult) => {
-        console.log("[MintModuleTokens] Success!", txResult);
-
-        const moduleCount = moduleCodes.length;
-
-        // Show initial success message
-        toast.success("Transaction Submitted!", {
-          description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} minting - awaiting confirmation`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Note: PENDING_TX status is handled by transaction definition's onSubmit side effects
-        // Confirmation is handled by onConfirmation side effects or external polling
-
-        // Refresh data to show pending status
-        await onSuccess?.();
+        console.log("[MintModuleTokens] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[MintModuleTokens] Error:", txError);
-        toast.error("Minting Failed", {
-          description: txError.message || "Failed to mint module tokens",
-        });
         onError?.(txError);
       },
     });
@@ -201,7 +205,7 @@ export function MintModuleTokens({
             <TokenIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Mint Module Tokens</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Create on-chain credentials for your course modules
             </AndamioCardDescription>
@@ -268,21 +272,55 @@ export function MintModuleTokens({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: `${courseModules.length} module token${courseModules.length > 1 ? "s" : ""} minted successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Module Tokens Minted!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {courseModules.length} module{courseModules.length > 1 ? "s" : ""} minted successfully.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mint Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleMintModules}

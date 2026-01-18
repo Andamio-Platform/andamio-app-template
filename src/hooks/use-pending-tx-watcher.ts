@@ -4,40 +4,33 @@
  * Monitors pending blockchain transactions and executes onConfirmation side effects
  * when transactions are confirmed on-chain.
  *
- * This is a temporary client-side solution. In production, this functionality
- * should be moved to a backend monitoring service for better reliability.
+ * This is a client-side solution using localStorage for persistence.
  *
  * ## Features
  * - Automatic polling of blockchain for transaction confirmations
  * - Execution of onConfirmation side effects from transaction definitions
- * - Status updates via API after confirmation
  * - Error handling and retry logic
  * - Configurable polling interval
+ * - localStorage persistence across page reloads
  *
- * ## Unconfirmed Transaction Clearing
+ * ## Transaction Flow
  * When a transaction is confirmed, this hook automatically:
  * 1. Processes entity-specific side effects (module status, etc.)
- * 2. Calls `POST /user/unconfirmed-tx` with `null` to clear the user's pending tx
- * 3. Removes the transaction from the watch list
+ * 2. Removes the transaction from the watch list
+ * 3. Calls the onConfirmation callback
  *
- * This works in tandem with `useAndamioTransaction` which sets the unconfirmedTx
- * when a transaction is submitted.
- *
- * @see useAndamioTransaction - Sets unconfirmedTx on submission
- * @see andamio-db-api/src/routers/user.ts - API endpoint documentation
+ * @see useAndamioTransaction - Sets pending tx on submission
  */
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useAndamioAuth } from "./use-andamio-auth";
-import { env } from "~/env";
-import { txLogger } from "~/lib/tx-logger";
 import { pendingTxLogger } from "~/lib/debug-logger";
 import {
   checkTransactionsBatch,
   extractOnChainData,
   type TransactionConfirmation,
 } from "~/lib/cardano-indexer";
-import type { CourseModuleResponse } from "@andamio/db-api-types";
+import type { CourseModuleResponse } from "~/types/generated";
 
 /**
  * Pending transaction to monitor
@@ -168,7 +161,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update module status to ON_CHAIN
       // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/confirm-transaction`,
+        `/api/gateway/api/v2/course/teacher/course-module/confirm-transaction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -208,7 +201,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Confirm blockchain transaction and update assignment commitment status to PENDING_APPROVAL
       // This matches the onConfirmation side effect in COURSE_STUDENT_ASSIGNMENT_COMMIT
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/shared/assignment-commitment/confirm-transaction`,
+        `/api/gateway/api/v2/course/shared/assignment-commitment/confirm-transaction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -284,26 +277,8 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             console.warn(`[PendingTx] Handler not implemented for ${tx.entityType}`);
         }
 
-        // Clear user's unconfirmedTx now that it's confirmed
-        const clearUrl = `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/unconfirmed-tx`;
-        const clearBody = { tx_hash: null };
-        txLogger.sideEffectRequest("onConfirmation", "Clear User Unconfirmed Tx", "POST", clearUrl, clearBody);
-        try {
-          const clearResponse = await authenticatedFetch(clearUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(clearBody),
-          });
-          if (clearResponse.ok) {
-            const responseData = (await clearResponse.json()) as Record<string, unknown>;
-            txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", true, responseData);
-          } else {
-            txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", false, undefined, await clearResponse.text());
-          }
-        } catch (clearError) {
-          txLogger.sideEffectResult("onConfirmation", "Clear User Unconfirmed Tx", false, undefined, clearError);
-          // Non-critical - continue with confirmation processing
-        }
+        // NOTE: POST /user/unconfirmed-tx endpoint was removed from API
+        // Pending transaction state is now managed entirely client-side
 
         // Remove from watch list
         removePendingTx(tx.id);
@@ -327,7 +302,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         }
       }
     },
-    [processConfirmedModule, processConfirmedAssignmentCommitment, removePendingTx, maxRetries, onConfirmation, onError, authenticatedFetch]
+    [processConfirmedModule, processConfirmedAssignmentCommitment, removePendingTx, maxRetries, onConfirmation, onError]
   );
 
   /**
@@ -417,64 +392,8 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, pendingTransactions.length, effectivePollInterval, jwt]); // Include jwt to re-trigger when auth is ready
 
-  /**
-   * Load pending transactions from database
-   */
-  const loadPendingTransactionsFromDatabase = useCallback(async () => {
-    if (!jwt) {
-      return;
-    }
-
-    try {
-      pendingTxLogger.debug("Loading pending transactions from database...");
-
-      // Go API: GET /user/pending-transactions
-      const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/user/pending-transactions`
-      );
-
-      // Handle 404/empty as "no pending transactions" - not an error
-      if (response.status === 404 || response.status === 204) {
-        pendingTxLogger.debug("No pending transactions in database (404/204)");
-        return;
-      }
-
-      if (!response.ok) {
-        // Log but don't throw for non-critical endpoint failures
-        pendingTxLogger.warn("Pending transactions endpoint returned:", response.status);
-        return;
-      }
-
-      const dbTransactions = (await response.json()) as PendingTransaction[];
-
-      // Convert date strings back to Date objects
-      const transactions = dbTransactions.map((tx) => ({
-        ...tx,
-        submittedAt: new Date(tx.submittedAt),
-      }));
-
-      pendingTxLogger.info(`Loaded ${transactions.length} pending transactions from database`);
-
-      // Merge with existing transactions (database is source of truth)
-      setPendingTransactions((prev) => {
-        // Create a map of database transactions by id
-        const dbTxMap = new Map(transactions.map((tx) => [tx.id, tx]));
-
-        // Keep any local transactions not in database
-        const localOnly = prev.filter((tx) => !dbTxMap.has(tx.id));
-
-        // Combine database transactions with local-only transactions
-        const merged = [...transactions, ...localOnly];
-
-        pendingTxLogger.debug(`Merged state: ${transactions.length} from DB, ${localOnly.length} local-only`);
-
-        return merged;
-      });
-    } catch (error) {
-      // Silently handle - pending tx loading is non-critical
-      pendingTxLogger.debug("Failed to load pending transactions:", error);
-    }
-  }, [jwt, authenticatedFetch]);
+  // NOTE: loadPendingTransactionsFromDatabase was removed - API endpoint no longer exists
+  // Pending transactions are now tracked entirely client-side via localStorage
 
   /**
    * Load pending transactions from localStorage on mount
@@ -496,16 +415,6 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       pendingTxLogger.error("Failed to load pending transactions from storage:", error);
     }
   }, []);
-
-  /**
-   * Load pending transactions from database when authenticated
-   */
-  useEffect(() => {
-    if (jwt) {
-      void loadPendingTransactionsFromDatabase();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jwt]); // Only run when jwt changes, not when function reference changes
 
   /**
    * Save pending transactions to localStorage

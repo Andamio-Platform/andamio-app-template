@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { env } from "~/env";
 import { useAndamioAuth } from "./use-andamio-auth";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 
 /**
  * useOwnedCourses - Fetches owned courses with module counts
@@ -70,7 +69,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
     try {
       // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+        `/api/gateway/api/v2/course/owner/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -95,7 +94,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
 
           if (courseNftPolicyIds.length > 0) {
             const modulesResponse = await authenticatedFetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-modules/list`,
+              `/api/gateway/api/v2/course/teacher/course-modules/list`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

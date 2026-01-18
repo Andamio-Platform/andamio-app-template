@@ -67,7 +67,7 @@ exports.PROJECT_CONTRIBUTOR_TASK_ACTION = {
                 evidence: zod_1.z.any().optional(), // Updated evidence as Tiptap JSON document
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/project/contributor/task/action" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/project/contributor/task/action" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     onSubmit: [
@@ -106,6 +106,6 @@ exports.PROJECT_CONTRIBUTOR_TASK_ACTION = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/task-action",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_project_contributor_task_action",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_contributor_task_action",
     },
 };

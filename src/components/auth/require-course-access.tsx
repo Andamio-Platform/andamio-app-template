@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
@@ -74,7 +73,7 @@ export function RequireCourseAccess({
       try {
         // Go API: POST /course/owner/courses/list
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+          `/api/gateway/api/v2/course/owner/courses/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

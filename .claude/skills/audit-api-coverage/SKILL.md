@@ -5,25 +5,42 @@ description: Audit the usage of Andamio API endpoints across all three sub-syste
 
 # Audit API Coverage
 
-Audit and maintain API coverage across the three Andamio API sub-systems.
+Audit and maintain API coverage for the Unified Andamio API Gateway.
 
-## The Three API Systems
+## The Unified API Gateway
 
-| API | Purpose | Live Docs | Base URL |
-|-----|---------|-----------|----------|
-| **Atlas TX API** | Transaction building (unsigned CBOR) | [swagger.json](https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json) | `atlas-api-preprod-507341199760.us-central1.run.app` |
-| **Andamio DB API** | Off-chain CRUD, auth, drafts | [doc.json](https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json) | `andamio-db-api-343753432212.us-central1.run.app` |
-| **Andamioscan** | On-chain indexed data | [swagger.yaml](https://preprod.andamioscan.io/swagger.yaml) | `preprod.andamioscan.io/api` |
+| Property | Value |
+|----------|-------|
+| **Base URL** | `https://andamio-api-gateway-168705267033.us-central1.run.app` |
+| **API Docs** | [doc.json](https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json) |
+| **Total Endpoints** | ~40 |
 
 **Always use the live docs as source of truth.** The files in this skill directory are derived from these sources.
+
+## Endpoint Categories
+
+The unified gateway consolidates what was previously 3 separate APIs:
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| Authentication | 2 | Login and registration |
+| User Management | 4 | Profile and usage metrics |
+| API Key Management | 3 | API key lifecycle |
+| Admin Functions | 3 | Platform management |
+| Merged Courses | 3 | Combined off-chain + on-chain course data |
+| Merged Projects | 3 | Combined off-chain + on-chain project data |
+| Scan (Courses) | 4 | On-chain indexed course data |
+| Scan (Projects) | 4 | On-chain indexed project data |
+| Scan (Transactions) | 1 | Transaction list |
+| TX (Courses) | 6 | Course transaction building |
+| TX (Projects) | 4 | Project transaction building |
+| TX (Instance/Global) | 3 | Instance and global operations |
 
 ## Quick Reference Files
 
 | File | Content | Auto-generated? |
 |------|---------|-----------------|
-| [db-api-endpoints.md](./db-api-endpoints.md) | DB API endpoint reference | Manual (from live docs) |
-| [tx-api-endpoints.md](./tx-api-endpoints.md) | TX API endpoint reference | Manual (from live docs) |
-| [andamioscan-endpoints.md](./andamioscan-endpoints.md) | Andamioscan endpoint reference | Manual (from live docs) |
+| [unified-api-endpoints.md](./unified-api-endpoints.md) | All gateway endpoints | Manual (from live docs) |
 | [api-coverage.md](./api-coverage.md) | Implementation status per endpoint | Manual tracking |
 | [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Coverage summary | **Auto-generated** |
 | [coverage-report.json](./coverage-report.json) | Full coverage data | **Auto-generated** |
@@ -33,42 +50,23 @@ Audit and maintain API coverage across the three Andamio API sub-systems.
 Generate a fresh coverage report:
 
 ```bash
-node --import tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts
-```
-
-### Refreshing Andamioscan Spec
-
-The Andamioscan spec is stored locally. Refresh and convert it:
-
-```bash
-# Download fresh YAML spec
-curl -s https://preprod.andamioscan.io/swagger.yaml -o .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml
-
-# Convert to JSON for audit script
-npx js-yaml .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml > .claude/skills/audit-api-coverage/andamioscan-api-doc.json
+npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts
 ```
 
 This will:
-1. Fetch live OpenAPI specs from all 3 APIs
-2. Scan `src/` for DB API and Andamioscan usage
-3. Scan `packages/andamio-transactions/` for TX API usage
+1. Fetch live OpenAPI spec from the gateway
+2. Scan `src/` for API client usage
+3. Scan `packages/andamio-transactions/` for TX definitions
 4. Generate `COVERAGE-REPORT.md` and `coverage-report.json`
-
-### Excluded Endpoints
-
-The audit script excludes deprecated endpoints from coverage tracking:
-
-- **V1 Project endpoints** (`/project/public/*`, `/project/owner/*`, etc.) - Deprecated in favor of V2 (`/project-v2/*`). The T3 App Template uses only V2 Project endpoints as of January 2026.
-
-To modify exclusions, edit `DB_API_EXCLUDE_PATTERNS` in `scripts/audit-coverage.ts`.
 
 ## Implementation Locations
 
-| API | Implementation | Pattern |
-|-----|----------------|---------|
-| DB API | `src/hooks/api/*.ts` | React Query hooks |
-| Andamioscan | `src/lib/andamioscan.ts` | Typed client functions |
-| TX API | `packages/andamio-transactions/src/definitions/` | Transaction definitions |
+| Endpoint Category | Implementation | Pattern |
+|-------------------|----------------|---------|
+| Auth, User, Admin | `src/lib/andamio-auth.ts`, `src/contexts/` | Auth context |
+| Merged Courses/Projects | `src/hooks/api/*.ts` | React Query hooks |
+| Scan (Andamioscan) | `src/lib/andamioscan.ts` | Typed client functions |
+| TX (Transactions) | `packages/andamio-transactions/src/definitions/` | Transaction definitions |
 
 ## Workflow: Adding a New Endpoint
 
@@ -77,16 +75,22 @@ To modify exclusions, edit `DB_API_EXCLUDE_PATTERNS` in `scripts/audit-coverage.
 Before implementing, verify the endpoint exists in the live OpenAPI spec:
 
 ```bash
-# DB API - check specific endpoint
-curl -s https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
-
-# TX API - check transaction endpoints
-curl -s https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json | jq '.paths | keys'
+# Check specific endpoint
+curl -s https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
 ```
 
 ### 2. Implement
 
-**For DB API endpoints:**
+**For Auth/User endpoints:**
+```typescript
+// src/lib/andamio-auth.ts or context
+const response = await fetch(
+  `${env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/auth/login`,
+  { method: 'POST', body: JSON.stringify(payload) }
+);
+```
+
+**For Merged Data endpoints (courses/projects):**
 ```typescript
 // src/hooks/api/use-{resource}.ts
 export function use{Resource}() {
@@ -94,24 +98,24 @@ export function use{Resource}() {
     queryKey: ['{resource}', params],
     queryFn: async () => {
       const response = await authenticatedFetch(
-        `${API_URL}/{path}`
+        `${GATEWAY_URL}/api/v2/course/user/courses/list`
       );
-      return response.json() as {Type};
+      return response.json() as MergedCourseList;
     },
   });
 }
 ```
 
-**For Andamioscan endpoints:**
+**For Scan endpoints (on-chain data):**
 ```typescript
 // src/lib/andamioscan.ts
-export async function get{Resource}(params): Promise<{Type}> {
-  return fetchAndamioscan(`/api/v2/{path}`);
+export async function getAllCourses(): Promise<CourseList> {
+  return fetchGateway(`/v2/courses`);
 }
 ```
 
-**For TX API endpoints:**
-Transaction definitions in `packages/andamio-transactions/src/definitions/`.
+**For TX endpoints:**
+Transaction definitions in `packages/andamio-transactions/src/definitions/v2/`.
 
 ### 3. Update Coverage
 
@@ -123,7 +127,13 @@ After implementing:
 
 When a user needs to integrate a new endpoint, ask:
 
-### For DB API Endpoints
+### For Auth/User Endpoints
+
+1. Is this a login flow change or user management?
+2. Does it affect the global auth context?
+3. Error handling strategy?
+
+### For Merged Data Endpoints
 
 1. Which route(s) will use this data?
 2. Query or mutation?
@@ -132,104 +142,57 @@ When a user needs to integrate a new endpoint, ask:
 5. Error handling? (toast, inline)
 6. Cache invalidation needed?
 
-### For Andamioscan Endpoints
+### For Scan Endpoints (On-chain Data)
 
 1. Which on-chain data is needed?
 2. Polling for updates? (pending tx confirmation)
 3. Indexer lag handling?
 
-### For TX API Endpoints
+### For TX Endpoints
 
 1. Which transaction definition?
-2. What DB API side effects?
+2. What side effects on confirmation?
    - onSubmit: Set PENDING_TX status
    - onConfirmation: Finalize status
 3. Transaction state UI?
 
 ## Keeping Docs Updated
 
-When the live APIs change:
+When the gateway API changes:
 
 1. **Run the audit script** - catches new/removed endpoints
-2. **Update endpoint reference files** - only if significantly changed
+2. **Update unified-api-endpoints.md** - only if significantly changed
 3. **Update api-coverage.md** - track new implementations
 
 **Don't manually maintain endpoint lists** - let the audit script detect drift.
 
-## Reviewing Partnering Repos
+## Migration from 3 APIs
 
-The Andamio platform consists of multiple repositories. When auditing API coverage, also review partnering repos for recent changes that may affect this template.
+The unified gateway consolidates what was previously:
 
-### Partnering Repositories
+| Old API | Old Base URL | New Gateway Path |
+|---------|--------------|------------------|
+| Andamio DB API | `andamio-db-api-343753432212.us-central1.run.app` | `/auth/*`, `/user/*`, `/api/v2/*` |
+| Andamioscan | `preprod.andamioscan.io/api` | `/v2/*` (passthrough) |
+| Atlas TX API | `atlas-api-preprod-507341199760.us-central1.run.app` | `/v2/tx/*` (passthrough) |
 
-| Repo | Local Path | GitHub | Purpose |
-|------|------------|--------|---------|
-| **andamioscan** | `~/projects/01-projects/andamioscan` | `Andamio-Platform/andamioscan` | On-chain indexer |
-| **atlas-api** | (remote only) | `Andamio-Platform/atlas-api` | TX building API |
-| **andamio-db-api** | (remote only) | `Andamio-Platform/andamio-db-api` | Off-chain CRUD API |
+### Key Benefits
 
-### Workflow: Check for API Changes
+1. **Single Base URL**: One environment variable instead of 3
+2. **Merged Endpoints**: Combined off-chain + on-chain data in single calls
+3. **API Key Support**: New capability for programmatic access
+4. **Simplified Auth**: Single login endpoint
 
-**Step 1: Review recently closed GitHub issues**
-
-```bash
-# Andamioscan - see recently closed issues
-gh issue list --repo Andamio-Platform/andamioscan --state closed --limit 10
-
-# View specific issue details
-gh issue view <issue-number> --repo Andamio-Platform/andamioscan
-```
-
-**Step 2: Check local repo for recent commits (if available)**
-
-```bash
-# If local clone exists, check recent commits
-cd ~/projects/01-projects/andamioscan
-git log --oneline -10
-git diff HEAD~5..HEAD --stat
-```
-
-**Step 3: Refresh API specs**
-
-```bash
-# Download fresh swagger/OpenAPI specs
-curl -s https://preprod.andamioscan.io/swagger.yaml -o .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml
-npx js-yaml .claude/skills/audit-api-coverage/andamioscan-api-doc.yaml > .claude/skills/audit-api-coverage/andamioscan-api-doc.json
-```
-
-**Step 4: Update types and implementations**
-
-After identifying API changes:
-1. Update TypeScript types in `src/lib/andamioscan.ts`
-2. Update transaction definitions in `packages/andamio-transactions/`
-3. Run type check to catch breaking changes
-
-### Key Issues to Track
-
-When reviewing GitHub issues, look for:
-- **New fields added** to API responses (need to update types)
-- **Deprecated fields** (need to remove usage)
-- **New endpoints** (potential new integrations)
-- **Bug fixes** that may unblock features
-
-### Example: Andamioscan Issue #10
-
-**Issue**: "Return contributor_state_id for tasks"
-**Impact**: Added `contributor_state_policy_id` to task objects
-
-**Actions taken**:
-1. Updated `AndamioscanPrerequisite` type with `project_state_policy_id`
-2. Updated `TaskCommit` component to pass `contributorStatePolicyId`
-3. Updated transaction definition schema
-4. Added helper function to extract value from on-chain task
-
-## Current Stats (run script for latest)
+## Current Stats
 
 Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current coverage.
 
-The three APIs have approximately:
-- **TX API**: 17 endpoints (transaction building)
-- **DB API**: 77 endpoints (off-chain CRUD)
-- **Andamioscan**: 34 endpoints (on-chain indexed data)
+The unified gateway has approximately **40 endpoints** across these categories:
 
-Total: ~128 endpoints across 3 APIs.
+| Category | Count |
+|----------|-------|
+| Auth + User + Admin + API Key | 12 |
+| Merged Data (Courses + Projects) | 6 |
+| Scan (On-chain indexed) | 9 |
+| TX (Transaction building) | 13 |
+| **Total** | **~40** |

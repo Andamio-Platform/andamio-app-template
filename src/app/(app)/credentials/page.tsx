@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCompletedCourses } from "~/hooks/use-andamioscan";
+import { useStudentCourses } from "~/hooks/api";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import {
   AndamioPageHeader,
@@ -30,16 +30,20 @@ import {
  * Credentials Page
  *
  * Displays all credentials (completed courses) earned by the authenticated user.
- * Data is fetched from Andamioscan on-chain indexer.
+ * Uses the merged student courses endpoint and filters by enrollment_status.
  *
- * API Endpoint: GET /v2/users/{alias}/courses/completed
+ * API Endpoint: POST /api/v2/course/student/courses/list
  */
 export default function CredentialsPage() {
   const { isAuthenticated, user } = useAndamioAuth();
 
-  const { data: completedCourses, isLoading, error, refetch } = useCompletedCourses(
-    user?.accessTokenAlias ?? undefined
-  );
+  const { data: studentCourses, isLoading, error, refetch } = useStudentCourses();
+
+  // Filter to only completed courses
+  const completedCourses = useMemo(() => {
+    if (!studentCourses) return [];
+    return studentCourses.filter((course) => course.enrollment_status === "completed");
+  }, [studentCourses]);
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
@@ -97,7 +101,7 @@ export default function CredentialsPage() {
           title="Unable to Load Credentials"
           description="There was an error loading your credentials from the blockchain."
           action={
-            <AndamioButton onClick={refetch}>Try Again</AndamioButton>
+            <AndamioButton onClick={() => refetch()}>Try Again</AndamioButton>
           }
         />
       </div>
@@ -185,6 +189,18 @@ export default function CredentialsPage() {
               </div>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
+              {/* Course Title */}
+              {course.content?.title && (
+                <div className="space-y-1">
+                  <AndamioText variant="small" className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Course
+                  </AndamioText>
+                  <AndamioText className="font-medium">
+                    {course.content.title}
+                  </AndamioText>
+                </div>
+              )}
+
               {/* Course ID */}
               <div className="space-y-1">
                 <AndamioText variant="small" className="text-xs uppercase tracking-wide text-muted-foreground">

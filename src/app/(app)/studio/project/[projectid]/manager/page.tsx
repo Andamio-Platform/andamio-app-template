@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import {
   AndamioBadge,
@@ -42,7 +41,7 @@ import {
   CloseIcon,
   BlockIcon,
 } from "~/components/icons";
-import { type ProjectV2Output } from "@andamio/db-api-types";
+import { type ProjectV2Output } from "~/types/generated";
 import { TasksAssess } from "~/components/transactions";
 
 interface TaskSubmission {
@@ -112,9 +111,9 @@ export default function ManagerDashboardPage() {
     setError(null);
 
     try {
-      // V2 API: GET /project-v2/user/project/:project_id
+      // V2 API: GET /project/user/project/:project_id
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+        `/api/gateway/api/v2/project/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {
@@ -133,7 +132,7 @@ export default function ManagerDashboardPage() {
       // For now, we'll use mock data to demonstrate the UI pattern
       // In a real implementation, you would call:
       // const submissionsResponse = await authenticatedFetch(
-      //   `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/task-submissions/by-project`,
+      //   `/api/gateway/api/v2/task-submissions/by-project`,
       //   {
       //     method: "POST",
       //     headers: { "Content-Type": "application/json" },

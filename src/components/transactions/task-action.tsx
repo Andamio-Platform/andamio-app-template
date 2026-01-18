@@ -1,18 +1,20 @@
 /**
- * TaskAction Transaction Component (V2)
+ * TaskAction Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for contributors to perform actions on their current task (update submission, etc).
- * Uses PROJECT_CONTRIBUTOR_TASK_ACTION transaction definition.
+ * Uses PROJECT_CONTRIBUTOR_TASK_ACTION transaction with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/project/contributor/task-action.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { PROJECT_CONTRIBUTOR_TASK_ACTION, computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -24,8 +26,9 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TaskIcon, TransactionIcon, AlertIcon } from "~/components/icons";
+import { TaskIcon, TransactionIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
 
 export interface TaskActionProps {
@@ -95,8 +98,32 @@ export function TaskAction({
   onSuccess,
 }: TaskActionProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[TaskAction] TX confirmed and DB updated by gateway");
+
+          toast.success("Task Action Completed!", {
+            description: `Action on ${taskTitle ?? taskCode} recorded successfully`,
+          });
+
+          if (result?.txHash) {
+            void onSuccess?.({ txHash: result.txHash });
+          }
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Action Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+      },
+    }
+  );
 
   // Compute evidence hash for display if evidence provided
   const computedHash = useMemo(() => {
@@ -107,6 +134,8 @@ export function TaskAction({
       return null;
     }
   }, [taskEvidence]);
+
+  const ui = TRANSACTION_UI.PROJECT_CONTRIBUTOR_TASK_ACTION;
 
   const handleAction = async () => {
     if (!user?.accessTokenAlias) {
@@ -127,39 +156,21 @@ export function TaskAction({
     const projectInfoValue = hash ?? projectInfo;
 
     await execute({
-      definition: PROJECT_CONTRIBUTOR_TASK_ACTION,
+      txType: "PROJECT_CONTRIBUTOR_TASK_ACTION",
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
         project_info: projectInfoValue,
-        // Side effect params (matches /project-v2/contributor/commitment/submit)
+        // Side effect params (matches /project/contributor/commitment/submit)
         task_hash: taskHash,
         evidence: taskEvidence,
       },
       onSuccess: async (txResult) => {
-        console.log("[TaskAction] Success!", txResult);
-
-        toast.success("Task Action Completed!", {
-          description: `Action on ${taskTitle ?? taskCode} recorded successfully`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Pass txHash to onSuccess callback
-        if (txResult.txHash) {
-          await onSuccess?.({ txHash: txResult.txHash });
-        }
+        console.log("[TaskAction] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[TaskAction] Error:", txError);
-        toast.error("Action Failed", {
-          description: txError.message || "Failed to perform task action",
-        });
       },
     });
   };
@@ -178,7 +189,7 @@ export function TaskAction({
             <TaskIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Task Action</AndamioCardTitle>
+            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
               Update your submission for {taskTitle ?? taskCode}
             </AndamioCardDescription>
@@ -215,29 +226,63 @@ export function TaskAction({
           </AndamioText>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: evidenceHash
-                ? `Action recorded with hash ${evidenceHash.slice(0, 16)}...`
-                : "Task action completed successfully!",
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Task Action Completed!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {evidenceHash
+                    ? `Recorded with hash ${evidenceHash.slice(0, 16)}...`
+                    : "Your action has been recorded on-chain"}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleAction}
             disabled={!hasAccessToken}
             stateText={{
-              idle: "Submit Action",
+              idle: ui.buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Recording on Blockchain...",

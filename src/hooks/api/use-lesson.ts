@@ -3,9 +3,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type LessonResponse, type LessonListResponse } from "@andamio/db-api-types";
+import { type LessonResponse, type LessonListResponse } from "~/types/generated";
 import { sltKeys } from "./use-slt";
 
 // =============================================================================
@@ -47,7 +46,7 @@ export function useLessons(
     queryFn: async () => {
       // Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
@@ -89,7 +88,7 @@ export function useLesson(
     queryFn: async () => {
       // Go API: GET /course/user/lesson/get/{policy_id}/{module_code}/{index}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+        `/api/gateway/api/v2/course/user/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
       );
 
       if (!response.ok) {
@@ -132,7 +131,7 @@ export function useCreateLesson() {
     }) => {
       // Go API: POST /course/teacher/lesson/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/create`,
+        `/api/gateway/api/v2/course/teacher/lesson/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

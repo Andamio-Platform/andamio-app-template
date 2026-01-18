@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -29,7 +29,7 @@ import {
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AddIcon, SparkleIcon, CourseIcon, ExternalLinkIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { INSTANCE_COURSE_CREATE } from "@andamio/transactions";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
@@ -43,7 +43,7 @@ import { INSTANCE_COURSE_CREATE } from "@andamio/transactions";
 export function CreateCourseDialog() {
   const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -105,20 +105,20 @@ export function CreateCourseDialog() {
     void fetchWalletData();
   }, [wallet, connected]);
 
+  const ui = TRANSACTION_UI.INSTANCE_COURSE_CREATE;
+
   const handleCreateCourse = async () => {
     if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
     }
 
     await execute({
-      definition: INSTANCE_COURSE_CREATE,
+      txType: "INSTANCE_COURSE_CREATE",
       params: {
         // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         teachers: [user.accessTokenAlias],
         initiator_data: initiatorData,
-        // Side effect params
-        title: title.trim(),
       },
       onSuccess: async (txResult) => {
         // Extract course_id from the V2 API response
@@ -269,10 +269,10 @@ export function CreateCourseDialog() {
                   <TransactionStatus
                     state={state}
                     result={result}
-                    error={error}
+                    error={error?.message ?? null}
                     onRetry={() => reset()}
                     messages={{
-                      success: "Your Course NFT has been minted on-chain!",
+                      success: ui.successInfo,
                     }}
                   />
                 )}
@@ -324,7 +324,7 @@ export function CreateCourseDialog() {
                     disabled={!canCreate}
                     className="flex-1"
                     stateText={{
-                      idle: "Mint Course NFT",
+                      idle: ui.buttonText,
                       fetching: "Preparing...",
                       signing: "Sign in Wallet",
                       submitting: "Minting...",

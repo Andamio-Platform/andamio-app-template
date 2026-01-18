@@ -4,17 +4,113 @@ Automatic monitoring and confirmation of blockchain transactions in the T3 App T
 
 ## Overview
 
-The Pending Transaction Watcher provides automatic monitoring of submitted blockchain transactions and updates entity status when transactions are confirmed on-chain.
+The gateway now provides **server-side transaction monitoring** via the TX State Machine endpoints. This replaces the previous client-side Koios polling approach.
 
-**Key Features:**
-- ✅ Automatic polling of blockchain for transaction confirmations
-- ✅ Status updates via API when transactions confirm
+**Key Features (V2 Gateway Approach):**
+- ✅ Server-side transaction monitoring and confirmation
+- ✅ Automatic DB updates via TxTypeRegistry
+- ✅ Simple client-side polling of gateway status endpoint
+- ✅ Well-defined terminal states (`updated`, `failed`, `expired`)
 - ✅ Toast notifications for user feedback
-- ✅ LocalStorage persistence (survives page refreshes)
-- ✅ Error handling and retry logic
-- ✅ Zero configuration required for standard transactions
 
-**Note:** This is a temporary client-side solution. In production, this functionality should be moved to a backend monitoring service for better reliability and scalability.
+> **Migration Note**: The V1 client-side Koios polling approach is **deprecated**. New transaction components should use the V2 gateway approach documented below.
+
+---
+
+## V2 Gateway Approach (Recommended)
+
+The gateway provides dedicated endpoints for tracking pending transactions with automatic confirmation handling.
+
+### TX State Machine Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v2/tx/register` | POST | Register TX after wallet submit |
+| `/api/v2/tx/status/:tx_hash` | GET | Poll individual TX status |
+| `/api/v2/tx/pending` | GET | Get all user's pending TXs |
+| `/api/v2/tx/types` | GET | List valid TX types |
+
+### TX States
+
+```
+pending → confirmed → updated   (success path)
+pending → failed                (error after retries)
+pending → expired               (exceeded TTL without confirmation)
+```
+
+| State | Description |
+|-------|-------------|
+| `pending` | TX submitted to blockchain, awaiting confirmation |
+| `confirmed` | TX confirmed on-chain, gateway processing DB updates |
+| `updated` | DB updates complete, TX fully processed (terminal) |
+| `failed` | TX failed after max retries (terminal) |
+| `expired` | TX exceeded TTL without confirmation (terminal) |
+
+### Full Transaction Flow
+
+```
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
+│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  POLL   │
+└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
+     │              │              │              │              │
+     │              │              │              │              ▼
+  POST to       wallet.        wallet.       POST to       GET status
+  /tx/*         signTx()      submitTx()    /tx/register   until terminal
+```
+
+1. **BUILD**: POST to `/api/v2/tx/*` endpoint → get unsigned CBOR
+2. **SIGN**: User signs with wallet (`wallet.signTx(cbor, true)`)
+3. **SUBMIT**: Submit to blockchain (`wallet.submitTx(signed)`) → get txHash
+4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType
+5. **POLL**: GET `/api/v2/tx/status/:txHash` every 10 seconds until terminal state
+
+### Implementation
+
+See:
+- `~/hooks/use-tx-watcher.ts` - TX status polling hook
+- `~/hooks/use-simple-transaction.ts` - Simplified transaction hook with auto-registration
+- `~/.claude/skills/audit-api-coverage/tx-state-machine.md` - Full API documentation
+
+### Usage Example
+
+```typescript
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+
+function MintAccessToken() {
+  const { execute, state, txStatus } = useSimpleTransaction();
+
+  const handleMint = async () => {
+    await execute({
+      txType: "GLOBAL_GENERAL_ACCESS_TOKEN_MINT",
+      params: { initiator_data: walletAddress, alias: "myalias" },
+      onSuccess: (result) => {
+        // Transaction submitted and registered
+        // txStatus will update automatically as gateway processes
+      },
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleMint}>Mint</button>
+      {txStatus && (
+        <div>
+          Status: {txStatus.state}
+          {txStatus.state === "updated" && "✓ Complete!"}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## V1 Client-Side Approach (Deprecated)
+
+> **⚠️ DEPRECATED**: This approach uses client-side Koios polling and manual DB updates. New components should use the V2 gateway approach above.
+
+The following documentation is preserved for reference during migration.
 
 ## Architecture
 
@@ -218,7 +314,7 @@ const processConfirmed[EntityType] = useCallback(
 
     // Update entity status via API (Andamio API uses POST for all mutations)
     const response = await authenticatedFetch(
-      `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/[entity-endpoint]/confirm-transaction`,
+      "/api/gateway/api/v2/[entity-endpoint]/confirm-transaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

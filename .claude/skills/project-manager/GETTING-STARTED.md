@@ -18,18 +18,18 @@ If you're joining the Andamio Pioneers program:
 For pioneers, use these production API URLs in your `.env`:
 
 ```bash
-NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.europe-west1.run.app/api/v0"
-ANDAMIOSCAN_API_URL="https://preprod.andamioscan.andamio.space"
-ATLAS_TX_API_URL="https://atlas-api-preprod-507341199760.us-central1.run.app"
+# Unified API Gateway (combines all services)
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+ANDAMIO_API_KEY="your-api-key-here"
+
+# Cardano Network
 NEXT_PUBLIC_CARDANO_NETWORK="preprod"
-NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="39b2876b2458b8cd869eb665b24740df6890684a3e6cd7ff6c28b84b"
+NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="4758613867a8a7aa500b5d57a0e877f01a8e63c1365469589b12063c"
 ```
 
 ### API Documentation
 
-- [Andamioscan (Indexer)](https://preprod.andamioscan.andamio.space/swagger/index.html)
-- [Transaction API](https://atlas-api-preprod-507341199760.us-central1.run.app/docs)
-- [Database API](https://andamio-db-api-343753432212.europe-west1.run.app/swagger/)
+- [Unified API Gateway](https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json) - Combined API docs
 
 ---
 
@@ -98,14 +98,19 @@ You're now authenticated!
 ```
 Browser (This App)
      │
-     ├─── Andamio DB API (localhost:4000)
-     │    └── Off-chain data (courses, users, progress)
-     │
-     ├─── Andamioscan API (via proxy)
-     │    └── On-chain data + transaction building
-     │
-     └─── Koios API (via proxy)
-          └── Transaction confirmations
+     └─── Unified API Gateway
+          │
+          ├─── /api/v2/* (Merged Endpoints)
+          │    └── DB metadata + on-chain state combined
+          │
+          ├─── /v2/* (Andamioscan Passthrough)
+          │    └── On-chain indexed data
+          │
+          ├─── /v2/tx/* (Transaction Building)
+          │    └── Build unsigned Cardano transactions
+          │
+          └─── /auth/* (Authentication)
+               └── User login and registration
 ```
 
 ### Key Directories
@@ -124,12 +129,21 @@ src/
 
 ### Authentication Flow
 
+The app uses a **hybrid authentication approach** that automatically chooses the best method:
+
+**For Users WITH Access Tokens (Gateway Auth)**:
 1. **Connect Wallet** - User connects Cardano wallet via Mesh SDK
-2. **Get Nonce** - App requests nonce from Database API
+2. **Detect Token** - Access token found in wallet → alias extracted
+3. **Gateway Login** - POST `/auth/login` with `{alias, wallet_address}`
+4. **Receive JWT** - JWT returned directly (no signing required)
+5. **Store JWT** - Token stored in localStorage
+
+**For Users WITHOUT Access Tokens (Legacy Auth)**:
+1. **Connect Wallet** - User connects Cardano wallet via Mesh SDK
+2. **Get Nonce** - App requests nonce from legacy Database API
 3. **Sign Message** - User signs nonce with wallet
 4. **Validate** - API validates signature, returns JWT
 5. **Store JWT** - Token stored in localStorage
-6. **Authenticated Requests** - JWT included in API calls
 
 ---
 
@@ -161,8 +175,7 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 
 ```typescript
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
-import { type YourType } from "@andamio/db-api-types";
+import { type YourType } from "~/types/generated";
 
 export function MyComponent() {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
@@ -173,7 +186,7 @@ export function MyComponent() {
 
     async function fetchData() {
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/your-endpoint`
+        "/api/gateway/api/v2/your-endpoint"
       );
       const result = await response.json() as YourType;
       setData(result);
@@ -288,4 +301,4 @@ const [content, setContent] = useState<JSONContent | null>(null);
 
 ---
 
-*Last Updated: January 14, 2026*
+*Last Updated: January 18, 2026*

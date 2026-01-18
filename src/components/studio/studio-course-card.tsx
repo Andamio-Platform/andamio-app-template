@@ -2,7 +2,7 @@
 
 import React from "react";
 import { SuccessIcon, PendingIcon, AlertIcon, OnChainIcon } from "~/components/icons";
-import { type CourseListResponse } from "@andamio/db-api-types";
+import { type CourseListResponse } from "~/types/generated";
 import { cn } from "~/lib/utils";
 
 export interface HybridCourseStatus {

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
 import {
@@ -33,7 +32,7 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
-import { type ProjectV2Output, type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { ManagersManage, BlacklistManage } from "~/components/transactions";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan";
@@ -110,7 +109,7 @@ export default function ProjectDashboardPage() {
 
       // Step 1: Try to fetch project directly (V2 API)
       const projectResponse = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
+        `/api/gateway/api/v2/project/user/project/${projectId}`
       );
 
       if (projectResponse.ok) {
@@ -148,13 +147,18 @@ export default function ProjectDashboardPage() {
       setImageUrl(projectData.image_url ?? "");
       // Note: video_url not available in V2 API
 
-      // V2 API: GET /project-v2/manager/tasks/:project_state_policy_id
+      // V2 API: POST /project/manager/tasks/list with {project_id} in body
       // Manager endpoint returns all tasks including DRAFT status
       if (projectData.states && projectData.states.length > 0) {
         const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
         if (projectStatePolicyId) {
           const tasksResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${projectStatePolicyId}`
+            `/api/gateway/api/v2/project/manager/tasks/list`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ project_id: projectStatePolicyId }),
+            }
           );
 
           if (tasksResponse.ok) {
@@ -199,9 +203,9 @@ export default function ProjectDashboardPage() {
     setSaveError(null);
 
     try {
-      // V2 API: POST /project-v2/admin/project/update
+      // V2 API: POST /project/owner/project/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/project/update`,
+        `/api/gateway/api/v2/project/owner/project/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

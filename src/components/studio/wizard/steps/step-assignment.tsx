@@ -12,7 +12,6 @@ import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, A
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 
@@ -63,7 +62,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
       if (assignment) {
         // Go API: POST /course/teacher/assignment/update
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/update`,
+          `/api/gateway/api/v2/course/teacher/assignment/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -83,7 +82,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
       } else {
         // Go API: POST /course/teacher/assignment/create
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/assignment/create`,
+          `/api/gateway/api/v2/course/teacher/assignment/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

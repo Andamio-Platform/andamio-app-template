@@ -13,7 +13,7 @@ import {
   AndamioTableRow,
 } from "~/components/andamio/andamio-table";
 import { AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
-import { type AndamioscanModule } from "~/lib/andamioscan";
+import { type OrchestrationCourseModule } from "~/types/generated";
 
 /**
  * Combined SLT + Lesson data type
@@ -39,7 +39,7 @@ export interface SLTLessonTableProps {
   /** Module code for links */
   moduleCode: string;
   /** On-chain module data for verification badges */
-  onChainModule?: AndamioscanModule | null;
+  onChainModule?: OrchestrationCourseModule | null;
 }
 
 /**

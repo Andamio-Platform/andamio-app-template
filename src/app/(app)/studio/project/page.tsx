@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useOwnedProjects, useManagingProjects } from "~/hooks/use-andamioscan";
+import { useManagerProjects, type ManagerProject } from "~/hooks/api";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioAlert,
@@ -33,9 +33,6 @@ import {
   AndamioDrawerHeader,
   AndamioDrawerTitle,
   AndamioDrawerTrigger,
-  AndamioTooltip,
-  AndamioTooltipContent,
-  AndamioTooltipTrigger,
   AndamioText,
 } from "~/components/andamio";
 import {
@@ -48,170 +45,50 @@ import {
   LoadingIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { type ProjectV2Output } from "@andamio/db-api-types";
 import { CreateProject } from "~/components/transactions";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
 
 /**
- * Represents a project with hybrid on-chain + DB status
- */
-interface HybridProjectStatus {
-  projectId: string;
-  title: string | null | undefined;
-  /** Project exists in our database */
-  inDb: boolean;
-  /** Project found on-chain via Andamioscan */
-  onChain: boolean;
-  /** Admin alias from on-chain data */
-  admin: string | null;
-  /** Managers from on-chain data */
-  managers: string[];
-  /** Whether user is the admin/owner (vs just a manager) */
-  isOwned: boolean;
-  /** Full DB project data if available */
-  dbProject?: ProjectV2Output;
-}
-
-/**
  * Project list content - only rendered when authenticated
+ *
+ * Uses merged manager projects endpoint for clean, single-source data.
  */
 function ProjectListContent() {
   const router = useRouter();
   const { user } = useAndamioAuth();
-  const alias = user?.accessTokenAlias ?? undefined;
+  const alias = user?.accessTokenAlias;
 
-  // DB projects (immediate after minting)
-  const [dbProjects, setDbProjects] = useState<ProjectV2Output[]>([]);
-  const [isLoadingDb, setIsLoadingDb] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
 
-  // On-chain projects where user is owner/admin
+  // Single merged API call for manager projects
   const {
-    data: ownedOnChainProjects,
-    isLoading: isLoadingOwned,
-    refetch: refetchOwned,
-  } = useOwnedProjects(alias);
-
-  // On-chain projects where user is manager
-  const {
-    data: managingOnChainProjects,
-    isLoading: isLoadingManaging,
-    refetch: refetchManaging,
-  } = useManagingProjects(alias);
-
-  const fetchDbProjects = useCallback(async () => {
-    setIsLoadingDb(true);
-    setError(null);
-
-    try {
-      // V2 API: GET /project-v2/user/projects/list
-      // Returns all ON_CHAIN projects - we filter by ownership using Andamioscan data
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/projects/list`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as ProjectV2Output[];
-      setDbProjects(data ?? []);
-    } catch (err) {
-      console.error("Error fetching projects:", err);
-      setError(err instanceof Error ? err.message : "Failed to load projects");
-    } finally {
-      setIsLoadingDb(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchDbProjects();
-  }, [fetchDbProjects]);
-
-  // Merge projects from on-chain sources (owned + managed) with DB metadata
-  // Only shows projects where user has on-chain ownership or management role
-  const hybridProjects = useMemo<HybridProjectStatus[]>(() => {
-    const projectMap = new Map<string, HybridProjectStatus>();
-
-    // Create lookup maps for DB projects
-    const dbProjectMap = new Map(
-      dbProjects
-        .filter((p): p is typeof p & { project_id: string } => !!p.project_id)
-        .map((p) => [p.project_id, p])
-    );
-
-    // Add on-chain owned projects (user is admin)
-    if (ownedOnChainProjects) {
-      for (const onChainProject of ownedOnChainProjects) {
-        const dbProject = dbProjectMap.get(onChainProject.project_id);
-        projectMap.set(onChainProject.project_id, {
-          projectId: onChainProject.project_id,
-          title: dbProject?.title ?? null,
-          inDb: !!dbProject,
-          onChain: true,
-          admin: onChainProject.admin,
-          managers: onChainProject.managers,
-          isOwned: true,
-          dbProject,
-        });
-      }
-    }
-
-    // Add on-chain managing projects (user is manager but not owner)
-    if (managingOnChainProjects) {
-      for (const onChainProject of managingOnChainProjects) {
-        // Skip if already added as owned
-        if (projectMap.has(onChainProject.project_id)) continue;
-
-        const dbProject = dbProjectMap.get(onChainProject.project_id);
-        projectMap.set(onChainProject.project_id, {
-          projectId: onChainProject.project_id,
-          title: dbProject?.title ?? null,
-          inDb: !!dbProject,
-          onChain: true,
-          admin: onChainProject.admin,
-          managers: onChainProject.managers,
-          isOwned: false, // User is manager, not owner
-          dbProject,
-        });
-      }
-    }
-
-    // Sort: DB projects first (have title), then by projectId
-    return Array.from(projectMap.values()).sort((a, b) => {
-      if (a.inDb && !b.inDb) return -1;
-      if (!a.inDb && b.inDb) return 1;
-      return a.projectId.localeCompare(b.projectId);
-    });
-  }, [dbProjects, ownedOnChainProjects, managingOnChainProjects]);
+    data: projects = [],
+    isLoading,
+    error,
+    refetch,
+  } = useManagerProjects();
 
   const handleRefresh = useCallback(() => {
-    void fetchDbProjects();
-    void refetchOwned();
-    void refetchManaging();
-  }, [fetchDbProjects, refetchOwned, refetchManaging]);
+    void refetch();
+  }, [refetch]);
 
   const handleImportSuccess = () => {
     handleRefresh();
   };
 
-  const isLoading = isLoadingDb || isLoadingOwned || isLoadingManaging;
-
   // Stats
-  const totalCount = hybridProjects.length;
-  const unregisteredCount = hybridProjects.filter((p) => !p.inDb && p.isOwned).length;
-  const ownedCount = hybridProjects.filter((p) => p.isOwned).length;
-  const managingCount = hybridProjects.filter((p) => !p.isOwned).length;
+  const totalCount = projects.length;
+  const hasDbContent = (p: ManagerProject) => p.title !== undefined && p.title !== null;
+  const unregisteredCount = projects.filter((p) => !hasDbContent(p)).length;
 
   // Loading state (only show when no data yet)
-  if (isLoading && hybridProjects.length === 0) {
+  if (isLoading && projects.length === 0) {
     return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
-  if (error && hybridProjects.length === 0) {
+  if (error && projects.length === 0) {
     return (
       <div className="space-y-6">
         <AndamioPageHeader
@@ -222,14 +99,14 @@ function ProjectListContent() {
         <AndamioAlert variant="destructive">
           <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Error</AndamioAlertTitle>
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+          <AndamioAlertDescription>{error.message}</AndamioAlertDescription>
         </AndamioAlert>
       </div>
     );
   }
 
   // Empty state
-  if (!isLoading && hybridProjects.length === 0) {
+  if (!isLoading && projects.length === 0) {
     return (
       <div className="space-y-6">
         <AndamioPageHeader
@@ -263,28 +140,14 @@ function ProjectListContent() {
             {/* Status badges */}
             {!isLoading && totalCount > 0 && (
               <div className="flex gap-2">
-                {ownedCount > 0 && (
-                  <AndamioBadge variant="default">
-                    {ownedCount} owned
-                  </AndamioBadge>
-                )}
-                {managingCount > 0 && (
-                  <AndamioBadge variant="secondary">
-                    {managingCount} managing
-                  </AndamioBadge>
-                )}
+                <AndamioBadge variant="default">
+                  {totalCount} project{totalCount !== 1 ? "s" : ""}
+                </AndamioBadge>
                 {unregisteredCount > 0 && (
-                  <AndamioTooltip>
-                    <AndamioTooltipTrigger asChild>
-                      <AndamioBadge variant="outline" className="text-warning border-warning">
-                        <AlertIcon className="h-3 w-3 mr-1" />
-                        {unregisteredCount} unregistered
-                      </AndamioBadge>
-                    </AndamioTooltipTrigger>
-                    <AndamioTooltipContent>
-                      <p>On-chain projects not yet registered in database</p>
-                    </AndamioTooltipContent>
-                  </AndamioTooltip>
+                  <AndamioBadge variant="outline" className="text-warning border-warning">
+                    <AlertIcon className="h-3 w-3 mr-1" />
+                    {unregisteredCount} unregistered
+                  </AndamioBadge>
                 )}
               </div>
             )}
@@ -323,14 +186,13 @@ function ProjectListContent() {
               <AndamioTableHead className="w-[50px]">Status</AndamioTableHead>
               <AndamioTableHead>Title</AndamioTableHead>
               <AndamioTableHead>Project ID</AndamioTableHead>
-              <AndamioTableHead className="text-center hidden md:table-cell">Role</AndamioTableHead>
               <AndamioTableHead className="text-right">Actions</AndamioTableHead>
             </AndamioTableRow>
           </AndamioTableHeader>
           <AndamioTableBody>
-            {hybridProjects.map((project) => (
-              <HybridProjectRow
-                key={project.projectId}
+            {projects.map((project) => (
+              <ProjectRow
+                key={project.project_id}
                 project={project}
                 onImportSuccess={handleImportSuccess}
               />
@@ -343,31 +205,40 @@ function ProjectListContent() {
 }
 
 /**
- * Individual project row with hybrid status
+ * Individual project row
  */
-function HybridProjectRow({
+function ProjectRow({
   project,
   onImportSuccess,
 }: {
-  project: HybridProjectStatus;
+  project: ManagerProject;
   onImportSuccess: () => void;
 }) {
-  const truncatedId = `${project.projectId.slice(0, 8)}...${project.projectId.slice(-8)}`;
+  const truncatedId = `${project.project_id.slice(0, 8)}...${project.project_id.slice(-8)}`;
+  const hasDbContent = project.title !== undefined && project.title !== null;
+  const isOnChain = project.source === "merged" || project.source === "on-chain-only";
 
-  // Determine status icon - all projects are on-chain (that's the source of truth)
+  // Determine status icon
   const getStatusIcon = () => {
-    if (project.inDb) {
-      // Registered in database
+    if (hasDbContent && isOnChain) {
+      // Registered and on-chain
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
           <SuccessIcon className="h-4 w-4 text-success" />
         </div>
       );
-    } else {
-      // On-chain but not in DB (needs registration)
+    } else if (hasDbContent) {
+      // Draft (in DB but not on-chain)
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
           <AlertIcon className="h-4 w-4 text-warning" />
+        </div>
+      );
+    } else {
+      // On-chain but not in DB (needs registration)
+      return (
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+          <AlertIcon className="h-4 w-4 text-muted-foreground" />
         </div>
       );
     }
@@ -375,10 +246,12 @@ function HybridProjectRow({
 
   // Determine status text
   const getStatusText = () => {
-    if (project.inDb) {
-      return <span className="text-xs text-success">Registered</span>;
+    if (hasDbContent && isOnChain) {
+      return <span className="text-xs text-success">Live</span>;
+    } else if (hasDbContent) {
+      return <span className="text-xs text-warning">Draft</span>;
     } else {
-      return <span className="text-xs text-warning">Unregistered</span>;
+      return <span className="text-xs text-muted-foreground">Unregistered</span>;
     }
   };
 
@@ -398,38 +271,21 @@ function HybridProjectRow({
         )}
       </AndamioTableCell>
       <AndamioTableCell className="font-mono text-xs">
-        <span title={project.projectId}>{truncatedId}</span>
-      </AndamioTableCell>
-      <AndamioTableCell className="text-center hidden md:table-cell">
-        <AndamioBadge variant={project.isOwned ? "default" : "secondary"}>
-          {project.isOwned ? "Owner" : "Manager"}
-        </AndamioBadge>
+        <span title={project.project_id}>{truncatedId}</span>
       </AndamioTableCell>
       <AndamioTableCell className="text-right">
-        {project.inDb ? (
-          <Link href={`/studio/project/${project.projectId}`}>
+        {hasDbContent ? (
+          <Link href={`/studio/project/${project.project_id}`}>
             <AndamioButton variant="ghost" size="sm">
               <SettingsIcon className="h-4 w-4 mr-1" />
               Manage
             </AndamioButton>
           </Link>
-        ) : project.isOwned ? (
+        ) : (
           <RegisterProjectDrawer
-            projectId={project.projectId}
+            projectId={project.project_id}
             onSuccess={onImportSuccess}
           />
-        ) : (
-          <AndamioTooltip>
-            <AndamioTooltipTrigger asChild>
-              <AndamioButton variant="ghost" size="sm" disabled>
-                <AlertIcon className="h-4 w-4 mr-1" />
-                Not Registered
-              </AndamioButton>
-            </AndamioTooltipTrigger>
-            <AndamioTooltipContent>
-              <p>Only the project owner can register this project</p>
-            </AndamioTooltipContent>
-          </AndamioTooltip>
         )}
       </AndamioTableCell>
     </AndamioTableRow>
@@ -456,10 +312,10 @@ function RegisterProjectDrawer({
 
     setIsSubmitting(true);
     try {
-      // V2 API: POST /project-v2/admin/project/register
+      // V2 API: POST /project/owner/project/register
       // Registers an existing on-chain project into the database with a title
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/project/register`,
+        `/api/gateway/api/v2/project/owner/project/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -581,8 +437,8 @@ function RegisterProjectDrawer({
 /**
  * Project Studio Page - Lists projects owned/managed by the authenticated user
  *
- * API Endpoint (V2): POST /project-v2/admin/projects/list
- * Type Reference: ProjectV2Output from @andamio/db-api-types
+ * API Endpoint (V2): POST /project/owner/projects/list
+ * Type Reference: ProjectV2Output from ~/types/generated
  */
 export default function ProjectStudioPage() {
   return (

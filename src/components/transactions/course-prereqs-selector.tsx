@@ -14,7 +14,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useTeachableCoursesWithDetails } from "~/hooks/use-andamioscan";
+import { useTeacherCoursesWithModules, type TeacherCourseWithModules } from "~/hooks/api";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -34,8 +34,6 @@ import { Skeleton } from "~/components/ui/skeleton";
 export type CoursePrereq = [string, string[]]; // [course_policy_id, module_hashes[]]
 
 interface CoursePrereqsSelectorProps {
-  /** User's access token alias for fetching their courses */
-  userAlias: string;
   /** Current value of course prerequisites */
   value: CoursePrereq[];
   /** Callback when prerequisites change */
@@ -51,14 +49,13 @@ interface SelectedCourse {
 }
 
 export function CoursePrereqsSelector({
-  userAlias,
   value,
   onChange,
   disabled = false,
 }: CoursePrereqsSelectorProps) {
-  // Fetch courses where user is owner OR teacher (with module details from Andamioscan)
+  // Fetch courses where user is owner OR teacher (with module details)
   const { data: courses, isLoading: coursesLoading } =
-    useTeachableCoursesWithDetails(userAlias);
+    useTeacherCoursesWithModules();
 
   // Local state for the course being added
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");

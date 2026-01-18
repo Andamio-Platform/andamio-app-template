@@ -5,9 +5,9 @@
  * Matches tasks by content and updates DB with on-chain task_id.
  */
 
-import { env } from "~/env";
 import { getProject, type AndamioscanTask, type AndamioscanProjectDetails } from "~/lib/andamioscan";
-import { type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type ProjectTaskV2Output } from "~/types/generated";
+import { computeTaskHash, type TaskData } from "@andamio/transactions";
 
 /**
  * Decode hex string to UTF-8 text
@@ -24,12 +24,26 @@ function hexToText(hex: string): string {
 }
 
 /**
+ * Compute task hash from DB task data.
+ * Uses the same algorithm as on-chain for reliable matching.
+ */
+function computeTaskHashFromDb(dbTask: ProjectTaskV2Output): string {
+  const taskData: TaskData = {
+    project_content: dbTask.title ?? "",
+    expiration_time: parseInt(dbTask.expiration_time) || 0,
+    lovelace_amount: parseInt(dbTask.lovelace) || 0,
+    native_assets: [],
+  };
+  return computeTaskHash(taskData);
+}
+
+/**
  * Match result for a single task
  */
 export interface TaskMatchResult {
   dbTask: ProjectTaskV2Output;
   onChainTask: AndamioscanTask;
-  matchedBy: "content" | "lovelace_and_expiration";
+  matchedBy: "computed_hash" | "content" | "lovelace_and_expiration";
 }
 
 /**
@@ -45,13 +59,20 @@ export interface SyncResult {
 
 /**
  * Fetch DB tasks for a project
+ *
+ * V2: Changed from GET with path param to POST with body
  */
 async function fetchDbTasks(
   projectStatePolicyId: string,
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
 ): Promise<ProjectTaskV2Output[]> {
   const response = await authenticatedFetch(
-    `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/${projectStatePolicyId}`
+    `/api/gateway/api/v2/project/manager/tasks/list`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectStatePolicyId }),
+    }
   );
 
   if (!response.ok) {
@@ -65,11 +86,65 @@ async function fetchDbTasks(
 }
 
 /**
+ * Confirm a single task with task_hash using the confirm-tx endpoint
+ *
+ * This endpoint supports task_hash, which batch-status does not.
+ * Used to persist the computed task hash to the database.
+ *
+ * @returns Success or error message
+ */
+async function confirmTaskWithHash(
+  projectStatePolicyId: string,
+  taskIndex: number,
+  txHash: string,
+  taskHash: string,
+  authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
+): Promise<{ success: boolean; error?: string }> {
+  const requestBody = {
+    project_state_policy_id: projectStatePolicyId,
+    index: taskIndex,
+    tx_hash: txHash,
+    task_hash: taskHash,
+  };
+
+  console.log(`[project-task-sync] confirm-tx for task ${taskIndex}:`, {
+    taskHash: taskHash.slice(0, 16) + "...",
+    txHash: txHash.slice(0, 16) + "...",
+  });
+
+  const response = await authenticatedFetch(
+    `/api/gateway/api/v2/project/manager/task/confirm-tx`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    }
+  );
+
+  if (!response.ok) {
+    let errorDetail = `HTTP ${response.status}`;
+    try {
+      const errorBody = (await response.json()) as { message?: string; error?: string };
+      errorDetail = errorBody.message ?? errorBody.error ?? errorDetail;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    console.error(`[project-task-sync] confirm-tx failed for task ${taskIndex}:`, errorDetail);
+    return { success: false, error: errorDetail };
+  }
+
+  return { success: true };
+}
+
+/**
  * Batch update task statuses using the batch-status endpoint
  *
  * This endpoint allows direct status updates without tx_hash validation,
  * which is needed for syncing tasks that are already on-chain but not
  * reflected in the database.
+ *
+ * NOTE: This endpoint does NOT support task_hash. Use confirmTaskWithHash
+ * separately to persist task hashes.
  *
  * @returns Object with count of updated tasks and any errors
  */
@@ -92,7 +167,7 @@ async function batchUpdateTaskStatus(
   };
 
   const response = await authenticatedFetch(
-    `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/manager/tasks/batch-status`,
+    `/api/gateway/api/v2/project/manager/tasks/batch-status`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -166,9 +241,10 @@ async function batchUpdateTaskStatus(
 /**
  * Match on-chain tasks to DB tasks
  *
- * Matching strategy:
- * 1. Decode hex content from on-chain and compare to DB task title
- * 2. Also verify lovelace amount matches
+ * Matching strategy (in order of reliability):
+ * 1. Compute task hash from DB data and match directly (most reliable)
+ * 2. Decode hex content from on-chain and compare to DB task title
+ * 3. Match by lovelace + expiration time (fallback)
  */
 function matchTasks(
   dbTasks: ProjectTaskV2Output[],
@@ -182,6 +258,12 @@ function matchTasks(
   const unmatchedDb: ProjectTaskV2Output[] = [];
   const usedOnChainIds = new Set<string>();
 
+  // Create a map of on-chain tasks by task_id for O(1) lookup
+  const onChainTaskMap = new Map<string, AndamioscanTask>();
+  for (const task of onChainTasks) {
+    onChainTaskMap.set(task.task_id, task);
+  }
+
   for (const dbTask of dbTasks) {
     // Skip tasks that are already confirmed (have a task_hash)
     if (dbTask.task_hash && dbTask.status === "ON_CHAIN") {
@@ -189,38 +271,47 @@ function matchTasks(
     }
 
     let matchedOnChain: AndamioscanTask | null = null;
-    let matchedBy: "content" | "lovelace_and_expiration" = "content";
+    let matchedBy: "computed_hash" | "content" | "lovelace_and_expiration" = "computed_hash";
 
-    // Try to match by content
-    for (const onChainTask of onChainTasks) {
-      if (usedOnChainIds.has(onChainTask.task_id)) {
-        continue;
-      }
+    // PRIMARY: Compute task hash and match directly
+    const computedHash = computeTaskHashFromDb(dbTask);
+    const hashMatch = onChainTaskMap.get(computedHash);
+    if (hashMatch && !usedOnChainIds.has(computedHash)) {
+      matchedOnChain = hashMatch;
+      matchedBy = "computed_hash";
+    }
 
-      const decodedContent = hexToText(onChainTask.content);
-      const dbTitle = dbTask.title ?? "";
-
-      // Match by title/content
-      if (decodedContent === dbTitle) {
-        // Verify lovelace also matches
-        const dbLovelace = parseInt(dbTask.lovelace) || 0;
-        if (dbLovelace === onChainTask.lovelace) {
-          matchedOnChain = onChainTask;
-          matchedBy = "content";
-          break;
+    // FALLBACK: Try content/lovelace matching if hash didn't match
+    if (!matchedOnChain) {
+      for (const onChainTask of onChainTasks) {
+        if (usedOnChainIds.has(onChainTask.task_id)) {
+          continue;
         }
-      }
 
-      // Fallback: match by lovelace and expiration time
-      const dbLovelace = parseInt(dbTask.lovelace) || 0;
-      const dbExpiration = parseInt(dbTask.expiration_time) || 0;
-      if (
-        dbLovelace === onChainTask.lovelace &&
-        dbExpiration === onChainTask.expiration_posix
-      ) {
-        matchedOnChain = onChainTask;
-        matchedBy = "lovelace_and_expiration";
-        // Don't break - prefer content match
+        const decodedContent = hexToText(onChainTask.content);
+        const dbTitle = dbTask.title ?? "";
+
+        // Match by title/content
+        if (decodedContent === dbTitle) {
+          const dbLovelace = parseInt(dbTask.lovelace) || 0;
+          if (dbLovelace === onChainTask.lovelace) {
+            matchedOnChain = onChainTask;
+            matchedBy = "content";
+            break;
+          }
+        }
+
+        // Last resort: match by lovelace and expiration time
+        const dbLovelace = parseInt(dbTask.lovelace) || 0;
+        const dbExpiration = parseInt(dbTask.expiration_time) || 0;
+        if (
+          dbLovelace === onChainTask.lovelace &&
+          dbExpiration === onChainTask.expiration_posix
+        ) {
+          matchedOnChain = onChainTask;
+          matchedBy = "lovelace_and_expiration";
+          // Don't break - prefer content match
+        }
       }
     }
 
@@ -358,17 +449,30 @@ export async function syncProjectTasks(
   // Separate tasks by current status for proper transition handling
   const draftTasks = matched.filter((m) => m.dbTask.status === "DRAFT");
   const pendingTasks = matched.filter((m) => m.dbTask.status === "PENDING_TX");
+  const onChainTasksMissingHash = matched.filter(
+    (m) => m.dbTask.status === "ON_CHAIN" && !m.dbTask.task_hash
+  );
 
-  console.log(`[project-task-sync] Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX`);
+  console.log(`[project-task-sync] Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX, ${onChainTasksMissingHash.length} ON_CHAIN (missing hash)`);
 
   let confirmed = 0;
+
+  // Get tx_hash from treasury_fundings if not provided
+  // This is needed for confirm-tx which sets task_hash
+  let effectiveTxHash = txHash;
+  if (!effectiveTxHash && projectDetails?.treasury_fundings?.length) {
+    const sortedFundings = [...projectDetails.treasury_fundings].sort(
+      (a, b) => b.slot - a.slot
+    );
+    effectiveTxHash = sortedFundings[0]?.tx_hash ?? "";
+    console.log(`[project-task-sync] Using tx_hash from treasury_fundings: ${effectiveTxHash.slice(0, 16)}...`);
+  }
 
   // Step 1: Update DRAFT tasks to PENDING_TX first (required transition)
   if (draftTasks.length > 0) {
     const draftToUpdate = draftTasks.map((match) => ({
       index: match.dbTask.index,
       status: "PENDING_TX",
-      task_hash: match.onChainTask.task_id,
     }));
 
     try {
@@ -390,29 +494,92 @@ export async function syncProjectTasks(
     }
   }
 
-  // Step 2: Update all matched tasks to ON_CHAIN (now they should be PENDING_TX)
-  const allTasksToOnChain = matched.map((match) => ({
-    index: match.dbTask.index,
-    status: "ON_CHAIN",
-    task_hash: match.onChainTask.task_id,
-  }));
+  // Step 2: Use confirm-tx to transition PENDING_TX → ON_CHAIN WITH task_hash
+  // The confirm-tx endpoint is the ONLY way to persist task_hash
+  // batch-status doesn't support task_hash in its schema
+  // NOTE: Only DRAFT and PENDING_TX tasks can be confirmed - ON_CHAIN tasks cannot
+  const tasksToConfirm = [...draftTasks, ...pendingTasks];
 
-  try {
-    const result = await batchUpdateTaskStatus(
-      projectStatePolicyId,
-      allTasksToOnChain,
-      authenticatedFetch
-    );
+  if (effectiveTxHash && tasksToConfirm.length > 0) {
+    console.log(`[project-task-sync] Step 2: Confirming ${tasksToConfirm.length} tasks with task_hash via confirm-tx`);
 
-    confirmed = result.updated;
-    if (result.errors.length > 0) {
-      errors.push(...result.errors);
+    for (const match of tasksToConfirm) {
+      const result = await confirmTaskWithHash(
+        projectStatePolicyId,
+        match.dbTask.index,
+        effectiveTxHash,
+        match.onChainTask.task_id,
+        authenticatedFetch
+      );
+
+      if (result.success) {
+        confirmed++;
+      } else {
+        // If confirm-tx fails, try batch-status as fallback (won't set task_hash)
+        console.warn(`[project-task-sync] confirm-tx failed for task ${match.dbTask.index}: ${result.error}`);
+        console.log(`[project-task-sync] Falling back to batch-status for task ${match.dbTask.index}`);
+
+        try {
+          const batchResult = await batchUpdateTaskStatus(
+            projectStatePolicyId,
+            [{ index: match.dbTask.index, status: "ON_CHAIN" }],
+            authenticatedFetch
+          );
+          if (batchResult.updated > 0) {
+            confirmed++;
+          }
+          if (batchResult.errors.length > 0) {
+            errors.push(...batchResult.errors);
+          }
+        } catch (err) {
+          errors.push(`Task ${match.dbTask.index}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
     }
-    console.log(`[project-task-sync] PENDING_TX → ON_CHAIN: ${result.updated} updated`);
-  } catch (err) {
-    console.error("[project-task-sync] Step 2 error:", err);
+
+    console.log(`[project-task-sync] Confirmed ${confirmed}/${tasksToConfirm.length} tasks`);
+  } else if (!effectiveTxHash && tasksToConfirm.length > 0) {
+    // No tx_hash available - use batch-status as fallback (won't set task_hash)
+    console.warn("[project-task-sync] No tx_hash available - using batch-status (task_hash won't be persisted)");
+
+    const allTasksToOnChain = tasksToConfirm.map((match) => ({
+      index: match.dbTask.index,
+      status: "ON_CHAIN",
+    }));
+
+    try {
+      const result = await batchUpdateTaskStatus(
+        projectStatePolicyId,
+        allTasksToOnChain,
+        authenticatedFetch
+      );
+
+      confirmed = result.updated;
+      if (result.errors.length > 0) {
+        errors.push(...result.errors);
+      }
+      console.log(`[project-task-sync] PENDING_TX → ON_CHAIN (no task_hash): ${result.updated} updated`);
+    } catch (err) {
+      console.error("[project-task-sync] Step 2 fallback error:", err);
+      errors.push(
+        `Error updating tasks to ON_CHAIN: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  // Warn about ON_CHAIN tasks that are missing task_hash
+  // These cannot be fixed via frontend - requires backend endpoint that supports updating task_hash on ON_CHAIN tasks
+  if (onChainTasksMissingHash.length > 0) {
+    console.warn(
+      `[project-task-sync] ${onChainTasksMissingHash.length} ON_CHAIN task(s) missing task_hash - cannot update via current API`,
+      onChainTasksMissingHash.map((m) => ({
+        index: m.dbTask.index,
+        title: m.dbTask.title,
+        computedHash: m.onChainTask.task_id.slice(0, 16) + "...",
+      }))
+    );
     errors.push(
-      `Error updating tasks to ON_CHAIN: ${err instanceof Error ? err.message : String(err)}`
+      `${onChainTasksMissingHash.length} ON_CHAIN task(s) missing task_hash - backend endpoint needed to update`
     );
   }
 

@@ -17,6 +17,7 @@ import {
   LogOutIcon,
   SitemapIcon,
   ThemeIcon,
+  KeyIcon,
 } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import type { NavSection } from "~/types/ui";
@@ -80,6 +81,12 @@ const navigationSections: NavSection[] = [
     title: "Dev Tools",
     muted: true,
     items: [
+      {
+        name: "API Setup",
+        href: "/api-setup",
+        icon: KeyIcon,
+        description: "Gateway registration",
+      },
       {
         name: "Component Library",
         href: "/components",

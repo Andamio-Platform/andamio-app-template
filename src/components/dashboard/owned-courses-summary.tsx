@@ -19,7 +19,7 @@ import {
   ExternalLinkIcon,
   AddIcon,
 } from "~/components/icons";
-import { useOwnedCourses } from "~/hooks/use-andamioscan";
+import { useTeacherCourses } from "~/hooks/api";
 
 interface OwnedCoursesSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -28,11 +28,11 @@ interface OwnedCoursesSummaryProps {
 /**
  * Owned Courses Summary Card
  *
- * Displays a summary of courses the user owns/created (on-chain data).
+ * Displays a summary of courses the user teaches (merged on-chain + DB data).
  * Shows on the dashboard for authenticated users.
  *
- * Note: This is different from "teaching" courses - owned means the user
- * is the admin/creator of the course.
+ * Uses the teacher courses endpoint which returns courses where the user
+ * is either an owner/admin OR a listed teacher.
  *
  * UX States:
  * - Loading: Skeleton cards
@@ -40,9 +40,7 @@ interface OwnedCoursesSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryProps) {
-  const { data: ownedCourses, isLoading, error, refetch } = useOwnedCourses(
-    accessTokenAlias ?? undefined
-  );
+  const { data: ownedCourses, isLoading, error, refetch } = useTeacherCourses();
 
   // Log errors silently (per user preference)
   React.useEffect(() => {
@@ -86,7 +84,7 @@ export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryPro
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={InstructorIcon} title="My Courses" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -124,7 +122,7 @@ export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryPro
             <AndamioBadge variant="secondary" className="text-xs">
               {ownedCourses.length} owned
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -137,7 +135,7 @@ export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryPro
           <div>
             <AndamioText className="text-lg font-semibold">{ownedCourses.length}</AndamioText>
             <AndamioText variant="small" className="text-xs">
-              {ownedCourses.length === 1 ? "Course" : "Courses"} owned on-chain
+              {ownedCourses.length === 1 ? "Course" : "Courses"} teaching
             </AndamioText>
           </div>
         </div>

@@ -14,10 +14,9 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { env } from "~/env";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
-import type { LessonResponse } from "@andamio/db-api-types";
+import type { LessonResponse } from "~/types/generated";
 
 interface StepLessonsProps {
   config: WizardStepConfig;
@@ -61,7 +60,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
     try {
       // Go API: POST /course/teacher/lesson/create
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/create`,
+        `/api/gateway/api/v2/course/teacher/lesson/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -335,7 +334,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
     try {
       // Go API: POST /course/teacher/lesson/update
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/lesson/update`,
+        `/api/gateway/api/v2/course/teacher/lesson/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

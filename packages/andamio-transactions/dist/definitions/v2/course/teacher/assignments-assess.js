@@ -102,7 +102,7 @@ exports.COURSE_TEACHER_ASSIGNMENTS_ASSESS = {
                 assessment_result: zod_1.z.enum(["accept", "refuse"]), // Passed through for conditional side effects
             }),
         }),
-        builder: { type: "api-endpoint", endpoint: "/v2/tx/course/teacher/assignments/assess" },
+        builder: { type: "api-endpoint", endpoint: "/api/v2/tx/course/teacher/assignments/assess" },
         estimatedCost: (0, protocol_reference_1.getProtocolCost)(protocolId),
     },
     // Two conditional side effects - one for accept, one for refuse
@@ -163,6 +163,6 @@ exports.COURSE_TEACHER_ASSIGNMENTS_ASSESS = {
     },
     docs: {
         protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/teacher/assignments/assess",
-        apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/docs#/default/post_v2_tx_course_teacher_assignments_assess",
+        apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_teacher_assignments_assess",
     },
 };

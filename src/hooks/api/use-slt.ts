@@ -3,9 +3,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { env } from "~/env";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type SLTListResponse, type SLTResponse } from "@andamio/db-api-types";
+import { type SLTListResponse, type SLTResponse } from "~/types/generated";
 import { courseModuleKeys } from "./use-course-module";
 
 // =============================================================================
@@ -47,7 +46,7 @@ export function useSLTs(
     queryFn: async () => {
       // Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const response = await fetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
@@ -86,7 +85,7 @@ export function useCreateSLT() {
       // Go API: POST /course/teacher/slt/create
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/create`,
+        `/api/gateway/api/v2/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,7 +141,7 @@ export function useUpdateSLT() {
       // Go API: POST /course/teacher/slt/update
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/update`,
+        `/api/gateway/api/v2/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -189,7 +188,7 @@ export function useDeleteSLT() {
       // Go API: POST /course/teacher/slt/delete
       // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/slt/delete`,
+        `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

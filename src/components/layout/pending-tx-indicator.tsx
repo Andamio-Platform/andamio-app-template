@@ -16,6 +16,13 @@ import { cn } from "~/lib/utils";
  *
  * Shows in the status bar when there are blockchain transactions awaiting confirmation.
  * Simple, elegant, and non-intrusive.
+ *
+ * @deprecated This component uses usePendingTransactions which returns empty state.
+ * The V1 API endpoint was removed. Transaction confirmation is now handled
+ * by individual transaction components via useTxWatcher + gateway auto-confirmation.
+ *
+ * TODO: Update to use gateway `/api/v2/transactions` endpoint for global pending tx tracking
+ * if this feature is needed in the future.
  */
 export function PendingTxIndicator() {
   const { count, hasPending, pendingTxs } = usePendingTransactions({

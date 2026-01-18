@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon, DeleteIcon } from "~/components/icons";
-import { type CourseModuleResponse } from "@andamio/db-api-types";
+import { type CourseModuleResponse } from "~/types/generated";
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -12,7 +12,7 @@ import { cn } from "~/lib/utils";
 // Module Status Configuration
 // =============================================================================
 
-type ModuleStatus = CourseModuleResponse["status"] | "APPROVED" | "ARCHIVED" | "BACKLOG" | "DEPRECATED";
+type ModuleStatus = "ON_CHAIN" | "PENDING_TX" | "APPROVED" | "DRAFT" | "ARCHIVED" | "BACKLOG" | "DEPRECATED";
 
 interface StatusConfig {
   icon: typeof SuccessIcon;
@@ -122,8 +122,7 @@ export function StudioModuleCard({
   isDeleting = false,
 }: StudioModuleCardProps) {
   const sltCount = courseModule.slts?.length ?? 0;
-  // Cast status to string to handle extended statuses like APPROVED
-  const status = courseModule.status as string;
+  const status = courseModule.status;
   // Only allow delete for DRAFT modules (not minted or pending)
   const canDelete = onDelete && status === "DRAFT";
 

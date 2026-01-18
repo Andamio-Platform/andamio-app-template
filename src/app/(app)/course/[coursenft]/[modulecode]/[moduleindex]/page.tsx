@@ -59,7 +59,7 @@ export default function LessonDetailPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+            course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
             courseModule={{ code: courseModule.module_code, title: courseModule.title }}
             lesson={{ index: moduleIndex }}
             currentPage="lesson"
@@ -92,7 +92,7 @@ export default function LessonDetailPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
+          course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
           courseModule={{ code: courseModule.module_code, title: courseModule.title }}
           lesson={{ index: lesson.module_index, title: lesson.title ?? undefined }}
           currentPage="lesson"

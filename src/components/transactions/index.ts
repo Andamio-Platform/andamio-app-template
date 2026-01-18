@@ -11,11 +11,17 @@ export type { TransactionButtonProps } from "./transaction-button";
 export { TransactionStatus } from "./transaction-status";
 export type { TransactionStatusProps } from "./transaction-status";
 
+// AndamioTransaction is deprecated - use specific transaction components instead
+// (e.g., AssessAssignment, EnrollInCourse, TaskCommit, etc.)
 export { AndamioTransaction } from "./andamio-transaction";
 export type { AndamioTransactionProps } from "./andamio-transaction";
 
-export { MintAccessToken } from "./mint-access-token";
-export type { MintAccessTokenProps } from "./mint-access-token";
+// MintAccessToken (V1) is deprecated - use MintAccessTokenSimple instead
+export { MintAccessTokenSimple } from "./mint-access-token-simple";
+export type { MintAccessTokenSimpleProps } from "./mint-access-token-simple";
+// Re-export for backwards compatibility
+export { MintAccessTokenSimple as MintAccessToken } from "./mint-access-token-simple";
+export type { MintAccessTokenSimpleProps as MintAccessTokenProps } from "./mint-access-token-simple";
 
 export { EnrollInCourse } from "./enroll-in-course";
 export type { EnrollInCourseProps } from "./enroll-in-course";
@@ -49,13 +55,12 @@ export { BlacklistManage } from "./blacklist-manage";
 export type { BlacklistManageProps } from "./blacklist-manage";
 
 export { TasksManage } from "./tasks-manage";
-export type { TasksManageProps } from "./tasks-manage";
+export type { TasksManageProps, ComputedTaskHash } from "./tasks-manage";
 
 export { TasksAssess } from "./tasks-assess";
 export type { TasksAssessProps } from "./tasks-assess";
 
-export { ProjectEnroll } from "./project-enroll";
-export type { ProjectEnrollProps } from "./project-enroll";
+// ProjectEnroll is deprecated - use TaskCommit with isFirstCommit={true} instead
 
 export { TaskAction } from "./task-action";
 export type { TaskActionProps } from "./task-action";

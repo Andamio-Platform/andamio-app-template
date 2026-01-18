@@ -1,21 +1,21 @@
 /**
- * BurnModuleTokens Transaction Component
+ * BurnModuleTokens Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * Teacher UI for burning (removing) course module tokens.
- * Uses COURSE_TEACHER_MODULES_MANAGE transaction definition from @andamio/transactions.
+ * Uses COURSE_TEACHER_MODULES_MANAGE transaction type with gateway auto-confirmation.
  *
- * @see packages/andamio-transactions/src/definitions/v2/course/teacher/modules-manage.ts
+ * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { COURSE_TEACHER_MODULES_MANAGE } from "@andamio/transactions";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useAndamioTransaction } from "~/hooks/use-andamio-transaction";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { courseModuleKeys } from "~/hooks/api/use-course-module";
-import { env } from "~/env";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -28,8 +28,9 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { DeleteIcon, ModuleIcon, AlertIcon, CloseIcon } from "~/components/icons";
+import { DeleteIcon, ModuleIcon, AlertIcon, CloseIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface ModuleToBurn {
   /** Module code (for display) */
@@ -83,18 +84,47 @@ export function BurnModuleTokens({
   onError,
 }: BurnModuleTokensProps) {
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useAndamioTransaction();
+  const { state, result, error, execute, reset } = useSimpleTransaction();
   const queryClient = useQueryClient();
+
+  // Watch for gateway confirmation after TX submission
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          console.log("[BurnModuleTokens] TX confirmed and DB updated by gateway");
+
+          const moduleCount = modulesToBurn.length;
+          toast.success("Modules Burned Successfully!", {
+            description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} removed from blockchain`,
+          });
+
+          // Revert burned modules to DRAFT status in database
+          void revertModulesToDraft(modulesToBurn).then(() => {
+            // Clear selection and call success callback
+            onClearSelection();
+            void onSuccess?.();
+          });
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Burn Failed", {
+            description: status.last_error ?? "Transaction failed on-chain. Please try again.",
+          });
+          onError?.(new Error(status.last_error ?? "Transaction failed"));
+        }
+      },
+    }
+  );
 
   /**
    * Update burned modules to DRAFT status in the database.
-   * Called after the burn transaction is successfully submitted.
+   * Called after the burn transaction is confirmed on-chain.
    */
   const revertModulesToDraft = async (modules: ModuleToBurn[]) => {
     const results = await Promise.allSettled(
       modules.map(async (m) => {
         const response = await authenticatedFetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/teacher/course-module/update-status`,
+          `/api/gateway/api/v2/course/teacher/course-module/update-status`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -127,6 +157,8 @@ export function BurnModuleTokens({
     return results;
   };
 
+  const ui = TRANSACTION_UI.COURSE_TEACHER_MODULES_MANAGE;
+
   const handleBurnModules = async () => {
     if (!user?.accessTokenAlias || modulesToBurn.length === 0) {
       return;
@@ -135,38 +167,17 @@ export function BurnModuleTokens({
     // Extract the on-chain hashes for burning
     const hashesToBurn = modulesToBurn.map((m) => m.onChainHash);
 
-    const txRequest = {
-      alias: user.accessTokenAlias,
-      course_id: courseNftPolicyId,
-      modules_to_mint: [],
-      modules_to_update: [],
-      modules_to_burn: hashesToBurn,
-    };
-
     await execute({
-      definition: COURSE_TEACHER_MODULES_MANAGE,
-      params: txRequest,
+      txType: "COURSE_TEACHER_MODULES_MANAGE",
+      params: {
+        alias: user.accessTokenAlias,
+        course_id: courseNftPolicyId,
+        modules_to_mint: [],
+        modules_to_update: [],
+        modules_to_burn: hashesToBurn,
+      },
       onSuccess: async (txResult) => {
-        console.log("[BurnModuleTokens] Success!", txResult);
-
-        const moduleCount = modulesToBurn.length;
-
-        toast.success("Burn Transaction Submitted!", {
-          description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} burned - updating database`,
-          action: txResult.blockchainExplorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(txResult.blockchainExplorerUrl, "_blank"),
-              }
-            : undefined,
-        });
-
-        // Revert burned modules to DRAFT status in database
-        await revertModulesToDraft(modulesToBurn);
-
-        // Clear selection and refresh data
-        onClearSelection();
-        await onSuccess?.();
+        console.log("[BurnModuleTokens] TX submitted successfully!", txResult);
       },
       onError: (txError) => {
         console.error("[BurnModuleTokens] Error:", txError);
@@ -254,21 +265,55 @@ export function BurnModuleTokens({
           </div>
         </div>
 
-        {/* Transaction Status */}
-        {state !== "idle" && (
+        {/* Transaction Status - Only show during processing */}
+        {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error}
+            error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: `${modulesToBurn.length} module${modulesToBurn.length > 1 ? "s" : ""} burned successfully!`,
+              success: "Transaction submitted! Waiting for confirmation...",
             }}
           />
         )}
 
+        {/* Gateway Confirmation Status */}
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Processing database updates"}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {txConfirmed && (
+          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-success" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-success">
+                  Modules Burned Successfully!
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {modulesToBurn.length} module{modulesToBurn.length > 1 ? "s" : ""} removed from blockchain
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Burn Button */}
-        {state !== "success" && (
+        {state !== "success" && !txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleBurnModules}

@@ -20,7 +20,7 @@ import {
   LoadingIcon,
   DatabaseIcon,
 } from "~/components/icons";
-import { useUserGlobalState } from "~/hooks/use-andamioscan";
+import { useStudentCourses } from "~/hooks/api";
 import Link from "next/link";
 
 interface OnChainStatusProps {
@@ -30,15 +30,14 @@ interface OnChainStatusProps {
 /**
  * On-Chain Status Card
  *
- * Displays the user's on-chain state from Andamioscan:
+ * Displays the user's on-chain learning status:
  * - Enrolled courses
- * - Earned credentials
  * - Links to course detail pages
+ *
+ * Uses the merged student courses endpoint for enrolled course data.
  */
 export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
-  const { data: userState, isLoading, error, refetch } = useUserGlobalState(
-    accessTokenAlias ?? undefined
-  );
+  const { data: enrolledCourses, isLoading, error, refetch } = useStudentCourses();
 
   // No access token - show prompt to mint
   if (!accessTokenAlias) {
@@ -90,7 +89,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -112,12 +111,8 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
     );
   }
 
-  // Calculate stats
-  const enrolledCourses = userState?.courses.filter((c) => c.is_enrolled) ?? [];
-  const totalCredentials = userState?.courses.reduce(
-    (sum, c) => sum + c.credentials.length,
-    0
-  ) ?? 0;
+  // Calculate stats - using enrolledCourses from hook directly
+  const courseCount = enrolledCourses?.length ?? 0;
 
   return (
     <AndamioCard>
@@ -129,7 +124,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
               <VerifiedIcon className="mr-1 h-3 w-3 text-success" />
               Live
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -137,55 +132,40 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-            <CourseIcon className="h-4 w-4 text-info" />
-            <div>
-              <AndamioText className="text-lg font-semibold">{enrolledCourses.length}</AndamioText>
-              <AndamioText variant="small" className="text-xs">
-                {enrolledCourses.length === 1 ? "Course" : "Courses"}
-              </AndamioText>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-            <CredentialIcon className="h-4 w-4 text-warning" />
-            <div>
-              <AndamioText className="text-lg font-semibold">{totalCredentials}</AndamioText>
-              <AndamioText variant="small" className="text-xs">
-                {totalCredentials === 1 ? "Credential" : "Credentials"}
-              </AndamioText>
-            </div>
+        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
+          <CourseIcon className="h-4 w-4 text-info" />
+          <div>
+            <AndamioText className="text-lg font-semibold">{courseCount}</AndamioText>
+            <AndamioText variant="small" className="text-xs">
+              {courseCount === 1 ? "Course" : "Courses"} enrolled on-chain
+            </AndamioText>
           </div>
         </div>
 
         {/* Enrolled Courses List */}
-        {enrolledCourses.length > 0 ? (
+        {enrolledCourses && enrolledCourses.length > 0 ? (
           <div className="space-y-2">
             <AndamioText variant="overline">
               Active Enrollments
             </AndamioText>
             <div className="space-y-1.5">
-              {enrolledCourses.slice(0, 3).map((course) => (
+              {enrolledCourses.slice(0, 3).map((course, index) => (
                 <Link
-                  key={course.course_id}
-                  href={`/course/${course.course_id}`}
+                  key={course.course_id ?? index}
+                  href={`/course/${course.course_id ?? ""}`}
                   className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <CourseIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <code className="text-xs font-mono truncate">
-                      {course.course_id.slice(0, 16)}...
-                    </code>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {course.credentials.length > 0 && (
-                      <AndamioBadge variant="secondary" className="text-xs">
-                        <CredentialIcon className="mr-1 h-3 w-3" />
-                        {course.credentials.length}
-                      </AndamioBadge>
+                    {course.content?.title ? (
+                      <span className="text-xs truncate">{course.content.title}</span>
+                    ) : (
+                      <code className="text-xs font-mono truncate">
+                        {course.course_id?.slice(0, 16) ?? "Unknown"}...
+                      </code>
                     )}
-                    <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
+                  <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </Link>
               ))}
               {enrolledCourses.length > 3 && (
@@ -206,21 +186,6 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
             >
               Browse courses →
             </Link>
-          </div>
-        )}
-
-        {/* Credentials Summary */}
-        {totalCredentials > 0 && (
-          <div className="pt-2 border-t">
-            <div className="flex items-center justify-between">
-              <AndamioText variant="small" className="text-xs">
-                {totalCredentials} credential{totalCredentials !== 1 ? "s" : ""} earned on-chain
-              </AndamioText>
-              <AndamioBadge variant="outline" className="text-xs text-success">
-                <VerifiedIcon className="mr-1 h-3 w-3" />
-                Verified
-              </AndamioBadge>
-            </div>
           </div>
         )}
       </AndamioCardContent>

@@ -1,38 +1,43 @@
 # Project Manager Skill
 
-> **Last Updated**: January 14, 2026
+> **Last Updated**: January 18, 2026 (V2 Gateway API Migration on `update/andamioscan` branch)
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
 ---
 
-## 🚨 RESUME HERE TOMORROW (January 15, 2026)
+## ✅ COMPLETED: V2 Gateway API Migration
 
-**Leaving Off**: Commitment Sync page implemented but has bugs to fix.
+**Status**: Complete on `update/andamioscan` branch - Ready for merge to main
 
-### First Priority: Test & Fix Commitment Sync
+The unified V2 Gateway API (92 endpoints) consolidates all 3 subsystems into a single gateway. Migration completed January 17-18, 2026.
 
-**Location**: `/studio/project/[projectid]/commitments`
+### What Changed
 
-**Test Steps**:
-1. Navigate to commitments page for a project with on-chain submissions
-2. Check if "DB Status" column shows correctly (✅ exists or ⚠️ Missing)
-3. Click "Sync" button for a submission with "Missing" status
-4. Verify toast shows success/error
-5. Test TasksAssess component after sync
+| Before | After |
+|--------|-------|
+| 3 separate API handlers | Single gateway proxy |
+| Manual data merging | Merged endpoints include on-chain data |
+| `@andamio/db-api-types` NPM package | Generated types from OpenAPI spec |
+| `NEXT_PUBLIC_ANDAMIO_API_URL` env var | Removed (only gateway URL needed) |
+| Multiple proxy routes | Single `/api/gateway/[...path]` |
+| v1 auth endpoints | v2 auth endpoints |
 
-**Known Issues**:
-- Sync button may fail if DB check returns unexpected response
-- DB status check uses contributor endpoint (may need manager endpoint)
-- Some edge cases with task_hash not being in DB
+### Key Files
 
-**Files to Debug**:
-- `src/lib/project-commitment-sync.ts` - `syncPendingAssessment()` and `checkCommitmentExists()`
-- `src/app/(app)/studio/project/[projectid]/commitments/page.tsx` - UI and state handling
+| File | Purpose |
+|------|---------|
+| `src/app/api/gateway/[...path]/route.ts` | Unified proxy route |
+| `src/lib/gateway.ts` | Gateway client functions |
+| `src/types/generated/gateway.ts` | Auto-generated types |
+| `src/types/generated/index.ts` | Strict type re-exports |
 
-**Related Docs**:
-- `CONTRIBUTOR-TRANSACTION-MODEL.md` - Explains the 3-transaction contributor lifecycle
-- `STATUS.md` (Session 9) - Full session notes
+### Regenerating Types
+
+When the API changes:
+```bash
+npm run generate:types
+```
 
 ---
 
@@ -91,16 +96,17 @@ Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for li
 
 | Blocker | Status |
 |---------|--------|
-| **Commitment Sync Bugs** | 🔧 Debug tomorrow |
+| **Andamioscan Issue #11** | ✅ **Resolved** - task_id now populated |
+| **Atlas TX API Task Commit** | ✅ **Resolved** - client-side fix implemented |
 | @andamio/transactions NPM | Waiting (have locally via workspace) |
 | Go API Migration | ✅ **Complete** (50+ endpoints migrated) |
 | Wallet Testing | ⏳ Need to test Nami, Flint, Yoroi, Lace |
 
 ### Current Focus
 
-**Andamio Pioneers Program** (2026-01-14 onwards) - Preprod testing with real users.
+**Post-Migration Testing** (2026-01-18) - V2 Gateway migration complete on `update/andamioscan` branch, ready for testing and merge.
 
-See `ROADMAP.md` for current priorities and `STATUS.md` for detailed blockers.
+See `ROADMAP.md` for current priorities and `STATUS.md` for detailed session notes.
 
 ---
 
@@ -117,45 +123,62 @@ See `ROADMAP.md` for current priorities and `STATUS.md` for detailed blockers.
 
 ## Data Sources
 
-The app integrates multiple APIs:
+### Current Architecture (V2 Gateway - Single API) ✅
 
-| Source | Type | Purpose |
-|--------|------|---------|
-| Andamioscan | Read-only | On-chain course/user state |
-| Andamio DB API | CRUD | Drafts, metadata, local state |
-| Atlas Tx API | Transactions | Build & submit blockchain tx |
+The template now uses the unified V2 Gateway API, consolidating all 3 subsystems.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Andamio T3 App Template                   │
-├─────────────────────────────────────────────────────────────┤
+│              V2 Gateway API (92 endpoints)                   │
 │                                                              │
-│  ┌────────────┐  ┌────────────┐  ┌────────────────────────┐ │
-│  │ Andamioscan│  │ DB API     │  │ Atlas Tx API           │ │
-│  │ (on-chain) │  │ (CRUD)     │  │ (transactions)         │ │
-│  └─────┬──────┘  └─────┬──────┘  └───────────┬────────────┘ │
-│        │               │                      │              │
-│        ▼               ▼                      ▼              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                Frontend Components                    │   │
-│  │  - Course pages (Andamioscan + DB API)               │   │
-│  │  - Studio pages (DB API)                             │   │
-│  │  - Transactions (Atlas Tx → confirm via Andamioscan) │   │
-│  └──────────────────────────────────────────────────────┘   │
+│  • Auth:         /api/v2/auth/*                             │
+│  • Merged Data:  /api/v2/course/*, /api/v2/project/*        │
+│  • Transactions: /v2/tx/*                                    │
+│  • On-chain:     /v2/courses, /v2/projects (scan passthru)  │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Andamio T3 App Template                   │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ Single Proxy: /api/gateway/[...path]                   │ │
+│  │ • Hides gateway URL from client                        │ │
+│  │ • Adds API key header server-side                      │ │
+│  │ • 30-second cache for GET requests                     │ │
+│  └────────────────────────┬───────────────────────────────┘ │
+│                           │                                  │
+│                           ▼                                  │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ React hooks (all gateway calls)                        │ │
+│  │ • Role-based hooks (use-student-courses, etc.)         │ │
+│  │ • Types generated from OpenAPI spec                    │ │
+│  │ • Automatic cache invalidation                         │ │
+│  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Key benefit**: Merged endpoints return combined on-chain + off-chain data. No more manual data combining in the frontend.
+
+### Legacy Architecture (Removed)
+
+The following have been removed from the `update/andamioscan` branch:
+- `/api/andamioscan/` proxy route
+- `/api/atlas-tx/` proxy route
+- `NEXT_PUBLIC_ANDAMIO_API_URL` environment variable
+- `@andamio/db-api-types` NPM dependency
+- `src/hooks/use-andamioscan.ts`
 
 ---
 
 ## Environment Variables
 
 ```bash
-# Andamioscan (on-chain data)
-NEXT_PUBLIC_ANDAMIOSCAN_URL="https://preprod.andamioscan.andamio.space"
+# Unified API Gateway (combines all services)
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+ANDAMIO_API_KEY="your-api-key-here"
 
-# Andamio DB API (local state)
-NEXT_PUBLIC_ANDAMIO_API_URL="http://localhost:4000/api/v0"
-
-# Access Token Policy ID
-NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="..."
+# Cardano Network
+NEXT_PUBLIC_CARDANO_NETWORK="preprod"
+NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="4758613867a8a7aa500b5d57a0e877f01a8e63c1365469589b12063c"
 ```

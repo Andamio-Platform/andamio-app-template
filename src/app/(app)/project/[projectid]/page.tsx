@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { env } from "~/env";
-import { useProject } from "~/hooks/use-andamioscan";
+import { useProject } from "~/hooks/api";
 import {
   AndamioBadge,
   AndamioButton,
@@ -38,20 +37,18 @@ import {
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
-import { type ProjectV2Output, type ProjectTaskV2Output } from "@andamio/db-api-types";
+import { type OrchestrationMergedProjectDetail } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 
-import type { AndamioscanProjectDetails } from "~/lib/andamioscan";
-
 /**
- * On-Chain Project Data Component
- * Displays blockchain data from Andamioscan
+ * Project Data Component
+ * Displays project data from the merged API
  */
-function OnChainProjectData({
-  projectDetails,
+function ProjectDataCard({
+  project,
   isLoading,
 }: {
-  projectDetails: AndamioscanProjectDetails | null | undefined;
+  project: OrchestrationMergedProjectDetail | null | undefined;
   isLoading: boolean;
 }) {
   // Loading state
@@ -75,18 +72,18 @@ function OnChainProjectData({
     );
   }
 
-  // Not on chain
-  if (!projectDetails) {
+  // Not available
+  if (!project) {
     return (
       <AndamioCard>
         <AndamioCardHeader>
-          <AndamioCardIconHeader icon={OnChainIcon} title="On-Chain Data" />
+          <AndamioCardIconHeader icon={OnChainIcon} title="Project Data" />
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex items-center gap-2 text-muted-foreground">
             <OnChainIcon className="h-4 w-4" />
             <AndamioText variant="small">
-              Project not yet indexed on-chain
+              Project data not available
             </AndamioText>
           </div>
         </AndamioCardContent>
@@ -95,16 +92,20 @@ function OnChainProjectData({
   }
 
   // Calculate totals
-  const totalFunding = projectDetails.treasury_fundings.reduce(
-    (sum, f) => sum + f.lovelace,
+  const contributors = project.contributors ?? [];
+  const tasks = project.tasks ?? [];
+  const submissions = project.submissions ?? [];
+  const assessments = project.assessments ?? [];
+  const credentialClaims = project.credential_claims ?? [];
+  const treasuryFundings = project.treasury_fundings ?? [];
+  const prerequisites = project.prerequisites ?? [];
+
+  const totalFunding = treasuryFundings.reduce(
+    (sum, f) => sum + (f.lovelace ?? 0),
     0
   );
-  const pendingSubmissions = projectDetails.submissions.filter(
-    (s) => !s.deletedAt?.valid
-  ).length;
-  const completedAssessments = projectDetails.assessments.filter(
-    (a) => !a.deletedAt?.valid
-  ).length;
+  const pendingSubmissions = submissions.length;
+  const completedAssessments = assessments.length;
 
   return (
     <AndamioCard>
@@ -112,12 +113,14 @@ function OnChainProjectData({
         <div className="flex items-center justify-between">
           <AndamioCardIconHeader
             icon={OnChainIcon}
-            title="On-Chain Data"
-            description="Live blockchain data from Andamioscan"
+            title="Project Data"
+            description="Live blockchain data"
           />
-          <AndamioBadge status="success">
-            Verified
-          </AndamioBadge>
+          {project.source === "merged" && (
+            <AndamioBadge status="success">
+              Verified
+            </AndamioBadge>
+          )}
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-6">
@@ -129,17 +132,17 @@ function OnChainProjectData({
               <AndamioText variant="small">Contributors</AndamioText>
             </div>
             <AndamioText className="text-2xl font-bold">
-              {projectDetails.contributors.length}
+              {contributors.length}
             </AndamioText>
           </div>
 
           <div className="rounded-lg bg-muted/30 p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TaskIcon className="h-4 w-4" />
-              <AndamioText variant="small">On-Chain Tasks</AndamioText>
+              <AndamioText variant="small">Tasks</AndamioText>
             </div>
             <AndamioText className="text-2xl font-bold">
-              {projectDetails.tasks.length}
+              {tasks.length}
             </AndamioText>
           </div>
 
@@ -149,7 +152,7 @@ function OnChainProjectData({
               <AndamioText variant="small">Credentials Claimed</AndamioText>
             </div>
             <AndamioText className="text-2xl font-bold">
-              {projectDetails.credential_claims.length}
+              {credentialClaims.length}
             </AndamioText>
           </div>
 
@@ -172,7 +175,7 @@ function OnChainProjectData({
             </AndamioText>
             <div className="flex items-center gap-4">
               <AndamioBadge variant="secondary">
-                {projectDetails.submissions.length} submissions
+                {submissions.length} submissions
               </AndamioBadge>
               <AndamioBadge variant="outline">
                 {pendingSubmissions} pending
@@ -183,16 +186,16 @@ function OnChainProjectData({
             </div>
           </div>
 
-          {projectDetails.prerequisites.length > 0 && (
+          {prerequisites.length > 0 && (
             <div>
               <AndamioText variant="small" className="font-medium mb-2">
                 Prerequisites
               </AndamioText>
               <div className="flex flex-wrap gap-2">
-                {projectDetails.prerequisites.map((prereq, i) => (
+                {prerequisites.map((prereq, i) => (
                   <AndamioBadge key={i} variant="outline" className="font-mono text-xs">
                     <CourseIcon className="h-3 w-3 mr-1" />
-                    {prereq.course_id.slice(0, 12)}... ({prereq.assignment_ids.length} assignments)
+                    {prereq.course_id?.slice(0, 12)}... ({prereq.assignment_ids?.length ?? 0} assignments)
                   </AndamioBadge>
                 ))}
               </div>
@@ -201,20 +204,20 @@ function OnChainProjectData({
         </div>
 
         {/* Contributors List */}
-        {projectDetails.contributors.length > 0 && (
+        {contributors.length > 0 && (
           <div>
             <AndamioText variant="small" className="font-medium mb-2">
               Active Contributors
             </AndamioText>
             <div className="flex flex-wrap gap-2">
-              {projectDetails.contributors.slice(0, 10).map((alias) => (
-                <AndamioBadge key={alias} variant="secondary" className="font-mono text-xs">
-                  {alias}
+              {contributors.slice(0, 10).map((contributor, i) => (
+                <AndamioBadge key={contributor.alias ?? i} variant="secondary" className="font-mono text-xs">
+                  {contributor.alias ?? "Unknown"}
                 </AndamioBadge>
               ))}
-              {projectDetails.contributors.length > 10 && (
+              {contributors.length > 10 && (
                 <AndamioBadge variant="outline">
-                  +{projectDetails.contributors.length - 10} more
+                  +{contributors.length - 10} more
                 </AndamioBadge>
               )}
             </div>
@@ -228,106 +231,19 @@ function OnChainProjectData({
 /**
  * Project detail page displaying project info and tasks list
  *
- * API Endpoints (V2):
- * - GET /project-v2/user/project/:project_id
- * - GET /project-v2/user/tasks/:project_state_policy_id
+ * API Endpoint (V2 Merged):
+ * - GET /api/v2/project/user/project/get/{project_id}
  */
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.projectid as string;
 
-  const [project, setProject] = useState<ProjectV2Output | null>(null);
-  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch on-chain project details from Andamioscan
+  // Fetch project with all data from merged endpoint
   const {
-    data: onChainProject,
-    isLoading: isOnChainLoading,
+    data: project,
+    isLoading,
+    error,
   } = useProject(projectId);
-
-  useEffect(() => {
-    const fetchProjectAndTasks = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // V2 API: GET /project-v2/user/project/:project_id
-        const projectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/project/${projectId}`
-        );
-
-        if (!projectResponse.ok) {
-          const errorText = await projectResponse.text();
-          console.error("Project fetch error:", {
-            status: projectResponse.status,
-            statusText: projectResponse.statusText,
-            body: errorText,
-          });
-          throw new Error(`Project not found (${projectResponse.status})`);
-        }
-
-        const projectData = (await projectResponse.json()) as ProjectV2Output;
-        setProject(projectData);
-
-        // V2 API: GET /project-v2/user/tasks/:project_state_policy_id
-        // Note: project_state_policy_id comes from the project's states array
-        if (projectData.states && projectData.states.length > 0) {
-          const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
-          if (projectStatePolicyId) {
-            const tasksResponse = await fetch(
-              `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/tasks/${projectStatePolicyId}`
-            );
-
-            if (!tasksResponse.ok) {
-              const errorText = await tasksResponse.text();
-              console.error("Tasks fetch error:", {
-                status: tasksResponse.status,
-                statusText: tasksResponse.statusText,
-                body: errorText,
-              });
-              // Don't throw - project might have no tasks yet
-              console.warn("Failed to fetch tasks:", errorText);
-            } else {
-              const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
-              setTasks(tasksData ?? []);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching project and tasks:", err);
-        setError(err instanceof Error ? err.message : "Failed to load project");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchProjectAndTasks();
-  }, [projectId]);
-
-  // Helper to check if a task is expired
-  const isTaskExpired = (expirationTime: string | null): boolean => {
-    if (!expirationTime) return false;
-    const expiryTimestamp = parseInt(expirationTime, 10);
-    const currentTimestamp = Date.now();
-    return currentTimestamp > expiryTimestamp;
-  };
-
-  // Helper to get status badge variant
-  const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
-    switch (status) {
-      case "ON_CHAIN":
-        return "default";
-      case "DRAFT":
-        return "secondary";
-      case "EXPIRED":
-      case "CANCELLED":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
 
   // Loading state
   if (isLoading) {
@@ -339,13 +255,18 @@ export default function ProjectDetailPage() {
     return (
       <div className="space-y-6">
         <AndamioBackButton href="/project" label="Back to Projects" />
-        <AndamioErrorAlert error={error ?? "Project not found"} />
+        <AndamioErrorAlert error={error?.message ?? "Project not found"} />
       </div>
     );
   }
 
-  // Filter tasks to show only live tasks for public view
-  const liveTasks = tasks.filter((task) => task.status === "ON_CHAIN");
+  // Get tasks from merged project data
+  const allTasks = project.tasks ?? [];
+  // For on-chain tasks, filter based on availability (not deleted)
+  const liveTasks = allTasks;
+
+  // Get project title from content
+  const projectTitle = project.content?.title ?? "Project";
 
   // Empty tasks state
   if (liveTasks.length === 0) {
@@ -353,17 +274,17 @@ export default function ProjectDetailPage() {
       <div className="space-y-6">
         <AndamioBackButton href="/project" label="Back to Projects" />
 
-        <AndamioPageHeader title={project.title ?? "Project"} />
+        <AndamioPageHeader title={projectTitle} />
         <div className="flex flex-wrap items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
             {project.project_id?.slice(0, 16)}...
           </AndamioBadge>
         </div>
 
-        {/* On-Chain Data Section */}
-        <OnChainProjectData
-          projectDetails={onChainProject}
-          isLoading={isOnChainLoading}
+        {/* Project Data Section */}
+        <ProjectDataCard
+          project={project}
+          isLoading={false}
         />
 
         <AndamioEmptyState
@@ -381,7 +302,7 @@ export default function ProjectDetailPage() {
       <AndamioBackButton href="/project" label="Back to Projects" />
 
       <AndamioPageHeader
-        title={project.title ?? "Project"}
+        title={projectTitle}
         action={
           <Link href={`/project/${projectId}/contributor`}>
             <AndamioButton>
@@ -397,10 +318,10 @@ export default function ProjectDetailPage() {
         </AndamioBadge>
       </div>
 
-      {/* On-Chain Data Section */}
-      <OnChainProjectData
-        projectDetails={onChainProject}
-        isLoading={isOnChainLoading}
+      {/* Project Data Section */}
+      <ProjectDataCard
+        project={project}
+        isLoading={false}
       />
 
       <div className="space-y-4">
@@ -410,48 +331,44 @@ export default function ProjectDetailPage() {
             <AndamioTableHeader>
               <AndamioTableRow>
                 <AndamioTableHead className="w-12 sm:w-16">#</AndamioTableHead>
-                <AndamioTableHead className="min-w-[150px]">Title</AndamioTableHead>
-                <AndamioTableHead className="min-w-[200px] hidden md:table-cell">Description</AndamioTableHead>
+                <AndamioTableHead className="min-w-[150px]">Task ID</AndamioTableHead>
+                <AndamioTableHead className="min-w-[200px] hidden md:table-cell">Expiration</AndamioTableHead>
                 <AndamioTableHead className="w-24 sm:w-32 text-center">Reward</AndamioTableHead>
-                <AndamioTableHead className="w-24 sm:w-32 text-center">Status</AndamioTableHead>
               </AndamioTableRow>
             </AndamioTableHeader>
             <AndamioTableBody>
-              {liveTasks.map((task) => (
-                <AndamioTableRow key={task.task_hash ?? task.index}>
+              {liveTasks.map((task, index) => (
+                <AndamioTableRow key={task.task_id ?? index}>
                   <AndamioTableCell className="font-mono text-xs">
-                    {task.index}
+                    {index + 1}
                   </AndamioTableCell>
                   <AndamioTableCell>
-                    {task.task_hash ? (
+                    {task.task_id ? (
                       <Link
-                        href={`/project/${projectId}/${task.task_hash}`}
-                        className="font-medium hover:underline"
+                        href={`/project/${projectId}/${task.task_id}`}
+                        className="font-medium font-mono text-sm hover:underline"
                       >
-                        {task.title}
+                        {task.task_id.slice(0, 16)}...
                       </Link>
                     ) : (
-                      <AndamioText className="font-medium">{task.title}</AndamioText>
+                      <AndamioText className="font-medium text-muted-foreground">No ID</AndamioText>
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
-                    {task.content}
+                    {task.expiration ? (
+                      <AndamioText variant="small">
+                        Expires: {new Date(task.expiration).toLocaleDateString()}
+                      </AndamioText>
+                    ) : (
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        No expiration
+                      </AndamioText>
+                    )}
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
                     <AndamioBadge variant="outline">
-                      {formatLovelace(task.lovelace)}
+                      {formatLovelace(task.lovelace ?? 0)}
                     </AndamioBadge>
-                  </AndamioTableCell>
-                  <AndamioTableCell className="text-center">
-                    {task.status === "ON_CHAIN" && isTaskExpired(task.expiration_time) ? (
-                      <AndamioBadge variant="destructive">
-                        Expired
-                      </AndamioBadge>
-                    ) : (
-                      <AndamioBadge variant={getStatusVariant(task.status)}>
-                        {task.status === "ON_CHAIN" ? "Live" : task.status}
-                      </AndamioBadge>
-                    )}
                   </AndamioTableCell>
                 </AndamioTableRow>
               ))}

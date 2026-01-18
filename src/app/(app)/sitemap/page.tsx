@@ -30,7 +30,7 @@ import {
   WarningIcon,
   ServerIcon,
 } from "~/components/icons";
-import { type CourseListResponse, type ProjectV2Output } from "@andamio/db-api-types";
+import { type CourseListResponse, type ProjectV2Output } from "~/types/generated";
 import type { RouteCategory } from "~/types/ui";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
@@ -307,16 +307,16 @@ export default function SitemapPage() {
       try {
         // Go API: GET /course/user/courses/list
         const pubCourseResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/user/courses/list`
+          `/api/gateway/api/v2/course/user/courses/list`
         );
         if (pubCourseResponse.ok) {
           const pubData = (await pubCourseResponse.json()) as CourseListResponse;
           setPublishedCourses(pubData ?? []);
         }
 
-        // V2 API: GET /project-v2/user/projects/list
+        // V2 API: GET /project/user/projects/list
         const pubProjectResponse = await fetch(
-          `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/user/projects/list`
+          `/api/gateway/api/v2/project/user/projects/list`
         );
         if (pubProjectResponse.ok) {
           const pubData = (await pubProjectResponse.json()) as ProjectV2Output[];
@@ -327,7 +327,7 @@ export default function SitemapPage() {
         if (isAuthenticated) {
           // Go API: POST /course/owner/courses/list
           const ownedCourseResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/course/owner/courses/list`,
+            `/api/gateway/api/v2/course/owner/courses/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -339,9 +339,9 @@ export default function SitemapPage() {
             setOwnedCourses(ownedData ?? []);
           }
 
-          // V2 API: POST /project-v2/admin/projects/list
+          // V2 API: POST /project/owner/projects/list
           const ownedProjectResponse = await authenticatedFetch(
-            `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/projects/list`,
+            `/api/gateway/api/v2/project/owner/projects/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -688,21 +688,15 @@ export default function SitemapPage() {
         <AndamioCardContent className="pt-4">
           <div className="space-y-2">
             <div className="rounded-md border p-3">
-              <AndamioText variant="small" className="font-medium mb-1">API Base URL</AndamioText>
+              <AndamioText variant="small" className="font-medium mb-1">Gateway Base URL</AndamioText>
               <code className="text-xs font-mono text-primary">
-                {env.NEXT_PUBLIC_ANDAMIO_API_URL}
+                {env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}
               </code>
             </div>
             <div className="rounded-md border p-3">
-              <AndamioText variant="small" className="font-medium mb-1">OpenAPI Documentation</AndamioText>
+              <AndamioText variant="small" className="font-medium mb-1">API Documentation</AndamioText>
               <code className="text-xs font-mono text-primary">
-                {env.NEXT_PUBLIC_ANDAMIO_API_URL.replace("/api/v0", "/openapi/v0.json")}
-              </code>
-            </div>
-            <div className="rounded-md border p-3">
-              <AndamioText variant="small" className="font-medium mb-1">Swagger UI</AndamioText>
-              <code className="text-xs font-mono text-primary">
-                {env.NEXT_PUBLIC_ANDAMIO_API_URL.replace("/api/v0", "/swagger/index.html")}
+                {env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/api/v1/docs/doc.json
               </code>
             </div>
           </div>

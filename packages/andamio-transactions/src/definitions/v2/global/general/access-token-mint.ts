@@ -13,7 +13,7 @@ const txName = "GLOBAL_GENERAL_ACCESS_TOKEN_MINT" as const;
  * This is the entry point for all users.
  *
  * ## API Endpoint
- * POST /v2/tx/global/general/access-token/mint
+ * POST /v2/tx/global/user/access-token/mint
  *
  * ## Request Body (MintAccessTokenTxRequest)
  * ```json
@@ -62,7 +62,7 @@ export const GLOBAL_GENERAL_ACCESS_TOKEN_MINT: AndamioTransactionDefinition = {
       // No side effect parameters
       sideEffectParams: z.object({}),
     }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/global/general/access-token/mint" },
+    builder: { type: "api-endpoint", endpoint: "/api/v2/tx/global/user/access-token/mint" },
     estimatedCost: getProtocolCost(protocolId),
   },
   onSubmit: [
@@ -106,6 +106,6 @@ export const GLOBAL_GENERAL_ACCESS_TOKEN_MINT: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/global/general/access-token/mint",
-    apiDocs: "https://atlas-api-preprod-507341199760.us-central1.run.app/swagger/index.html#/default/post_v2_tx_global_general_access_token_mint",
+    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_global_user_access_token_mint",
   },
 };

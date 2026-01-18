@@ -7,9 +7,8 @@ import { ThemeProvider } from "next-themes";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
-import { AndamioAuthProvider } from "~/contexts/andamio-auth-context";
+import { AuthProvider } from "~/components/providers/auth-provider";
 import { Toaster } from "~/components/ui/sonner";
-import { PendingTxWatcher } from "~/components/pending-tx-watcher";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -43,14 +42,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <MeshProvider>
-            <AndamioAuthProvider>
+            <AuthProvider>
               <TRPCReactProvider>
-                <PendingTxWatcher>
-                  {children}
-                </PendingTxWatcher>
+                {children}
               </TRPCReactProvider>
               <Toaster position="top-right" richColors closeButton />
-            </AndamioAuthProvider>
+            </AuthProvider>
           </MeshProvider>
         </ThemeProvider>
       </body>

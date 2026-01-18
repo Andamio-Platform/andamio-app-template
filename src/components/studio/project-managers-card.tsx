@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useOwnedProjects, useManagingProjects } from "~/hooks/use-andamioscan";
-import { env } from "~/env";
+import { useProject } from "~/hooks/api";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -44,49 +43,31 @@ export function ProjectManagersCard({
   projectId,
   className,
 }: ProjectManagersCardProps) {
-  const { user, authenticatedFetch } = useAndamioAuth();
-  const alias = user?.accessTokenAlias ?? undefined;
+  const { authenticatedFetch } = useAndamioAuth();
 
-  // Get on-chain projects where user is owner
+  // Get merged project data (includes on-chain managers)
   const {
-    data: ownedProjects,
-    isLoading: isLoadingOwned,
-    refetch: refetchOwned,
-  } = useOwnedProjects(alias);
-
-  // Get on-chain projects where user is manager
-  const {
-    data: managingProjects,
-    isLoading: isLoadingManaging,
-    refetch: refetchManaging,
-  } = useManagingProjects(alias);
+    data: project,
+    isLoading,
+    refetch: refetchProject,
+  } = useProject(projectId);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [dbManagers, setDbManagers] = useState<string[] | null>(null);
   const [lastSyncSuccess, setLastSyncSuccess] = useState<boolean | null>(null);
 
-  // Find this specific project in owned or managing lists
-  const ownedProject = ownedProjects?.find(
-    (p) => p.project_id === projectId
-  );
-  const managingProject = managingProjects?.find(
-    (p) => p.project_id === projectId
-  );
-  const onChainProject = ownedProject ?? managingProject;
-
-  const onChainAdmin = onChainProject?.admin ?? null;
-  const onChainManagers = onChainProject?.managers ?? [];
-
-  const isLoading = isLoadingOwned || isLoadingManaging;
+  // Get managers from merged project data
+  const projectOwner = project?.owner ?? null;
+  const onChainManagers = project?.managers ?? [];
 
   const handleSyncManagers = async () => {
     setIsSyncing(true);
     setLastSyncSuccess(null);
 
     try {
-      // V2 API: POST /project-v2/admin/managers/sync
+      // V2 API: POST /project/owner/managers/sync
       const response = await authenticatedFetch(
-        `${env.NEXT_PUBLIC_ANDAMIO_API_URL}/project-v2/admin/managers/sync`,
+        `/api/gateway/api/v2/project/owner/managers/sync`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -107,9 +88,8 @@ export function ProjectManagersCard({
         description: `${result.managers_synced.length} manager(s) synced from on-chain data`,
       });
 
-      // Refresh on-chain data to ensure we're showing latest
-      void refetchOwned();
-      void refetchManaging();
+      // Refresh project data to ensure we're showing latest
+      void refetchProject();
     } catch (err) {
       console.error("Error syncing managers:", err);
       setLastSyncSuccess(false);
@@ -125,7 +105,7 @@ export function ProjectManagersCard({
   const managersMatch =
     dbManagers !== null &&
     onChainManagers.length === dbManagers.length &&
-    onChainManagers.every((m) => dbManagers.includes(m));
+    onChainManagers.every((m: string) => dbManagers.includes(m));
 
   return (
     <AndamioCard className={cn("", className)}>
@@ -158,7 +138,7 @@ export function ProjectManagersCard({
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
         {/* On-Chain Admin */}
-        {onChainAdmin && (
+        {projectOwner && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <OnChainIcon className="h-3.5 w-3.5 text-primary" />
@@ -168,7 +148,7 @@ export function ProjectManagersCard({
             </div>
             <div className="flex flex-wrap gap-1.5">
               <AndamioBadge variant="default" className="font-mono text-xs">
-                {onChainAdmin}
+                {projectOwner}
               </AndamioBadge>
             </div>
           </div>
@@ -188,7 +168,7 @@ export function ProjectManagersCard({
                 <AndamioSkeleton className="h-6 w-20" />
                 <AndamioSkeleton className="h-6 w-16" />
               </>
-            ) : !onChainProject ? (
+            ) : !project ? (
               <AndamioText variant="small" className="text-muted-foreground">
                 Project not found on-chain (may still be syncing)
               </AndamioText>
@@ -197,7 +177,7 @@ export function ProjectManagersCard({
                 No managers found on-chain
               </AndamioText>
             ) : (
-              onChainManagers.map((manager) => (
+              onChainManagers.map((manager: string) => (
                 <AndamioBadge
                   key={manager}
                   variant="secondary"

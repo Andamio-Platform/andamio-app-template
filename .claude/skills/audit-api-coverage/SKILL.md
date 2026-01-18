@@ -13,7 +13,8 @@ Audit and maintain API coverage for the Unified Andamio API Gateway.
 |----------|-------|
 | **Base URL** | `https://andamio-api-gateway-168705267033.us-central1.run.app` |
 | **API Docs** | [doc.json](https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json) |
-| **Total Endpoints** | ~40 |
+| **Total Endpoints** | ~90+ |
+| **T3 Coverage** | ~79% (37/47 core endpoints) |
 
 **Always use the live docs as source of truth.** The files in this skill directory are derived from these sources.
 
@@ -21,20 +22,17 @@ Audit and maintain API coverage for the Unified Andamio API Gateway.
 
 The unified gateway consolidates what was previously 3 separate APIs:
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| Authentication | 2 | Login and registration |
-| User Management | 4 | Profile and usage metrics |
-| API Key Management | 3 | API key lifecycle |
-| Admin Functions | 3 | Platform management |
-| Merged Courses | 3 | Combined off-chain + on-chain course data |
-| Merged Projects | 3 | Combined off-chain + on-chain project data |
-| Scan (Courses) | 4 | On-chain indexed course data |
-| Scan (Projects) | 4 | On-chain indexed project data |
-| Scan (Transactions) | 1 | Transaction list |
-| TX (Courses) | 6 | Course transaction building |
-| TX (Projects) | 4 | Project transaction building |
-| TX (Instance/Global) | 3 | Instance and global operations |
+| Category | Count | T3 Status | Description |
+|----------|-------|-----------|-------------|
+| Authentication | 4 | ✅ 100% | Login session, validate, direct login |
+| User Management | 4 | ⏳ 0% | Profile and usage metrics |
+| API Key Management | 3 | ⏳ 0% | API key lifecycle |
+| Admin Functions | 3 | ⏳ 0% | Platform management |
+| Merged Courses | 8+ | ✅ 100% | Combined off-chain + on-chain course data |
+| Merged Projects | 8+ | ✅ 100% | Combined off-chain + on-chain project data |
+| TX (Courses) | 6 | ✅ 100% | Course transaction building |
+| TX (Projects) | 8 | ✅ 100% | Project transaction building |
+| TX (Instance/Global) | 3 | ✅ 100% | Instance and global operations |
 
 ## Quick Reference Files
 

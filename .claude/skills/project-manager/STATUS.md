@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 18, 2026 (V2 Gateway API Migration on `update/andamioscan` branch)
+> **Last Updated**: January 18, 2026 (Session 20 - Auth & API Response Fixes)
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -125,6 +125,46 @@ Created new simplified transaction system that leverages gateway auto-confirmati
 **Next Steps**:
 1. Treasury transactions pending backend implementation
 2. ~~Consider deprecating `useAndamioTransaction` hook (V1)~~ ✅ Done (Session 19)
+
+### Session 20 Summary (January 18, 2026)
+
+**Completed**: Auth Response Fix + Teacher/Manager API Response Handling
+
+Fixed critical issues blocking authentication and role-based data fetching.
+
+**Auth Response Fix** (`src/lib/andamio-auth.ts`):
+- Gateway `/api/v2/auth/login/validate` response structure didn't match expectations
+- **Old expectation**: `{ token, user: { stake_address, access_token_alias } }`
+- **Actual response**: `{ jwt, user: { id, cardano_bech32_addr, access_token_alias } }`
+- Updated `ValidateSignatureApiResponse` interface and extraction logic
+
+**Teacher/Manager API Response Handling**:
+- Gateway merged endpoints return `content` nested object, not flat fields
+- **API returns**: `{ content: { title, code, live } }`
+- **UI expected**: `{ title, course_code }`
+- Added content flattening in hooks: `useTeacherCourses`, `useManagerProjects`
+- Updated `source` value from `"on-chain-only"` to `"chain_only"` across 4 files
+
+**Files Modified**:
+- `src/lib/andamio-auth.ts` - Fixed response parsing
+- `src/hooks/api/use-teacher-courses.ts` - Added content flattening + debug logging
+- `src/hooks/api/use-manager-projects.ts` - Added content flattening + debug logging
+- `src/hooks/api/use-contributor-projects.ts` - Fixed source value in type comment
+- `src/app/(studio)/studio/course/page.tsx` - Fixed source comparison
+- `src/app/(app)/studio/project/page.tsx` - Fixed source comparison
+
+**Testing Status**:
+- ✅ Authentication working (JWT properly extracted)
+- ✅ Teacher courses loading (6 courses for "james")
+- ✅ Manager projects loading (pending verification)
+- ⏳ Transactions not yet tested this session
+
+**Next Steps**:
+1. Test transaction flows (mint, commit, assess, claim)
+2. Remove debug logging once verified
+3. Merge to main when all flows confirmed working
+
+---
 
 ### Session 19 Summary (January 18, 2026)
 

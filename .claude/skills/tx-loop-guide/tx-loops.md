@@ -2,7 +2,7 @@
 
 Reference catalog for Andamio transaction loops. Each loop represents a realistic sequence of transactions between one or more roles.
 
-**Protocol Version:** V2 (current production)
+**Protocol Version:** V2 (Gateway API - January 2026)
 
 ---
 
@@ -18,14 +18,15 @@ Reference catalog for Andamio transaction loops. Each loop represents a realisti
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | User | `GENERAL_ACCESS_TOKEN_MINT` | Mint access token (~7.9 ADA) |
+| 1 | User | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | Mint access token (~7.9 ADA) |
 
 **Side Effects:**
-- On confirmation: User can now participate in courses
+- Gateway auto-confirms on-chain
+- No DB update needed (pure on-chain tx)
 
 **Notes:**
 - This is required before any other loop
-- The database user record is created separately when connecting to the app (not part of this tx)
+- The database user record is created during authentication (not this tx)
 - User chooses an alias (1-31 characters) that becomes their on-chain identity
 
 ---
@@ -52,12 +53,11 @@ Reference catalog for Andamio transaction loops. Each loop represents a realisti
 **Side Effects:**
 
 Step 1 (Enroll):
-- onSubmit: Create assignment commitment in database
-- onConfirmation: Set commitment status to `PENDING_APPROVAL`
+- Gateway registers TX and auto-confirms
+- DB commitment created with status `PENDING_APPROVAL`
 
 Step 2 (Assess - Accept):
-- onSubmit: Set status to `PENDING_TX_ASSIGNMENT_ACCEPTED`
-- onConfirmation: Set status to `ASSIGNMENT_ACCEPTED`
+- Gateway auto-updates commitment status to `ASSIGNMENT_ACCEPTED`
 
 Step 3 (Claim):
 - No database side effects (purely on-chain)
@@ -71,34 +71,34 @@ Step 3 (Claim):
 
 ## Loop 3: Create and Publish Course
 
-**Description:** An admin creates a new course, then a teacher (or the admin as teacher) publishes modules.
+**Description:** An owner creates a new course, then publishes modules.
 
-**Roles:** 1-2 (Admin, optionally separate Teacher)
+**Roles:** 1-2 (Owner, optionally separate Teacher)
 
 **Prerequisites:**
-- Admin has minted Access Token
+- Owner has minted Access Token
 - If separate teacher: Teacher has minted Access Token
 
 **Transactions:**
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Admin | `COURSE_ADMIN_CREATE` | Create course on-chain (~45.3 ADA) |
+| 1 | Owner | `INSTANCE_COURSE_CREATE` | Create course on-chain (~45.3 ADA) |
 | 2 | Teacher | `COURSE_TEACHER_MODULES_MANAGE` | Mint modules (~1.86 ADA) |
 
 **Side Effects:**
 
 Step 1 (Create):
-- onSubmit: Create course record with title and policy ID
-- onConfirmation: Set course `live` to true
+- Gateway registers TX
+- On confirmation: Course record created in DB, `live` set to true
 
 Step 2 (Modules Manage - Mint):
-- onSubmit: Set all modules to `PENDING_TX`
-- onConfirmation: Set all modules to `ON_CHAIN` with module hash
+- Gateway auto-confirms
+- All modules set to `ON_CHAIN` with module hash
 
 **Notes:**
 - Course policy ID comes from tx API response - frontend must extract it
-- Admin who creates the course is automatically a teacher
+- Owner who creates the course is automatically a teacher
 - Modules need SLTs (Student Learning Targets) defined before minting
 - Module hash is computed from SLTs using Blake2b-256
 
@@ -128,12 +128,10 @@ Step 2 (Modules Manage - Mint):
 **Side Effects:**
 
 Step 2 (Assess - Refuse):
-- onSubmit: Set status to `PENDING_TX_ASSIGNMENT_REFUSED`
-- onConfirmation: Set status to `ASSIGNMENT_REFUSED`
+- Gateway auto-updates status to `ASSIGNMENT_REFUSED`
 
 Step 3 (Update):
-- onSubmit: Update evidence in database
-- onConfirmation: Set status to `PENDING_APPROVAL`
+- Gateway auto-updates evidence and sets status to `PENDING_APPROVAL`
 
 **Notes:**
 - Refused assignments can be revised and resubmitted
@@ -163,12 +161,6 @@ Step 3 (Update):
 | ... | ... | ... | Repeat for additional modules |
 | N | Student | `COURSE_STUDENT_CREDENTIAL_CLAIM` | Claim credential (~-1.03 ADA refund) |
 
-**Side Effects:**
-
-Step 3 (Update - new module):
-- onSubmit: Create new assignment commitment for Module 2
-- onConfirmation: Set commitment status to `PENDING_APPROVAL`
-
 **Notes:**
 - `COURSE_STUDENT_ASSIGNMENT_UPDATE` has two modes:
   - Update evidence for current module
@@ -180,32 +172,31 @@ Step 3 (Update - new module):
 
 ## Loop 6: Team Teaching Setup
 
-**Description:** An admin creates a course and adds additional teachers who can then manage content and assess students.
+**Description:** An owner creates a course and adds additional teachers who can then manage content and assess students.
 
-**Roles:** 2+ (Admin, Teacher(s))
+**Roles:** 2+ (Owner, Teacher(s))
 
 **Prerequisites:**
-- Admin has minted Access Token
+- Owner has minted Access Token
 - All teachers have minted Access Tokens
 
 **Transactions:**
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Admin | `COURSE_ADMIN_CREATE` | Create course on-chain (~45.3 ADA) |
-| 2 | Admin | `COURSE_ADMIN_TEACHERS_UPDATE` | Add teacher aliases (~5.3 ADA) |
+| 1 | Owner | `INSTANCE_COURSE_CREATE` | Create course on-chain (~45.3 ADA) |
+| 2 | Owner | `COURSE_OWNER_TEACHERS_MANAGE` | Add teacher aliases (~5.3 ADA) |
 | 3 | Teacher | `COURSE_TEACHER_MODULES_MANAGE` | Teacher mints modules (~1.86 ADA) |
 
 **Side Effects:**
 
-Step 2 (Teachers Update):
-- No database side effects (purely on-chain)
-- Teacher access verified via Andamioscan API
+Step 2 (Teachers Manage):
+- Gateway syncs teachers to DB automatically
 
 **Notes:**
-- Admin who creates the course is automatically a teacher
+- Owner who creates the course is automatically a teacher
 - Additional teachers are identified by their Access Token alias
-- Teachers can be added or removed with subsequent `TEACHERS_UPDATE` transactions
+- Teachers can be added or removed with subsequent `COURSE_OWNER_TEACHERS_MANAGE` transactions
 - Any registered teacher can manage modules and assess assignments
 
 ---
@@ -220,34 +211,33 @@ The following loops test the Project/Treasury system for bounties and task-based
 
 ## Loop P1: Create and Configure Project
 
-**Description:** An admin creates a new project treasury and optionally adds managers.
+**Description:** An owner creates a new project treasury and optionally adds managers.
 
-**Roles:** 1-2 (Admin, optionally separate Manager(s))
+**Roles:** 1-2 (Owner, optionally separate Manager(s))
 
 **Prerequisites:**
-- Admin has minted Access Token
+- Owner has minted Access Token
 - If separate managers: Managers have minted Access Tokens
 
 **Transactions:**
 
 | Step | Role | Transaction | Description |
 |------|------|-------------|-------------|
-| 1 | Admin | `PROJECT_ADMIN_CREATE` | Create project treasury on-chain |
-| 2 | Admin | `PROJECT_ADMIN_MANAGERS_MANAGE` | Add manager aliases (optional) |
+| 1 | Owner | `INSTANCE_PROJECT_CREATE` | Create project treasury on-chain |
+| 2 | Owner | `PROJECT_OWNER_MANAGERS_MANAGE` | Add manager aliases (optional) |
 
 **Side Effects:**
 
 Step 1 (Create):
-- onSubmit: Create project record with title and treasury NFT policy ID
-- onConfirmation: Set project status to live
+- Gateway registers TX
+- On confirmation: Project record created in DB
 
 Step 2 (Managers Manage):
-- No database side effects (purely on-chain)
-- Manager access verified via Andamioscan API
+- Gateway syncs managers to DB automatically
 
 **Notes:**
 - Project creation requires `partialSign: true` for multi-sig
-- Admin who creates the project is automatically a manager
+- Owner who creates the project is automatically a manager
 - Treasury NFT policy ID comes from tx API response
 
 ---
@@ -269,134 +259,20 @@ Step 2 (Managers Manage):
 |------|------|-------------|-------------|
 | 1 | Manager | `PROJECT_MANAGER_TASKS_MANAGE` | Mint/publish tasks on-chain |
 
-**API Request Format:**
-```json
-{
-  "alias": "manager-alias",
-  "project_id": "56-char-hex (treasury NFT policy ID)",
-  "contributor_state_id": "56-char-hex (= project_state_policy_id)",
-  "prerequisites": [],
-  "tasks_to_add": [{
-    "project_content": "Task description (max 140 chars)",
-    "expiration_time": 1735689600000,
-    "lovelace_amount": 5000000,
-    "native_assets": []
-  }],
-  "tasks_to_remove": [],
-  "deposit_value": [["lovelace", 5000000]]
-}
-```
-
 **Side Effects:**
 
 Step 1 (Tasks Manage - Mint):
-- onSubmit: Set tasks to `PENDING_TX`
-- onConfirmation: Sync with Andamioscan to get `task_id`, store as `task_hash` in DB
-
-**Post-Transaction Sync:**
-After transaction confirmation, call `syncProjectTasks()` to:
-1. Fetch on-chain tasks from Andamioscan API
-2. Decode hex content and match to DB task titles
-3. Update DB via `/project-v2/manager/task/confirm-tx` with on-chain `task_id`
+- Gateway auto-confirms
+- Tasks synced with on-chain `task_id` (stored as `task_hash` in DB)
 
 **Notes:**
-- `contributor_state_id` = `project_state_policy_id` from DB (no Andamioscan lookup needed)
-- `prerequisites` field is REQUIRED by Atlas API (undocumented) - use `[]` if none
+- `contributor_state_id` = `project_state_policy_id` from DB
+- `prerequisites` field is REQUIRED by Atlas API (use `[]` if none)
 - On-chain task content is hex-encoded UTF-8 (max 140 chars)
-- Task matching uses decoded hex content compared to DB task title
-- `task_id` from Andamioscan is stored as `task_hash` in DB
 
 **Routes:**
 - `/studio/project/[projectid]/draft-tasks` — View/create draft tasks
 - `/studio/project/[projectid]/draft-tasks/[taskindex]` — Edit individual task
-- `/studio/project/[projectid]/manage-treasury` — Publish tasks on-chain
-
----
-
-## Combined: Project Manager Loop (P1 + P2)
-
-**Description:** The complete workflow for a project manager to create a project, define tasks in the database, and publish them on-chain for contributors.
-
-**Roles:** 1 (Admin/Manager)
-
-**Prerequisites:**
-- User has minted Access Token
-
-**Flow Overview:**
-
-```
-1. Create Project (P1)     →  Project exists on-chain with project_state_policy_id
-                ↓
-2. Draft Tasks (DB only)   →  Tasks created in database with DRAFT status
-                ↓
-3. Publish Tasks (P2)      →  Tasks minted on-chain, synced back to DB
-```
-
-**Transactions:**
-
-| Step | Role | Transaction | Description |
-|------|------|-------------|-------------|
-| 1 | Admin | `PROJECT_ADMIN_CREATE` | Create project treasury on-chain |
-| 2 | Manager | (Database) | Create draft tasks via UI/API |
-| 3 | Manager | `PROJECT_MANAGER_TASKS_MANAGE` | Publish tasks on-chain |
-
-**Step-by-Step:**
-
-### Step 1: Create Project
-
-**Route:** `/studio/new/project`
-
-- Fill in project metadata (title, description)
-- Submit `PROJECT_ADMIN_CREATE` transaction
-- On confirmation: Project record created with `project_state_policy_id`
-
-### Step 2: Draft Tasks (No Transaction)
-
-**Routes:**
-- `/studio/project/[projectid]/draft-tasks` — Task list
-- `/studio/project/[projectid]/draft-tasks/new` — Create task
-- `/studio/project/[projectid]/draft-tasks/[taskindex]` — Edit task
-
-**Task Fields:**
-- Title (becomes `project_content` on-chain, max 140 chars)
-- Description (stored in DB, not on-chain)
-- Lovelace amount (reward)
-- Expiration time (POSIX timestamp in milliseconds)
-- Rich content (optional, stored as JSON in DB)
-
-**Status:** Tasks start with `DRAFT` status
-
-### Step 3: Publish Tasks
-
-**Route:** `/studio/project/[projectid]/manage-treasury`
-
-1. View draft tasks in table
-2. Select tasks to publish
-3. Submit `PROJECT_MANAGER_TASKS_MANAGE` transaction
-4. On confirmation: `syncProjectTasks()` runs automatically
-5. Tasks updated from `DRAFT` → `ON_CHAIN` with `task_hash`
-
-**Data Flow:**
-
-```
-UI Form → DB (DRAFT) → Tx API → Blockchain → Andamioscan → Sync → DB (ON_CHAIN)
-           ↑                                                         ↓
-     project_state_policy_id                                   task_hash (= task_id)
-```
-
-**Key Identifiers:**
-
-| ID | Source | Purpose |
-|----|--------|---------|
-| `project_id` | Tx response | Treasury NFT policy ID (56 char hex) |
-| `project_state_policy_id` | DB API | State tracking, also used as `contributor_state_id` |
-| `task_hash` | Andamioscan | On-chain task identifier (stored after sync) |
-
-**Notes:**
-- Admin who creates project is automatically a manager
-- `project_state_policy_id` IS the `contributor_state_id` for transactions
-- Prerequisites fetched from Andamioscan, use `[]` if null
-- Sync function matches tasks by decoded hex content vs DB title
 
 ---
 
@@ -422,12 +298,11 @@ UI Form → DB (DRAFT) → Tx API → Blockchain → Andamioscan → Sync → DB
 **Side Effects:**
 
 Step 1 (Task Commit):
-- onSubmit: Create task commitment in database
-- onConfirmation: Set commitment status to `PENDING_APPROVAL`
+- Gateway registers TX
+- On confirmation: Commitment status set to `PENDING_APPROVAL`
 
 Step 2 (Tasks Assess - Accept):
-- onSubmit: Set status to `PENDING_TX_ACCEPTED`
-- onConfirmation: Set status to `ACCEPTED`
+- Gateway auto-updates status to `ACCEPTED`
 
 Step 3 (Credential Claim):
 - No database side effects (purely on-chain)
@@ -462,12 +337,10 @@ Step 3 (Credential Claim):
 **Side Effects:**
 
 Step 2 (Assess - Refuse):
-- onSubmit: Set status to `PENDING_TX_REFUSED`
-- onConfirmation: Set status to `REFUSED`
+- Gateway auto-updates status to `REFUSED`
 
 Step 3 (Task Action - Update):
-- onSubmit: Update evidence in database
-- onConfirmation: Set status to `PENDING_APPROVAL`
+- Gateway auto-updates evidence and sets status to `PENDING_APPROVAL`
 
 **Notes:**
 - Tests the full feedback cycle for projects
@@ -505,31 +378,51 @@ Step 3 (Task Action - Update):
 
 ## Quick Reference: All V2 Transactions
 
+### Global
+
+| Transaction | Role | Has Side Effects |
+|-------------|------|------------------|
+| `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | Any | No (pure on-chain) |
+
 ### Course Transactions
 
-| Transaction | Role | Typical Cost | Has Side Effects |
-|-------------|------|--------------|------------------|
-| `GENERAL_ACCESS_TOKEN_MINT` | Any | ~7.9 ADA | No |
-| `COURSE_ADMIN_CREATE` | Admin | ~45.3 ADA | Yes |
-| `COURSE_ADMIN_TEACHERS_UPDATE` | Admin | ~5.3 ADA | No |
-| `COURSE_TEACHER_MODULES_MANAGE` | Teacher | ~1.86 ADA | Yes |
-| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Teacher | ~0.21 ADA | Yes |
-| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Student | ~2.14 ADA | Yes |
-| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Student | ~0.33 ADA | Yes |
-| `COURSE_STUDENT_CREDENTIAL_CLAIM` | Student | ~-1.03 ADA | No |
+| Transaction | Role | Has Side Effects |
+|-------------|------|------------------|
+| `INSTANCE_COURSE_CREATE` | Owner | Yes |
+| `COURSE_OWNER_TEACHERS_MANAGE` | Owner | Yes (syncs teachers) |
+| `COURSE_TEACHER_MODULES_MANAGE` | Teacher | Yes |
+| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | Teacher | Yes |
+| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | Student | Yes |
+| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | Student | Yes |
+| `COURSE_STUDENT_CREDENTIAL_CLAIM` | Student | No |
 
 ### Project Transactions
 
-| Transaction | Role | Typical Cost | Has Side Effects |
-|-------------|------|--------------|------------------|
-| `PROJECT_ADMIN_CREATE` | Admin | TBD | Yes |
-| `PROJECT_ADMIN_MANAGERS_MANAGE` | Admin | TBD | No |
-| `PROJECT_ADMIN_BLACKLIST_MANAGE` | Admin | TBD | No |
-| `PROJECT_MANAGER_TASKS_MANAGE` | Manager | TBD | Yes |
-| `PROJECT_MANAGER_TASKS_ASSESS` | Manager | TBD | Yes |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Contributor | TBD | Yes |
-| `PROJECT_CONTRIBUTOR_TASK_ACTION` | Contributor | TBD | Yes |
-| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Contributor | TBD | No |
+| Transaction | Role | Has Side Effects |
+|-------------|------|------------------|
+| `INSTANCE_PROJECT_CREATE` | Owner | Yes |
+| `PROJECT_OWNER_MANAGERS_MANAGE` | Owner | Yes (syncs managers) |
+| `PROJECT_OWNER_BLACKLIST_MANAGE` | Owner | No |
+| `PROJECT_MANAGER_TASKS_MANAGE` | Manager | Yes |
+| `PROJECT_MANAGER_TASKS_ASSESS` | Manager | Yes |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Contributor | Yes |
+| `PROJECT_CONTRIBUTOR_TASK_ACTION` | Contributor | Yes |
+| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Contributor | No |
+
+---
+
+## V2 Transaction Flow
+
+All transactions use the simplified V2 flow with Gateway auto-confirmation:
+
+```
+1. BUILD    →  POST /api/v2/tx/{endpoint}  →  Get unsigned_tx
+2. SIGN     →  wallet.signTx(unsigned_tx)  →  Get signed_tx
+3. SUBMIT   →  wallet.submitTx(signed_tx)  →  Get tx_hash
+4. CONFIRM  →  Gateway auto-confirms via TxTypeRegistry
+```
+
+**No manual TX registration or polling needed** - the Gateway handles confirmation and DB updates automatically.
 
 ---
 
@@ -541,7 +434,7 @@ Step 3 (Task Action - Update):
 - Each account needs its own Access Token
 
 **For pair testing:**
-- One person plays Student, one plays Teacher/Admin
+- One person plays Student, one plays Teacher/Manager
 - Great for catching UX issues in handoff moments
 - Can test realistic timing and notification flows
 

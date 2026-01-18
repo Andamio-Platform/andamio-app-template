@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Auth Response Parsing** (January 18, 2026): Fixed JWT extraction from V2 Gateway auth response
+  - Updated `ValidateSignatureApiResponse` interface to match actual API response structure
+  - Changed field mappings: `token` → `jwt`, `stake_address` → `id`/`cardano_bech32_addr`
+  - Authentication now works correctly with V2 Gateway
+- **Merged Endpoint Response Handling** (January 18, 2026): Fixed handling of nested `content` structure in merged API responses
+  - `useTeacherCourses` and `useManagerProjects` hooks now flatten `content.*` fields to top level
+  - UI components can access `title`, `description`, etc. directly without nested access
+  - Fixed `source` value comparison: changed `"on-chain-only"` to `"chain_only"` to match Gateway response
+
 ### Added
 - **V2 API Migration Fixes** (January 18, 2026): Added new React Query hooks for merged API data
   - `useManagerCommitments(projectId?)` - Fetch pending task commitments for project managers

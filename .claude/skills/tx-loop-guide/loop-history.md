@@ -53,7 +53,7 @@ Record each testing session here.
 **Result:** Issues Found
 
 **Transactions:**
-- [x] GENERAL_ACCESS_TOKEN_MINT — Success (on-chain) but UI stuck
+- [x] GLOBAL_GENERAL_ACCESS_TOKEN_MINT — Success (on-chain) but UI stuck
 
 **Issues Created:**
 - #28 — Access Token mint UI stuck after successful transaction (blocker)
@@ -115,7 +115,7 @@ Record each testing session here.
 **Result:** Issues Found (in progress)
 
 **Transactions:**
-- [x] COURSE_ADMIN_CREATE — Previously completed (course exists on-chain)
+- [x] INSTANCE_COURSE_CREATE — Previously completed (course exists on-chain)
 - [ ] COURSE_TEACHER_MODULES_MANAGE — Not yet tested this session
 
 **Issues Created:**
@@ -146,7 +146,7 @@ Record each testing session here.
 **Result:** Validated
 
 **Transactions:**
-- [x] PROJECT_ADMIN_CREATE — Previously completed (project exists on-chain)
+- [x] INSTANCE_PROJECT_CREATE — Previously completed (project exists on-chain)
 - [x] PROJECT_MANAGER_TASKS_MANAGE — Success (tasks published on-chain)
 
 **Issues Created:**

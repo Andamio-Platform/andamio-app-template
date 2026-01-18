@@ -219,7 +219,7 @@ interface CourseListItemProps {
 function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
   // Determine status based on source field from API
   const hasDbContent = course.title !== undefined && course.title !== null;
-  const isOnChain = course.source === "merged" || course.source === "on-chain-only";
+  const isOnChain = course.source === "merged" || course.source === "chain_only";
 
   return (
     <button
@@ -294,7 +294,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
   // Determine status from merged data
   const hasDbContent = course.title !== undefined && course.title !== null;
-  const isOnChain = course.source === "merged" || course.source === "on-chain-only";
+  const isOnChain = course.source === "merged" || course.source === "chain_only";
 
   // Fetch modules for this course (only if we have DB content)
   const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(

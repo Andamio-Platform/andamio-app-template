@@ -47,13 +47,20 @@ export interface ManagerProject {
   created_tx?: string;
   created_slot?: number;
 
-  // Off-chain content
+  // Off-chain content (nested under "content" from API)
+  content?: {
+    title?: string;
+    description?: string;
+    image_url?: string;
+  };
+
+  // Flattened accessors for backwards compatibility
   title?: string;
   description?: string;
   image_url?: string;
 
   // Metadata
-  source?: string; // "merged" | "on-chain-only" | "db-only"
+  source?: string; // "merged" | "chain_only" | "db_only"
 }
 
 export type ManagerProjectsResponse = ManagerProject[];
@@ -88,7 +95,7 @@ export interface ManagerCommitment {
   };
 
   // Metadata
-  source?: string; // "merged" | "on-chain-only" | "db-only"
+  source?: string; // "merged" | "chain_only" | "db-only"
 }
 
 export type ManagerCommitmentsResponse = ManagerCommitment[];
@@ -146,12 +153,24 @@ export function useManagerProjects() {
 
       const result = await response.json() as { data?: ManagerProject[]; warning?: string };
 
+      // Debug: log the full response
+      console.log("[useManagerProjects] API response:", JSON.stringify(result, null, 2));
+
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useManagerProjects] API warning:", result.warning);
       }
 
-      return result.data ?? [];
+      // Flatten content fields for backwards compatibility with UI
+      const projects = (result.data ?? []).map((project) => ({
+        ...project,
+        // Flatten content.* to top level for UI components
+        title: project.content?.title ?? project.title,
+        description: project.content?.description ?? project.description,
+        image_url: project.content?.image_url ?? project.image_url,
+      }));
+
+      return projects;
     },
     enabled: isAuthenticated,
     staleTime: 30 * 1000, // 30 seconds

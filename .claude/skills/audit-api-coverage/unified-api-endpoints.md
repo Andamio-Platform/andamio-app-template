@@ -2,9 +2,10 @@
 
 > **Source of Truth**: [API Documentation](https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json)
 > **Base URL**: `https://andamio-api-gateway-168705267033.us-central1.run.app`
-> **Total Endpoints**: 44
+> **Total Endpoints**: ~90+
+> **Last Updated**: January 18, 2026
 
-This file documents all endpoints available in the Unified Andamio API Gateway.
+This file documents the main endpoints available in the Unified Andamio API Gateway.
 
 ---
 
@@ -27,53 +28,63 @@ This file documents all endpoints available in the Unified Andamio API Gateway.
 
 ---
 
-## Authentication (2 endpoints)
+## Authentication (4 endpoints)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/login` | User login with alias and wallet address |
-| POST | `/api/v1/auth/register` | Register new user with unique alias |
+| POST | `/api/v2/auth/login/session` | Create login session, get nonce for signing |
+| POST | `/api/v2/auth/login/validate` | Validate wallet signature, get JWT |
+| POST | `/api/v2/auth/login` | Direct login (no wallet verification) |
+| POST | `/api/v2/auth/developer/account/login` | Developer account login |
 
-### Security Note
+### Authentication Flows
 
-> **IMPORTANT**: Gateway authentication (`/api/v1/auth/login`) performs NO cryptographic wallet verification.
-> It simply looks up the alias and checks if it belongs to the provided wallet address.
->
-> **For browser-based apps**: Use the legacy 2-step CIP-30 flow (nonce signing) which provides
-> cryptographic proof of wallet ownership. The web app uses a hybrid approach that automatically
-> chooses the appropriate auth method.
->
-> **For programmatic access**: Gateway auth is designed for API key-based access where the
-> caller has already authenticated via other means.
+**Browser-based (CIP-30 signing)** - Used by T3 App Template:
+```
+1. POST /api/v2/auth/login/session → { id, nonce }
+2. wallet.signData(nonce) → signature
+3. POST /api/v2/auth/login/validate → { jwt, user }
+```
+
+**Programmatic (no verification)** - For API key access:
+```
+POST /api/v2/auth/login → { jwt, user }
+```
 
 ### Request/Response Details
 
-**POST `/auth/login`**
+**POST `/api/v2/auth/login/session`**
 ```typescript
 // Request
-{
-  alias: string;
-  wallet_address: string;
-}
+{ }  // Empty body
 
 // Response
 {
-  token: string;  // JWT
-  user: UserProfile;
+  id: string;     // Session ID
+  nonce: string;  // Random nonce to sign
 }
 ```
 
-**POST `/auth/register`**
+**POST `/api/v2/auth/login/validate`**
 ```typescript
 // Request
 {
-  alias: string;
-  wallet_address: string;
+  id: string;                    // Session ID from step 1
+  signature: { signature: string; key: string };
+  address: string;               // Wallet address (bech32)
+  convert_utf8: boolean;
+  wallet_preference: string;
+  andamio_access_token_unit?: string;
 }
 
 // Response
 {
-  user: UserProfile;
+  jwt: string;  // JWT token
+  user: {
+    id: string;
+    cardano_bech32_addr: string;
+    access_token_alias: string | null;
+  }
 }
 ```
 
@@ -118,30 +129,81 @@ This file documents all endpoints available in the Unified Andamio API Gateway.
 
 ---
 
-## Merged Courses (3 endpoints)
+## Merged Courses (18+ endpoints)
 
 These endpoints combine off-chain (DB) and on-chain (Andamioscan) data into unified responses.
 
+### Public Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v2/course/user/courses/list` | List all published courses with on-chain state |
 | GET | `/api/v2/course/user/course/get/{policy_id}` | Get course details with on-chain state |
-| POST | `/api/v2/course/student/course-status` | Get student's course progress |
 
-### Key Benefit
-Previously required 2 API calls (DB API + Andamioscan) to get complete course data. Now single call.
+### Owner Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/course/owner/courses/list` | List owner's courses (includes unregistered) |
+| POST | `/api/v2/course/owner/course/register` | Register on-chain course in DB |
+
+### Teacher Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/course/teacher/courses/list` | List courses where user is teacher |
+| POST | `/api/v2/course/teacher/assignment-commitments/list` | List pending assignments to assess |
+
+### Student Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/course/student/courses/list` | List enrolled courses |
+| POST | `/api/v2/course/student/assignment-commitments/list` | List student's commitments |
+
+### Response Format
+```typescript
+{
+  data: Array<{
+    course_id: string;
+    owner: string;
+    teachers: string[];
+    content?: { title: string; code: string; live: boolean };  // Nested!
+    source: "merged" | "chain_only";  // Indicates data origin
+  }>;
+}
+```
+
+**Note**: Hooks flatten `content.*` to top level for backward compatibility.
 
 ---
 
-## Merged Projects (3 endpoints)
+## Merged Projects (18+ endpoints)
 
 These endpoints combine off-chain (DB) and on-chain (Andamioscan) data into unified responses.
 
+### Public Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v2/project/user/projects/list` | List all published projects with on-chain state |
-| GET | `/api/v2/project/user/project/{project_id}` | Get project details with on-chain state |
-| GET | `/api/v2/project/contributor/status/{project_id}/{alias}` | Get contributor status in project |
+| POST | `/api/v2/project/user/project/get` | Get project details with on-chain state |
+
+### Owner Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/project/owner/projects/list` | List owner's projects (includes unregistered) |
+| POST | `/api/v2/project/owner/project/register` | Register on-chain project in DB |
+
+### Manager Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/project/manager/projects/list` | List projects where user is manager |
+| POST | `/api/v2/project/manager/commitments/list` | List pending task commitments to assess |
+
+### Contributor Endpoints (requires auth)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v2/project/contributor/projects/list` | List projects where user is contributor |
+| POST | `/api/v2/project/contributor/commitments/list` | List contributor's commitments |
+
+### Response Format
+Same pattern as courses - `content` is nested, `source` indicates data origin.
 
 ---
 

@@ -21,9 +21,19 @@ This skill guides a tester or developer through a specified Andamio Transaction 
 
 ## Reference Files
 
-- **[tx-loops.md](./tx-loops.md)** - Catalog of all tx loops with steps and side effects
+- **[tx-loops.md](./tx-loops.md)** - Catalog of all V2 tx loops with steps and side effects
 - **[loop-history.md](./loop-history.md)** - Testing status and history for each loop
-- **[@andamio/transactions](../../../packages/andamio-transactions/README.md)** - Transaction definitions and expected behavior
+- **[@andamio/transactions](../../../packages/andamio-transactions/README.md)** - Transaction definitions (V2 pattern)
+
+## V2 Gateway API
+
+All transactions now use the V2 Gateway API with auto-confirmation. The simplified flow is:
+
+```
+BUILD → SIGN → SUBMIT → (Gateway auto-confirms)
+```
+
+No manual TX registration or polling needed.
 
 ## Goals & Questions
 
@@ -251,11 +261,11 @@ User: Yes, ready to go
 Guide: Perfect. You'll start as the Student.
 
 **Step 1 of 3:** Try to enroll in a course and commit to an assignment.
-This will be the `COURSE_STUDENT_ASSIGNMENT_COMMIT` transaction.
+This will be the `COURSE_STUDENT_ASSIGNMENT_COMMIT` transaction (V2 Gateway).
 
 User: Done! That worked.
 
-Guide: Nice. How did that feel? Could you find where to enroll easily?
+Guide: Nice. The Gateway should have auto-confirmed that. Could you find where to enroll easily?
 
 User: Took me a minute to find the enroll button, it was hidden in a dropdown.
 

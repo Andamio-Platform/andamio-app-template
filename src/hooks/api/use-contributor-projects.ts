@@ -57,7 +57,7 @@ export interface ContributorProject {
   image_url?: string;
 
   // Metadata
-  source?: string; // "merged" | "on-chain-only" | "db-only"
+  source?: string; // "merged" | "chain_only" | "db-only"
 }
 
 export type ContributorProjectsResponse = ContributorProject[];

@@ -235,9 +235,10 @@ export async function createLoginSession(): Promise<LoginSession> {
  * API response format from /api/v2/auth/login/validate
  */
 interface ValidateSignatureApiResponse {
-  token: string;
+  jwt: string;
   user: {
-    stake_address: string;
+    id: string;
+    cardano_bech32_addr: string;
     access_token_alias: string | null;
     created_at?: string;
     updated_at?: string;
@@ -287,11 +288,10 @@ export async function validateSignature(params: {
   // Transform API response to internal format
   const apiResponse = (await response.json()) as ValidateSignatureApiResponse;
   return {
-    jwt: apiResponse.token,
+    jwt: apiResponse.jwt,
     user: {
-      // Use stake_address as the user identifier
-      id: apiResponse.user.stake_address,
-      cardanoBech32Addr: apiResponse.user.stake_address,
+      id: apiResponse.user.id,
+      cardanoBech32Addr: apiResponse.user.cardano_bech32_addr,
       accessTokenAlias: apiResponse.user.access_token_alias,
     },
   };

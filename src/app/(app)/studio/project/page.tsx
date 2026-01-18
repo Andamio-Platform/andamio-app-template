@@ -216,7 +216,7 @@ function ProjectRow({
 }) {
   const truncatedId = `${project.project_id.slice(0, 8)}...${project.project_id.slice(-8)}`;
   const hasDbContent = project.title !== undefined && project.title !== null;
-  const isOnChain = project.source === "merged" || project.source === "on-chain-only";
+  const isOnChain = project.source === "merged" || project.source === "chain_only";
 
   // Determine status icon
   const getStatusIcon = () => {

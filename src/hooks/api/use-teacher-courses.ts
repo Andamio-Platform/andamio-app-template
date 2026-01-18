@@ -44,10 +44,22 @@ export interface TeacherCourse {
   course_address?: string;
   owner?: string;
   teachers?: string[];
+  student_state_id?: string;
   created_tx?: string;
   created_slot?: number;
 
-  // Off-chain content
+  // Off-chain content (nested under "content" from API)
+  content?: {
+    title?: string;
+    code?: string;
+    description?: string;
+    image_url?: string;
+    video_url?: string;
+    live?: boolean;
+  };
+
+  // Flattened accessors for backwards compatibility
+  // These are populated by the hook from content.*
   title?: string;
   description?: string;
   image_url?: string;
@@ -55,7 +67,7 @@ export interface TeacherCourse {
   course_code?: string;
 
   // Metadata
-  source?: string; // "merged" | "on-chain-only" | "db-only"
+  source?: string; // "merged" | "chain_only" | "db_only"
 }
 
 export type TeacherCoursesResponse = TeacherCourse[];
@@ -116,6 +128,8 @@ export function useTeacherCourses() {
     queryKey: teacherCourseKeys.list(),
     queryFn: async (): Promise<TeacherCoursesResponse> => {
       // Merged endpoint: POST /api/v2/course/teacher/courses/list
+      console.log("[useTeacherCourses] Making request...");
+
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/courses/list`,
         {
@@ -125,23 +139,42 @@ export function useTeacherCourses() {
         }
       );
 
+      console.log("[useTeacherCourses] Response status:", response.status);
+
       // 404 means no courses - return empty array
       if (response.status === 404) {
+        console.log("[useTeacherCourses] Got 404 - returning empty array");
         return [];
       }
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[useTeacherCourses] Error response:", errorText);
         throw new Error(`Failed to fetch teacher courses: ${response.statusText}`);
       }
 
       const result = await response.json() as { data?: TeacherCourse[]; warning?: string };
+
+      // Debug: log the full response
+      console.log("[useTeacherCourses] API response:", JSON.stringify(result, null, 2));
 
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useTeacherCourses] API warning:", result.warning);
       }
 
-      return result.data ?? [];
+      // Flatten content fields for backwards compatibility with UI
+      const courses = (result.data ?? []).map((course) => ({
+        ...course,
+        // Flatten content.* to top level for UI components
+        title: course.content?.title ?? course.title,
+        description: course.content?.description ?? course.description,
+        image_url: course.content?.image_url ?? course.image_url,
+        video_url: course.content?.video_url ?? course.video_url,
+        course_code: course.content?.code ?? course.course_code,
+      }));
+
+      return courses;
     },
     enabled: isAuthenticated,
     staleTime: 30 * 1000, // 30 seconds

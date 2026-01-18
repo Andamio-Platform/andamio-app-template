@@ -21,6 +21,8 @@ import {
   type CourseListResponse,
   type OrchestrationMergedCourseDetail,
   type MergedHandlersMergedCourseDetailResponse,
+  type OrchestrationMergedCourseListItem,
+  type MergedHandlersMergedCoursesResponse,
 } from "~/types/generated";
 
 // =============================================================================
@@ -96,9 +98,16 @@ export function useCourse(courseId: string | undefined) {
 }
 
 /**
- * Fetch all published courses
+ * Fetch all published courses (merged endpoint)
  *
+ * Returns combined on-chain and off-chain data for all published courses.
  * Used for the public course catalog. Cached globally.
+ *
+ * Uses: GET /api/v2/course/user/courses/list
+ *
+ * Response format:
+ * - data: Array of courses with nested content
+ * - warning: Optional message for partial data scenarios
  *
  * @example
  * ```tsx
@@ -107,7 +116,14 @@ export function useCourse(courseId: string | undefined) {
  *
  *   return (
  *     <div className="grid grid-cols-3 gap-4">
- *       {courses?.map(course => <CourseCard key={course.id} course={course} />)}
+ *       {courses?.map(course => (
+ *         <CourseCard
+ *           key={course.course_id}
+ *           title={course.content?.title}
+ *           description={course.content?.description}
+ *           source={course.source}
+ *         />
+ *       ))}
  *     </div>
  *   );
  * }
@@ -116,22 +132,34 @@ export function useCourse(courseId: string | undefined) {
 export function usePublishedCourses() {
   return useQuery({
     queryKey: courseKeys.published(),
-    queryFn: async () => {
-      // Go API endpoint: /course/user/courses/list
+    queryFn: async (): Promise<OrchestrationMergedCourseListItem[]> => {
       const response = await fetch(
         `/api/gateway/api/v2/course/user/courses/list`
       );
 
       // 404 means no published courses exist yet - treat as empty state, not error
       if (response.status === 404) {
-        return [] as CourseListResponse;
+        return [];
       }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch published courses: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseListResponse>;
+      const result = await response.json() as MergedHandlersMergedCoursesResponse | OrchestrationMergedCourseListItem[];
+
+      // Handle both wrapped { data: [...] } and raw array formats
+      if (Array.isArray(result)) {
+        // Legacy/raw array format
+        return result;
+      }
+
+      // Wrapped format with data property
+      if (result.warning) {
+        console.warn("[usePublishedCourses] API warning:", result.warning);
+      }
+
+      return result.data ?? [];
     },
   });
 }

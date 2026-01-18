@@ -67,9 +67,9 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/course-modules/list/{policy_id}
+      // Go API: GET /course/user/modules/list/{policy_id}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -110,7 +110,7 @@ export function useCourseModule(
       // V2: GET /course/user/course-module/get was removed
       // Use list endpoint and filter client-side
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
@@ -134,7 +134,7 @@ export function useCourseModule(
  * Batch fetch modules for multiple courses by policy ID
  *
  * Used for dashboard views showing module counts across courses.
- * Uses POST /course-modules/list endpoint.
+ * Uses POST /course/teacher/modules/list endpoint.
  *
  * @example
  * ```tsx
@@ -156,9 +156,9 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
   return useQuery({
     queryKey: courseModuleKeys.map(courseNftPolicyIds),
     queryFn: async () => {
-      // Go API: POST /course/teacher/course-modules/list - returns modules grouped by policy ID
+      // Go API: POST /course/teacher/modules/list - returns modules grouped by policy ID
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-modules/list`,
+        `/api/gateway/api/v2/course/teacher/modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

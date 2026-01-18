@@ -232,7 +232,7 @@ function ProjectDataCard({
  * Project detail page displaying project info and tasks list
  *
  * API Endpoint (V2 Merged):
- * - GET /api/v2/project/user/project/get/{project_id}
+ * - GET /api/v2/project/user/project/{project_id}
  */
 export default function ProjectDetailPage() {
   const params = useParams();

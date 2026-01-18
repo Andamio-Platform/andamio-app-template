@@ -114,7 +114,7 @@ export function useModuleWizardData({
       // V2: GET /course/user/course-module/get was removed
       // Use list endpoint and filter client-side
       const modulesResponse = await fetch(
-        `/api/gateway/api/v2/course/user/course-modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
       );
       const modules = modulesResponse.ok
         ? ((await modulesResponse.json()) as CourseModuleListResponse)

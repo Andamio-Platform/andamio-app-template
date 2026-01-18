@@ -85,7 +85,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       setCourses(data ?? []);
 
       // Fetch module counts for all courses using batch endpoint
-      // Go API: POST /course/teacher/course-modules/list
+      // Go API: POST /course/teacher/modules/list
       if (data && data.length > 0) {
         try {
           const courseNftPolicyIds = data
@@ -94,7 +94,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
 
           if (courseNftPolicyIds.length > 0) {
             const modulesResponse = await authenticatedFetch(
-              `/api/gateway/api/v2/course/teacher/course-modules/list`,
+              `/api/gateway/api/v2/course/teacher/modules/list`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

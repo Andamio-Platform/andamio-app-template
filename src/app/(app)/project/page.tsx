@@ -239,30 +239,35 @@ export default function ProjectCatalogPage() {
             </AndamioTableRow>
           </AndamioTableHeader>
           <AndamioTableBody>
-            {projects.map((project) => (
-              <AndamioTableRow key={project.project_id ?? project.content?.title}>
-                <AndamioTableCell>
-                  <Link
-                    href={`/project/${project.project_id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {project.content?.title ?? project.project_id?.slice(0, 16) ?? "Untitled"}
-                  </Link>
-                </AndamioTableCell>
-                <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
-                  {project.project_id ? (
-                    <span title={project.project_id}>
-                      {project.project_id.slice(0, 16)}...
-                    </span>
-                  ) : (
-                    "-"
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell className="text-center">
-                  {renderEligibilityBadge(project.project_id)}
-                </AndamioTableCell>
-              </AndamioTableRow>
-            ))}
+            {projects.map((project, index) => {
+              // Handle both merged format (content.title) and legacy format (title at top level)
+              const title = project.content?.title ?? (project as unknown as { title?: string }).title;
+
+              return (
+                <AndamioTableRow key={project.project_id ?? title ?? `project-${index}`}>
+                  <AndamioTableCell>
+                    <Link
+                      href={`/project/${project.project_id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {title ?? project.project_id?.slice(0, 16) ?? "Untitled"}
+                    </Link>
+                  </AndamioTableCell>
+                  <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
+                    {project.project_id ? (
+                      <span title={project.project_id}>
+                        {project.project_id.slice(0, 16)}...
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </AndamioTableCell>
+                  <AndamioTableCell className="text-center">
+                    {renderEligibilityBadge(project.project_id)}
+                  </AndamioTableCell>
+                </AndamioTableRow>
+              );
+            })}
           </AndamioTableBody>
         </AndamioTable>
       </AndamioTableContainer>

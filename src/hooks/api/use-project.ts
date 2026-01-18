@@ -41,7 +41,7 @@ export const projectKeys = {
  * Fetch a single project by ID (merged endpoint)
  *
  * Returns both on-chain data (tasks, contributors) and off-chain content.
- * Uses: GET /api/v2/project/user/project/get/{project_id}
+ * Uses: GET /api/v2/project/user/project/{project_id}
  *
  * @param projectId - Project NFT Policy ID
  */
@@ -50,7 +50,7 @@ export function useProject(projectId: string | undefined) {
     queryKey: projectKeys.detail(projectId ?? ""),
     queryFn: async (): Promise<OrchestrationMergedProjectDetail | null> => {
       const response = await fetch(
-        `/api/gateway/api/v2/project/user/project/get/${projectId}`
+        `/api/gateway/api/v2/project/user/project/${projectId}`
       );
 
       if (response.status === 404) {
@@ -95,8 +95,15 @@ export function useProjects() {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedProjectsResponse;
+      const result = await response.json() as MergedHandlersMergedProjectsResponse | OrchestrationMergedProjectListItem[];
 
+      // Handle both wrapped { data: [...] } and raw array formats
+      if (Array.isArray(result)) {
+        // Legacy/raw array format
+        return result;
+      }
+
+      // Wrapped format with data property
       if (result.warning) {
         console.warn("[useProjects] API warning:", result.warning);
       }

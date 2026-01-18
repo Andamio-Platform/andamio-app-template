@@ -133,9 +133,13 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
   // For pure on-chain TXs (no DB updates), treat submission as success
   const isPureOnChainSuccess = state === "success" && result && !result.requiresDBUpdate;
 
+  // Track if we've already handled the success to prevent infinite loop
+  const hasHandledSuccessRef = React.useRef(false);
+
   // Handle pure on-chain TX success (e.g., Access Token Mint)
   useEffect(() => {
-    if (isPureOnChainSuccess) {
+    if (isPureOnChainSuccess && !hasHandledSuccessRef.current) {
+      hasHandledSuccessRef.current = true;
       console.log("[MintAccessTokenSimple] Pure on-chain TX submitted successfully");
 
       // Refresh auth to detect the new token in wallet
@@ -145,6 +149,13 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
       void onSuccess?.();
     }
   }, [isPureOnChainSuccess, refreshAuth, onSuccess]);
+
+  // Reset the ref when state goes back to idle (for subsequent mints)
+  useEffect(() => {
+    if (state === "idle") {
+      hasHandledSuccessRef.current = false;
+    }
+  }, [state]);
 
   // Get UI config from centralized config
   const ui = TRANSACTION_UI.GLOBAL_GENERAL_ACCESS_TOKEN_MINT;

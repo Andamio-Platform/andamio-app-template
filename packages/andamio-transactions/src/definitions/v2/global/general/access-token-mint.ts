@@ -106,6 +106,6 @@ export const GLOBAL_GENERAL_ACCESS_TOKEN_MINT: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/global/general/access-token/mint",
-    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_global_user_access_token_mint",
+    apiDocs: "https://dev-api.andamio.io/api/v1/docs/index.html#/default/post_v2_tx_global_user_access_token_mint",
   },
 };

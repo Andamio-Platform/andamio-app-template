@@ -9,6 +9,10 @@
  * - Compact on-chain storage (64-char hex hash vs full JSON)
  * - Tamper-evidence (can verify DB content matches on-chain commitment)
  * - Privacy (evidence details not exposed on-chain)
+ *
+ * Extracted from @andamio/transactions package for local use.
+ *
+ * @module assignment-info-hash
  */
 
 import * as blake from "blakejs";
@@ -101,7 +105,7 @@ export function normalizeForHashing(value: unknown): unknown {
  *
  * @example
  * ```typescript
- * import { computeAssignmentInfoHash } from "@andamio/transactions";
+ * import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
  *
  * const evidence = {
  *   type: "doc",
@@ -122,7 +126,7 @@ export function computeAssignmentInfoHash(evidence: unknown): string {
   const jsonString = JSON.stringify(normalized);
 
   // Convert to bytes and hash with Blake2b-256
-  const bytes = Buffer.from(jsonString, "utf-8");
+  const bytes = new TextEncoder().encode(jsonString);
   return blake.blake2bHex(bytes, undefined, 32);
 }
 
@@ -134,23 +138,6 @@ export function computeAssignmentInfoHash(evidence: unknown): string {
  * @param evidence - The evidence content to verify
  * @param expectedHash - The expected hash (from on-chain data)
  * @returns True if the evidence produces the expected hash
- *
- * @example
- * ```typescript
- * import { verifyAssignmentInfoHash } from "@andamio/transactions";
- *
- * // Fetch evidence from database
- * const dbEvidence = await fetchEvidenceFromDb(commitmentId);
- *
- * // Fetch hash from on-chain data
- * const onChainHash = await fetchOnChainAssignmentInfo(studentAlias, courseId);
- *
- * // Verify they match
- * const isValid = verifyAssignmentInfoHash(dbEvidence, onChainHash);
- * if (!isValid) {
- *   console.error("Evidence has been tampered with or doesn't match on-chain commitment");
- * }
- * ```
  */
 export function verifyAssignmentInfoHash(
   evidence: unknown,
@@ -167,15 +154,6 @@ export function verifyAssignmentInfoHash(
  *
  * @param hash - The string to validate
  * @returns True if the string is a valid hash format
- *
- * @example
- * ```typescript
- * import { isValidAssignmentInfoHash } from "@andamio/transactions";
- *
- * isValidAssignmentInfoHash("abc123"); // false - too short
- * isValidAssignmentInfoHash("xyz..."); // false - invalid characters
- * isValidAssignmentInfoHash("8dcbe1b925d87e6c547bbd8071c23a712db4c32751454b0948f8c846e9246b5c"); // true
- * ```
  */
 export function isValidAssignmentInfoHash(hash: string): boolean {
   if (typeof hash !== "string") {
@@ -210,21 +188,6 @@ export type EvidenceVerificationResult = {
  * @param evidence - The evidence content to verify
  * @param onChainHash - The hash from on-chain data
  * @returns Detailed verification result
- *
- * @example
- * ```typescript
- * import { verifyEvidenceDetailed } from "@andamio/transactions";
- *
- * const result = verifyEvidenceDetailed(dbEvidence, onChainHash);
- *
- * if (result.isValid) {
- *   console.log("Evidence verified successfully");
- * } else {
- *   console.error(result.message);
- *   console.log("Computed:", result.computedHash);
- *   console.log("Expected:", result.expectedHash);
- * }
- * ```
  */
 export function verifyEvidenceDetailed(
   evidence: unknown,

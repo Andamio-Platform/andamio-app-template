@@ -119,57 +119,6 @@ async function syncAccessTokenFromWallet(
   }
 }
 
-/**
- * Automatically register user as Creator and Learner on first login
- * Silently fails if user is already registered (409 Conflict)
- */
-async function autoRegisterRoles(jwt: string): Promise<void> {
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${jwt}`,
-  };
-
-  try {
-    // Register as Creator
-    const creatorResponse = await fetch(`/api/gateway/api/v2/creator/create`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({}),
-    });
-
-    if (creatorResponse.ok) {
-      const creatorData = (await creatorResponse.json()) as { success: boolean; creatorId: string };
-      authLogger.info("Registered as Creator:", creatorData.creatorId);
-    } else if (creatorResponse.status === 409) {
-      authLogger.info("Already registered as Creator");
-    } else {
-      authLogger.warn("Failed to register as Creator:", await creatorResponse.text());
-    }
-  } catch (error) {
-    authLogger.warn("Error registering as Creator:", error);
-  }
-
-  try {
-    // Register as Learner
-    const learnerResponse = await fetch(`/api/gateway/api/v2/learner/create`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({}),
-    });
-
-    if (learnerResponse.ok) {
-      const learnerData = (await learnerResponse.json()) as { success: boolean; learnerId: string };
-      authLogger.info("Registered as Learner:", learnerData.learnerId);
-    } else if (learnerResponse.status === 409) {
-      authLogger.info("Already registered as Learner");
-    } else {
-      authLogger.warn("Failed to register as Learner:", await learnerResponse.text());
-    }
-  } catch (error) {
-    authLogger.warn("Error registering as Learner:", error);
-  }
-}
-
 interface AndamioAuthContextType {
   // State
   isAuthenticated: boolean;
@@ -446,10 +395,6 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setIsAuthenticated(true);
       setPopupBlocked(false);
       authLogger.info("Auth state updated: isAuthenticated=true");
-
-      // TODO: Re-enable after API endpoints exist
-      // Automatically register as Creator and Learner on first login
-      // await autoRegisterRoles(authResponse.jwt);
 
       // Sync access token from wallet to database (in case it wasn't detected during auth)
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);

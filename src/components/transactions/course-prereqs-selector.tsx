@@ -14,7 +14,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useTeacherCoursesWithModules, type TeacherCourseWithModules } from "~/hooks/api";
+import { useTeacherCoursesWithModules } from "~/hooks/api";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";

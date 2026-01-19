@@ -27,6 +27,6 @@ export {
   hashSchema,
   shortTextSchema,
   walletDataSchema,
-  listValueSchema,
+  valueSchema,
   type TxParams,
 } from "./transaction-schemas";

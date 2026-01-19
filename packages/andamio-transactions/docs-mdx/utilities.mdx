@@ -1,130 +1,29 @@
 ---
 title: "Utilities"
-description: "Hash functions, CBOR decoder, and helper utilities"
+description: "CBOR decoder and helper utilities"
 icon: Wrench
 ---
 
 # Utilities
 
-The `@andamio/transactions` package includes utilities for computing content hashes, decoding transaction CBOR, and formatting complex inputs.
+The `@andamio/transactions` package includes utilities for decoding transaction CBOR and formatting complex inputs.
 
-## SLT Hash Utility
+## Hash Utilities (Migrated)
 
-Compute module token names (hashes) from Student Learning Targets (SLTs). This matches the on-chain Plutus validator computation exactly.
+**Note:** Hash utilities have been migrated to the main T3 App Template at `~/lib/utils/`:
 
-### computeSltHash
-
-```typescript
-import { computeSltHash } from "@andamio/transactions";
-
-const slts = [
-  "I can mint an access token.",
-  "I can complete an assignment to earn a credential."
-];
-
-const moduleHash = computeSltHash(slts);
-// Returns: "8dcbe1b925d87e6c547bbd8071c23a712db4c32751454b0948f8c846e9246b5c"
-```
-
-### verifySltHash
-
-Verify a hash matches expected SLTs:
+| Function | New Location |
+|----------|--------------|
+| `computeSltHashDefinite` | `~/lib/utils/slt-hash.ts` |
+| `computeAssignmentInfoHash` | `~/lib/utils/assignment-info-hash.ts` |
+| `computeTaskHash` | `~/lib/utils/task-hash.ts` |
 
 ```typescript
-import { verifySltHash } from "@andamio/transactions";
-
-const isValid = verifySltHash(slts, moduleHash);
-// Returns: true
+// New import pattern in T3 App Template
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
+import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
+import { computeTaskHash } from "~/lib/utils/task-hash";
 ```
-
-### isValidSltHash
-
-Validate hash format (64 hex characters):
-
-```typescript
-import { isValidSltHash } from "@andamio/transactions";
-
-isValidSltHash(moduleHash);  // true
-isValidSltHash("invalid");   // false
-```
-
-### Algorithm
-
-The SLT hash algorithm:
-
-1. Convert each SLT string to UTF-8 bytes
-2. Encode as CBOR indefinite-length array of byte strings
-3. Hash with Blake2b-256 (32 bytes / 256 bits)
-
-This matches the Plutus on-chain computation:
-
-```haskell
-sltsToBbs MintModuleV2{slts} = blake2b_256 $ serialiseData $ toBuiltinData $ map stringToBuiltinByteString slts
-```
-
-### Use Cases
-
-- **Preview before minting** - Show users what their module's on-chain identifier will be
-- **Validate after confirmation** - Verify the on-chain mint matches expectations
-- **Look up existing modules** - Compute the hash to query if a module already exists
-- **Debug mismatches** - Compare expected vs actual hashes
-
----
-
-## Assignment Info Hash Utility
-
-For assignment commitments, the `assignmentInfo` stored on-chain is a hash of the evidence content. The full evidence (Tiptap JSON) is stored in the database, while only the hash goes on-chain.
-
-### computeAssignmentInfoHash
-
-```typescript
-import { computeAssignmentInfoHash } from "@andamio/transactions";
-
-const evidence = {
-  type: "doc",
-  content: [
-    { type: "paragraph", content: [{ type: "text", text: "My submission..." }] }
-  ]
-};
-
-const assignmentInfoHash = computeAssignmentInfoHash(evidence);
-// Use this hash in the transaction's commitData.assignmentInfo
-```
-
-### verifyAssignmentInfoHash
-
-Verify database evidence matches on-chain commitment:
-
-```typescript
-import { verifyAssignmentInfoHash } from "@andamio/transactions";
-
-const isValid = verifyAssignmentInfoHash(dbEvidence, onChainHash);
-```
-
-### verifyEvidenceDetailed
-
-Get detailed verification results for debugging:
-
-```typescript
-import { verifyEvidenceDetailed } from "@andamio/transactions";
-
-const result = verifyEvidenceDetailed(dbEvidence, onChainHash);
-
-if (!result.isValid) {
-  console.log(result.message);
-  console.log("Expected:", result.expectedHash);
-  console.log("Actual:", result.actualHash);
-}
-```
-
-### Normalization Rules
-
-Evidence is normalized before hashing to ensure deterministic results:
-
-- Object keys sorted alphabetically
-- Strings trimmed of leading/trailing whitespace
-- Arrays preserve order, items normalized recursively
-- `undefined` converted to `null`
 
 ---
 
@@ -204,7 +103,7 @@ const txId = extractTxId(unsignedTxCBOR);
 
 For most Andamio transactions, the decoder is a **nice-to-have** rather than essential:
 
-- Module hashes can be pre-computed with `computeSltHash(slts)` before calling the tx API
+- Module hashes can be pre-computed with `computeSltHashDefinite(slts)` before calling the tx API
 - Evidence hashes are computed with `computeAssignmentInfoHash(evidence)` before submission
 - Transaction ID comes back after signing
 
@@ -240,10 +139,11 @@ await fetch('/api/course-modules/batch-update-status', {
 Format body for confirming modules with hashes:
 
 ```typescript
-import { formatBatchConfirmBody, computeSltHash } from "@andamio/transactions";
+import { formatBatchConfirmBody } from "@andamio/transactions";
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
 
 // Pre-compute hashes (preferred - known at submission time)
-const moduleHashes = modules.map(m => computeSltHash(m.slts.map(s => s.text)));
+const moduleHashes = modules.map(m => computeSltHashDefinite(m.slts.map(s => s.text)));
 
 const confirmBody = formatBatchConfirmBody(
   courseNftPolicyId,           // "abc123..."
@@ -259,33 +159,6 @@ await fetch('/api/course-modules/batch-confirm-transaction', {
 ```
 
 **Important:** Module codes and hashes must be passed in the same order as they appear in `module_infos`.
-
----
-
-## Evidence Locking Behavior
-
-Once a student commits evidence to an assignment, the evidence becomes **immutable from a blockchain perspective**. The on-chain commitment stores a hash of the evidence, so any modification would cause a mismatch.
-
-### UX Implementation Requirements
-
-1. **Lock evidence editor after commitment** - When `network_status` transitions to `PENDING_TX_*` or any committed state, make the editor read-only.
-
-2. **Status-based editability:**
-
-```typescript
-const isEditable = (status: AssignmentCommitmentStatus) => {
-  return status === "DRAFT" || status === "NEEDS_REVISION";
-};
-```
-
-3. **Visual indicators:**
-   - Show a lock icon when evidence is committed
-   - Display the evidence hash for transparency
-   - Link to on-chain verification via Andamioscan
-
-### Why This Matters
-
-The assignment info hash creates a tamper-evident record. If someone edits database evidence after commitment, verification will fail because the hash won't match. This ensures the evidence a teacher assesses is exactly what the student committed.
 
 ---
 

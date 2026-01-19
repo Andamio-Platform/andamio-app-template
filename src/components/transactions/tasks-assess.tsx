@@ -160,11 +160,6 @@ export function TasksAssess({
         task_decisions: [
           { alias: contributorAlias, outcome: decision },
         ],
-        // Side effect params (matches /project/manager/commitment/assess)
-        // Note: DB API expects uppercase decision values
-        task_hash: taskHash,
-        contributor_alias: contributorAlias,
-        decision: outcomeToDbDecision[decision],
       },
       onSuccess: async (txResult) => {
         console.log("[TasksAssess] TX submitted successfully!", txResult);

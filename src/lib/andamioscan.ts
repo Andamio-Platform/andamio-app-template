@@ -7,7 +7,7 @@
  * Uses the Next.js API proxy at /api/gateway which forwards to the
  * Unified Andamio API Gateway.
  *
- * Gateway Base: https://andamio-api-gateway-168705267033.us-central1.run.app
+ * Gateway Base: https://dev-api.andamio.io
  * Proxy Base: /api/gateway
  *
  * Endpoint Paths: /api/v2/* (on-chain indexed data)

@@ -106,6 +106,6 @@ export const PROJECT_CONTRIBUTOR_TASK_ACTION: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/task-action",
-    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_project_contributor_task_action",
+    apiDocs: "https://dev-api.andamio.io/api/v1/docs/index.html#/default/post_v2_tx_project_contributor_task_action",
   },
 };

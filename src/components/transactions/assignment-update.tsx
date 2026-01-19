@@ -15,7 +15,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";

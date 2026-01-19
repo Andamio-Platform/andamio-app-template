@@ -30,7 +30,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { DeleteIcon, ModuleIcon, AlertIcon, CloseIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface ModuleToBurn {
   /** Module code (for display) */
@@ -157,8 +156,6 @@ export function BurnModuleTokens({
     return results;
   };
 
-  const ui = TRANSACTION_UI.COURSE_TEACHER_MODULES_MANAGE;
-
   const handleBurnModules = async () => {
     if (!user?.accessTokenAlias || modulesToBurn.length === 0) {
       return;
@@ -172,9 +169,9 @@ export function BurnModuleTokens({
       params: {
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
-        modules_to_mint: [],
+        modules_to_add: [],
         modules_to_update: [],
-        modules_to_burn: hashesToBurn,
+        modules_to_remove: hashesToBurn,
       },
       onSuccess: async (txResult) => {
         console.log("[BurnModuleTokens] TX submitted successfully!", txResult);

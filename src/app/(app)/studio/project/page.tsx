@@ -56,8 +56,6 @@ import { getTokenExplorerUrl } from "~/lib/constants";
  */
 function ProjectListContent() {
   const router = useRouter();
-  const { user } = useAndamioAuth();
-  const alias = user?.accessTokenAlias;
 
   const [showCreateProject, setShowCreateProject] = useState(false);
 

@@ -6,6 +6,8 @@
  *
  * The algorithm matches the on-chain Plutus validator serialization.
  *
+ * Extracted from @andamio/transactions package for local use.
+ *
  * @module task-hash
  */
 
@@ -48,7 +50,7 @@ const PLUTUS_CHUNK_SIZE = 64;
  *
  * @example
  * ```typescript
- * import { computeTaskHash } from "@andamio/transactions";
+ * import { computeTaskHash } from "~/lib/utils/task-hash";
  *
  * const task = {
  *   project_content: "Open Task #1",
@@ -102,7 +104,7 @@ export function isValidTaskHash(hash: string): boolean {
  */
 export function debugTaskCBOR(task: TaskData): string {
   const cborData = encodeTaskAsPlutusData(task);
-  return cborData.toString("hex");
+  return Buffer.from(cborData).toString("hex");
 }
 
 // =============================================================================
@@ -119,16 +121,16 @@ export function debugTaskCBOR(task: TaskData): string {
  *
  * @internal
  */
-function encodeTaskAsPlutusData(task: TaskData): Buffer {
-  const chunks: Buffer[] = [];
+function encodeTaskAsPlutusData(task: TaskData): Uint8Array {
+  const chunks: Uint8Array[] = [];
 
   // Plutus Constr 0 with indefinite array
   // CBOR tag 121 (0xd879) = Constr 0 in Plutus Data
-  chunks.push(Buffer.from([0xd8, 0x79])); // Tag 121 (Constr 0)
-  chunks.push(Buffer.from([0x9f])); // Start indefinite array
+  chunks.push(new Uint8Array([0xd8, 0x79])); // Tag 121 (Constr 0)
+  chunks.push(new Uint8Array([0x9f])); // Start indefinite array
 
   // Field 1: project_content as BuiltinByteString
-  chunks.push(encodePlutusBuiltinByteString(Buffer.from(task.project_content, "utf-8")));
+  chunks.push(encodePlutusBuiltinByteString(new TextEncoder().encode(task.project_content)));
 
   // Field 2: expiration_time as Integer
   chunks.push(encodePlutusInteger(task.expiration_time));
@@ -140,9 +142,9 @@ function encodeTaskAsPlutusData(task: TaskData): Buffer {
   chunks.push(encodeNativeAssets(task.native_assets));
 
   // End indefinite array
-  chunks.push(Buffer.from([0xff])); // Break
+  chunks.push(new Uint8Array([0xff])); // Break
 
-  return Buffer.concat(chunks);
+  return concatUint8Arrays(chunks);
 }
 
 /**
@@ -153,28 +155,28 @@ function encodeTaskAsPlutusData(task: TaskData): Buffer {
  *
  * @internal
  */
-function encodeNativeAssets(assets: NativeAsset[]): Buffer {
+function encodeNativeAssets(assets: NativeAsset[]): Uint8Array {
   if (assets.length === 0) {
     // Empty list: definite-length array of 0 elements
-    return Buffer.from([0x80]); // Array(0)
+    return new Uint8Array([0x80]); // Array(0)
   }
 
-  const chunks: Buffer[] = [];
+  const chunks: Uint8Array[] = [];
 
   // Start indefinite array
-  chunks.push(Buffer.from([0x9f]));
+  chunks.push(new Uint8Array([0x9f]));
 
   for (const [assetClass, quantity] of assets) {
     // Each asset is a 2-element array: [bytestring, integer]
-    chunks.push(Buffer.from([0x82])); // Array of 2 elements
-    chunks.push(encodePlutusBuiltinByteString(Buffer.from(assetClass, "utf-8")));
+    chunks.push(new Uint8Array([0x82])); // Array of 2 elements
+    chunks.push(encodePlutusBuiltinByteString(new TextEncoder().encode(assetClass)));
     chunks.push(encodePlutusInteger(quantity));
   }
 
   // End indefinite array
-  chunks.push(Buffer.from([0xff]));
+  chunks.push(new Uint8Array([0xff]));
 
-  return Buffer.concat(chunks);
+  return concatUint8Arrays(chunks);
 }
 
 /**
@@ -185,22 +187,22 @@ function encodeNativeAssets(assets: NativeAsset[]): Buffer {
  *
  * @internal
  */
-function encodePlutusBuiltinByteString(buffer: Buffer): Buffer {
+function encodePlutusBuiltinByteString(buffer: Uint8Array): Uint8Array {
   if (buffer.length <= PLUTUS_CHUNK_SIZE) {
     return encodeCBORByteString(buffer);
   }
 
   // Long string: use indefinite-length chunked encoding
-  const chunks: Buffer[] = [];
-  chunks.push(Buffer.from([0x5f])); // Start indefinite byte string
+  const chunks: Uint8Array[] = [];
+  chunks.push(new Uint8Array([0x5f])); // Start indefinite byte string
 
   for (let i = 0; i < buffer.length; i += PLUTUS_CHUNK_SIZE) {
     const chunk = buffer.subarray(i, Math.min(i + PLUTUS_CHUNK_SIZE, buffer.length));
     chunks.push(encodeCBORByteString(chunk));
   }
 
-  chunks.push(Buffer.from([0xff])); // Break
-  return Buffer.concat(chunks);
+  chunks.push(new Uint8Array([0xff])); // Break
+  return concatUint8Arrays(chunks);
 }
 
 /**
@@ -208,41 +210,43 @@ function encodePlutusBuiltinByteString(buffer: Buffer): Buffer {
  *
  * @internal
  */
-function encodePlutusInteger(n: number): Buffer {
+function encodePlutusInteger(n: number): Uint8Array {
   // CBOR integer encoding (major type 0 for positive, 1 for negative)
   if (n >= 0) {
     if (n <= 23) {
-      return Buffer.from([n]);
+      return new Uint8Array([n]);
     } else if (n <= 0xff) {
-      return Buffer.from([0x18, n]);
+      return new Uint8Array([0x18, n]);
     } else if (n <= 0xffff) {
-      return Buffer.from([0x19, n >> 8, n & 0xff]);
+      return new Uint8Array([0x19, n >> 8, n & 0xff]);
     } else if (n <= 0xffffffff) {
-      return Buffer.from([0x1a, (n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]);
+      return new Uint8Array([0x1a, (n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]);
     } else {
       // 64-bit integer - use BigInt for precision
-      const buf = Buffer.alloc(9);
+      const buf = new Uint8Array(9);
       buf[0] = 0x1b;
       const big = BigInt(n);
-      buf.writeBigUInt64BE(big, 1);
+      const view = new DataView(buf.buffer);
+      view.setBigUint64(1, big, false); // false = big-endian
       return buf;
     }
   } else {
     // Negative integers: major type 1, encode (-1 - n)
     const absVal = -1 - n;
     if (absVal <= 23) {
-      return Buffer.from([0x20 + absVal]);
+      return new Uint8Array([0x20 + absVal]);
     } else if (absVal <= 0xff) {
-      return Buffer.from([0x38, absVal]);
+      return new Uint8Array([0x38, absVal]);
     } else if (absVal <= 0xffff) {
-      return Buffer.from([0x39, absVal >> 8, absVal & 0xff]);
+      return new Uint8Array([0x39, absVal >> 8, absVal & 0xff]);
     } else if (absVal <= 0xffffffff) {
-      return Buffer.from([0x3a, (absVal >> 24) & 0xff, (absVal >> 16) & 0xff, (absVal >> 8) & 0xff, absVal & 0xff]);
+      return new Uint8Array([0x3a, (absVal >> 24) & 0xff, (absVal >> 16) & 0xff, (absVal >> 8) & 0xff, absVal & 0xff]);
     } else {
-      const buf = Buffer.alloc(9);
+      const buf = new Uint8Array(9);
       buf[0] = 0x3b;
       const big = BigInt(absVal);
-      buf.writeBigUInt64BE(big, 1);
+      const view = new DataView(buf.buffer);
+      view.setBigUint64(1, big, false);
       return buf;
     }
   }
@@ -253,15 +257,43 @@ function encodePlutusInteger(n: number): Buffer {
  *
  * @internal
  */
-function encodeCBORByteString(buffer: Buffer): Buffer {
+function encodeCBORByteString(buffer: Uint8Array): Uint8Array {
   const len = buffer.length;
 
   if (len <= 23) {
-    return Buffer.concat([Buffer.from([0x40 + len]), buffer]);
+    const result = new Uint8Array(1 + len);
+    result[0] = 0x40 + len;
+    result.set(buffer, 1);
+    return result;
   } else if (len <= 255) {
-    return Buffer.concat([Buffer.from([0x58, len]), buffer]);
+    const result = new Uint8Array(2 + len);
+    result[0] = 0x58;
+    result[1] = len;
+    result.set(buffer, 2);
+    return result;
   } else if (len <= 65535) {
-    return Buffer.concat([Buffer.from([0x59, len >> 8, len & 0xff]), buffer]);
+    const result = new Uint8Array(3 + len);
+    result[0] = 0x59;
+    result[1] = len >> 8;
+    result[2] = len & 0xff;
+    result.set(buffer, 3);
+    return result;
   }
   throw new Error("Byte string too long for CBOR encoding");
+}
+
+/**
+ * Concatenate multiple Uint8Arrays into one
+ *
+ * @internal
+ */
+function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
 }

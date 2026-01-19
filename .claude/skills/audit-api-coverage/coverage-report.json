@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-01-16T18:06:40.494Z",
-  "gatewayUrl": "https://andamio-api-gateway-168705267033.us-central1.run.app",
+  "gatewayUrl": "https://dev-api.andamio.io",
   "summary": {
     "totalEndpoints": 45,
     "implementedEndpoints": 25,

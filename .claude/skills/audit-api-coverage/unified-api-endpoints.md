@@ -1,7 +1,7 @@
 # Unified API Gateway Endpoints
 
-> **Source of Truth**: [API Documentation](https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json)
-> **Base URL**: `https://andamio-api-gateway-168705267033.us-central1.run.app`
+> **Source of Truth**: [API Documentation](https://dev-api.andamio.io/api/v1/docs/doc.json)
+> **Base URL**: `https://dev-api.andamio.io`
 > **Total Endpoints**: ~90+
 > **Last Updated**: January 18, 2026
 
@@ -291,7 +291,7 @@ Transaction building endpoints for instance and global operations.
 
 | Before (3 APIs) | After (Unified Gateway) |
 |-----------------|-------------------------|
-| DB API: `andamio-db-api-343753432212.us-central1.run.app` | `andamio-api-gateway-168705267033.us-central1.run.app` |
+| DB API: `andamio-db-api-343753432212.us-central1.run.app` | `dev-api.andamio.io` |
 | Andamioscan: `preprod.andamioscan.io/api` | Same gateway, `/api/v2/*` paths |
 | Atlas TX API: `atlas-api-preprod-507341199760.us-central1.run.app` | Same gateway, `/api/v2/tx/*` paths |
 

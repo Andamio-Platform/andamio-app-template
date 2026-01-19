@@ -1,8 +1,81 @@
 # Project Status
 
-> **Last Updated**: January 18, 2026 (Session 20 - Auth & API Response Fixes)
+> **Last Updated**: January 19, 2026 (Session 22 - Course Auto-Registration Fixed! 🎉)
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## ✅ RESOLVED: Course Auto-Registration Now Works
+
+**Status**: ✅ Fixed in Gateway v2.0.0-preprod-20260119-e
+
+**What Was Fixed**:
+The TX State Machine now auto-registers courses correctly. The Gateway:
+1. Captures `owner_alias` from JWT at `POST /api/v2/tx/register`
+2. Stores it in Redis metadata alongside `code` and `title`
+3. When TX confirms, calls new `POST /course/gateway/course/register` with service-to-service auth
+4. Course appears with correct title automatically
+
+**Expected Flow** (auto-registration):
+1. Build TX → Sign → Submit → Get `tx_hash`
+2. Register TX: `POST /api/v2/tx/register` (with metadata `{code, title}`)
+3. Poll: `GET /api/v2/tx/status/{tx_hash}` until `"updated"`
+4. Course auto-registered by Gateway ← **Now works!**
+5. Course appears with title in UI
+
+**Required Metadata for `course_create`**:
+```json
+{
+  "tx_hash": "...",
+  "tx_type": "course_create",
+  "metadata": {
+    "code": "COURSE-101",
+    "title": "My Course Title",
+    "description": "Optional description",
+    "image_url": "https://optional-image-url.com/image.png"
+  }
+}
+```
+Note: `owner_alias` is captured automatically from JWT - no need to include it.
+
+**Manual Fallback** (still available):
+- `POST /api/v2/course/owner/course/register` - requires user JWT
+- Useful for existing on-chain courses without DB records
+
+**Frontend Implementation Status**:
+- ✅ Added `code` field to `CreateCourseDialog` component
+- ✅ Added `code` field to `CreateCourse` component
+- ✅ Both components pass `{ code, title }` in metadata to `/api/v2/tx/register`
+- ✅ Fixed API response handling for wrapped `{ data: [...] }` format
+- ✅ Manual registration call after TX confirms (fallback, may not be needed now)
+- ✅ `RegisterCourseDrawer` updated with `policy_id` and `code` fields
+
+**Ready for Testing**: Create a new course to verify auto-registration works end-to-end without manual intervention.
+
+---
+
+## 🎯 IMMEDIATE PRIORITIES
+
+### Current Focus: UX Testing with Issue Handling
+
+**Status**: Ready to test now that course auto-registration is fixed!
+
+**Next Steps**:
+1. Test course creation flow - verify auto-registration works
+2. Continue testing all Course and Project UX flows
+3. Run `/issue-handler` to capture and route any bugs found
+
+### High-Priority Skills to Refine
+
+These skills need refinement through active use as we improve the codebase:
+
+| Skill | Priority | Purpose | Status |
+|-------|----------|---------|--------|
+| `react-query-auditor` | **HIGH** | Audit cache invalidation patterns across transaction callbacks. Some routes require manual refresh after transactions - need systematic audit of `queryClient.invalidateQueries()` calls. | Proposed |
+| `andamioscan-event-integrator` | **HIGH** | Guide integration of 15 remaining Andamioscan Event endpoints. Would replace Koios polling with entity-specific transaction confirmation. See GitHub issue #26. | Proposed |
+
+**Philosophy**: Refine skills by using them. As we test UX and find issues, we'll build out these skills with real-world patterns.
 
 ---
 
@@ -56,9 +129,9 @@ The unified V2 Gateway API consolidates all 3 subsystems (DB API, Andamioscan, T
 
 ---
 
-## 🔄 CURRENT WORK: V2 Transaction Migration
+## ✅ COMPLETED: V2 Transaction Migration
 
-**Status**: In Progress - Migrating transaction components to gateway auto-confirmation
+**Status**: Complete (January 19, 2026) - All transaction components migrated to gateway auto-confirmation
 
 ### Session 18 Summary (January 18, 2026)
 
@@ -188,12 +261,18 @@ Migrated remaining transaction components to V2 pattern and added deprecation no
 | `AndamioTransaction` | `@deprecated` | Specific TX components (e.g., `TaskCommit`, `EnrollInCourse`) |
 | `PendingTxIndicator` | `@deprecated` | Individual component TX tracking via `useTxWatcher` |
 
-**Bug Fixed**:
-- `burn-module-tokens.tsx` line 94: Fixed "Promise-returning function provided to property where a void return was expected" error by changing async callback to void pattern
+**V1 Migration Complete** (January 19, 2026):
+- ✅ `instructor/page.tsx` - Migrated to `useSimpleTransaction` + `useTxWatcher`
+- ✅ `assignment-commitment.tsx` - Migrated to `useSimpleTransaction` + `useTxWatcher`
+- All V1 components (`AndamioTransaction`, `useAndamioTransaction`) remain for backwards compatibility but have no active users
 
-**Pages Still Using V1 Wrapper** (working correctly with V2 APIs):
-- `src/app/(app)/studio/course/[coursenft]/instructor/page.tsx` - Uses `AndamioTransaction` with `COURSE_TEACHER_ASSIGNMENTS_ASSESS`
-- `src/components/learner/assignment-commitment.tsx` - Uses `AndamioTransaction` with `COURSE_STUDENT_ASSIGNMENT_*`
+**Hash Utilities Migrated** (January 19, 2026):
+- Moved from `@andamio/transactions` to `~/lib/utils/`:
+  - `computeSltHashDefinite` → `~/lib/utils/slt-hash.ts`
+  - `computeAssignmentInfoHash` → `~/lib/utils/assignment-info-hash.ts`
+  - `computeTaskHash` → `~/lib/utils/task-hash.ts`
+- Removed `blakejs` and `cbor` dependencies from `@andamio/transactions`
+- Dev script simplified: `npm run dev` now runs just Next.js
 
 **Build Status**: ✅ TypeScript passes with no errors
 
@@ -447,6 +526,7 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
+| **Course Creation Metadata** | ✅ **Resolved** | Auto-registration now works! Gateway v2.0.0-preprod-20260119-e captures `owner_alias` from JWT and uses service-to-service auth. |
 | **Atlas TX API Task Commit** | ✅ **Resolved** | Client-side fix implemented. End-to-end testing ready. |
 | **Andamioscan task_id Empty** | ✅ **Resolved (Jan 16)** | Issue #11 fixed - `task_id` now populated in pending assessments/submissions. |
 | **Project V2 Task Update/Delete** | 🚨 **Blocking** | API returns 404 for existing tasks. Bug reported to DB API team. |

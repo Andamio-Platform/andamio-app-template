@@ -80,22 +80,11 @@ export {
 // Export utilities
 export { createProtocolSpec, getProtocolCost, PROTOCOL_COSTS } from "./utils/protocol-reference";
 export { mergeSchemas, createSchemas } from "./utils/schema-helpers";
-export {
-  computeSltHash,
-  computeSltHashDefinite,
-  verifySltHash,
-  isValidSltHash,
-} from "./utils/slt-hash";
-export {
-  computeAssignmentInfoHash,
-  verifyAssignmentInfoHash,
-  isValidAssignmentInfoHash,
-  verifyEvidenceDetailed,
-  normalizeForHashing,
-} from "./utils/assignment-info-hash";
-export type { TiptapDoc, TiptapNode, TiptapMark, EvidenceVerificationResult } from "./utils/assignment-info-hash";
-export { computeTaskHash, verifyTaskHash, isValidTaskHash, debugTaskCBOR } from "./utils/task-hash";
-export type { TaskData } from "./utils/task-hash";
+
+// NOTE: Hash utilities have been migrated to the main app at ~/lib/utils/
+// - computeSltHashDefinite -> ~/lib/utils/slt-hash.ts
+// - computeAssignmentInfoHash -> ~/lib/utils/assignment-info-hash.ts
+// - computeTaskHash -> ~/lib/utils/task-hash.ts
 
 // Export testing utilities
 export {

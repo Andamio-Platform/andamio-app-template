@@ -1,5 +1,7 @@
 # Transaction Migration Guide
 
+> **Migration Complete** (January 19, 2026): All transaction components have been migrated to V2. The V1 components (`useAndamioTransaction`, `AndamioTransaction`) remain in the codebase for backwards compatibility but have no active users. Hash utilities have been migrated to `~/lib/utils/`.
+
 ## Overview
 
 This guide documents the process of migrating transaction components from the V1 approach (`useAndamioTransaction` + client-side polling) to the V2 approach (`useSimpleTransaction` + gateway auto-confirmation).

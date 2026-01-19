@@ -14,71 +14,47 @@
  * 2. Encode as CBOR indefinite-length array of byte strings
  * 3. Hash with Blake2b-256 (32 bytes / 256 bits)
  *
+ * Extracted from @andamio/transactions package for local use.
+ *
  * @module slt-hash
  */
 
 import * as blake from "blakejs";
-import * as cbor from "cbor";
 
 /**
- * Compute the module hash (token name) from a list of SLT strings.
+ * Plutus chunk size for byte strings.
+ * Strings longer than this are encoded as indefinite-length chunked byte strings.
+ */
+const PLUTUS_CHUNK_SIZE = 64;
+
+/**
+ * Compute the module hash matching Plutus on-chain encoding.
  *
- * This produces the same hash as the on-chain Plutus validator, allowing
- * clients to pre-compute or verify module token names.
+ * Plutus's `stringToBuiltinByteString` chunks byte strings at 64 bytes.
+ * This function replicates that behavior:
+ * - Strings <= 64 bytes: encoded as regular CBOR byte strings
+ * - Strings > 64 bytes: encoded as indefinite-length chunked byte strings
  *
  * @param slts - Array of Student Learning Target strings
  * @returns 64-character hex string (256-bit Blake2b hash)
  *
  * @example
  * ```typescript
- * import { computeSltHash } from "@andamio/transactions";
+ * import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
  *
  * const slts = [
  *   "I can mint an access token.",
  *   "I can complete an assignment to earn a credential."
  * ];
  *
- * const moduleHash = computeSltHash(slts);
+ * const moduleHash = computeSltHashDefinite(slts);
  * // Returns: "8dcbe1b925d87e6c547bbd8071c23a712db4c32751454b0948f8c846e9246b5c"
  * ```
  */
-export function computeSltHash(slts: string[]): string {
-  // Convert each SLT string to UTF-8 bytes
-  const sltBytes = slts.map((slt) => Buffer.from(slt, "utf-8"));
-
-  // Encode as CBOR indefinite-length array of byte strings
-  // This matches Plutus serialiseData $ toBuiltinData $ map stringToBuiltinByteString slts
-  const cborData = encodeAsIndefiniteArray(sltBytes);
-
-  // Hash with Blake2b-256
+export function computeSltHashDefinite(slts: string[]): string {
+  const sltBytes = slts.map((slt) => new TextEncoder().encode(slt));
+  const cborData = encodeAsPlutusArray(sltBytes);
   return blake.blake2bHex(cborData, undefined, 32);
-}
-
-/**
- * Encode an array of byte buffers as a CBOR indefinite-length array.
- *
- * CBOR format:
- * - 0x9f: Start indefinite array marker
- * - Each item: CBOR-encoded byte string
- * - 0xff: Break/end marker
- *
- * @internal
- */
-function encodeAsIndefiniteArray(items: Buffer[]): Buffer {
-  const chunks: Buffer[] = [];
-
-  // Start indefinite array (major type 4, additional info 31)
-  chunks.push(Buffer.from([0x9f]));
-
-  // Encode each byte buffer as a CBOR byte string
-  for (const item of items) {
-    chunks.push(cbor.encode(item));
-  }
-
-  // End indefinite array (break)
-  chunks.push(Buffer.from([0xff]));
-
-  return Buffer.concat(chunks);
 }
 
 /**
@@ -87,21 +63,9 @@ function encodeAsIndefiniteArray(items: Buffer[]): Buffer {
  * @param slts - Array of Student Learning Target strings
  * @param expectedHash - The hash to verify (64-character hex string)
  * @returns true if the computed hash matches the expected hash
- *
- * @example
- * ```typescript
- * import { verifySltHash } from "@andamio/transactions";
- *
- * const slts = ["I can mint an access token."];
- * const moduleHash = "abc123..."; // from on-chain data
- *
- * if (verifySltHash(slts, moduleHash)) {
- *   console.log("SLTs match the on-chain module");
- * }
- * ```
  */
 export function verifySltHash(slts: string[], expectedHash: string): boolean {
-  const computedHash = computeSltHash(slts);
+  const computedHash = computeSltHashDefinite(slts);
   return computedHash.toLowerCase() === expectedHash.toLowerCase();
 }
 
@@ -121,31 +85,8 @@ export function isValidSltHash(hash: string): boolean {
 }
 
 // =============================================================================
-// Plutus-Compatible Encoding (with 64-byte chunking)
+// Plutus-Compatible Encoding (Internal)
 // =============================================================================
-
-/**
- * Plutus chunk size for byte strings.
- * Strings longer than this are encoded as indefinite-length chunked byte strings.
- */
-const PLUTUS_CHUNK_SIZE = 64;
-
-/**
- * Compute the module hash matching Plutus on-chain encoding.
- *
- * Plutus's `stringToBuiltinByteString` chunks byte strings at 64 bytes.
- * This function replicates that behavior:
- * - Strings <= 64 bytes: encoded as regular CBOR byte strings
- * - Strings > 64 bytes: encoded as indefinite-length chunked byte strings
- *
- * @param slts - Array of Student Learning Target strings
- * @returns 64-character hex string (256-bit Blake2b hash)
- */
-export function computeSltHashDefinite(slts: string[]): string {
-  const sltBytes = slts.map((slt) => Buffer.from(slt, "utf-8"));
-  const cborData = encodeAsPlutusArray(sltBytes);
-  return blake.blake2bHex(cborData, undefined, 32);
-}
 
 /**
  * Encode an array of byte buffers matching Plutus serialization.
@@ -154,11 +95,11 @@ export function computeSltHashDefinite(slts: string[]): string {
  *
  * @internal
  */
-function encodeAsPlutusArray(items: Buffer[]): Buffer {
-  const chunks: Buffer[] = [];
+function encodeAsPlutusArray(items: Uint8Array[]): Uint8Array {
+  const chunks: Uint8Array[] = [];
 
   // Start indefinite array
-  chunks.push(Buffer.from([0x9f]));
+  chunks.push(new Uint8Array([0x9f]));
 
   // Encode each item (with chunking for long strings)
   for (const item of items) {
@@ -166,9 +107,9 @@ function encodeAsPlutusArray(items: Buffer[]): Buffer {
   }
 
   // End indefinite array
-  chunks.push(Buffer.from([0xff]));
+  chunks.push(new Uint8Array([0xff]));
 
-  return Buffer.concat(chunks);
+  return concatUint8Arrays(chunks);
 }
 
 /**
@@ -179,23 +120,23 @@ function encodeAsPlutusArray(items: Buffer[]): Buffer {
  *
  * @internal
  */
-function encodePlutusBuiltinByteString(buffer: Buffer): Buffer {
+function encodePlutusBuiltinByteString(buffer: Uint8Array): Uint8Array {
   if (buffer.length <= PLUTUS_CHUNK_SIZE) {
     // Short string: encode normally
     return encodeCBORByteString(buffer);
   }
 
   // Long string: use indefinite-length chunked encoding
-  const chunks: Buffer[] = [];
-  chunks.push(Buffer.from([0x5f])); // Start indefinite byte string
+  const chunks: Uint8Array[] = [];
+  chunks.push(new Uint8Array([0x5f])); // Start indefinite byte string
 
   for (let i = 0; i < buffer.length; i += PLUTUS_CHUNK_SIZE) {
     const chunk = buffer.subarray(i, Math.min(i + PLUTUS_CHUNK_SIZE, buffer.length));
     chunks.push(encodeCBORByteString(chunk));
   }
 
-  chunks.push(Buffer.from([0xff])); // Break
-  return Buffer.concat(chunks);
+  chunks.push(new Uint8Array([0xff])); // Break
+  return concatUint8Arrays(chunks);
 }
 
 /**
@@ -203,7 +144,7 @@ function encodePlutusBuiltinByteString(buffer: Buffer): Buffer {
  *
  * @internal
  */
-function encodeCBORByteString(buffer: Buffer): Buffer {
+function encodeCBORByteString(buffer: Uint8Array): Uint8Array {
   const len = buffer.length;
 
   // CBOR byte string encoding (major type 2 = 0x40):
@@ -211,11 +152,39 @@ function encodeCBORByteString(buffer: Buffer): Buffer {
   // - 24-255 bytes: 0x58 + 1-byte length
   // - 256-65535 bytes: 0x59 + 2-byte length (big-endian)
   if (len <= 23) {
-    return Buffer.concat([Buffer.from([0x40 + len]), buffer]);
+    const result = new Uint8Array(1 + len);
+    result[0] = 0x40 + len;
+    result.set(buffer, 1);
+    return result;
   } else if (len <= 255) {
-    return Buffer.concat([Buffer.from([0x58, len]), buffer]);
+    const result = new Uint8Array(2 + len);
+    result[0] = 0x58;
+    result[1] = len;
+    result.set(buffer, 2);
+    return result;
   } else if (len <= 65535) {
-    return Buffer.concat([Buffer.from([0x59, len >> 8, len & 0xff]), buffer]);
+    const result = new Uint8Array(3 + len);
+    result[0] = 0x59;
+    result[1] = len >> 8;
+    result[2] = len & 0xff;
+    result.set(buffer, 3);
+    return result;
   }
   throw new Error("Byte string too long for CBOR encoding");
+}
+
+/**
+ * Concatenate multiple Uint8Arrays into one
+ *
+ * @internal
+ */
+function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
 }

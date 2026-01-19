@@ -166,6 +166,6 @@ export const COURSE_TEACHER_ASSIGNMENTS_ASSESS: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/course/teacher/assignments/assess",
-    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_course_teacher_assignments_assess",
+    apiDocs: "https://dev-api.andamio.io/api/v1/docs/index.html#/default/post_v2_tx_course_teacher_assignments_assess",
   },
 };

@@ -5,7 +5,7 @@
  * These endpoints combine off-chain (DB) and on-chain (Andamioscan) data into
  * unified responses, eliminating the need for multiple API calls.
  *
- * Gateway Base: https://andamio-api-gateway-168705267033.us-central1.run.app
+ * Gateway Base: https://dev-api.andamio.io
  * Proxy Base: /api/andamioscan (forwards to gateway)
  *
  * Merged Endpoint Categories:

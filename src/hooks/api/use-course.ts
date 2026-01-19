@@ -202,7 +202,12 @@ export function useOwnedCoursesQuery() {
         throw new Error(`Failed to fetch owned courses: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseListResponse>;
+      const result = (await response.json()) as
+        | CourseListResponse
+        | { data?: CourseListResponse; warning?: string };
+
+      // Handle both wrapped { data: [...] } and raw array formats
+      return Array.isArray(result) ? result : (result.data ?? []);
     },
     enabled: isAuthenticated,
   });

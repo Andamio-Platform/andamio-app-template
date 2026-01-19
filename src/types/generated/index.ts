@@ -245,9 +245,10 @@ export type { AndamioApiInternalInternalApiAndamioDbClientLoginSessionResponse a
 // Transaction Types (Atlas TX API)
 // =============================================================================
 
-export type { AtlasTxClientCreateCourseTxRequest as CreateCourseTxRequest } from "./gateway";
-export type { AtlasTxClientClaimCourseCredentialsTxRequest as ClaimCourseCredentialsTxRequest } from "./gateway";
-export type { AtlasTxClientUnsignedTxResponseInitCourse as UnsignedTxResponseInitCourse } from "./gateway";
+export type { AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest as CreateCourseTxRequest } from "./gateway";
+export type { AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest as ClaimCourseCredentialsTxRequest } from "./gateway";
+export type { AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse as UnsignedTxResponseInitCourse } from "./gateway";
+export type { AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponse as UnsignedTxResponse } from "./gateway";
 
 // =============================================================================
 // Merged/Orchestration Types (Combined DB + On-Chain Data)
@@ -283,8 +284,8 @@ export type { AndamioApiInternalInternalApiAndamioDbClientCreateLessonRequest as
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionRequest as CreateIntroductionRequest } from "./gateway";
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentRequest as CreateAssignmentRequest } from "./gateway";
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentRequest as CreateAssignmentCommitmentRequest } from "./gateway";
-export type { AndamioDbClientReviewAssignmentCommitmentRequest as ReviewAssignmentCommitmentRequest } from "./gateway";
-export type { AndamioDbClientCourseOwnerCourseMintPostRequest as CourseMintPostRequest } from "./gateway";
+export type { AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentRequest as ReviewAssignmentCommitmentRequest } from "./gateway";
+export type { AndamioApiInternalInternalApiAndamioDbClientMintCourseRequest as MintCourseRequest } from "./gateway";
 
 // Project requests
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest as CreateProjectRequest } from "./gateway";
@@ -299,3 +300,39 @@ export type { AndamioApiInternalInternalApiAndamioDbClientUpdateTaskCommitmentRe
 
 export type { AndamioApiInternalInternalApiAndamioDbClientNullableString as NullableString } from "./gateway";
 export type { AndamioApiInternalInternalApiAndamioDbClientNullableInt32 as NullableInt32 } from "./gateway";
+
+// =============================================================================
+// TX State Machine Types
+// =============================================================================
+
+export type { TxStateHandlersRegisterPendingTxRequest as TxRegisterRequest } from "./gateway";
+export type { TxStateHandlersPendingTxResponse as TxStatusResponse } from "./gateway";
+export type { TxStateHandlersValidTxTypesResponse as ValidTxTypesResponse } from "./gateway";
+export type { TxStateHandlersTxStatsResponse as TxStatsResponse } from "./gateway";
+
+/**
+ * Valid transaction types for the TX State Machine
+ * Use with POST /api/v2/tx/register
+ */
+export type GatewayTxType =
+  | "course_create"
+  | "course_enroll"
+  | "modules_manage"
+  | "teachers_update"
+  | "assignment_submit"
+  | "assessment_assess"
+  | "credential_claim"
+  | "project_create"
+  | "project_join"
+  | "tasks_manage"
+  | "task_submit"
+  | "task_assess"
+  | "project_credential_claim"
+  | "blacklist_update"
+  | "treasury_fund"
+  | "access_token_mint";
+
+/**
+ * Transaction state in the TX State Machine lifecycle
+ */
+export type TxState = "pending" | "confirmed" | "updated" | "failed" | "expired";

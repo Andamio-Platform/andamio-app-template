@@ -15,7 +15,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
@@ -159,15 +159,10 @@ export function EnrollInCourse({
     await execute({
       txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
         slt_hash: sltHash,
         assignment_info: hash,
-        // Side effect params
-        module_code: moduleCode,
-        network_evidence: evidence,
-        network_evidence_hash: hash,
       },
       onSuccess: async (txResult) => {
         console.log("[EnrollInCourse] TX submitted successfully!", txResult);

@@ -28,9 +28,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `react-query-auditor` | Audit react-query hook usage and cache invalidation patterns | **High** | V2 migration requires all gateway calls use react-query. Skill would: verify QueryClient defaults, check per-hook staleTime overrides, audit cache invalidation in transaction callbacks. |
 | `api-type-generator` | Regenerate and verify API types from gateway OpenAPI spec | Medium | New type generation system uses `npm run generate:types`. Skill would: run generation, check for breaking changes in generated types, update strict type re-exports in `index.ts`, verify all imports use generated types. |
 | ~~`tx-migration-guide`~~ | ~~Guide migration of transaction components from V1 to V2~~ | ~~**High**~~ | **COMPLETED 2026-01-18**. All 16 transaction components migrated to V2. Migration guide: `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md`. |
+| `package-deprecation-guide` | Guide deprecation and removal of local packages | Low | Pattern from @andamio/transactions deprecation. Skill would: identify unused exports, migrate utilities to local lib, update imports across codebase, clean up package.json scripts. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-18 (Session 18 - V2 Transaction Migration documentation created)
+**Updated**: 2026-01-19 (Session 19 - Hash utilities migrated, @andamio/transactions deprecated)
 
 ---
 
@@ -174,3 +175,10 @@ Items that have been addressed and can be archived.
 | Fix V2 Gateway Auth Response Parsing | 2026-01-18 | Fixed `ValidateSignatureApiResponse` interface to match actual Gateway response: `jwt` (not `token`), `user.id`/`user.cardano_bech32_addr` (not `stake_address`). Updated field extraction in `validateSignature()`. |
 | Fix Merged Endpoint Content Flattening | 2026-01-18 | Gateway merged endpoints return `content: {title, code, live}` nested object. Added content flattening in `useTeacherCourses` and `useManagerProjects` hooks. Fixed `source` value from `"on-chain-only"` to `"chain_only"` in 4 files. |
 | Update tx-loop-guide to V2 Transaction Names | 2026-01-18 | Updated all transaction names in tx-loops.md and loop-history.md to V2 naming convention. Changed: `GENERAL_ACCESS_TOKEN_MINT` → `GLOBAL_GENERAL_ACCESS_TOKEN_MINT`, `COURSE_ADMIN_CREATE` → `INSTANCE_COURSE_CREATE`, etc. Added V2 Gateway API section to SKILL.md. |
+| Migrate hash utilities to local lib | 2026-01-19 | Moved `computeSltHashDefinite`, `computeAssignmentInfoHash`, `computeTaskHash` from `@andamio/transactions` to `src/lib/utils/`. New files: `slt-hash.ts`, `assignment-info-hash.ts`, `task-hash.ts`, `index.ts`. Updated 10+ files with new imports. |
+| Deprecate @andamio/transactions package | 2026-01-19 | Removed all hash utilities and dependencies (blakejs, cbor) from package. Updated package README with deprecation notice. Package now only used by deprecated V1 components. Dev script simplified to `next dev --turbopack`. |
+| Migrate remaining V1 transaction components | 2026-01-19 | Migrated `assignment-commitment.tsx` and `instructor/page.tsx` from `AndamioTransaction` to V2 pattern (`useSimpleTransaction` + `useTxWatcher`). All V1 components now have V2 equivalents. |
+| Update TRANSACTION-COMPONENTS.md imports | 2026-01-19 | Updated all import examples to use `~/lib/utils/` for hash functions. Documented local hash utility location in package architecture section. |
+| Update andamioscan-api.md imports | 2026-01-19 | Updated code samples to use `~/lib/utils/slt-hash` instead of `@andamio/transactions`. Fixed hash utility references. |
+| Update TX-MIGRATION-GUIDE.md status | 2026-01-19 | Added migration complete banner. Updated checklist to show all 16 TX types migrated. Added note about hash utility location change. |
+| Update STATUS.md with migration completion | 2026-01-19 | Documented V1→V2 migration completion, hash utility migration, and @andamio/transactions deprecation in project status. |

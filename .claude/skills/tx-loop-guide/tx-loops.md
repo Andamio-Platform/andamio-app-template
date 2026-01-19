@@ -376,6 +376,36 @@ Step 3 (Task Action - Update):
 
 ---
 
+## Loop P6: Fund Project Treasury
+
+**Description:** Any user adds funds to a project treasury to enable task rewards.
+
+**Roles:** 1 (Any User)
+
+**Prerequisites:**
+- User has minted Access Token
+- Project exists on-chain
+
+**Transactions:**
+
+| Step | Role | Transaction | Description |
+|------|------|-------------|-------------|
+| 1 | User | `PROJECT_USER_TREASURY_ADD_FUNDS` | Add ADA to project treasury |
+
+**Side Effects:**
+
+Step 1 (Add Funds):
+- Gateway registers TX
+- On confirmation: Treasury balance updated in DB
+
+**Notes:**
+- Any user can fund a project treasury (not limited to owner/manager)
+- Funds become available for task rewards
+- Treasury balance is visible on the project dashboard
+- Good for testing treasury visibility and fund management
+
+---
+
 ## Quick Reference: All V2 Transactions
 
 ### Global
@@ -408,6 +438,7 @@ Step 3 (Task Action - Update):
 | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | Contributor | Yes |
 | `PROJECT_CONTRIBUTOR_TASK_ACTION` | Contributor | Yes |
 | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | Contributor | No |
+| `PROJECT_USER_TREASURY_ADD_FUNDS` | Any User | Yes |
 
 ---
 

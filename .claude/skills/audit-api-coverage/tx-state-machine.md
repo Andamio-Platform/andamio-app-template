@@ -81,25 +81,33 @@ interface TxRegisterRequest {
 
 ## TX Type Mapping
 
-| TransactionType | tx_type for Register |
-|-----------------|---------------------|
+| TransactionType | Gateway tx_type |
+|-----------------|-----------------|
 | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `access_token_mint` |
 | `INSTANCE_COURSE_CREATE` | `course_create` |
 | `INSTANCE_PROJECT_CREATE` | `project_create` |
-| `COURSE_OWNER_TEACHERS_MANAGE` | `course_teachers_manage` |
-| `COURSE_TEACHER_MODULES_MANAGE` | `course_modules_manage` |
-| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `course_assignments_assess` |
-| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `course_assignment_commit` |
-| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `course_assignment_update` |
-| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `course_credential_claim` |
-| `PROJECT_OWNER_MANAGERS_MANAGE` | `project_managers_manage` |
-| `PROJECT_OWNER_BLACKLIST_MANAGE` | `project_blacklist_manage` |
-| `PROJECT_MANAGER_TASKS_MANAGE` | `project_tasks_manage` |
-| `PROJECT_MANAGER_TASKS_ASSESS` | `project_tasks_assess` |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `project_task_commit` |
-| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `project_task_action` |
+| `COURSE_OWNER_TEACHERS_MANAGE` | `teachers_update` |
+| `COURSE_TEACHER_MODULES_MANAGE` | `modules_manage` |
+| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assessment_assess` |
+| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `assignment_submit` |
+| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment_submit` |
+| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential_claim` |
+| `PROJECT_OWNER_MANAGERS_MANAGE` | `project_join` |
+| `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist_update` |
+| `PROJECT_MANAGER_TASKS_MANAGE` | `tasks_manage` |
+| `PROJECT_MANAGER_TASKS_ASSESS` | `task_assess` |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task_submit` |
+| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task_submit` |
 | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project_credential_claim` |
-| `PROJECT_USER_TREASURY_ADD_FUNDS` | `project_treasury_add_funds` |
+| `PROJECT_USER_TREASURY_ADD_FUNDS` | `treasury_fund` |
+
+**Valid Gateway tx_type values** (from API spec):
+```
+course_create, course_enroll, modules_manage, teachers_update,
+assignment_submit, assessment_assess, credential_claim,
+project_create, project_join, tasks_manage, task_submit, task_assess,
+project_credential_claim, blacklist_update, treasury_fund, access_token_mint
+```
 
 ## See Also
 

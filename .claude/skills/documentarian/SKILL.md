@@ -33,7 +33,18 @@ Based on the results of your search in Step 2, update the related documentation 
 
 If any features are not yet covered in the existing documentation, write the necessary docs, or add the new changes/features to existing docs.
 
-### 5. Suggest New Claude Skills
+### 5. Delegate to Specialized Skills
+
+When changes involve specific domains, delegate documentation updates to the appropriate skill:
+
+| Change Type | Delegate To | Description |
+|-------------|-------------|-------------|
+| Transaction schemas | `/transaction-auditor` | API schema sync, TX_TYPE_MAP, tx-state-machine.md |
+| API endpoint changes | `/audit-api-coverage` | Endpoint coverage, API integration docs |
+| Styling/components | `/design-system reference` | Component patterns, color system |
+| Project status | `/project-manager` | STATUS.md, ROADMAP.md, feature tracking |
+
+### 6. Suggest New Claude Skills
 
 Now that we are storing most documentation in Claude Skills, can you recommend any new Skills we should build to make this App Template more accessible to vibe coders?
 
@@ -43,6 +54,27 @@ Add any new skill suggestions to the `BACKLOG.md` file in this skill directory. 
 - Process improvements for the documentarian skill itself
 
 Review the backlog periodically and move completed items to the archive section.
+
+## Key Documentation Files
+
+### Transaction-Related
+
+| File | Purpose |
+|------|---------|
+| `src/config/transaction-schemas.ts` | Zod validation schemas |
+| `src/config/transaction-ui.ts` | TX types, endpoints, UI strings |
+| `src/hooks/use-tx-watcher.ts` | TX_TYPE_MAP, status polling |
+| `.claude/skills/audit-api-coverage/tx-state-machine.md` | TX State Machine docs |
+| `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md` | Migration patterns |
+
+### Type Generation
+
+| File | Purpose |
+|------|---------|
+| `src/types/generated/gateway.ts` | Auto-generated from API spec |
+| `src/types/generated/index.ts` | Clean type exports |
+
+When API types change, run `npm run generate:types` to regenerate.
 
 ## Examples
 

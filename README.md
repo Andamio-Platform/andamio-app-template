@@ -84,14 +84,19 @@ andamio-t3-app-template/
 │       └── constants.ts              # UI timeouts, explorer URLs
 │
 ├── packages/
-│   └── andamio-transactions/         # Transaction definitions (local package)
-│       ├── src/definitions/          # All 16 transaction types
-│       └── README.md                 # Transaction package docs
+│   └── andamio-transactions/         # Transaction definitions (deprecated)
+│       ├── src/definitions/          # V1 transaction definitions
+│       └── README.md                 # Package docs
 │
 └── .claude/skills/                   # AI-assisted development skills
 ```
 
-The `@andamio/transactions` package is embedded locally, allowing direct editing of transaction definitions without publishing.
+**Hash Utilities**: Local implementations at `src/lib/utils/`:
+- `slt-hash.ts` - Module token name computation
+- `assignment-info-hash.ts` - Evidence hashing
+- `task-hash.ts` - Project task ID computation
+
+> The `@andamio/transactions` package is embedded but deprecated. V2 transactions use `useSimpleTransaction` with gateway auto-confirmation.
 
 ## Key Features
 

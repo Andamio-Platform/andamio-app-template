@@ -89,7 +89,12 @@ export function RequireCourseAccess({
           course_nft_policy_id: string | null;
         }
 
-        const ownedCourses = (await response.json()) as OwnedCourse[];
+        const result = (await response.json()) as
+          | OwnedCourse[]
+          | { data?: OwnedCourse[]; warning?: string };
+
+        // Handle both wrapped { data: [...] } and raw array formats
+        const ownedCourses = Array.isArray(result) ? result : (result.data ?? []);
 
         // Check if user has access to this specific course
         const hasAccess = ownedCourses.some(

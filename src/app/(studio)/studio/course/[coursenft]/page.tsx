@@ -53,7 +53,7 @@ import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 import type { CourseModuleResponse, OrchestrationCourseModule } from "~/types/generated";
-import { computeSltHashDefinite } from "@andamio/transactions";
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
 
 // =============================================================================
 // Types

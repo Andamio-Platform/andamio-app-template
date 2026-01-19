@@ -42,6 +42,7 @@ A loop is **Validated** when:
 | P3: Earn Project Credential | Untested | - | - | - | - |
 | P4: Task Revision Flow | Untested | - | - | - | - |
 | P5: Multi-Task Contribution | Untested | - | - | - | - |
+| P6: Fund Project Treasury | Untested | - | - | - | `PROJECT_USER_TREASURY_ADD_FUNDS` |
 
 ## Session Log
 

@@ -42,7 +42,7 @@ import {
   TaskIcon,
   DatabaseIcon,
 } from "~/components/icons";
-import { type ProjectV2Output, type OrchestrationProjectTaskOnChain } from "~/types/generated";
+import { type OrchestrationProjectTaskOnChain } from "~/types/generated";
 import { TasksAssess } from "~/components/transactions";
 import { toast } from "sonner";
 
@@ -84,8 +84,8 @@ export default function ProjectCommitmentsPage() {
     refetch,
   } = useManagerCommitments(projectId);
 
-  // Pending assessments are already filtered by projectId in the hook
-  const pendingAssessments = allPendingAssessments ?? [];
+  // Pending assessments are already filtered by projectId in the hook - memoized to stabilize reference
+  const pendingAssessments = useMemo(() => allPendingAssessments ?? [], [allPendingAssessments]);
 
   // Map task_id to task details from merged project data
   const taskMap = useMemo(() => {

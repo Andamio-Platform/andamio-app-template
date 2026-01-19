@@ -213,9 +213,9 @@ describe("Side Effect Execution", () => {
 
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(3);
-      expect(result.results[0].success).toBe(true);
-      expect(result.results[1].skipped).toBe(true);
-      expect(result.results[2].success).toBe(true);
+      expect(result.results[0]!.success).toBe(true);
+      expect(result.results[1]!.skipped).toBe(true);
+      expect(result.results[2]!.success).toBe(true);
 
       // Should only call fetch for non-skipped side effects
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -251,8 +251,8 @@ describe("Side Effect Execution", () => {
       expect(result.success).toBe(false);
       expect(result.criticalErrors).toHaveLength(1);
       expect(result.criticalErrors[0]).toContain("Critical Side Effect");
-      expect(result.results[0].success).toBe(false);
-      expect(result.results[1].success).toBe(false);
+      expect(result.results[0]!.success).toBe(false);
+      expect(result.results[1]!.success).toBe(false);
     });
 
     it("should throw on critical failure if requested", async () => {
@@ -313,8 +313,8 @@ describe("Side Effect Execution", () => {
       });
 
       expect(result.success).toBe(true); // No critical failures
-      expect(result.results[0].success).toBe(false);
-      expect(result.results[1].success).toBe(true);
+      expect(result.results[0]!.success).toBe(false);
+      expect(result.results[1]!.success).toBe(true);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
@@ -368,8 +368,8 @@ describe("Side Effect Execution", () => {
       const executable = getExecutableSideEffects(sideEffects);
 
       expect(executable).toHaveLength(2);
-      expect(executable[0].def).toBe("Valid 1");
-      expect(executable[1].def).toBe("Valid 2");
+      expect(executable[0]!.def).toBe("Valid 1");
+      expect(executable[1]!.def).toBe("Valid 2");
     });
   });
 });

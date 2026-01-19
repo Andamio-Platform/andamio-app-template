@@ -39,13 +39,24 @@ import { TRANSACTION_UI } from "~/config/transaction-ui";
  *
  * After transaction submission, transforms to show a provisioning overlay
  * that tracks blockchain confirmation and redirects to Course Studio.
+ *
+ * ## Manual Registration Workaround
+ *
+ * After TX confirms on-chain, calls `POST /api/v2/course/owner/course/register`
+ * to register the course in the database. This is needed because the TX State
+ * Machine auto-registration fails (401 - background poller runs without user JWT).
+ *
+ * This workaround is temporary. Once DB API team implements gateway-level auth
+ * for `/course/gateway/course/register`, auto-registration will work and this
+ * workaround can be removed.
  */
 export function CreateCourseDialog() {
-  const { user } = useAndamioAuth();
+  const { user, authenticatedFetch } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useSimpleTransaction();
 
   const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [initiatorData, setInitiatorData] = useState<{
     used_addresses: string[];
@@ -54,6 +65,12 @@ export function CreateCourseDialog() {
 
   // Provisioning state for tracking blockchain confirmation
   const [provisioningConfig, setProvisioningConfig] = useState<ProvisioningConfig | null>(null);
+  // Store course metadata for manual registration after TX confirms
+  const [courseMetadata, setCourseMetadata] = useState<{
+    policyId: string;
+    code: string;
+    title: string;
+  } | null>(null);
 
   const {
     currentStep,
@@ -66,9 +83,52 @@ export function CreateCourseDialog() {
       ? {
           ...provisioningConfig,
           onReady: () => {
-            toast.success("Course Ready!", {
-              description: `"${provisioningConfig.title}" has been confirmed on-chain`,
-            });
+            // Wrap async registration in void to satisfy callback signature
+            void (async () => {
+            // Manual registration workaround: Call registration endpoint after TX confirms
+            // This is needed because TX State Machine auto-registration fails (401 - no user JWT)
+            if (courseMetadata) {
+              try {
+                console.log("[CreateCourse] Registering course with DB...", courseMetadata);
+                const regResponse = await authenticatedFetch(
+                  "/api/gateway/api/v2/course/owner/course/register",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      policy_id: courseMetadata.policyId,
+                      code: courseMetadata.code,
+                      title: courseMetadata.title,
+                    }),
+                  }
+                );
+
+                if (regResponse.ok) {
+                  console.log("[CreateCourse] Course registered successfully!");
+                  toast.success("Course Ready!", {
+                    description: `"${courseMetadata.title}" is now live and registered`,
+                  });
+                } else {
+                  const errorText = await regResponse.text();
+                  console.error("[CreateCourse] Registration failed:", errorText);
+                  // Still show partial success - course is on-chain even if DB registration failed
+                  toast.warning("Course Created (Registration Pending)", {
+                    description: `Course is on-chain but DB registration may need manual sync`,
+                  });
+                }
+              } catch (err) {
+                console.error("[CreateCourse] Registration error:", err);
+                toast.warning("Course Created (Registration Pending)", {
+                  description: `Course is on-chain but DB registration may need manual sync`,
+                });
+              }
+            } else {
+              // Fallback if metadata not available
+              toast.success("Course Ready!", {
+                description: `"${provisioningConfig.title}" has been confirmed on-chain`,
+              });
+            }
+            })();
           },
         }
       : null
@@ -108,7 +168,7 @@ export function CreateCourseDialog() {
   const ui = TRANSACTION_UI.INSTANCE_COURSE_CREATE;
 
   const handleCreateCourse = async () => {
-    if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
+    if (!user?.accessTokenAlias || !initiatorData || !code.trim() || !title.trim()) {
       return;
     }
 
@@ -120,12 +180,24 @@ export function CreateCourseDialog() {
         teachers: [user.accessTokenAlias],
         initiator_data: initiatorData,
       },
+      // Pass metadata for gateway auto-registration (code + title required)
+      metadata: {
+        code: code.trim(),
+        title: title.trim(),
+      },
       onSuccess: async (txResult) => {
         // Extract course_id from the V2 API response
         const courseNftPolicyId = txResult.apiResponse?.course_id as string | undefined;
         const txHash = txResult.txHash;
 
         if (courseNftPolicyId && txHash) {
+          // Store metadata for manual registration after TX confirms
+          setCourseMetadata({
+            policyId: courseNftPolicyId,
+            code: code.trim(),
+            title: title.trim(),
+          });
+
           // Set up provisioning config to show the overlay
           setProvisioningConfig({
             entityType: "course",
@@ -135,7 +207,7 @@ export function CreateCourseDialog() {
             successRedirectPath: `/studio/course/${courseNftPolicyId}`,
             explorerUrl: txResult.blockchainExplorerUrl,
             autoRedirect: true,
-            autoRedirectDelay: 2000,
+            autoRedirectDelay: 3000, // Increased delay to allow registration to complete
           });
         } else {
           // Fallback: If no courseNftPolicyId, show success and close
@@ -171,8 +243,10 @@ export function CreateCourseDialog() {
 
     setOpen(newOpen);
     if (!newOpen) {
+      setCode("");
       setTitle("");
       setProvisioningConfig(null);
+      setCourseMetadata(null);
       reset();
     }
   };
@@ -180,8 +254,9 @@ export function CreateCourseDialog() {
   // Requirements
   const hasAccessToken = !!user?.accessTokenAlias;
   const hasInitiatorData = !!initiatorData;
+  const hasCode = code.trim().length > 0;
   const hasTitle = title.trim().length > 0;
-  const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
+  const canCreate = hasAccessToken && hasInitiatorData && hasCode && hasTitle;
 
   return (
     <AndamioDrawer open={open} onOpenChange={handleOpenChange}>
@@ -241,11 +316,33 @@ export function CreateCourseDialog() {
                   </AndamioAlert>
                 )}
 
+                {/* Course Code Input */}
+                {hasAccessToken && hasInitiatorData && state !== "success" && (
+                  <div className="space-y-2">
+                    <AndamioLabel htmlFor="course-code" className="text-base">
+                      Course Code <span className="text-destructive">*</span>
+                    </AndamioLabel>
+                    <AndamioInput
+                      id="course-code"
+                      placeholder="CARDANO-101"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      disabled={state !== "idle" && state !== "error"}
+                      className="h-12 text-base font-mono"
+                      maxLength={50}
+                      autoFocus
+                    />
+                    <AndamioText variant="small">
+                      A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
+                    </AndamioText>
+                  </div>
+                )}
+
                 {/* Title Input */}
                 {hasAccessToken && hasInitiatorData && state !== "success" && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <AndamioLabel htmlFor="course-title" className="text-base">
-                      Course Title
+                      Course Title <span className="text-destructive">*</span>
                     </AndamioLabel>
                     <AndamioInput
                       id="course-title"
@@ -255,11 +352,9 @@ export function CreateCourseDialog() {
                       disabled={state !== "idle" && state !== "error"}
                       className="h-12 text-base"
                       maxLength={200}
-                      autoFocus
                     />
                     <AndamioText variant="small">
-                      Don&apos;t worry, you can change this later. The course is
-                      created on-chain once the transaction succeeds.
+                      The display name shown to learners. You can change this later.
                     </AndamioText>
                   </div>
                 )}

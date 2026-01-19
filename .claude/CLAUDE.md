@@ -17,25 +17,33 @@ This is an Andamio T3 App template that provides a complete Cardano dApp starter
 ## Architecture
 
 ### Repository Structure
-This template is a standalone repository with an embedded transactions package:
+This template is a standalone repository:
 ```
 andamio-t3-app-template/
 ├── src/                              # Next.js app source
-├── packages/andamio-transactions/    # Transaction definitions (local package)
+│   ├── config/                       # Transaction schemas and UI config
+│   ├── hooks/                        # Transaction hooks (use-tx-watcher, etc.)
+│   └── types/generated/              # Auto-generated API types
+├── packages/andamio-transactions/    # DEPRECATED - V1 transaction definitions
 └── .claude/skills/                   # AI-assisted development skills
 ```
 
-**Transaction Package**: The `@andamio/transactions` package is included locally at `packages/andamio-transactions/`. This allows:
-- Direct editing of transaction definitions
-- Immediate testing without publishing
-- Self-contained template that works after forking
+**Transaction Configuration** (V2 - Current):
+- `src/config/transaction-schemas.ts` - Zod validation schemas matching Gateway API
+- `src/config/transaction-ui.ts` - TX types, endpoints, UI strings
+- `src/hooks/use-tx-watcher.ts` - TX_TYPE_MAP for gateway registration
 
-> **Note**: The main app's `package.json` references `"@andamio/transactions": "file:packages/andamio-transactions"` to use the local package.
+> **DEPRECATED**: The `@andamio/transactions` package at `packages/andamio-transactions/` is deprecated. New transaction code should use `src/config/transaction-schemas.ts` and the TX State Machine pattern.
+
+**Local Hash Utilities** at `src/lib/utils/`:
+- `slt-hash.ts` - Compute module token names from SLTs
+- `assignment-info-hash.ts` - Hash assignment evidence for on-chain storage
+- `task-hash.ts` - Compute project task IDs matching on-chain validators
 
 ### Unified API Gateway
 The app uses the Unified Andamio API Gateway which combines all backend services:
-- **Gateway URL**: `https://andamio-api-gateway-168705267033.us-central1.run.app`
-- **API Docs**: `https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json`
+- **Gateway URL**: `https://dev-api.andamio.io`
+- **API Docs**: `https://dev-api.andamio.io/api/v1/docs/doc.json`
 
 The gateway provides:
 - **Merged Endpoints** (`/api/v2/*`): Combined off-chain (DB) + on-chain data
@@ -692,7 +700,7 @@ import { type YourOutputType } from "~/types/generated";
 ```
 
 2. Check the Gateway API docs for the endpoint schema:
-   - API Docs: `https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json`
+   - API Docs: `https://dev-api.andamio.io/api/v1/docs/doc.json`
 
 3. Make authenticated request via gateway proxy:
 ```typescript
@@ -879,9 +887,24 @@ This project uses Claude Skills for AI-assisted development workflows:
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API coverage across all 3 sub-systems + interview-based implementation planning |
 | `project-manager` | Track project status and roadmap |
-| `transaction-auditor` | Audit transaction definitions against Atlas TX API swagger and fix schema mismatches |
+| `transaction-auditor` | Sync transaction schemas with Andamio Gateway API spec when breaking changes are published |
+| `tx-loop-guide` | Guide testers through transaction loops to validate functionality |
 
 Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
+
+### API Schema Sync Workflow
+
+When the Andamio Gateway API publishes breaking changes:
+
+1. Run `/transaction-auditor` to sync schemas
+2. The skill will:
+   - Fetch latest API spec from gateway
+   - Compare against `src/config/transaction-schemas.ts`
+   - Update schemas and `TX_TYPE_MAP`
+   - Regenerate types with `npm run generate:types`
+   - Fix component type errors
+
+See `.claude/skills/transaction-auditor/SKILL.md` for full workflow.
 
 ## Tech Stack
 
@@ -899,7 +922,7 @@ Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation 
 
 ```bash
 # Unified API Gateway (combines all services)
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev-api.andamio.io"
 
 # API Key for server-side gateway requests
 ANDAMIO_API_KEY="your-api-key-here"

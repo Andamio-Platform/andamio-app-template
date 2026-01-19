@@ -576,11 +576,12 @@ interface RegisterCourseDrawerProps {
 function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps) {
   const { authenticatedFetch } = useAndamioAuth();
   const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRegister = async () => {
-    if (!title.trim()) return;
+    if (!code.trim() || !title.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -591,8 +592,9 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            policy_id: courseId,
+            code: code.trim(),
             title: title.trim(),
-            course_id: courseId,
           }),
         }
       );
@@ -607,6 +609,7 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
       });
 
       setOpen(false);
+      setCode("");
       setTitle("");
       onSuccess?.();
     } catch (err) {
@@ -658,15 +661,37 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
               </div>
             </div>
 
+            {/* Course Code input */}
+            <div className="space-y-2">
+              <AndamioLabel htmlFor="register-code">
+                Course Code <span className="text-destructive">*</span>
+              </AndamioLabel>
+              <AndamioInput
+                id="register-code"
+                placeholder="CARDANO-101"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                disabled={isSubmitting}
+                maxLength={50}
+                className="font-mono"
+              />
+              <AndamioText variant="small" className="text-xs">
+                A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
+              </AndamioText>
+            </div>
+
             {/* Title input */}
             <div className="space-y-2">
-              <AndamioLabel htmlFor="register-title">Course Title</AndamioLabel>
+              <AndamioLabel htmlFor="register-title">
+                Course Title <span className="text-destructive">*</span>
+              </AndamioLabel>
               <AndamioInput
                 id="register-title"
-                placeholder="Enter a title for your course"
+                placeholder="Introduction to Cardano Development"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
+                maxLength={200}
                 autoFocus
               />
               <AndamioText variant="small" className="text-xs">
@@ -684,7 +709,7 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
             <AndamioButton
               className="flex-1"
               onClick={handleRegister}
-              disabled={!title.trim() || isSubmitting}
+              disabled={!code.trim() || !title.trim() || isSubmitting}
             >
               {isSubmitting ? (
                 <>

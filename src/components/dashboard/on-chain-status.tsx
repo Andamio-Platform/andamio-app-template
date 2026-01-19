@@ -12,7 +12,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import {
   CourseIcon,
-  CredentialIcon,
   ExternalLinkIcon,
   RefreshIcon,
   AlertIcon,

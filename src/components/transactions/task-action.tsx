@@ -11,7 +11,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { computeAssignmentInfoHash } from "@andamio/transactions";
+import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
@@ -158,13 +158,9 @@ export function TaskAction({
     await execute({
       txType: "PROJECT_CONTRIBUTOR_TASK_ACTION",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
-        project_info: projectInfoValue,
-        // Side effect params (matches /project/contributor/commitment/submit)
-        task_hash: taskHash,
-        evidence: taskEvidence,
+        project_info: projectInfoValue ?? "",
       },
       onSuccess: async (txResult) => {
         console.log("[TaskAction] TX submitted successfully!", txResult);

@@ -24,7 +24,7 @@
 
 ## Unified API Gateway
 
-**Base URL**: `https://andamio-api-gateway-168705267033.us-central1.run.app`
+**Base URL**: `https://dev-api.andamio.io`
 **Coverage**: 25/45 (56%)
 
 ### Implemented Categories

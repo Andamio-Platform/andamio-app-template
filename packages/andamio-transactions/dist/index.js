@@ -39,7 +39,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractTxId = exports.extractAssetNames = exports.extractMintsByPolicy = exports.extractMints = exports.decodeTransactionCbor = exports.getExecutableSideEffects = exports.shouldExecuteSideEffect = exports.checkSideEffectCondition = exports.executeOnSubmit = exports.executeSideEffect = exports.testSideEffect = exports.createMockConfirmationContext = exports.createMockSubmissionContext = exports.validateSideEffect = exports.getValueFromPath = exports.constructRequestBody = exports.resolvePathParams = exports.debugTaskCBOR = exports.isValidTaskHash = exports.verifyTaskHash = exports.computeTaskHash = exports.normalizeForHashing = exports.verifyEvidenceDetailed = exports.isValidAssignmentInfoHash = exports.verifyAssignmentInfoHash = exports.computeAssignmentInfoHash = exports.isValidSltHash = exports.verifySltHash = exports.computeSltHashDefinite = exports.computeSltHash = exports.createSchemas = exports.mergeSchemas = exports.PROTOCOL_COSTS = exports.getProtocolCost = exports.createProtocolSpec = exports.hasTransaction = exports.getTransactionCountByVersion = exports.getAvailableVersions = exports.getTransactionsByVersionAndRole = exports.getTransactionsByVersion = exports.getTransactionsByRole = exports.getAllTransactionDefinitions = exports.getTransactionDefinition = exports.transactionRegistry = exports.v2 = exports.formatBatchConfirmBody = exports.formatBatchUpdateStatusBody = void 0;
+exports.extractTxId = exports.extractAssetNames = exports.extractMintsByPolicy = exports.extractMints = exports.decodeTransactionCbor = exports.getExecutableSideEffects = exports.shouldExecuteSideEffect = exports.checkSideEffectCondition = exports.executeOnSubmit = exports.executeSideEffect = exports.testSideEffect = exports.createMockConfirmationContext = exports.createMockSubmissionContext = exports.validateSideEffect = exports.getValueFromPath = exports.constructRequestBody = exports.resolvePathParams = exports.createSchemas = exports.mergeSchemas = exports.PROTOCOL_COSTS = exports.getProtocolCost = exports.createProtocolSpec = exports.hasTransaction = exports.getTransactionCountByVersion = exports.getAvailableVersions = exports.getTransactionsByVersionAndRole = exports.getTransactionsByVersion = exports.getTransactionsByRole = exports.getAllTransactionDefinitions = exports.getTransactionDefinition = exports.transactionRegistry = exports.v2 = exports.formatBatchConfirmBody = exports.formatBatchUpdateStatusBody = void 0;
 // Export transaction definitions
 __exportStar(require("./definitions"), exports);
 // Export input helper functions (V2)
@@ -68,22 +68,10 @@ Object.defineProperty(exports, "PROTOCOL_COSTS", { enumerable: true, get: functi
 var schema_helpers_1 = require("./utils/schema-helpers");
 Object.defineProperty(exports, "mergeSchemas", { enumerable: true, get: function () { return schema_helpers_1.mergeSchemas; } });
 Object.defineProperty(exports, "createSchemas", { enumerable: true, get: function () { return schema_helpers_1.createSchemas; } });
-var slt_hash_1 = require("./utils/slt-hash");
-Object.defineProperty(exports, "computeSltHash", { enumerable: true, get: function () { return slt_hash_1.computeSltHash; } });
-Object.defineProperty(exports, "computeSltHashDefinite", { enumerable: true, get: function () { return slt_hash_1.computeSltHashDefinite; } });
-Object.defineProperty(exports, "verifySltHash", { enumerable: true, get: function () { return slt_hash_1.verifySltHash; } });
-Object.defineProperty(exports, "isValidSltHash", { enumerable: true, get: function () { return slt_hash_1.isValidSltHash; } });
-var assignment_info_hash_1 = require("./utils/assignment-info-hash");
-Object.defineProperty(exports, "computeAssignmentInfoHash", { enumerable: true, get: function () { return assignment_info_hash_1.computeAssignmentInfoHash; } });
-Object.defineProperty(exports, "verifyAssignmentInfoHash", { enumerable: true, get: function () { return assignment_info_hash_1.verifyAssignmentInfoHash; } });
-Object.defineProperty(exports, "isValidAssignmentInfoHash", { enumerable: true, get: function () { return assignment_info_hash_1.isValidAssignmentInfoHash; } });
-Object.defineProperty(exports, "verifyEvidenceDetailed", { enumerable: true, get: function () { return assignment_info_hash_1.verifyEvidenceDetailed; } });
-Object.defineProperty(exports, "normalizeForHashing", { enumerable: true, get: function () { return assignment_info_hash_1.normalizeForHashing; } });
-var task_hash_1 = require("./utils/task-hash");
-Object.defineProperty(exports, "computeTaskHash", { enumerable: true, get: function () { return task_hash_1.computeTaskHash; } });
-Object.defineProperty(exports, "verifyTaskHash", { enumerable: true, get: function () { return task_hash_1.verifyTaskHash; } });
-Object.defineProperty(exports, "isValidTaskHash", { enumerable: true, get: function () { return task_hash_1.isValidTaskHash; } });
-Object.defineProperty(exports, "debugTaskCBOR", { enumerable: true, get: function () { return task_hash_1.debugTaskCBOR; } });
+// NOTE: Hash utilities have been migrated to the main app at ~/lib/utils/
+// - computeSltHashDefinite -> ~/lib/utils/slt-hash.ts
+// - computeAssignmentInfoHash -> ~/lib/utils/assignment-info-hash.ts
+// - computeTaskHash -> ~/lib/utils/task-hash.ts
 // Export testing utilities
 var testing_1 = require("./testing");
 Object.defineProperty(exports, "resolvePathParams", { enumerable: true, get: function () { return testing_1.resolvePathParams; } });

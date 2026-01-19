@@ -81,8 +81,13 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
         throw new Error(`Failed to fetch courses: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as CourseListResponse;
-      setCourses(data ?? []);
+      const result = (await response.json()) as
+        | CourseListResponse
+        | { data?: CourseListResponse; warning?: string };
+
+      // Handle both wrapped { data: [...] } and raw array formats
+      const data = Array.isArray(result) ? result : (result.data ?? []);
+      setCourses(data);
 
       // Fetch module counts for all courses using batch endpoint
       // Go API: POST /course/teacher/modules/list

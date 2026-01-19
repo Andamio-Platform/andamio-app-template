@@ -7,7 +7,7 @@
 
 import { getProject, type AndamioscanTask, type AndamioscanProjectDetails } from "~/lib/andamioscan";
 import { type ProjectTaskV2Output } from "~/types/generated";
-import { computeTaskHash, type TaskData } from "@andamio/transactions";
+import { computeTaskHash, type TaskData } from "~/lib/utils/task-hash";
 
 /**
  * Decode hex string to UTF-8 text

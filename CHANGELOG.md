@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Hash Utilities Migration** (January 19, 2026): Migrated hash utilities from `@andamio/transactions` to local `src/lib/utils/`
+  - `computeSltHashDefinite` → `~/lib/utils/slt-hash.ts`
+  - `computeAssignmentInfoHash` → `~/lib/utils/assignment-info-hash.ts`
+  - `computeTaskHash` → `~/lib/utils/task-hash.ts`
+  - Updated 10+ files to use new import paths
+  - Removed `blakejs` and `cbor` dependencies from `@andamio/transactions` package
+  - Dev script simplified: `npm run dev` now runs just Next.js (no concurrent transactions watcher)
+- **V1 Transaction Components Migrated to V2** (January 19, 2026): Final V1 components migrated to `useSimpleTransaction`
+  - `assignment-commitment.tsx` - Uses `useSimpleTransaction` + `useTxWatcher` for commit/update flows
+  - `instructor/page.tsx` - Uses `useSimpleTransaction` + `useTxWatcher` for assessment flow
+  - V1 components (`AndamioTransaction`, `useAndamioTransaction`) remain for backwards compatibility but are deprecated
+
 ### Fixed
 - **Auth Response Parsing** (January 18, 2026): Fixed JWT extraction from V2 Gateway auth response
   - Updated `ValidateSignatureApiResponse` interface to match actual API response structure
@@ -50,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Key changes tracked: endpoint renames, method changes (GET→POST), removed endpoints, merged endpoints
   - Payload field name standardization: `course_id` and `project_id` used consistently
 - **Unified API Gateway Integration** (January 16, 2026): Migrated to the Unified Andamio API Gateway which combines all backend services
-  - Gateway URL: `https://andamio-api-gateway-168705267033.us-central1.run.app`
+  - Gateway URL: `https://dev-api.andamio.io`
   - New API client at `src/lib/andamio-gateway.ts` for merged endpoints
   - Updated `src/lib/andamioscan.ts` to use gateway passthrough
   - Updated `src/lib/andamio-auth.ts` for hybrid authentication (gateway + legacy)

@@ -146,6 +146,6 @@ export const INSTANCE_PROJECT_CREATE: AndamioTransactionDefinition = {
   },
   docs: {
     protocolDocs: "https://docs.andamio.io/docs/protocol/v2/transactions/instance/owner/project/create",
-    apiDocs: "https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/index.html#/default/post_v2_tx_instance_owner_project_create",
+    apiDocs: "https://dev-api.andamio.io/api/v1/docs/index.html#/default/post_v2_tx_instance_owner_project_create",
   },
 };

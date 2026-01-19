@@ -263,10 +263,6 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 
 ## Package Architecture
 
-**`@andamio/transactions` Package** (local package):
-- Utility functions for hash computation
-- Input helper functions (`computeAssignmentInfoHash`, `computeSltHashDefinite`, etc.)
-
 **T3 App Template** (this app):
 - `useSimpleTransaction` hook - transaction lifecycle (build → sign → submit → register)
 - `useTxWatcher` hook - gateway confirmation polling
@@ -274,6 +270,11 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 - `~/config/transaction-schemas.ts` - Zod validation schemas for params
 - `TransactionButton`, `TransactionStatus` - UI components
 - 16 transaction-specific components
+- Hash utilities at `~/lib/utils/` (migrated from `@andamio/transactions`)
+
+**`@andamio/transactions` Package** (local, deprecated):
+- CBOR decoder utilities
+- V1 transaction definitions (deprecated - used only by legacy components)
 
 **Key Files**:
 ```typescript
@@ -285,8 +286,10 @@ import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TRANSACTION_UI, TRANSACTION_ENDPOINTS } from "~/config/transaction-ui";
 import { txSchemas, type TxParams } from "~/config/transaction-schemas";
 
-// Utility functions from @andamio/transactions
-import { computeAssignmentInfoHash, computeSltHashDefinite } from "@andamio/transactions";
+// Hash utilities (local)
+import { computeAssignmentInfoHash } from "~/lib/utils/assignment-info-hash";
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
+import { computeTaskHash } from "~/lib/utils/task-hash";
 ```
 
 ---

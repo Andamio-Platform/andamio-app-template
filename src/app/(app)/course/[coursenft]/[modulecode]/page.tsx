@@ -47,8 +47,8 @@ export default function ModuleLessonsPage() {
   const { data: slts, isLoading: sltsLoading } = useSLTs(courseNftPolicyId, moduleCode);
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseNftPolicyId, moduleCode);
 
-  // Get on-chain modules from the merged course data
-  const onChainModules = course?.modules ?? [];
+  // Get on-chain modules from the merged course data - memoized to stabilize reference
+  const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
 
   // Combine SLTs and Lessons - derived from query data
   const combinedData = useMemo<CombinedSLTLesson[]>(() => {

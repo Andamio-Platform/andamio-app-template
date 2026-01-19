@@ -142,7 +142,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         alias: user.accessTokenAlias,
         managers: managersList.length > 0 ? managersList : [user.accessTokenAlias],
         course_prereqs: coursePrereqs,
-        deposit_value: [["lovelace", lovelaceAmount]],
         initiator_data: initiatorData,
       },
       metadata: {

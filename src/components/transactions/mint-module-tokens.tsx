@@ -15,7 +15,7 @@
 "use client";
 
 import React, { useMemo, useCallback } from "react";
-import { computeSltHashDefinite } from "@andamio/transactions";
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
@@ -161,7 +161,7 @@ export function MintModuleTokens({
 
     const modules_to_mint = modulesWithData.map((m) => ({
       slts: m.slts,
-      allowed_course_state_ids: [] as string[],
+      allowed_student_state_ids: [] as string[],
       prereq_slt_hashes: [] as string[],
     }));
 
@@ -170,9 +170,9 @@ export function MintModuleTokens({
       params: {
         alias: user.accessTokenAlias,
         course_id: courseNftPolicyId,
-        modules_to_mint,
+        modules_to_add: modules_to_mint,
         modules_to_update: [],
-        modules_to_burn: [],
+        modules_to_remove: [],
       },
       onSuccess: async (txResult) => {
         console.log("[MintModuleTokens] TX submitted successfully!", txResult);

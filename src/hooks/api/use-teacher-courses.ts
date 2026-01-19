@@ -18,7 +18,6 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { type CourseListResponse } from "~/types/generated";
 
 // =============================================================================
 // Query Keys

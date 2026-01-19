@@ -46,9 +46,11 @@ import {
 } from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
-import { COURSE_TEACHER_ASSIGNMENTS_ASSESS } from "@andamio/transactions";
-import { AndamioTransaction } from "~/components/transactions/andamio-transaction";
-import { useTrackPendingTx } from "~/components/pending-tx-watcher";
+import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
+import { TransactionButton } from "~/components/transactions/transaction-button";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/instructor/pending-reviews-list";
 
 /**
@@ -95,7 +97,26 @@ export default function InstructorDashboardPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
-  const { trackPendingTx } = useTrackPendingTx();
+
+  // V2 Transaction hooks
+  const assessTx = useSimpleTransaction();
+
+  // Watch for gateway confirmation after assess TX submission
+  const { status: assessTxStatus, isSuccess: assessTxConfirmed } = useTxWatcher(
+    assessTx.result?.requiresDBUpdate ? assessTx.result.txHash : null,
+    {
+      onComplete: (status) => {
+        if (status.state === "updated") {
+          // Refresh data and reset UI
+          void fetchData();
+          setSelectedCommitment(null);
+          setDetailedCommitment(null);
+          setAssessmentDecision("accept");
+          assessTx.reset();
+        }
+      },
+    }
+  );
 
   const [course, setCourse] = useState<CourseResponse | null>(null);
   const [commitments, setCommitments] = useState<AssignmentCommitmentResponse[]>([]);
@@ -580,56 +601,107 @@ export default function InstructorDashboardPage() {
               </AndamioText>
             </div>
 
-            {/* Transaction Actions */}
-            <div className="pt-4">
-              <AndamioTransaction
-                definition={COURSE_TEACHER_ASSIGNMENTS_ASSESS}
-                inputs={{
-                  // txParams - for the transaction builder API
-                  alias: user?.accessTokenAlias ?? "",
-                  course_id: courseNftPolicyId,
-                  assignment_decisions: [
-                    {
-                      alias: selectedCommitment.access_token_alias ?? "",
-                      outcome: assessmentDecision,
-                    },
-                  ],
-                  // sideEffectParams - for the DB API side effects
-                  module_code: selectedCommitment.module_code,
-                  student_access_token_alias: selectedCommitment.access_token_alias ?? "",
-                  assessment_result: assessmentDecision,
-                }}
-                onSuccess={async (result) => {
-                  // Track pending transaction for confirmation handling
-                  if (result.txHash && selectedCommitment.access_token_alias) {
-                    trackPendingTx({
-                      id: `assessment-${courseNftPolicyId}-${selectedCommitment.module_code}-${selectedCommitment.access_token_alias}`,
-                      txHash: result.txHash,
-                      entityType: "assignment-commitment",
-                      entityId: selectedCommitment.access_token_alias,
-                      context: {
-                        courseNftPolicyId,
-                        moduleCode: selectedCommitment.module_code,
+            {/* Transaction Actions (V2) */}
+            <div className="pt-4 space-y-3">
+              {/* Requirements Check */}
+              {!(
+                selectedCommitment.access_token_alias &&
+                (detailedCommitment?.status ?? selectedCommitment.status) === "PENDING_APPROVAL"
+              ) && (
+                <AndamioAlert>
+                  <AlertIcon className="h-4 w-4" />
+                  <AndamioAlertDescription>
+                    {selectedCommitment.access_token_alias
+                      ? "This assignment is not ready for assessment"
+                      : "Learner does not have an access token"}
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              )}
+
+              {/* Transaction Status */}
+              {assessTx.state !== "idle" && !assessTxConfirmed && (
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-3">
+                    <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                    <div className="flex-1">
+                      <AndamioText className="font-medium">
+                        {assessTx.state === "fetching" && "Preparing assessment..."}
+                        {assessTx.state === "signing" && "Please sign in your wallet..."}
+                        {assessTx.state === "submitting" && "Submitting assessment..."}
+                        {assessTx.state === "success" && "Waiting for confirmation..."}
+                      </AndamioText>
+                      {assessTx.state === "success" && assessTxStatus && (
+                        <AndamioText variant="small" className="text-xs">
+                          {assessTxStatus.state === "pending" && "Waiting for block confirmation"}
+                          {assessTxStatus.state === "confirmed" && "Processing database updates"}
+                        </AndamioText>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Success State */}
+              {assessTxConfirmed && (
+                <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <SuccessIcon className="h-5 w-5 text-success" />
+                    <AndamioText className="font-medium text-success">
+                      Assessment submitted successfully!
+                    </AndamioText>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {assessTx.state === "error" && (
+                <AndamioAlert variant="destructive">
+                  <AlertIcon className="h-4 w-4" />
+                  <AndamioAlertDescription>
+                    {assessTx.error?.message ?? "Assessment failed"}
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              )}
+
+              {/* Submit Button */}
+              {!assessTxConfirmed && (
+                <TransactionButton
+                  txState={assessTx.state}
+                  onClick={async () => {
+                    if (!user?.accessTokenAlias || !selectedCommitment.access_token_alias) {
+                      return;
+                    }
+                    await assessTx.execute({
+                      txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
+                      params: {
+                        alias: user.accessTokenAlias,
+                        course_id: courseNftPolicyId,
+                        assignment_decisions: [
+                          {
+                            alias: selectedCommitment.access_token_alias,
+                            outcome: assessmentDecision,
+                          },
+                        ],
+                      },
+                      onError: (err) => {
+                        setError(err.message);
                       },
                     });
+                  }}
+                  disabled={
+                    !user?.accessTokenAlias ||
+                    !selectedCommitment.access_token_alias ||
+                    (detailedCommitment?.status ?? selectedCommitment.status) !== "PENDING_APPROVAL"
                   }
-
-                  // Refresh commitments list
-                  await fetchData();
-                  setSelectedCommitment(null);
-                  setDetailedCommitment(null);
-                  setAssessmentDecision("accept"); // Reset for next assessment
-                }}
-                requirements={{
-                  check: !!(
-                    selectedCommitment.access_token_alias &&
-                    (detailedCommitment?.status ?? selectedCommitment.status) === "PENDING_APPROVAL"
-                  ),
-                  failureMessage: selectedCommitment.access_token_alias
-                    ? "This assignment is not ready for assessment"
-                    : "Learner does not have an access token",
-                }}
-              />
+                  stateText={{
+                    idle: assessmentDecision === "accept" ? "Accept Assignment" : "Refuse Assignment",
+                    fetching: "Preparing...",
+                    signing: "Sign in Wallet",
+                    submitting: "Submitting...",
+                  }}
+                  className="w-full"
+                />
+              )}
             </div>
           </AndamioCardContent>
         </AndamioCard>

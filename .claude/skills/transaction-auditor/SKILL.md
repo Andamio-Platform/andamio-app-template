@@ -1,228 +1,210 @@
+---
+name: transaction-auditor
+description: Sync transaction schemas with the Andamio Gateway API spec when breaking changes are published.
+---
+
 # Transaction Auditor Skill
 
-**Purpose**: Audit and maintain transaction definitions in `packages/andamio-transactions` against the authoritative Atlas TX API swagger specification.
+**Purpose**: Keep the T3 App Template's transaction schemas in sync with the authoritative Andamio Gateway API specification.
 
 ## When to Use
 
-- After Atlas TX API schema changes
-- When adding new transaction definitions
+- After Andamio Gateway API releases with breaking changes
+- When adding new transaction types
 - When debugging transaction failures (schema mismatches)
 - Before releases to ensure schema alignment
-- When prompted with `/transaction-auditor` or asked to audit transactions
+- When prompted with `/transaction-auditor`
 
 ## Data Sources
 
 ### Authoritative Source
-- **Atlas TX API Swagger**: `https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json`
 
-### Local Definitions
-- **Package Location**: `packages/andamio-transactions/src/definitions/v2/`
-- **Export Index**: `packages/andamio-transactions/src/definitions/v2/index.ts`
+**Andamio Gateway API Spec**:
+```
+https://dev-api.andamio.io/api/v1/docs/doc.json
+```
 
-### Previous Audit Reports
-- **Audit Report**: `.claude/skills/audit-api-coverage/tx-audit-report.md`
+### Local Files to Update
 
-## V2 Transactions (16 total)
+| File | Purpose |
+|------|---------|
+| `src/config/transaction-schemas.ts` | Zod validation schemas for TX params |
+| `src/config/transaction-ui.ts` | TX types, endpoints, UI strings |
+| `src/hooks/use-tx-watcher.ts` | `TX_TYPE_MAP` for gateway registration |
+| `src/types/generated/index.ts` | Type exports (after regeneration) |
 
-| Category | Count | Transactions |
-|----------|-------|--------------|
-| Global General | 1 | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` |
-| Instance | 2 | `INSTANCE_COURSE_CREATE`, `INSTANCE_PROJECT_CREATE` |
-| Course Owner | 1 | `COURSE_OWNER_TEACHERS_MANAGE` |
-| Course Teacher | 2 | `COURSE_TEACHER_MODULES_MANAGE`, `COURSE_TEACHER_ASSIGNMENTS_ASSESS` |
-| Course Student | 3 | `COURSE_STUDENT_ASSIGNMENT_COMMIT`, `COURSE_STUDENT_ASSIGNMENT_UPDATE`, `COURSE_STUDENT_CREDENTIAL_CLAIM` |
-| Project Owner | 2 | `PROJECT_OWNER_MANAGERS_MANAGE`, `PROJECT_OWNER_BLACKLIST_MANAGE` |
-| Project Manager | 2 | `PROJECT_MANAGER_TASKS_MANAGE`, `PROJECT_MANAGER_TASKS_ASSESS` |
-| Project Contributor | 3 | `PROJECT_CONTRIBUTOR_TASK_COMMIT`, `PROJECT_CONTRIBUTOR_TASK_ACTION`, `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` |
+### Supporting Documentation
+
+| File | Purpose |
+|------|---------|
+| `.claude/skills/audit-api-coverage/tx-state-machine.md` | TX State Machine docs |
+| `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md` | Migration patterns |
 
 ## Audit Workflow
 
-### Step 1: Fetch Swagger Schema
+### Step 1: Fetch Latest API Spec
 
 ```bash
-curl -s https://atlas-api-preprod-507341199760.us-central1.run.app/swagger.json | jq '.paths' > /tmp/swagger-paths.json
+# Get all TX-related paths
+curl -s "https://dev-api.andamio.io/api/v1/docs/doc.json" \
+  | jq -r '.paths | keys[]' | grep "/api/v2/tx/" | sort
+
+# Get specific request schemas
+curl -s "https://dev-api.andamio.io/api/v1/docs/doc.json" \
+  | jq '[.definitions | to_entries[] | select(.key | contains("TxRequest"))] | from_entries'
 ```
 
-Or use WebFetch tool to retrieve and analyze the swagger.
+### Step 2: Compare Schemas
 
-### Step 2: Map Endpoints to Definitions
+For each transaction type, compare the API spec against `src/config/transaction-schemas.ts`:
 
-Each transaction definition specifies its endpoint in `buildTxConfig.builder.endpoint`:
+| Check | Description |
+|-------|-------------|
+| Field names | Do local field names match API exactly? |
+| Field types | Do Zod types match swagger types? |
+| Required vs optional | Does optionality match? |
+| Nested objects | Do array item schemas match? |
+| Enums | Do enum values match? |
 
-| Definition | Endpoint |
-|------------|----------|
-| `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `/v2/tx/global/general/access-token/mint` |
-| `INSTANCE_COURSE_CREATE` | `/v2/tx/instance/owner/course/create` |
-| `INSTANCE_PROJECT_CREATE` | `/v2/tx/instance/owner/project/create` |
-| `COURSE_OWNER_TEACHERS_MANAGE` | `/v2/tx/course/owner/teachers/manage` |
-| `COURSE_TEACHER_MODULES_MANAGE` | `/v2/tx/course/teacher/modules/manage` |
-| `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `/v2/tx/course/teacher/assignments/assess` |
-| `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `/v2/tx/course/student/assignment/commit` |
-| `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `/v2/tx/course/student/assignment/update` |
-| `COURSE_STUDENT_CREDENTIAL_CLAIM` | `/v2/tx/course/student/credential/claim` |
-| `PROJECT_OWNER_MANAGERS_MANAGE` | `/v2/tx/project/owner/managers/manage` |
-| `PROJECT_OWNER_BLACKLIST_MANAGE` | `/v2/tx/project/owner/blacklist/manage` |
-| `PROJECT_MANAGER_TASKS_MANAGE` | `/v2/tx/project/manager/tasks/manage` |
-| `PROJECT_MANAGER_TASKS_ASSESS` | `/v2/tx/project/manager/tasks/assess` |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `/v2/tx/project/contributor/task/commit` |
-| `PROJECT_CONTRIBUTOR_TASK_ACTION` | `/v2/tx/project/contributor/task/action` |
-| `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `/v2/tx/project/contributor/credential/claim` |
+### Step 3: Check TX Type Mapping
 
-### Step 3: Compare Schemas
+Compare `TX_TYPE_MAP` in `src/hooks/use-tx-watcher.ts` against the API's `tx_type` enum:
 
-For each transaction definition, compare:
+```bash
+# Get valid tx_type values from API
+curl -s "https://dev-api.andamio.io/api/v1/docs/doc.json" \
+  | jq '.definitions["tx_state_handlers.RegisterPendingTxRequest"].properties.tx_type.enum'
+```
 
-1. **Field Names**: Does `txParams` schema match swagger request body properties?
-2. **Field Types**: Do Zod types match swagger types?
-3. **Constraints**: Are `.min()`, `.max()`, `.length()` constraints correct?
-4. **Required vs Optional**: Does optionality match?
-5. **Enums**: Do `z.enum()` values match swagger enum definitions?
+### Step 4: Regenerate Types
 
-### Step 4: Identify Common Issues
+After confirming API changes, regenerate TypeScript types:
 
-Based on previous audits, watch for:
+```bash
+npm run generate:types
+```
 
-| Issue | Example | Fix |
-|-------|---------|-----|
-| Wrong field name | `task_hash` vs `alias` in task_decisions | Update field name |
-| Missing max length | `ShortText140` fields need `.max(140)` | Add `.max(140)` |
-| Wrong array item schema | `task_decisions: [{alias, outcome}]` not `[{task_hash, outcome}]` | Update schema |
-| Missing optional fields | `initiator_data`, `fee_tier` | Add with `.optional()` |
-| Extra fields not in swagger | `deposit_value` in project create | Verify or remove |
+This fetches the latest OpenAPI spec and generates `src/types/generated/gateway.ts`.
 
-### Step 5: Update Definitions
+### Step 5: Update Local Schemas
 
-When fixing issues:
+Update these files in order:
 
-1. **Read the definition file** first
-2. **Update the Zod schema** in `buildTxConfig.txApiSchema` (via `createSchemas`)
-3. **Update JSDoc comments** if the API contract changed
-4. **Rebuild the package**: `cd packages/andamio-transactions && npm run build`
-5. **Update the audit report** in `.claude/skills/audit-api-coverage/tx-audit-report.md`
+1. **`src/types/generated/index.ts`** - Add/update type exports
+2. **`src/config/transaction-schemas.ts`** - Update Zod schemas
+3. **`src/hooks/use-tx-watcher.ts`** - Update `TX_TYPE_MAP`
+4. **Components** - Fix any type errors from schema changes
 
-## Swagger Type Reference
+### Step 6: Verify Changes
 
-Common types in Atlas TX API swagger:
+```bash
+npm run typecheck
+```
+
+Fix any type errors in components that use the updated schemas.
+
+### Step 7: Update Documentation
+
+Update these docs to reflect changes:
+- `.claude/skills/audit-api-coverage/tx-state-machine.md`
+- `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md`
+
+## Transaction Types (17 total)
+
+| Category | TransactionType | Gateway tx_type | Endpoint |
+|----------|-----------------|-----------------|----------|
+| Global | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `access_token_mint` | `/api/v2/tx/global/user/access-token/mint` |
+| Instance | `INSTANCE_COURSE_CREATE` | `course_create` | `/api/v2/tx/instance/owner/course/create` |
+| Instance | `INSTANCE_PROJECT_CREATE` | `project_create` | `/api/v2/tx/instance/owner/project/create` |
+| Course Owner | `COURSE_OWNER_TEACHERS_MANAGE` | `teachers_update` | `/api/v2/tx/course/owner/teachers/manage` |
+| Course Teacher | `COURSE_TEACHER_MODULES_MANAGE` | `modules_manage` | `/api/v2/tx/course/teacher/modules/manage` |
+| Course Teacher | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` | `assessment_assess` | `/api/v2/tx/course/teacher/assignments/assess` |
+| Course Student | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `assignment_submit` | `/api/v2/tx/course/student/assignment/commit` |
+| Course Student | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment_submit` | `/api/v2/tx/course/student/assignment/update` |
+| Course Student | `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential_claim` | `/api/v2/tx/course/student/credential/claim` |
+| Project Owner | `PROJECT_OWNER_MANAGERS_MANAGE` | `project_join` | `/api/v2/tx/project/owner/managers/manage` |
+| Project Owner | `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist_update` | `/api/v2/tx/project/owner/contributor-blacklist/manage` |
+| Project Manager | `PROJECT_MANAGER_TASKS_MANAGE` | `tasks_manage` | `/api/v2/tx/project/manager/tasks/manage` |
+| Project Manager | `PROJECT_MANAGER_TASKS_ASSESS` | `task_assess` | `/api/v2/tx/project/manager/tasks/assess` |
+| Project Contributor | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task_submit` | `/api/v2/tx/project/contributor/task/commit` |
+| Project Contributor | `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task_submit` | `/api/v2/tx/project/contributor/task/action` |
+| Project Contributor | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project_credential_claim` | `/api/v2/tx/project/contributor/credential/claim` |
+| Project User | `PROJECT_USER_TREASURY_ADD_FUNDS` | `treasury_fund` | `/api/v2/tx/project/user/treasury/add-funds` |
+
+## TX State Machine Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v2/tx/register` | POST | Register TX after wallet submit |
+| `/api/v2/tx/status/{tx_hash}` | GET | Poll TX status |
+| `/api/v2/tx/pending` | GET | List user's pending TXs |
+| `/api/v2/tx/types` | GET | Get valid tx_type values |
+
+## Common Schema Patterns
+
+### API Type → Zod Schema
 
 ```typescript
-// Alias: User's access token alias
-type Alias = string; // 1-31 chars, pattern: ^[a-zA-Z0-9_]+$
+// Alias (1-31 chars, alphanumeric + underscore)
+alias: z.string().min(1).max(31)
 
-// GYMintingPolicyId: Policy ID (NFT identifier)
-type GYMintingPolicyId = string; // 56 char hex
+// Policy ID (56 char hex)
+course_id: z.string().length(56)
+project_id: z.string().length(56)
 
-// SltHash / TaskHash: Content hash
-type SltHash = string; // 64 char hex, pattern: ^[a-fA-F0-9]{64}$
+// Hash (64 char hex)
+slt_hash: z.string().length(64)
+task_hash: z.string().length(64)
 
-// ShortText140: Short text field
-type ShortText140 = string; // Max 140 characters
+// Short text (max 140 chars)
+assignment_info: z.string().max(140)
+project_info: z.string().max(140)
 
-// ListValue: ADA and native assets
-type ListValue = Array<[string, number]>; // [asset_class, quantity] tuples
+// Wallet data (optional)
+initiator_data: z.object({
+  used_addresses: z.array(z.string()),
+  change_address: z.string(),
+}).optional()
 
-// AssignmentOutcome
-type AssignmentOutcome = {
-  alias: string;  // Student's alias
-  outcome: "accept" | "refuse";
-};
+// Value (asset tuples)
+deposit_value: z.array(z.tuple([z.string(), z.number()]))
 
-// ProjectOutcome
-type ProjectOutcome = {
-  alias: string;  // Contributor's alias
-  outcome: "accept" | "refuse" | "deny";
-};
-
-// WalletData (for initiator_data)
-type WalletData = {
-  used_addresses: string[];  // GYAddressBech32[]
-  change_address: string;    // GYAddressBech32
-};
+// Outcome (string, not enum - API accepts any)
+outcome: z.string()
 ```
 
-## Definition File Structure
+## Changelog Integration
 
-Each definition file follows this pattern:
+When Andamio Gateway publishes a new version:
 
-```typescript
-import { z } from "zod";
-import type { AndamioTransactionDefinition } from "../../../../types";
-import { createProtocolSpec, getProtocolCost } from "../../../../utils/protocol-reference";
-import { createSchemas } from "../../../../utils/schema-helpers";
-
-const protocolId = "category.subcategory.action";
-const txName = "TX_NAME" as const;
-
-export const TX_NAME: AndamioTransactionDefinition = {
-  txType: txName,
-  role: "role-name",
-  protocolSpec: {
-    ...createProtocolSpec("v2", protocolId),
-    requiredTokens: ["token-type"],
-  },
-  buildTxConfig: {
-    ...createSchemas({
-      // Transaction API inputs - must match swagger request body
-      txParams: z.object({
-        field1: z.string().min(1).max(31),  // Alias
-        field2: z.string().length(56),       // PolicyId
-        // ... more fields
-      }),
-      // Side effect parameters - NOT sent to API
-      sideEffectParams: z.object({
-        // ... fields for onSubmit/onConfirmation
-      }),
-    }),
-    builder: { type: "api-endpoint", endpoint: "/v2/tx/..." },
-    estimatedCost: getProtocolCost(protocolId),
-  },
-  onSubmit: [...],
-  onConfirmation: [...],
-  ui: {...},
-  docs: {...},
-};
-```
-
-## Audit Report Format
-
-After completing an audit, update `.claude/skills/audit-api-coverage/tx-audit-report.md`:
-
-```markdown
-## Summary
-
-| Status | Count | Transactions |
-|--------|-------|--------------|
-| Match | N | List... |
-| Minor Issues | N | List... |
-| Critical Mismatch | N | List... |
-
-### Fixes Applied
-
-1. **TX_NAME** - Description of fix
-
-### Detailed Results
-
-#### Category (N transactions)
-
-| Tx | Status | Issues |
-|----|--------|--------|
-| TX_NAME | / / | Description |
-```
+1. **Read the changelog/release notes** for breaking changes
+2. **Identify affected schemas** by matching endpoint paths
+3. **Run this skill** to sync schemas
+4. **Test transactions** to verify compatibility
 
 ## Integration with Other Skills
 
-- **audit-api-coverage**: Shares the `tx-audit-report.md` output
-- **documentarian**: Updates BACKLOG.md when suggesting this skill
-- **review-pr**: Delegates to this skill for transaction-related changes
+| Skill | Integration |
+|-------|-------------|
+| `audit-api-coverage` | Shares `tx-state-machine.md` documentation |
+| `documentarian` | Triggers doc updates after schema changes |
+| `review-pr` | Delegates TX-related PR reviews to this skill |
+| `project-manager` | Updates TX-MIGRATION-GUIDE.md |
 
-## Quick Commands
+## Quick Reference Commands
 
 ```bash
-# Build transactions package after changes
-cd packages/andamio-transactions && npm run build
+# Regenerate types from gateway spec
+npm run generate:types
 
-# Type check
-cd packages/andamio-transactions && npm run type-check
+# Type check after changes
+npm run typecheck
 
-# Run tests
-cd packages/andamio-transactions && npm test
+# Get all TX request schemas from API
+curl -s "https://dev-api.andamio.io/api/v1/docs/doc.json" \
+  | jq '[.definitions | to_entries[] | select(.key | contains("TxRequest"))] | from_entries'
+
+# Get tx_type enum values
+curl -s "https://dev-api.andamio.io/api/v1/docs/doc.json" \
+  | jq '.definitions["tx_state_handlers.RegisterPendingTxRequest"].properties.tx_type.enum'
 ```

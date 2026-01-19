@@ -28,6 +28,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import type { GatewayTxType } from "~/types/generated";
 
 // =============================================================================
 // Types
@@ -226,31 +227,57 @@ export async function registerTransaction(
 /**
  * Map TransactionType (frontend) to tx_type (gateway)
  *
- * The gateway uses snake_case identifiers for TX types.
+ * The gateway uses a specific set of tx_type values defined in the API spec.
+ * @see GatewayTxType for valid values
+ * @see https://dev-api.andamio.io/api/v1/docs/ for API docs
  */
-export const TX_TYPE_MAP: Record<string, string> = {
+export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
+  // Global
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "access_token_mint",
+
+  // Course - Instance
   INSTANCE_COURSE_CREATE: "course_create",
+
+  // Course - Owner
+  COURSE_OWNER_TEACHERS_MANAGE: "teachers_update",
+
+  // Course - Teacher
+  COURSE_TEACHER_MODULES_MANAGE: "modules_manage",
+  COURSE_TEACHER_ASSIGNMENTS_ASSESS: "assessment_assess",
+
+  // Course - Student
+  COURSE_STUDENT_ASSIGNMENT_COMMIT: "assignment_submit",
+  COURSE_STUDENT_ASSIGNMENT_UPDATE: "assignment_submit",
+  COURSE_STUDENT_CREDENTIAL_CLAIM: "credential_claim",
+
+  // Project - Instance
   INSTANCE_PROJECT_CREATE: "project_create",
-  COURSE_OWNER_TEACHERS_MANAGE: "course_teachers_manage",
-  COURSE_TEACHER_MODULES_MANAGE: "course_modules_manage",
-  COURSE_TEACHER_ASSIGNMENTS_ASSESS: "course_assignments_assess",
-  COURSE_STUDENT_ASSIGNMENT_COMMIT: "course_assignment_commit",
-  COURSE_STUDENT_ASSIGNMENT_UPDATE: "course_assignment_update",
-  COURSE_STUDENT_CREDENTIAL_CLAIM: "course_credential_claim",
-  PROJECT_OWNER_MANAGERS_MANAGE: "project_managers_manage",
-  PROJECT_OWNER_BLACKLIST_MANAGE: "project_blacklist_manage",
-  PROJECT_MANAGER_TASKS_MANAGE: "project_tasks_manage",
-  PROJECT_MANAGER_TASKS_ASSESS: "project_tasks_assess",
-  PROJECT_CONTRIBUTOR_TASK_COMMIT: "project_task_commit",
-  PROJECT_CONTRIBUTOR_TASK_ACTION: "project_task_action",
+
+  // Project - Owner
+  PROJECT_OWNER_MANAGERS_MANAGE: "project_join",
+  PROJECT_OWNER_BLACKLIST_MANAGE: "blacklist_update",
+
+  // Project - Manager
+  PROJECT_MANAGER_TASKS_MANAGE: "tasks_manage",
+  PROJECT_MANAGER_TASKS_ASSESS: "task_assess",
+
+  // Project - Contributor
+  PROJECT_CONTRIBUTOR_TASK_COMMIT: "task_submit",
+  PROJECT_CONTRIBUTOR_TASK_ACTION: "task_submit",
   PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: "project_credential_claim",
-  PROJECT_USER_TREASURY_ADD_FUNDS: "project_treasury_add_funds",
+
+  // Project - User
+  PROJECT_USER_TREASURY_ADD_FUNDS: "treasury_fund",
 };
 
 /**
  * Get gateway tx_type from frontend TransactionType
  */
-export function getGatewayTxType(txType: string): string {
-  return TX_TYPE_MAP[txType] ?? txType.toLowerCase();
+export function getGatewayTxType(txType: string): GatewayTxType {
+  const mapped = TX_TYPE_MAP[txType];
+  if (!mapped) {
+    console.warn(`[TX] Unknown transaction type: ${txType}, using as-is`);
+    return txType.toLowerCase() as GatewayTxType;
+  }
+  return mapped;
 }

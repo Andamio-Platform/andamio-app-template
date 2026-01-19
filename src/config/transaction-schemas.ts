@@ -2,8 +2,7 @@
  * Transaction Parameter Schemas
  *
  * Zod schemas for validating transaction parameters before submission.
- * Extracted from @andamio/transactions package for use with the new
- * gateway auto-confirmation flow.
+ * These schemas match the Andamio Gateway API spec exactly.
  *
  * ## Usage
  *
@@ -21,7 +20,7 @@
  * const params: TxParams["COURSE_STUDENT_ASSIGNMENT_COMMIT"] = result.data;
  * ```
  *
- * @see https://docs.andamio.io/docs/protocol/v2/transactions
+ * @see https://dev-api.andamio.io/api/v1/docs/
  */
 
 import { z } from "zod";
@@ -33,7 +32,7 @@ import type { TransactionType } from "./transaction-ui";
 
 /**
  * Alias schema - User access token alias
- * 1-31 alphanumeric characters
+ * Alphanumeric characters and underscores only
  */
 export const aliasSchema = z.string().min(1).max(31);
 
@@ -56,7 +55,8 @@ export const hashSchema = z.string().length(64);
 export const shortTextSchema = z.string().max(140);
 
 /**
- * Wallet data schema - Optional initiator data for transaction building
+ * Wallet data schema - Initiator data for transaction building
+ * Contains addresses for UTxO selection and change output
  */
 export const walletDataSchema = z
   .object({
@@ -66,10 +66,10 @@ export const walletDataSchema = z
   .optional();
 
 /**
- * ListValue schema - Array of [asset_class, quantity] tuples
- * Used for deposit_value, native_assets, etc.
+ * Value schema - Array of [asset_class, quantity] tuples
+ * Asset class is either "lovelace" or "policy_id.asset_name"
  */
-export const listValueSchema = z.array(z.tuple([z.string(), z.number()]));
+export const valueSchema = z.array(z.tuple([z.string(), z.number()]));
 
 // =============================================================================
 // Transaction Parameter Schemas
@@ -77,6 +77,9 @@ export const listValueSchema = z.array(z.tuple([z.string(), z.number()]));
 
 /**
  * All transaction parameter schemas mapped by transaction type
+ *
+ * These schemas match the Andamio Gateway API spec exactly.
+ * @see https://dev-api.andamio.io/api/v1/docs/
  */
 export const txSchemas = {
   // ===========================================================================
@@ -85,10 +88,11 @@ export const txSchemas = {
 
   /**
    * Mint access token to participate in the Andamio protocol
+   * @see MintAccessTokenTxRequest
    */
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: z.object({
-    initiator_data: z.string().min(1), // GYAddressBech32 - wallet address
     alias: aliasSchema,
+    initiator_data: z.string().min(1), // Bech32 address string
   }),
 
   // ===========================================================================
@@ -97,15 +101,17 @@ export const txSchemas = {
 
   /**
    * Create a new course on-chain
+   * @see CreateCourseTxRequest
    */
   INSTANCE_COURSE_CREATE: z.object({
     alias: aliasSchema,
-    teachers: z.array(aliasSchema).min(1),
+    teachers: z.array(aliasSchema),
     initiator_data: walletDataSchema,
   }),
 
   /**
    * Create a new project on-chain
+   * @see CreateProjectTxRequest
    */
   INSTANCE_PROJECT_CREATE: z.object({
     alias: aliasSchema,
@@ -116,7 +122,6 @@ export const txSchemas = {
         z.array(hashSchema), // required module hashes
       ])
     ),
-    deposit_value: listValueSchema,
     initiator_data: walletDataSchema,
   }),
 
@@ -126,6 +131,7 @@ export const txSchemas = {
 
   /**
    * Add or remove teachers from a course
+   * @see ManageTeachersTxRequest
    */
   COURSE_OWNER_TEACHERS_MANAGE: z.object({
     alias: aliasSchema,
@@ -140,31 +146,33 @@ export const txSchemas = {
   // ===========================================================================
 
   /**
-   * Mint, update, or burn course modules
+   * Add, update, or remove course modules
+   * @see ManageModulesTxRequest
    */
   COURSE_TEACHER_MODULES_MANAGE: z.object({
     alias: aliasSchema,
     course_id: policyIdSchema,
-    modules_to_mint: z.array(
+    modules_to_add: z.array(
       z.object({
         slts: z.array(z.string()),
-        allowed_course_state_ids: z.array(policyIdSchema),
+        allowed_student_state_ids: z.array(policyIdSchema),
         prereq_slt_hashes: z.array(hashSchema),
       })
     ),
     modules_to_update: z.array(
       z.object({
         slt_hash: hashSchema,
-        allowed_course_state_ids: z.array(policyIdSchema),
+        allowed_student_state_ids: z.array(policyIdSchema),
         prereq_slt_hashes: z.array(hashSchema),
       })
     ),
-    modules_to_burn: z.array(hashSchema),
+    modules_to_remove: z.array(z.string()),
     initiator_data: walletDataSchema,
   }),
 
   /**
    * Assess student assignment submissions
+   * @see AssessAssignmentsTxRequest
    */
   COURSE_TEACHER_ASSIGNMENTS_ASSESS: z.object({
     alias: aliasSchema,
@@ -172,7 +180,7 @@ export const txSchemas = {
     assignment_decisions: z.array(
       z.object({
         alias: aliasSchema,
-        outcome: z.enum(["accept", "refuse"]),
+        outcome: z.string(), // API accepts any string, common values: "accept", "refuse"
       })
     ),
     initiator_data: walletDataSchema,
@@ -184,35 +192,30 @@ export const txSchemas = {
 
   /**
    * Commit to an assignment (first-time enrollment or subsequent commitment)
+   * @see CommitAssignmentTxRequest
    */
   COURSE_STUDENT_ASSIGNMENT_COMMIT: z.object({
     alias: aliasSchema,
     course_id: policyIdSchema,
     slt_hash: hashSchema,
-    assignment_info: shortTextSchema.min(1),
+    assignment_info: shortTextSchema,
     initiator_data: walletDataSchema,
-    // Side effect params (optional, used by gateway for DB updates)
-    module_code: z.string().optional(),
-    network_evidence: z.unknown().optional(),
-    network_evidence_hash: z.string().optional(),
   }),
 
   /**
    * Update assignment submission evidence
+   * @see AssignmentActionTxRequest
    */
   COURSE_STUDENT_ASSIGNMENT_UPDATE: z.object({
     alias: aliasSchema,
     course_id: policyIdSchema,
-    assignment_info: shortTextSchema.min(1),
+    assignment_info: shortTextSchema,
     initiator_data: walletDataSchema,
-    // Side effect params (optional, used by gateway for DB updates)
-    module_code: z.string().optional(),
-    network_evidence: z.unknown().optional(),
-    network_evidence_hash: z.string().optional(),
   }),
 
   /**
    * Claim course credential after completing all requirements
+   * @see ClaimCourseCredentialsTxRequest
    */
   COURSE_STUDENT_CREDENTIAL_CLAIM: z.object({
     alias: aliasSchema,
@@ -226,22 +229,26 @@ export const txSchemas = {
 
   /**
    * Add or remove managers from a project
+   * @see ManageManagersTxRequest
    */
   PROJECT_OWNER_MANAGERS_MANAGE: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
     managers_to_add: z.array(aliasSchema),
     managers_to_remove: z.array(aliasSchema),
+    initiator_data: walletDataSchema,
   }),
 
   /**
    * Manage contributor blacklist
+   * @see ManageContributorBlacklistTxRequest
    */
   PROJECT_OWNER_BLACKLIST_MANAGE: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
     aliases_to_add: z.array(aliasSchema),
     aliases_to_remove: z.array(aliasSchema),
+    initiator_data: walletDataSchema,
   }),
 
   // ===========================================================================
@@ -250,23 +257,18 @@ export const txSchemas = {
 
   /**
    * Add or remove tasks from a project
+   * @see ManageTasksTxRequest
    */
   PROJECT_MANAGER_TASKS_MANAGE: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
     contributor_state_id: policyIdSchema,
-    prerequisites: z.array(
-      z.object({
-        course_id: policyIdSchema,
-        assignment_ids: z.array(z.string()),
-      })
-    ),
     tasks_to_add: z.array(
       z.object({
         project_content: shortTextSchema,
         expiration_posix: z.number(),
         lovelace_amount: z.number(),
-        native_assets: listValueSchema,
+        native_assets: valueSchema,
       })
     ),
     tasks_to_remove: z.array(
@@ -274,16 +276,16 @@ export const txSchemas = {
         project_content: shortTextSchema,
         expiration_posix: z.number(),
         lovelace_amount: z.number(),
-        native_assets: listValueSchema,
+        native_assets: valueSchema,
       })
     ),
-    deposit_value: listValueSchema,
-    // Side effect params (optional, used by gateway for DB updates)
-    task_codes: z.array(z.string()).optional(),
+    deposit_value: valueSchema,
+    initiator_data: walletDataSchema,
   }),
 
   /**
    * Assess contributor task submissions
+   * @see TasksAssessV2TxRequest
    */
   PROJECT_MANAGER_TASKS_ASSESS: z.object({
     alias: aliasSchema,
@@ -292,13 +294,10 @@ export const txSchemas = {
     task_decisions: z.array(
       z.object({
         alias: aliasSchema,
-        outcome: z.enum(["accept", "refuse", "deny"]),
+        outcome: z.string(), // API accepts any string, common values: "accept", "refuse", "deny"
       })
     ),
-    // Side effect params (optional, used by gateway for DB updates)
-    task_hash: hashSchema.optional(),
-    contributor_alias: aliasSchema.optional(),
-    decision: z.enum(["ACCEPTED", "REFUSED", "DENIED"]).optional(),
+    initiator_data: walletDataSchema,
   }),
 
   // ===========================================================================
@@ -307,6 +306,7 @@ export const txSchemas = {
 
   /**
    * Commit to a new task in a project
+   * @see CommitTaskTxRequest
    */
   PROJECT_CONTRIBUTOR_TASK_COMMIT: z.object({
     alias: aliasSchema,
@@ -314,39 +314,31 @@ export const txSchemas = {
     contributor_state_id: policyIdSchema,
     task_hash: hashSchema,
     task_info: shortTextSchema,
-    tasks: z
-      .array(
-        z.object({
-          task_hash: hashSchema,
-          task_info: shortTextSchema,
-          contributor_state_policy_id: policyIdSchema,
-        })
-      )
-      .min(1)
-      .max(1),
-    // Side effect params (optional, used by gateway for DB updates)
-    evidence: z.unknown().optional(),
+    fee_tier: z.string().optional(),
+    initiator_data: walletDataSchema,
   }),
 
   /**
    * Perform an action on current task (update submission, etc.)
+   * @see TaskActionTxRequest
    */
   PROJECT_CONTRIBUTOR_TASK_ACTION: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
-    project_info: shortTextSchema.optional(),
-    // Side effect params (optional, used by gateway for DB updates)
-    task_hash: hashSchema.optional(),
-    evidence: z.unknown().optional(),
+    project_info: shortTextSchema,
+    initiator_data: walletDataSchema,
   }),
 
   /**
    * Claim credentials for completed project tasks
+   * @see ClaimProjectCredentialsTxRequest
    */
   PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
     contributor_state_id: policyIdSchema,
+    fee_tier: z.string().optional(),
+    initiator_data: walletDataSchema,
   }),
 
   // ===========================================================================
@@ -355,11 +347,13 @@ export const txSchemas = {
 
   /**
    * Add funds to project treasury
+   * @see AddFundsTxRequest
    */
   PROJECT_USER_TREASURY_ADD_FUNDS: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
-    funds: listValueSchema,
+    deposit_value: valueSchema,
+    initiator_data: walletDataSchema,
   }),
 } as const satisfies Record<TransactionType, z.ZodObject<z.ZodRawShape>>;
 

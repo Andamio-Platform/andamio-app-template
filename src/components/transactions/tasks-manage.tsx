@@ -11,7 +11,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { computeTaskHash } from "@andamio/transactions";
+import { computeTaskHash } from "~/lib/utils/task-hash";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
@@ -336,11 +336,7 @@ export function TasksManage({
 
     await execute({
       txType: "PROJECT_MANAGER_TASKS_MANAGE",
-      params: {
-        ...txParams,
-        // Side effect params (not sent to API, used internally)
-        task_codes,
-      },
+      params: txParams,
       onSuccess: async (txResult) => {
         console.log("[TasksManage] TX submitted successfully!", txResult);
         // Pass computed hashes to parent immediately after submission

@@ -36,8 +36,50 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
+export interface AndamioApiInternalInternalApiAndamioDbClientAssignmentCommitmentResponse {
+  access_token_alias?: string;
+  assignment_title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  evidence?: Record<string, any>;
+  module_code?: string;
+  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  policy_id?: string;
+  status?: string;
+  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientAssignmentResponse {
+  assignment_code?: string;
+  content_json?: Record<string, any>;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  live?: boolean;
+  module_code?: string;
+  slts?: AndamioApiInternalInternalApiAndamioDbClientSLTSummary[];
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientCourseModuleResponse {
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  module_code?: string;
+  module_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  slts?: AndamioApiInternalInternalApiAndamioDbClientSLTSummary[];
+  status?: string;
+  title?: string;
+}
+
 export interface AndamioApiInternalInternalApiAndamioDbClientCourseOwnerCourseDeletePostRequest {
   policy_id?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientCourseResponse {
+  course_code?: string;
+  course_nft_policy_id?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentRequest {
@@ -170,12 +212,37 @@ export interface AndamioApiInternalInternalApiAndamioDbClientInitRolesResponse {
   success?: boolean;
 }
 
+export interface AndamioApiInternalInternalApiAndamioDbClientIntroductionResponse {
+  content_json?: Record<string, any>;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  live?: boolean;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientLessonResponse {
+  content_json?: Record<string, any>;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  live?: boolean;
+  module_index?: number;
+  slt_text?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
 export interface AndamioApiInternalInternalApiAndamioDbClientLoginSessionResponse {
   expires_at?: string;
   /** Session ID (required for validate endpoint) */
   id?: string;
   /** Random nonce to sign with wallet */
   nonce?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientMintCourseRequest {
+  policy_id?: string;
+  tx_hash?: string;
 }
 
 export type AndamioApiInternalInternalApiAndamioDbClientNullableInt32 = object;
@@ -272,11 +339,46 @@ export interface AndamioApiInternalInternalApiAndamioDbClientProjectTaskToken {
   ticker?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
+export interface AndamioApiInternalInternalApiAndamioDbClientRegisterCourseRequest {
+  code?: string;
+  description?: string;
+  image_url?: string;
+  policy_id?: string;
+  title?: string;
+}
+
 export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
   description?: string;
   image_url?: string;
   project_id?: string;
   title?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentRequest {
+  access_token_alias?: string;
+  decision?: string;
+  module_code?: string;
+  pending_tx_hash?: string;
+  policy_id?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientSLTResponse {
+  module_code?: string;
+  module_index?: number;
+  policy_id?: string;
+  slt_text?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientSLTSummary {
+  module_index?: number;
+  slt_text?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientSignatureData {
+  /** CIP-30 COSE_Key (hex) */
+  key?: string;
+  /** CIP-30 COSE_Sign1 signature (hex) */
+  signature?: string;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientSuccessResponse {
@@ -352,6 +454,21 @@ export interface AndamioApiInternalInternalApiAndamioDbClientUserAccessTokenAlia
   access_token_alias?: string;
 }
 
+export interface AndamioApiInternalInternalApiAndamioDbClientUserCourseStatusResponse {
+  commitments?: AndamioApiInternalInternalApiAndamioDbClientAssignmentCommitmentResponse[];
+  course?: AndamioApiInternalInternalApiAndamioDbClientCourseResponse;
+  is_enrolled?: boolean;
+  modules_completed?: number;
+  policy_id?: string;
+  total_modules?: number;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientUserSummary {
+  access_token_alias?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  cardano_bech32_addr?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  id?: string;
+}
+
 export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRequest {
   /** Wallet address (hex or bech32) */
   address?: string;
@@ -361,7 +478,7 @@ export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRe
   convert_utf8?: boolean;
   /** Session ID from /auth/login/session */
   id?: string;
-  signature?: AndamioDbClientSignatureData;
+  signature?: AndamioApiInternalInternalApiAndamioDbClientSignatureData;
   /** Wallet name for debugging */
   wallet_preference?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
@@ -369,116 +486,236 @@ export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRe
 export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureResponse {
   /** JWT token for authenticated requests */
   jwt?: string;
-  user?: AndamioDbClientUserSummary;
+  user?: AndamioApiInternalInternalApiAndamioDbClientUserSummary;
 }
 
-export interface AndamioDbClientAssignmentCommitmentResponse {
-  access_token_alias?: string;
-  assignment_title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  evidence?: Record<string, any>;
-  module_code?: string;
-  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  policy_id?: string;
-  status?: string;
-  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+export interface AndamioApiInternalInternalApiAtlasTxClientAddFundsTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
+  deposit_value?: Record<string, any>[][];
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
 }
 
-export interface AndamioDbClientAssignmentResponse {
-  assignment_code?: string;
-  content_json?: Record<string, any>;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  live?: boolean;
-  module_code?: string;
-  slts?: AndamioDbClientSLTSummary[];
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+export interface AndamioApiInternalInternalApiAtlasTxClientAssessAssignmentsTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  assignment_decisions?: AndamioApiInternalInternalApiAtlasTxClientAssignmentOutcome[];
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
 }
 
-export interface AndamioDbClientCourseModuleResponse {
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  module_code?: string;
-  module_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  slts?: AndamioDbClientSLTSummary[];
-  status?: string;
-  title?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientAssignmentActionTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** A text string with a maximum length of 140 characters */
+  assignment_info?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
 }
 
-export interface AndamioDbClientCourseOwnerCourseMintPostRequest {
-  course_nft_policy_id?: string;
-  title?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientAssignmentOutcome {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  outcome?: string;
 }
 
-export interface AndamioDbClientCourseResponse {
-  course_code?: string;
-  course_nft_policy_id?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+export interface AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
 }
 
-export interface AndamioDbClientIntroductionResponse {
-  content_json?: Record<string, any>;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  live?: boolean;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+export interface AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentialsTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  contributor_state_id?: string;
+  fee_tier?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
 }
 
-export interface AndamioDbClientLessonResponse {
-  content_json?: Record<string, any>;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  live?: boolean;
-  module_index?: number;
-  slt_text?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+export interface AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** A text string with a maximum length of 140 characters */
+  assignment_info?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** Hex encoded hash of slts (exactly 64 characters) */
+  slt_hash?: string;
 }
 
-export interface AndamioDbClientReviewAssignmentCommitmentRequest {
-  access_token_alias?: string;
-  decision?: string;
-  module_code?: string;
-  pending_tx_hash?: string;
-  policy_id?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientCommitTaskTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  contributor_state_id?: string;
+  fee_tier?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
+  /** Hex encoded hash of slts (exactly 64 characters) */
+  task_hash?: string;
+  /** A text string with a maximum length of 140 characters */
+  task_info?: string;
 }
 
-export interface AndamioDbClientSLTResponse {
-  module_code?: string;
-  module_index?: number;
-  policy_id?: string;
-  slt_text?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  teachers?: string[];
 }
 
-export interface AndamioDbClientSLTSummary {
-  module_index?: number;
-  slt_text?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  course_prereqs?: Record<string, any>[][];
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  managers?: string[];
 }
 
-export interface AndamioDbClientSignatureData {
-  /** CIP-30 COSE_Key (hex) */
-  key?: string;
-  /** CIP-30 COSE_Sign1 signature (hex) */
-  signature?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientManageContributorBlacklistTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  aliases_to_add?: string[];
+  aliases_to_remove?: string[];
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
 }
 
-export interface AndamioDbClientUserCourseStatusResponse {
-  commitments?: AndamioDbClientAssignmentCommitmentResponse[];
-  course?: AndamioDbClientCourseResponse;
-  is_enrolled?: boolean;
-  modules_completed?: number;
-  policy_id?: string;
-  total_modules?: number;
+export interface AndamioApiInternalInternalApiAtlasTxClientManageManagersTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  managers_to_add?: string[];
+  managers_to_remove?: string[];
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
 }
 
-export interface AndamioDbClientUserSummary {
-  access_token_alias?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  cardano_bech32_addr?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  id?: string;
+export interface AndamioApiInternalInternalApiAtlasTxClientManageModulesTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  modules_to_add?: AndamioApiInternalInternalApiAtlasTxClientMintModuleV2[];
+  modules_to_remove?: string[];
+  modules_to_update?: AndamioApiInternalInternalApiAtlasTxClientUpdateModuleV2[];
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  contributor_state_id?: string;
+  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
+  deposit_value?: Record<string, any>[][];
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
+  tasks_to_add?: AndamioApiInternalInternalApiAtlasTxClientTaskData[];
+  tasks_to_remove?: AndamioApiInternalInternalApiAtlasTxClientTaskData[];
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientManageTeachersTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  teachers_to_add?: string[];
+  teachers_to_remove?: string[];
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientMintAccessTokenTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** An address, serialised as Bech32. */
+  initiator_data?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientMintModuleV2 {
+  allowed_student_state_ids?: string[];
+  prereq_slt_hashes?: string[];
+  slts?: string[];
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientProjectOutcome {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  outcome?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
+  /** A text string with a maximum length of 140 characters */
+  project_info?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientTaskData {
+  expiration_posix?: number;
+  lovelace_amount?: number;
+  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
+  native_assets?: Record<string, any>[][];
+  /** A text string with a maximum length of 140 characters */
+  project_content?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientTasksAssessV2TxRequest {
+  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  contributor_state_id?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
+  task_decisions?: AndamioApiInternalInternalApiAtlasTxClientProjectOutcome[];
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponse {
+  unsigned_tx?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse {
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  unsigned_tx?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitProject {
+  /** This is the hash of a minting policy script. */
+  project_id?: string;
+  unsigned_tx?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientUpdateModuleV2 {
+  allowed_student_state_ids?: string[];
+  prereq_slt_hashes?: string[];
+  /** Hex encoded hash of slts (exactly 64 characters) */
+  slt_hash?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientWalletData {
+  /** An address, serialised as Bech32. */
+  change_address?: string;
+  used_addresses?: string[];
 }
 
 export interface ApiKeyViewmodelsAPIKeyRequest {
@@ -759,235 +996,6 @@ export interface ApiUsageViewmodelsUserUsagePerApiKeyName {
   /** @example "MyFirstKey" */
   api_key_name?: string;
   usage_Data?: ApiUsageViewmodelsUserUsageData[];
-}
-
-export interface AtlasTxClientAddFundsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-}
-
-export interface AtlasTxClientAssessAssignmentsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  assignment_decisions?: AtlasTxClientAssignmentOutcome[];
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-}
-
-export interface AtlasTxClientAssignmentActionTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** A text string with a maximum length of 140 characters */
-  assignment_info?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-}
-
-export interface AtlasTxClientAssignmentOutcome {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  outcome?: string;
-}
-
-export interface AtlasTxClientClaimCourseCredentialsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-}
-
-export interface AtlasTxClientClaimProjectCredentialsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  contributor_state_id?: string;
-  fee_tier?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-}
-
-export interface AtlasTxClientCommitAssignmentTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** A text string with a maximum length of 140 characters */
-  assignment_info?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  /** Hex encoded hash of slts (exactly 64 characters) */
-  slt_hash?: string;
-}
-
-export interface AtlasTxClientCommitTaskTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  contributor_state_id?: string;
-  fee_tier?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-  /** Hex encoded hash of slts (exactly 64 characters) */
-  task_hash?: string;
-  /** A text string with a maximum length of 140 characters */
-  task_info?: string;
-}
-
-export interface AtlasTxClientCreateCourseTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  teachers?: string[];
-}
-
-export interface AtlasTxClientCreateProjectTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  course_prereqs?: Record<string, any>[][];
-  initiator_data?: AtlasTxClientWalletData;
-  managers?: string[];
-}
-
-export interface AtlasTxClientManageContributorBlacklistTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  aliases_to_add?: string[];
-  aliases_to_remove?: string[];
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-}
-
-export interface AtlasTxClientManageManagersTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  managers_to_add?: string[];
-  managers_to_remove?: string[];
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-}
-
-export interface AtlasTxClientManageModulesTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  modules_to_add?: AtlasTxClientMintModuleV2[];
-  modules_to_remove?: string[];
-  modules_to_update?: AtlasTxClientUpdateModuleV2[];
-}
-
-export interface AtlasTxClientManageTasksTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  contributor_state_id?: string;
-  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-  tasks_to_add?: AtlasTxClientTaskData[];
-  tasks_to_remove?: AtlasTxClientTaskData[];
-}
-
-export interface AtlasTxClientManageTeachersTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  teachers_to_add?: string[];
-  teachers_to_remove?: string[];
-}
-
-export interface AtlasTxClientMintAccessTokenTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** An address, serialised as Bech32. */
-  initiator_data?: string;
-}
-
-export interface AtlasTxClientMintModuleV2 {
-  allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
-  slts?: string[];
-}
-
-export interface AtlasTxClientProjectOutcome {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  outcome?: string;
-}
-
-export interface AtlasTxClientTaskActionTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-  /** A text string with a maximum length of 140 characters */
-  project_info?: string;
-}
-
-export interface AtlasTxClientTaskData {
-  expiration_posix?: number;
-  lovelace_amount?: number;
-  /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  native_assets?: Record<string, any>[][];
-  /** A text string with a maximum length of 140 characters */
-  project_content?: string;
-}
-
-export interface AtlasTxClientTasksAssessV2TxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  contributor_state_id?: string;
-  initiator_data?: AtlasTxClientWalletData;
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-  task_decisions?: AtlasTxClientProjectOutcome[];
-}
-
-export interface AtlasTxClientUnsignedTxResponse {
-  unsigned_tx?: string;
-}
-
-export interface AtlasTxClientUnsignedTxResponseInitCourse {
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  unsigned_tx?: string;
-}
-
-export interface AtlasTxClientUnsignedTxResponseInitProject {
-  /** This is the hash of a minting policy script. */
-  project_id?: string;
-  unsigned_tx?: string;
-}
-
-export interface AtlasTxClientUpdateModuleV2 {
-  allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
-  /** Hex encoded hash of slts (exactly 64 characters) */
-  slt_hash?: string;
-}
-
-export interface AtlasTxClientWalletData {
-  /** An address, serialised as Bech32. */
-  change_address?: string;
-  used_addresses?: string[];
 }
 
 export interface AuthViewmodelsJWTResponse {
@@ -1557,35 +1565,158 @@ export interface OrchestrationTeacherAssignmentCommitmentItem {
   submission_tx?: string;
 }
 
+/** Response containing the current state of a tracked transaction. */
 export interface TxStateHandlersPendingTxResponse {
+  /**
+   * Timestamp when the transaction was confirmed on-chain (RFC3339 format, null if not yet confirmed)
+   * @example "2026-01-19T12:00:30Z"
+   */
   confirmed_at?: string;
+  /**
+   * Timestamp when the transaction was registered (RFC3339 format)
+   * @example "2026-01-19T12:00:00Z"
+   */
   created_at?: string;
+  /**
+   * Optional instance ID (course_id or project_id)
+   * @example "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+   */
   instance_id?: string;
+  /**
+   * Last error message if the transaction failed
+   * @example ""
+   */
   last_error?: string;
+  /** Optional metadata stored with the transaction */
   metadata?: Record<string, string>;
+  /**
+   * Number of retry attempts for confirmation polling
+   * @example 0
+   */
   retry_count?: number;
-  state?: string;
+  /**
+   * Current state in the transaction lifecycle
+   * @example "pending"
+   */
+  state?: "pending" | "confirmed" | "updated" | "failed" | "expired";
+  /**
+   * Transaction hash (64 hex characters)
+   * @example "8a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b"
+   */
   tx_hash?: string;
-  tx_type?: string;
+  /**
+   * Transaction type
+   * @example "assignment_submit"
+   */
+  tx_type?:
+    | "course_create"
+    | "course_enroll"
+    | "modules_manage"
+    | "teachers_update"
+    | "assignment_submit"
+    | "assessment_assess"
+    | "credential_claim"
+    | "project_create"
+    | "project_join"
+    | "tasks_manage"
+    | "task_submit"
+    | "task_assess"
+    | "project_credential_claim"
+    | "blacklist_update"
+    | "treasury_fund"
+    | "access_token_mint";
+  /**
+   * Timestamp of the last state update (RFC3339 format)
+   * @example "2026-01-19T12:01:00Z"
+   */
   updated_at?: string;
+  /**
+   * User ID who registered the transaction
+   * @example "user_abc123"
+   */
   user_id?: string;
 }
 
+/** Request body for registering a transaction with the TX State Machine. After submitting a signed transaction to the Cardano network, register it here so the Gateway can track confirmation and automatically update the database. */
 export interface TxStateHandlersRegisterPendingTxRequest {
+  /**
+   * Optional instance ID (course_id or project_id) for scoping
+   * @example "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+   */
   instance_id?: string;
+  /** Optional metadata for off-chain data needed during DB update (e.g., policy_id, module_code) */
   metadata?: Record<string, string>;
+  /**
+   * Transaction hash (64 hex characters) returned from wallet.submitTx()
+   * @example "8a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b"
+   */
   tx_hash: string;
-  tx_type: string;
+  /**
+   * Transaction type - determines which Andamioscan event endpoint to poll and which DB update to perform
+   * @example "assignment_submit"
+   */
+  tx_type:
+    | "course_create"
+    | "course_enroll"
+    | "modules_manage"
+    | "teachers_update"
+    | "assignment_submit"
+    | "assessment_assess"
+    | "credential_claim"
+    | "project_create"
+    | "project_join"
+    | "tasks_manage"
+    | "task_submit"
+    | "task_assess"
+    | "project_credential_claim"
+    | "blacklist_update"
+    | "treasury_fund"
+    | "access_token_mint";
 }
 
+/** Statistics about the TX State Machine for monitoring and debugging. */
 export interface TxStateHandlersTxStatsResponse {
+  /**
+   * Number of transactions confirmed on-chain
+   * @example 142
+   */
   confirmed_count?: number;
+  /**
+   * Number of expired transactions (not confirmed within timeout)
+   * @example 0
+   */
   expired_count?: number;
+  /**
+   * Number of failed transactions
+   * @example 2
+   */
   failed_count?: number;
+  /**
+   * Number of transactions in pending state
+   * @example 5
+   */
   pending_count?: number;
+  /**
+   * Current length of the confirmation queue
+   * @example 3
+   */
   queue_length?: number;
+  /** Breakdown of pending transactions by type */
   type_breakdown?: Record<string, number>;
+  /**
+   * Number of transactions with completed DB updates
+   * @example 140
+   */
   updated_count?: number;
+}
+
+/** List of valid transaction types that can be registered with the TX State Machine. */
+export interface TxStateHandlersValidTxTypesResponse {
+  /**
+   * List of valid transaction type strings
+   * @example ["course_create","assignment_submit","access_token_mint"]
+   */
+  types?: string[];
 }
 
 export interface UserViewmodelsDeleteUserRequest {

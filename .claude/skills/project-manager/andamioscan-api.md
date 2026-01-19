@@ -267,14 +267,14 @@ if (!isEnrolled) {
 
 ### Module Hash Cross-Reference
 
-Module `assignment_id` in Andamioscan = module token name = `computeSltHash(slts)`:
+Module `assignment_id` in Andamioscan = module token name = `computeSltHashDefinite(slts)`:
 
 ```typescript
-import { computeSltHash } from "@andamio/transactions";
+import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
 
 // Verify local module matches on-chain
 const localModule = await getModuleFromDB(courseId, moduleCode);
-const expectedHash = computeSltHash(localModule.slts.map(s => s.text));
+const expectedHash = computeSltHashDefinite(localModule.slts.map(s => s.text));
 
 const course = await fetch(`${ANDAMIOSCAN_URL}/v2/courses/${courseId}/details`);
 const { modules } = await course.json();
@@ -317,7 +317,7 @@ All endpoints have typed client functions in `src/lib/andamioscan.ts`:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-168705267033.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev-api.andamio.io"
 ANDAMIO_API_KEY="your-api-key-here"
 ```
 
@@ -328,5 +328,5 @@ The Andamioscan API is now accessed via the unified V2 Gateway at `/api/gateway/
 ## Related Documentation
 
 - **V2 Gateway API**: `.claude/skills/audit-api-coverage/unified-api-endpoints.md` - Full endpoint reference
-- **@andamio/transactions**: Hash utilities (`computeSltHash`, `computeAssignmentInfoHash`)
-- **API Docs**: https://andamio-api-gateway-168705267033.us-central1.run.app/api/v1/docs/doc.json
+- **Hash Utilities**: `~/lib/utils/` - `slt-hash.ts`, `assignment-info-hash.ts`, `task-hash.ts`
+- **API Docs**: https://dev-api.andamio.io/api/v1/docs/doc.json

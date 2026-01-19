@@ -30,7 +30,11 @@ import {
   extractOnChainData,
   type TransactionConfirmation,
 } from "~/lib/cardano-indexer";
-import type { CourseModuleResponse } from "~/types/generated";
+// TX State Machine response type
+interface TxRegistrationResult {
+  tx_hash: string;
+  state: string;
+}
 
 /**
  * Pending transaction to monitor
@@ -140,6 +144,9 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
 
   /**
    * Process a confirmed module transaction
+   *
+   * Uses TX State Machine: Register the confirmed TX with the Gateway,
+   * which automatically handles DB updates when TX is verified on-chain.
    */
   const processConfirmedModule = useCallback(
     async (tx: PendingTransaction, onChainData: Record<string, unknown>) => {
@@ -157,38 +164,43 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         console.warn(`[PendingTx] No moduleHash found in on-chain data for ${tx.txHash}`);
       }
 
-      // Go API: POST /course/teacher/course-module/confirm-transaction
-      // Confirm blockchain transaction and update module status to ON_CHAIN
-      // This uses a special endpoint that bypasses PENDING_TX protection with blockchain proof
+      // TX State Machine: POST /api/v2/tx/register
+      // Register TX with Gateway - it handles confirmation and DB updates automatically
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/confirm-transaction`,
+        `/api/gateway/api/v2/tx/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
-            module_code: moduleCode,
             tx_hash: tx.txHash,
-            module_hash: moduleHash ?? undefined,
+            tx_type: "module_mint",
+            metadata: {
+              course_nft_policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              module_hash: moduleHash ?? undefined,
+            },
           }),
         }
       );
 
       if (!response.ok) {
         const error = (await response.json()) as { message?: string };
-        throw new Error(`Failed to update module status: ${error.message ?? response.statusText}`);
+        throw new Error(`Failed to register module TX: ${error.message ?? response.statusText}`);
       }
 
-      const updatedModule = (await response.json()) as CourseModuleResponse;
-      pendingTxLogger.info(`Module status updated to ON_CHAIN:`, updatedModule);
+      const registrationResult = (await response.json()) as TxRegistrationResult;
+      pendingTxLogger.info(`Module TX registered, state: ${registrationResult.state}`);
 
-      return updatedModule;
+      return registrationResult;
     },
     [authenticatedFetch]
   );
 
   /**
    * Process a confirmed assignment commitment transaction
+   *
+   * Uses TX State Machine: Register the confirmed TX with the Gateway,
+   * which automatically handles DB updates when TX is verified on-chain.
    */
   const processConfirmedAssignmentCommitment = useCallback(
     async (tx: PendingTransaction) => {
@@ -197,35 +209,35 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
         throw new Error("Missing courseNftPolicyId or moduleCode in context");
       }
 
-      // Go API: POST /course/shared/assignment-commitment/confirm-transaction
-      // Confirm blockchain transaction and update assignment commitment status to PENDING_APPROVAL
-      // This matches the onConfirmation side effect in COURSE_STUDENT_ASSIGNMENT_COMMIT
+      // TX State Machine: POST /api/v2/tx/register
+      // Register TX with Gateway - it handles confirmation and DB updates automatically
+      // See: TX_STATE_MACHINE_TRACKER.md section 3.4 (Assignment Commit)
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/shared/assignment-commitment/confirm-transaction`,
+        `/api/gateway/api/v2/tx/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            access_token_alias: tx.entityId, // entityId is the student's alias
             tx_hash: tx.txHash,
+            tx_type: "assignment_submit",
+            metadata: {
+              policy_id: courseNftPolicyId,
+              module_code: moduleCode,
+              access_token_alias: tx.entityId, // entityId is the student's alias
+            },
           }),
         }
       );
 
       if (!response.ok) {
         const error = (await response.json()) as { message?: string };
-        throw new Error(`Failed to confirm assignment commitment: ${error.message ?? response.statusText}`);
+        throw new Error(`Failed to register assignment commitment TX: ${error.message ?? response.statusText}`);
       }
 
-      const updatedCommitment = (await response.json()) as {
-        id: string;
-        networkStatus: string;
-      };
-      pendingTxLogger.info(`Assignment commitment confirmed:`, updatedCommitment);
+      const registrationResult = (await response.json()) as TxRegistrationResult;
+      pendingTxLogger.info(`Assignment commitment TX registered:`, registrationResult);
 
-      return updatedCommitment;
+      return registrationResult;
     },
     [authenticatedFetch]
   );

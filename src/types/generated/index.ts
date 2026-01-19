@@ -245,9 +245,9 @@ export type { AndamioApiInternalInternalApiAndamioDbClientLoginSessionResponse a
 // Transaction Types (Atlas TX API)
 // =============================================================================
 
-export type { AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest as CreateCourseTxRequest } from "./gateway";
-export type { AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest as ClaimCourseCredentialsTxRequest } from "./gateway";
-export type { AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse as UnsignedTxResponseInitCourse } from "./gateway";
+export type { AtlasTxClientCreateCourseTxRequest as CreateCourseTxRequest } from "./gateway";
+export type { AtlasTxClientClaimCourseCredentialsTxRequest as ClaimCourseCredentialsTxRequest } from "./gateway";
+export type { AtlasTxClientUnsignedTxResponseInitCourse as UnsignedTxResponseInitCourse } from "./gateway";
 
 // =============================================================================
 // Merged/Orchestration Types (Combined DB + On-Chain Data)
@@ -283,8 +283,8 @@ export type { AndamioApiInternalInternalApiAndamioDbClientCreateLessonRequest as
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionRequest as CreateIntroductionRequest } from "./gateway";
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentRequest as CreateAssignmentRequest } from "./gateway";
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentRequest as CreateAssignmentCommitmentRequest } from "./gateway";
-export type { AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentRequest as ReviewAssignmentCommitmentRequest } from "./gateway";
-export type { AndamioApiInternalInternalApiAndamioDbClientCourseOwnerCourseMintPostRequest as CourseMintPostRequest } from "./gateway";
+export type { AndamioDbClientReviewAssignmentCommitmentRequest as ReviewAssignmentCommitmentRequest } from "./gateway";
+export type { AndamioDbClientCourseOwnerCourseMintPostRequest as CourseMintPostRequest } from "./gateway";
 
 // Project requests
 export type { AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest as CreateProjectRequest } from "./gateway";

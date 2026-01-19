@@ -185,15 +185,15 @@ export function AssignmentCommitment({
     setError(null);
 
     try {
-      // Use the shared endpoint to get commitment for this specific module
-      // POST /course/shared/assignment-commitment/get
+      // Use the student endpoint to get commitment for this specific module
+      // POST /course/student/assignment-commitment/get
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/shared/assignment-commitment/get`,
+        `/api/gateway/api/v2/course/student/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
+            course_id: courseNftPolicyId,
             module_code: moduleCode,
             access_token_alias: user.accessTokenAlias,
           }),
@@ -292,7 +292,7 @@ export function AssignmentCommitment({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
+            course_id: courseNftPolicyId,
             module_code: moduleCode,
             access_token_alias: user.accessTokenAlias,
             evidence: localEvidenceContent,
@@ -330,7 +330,7 @@ export function AssignmentCommitment({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
+            course_id: courseNftPolicyId,
             module_code: moduleCode,
             access_token_alias: user.accessTokenAlias,
           }),
@@ -536,7 +536,7 @@ export function AssignmentCommitment({
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          policy_id: courseNftPolicyId,
+                          course_id: courseNftPolicyId,
                           module_code: moduleCode,
                           status: "PENDING_APPROVAL", // On-chain commitment means it's pending review
                         }),
@@ -557,7 +557,7 @@ export function AssignmentCommitment({
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          policy_id: courseNftPolicyId,
+                          course_id: courseNftPolicyId,
                           module_code: moduleCode,
                           access_token_alias: user.accessTokenAlias,
                           evidence: localEvidenceContent,

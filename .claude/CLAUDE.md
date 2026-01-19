@@ -887,6 +887,7 @@ This project uses Claude Skills for AI-assisted development workflows:
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API coverage across all 3 sub-systems + interview-based implementation planning |
 | `project-manager` | Track project status and roadmap |
+| `react-query-auditor` | Audit React Query hooks for type safety, proper patterns, and cache management issues |
 | `transaction-auditor` | Sync transaction schemas with Andamio Gateway API spec when breaking changes are published |
 | `tx-loop-guide` | Guide testers through transaction loops to validate functionality |
 

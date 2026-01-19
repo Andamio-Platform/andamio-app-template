@@ -6,6 +6,7 @@ import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
 import { AlertIcon, BackIcon, SecurityAlertIcon } from "~/components/icons";
+import type { OrchestrationMergedCourseListItem, MergedHandlersMergedCoursesResponse } from "~/types/generated";
 
 interface CourseAccessCheck {
   hasAccess: boolean;
@@ -31,9 +32,8 @@ interface RequireCourseAccessProps {
  *
  * Authorization logic:
  * - First checks if user is authenticated
- * - Then calls /courses/owned endpoint to check if user owns or contributes to the course
- * - Course ownership = created the course
- * - Teacher access = listed as contributor
+ * - Then calls /api/v2/course/owner/courses/list to get courses owned by the user
+ * - Checks if the specified course_id is in the owned courses list
  *
  * @example
  * ```tsx
@@ -85,20 +85,17 @@ export function RequireCourseAccess({
           throw new Error("Failed to verify course access");
         }
 
-        interface OwnedCourse {
-          course_nft_policy_id: string | null;
-        }
-
         const result = (await response.json()) as
-          | OwnedCourse[]
-          | { data?: OwnedCourse[]; warning?: string };
+          | OrchestrationMergedCourseListItem[]
+          | MergedHandlersMergedCoursesResponse;
 
         // Handle both wrapped { data: [...] } and raw array formats
         const ownedCourses = Array.isArray(result) ? result : (result.data ?? []);
 
         // Check if user has access to this specific course
+        // Note: course_id is the NFT policy ID in the merged API response
         const hasAccess = ownedCourses.some(
-          (course) => course.course_nft_policy_id === courseNftPolicyId
+          (course) => course.course_id === courseNftPolicyId
         );
 
         setAccessCheck({

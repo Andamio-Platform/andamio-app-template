@@ -16,13 +16,12 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import {
-  type CourseResponse,
-  type CourseListResponse,
-  type OrchestrationMergedCourseDetail,
-  type MergedHandlersMergedCourseDetailResponse,
-  type OrchestrationMergedCourseListItem,
-  type MergedHandlersMergedCoursesResponse,
+import type {
+  CourseResponse,
+  OrchestrationMergedCourseDetail,
+  MergedHandlersMergedCourseDetailResponse,
+  OrchestrationMergedCourseListItem,
+  MergedHandlersMergedCoursesResponse,
 } from "~/types/generated";
 
 // =============================================================================
@@ -187,7 +186,7 @@ export function useOwnedCoursesQuery() {
 
   return useQuery({
     queryKey: courseKeys.owned(),
-    queryFn: async () => {
+    queryFn: async (): Promise<OrchestrationMergedCourseListItem[]> => {
       // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/owner/courses/list`,
@@ -203,8 +202,8 @@ export function useOwnedCoursesQuery() {
       }
 
       const result = (await response.json()) as
-        | CourseListResponse
-        | { data?: CourseListResponse; warning?: string };
+        | OrchestrationMergedCourseListItem[]
+        | MergedHandlersMergedCoursesResponse;
 
       // Handle both wrapped { data: [...] } and raw array formats
       return Array.isArray(result) ? result : (result.data ?? []);

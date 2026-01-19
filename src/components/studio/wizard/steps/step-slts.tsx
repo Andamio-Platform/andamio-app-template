@@ -117,17 +117,16 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Go API: POST /course/teacher/slt/create
-      // API expects "policy_id" not "course_nft_policy_id"
+      // API requires camelCase: policyId, moduleCode, sltText
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: nextIndex,
-            slt_text: text,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            sltText: text,
           }),
         }
       );
@@ -168,17 +167,17 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Go API: POST /course/teacher/slt/update
-      // API expects "policy_id" not "course_nft_policy_id"
+      // API requires camelCase: policyId, moduleCode, moduleIndex, sltText
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: slt.module_index,
-            slt_text: text,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            moduleIndex: slt.module_index,
+            sltText: text,
           }),
         }
       );
@@ -217,15 +216,16 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Step 1: Delete the SLT
+      // API requires camelCase: policyId, moduleCode, moduleIndex
       const deleteResponse = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: slt.module_index,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            moduleIndex: slt.module_index,
           }),
         }
       );
@@ -241,14 +241,15 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         })).filter((item) => item.module_index !== item.new_index);
 
         if (reorderData.length > 0) {
+          // API requires camelCase: policyId, moduleCode, slts
           const reorderResponse = await authenticatedFetch(
             `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                policy_id: courseNftPolicyId,
-                module_code: moduleCode,
+                policyId: courseNftPolicyId,
+                moduleCode,
                 slts: reorderData,
               }),
             }
@@ -336,14 +337,15 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Go API: POST /course/teacher/slts/batch-reorder
+      // API requires camelCase: policyId, moduleCode, slts
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            policyId: courseNftPolicyId,
+            moduleCode,
             slts: reorderData,
           }),
         }

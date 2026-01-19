@@ -526,6 +526,7 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
+| **SLT Endpoints Schema Mismatch** | 🚨 **Blocking** | SLT create/update/delete endpoints expect camelCase (`policyId`, `moduleCode`, `sltText`) while all other teacher endpoints use snake_case. Even with camelCase, returns "Invalid request body". **GitHub Issue**: [andamio-api#3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
 | **Course Creation Metadata** | ✅ **Resolved** | Auto-registration now works! Gateway v2.0.0-preprod-20260119-e captures `owner_alias` from JWT and uses service-to-service auth. |
 | **Atlas TX API Task Commit** | ✅ **Resolved** | Client-side fix implemented. End-to-end testing ready. |
 | **Andamioscan task_id Empty** | ✅ **Resolved (Jan 16)** | Issue #11 fixed - `task_id` now populated in pending assessments/submissions. |

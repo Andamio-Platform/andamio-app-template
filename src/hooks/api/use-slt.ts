@@ -83,17 +83,16 @@ export function useCreateSLT() {
       sltText: string;
     }) => {
       // Go API: POST /course/teacher/slt/create
-      // API expects "policy_id" not "course_nft_policy_id"
+      // API requires camelCase: policyId, moduleCode, sltText
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: moduleIndex,
-            slt_text: sltText,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            sltText,
           }),
         }
       );
@@ -139,17 +138,17 @@ export function useUpdateSLT() {
       sltText: string;
     }) => {
       // Go API: POST /course/teacher/slt/update
-      // API expects "policy_id" not "course_nft_policy_id"
+      // API requires camelCase: policyId, moduleCode, moduleIndex, sltText
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: moduleIndex,
-            slt_text: sltText,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            moduleIndex,
+            sltText,
           }),
         }
       );
@@ -186,16 +185,16 @@ export function useDeleteSLT() {
       moduleIndex: number;
     }) => {
       // Go API: POST /course/teacher/slt/delete
-      // API expects "policy_id" not "course_nft_policy_id"
+      // API requires camelCase: policyId, moduleCode, moduleIndex
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: moduleIndex,
+            policyId: courseNftPolicyId,
+            moduleCode,
+            moduleIndex,
           }),
         }
       );

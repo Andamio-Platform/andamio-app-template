@@ -22,13 +22,13 @@
 
 ---
 
-## Layer 1: Core - Working Scope (v1)
+## Layer 1: Core - Working Scope (v2 launch)
 
 **Location**: `packages/core/`
 **Publishable as**: `@andamio/core`
 **Dependencies**: Zero React - only `@noble/hashes`, `cbor`
 
-### Proposed Structure (v1)
+### Proposed Structure (v2 launch)
 
 ```
 packages/core/
@@ -64,7 +64,7 @@ packages/core/
 | `src/lib/constants.ts` | Explorer URLs, polling intervals | `packages/core/constants/cardano.ts` |
 | (new) | Policy IDs by network | `packages/core/constants/policies.ts` |
 
-### Deferred (v1)
+### Work in Progress
 
 | Category | Status | Rationale |
 |----------|--------|-----------|
@@ -77,7 +77,7 @@ packages/core/
 | Item | Rationale |
 |------|-----------|
 | Transaction definitions (`definitions/`) | Deprecated V1 - review for removal |
-| Registry (`registry.ts`) | Deprecated V1 |
+| Registry (`registry.ts`) | Deprecated V1 - update from current App Template |
 | Execution utilities (`execution/`) | Deprecated V1 |
 | Testing utilities (`testing/`) | May move to core later |
 | Schema helpers (`schema-helpers.ts`) | Review with TX schema decision |
@@ -107,7 +107,7 @@ This creates two layers of transaction schema:
 | **Protocol** | What the blockchain needs | `initiator_data`, `datum`, `redeemer`, `validator_refs` |
 | **Andamio API** | What the DB needs | `alias`, `course_id`, `teachers[]`, state machine metadata |
 
-**The tension**: Andamio API exposes transactions with additional metadata required for the DB. This is already "opinionated" - it's the Andamio way, not pure Cardano protocol.
+**Tension**: Andamio API exposes transactions with additional metadata required for the DB. This is already "opinionated".
 
 **Options under consideration**:
 
@@ -132,7 +132,7 @@ This creates two layers of transaction schema:
 |---|----------|--------|
 | 1 | Separate repo for `packages/core/`? | Defer - keep in monorepo for now |
 | 2 | Merge `@andamio/transactions` into core? | Depends on Q1 above |
-| 3 | ~~Split `andamioscan.ts`?~~ | N/A - removing entirely |
+| 3 | Any references to Andamioscan? | For example, protocol params? |
 | 4 | Layer 4 (Features) - required or aspirational? | Needs team input |
 | 5 | `(docs)/` routes - static or dynamic? | Defer |
 | 6 | Templates priority? | Defer - stabilize first |
@@ -160,7 +160,7 @@ This creates two layers of transaction schema:
 
 ---
 
-## Layer 2: Integration - Working Scope (v1)
+## Layer 2: Integration - Working Scope (v2 launch)
 
 **Simplification**: For v1, Layer 2 only works with the single Gateway API. No abstraction for multiple backends.
 
@@ -171,7 +171,7 @@ Gateway API ← only this
    ├── /api/v2/*     (includes auth/, tx/, {system}/)
 ```
 
-### Proposed Structure (v1)
+### Proposed Structure (v2 launch)
 
 ```
 src/
@@ -184,7 +184,7 @@ src/
 │       └── course-filters.ts
 │
 ├── hooks/
-│   ├── api/
+│   ├── api/                    # should we organize into /course and /project?
 │   │   ├── use-course.ts
 │   │   ├── use-course-module.ts
 │   │   ├── use-slt.ts
@@ -227,7 +227,7 @@ src/
 
 ---
 
-## Layer 3: Components - Working Scope (v1)
+## Layer 3: Components - Working Scope (v2 launch)
 
 **Location**: `src/components/`
 
@@ -250,7 +250,7 @@ pending → confirmed → updated  (success)
 pending → failed | expired     (error)
 ```
 
-### Proposed Structure (v1)
+### Proposed Structure (v2 launch)
 
 ```
 src/components/
@@ -449,7 +449,7 @@ Each feature that involves transactions uses V2 TX State Machine:
 
 ---
 
-## Layer 5: App - Working Scope (v1)
+## Layer 5: App - Working Scope (v2 launch)
 
 **Location**: `src/app/` and `src/config/`
 **Responsibility**: Most opinionated layer. Routes, layouts, branding, configuration.

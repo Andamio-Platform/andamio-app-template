@@ -13,20 +13,17 @@
 | L4: Features | ⏸️ Deferred | Post-v2 launch extraction |
 | L5: App | 🔄 Planning | Routes aligned with API |
 
-**Build Order**: L1 → L2 → L3 → L5 → LAUNCH → L4
-
-## Open Questions
-
-1. **TX Schema Ownership** - Does Layer 1 (Core) include transaction schemas, or does Gateway API remain the authority? See [details](#1-transaction-schema-ownership-critical).
-2. **Platform Engineering roles** - This is a significant amount of work, and things could definitely break. But if we play it right, good chance for our team to practice working together. Let's assign an owner to each Layer based on time constraints + intererests.
+**Build Order**: L1 + L2 + L3 + L5 (concurrent) → LAUNCH → L4 (extraction)
 
 ---
 
 ## Layer 1: Core - Working Scope (v2 launch)
 
-**Location**: `packages/core/`
-**Publishable as**: `@andamio/core`
-**Dependencies**: Zero React - only `@noble/hashes`, `cbor`
+| | |
+|---|---|
+| **Location** | `packages/core/` |
+| **Publishable as** | `@andamio/core` |
+| **Dependencies** | Zero React - only `@noble/hashes`, `cbor` |
 
 ### Proposed Structure (v2 launch)
 
@@ -69,7 +66,7 @@ packages/core/
 | Category | Status | Rationale |
 |----------|--------|-----------|
 | Types (`types/`) | **Hold** | Keep auto-generated from API spec until stable |
-| Transaction schemas (`config/`) | **Open question** | Gateway API owns schemas - see Open Questions |
+| Transaction schemas (`config/`) | **Decided** | Gateway API owns schemas - see Decisions Made |
 | Protocol costs (`costs.ts`) | **Hold** | Review with TX schema decision |
 
 ### What Stays in `@andamio/transactions`
@@ -87,82 +84,16 @@ packages/core/
 1. **Start now**: Hash utilities (`utils/hashing/`) - pure protocol math, no dependencies on API
 2. **Start now**: Constants (`constants/`) - explorer URLs, policy IDs, network config
 3. **Hold**: Types - keep auto-generated from API spec until stable
-4. **Open question**: Transaction schemas - resolve Gateway API ownership first
-
----
-
-## Open Questions
-
-### 1. Transaction Schema Ownership (Critical)
-
-**Context**: The TX State Machine pattern means the Gateway API now handles:
-- Server-side transaction monitoring
-- Automatic DB updates via TxTypeRegistry
-- State machine: `pending → confirmed → updated`
-
-This creates two layers of transaction schema:
-
-| Layer | What it defines | Example fields |
-|-------|-----------------|----------------|
-| **Protocol** | What the blockchain needs | `initiator_data`, `datum`, `redeemer`, `validator_refs` |
-| **Andamio API** | What the DB needs | `alias`, `course_id`, `teachers[]`, state machine metadata |
-
-**Tension**: Andamio API exposes transactions with additional metadata required for the DB. This is already "opinionated".
-
-**Options under consideration**:
-
-| Option | Core contains | Andamio TX schemas live in |
-|--------|---------------|---------------------------|
-| **A: Protocol-only** | Pure on-chain schemas (datums, redeemers) | Layer 2 (Integration) |
-| **B: No TX schemas** | Hash utils, CBOR, constants only | Gateway API is authority |
-| **C: Composition** | Protocol primitives | Separate `@andamio/transactions` that composes with Core |
-
-**Questions to resolve**:
-1. Are protocol-only schemas useful without Andamio context?
-2. Should the Gateway API remain the single source of truth for TX schemas?
-3. How do we version TX schemas when Gateway API changes?
-
-**Action**: Needs team discussion before proceeding.
-
----
-
-### 2. Other Open Questions (From Proposal)
-
-| # | Question | Status |
-|---|----------|--------|
-| 1 | Separate repo for `packages/core/`? | Defer - keep in monorepo for now |
-| 2 | Merge `@andamio/transactions` into core? | Depends on Q1 above |
-| 3 | Any references to Andamioscan? | For example, protocol params? |
-| 4 | Layer 4 (Features) - required or aspirational? | Needs team input |
-| 5 | `(docs)/` routes - static or dynamic? | Defer |
-| 6 | Templates priority? | Defer - stabilize first |
-| 7 | Storybook for components? | Defer |
-
----
-
-## Decisions Made
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-01-20 | Start Layer 1 with hash utils + constants | Low risk, immediate value |
-| 2026-01-20 | Hold on types until API stable | Auto-generated types are working |
-| 2026-01-20 | TX schemas need further review | Gateway ownership complicates Layer 1 scope |
-
----
-
-## Feedback Log
-
-| Date | Topic | Feedback | Resolution |
-|------|-------|----------|------------|
-| 2026-01-20 | Migration approach | Incremental is already implied by phases | Confirmed |
-| 2026-01-20 | Layer 1 scope | Hash utils + constants now, types later | Agreed |
-| 2026-01-20 | TX schemas | Gateway API adds opinionated metadata | Open question |
+4. **Decided**: Transaction schemas - Gateway API is authority (see Decisions Made)
 
 ---
 
 ## Layer 2: Integration - Working Scope (v2 launch)
 
-**Simplification**: For v1, Layer 2 only works with the single Gateway API. No abstraction for multiple backends.
+| | |
+|---|---|
+| **Location** | `src/lib/`, `src/hooks/`, `src/contexts/` |
+| **Simplification** | Single Gateway API only - no abstraction for multiple backends |
 
 ### Single API Surface
 
@@ -229,7 +160,9 @@ src/
 
 ## Layer 3: Components - Working Scope (v2 launch)
 
-**Location**: `src/components/`
+| | |
+|---|---|
+| **Location** | `src/components/` |
 
 ### TX State Machine Pattern (V2)
 
@@ -338,13 +271,15 @@ See Andamio API docs for TX State Machine details:
 
 ## Layer 4: Features - POST V2 LAUNCH
 
-**Location**: `src/features/` (NEW - does not exist yet)
-**Status**: **Deferred to post-v2 launch**
+| | |
+|---|---|
+| **Location** | `src/features/` (NEW - does not exist yet) |
+| **Status** | Deferred to post-v2 launch |
 
 ### Build Order
 
 ```
-L1 (Core) → L2 (Integration) → L3 (Components) → L5 (App) → LAUNCH → L4 (Features)
+L1 + L2 + L3 + L5 (concurrent) → LAUNCH → L4 (extraction)
 ```
 
 **Rationale**: Layer 4 is extracted FROM a working Layer 5. You can't build reusable features until you have an opinionated app to extract them from.
@@ -447,12 +382,12 @@ Each feature that involves transactions uses V2 TX State Machine:
 
 ---
 
----
-
 ## Layer 5: App - Working Scope (v2 launch)
 
-**Location**: `src/app/` and `src/config/`
-**Responsibility**: Most opinionated layer. Routes, layouts, branding, configuration.
+| | |
+|---|---|
+| **Location** | `src/app/` and `src/config/` |
+| **Responsibility** | Most opinionated layer. Routes, layouts, branding, configuration. |
 
 ### Naming Conventions
 
@@ -560,6 +495,30 @@ Each feature that involves transactions uses V2 TX State Machine:
 
 ---
 
+## Decisions Made
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-01-20 | Start Layer 1 with hash utils + constants | Low risk, immediate value |
+| 2026-01-20 | Hold on types until API stable | Auto-generated types are working |
+| 2026-01-20 | TX schemas: Gateway API is authority | See resolved question below |
+| 2026-01-20 | `@andamio/transactions` merged into App Template | Refine first, then decide core vs separate package |
+| 2026-01-20 | Remove `andamioscan.ts` (1497 lines) | No longer needed - Gateway provides all data |
+| 2026-01-20 | Remove complex sync utilities | No longer needed - TX State Machine handles this |
+| 2026-01-20 | Align template and package versions | Major releases stay in sync |
+
+---
+
+## Feedback Log
+
+| Date | Topic | Feedback | Resolution |
+|------|-------|----------|------------|
+| 2026-01-20 | Migration approach | Incremental is already implied by phases | Confirmed |
+| 2026-01-20 | Layer 1 scope | Hash utils + constants now, types later | Agreed |
+| 2026-01-20 | TX schemas | Gateway API adds opinionated metadata | Resolved - Gateway is authority |
+
+---
+
 ## Next Steps
 
 1. [x] Review Layer 1 scope
@@ -567,14 +526,79 @@ Each feature that involves transactions uses V2 TX State Machine:
 3. [x] Review Layer 3 scope
 4. [x] Review Layer 4 scope (deferred to post-launch)
 5. [x] Review Layer 5 scope
-6. [ ] Resolve TX schema ownership question with team
-7. [ ] Create Phase 1 task breakdown after decisions
+6. [x] Resolve TX schema ownership question with team
+7. [ ] Assign layer owners based on time + interests
+8. [ ] Create Phase 1 task breakdown
 
 ### Build Order for V2 Launch
 
 ```
-L1 (Core) → L2 (Integration) → L3 (Components) → L5 (App) → LAUNCH
-                                                              ↓
-                                                    L4 (Features) - post-launch extraction
+┌─────────────────────────────────────┐
+│  L1 (Core)         ─┐               │
+│  L2 (Integration)  ─┼─ concurrent → LAUNCH
+│  L3 (Components)   ─┤                 ↓
+│  L5 (App)          ─┘       L4 (Features) - post-launch extraction
+└─────────────────────────────────────┘
 ```
-6. [ ] Create Phase 1 task breakdown after decisions
+
+---
+
+## Resolved Questions
+
+All open questions have been resolved. Answers recorded here for reference.
+
+### 1. Transaction Schema Ownership
+
+**Question**: Does Layer 1 (Core) include transaction schemas, or does Gateway API remain the authority?
+
+**Answer**: Gateway API is the authority. Two layers exist:
+
+| Layer | What it defines | Lives in |
+|-------|-----------------|----------|
+| **Protocol** | On-chain schemas (datums, redeemers) | Could go in `@andamio/core` later |
+| **Andamio API** | DB-required fields (`alias`, `course_id`, etc.) | Gateway API (authority) |
+
+**Decision**: Option C (Composition) - Core contains protocol primitives only. `@andamio/transactions` is merged into App Template for now. After refinement, decide whether to:
+- Keep protocol-only schemas in `@andamio/core` (un-opinionated, on-chain only)
+- Keep Andamio-specific schemas in a separate `@andamio/transactions` package
+
+### 2. Separate repo for `packages/core/`?
+
+**Answer**: Can do any time. James can take this because he's been testing already.
+
+### 3. Merge `@andamio/transactions` into core?
+
+**Answer**: Merged into App Template for now. Refine and resolve schema questions, then decide:
+- `@andamio/core`: un-opinionated, on-chain only
+- Separate package: Andamio API schema
+
+### 4. How to handle 1497-line `andamioscan.ts`?
+
+**Answer**: No longer needed. Gateway provides all data via `/api/v2/*`.
+
+### 5. How to handle complex sync utilities (447 + 622 lines)?
+
+**Answer**: No longer needed. TX State Machine handles this server-side.
+
+### 6. `(docs)/` routes - static or dynamic?
+
+**Answer**: We have both at docs.andamio.io. Can clean up later.
+
+### 7. Minimum viable template for `templates/minimal/`?
+
+**Answer**: Still TBD. Want to see T3 App Template working first, then step back and see what can be removed into the minimal template.
+
+### 8. Storybook for Layer 3 components?
+
+**Answer**: Yes, good idea. Whoever takes ownership of Layer 3 should decide implementation details.
+
+### 9. Version template vs packages?
+
+**Answer**: Align them for every major release.
+
+---
+
+## Remaining Open Items
+
+1. **Platform Engineering roles** - Assign an owner to each Layer based on time constraints + interests
+2. **Minimal template scope** - Define after T3 App Template is stable

@@ -56,8 +56,7 @@ npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts
 This will:
 1. Fetch live OpenAPI spec from the gateway
 2. Scan `src/` for API client usage
-3. Scan `packages/andamio-transactions/` for TX definitions
-4. Generate `COVERAGE-REPORT.md` and `coverage-report.json`
+3. Generate `COVERAGE-REPORT.md` and `coverage-report.json`
 
 ## Implementation Locations
 
@@ -66,7 +65,7 @@ This will:
 | Auth, User, Admin | `src/lib/andamio-auth.ts`, `src/contexts/` | Auth context |
 | Merged Courses/Projects | `src/hooks/api/*.ts` | React Query hooks |
 | Scan (Andamioscan) | `src/lib/andamioscan.ts` | Typed client functions |
-| TX (Transactions) | `packages/andamio-transactions/src/definitions/` | Transaction definitions |
+| TX (Transactions) | `src/config/transaction-schemas.ts`, `src/config/transaction-ui.ts` | TX State Machine |
 
 ## Workflow: Adding a New Endpoint
 
@@ -115,7 +114,7 @@ export async function getAllCourses(): Promise<CourseList> {
 ```
 
 **For TX endpoints:**
-Transaction definitions in `packages/andamio-transactions/src/definitions/v2/`.
+Transaction schemas in `src/config/transaction-schemas.ts` and UI config in `src/config/transaction-ui.ts`.
 
 ### 3. Update Coverage
 

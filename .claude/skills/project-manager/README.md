@@ -175,7 +175,7 @@ The following have been removed from the `update/andamioscan` branch:
 
 ```bash
 # Unified API Gateway (combines all services)
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-701452636305.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-666713068234.us-central1.run.app"
 ANDAMIO_API_KEY="your-api-key-here"
 
 # Cardano Network

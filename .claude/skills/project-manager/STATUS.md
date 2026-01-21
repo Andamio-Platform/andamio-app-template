@@ -11,7 +11,7 @@ Current implementation status of the Andamio T3 App Template.
 **Status**: 🔄 In Progress
 
 The Andamio API Gateway has been deployed to a new URL:
-- **New URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+- **New URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
 - **Old URL**: `https://dev-api.andamio.io` (deprecated)
 
 ### Migration Status
@@ -566,8 +566,8 @@ Error in $.tasks[0]: parsing API.ProjectInstance.Task(Task) failed, key "contrib
 ### API Source of Truth
 
 **Always use the deployed API schema as the source of truth:**
-- **Gateway URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
-- **OpenAPI Spec**: `https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json`
+- **Gateway URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
+- **OpenAPI Spec**: `https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json`
 
 When implementing new endpoints or debugging API issues, fetch the live schema rather than reading local code.
 

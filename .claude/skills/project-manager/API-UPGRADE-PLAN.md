@@ -9,7 +9,7 @@
 ## Executive Summary
 
 The new Andamio API Gateway has been deployed at:
-- **URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+- **URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
 - **Total Endpoints**: 108
 - **Currently Implemented**: 68 (63%)
 - **Missing**: 40 endpoints

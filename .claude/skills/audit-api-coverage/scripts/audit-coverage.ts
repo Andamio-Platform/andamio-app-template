@@ -79,8 +79,8 @@ interface CoverageReport {
 const CONFIG = {
   gateway: {
     name: "Unified API Gateway",
-    specUrl: "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json",
-    baseUrl: "https://andamio-api-gateway-701452636305.us-central1.run.app",
+    specUrl: "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json",
+    baseUrl: "https://andamio-api-gateway-666713068234.us-central1.run.app",
   },
 };
 

@@ -12,7 +12,7 @@
     "dev:transactions": "cd packages/andamio-transactions && npm run dev",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "generate:types": "npx swagger-typescript-api generate -p https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json -o src/types/generated -n gateway.ts --no-client",
+    "generate:types": "npx swagger-typescript-api generate -p https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json -o src/types/generated -n gateway.ts --no-client",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",

@@ -42,8 +42,8 @@ andamio-t3-app-template/
 
 ### Unified API Gateway
 The app uses the Unified Andamio API Gateway which combines all backend services:
-- **Gateway URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
-- **API Docs**: `https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json`
+- **Gateway URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
+- **API Docs**: `https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json`
 
 The gateway provides:
 - **Merged Endpoints** (`/api/v2/*`): Combined off-chain (DB) + on-chain data
@@ -700,7 +700,7 @@ import { type YourOutputType } from "~/types/generated";
 ```
 
 2. Check the Gateway API docs for the endpoint schema:
-   - API Docs: `https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json`
+   - API Docs: `https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json`
 
 3. Make authenticated request via gateway proxy:
 ```typescript
@@ -923,7 +923,7 @@ See `.claude/skills/transaction-auditor/SKILL.md` for full workflow.
 
 ```bash
 # Unified API Gateway (combines all services)
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-701452636305.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-666713068234.us-central1.run.app"
 
 # API Key for server-side gateway requests
 ANDAMIO_API_KEY="your-api-key-here"

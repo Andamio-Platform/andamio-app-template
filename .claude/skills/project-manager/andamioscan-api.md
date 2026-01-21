@@ -317,7 +317,7 @@ All endpoints have typed client functions in `src/lib/andamioscan.ts`:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-701452636305.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-666713068234.us-central1.run.app"
 ANDAMIO_API_KEY="your-api-key-here"
 ```
 
@@ -329,4 +329,4 @@ The Andamioscan API is now accessed via the unified V2 Gateway at `/api/gateway/
 
 - **V2 Gateway API**: `.claude/skills/audit-api-coverage/unified-api-endpoints.md` - Full endpoint reference
 - **Hash Utilities**: `~/lib/utils/` - `slt-hash.ts`, `assignment-info-hash.ts`, `task-hash.ts`
-- **API Docs**: https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json
+- **API Docs**: https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json

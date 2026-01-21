@@ -21,7 +21,7 @@ description: Sync transaction schemas with the Andamio Gateway API spec when bre
 
 **Andamio Gateway API Spec**:
 ```
-https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json
+https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json
 ```
 
 ### Local Files to Update
@@ -46,11 +46,11 @@ https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.jso
 
 ```bash
 # Get all TX-related paths
-curl -s "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json" \
+curl -s "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json" \
   | jq -r '.paths | keys[]' | grep "/api/v2/tx/" | sort
 
 # Get specific request schemas
-curl -s "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json" \
+curl -s "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json" \
   | jq '[.definitions | to_entries[] | select(.key | contains("TxRequest"))] | from_entries'
 ```
 
@@ -72,7 +72,7 @@ Compare `TX_TYPE_MAP` in `src/hooks/use-tx-watcher.ts` against the API's `tx_typ
 
 ```bash
 # Get valid tx_type values from API
-curl -s "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json" \
+curl -s "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json" \
   | jq '.definitions["tx_state_handlers.RegisterPendingTxRequest"].properties.tx_type.enum'
 ```
 
@@ -201,10 +201,10 @@ npm run generate:types
 npm run typecheck
 
 # Get all TX request schemas from API
-curl -s "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json" \
+curl -s "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json" \
   | jq '[.definitions | to_entries[] | select(.key | contains("TxRequest"))] | from_entries'
 
 # Get tx_type enum values
-curl -s "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json" \
+curl -s "https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json" \
   | jq '.definitions["tx_state_handlers.RegisterPendingTxRequest"].properties.tx_type.enum'
 ```

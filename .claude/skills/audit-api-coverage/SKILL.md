@@ -11,8 +11,8 @@ Audit and maintain API coverage for the Unified Andamio API Gateway.
 
 | Property | Value |
 |----------|-------|
-| **Base URL** | `https://andamio-api-gateway-701452636305.us-central1.run.app` |
-| **API Docs** | [doc.json](https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json) |
+| **Base URL** | `https://andamio-api-gateway-666713068234.us-central1.run.app` |
+| **API Docs** | [doc.json](https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json) |
 | **Total Endpoints** | 108 |
 | **T3 Coverage** | 63% (68/108 endpoints) |
 
@@ -76,7 +76,7 @@ Before implementing, verify the endpoint exists in the live OpenAPI spec:
 
 ```bash
 # Check specific endpoint
-curl -s https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
+curl -s https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
 ```
 
 ### 2. Implement

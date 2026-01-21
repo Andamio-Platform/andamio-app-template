@@ -1,7 +1,7 @@
 # Unified API Gateway Endpoints
 
-> **Source of Truth**: [API Documentation](https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json)
-> **Base URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+> **Source of Truth**: [API Documentation](https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json)
+> **Base URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
 > **Total Endpoints**: 108
 > **Last Updated**: January 20, 2026
 

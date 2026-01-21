@@ -91,7 +91,8 @@ export default function EditTaskPage() {
         }
 
         const project = (await projectResponse.json()) as ProjectV2Output;
-        const statePolicyId = project.states?.[0]?.project_state_policy_id;
+        const rawStatePolicyId = project.states?.[0]?.project_state_policy_id;
+        const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
 
         if (!statePolicyId) {
           throw new Error("Project has no states");
@@ -121,15 +122,15 @@ export default function EditTaskPage() {
           throw new Error("Task not found");
         }
 
-        if (taskData.status !== "DRAFT") {
+        if (taskData.task_status !== "DRAFT") {
           throw new Error("Only DRAFT tasks can be edited");
         }
 
         setTask(taskData);
-        setTitle(taskData.title);
-        setContent(taskData.content ?? "");
-        setLovelace(taskData.lovelace);
-        setExpirationTime(taskData.expiration_time);
+        setTitle(taskData.title ?? "");
+        setContent(typeof taskData.content === "string" ? taskData.content : "");
+        setLovelace(taskData.lovelace_amount ?? "");
+        setExpirationTime(taskData.expiration_time ?? "");
         setContentJson((taskData.content_json as JSONContent) ?? null);
       } catch (err) {
         console.error("Error fetching task:", err);

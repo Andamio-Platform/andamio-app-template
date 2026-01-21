@@ -30,8 +30,8 @@ function hexToText(hex: string): string {
 function computeTaskHashFromDb(dbTask: ProjectTaskV2Output): string {
   const taskData: TaskData = {
     project_content: dbTask.title ?? "",
-    expiration_time: parseInt(dbTask.expiration_time) || 0,
-    lovelace_amount: parseInt(dbTask.lovelace) || 0,
+    expiration_time: parseInt(dbTask.expiration_time ?? "0") || 0,
+    lovelace_amount: parseInt(dbTask.lovelace_amount ?? "0") || 0,
     native_assets: [],
   };
   return computeTaskHash(taskData);
@@ -266,7 +266,7 @@ function matchTasks(
 
   for (const dbTask of dbTasks) {
     // Skip tasks that are already confirmed (have a task_hash)
-    if (dbTask.task_hash && dbTask.status === "ON_CHAIN") {
+    if (dbTask.task_hash && dbTask.task_status === "ON_CHAIN") {
       continue;
     }
 
@@ -293,8 +293,8 @@ function matchTasks(
 
         // Match by title/content
         if (decodedContent === dbTitle) {
-          const dbLovelace = parseInt(dbTask.lovelace) || 0;
-          if (dbLovelace === onChainTask.lovelace) {
+          const dbLovelace = parseInt(dbTask.lovelace_amount ?? "0") || 0;
+          if (dbLovelace === onChainTask.lovelace_amount) {
             matchedOnChain = onChainTask;
             matchedBy = "content";
             break;
@@ -302,10 +302,10 @@ function matchTasks(
         }
 
         // Last resort: match by lovelace and expiration time
-        const dbLovelace = parseInt(dbTask.lovelace) || 0;
-        const dbExpiration = parseInt(dbTask.expiration_time) || 0;
+        const dbLovelace = parseInt(dbTask.lovelace_amount ?? "0") || 0;
+        const dbExpiration = parseInt(dbTask.expiration_time ?? "0") || 0;
         if (
-          dbLovelace === onChainTask.lovelace &&
+          dbLovelace === onChainTask.lovelace_amount &&
           dbExpiration === onChainTask.expiration_posix
         ) {
           matchedOnChain = onChainTask;
@@ -322,7 +322,7 @@ function matchTasks(
         matchedBy,
       });
       usedOnChainIds.add(matchedOnChain.task_id);
-    } else if (dbTask.status === "DRAFT" || dbTask.status === "PENDING_TX") {
+    } else if (dbTask.task_status === "DRAFT" || dbTask.task_status === "PENDING_TX") {
       unmatchedDb.push(dbTask);
     }
   }
@@ -447,10 +447,10 @@ export async function syncProjectTasks(
   }
 
   // Separate tasks by current status for proper transition handling
-  const draftTasks = matched.filter((m) => m.dbTask.status === "DRAFT");
-  const pendingTasks = matched.filter((m) => m.dbTask.status === "PENDING_TX");
+  const draftTasks = matched.filter((m) => m.dbTask.task_status === "DRAFT");
+  const pendingTasks = matched.filter((m) => m.dbTask.task_status === "PENDING_TX");
   const onChainTasksMissingHash = matched.filter(
-    (m) => m.dbTask.status === "ON_CHAIN" && !m.dbTask.task_hash
+    (m) => m.dbTask.task_status === "ON_CHAIN" && !m.dbTask.task_hash
   );
 
   console.log(`[project-task-sync] Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX, ${onChainTasksMissingHash.length} ON_CHAIN (missing hash)`);
@@ -470,10 +470,12 @@ export async function syncProjectTasks(
 
   // Step 1: Update DRAFT tasks to PENDING_TX first (required transition)
   if (draftTasks.length > 0) {
-    const draftToUpdate = draftTasks.map((match) => ({
-      index: match.dbTask.index,
-      status: "PENDING_TX",
-    }));
+    const draftToUpdate = draftTasks
+      .filter((match) => match.dbTask.index !== undefined)
+      .map((match) => ({
+        index: match.dbTask.index!,
+        status: "PENDING_TX",
+      }));
 
     try {
       const result = await batchUpdateTaskStatus(
@@ -504,9 +506,11 @@ export async function syncProjectTasks(
     console.log(`[project-task-sync] Step 2: Confirming ${tasksToConfirm.length} tasks with task_hash via confirm-tx`);
 
     for (const match of tasksToConfirm) {
+      if (match.dbTask.index === undefined) continue;
+      const taskIndex = match.dbTask.index;
       const result = await confirmTaskWithHash(
         projectStatePolicyId,
-        match.dbTask.index,
+        taskIndex,
         effectiveTxHash,
         match.onChainTask.task_id,
         authenticatedFetch
@@ -516,13 +520,13 @@ export async function syncProjectTasks(
         confirmed++;
       } else {
         // If confirm-tx fails, try batch-status as fallback (won't set task_hash)
-        console.warn(`[project-task-sync] confirm-tx failed for task ${match.dbTask.index}: ${result.error}`);
-        console.log(`[project-task-sync] Falling back to batch-status for task ${match.dbTask.index}`);
+        console.warn(`[project-task-sync] confirm-tx failed for task ${taskIndex}: ${result.error}`);
+        console.log(`[project-task-sync] Falling back to batch-status for task ${taskIndex}`);
 
         try {
           const batchResult = await batchUpdateTaskStatus(
             projectStatePolicyId,
-            [{ index: match.dbTask.index, status: "ON_CHAIN" }],
+            [{ index: taskIndex, status: "ON_CHAIN" }],
             authenticatedFetch
           );
           if (batchResult.updated > 0) {
@@ -542,10 +546,12 @@ export async function syncProjectTasks(
     // No tx_hash available - use batch-status as fallback (won't set task_hash)
     console.warn("[project-task-sync] No tx_hash available - using batch-status (task_hash won't be persisted)");
 
-    const allTasksToOnChain = tasksToConfirm.map((match) => ({
-      index: match.dbTask.index,
-      status: "ON_CHAIN",
-    }));
+    const allTasksToOnChain = tasksToConfirm
+      .filter((match) => match.dbTask.index !== undefined)
+      .map((match) => ({
+        index: match.dbTask.index!,
+        status: "ON_CHAIN",
+      }));
 
     try {
       const result = await batchUpdateTaskStatus(

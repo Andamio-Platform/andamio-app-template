@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Gateway Taxonomy Compliance** (January 21, 2026): Fixed 41 files to handle API field name changes and NullableString typing
+  - **Field renames**: `status` → `module_status`/`task_status`/`commitment_status`, `module_code` → `course_module_code`, `module_index` → `index`, `module_hash` → `slt_hash`, `lovelace` → `lovelace_amount`
+  - **NullableString handling**: API generates nullable strings as `object` type requiring special handling
+  - Created `src/lib/type-helpers.ts` with `getString()` and `getOptionalString()` utilities
+  - Extended `LessonResponse` type to include `slt_index` (returned by API but not in OpenAPI spec)
+  - Build now passes with no type errors
+
 ### Changed
 - **Hash Utilities Migration** (January 19, 2026): Migrated hash utilities from `@andamio/transactions` to local `src/lib/utils/`
   - `computeSltHashDefinite` → `~/lib/utils/slt-hash.ts`

@@ -93,37 +93,30 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       // Go API: POST /course/teacher/modules/list
       if (data && data.length > 0) {
         try {
-          const courseNftPolicyIds = data
-            .map((c) => c.course_nft_policy_id)
-            .filter((id): id is string => id !== null);
+          const courseIds = data
+            .map((c) => c.course_id)
+            .filter((id): id is string => id !== null && id !== undefined);
 
-          if (courseNftPolicyIds.length > 0) {
+          if (courseIds.length > 0) {
             const modulesResponse = await authenticatedFetch(
               `/api/gateway/api/v2/course/teacher/modules/list`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ course_ids: courseNftPolicyIds }),
+                body: JSON.stringify({ course_ids: courseIds }),
               }
             );
 
             if (modulesResponse.ok) {
               const modulesData = (await modulesResponse.json()) as Record<
                 string,
-                Array<{ module_code: string; title: string }>
+                Array<{ course_module_code: string; title: string }>
               >;
 
-              // Convert to counts keyed by course_code
-              // Map policy ID back to course code for UI consistency
-              const policyToCode = new Map(
-                data.map((c) => [c.course_nft_policy_id, c.course_code])
-              );
+              // Convert to counts keyed by course_id
               const counts: Record<string, number> = {};
-              for (const [policyId, modules] of Object.entries(modulesData)) {
-                const courseCode = policyToCode.get(policyId);
-                if (courseCode) {
-                  counts[courseCode] = modules.length;
-                }
+              for (const [courseId, modules] of Object.entries(modulesData)) {
+                counts[courseId] = modules.length;
               }
               setModuleCounts(counts);
             }

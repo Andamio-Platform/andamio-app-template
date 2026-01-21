@@ -158,15 +158,15 @@ export default function TaskDetailPage() {
             #{task.index}
           </AndamioBadge>
           <AndamioBadge variant="default">
-            {task.status === "ON_CHAIN" ? "Live" : task.status}
+            {task.task_status === "ON_CHAIN" ? "Live" : task.task_status}
           </AndamioBadge>
         </div>
       </div>
 
       {/* Task Title and Description */}
       <AndamioPageHeader
-        title={task.title}
-        description={task.content ?? undefined}
+        title={task.title ?? "Untitled Task"}
+        description={typeof task.content === "string" ? task.content : undefined}
       />
 
       {/* Task Stats */}
@@ -174,18 +174,18 @@ export default function TaskDetailPage() {
         <AndamioDashboardStat
           icon={TokenIcon}
           label="Reward"
-          value={formatLovelace(task.lovelace)}
+          value={formatLovelace(task.lovelace_amount ?? "0")}
           iconColor="success"
         />
         <AndamioDashboardStat
           icon={PendingIcon}
           label="Expires"
-          value={formatTimestamp(task.expiration_time)}
+          value={formatTimestamp(task.expiration_time ?? "0")}
         />
         <AndamioDashboardStat
           icon={TeacherIcon}
           label="Created By"
-          value={task.created_by?.slice(0, 12) + "..." || "Unknown"}
+          value={task.created_by_alias?.slice(0, 12) + "..." || "Unknown"}
           iconColor="info"
         />
       </div>
@@ -193,7 +193,9 @@ export default function TaskDetailPage() {
       {/* Task Hash */}
       <div className="p-3 bg-muted rounded-lg">
         <AndamioText variant="small" className="text-xs mb-1">Task Hash (On-Chain ID)</AndamioText>
-        <AndamioText className="font-mono text-sm break-all">{task.task_hash}</AndamioText>
+        <AndamioText className="font-mono text-sm break-all">
+          {typeof task.task_hash === "string" ? task.task_hash : taskHash}
+        </AndamioText>
       </div>
 
       {/* Task Content */}
@@ -219,16 +221,24 @@ export default function TaskDetailPage() {
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="space-y-2">
-              {task.tokens.map((token, idx) => (
-                <div key={token.policy_id ?? idx} className="flex items-center justify-between p-2 border rounded">
-                  <div>
-                    <AndamioText className="font-medium font-mono text-sm">
-                      {token.asset_name ?? token.policy_id?.slice(0, 16)}
-                    </AndamioText>
+              {task.tokens.map((token, idx) => {
+                // NullableString types are generated as `object`, so cast to unknown first for type check
+                const rawPolicyId = token.policy_id as unknown;
+                const rawAssetName = token.asset_name as unknown;
+                const policyId = typeof rawPolicyId === "string" ? rawPolicyId : "";
+                const assetName = typeof rawAssetName === "string" ? rawAssetName : "";
+                const displayName = assetName || (policyId ? policyId.slice(0, 16) : `Token ${idx + 1}`);
+                return (
+                  <div key={policyId || idx} className="flex items-center justify-between p-2 border rounded">
+                    <div>
+                      <AndamioText className="font-medium font-mono text-sm">
+                        {displayName}
+                      </AndamioText>
+                    </div>
+                    <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
                   </div>
-                  <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </AndamioCardContent>
         </AndamioCard>
@@ -255,12 +265,12 @@ export default function TaskDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
-                <AndamioBadge variant={getCommitmentStatusVariant(commitment.status)}>
-                  {commitment.status.replace(/_/g, " ")}
+                <AndamioBadge variant={getCommitmentStatusVariant(commitment.commitment_status ?? "")}>
+                  {(commitment.commitment_status ?? "").replace(/_/g, " ")}
                 </AndamioBadge>
               </div>
 
-              {commitment.pending_tx_hash && (
+              {typeof commitment.pending_tx_hash === "string" && commitment.pending_tx_hash && (
                 <>
                   <AndamioSeparator />
                   <div>

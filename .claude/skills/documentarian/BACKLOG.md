@@ -30,8 +30,10 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | ~~`tx-migration-guide`~~ | ~~Guide migration of transaction components from V1 to V2~~ | ~~**High**~~ | **COMPLETED 2026-01-18**. All 16 transaction components migrated to V2. Migration guide: `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md`. |
 | `package-deprecation-guide` | Guide deprecation and removal of local packages | Low | Pattern from @andamio/transactions deprecation. Skill would: identify unused exports, migrate utilities to local lib, update imports across codebase, clean up package.json scripts. |
 
+| `nullable-type-validator` | Validate NullableString handling across components | Low | Pattern established with `src/lib/type-helpers.ts`. Skill would: scan for raw string access on NullableString fields, suggest getString() usage, check for proper type guards. |
+
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-19 (Session 19 - Hash utilities migrated, @andamio/transactions deprecated)
+**Updated**: 2026-01-21 (Session 27 - Gateway Taxonomy Compliance complete)
 
 ---
 
@@ -182,3 +184,4 @@ Items that have been addressed and can be archived.
 | Update andamioscan-api.md imports | 2026-01-19 | Updated code samples to use `~/lib/utils/slt-hash` instead of `@andamio/transactions`. Fixed hash utility references. |
 | Update TX-MIGRATION-GUIDE.md status | 2026-01-19 | Added migration complete banner. Updated checklist to show all 16 TX types migrated. Added note about hash utility location change. |
 | Update STATUS.md with migration completion | 2026-01-19 | Documented V1→V2 migration completion, hash utility migration, and @andamio/transactions deprecation in project status. |
+| Gateway Taxonomy Compliance documentation | 2026-01-21 | Updated STATUS.md (blocker resolved), CHANGELOG.md (new Fixed entry), CLAUDE.md (NullableString handling pattern + type-helpers.ts in Key Files). Created `src/lib/type-helpers.ts` with getString/getOptionalString utilities. |

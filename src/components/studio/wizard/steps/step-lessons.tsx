@@ -44,10 +44,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
   const lessons = data.lessons;
 
   // Map lessons to their SLT's index
-  // Note: API returns slt_index but types say module_index - they're the same value
   const lessonBySltIndex = lessons.reduce((acc, lesson) => {
-    // Use slt_index if available (actual API response), fall back to module_index (type definition)
-    const sltIndex = (lesson as { slt_index?: number }).slt_index ?? lesson.module_index;
+    const sltIndex = lesson.slt_index ?? 0;
     acc[sltIndex] = lesson;
     return acc;
   }, {} as Record<number, typeof lessons[number]>);
@@ -110,13 +108,14 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {slts.map((slt, index) => {
-            const lesson = lessonBySltIndex[slt.module_index];
-            const isCreatingThis = creatingForSlt === slt.module_index;
-            const isEditingThis = editingLessonIndex === slt.module_index;
+            const sltIndex = slt.index ?? 0;
+            const lesson = lessonBySltIndex[sltIndex];
+            const isCreatingThis = creatingForSlt === sltIndex;
+            const isEditingThis = editingLessonIndex === sltIndex;
 
             return (
               <motion.div
-                key={slt.module_index}
+                key={sltIndex}
                 layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -142,7 +141,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                       <div className="flex-1 min-w-0">
                         {/* SLT text */}
                         <AndamioText variant="small" className="mb-2">
-                          {slt.slt_text}
+                          {typeof slt.slt_text === "string" ? slt.slt_text : ""}
                         </AndamioText>
 
                         {/* Lesson info or create */}
@@ -151,12 +150,12 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <LessonIcon className="h-4 w-4 text-success" />
-                                <span className="font-medium">{lesson.title}</span>
+                                <span className="font-medium">{typeof lesson.title === "string" ? lesson.title : "Untitled Lesson"}</span>
                               </div>
                               <AndamioButton
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setEditingLessonIndex(isEditingThis ? null : slt.module_index)}
+                                onClick={() => setEditingLessonIndex(isEditingThis ? null : sltIndex)}
                               >
                                 {isEditingThis ? (
                                   <>
@@ -201,7 +200,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                               autoFocus
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && newLessonTitle.trim()) {
-                                  void handleCreateLesson(slt.module_index);
+                                  void handleCreateLesson(sltIndex);
                                 }
                                 if (e.key === "Escape") {
                                   setCreatingForSlt(null);
@@ -211,7 +210,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                             />
                             <AndamioButton
                               size="sm"
-                              onClick={() => handleCreateLesson(slt.module_index)}
+                              onClick={() => handleCreateLesson(sltIndex)}
                               disabled={!newLessonTitle.trim() || isCreating}
                               isLoading={isCreating}
                             >
@@ -232,7 +231,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                           <AndamioButton
                             size="sm"
                             variant="outline"
-                            onClick={() => setCreatingForSlt(slt.module_index)}
+                            onClick={() => setCreatingForSlt(sltIndex)}
                           >
                             <AddIcon className="h-3 w-3 mr-1" />
                             Add Lesson
@@ -312,7 +311,8 @@ interface LessonEditorProps {
 function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonEditorProps) {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
-  const [title, setTitle] = useState(lesson.title ?? "");
+  const lessonTitle = typeof lesson.title === "string" ? lesson.title : "";
+  const [title, setTitle] = useState(lessonTitle);
   const [content, setContent] = useState<JSONContent | null>(
     lesson.content_json ? (lesson.content_json as JSONContent) : null
   );
@@ -321,7 +321,8 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
 
   // Track unsaved changes
   useEffect(() => {
-    const titleChanged = title !== (lesson.title ?? "");
+    const originalTitle = typeof lesson.title === "string" ? lesson.title : "";
+    const titleChanged = title !== originalTitle;
     const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.content_json ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, lesson]);
@@ -341,7 +342,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            slt_index: (lesson as { slt_index?: number }).slt_index ?? lesson.module_index,
+            slt_index: lesson.slt_index,
             title,
             content_json: content,
           }),

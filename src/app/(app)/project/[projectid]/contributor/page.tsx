@@ -43,6 +43,12 @@ import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/ic
 import { toast } from "sonner";
 import { useTaskSubmitConfirmation } from "~/hooks/use-event-confirmation";
 
+// Helper to extract string from NullableString (API returns object type for nullable strings)
+function getString(value: string | object | undefined | null): string {
+  if (typeof value === "string") return value;
+  return "";
+}
+
 // DB Commitment status type
 type CommitmentV2Status =
   | "DRAFT"
@@ -61,12 +67,12 @@ type CommitmentV2Status =
 type CommitmentV2Output = {
   task_hash: string;
   contributor_alias: string;
-  status: CommitmentV2Status;
+  commitment_status: CommitmentV2Status;
   pending_tx_hash?: string | null;
   evidence?: JSONContent | null;
-  evidence_hash?: string | null;
+  task_evidence_hash?: string | null;
   assessed_by?: string | null;
-  assessment_decision?: string | null;
+  task_outcome?: string | null;
   commit_tx_hash?: string | null;
   submit_tx_hash?: string | null;
   assess_tx_hash?: string | null;
@@ -136,8 +142,8 @@ function ContributorDashboardContent() {
   const computeTaskHashFromDb = (dbTask: ProjectTaskV2Output): string => {
     const taskData: TaskData = {
       project_content: dbTask.title ?? "",
-      expiration_time: parseInt(dbTask.expiration_time) || 0,
-      lovelace_amount: parseInt(dbTask.lovelace) || 0,
+      expiration_time: parseInt(dbTask.expiration_time ?? "0") || 0,
+      lovelace_amount: parseInt(dbTask.lovelace_amount ?? "0") || 0,
       native_assets: [],
     };
     return computeTaskHash(taskData);
@@ -151,8 +157,9 @@ function ContributorDashboardContent() {
     if (!dbTask) return "";
 
     // If DB already has task_hash, use it
-    if (dbTask.task_hash?.length === 64) {
-      return dbTask.task_hash;
+    const taskHash = getString(dbTask.task_hash);
+    if (taskHash.length === 64) {
+      return taskHash;
     }
 
     // Compute the task hash from DB data
@@ -185,8 +192,9 @@ function ContributorDashboardContent() {
     if (!dbTask) return "";
 
     // Use existing task_hash or compute it
-    const taskHash = dbTask.task_hash?.length === 64
-      ? dbTask.task_hash
+    const existingTaskHash = getString(dbTask.task_hash);
+    const taskHash = existingTaskHash.length === 64
+      ? existingTaskHash
       : computeTaskHashFromDb(dbTask);
 
     // Find matching on-chain task
@@ -239,7 +247,7 @@ function ContributorDashboardContent() {
       const commitment = (await response.json()) as CommitmentV2Output;
       console.log("[Contributor] Fetched DB commitment:", {
         task_hash: commitment.task_hash,
-        status: commitment.status,
+        commitment_status: commitment.commitment_status,
         pending_tx_hash: commitment.pending_tx_hash,
         hasEvidence: !!commitment.evidence,
       });
@@ -331,19 +339,19 @@ function ContributorDashboardContent() {
 
       const projectData = (await projectResponse.json()) as ProjectV2Output;
       console.log("[Contributor] Project data received:", {
-        title: projectData.title,
+        title: getString(projectData.title),
         statesCount: projectData.states?.length,
         states: projectData.states?.map(s => ({
-          project_state_policy_id: s.project_state_policy_id,
-          project_state_policy_id_length: s.project_state_policy_id?.length,
+          project_state_policy_id: getString(s.project_state_policy_id),
+          project_state_policy_id_length: getString(s.project_state_policy_id).length,
         })),
       });
       setProject(projectData);
 
       // V2 API: POST /project/user/tasks/list with {project_id} in body
       if (projectData.states && projectData.states.length > 0) {
-        const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
-        console.log("[Contributor] Project state policy ID:", projectStatePolicyId, "length:", projectStatePolicyId?.length);
+        const projectStatePolicyId = getString(projectData.states[0]?.project_state_policy_id);
+        console.log("[Contributor] Project state policy ID:", projectStatePolicyId, "length:", projectStatePolicyId.length);
         if (projectStatePolicyId) {
           setContributorStateId(projectStatePolicyId);
 
@@ -361,22 +369,23 @@ function ContributorDashboardContent() {
             console.log("[Contributor] Tasks detail:", tasksData?.map(t => ({
               index: t.index,
               title: t.title,
-              task_hash: t.task_hash,
-              task_hash_length: t.task_hash?.length,
-              status: t.status,
-              lovelace: t.lovelace,
+              task_hash: getString(t.task_hash),
+              task_hash_length: getString(t.task_hash).length,
+              task_status: t.task_status,
+              lovelace_amount: t.lovelace_amount,
             })));
             setTasks(tasksData ?? []);
             // Select first available task by default
-            const liveTasks = tasksData.filter((t) => t.status === "ON_CHAIN");
+            const liveTasks = tasksData.filter((t) => t.task_status === "ON_CHAIN");
             console.log("[Contributor] Live tasks (ON_CHAIN):", liveTasks.length);
             if (liveTasks.length > 0 && !selectedTask) {
+              const firstTask = liveTasks[0];
               console.log("[Contributor] Auto-selecting first task:", {
-                index: liveTasks[0]?.index,
-                task_hash: liveTasks[0]?.task_hash,
-                task_hash_length: liveTasks[0]?.task_hash?.length,
+                index: firstTask?.index,
+                task_hash: getString(firstTask?.task_hash),
+                task_hash_length: getString(firstTask?.task_hash).length,
               });
-              setSelectedTask(liveTasks[0] ?? null);
+              setSelectedTask(firstTask ?? null);
             }
           } else {
             console.error("[Contributor] Tasks fetch failed:", tasksResponse.status);
@@ -397,7 +406,7 @@ function ContributorDashboardContent() {
             task_id: t.task_id,
             task_id_length: t.task_id.length,
             content: t.content.slice(0, 20) + "...",
-            lovelace: t.lovelace,
+            lovelace_amount: t.lovelace_amount,
           })));
           setOnChainTasks(onChainProjectDetails.tasks);
         }
@@ -439,7 +448,7 @@ function ContributorDashboardContent() {
               }
 
               // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
-              if (commitment?.status === "ACCEPTED") {
+              if (commitment?.commitment_status === "ACCEPTED") {
                 console.log("[Contributor] Andamioscan shows pending, but DB shows ACCEPTED - using DB status");
                 console.log("[Contributor] Status: task_accepted (DB override)");
                 setContributorStatus("task_accepted");
@@ -451,7 +460,7 @@ function ContributorDashboardContent() {
 
                 // Auto-select the first available (non-accepted) task
                 const acceptedTaskHash = commitment.task_hash;
-                const availableTasks = tasks.filter(t => t.status === "ON_CHAIN" && t.task_hash !== acceptedTaskHash);
+                const availableTasks = tasks.filter(t => t.task_status === "ON_CHAIN" && getString(t.task_hash) !== acceptedTaskHash);
                 if (availableTasks.length > 0) {
                   console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
                   setSelectedTask(availableTasks[0] ?? null);
@@ -465,13 +474,13 @@ function ContributorDashboardContent() {
                   console.log("[Contributor] Pending task submission from contributor status:", {
                     task_id: pendingTask.task_id,
                     content: pendingTask.content,
-                    lovelace: pendingTask.lovelace,
+                    lovelace_amount: pendingTask.lovelace_amount,
                   });
                   setPendingTaskSubmission(pendingTask);
 
                   if (commitment) {
                     console.log("[Contributor] DB commitment found:", {
-                      status: commitment.status,
+                      commitment_status: commitment.commitment_status,
                       pending_tx_hash: commitment.pending_tx_hash,
                       hasEvidence: !!commitment.evidence,
                     });
@@ -479,7 +488,7 @@ function ContributorDashboardContent() {
                     setSubmissionHasDbRecord(true);
 
                     // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
-                    if (commitment.status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
+                    if (commitment.commitment_status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
                       console.log("[Contributor] Setting pendingActionTxHash from DB:", commitment.pending_tx_hash);
                       setPendingActionTxHash(commitment.pending_tx_hash);
                     }
@@ -539,12 +548,12 @@ function ContributorDashboardContent() {
                   const commitment = await fetchDbCommitment(mySubmission.task.task_id);
                   if (commitment) {
                     console.log("[Contributor] FALLBACK: DB commitment found:", {
-                      status: commitment.status,
+                      commitment_status: commitment.commitment_status,
                       pending_tx_hash: commitment.pending_tx_hash,
                     });
                     setDbCommitment(commitment);
                     setSubmissionHasDbRecord(true);
-                    if (commitment.status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
+                    if (commitment.commitment_status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
                       setPendingActionTxHash(commitment.pending_tx_hash);
                     }
                     if (commitment.evidence) {
@@ -592,12 +601,12 @@ function ContributorDashboardContent() {
                 const commitment = await fetchDbCommitment(mySubmission.task.task_id);
                 if (commitment) {
                   console.log("[Contributor] FALLBACK: DB commitment found:", {
-                    status: commitment.status,
+                    commitment_status: commitment.commitment_status,
                     pending_tx_hash: commitment.pending_tx_hash,
                   });
                   setDbCommitment(commitment);
                   setSubmissionHasDbRecord(true);
-                  if (commitment.status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
+                  if (commitment.commitment_status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
                     setPendingActionTxHash(commitment.pending_tx_hash);
                   }
                   if (commitment.evidence) {
@@ -644,12 +653,12 @@ function ContributorDashboardContent() {
               const commitment = await fetchDbCommitment(mySubmission.task.task_id);
               if (commitment) {
                 console.log("[Contributor] FALLBACK after error: DB commitment found:", {
-                  status: commitment.status,
+                  commitment_status: commitment.commitment_status,
                   pending_tx_hash: commitment.pending_tx_hash,
                 });
                 setDbCommitment(commitment);
                 setSubmissionHasDbRecord(true);
-                if (commitment.status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
+                if (commitment.commitment_status === "PENDING_TX_SUBMIT" && commitment.pending_tx_hash) {
                   setPendingActionTxHash(commitment.pending_tx_hash);
                 }
                 if (commitment.evidence) {
@@ -723,12 +732,12 @@ function ContributorDashboardContent() {
     );
   }
 
-  const liveTasks = tasks.filter((t) => t.status === "ON_CHAIN");
+  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN");
 
   // Stats
   const stats = {
     totalTasks: liveTasks.length,
-    totalRewards: liveTasks.reduce((sum, t) => sum + (parseInt(t.lovelace ?? "0", 10) || 0), 0),
+    totalRewards: liveTasks.reduce((sum, t) => sum + (parseInt(t.lovelace_amount ?? "0", 10) || 0), 0),
   };
 
   return (
@@ -738,7 +747,7 @@ function ContributorDashboardContent() {
 
       <AndamioPageHeader
         title="Contributor Dashboard"
-        description={project.title ?? undefined}
+        description={getString(project.title) || undefined}
       />
 
       {/* Project Info */}
@@ -896,14 +905,14 @@ function ContributorDashboardContent() {
       {contributorStatus === "task_pending" && (pendingTaskSubmission || onChainSubmission) && submissionHasDbRecord === false && (() => {
         // Get task details from either source
         const taskId = onChainSubmission?.task.task_id ?? pendingTaskSubmission?.task_id ?? "";
-        const taskLovelace = onChainSubmission?.task.lovelace ?? pendingTaskSubmission?.lovelace ?? 0;
+        const taskLovelace = onChainSubmission?.task.lovelace_amount ?? pendingTaskSubmission?.lovelace_amount ?? 0;
         const txHash = onChainSubmission?.tx_hash;
         const submissionContent = onChainSubmission?.content ?? "";
 
         // Match to DB task
         const matchedDbTask = tasks.find(t =>
-          t.task_hash === taskId ||
-          (!t.task_hash && Number(t.lovelace) === taskLovelace)
+          getString(t.task_hash) === taskId ||
+          (!getString(t.task_hash) && Number(t.lovelace_amount) === taskLovelace)
         );
 
         return (
@@ -926,11 +935,11 @@ function ContributorDashboardContent() {
                 <div className="flex items-center gap-2 mb-2">
                   <TaskIcon className="h-4 w-4 text-primary" />
                   <AndamioText className="font-medium">{matchedDbTask.title}</AndamioText>
-                  <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelace)}</AndamioBadge>
+                  <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelace_amount ?? "0")}</AndamioBadge>
                 </div>
-                {matchedDbTask.content && (
+                {getString(matchedDbTask.content) && (
                   <AndamioText variant="small" className="text-muted-foreground">
-                    {matchedDbTask.content}
+                    {getString(matchedDbTask.content)}
                   </AndamioText>
                 )}
               </div>
@@ -1028,13 +1037,13 @@ function ContributorDashboardContent() {
       {contributorStatus === "task_pending" && (pendingTaskSubmission || onChainSubmission) && submissionHasDbRecord === true && (() => {
         // Get task info from either source
         const taskId = onChainSubmission?.task.task_id ?? pendingTaskSubmission?.task_id ?? "";
-        const taskLovelace = onChainSubmission?.task.lovelace ?? pendingTaskSubmission?.lovelace ?? 0;
+        const taskLovelace = onChainSubmission?.task.lovelace_amount ?? pendingTaskSubmission?.lovelace_amount ?? 0;
         const txHash = onChainSubmission?.tx_hash;
 
         // Match on-chain submission to DB task
         const matchedDbTask = tasks.find(t =>
-          t.task_hash === taskId ||
-          (!t.task_hash && Number(t.lovelace) === taskLovelace)
+          getString(t.task_hash) === taskId ||
+          (!getString(t.task_hash) && Number(t.lovelace_amount) === taskLovelace)
         );
 
         return (
@@ -1055,11 +1064,11 @@ function ContributorDashboardContent() {
                 <div className="flex items-center gap-2 mb-2">
                   <TaskIcon className="h-4 w-4 text-primary" />
                   <AndamioText className="font-medium">{matchedDbTask.title}</AndamioText>
-                  <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelace)}</AndamioBadge>
+                  <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelace_amount ?? "0")}</AndamioBadge>
                 </div>
-                {matchedDbTask.content && (
+                {getString(matchedDbTask.content) && (
                   <AndamioText variant="small" className="text-muted-foreground">
-                    {matchedDbTask.content}
+                    {getString(matchedDbTask.content)}
                   </AndamioText>
                 )}
               </div>
@@ -1090,7 +1099,7 @@ function ContributorDashboardContent() {
             </div>
 
             {/* Evidence Section - Read-only when PENDING_TX_SUBMIT, editable otherwise */}
-            {dbCommitment?.status === "PENDING_TX_SUBMIT" ? (
+            {dbCommitment?.commitment_status === "PENDING_TX_SUBMIT" ? (
               // Read-only view when waiting for transaction confirmation
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -1279,28 +1288,29 @@ function ContributorDashboardContent() {
           <AndamioCardContent className="space-y-2">
             {liveTasks.map((task) => {
               // Check if this task is the one that was accepted
-              const isAcceptedTask = dbCommitment?.task_hash === task.task_hash && dbCommitment?.status === "ACCEPTED";
+              const taskHashStr = getString(task.task_hash);
+              const isAcceptedTask = dbCommitment?.task_hash === taskHashStr && dbCommitment?.commitment_status === "ACCEPTED";
               const isSelectable = !isAcceptedTask;
 
               // Diagnostic logging for task data
               console.log("[Contributor] Task data:", {
                 index: task.index,
                 title: task.title,
-                task_hash: task.task_hash,
-                task_hash_length: task.task_hash?.length,
-                status: task.status,
-                lovelace: task.lovelace,
+                task_hash: taskHashStr,
+                task_hash_length: taskHashStr.length,
+                task_status: task.task_status,
+                lovelace_amount: task.lovelace_amount,
                 isAcceptedTask,
                 isSelectable,
               });
 
               return (
                 <div
-                  key={task.task_hash ?? task.index}
+                  key={taskHashStr || task.index}
                   className={`p-4 border rounded-lg transition-colors ${
                     isAcceptedTask
                       ? "border-success bg-success/5 cursor-default"
-                      : selectedTask?.task_hash === task.task_hash
+                      : getString(selectedTask?.task_hash) === taskHashStr
                         ? "border-primary bg-primary/5 cursor-pointer"
                         : "hover:border-muted-foreground/50 cursor-pointer"
                   }`}
@@ -1309,11 +1319,11 @@ function ContributorDashboardContent() {
                     console.log("[Contributor] Selected task:", {
                       index: task.index,
                       title: task.title,
-                      task_hash: task.task_hash,
-                      task_hash_length: task.task_hash?.length,
+                      task_hash: taskHashStr,
+                      task_hash_length: taskHashStr.length,
                     });
                     // Clear evidence when selecting a different task
-                    if (selectedTask?.task_hash !== task.task_hash) {
+                    if (getString(selectedTask?.task_hash) !== taskHashStr) {
                       setTaskEvidence(null);
                     }
                     setSelectedTask(task);
@@ -1333,16 +1343,16 @@ function ContributorDashboardContent() {
                         )}
                       </div>
                       <AndamioText variant="small" className={isAcceptedTask ? "text-success/70" : ""}>
-                        {task.content}
+                        {getString(task.content)}
                       </AndamioText>
                       {isAcceptedTask && (
                         <AndamioText variant="small" className="text-success/70">
-                          Your reward of {formatLovelace(task.lovelace)} will be claimed with your next commitment
+                          Your reward of {formatLovelace(task.lovelace_amount ?? "0")} will be claimed with your next commitment
                         </AndamioText>
                       )}
                     </div>
                     <AndamioBadge variant={isAcceptedTask ? "outline" : "outline"} className={isAcceptedTask ? "border-success text-success" : ""}>
-                      {formatLovelace(task.lovelace)}
+                      {formatLovelace(task.lovelace_amount ?? "0")}
                     </AndamioBadge>
                   </div>
                 </div>
@@ -1408,6 +1418,7 @@ function ContributorDashboardContent() {
         // Diagnostic logging before rendering TaskCommit
         const isFirstCommit = contributorStatus === "not_enrolled";
         const hasApprovedTask = contributorStatus === "task_accepted";
+        const selectedTaskHash = getString(selectedTask.task_hash);
         console.log("[Contributor] Rendering TaskCommit with:", {
           isFirstCommit,
           hasApprovedTask,
@@ -1416,8 +1427,8 @@ function ContributorDashboardContent() {
           projectId_length: projectId.length,
           contributorStateId: contributorStateId,
           contributorStateId_length: contributorStateId?.length,
-          taskHash: selectedTask.task_hash,
-          taskHash_length: selectedTask.task_hash?.length,
+          taskHash: selectedTaskHash,
+          taskHash_length: selectedTaskHash.length,
           taskCode: `TASK_${selectedTask.index}`,
           taskTitle: selectedTask.title,
           hasEvidence: !!taskEvidence,
@@ -1429,7 +1440,7 @@ function ContributorDashboardContent() {
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}
             contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
-            projectTitle={project.title ?? undefined}
+            projectTitle={getString(project.title) || undefined}
             taskHash={getOnChainTaskId(selectedTask)}
             taskCode={`TASK_${selectedTask.index}`}
             taskTitle={selectedTask.title ?? undefined}
@@ -1457,7 +1468,7 @@ function ContributorDashboardContent() {
               projectNftPolicyId={projectId}
               contributorStateId={contributorStateId ?? "0".repeat(56)}
               contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
-              projectTitle={project.title ?? undefined}
+              projectTitle={getString(project.title) || undefined}
               taskHash={getOnChainTaskId(selectedTask)}
               taskCode={`TASK_${selectedTask.index}`}
               taskTitle={selectedTask.title ?? undefined}
@@ -1476,7 +1487,7 @@ function ContributorDashboardContent() {
           <ProjectCredentialClaim
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}
-            projectTitle={project.title ?? undefined}
+            projectTitle={getString(project.title) || undefined}
             onSuccess={async () => {
               await fetchData();
             }}

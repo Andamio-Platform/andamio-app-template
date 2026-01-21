@@ -36,7 +36,7 @@ interface StepSLTsProps {
 
 type SLT = SLTListResponse[number];
 
-// Local SLT with stable ID for React keys (module_index changes during reorder/delete)
+// Local SLT with stable ID for React keys (index changes during reorder/delete)
 type LocalSLT = SLT & { _localId: string };
 
 // Generate a stable local ID for an SLT
@@ -67,7 +67,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   const inputId = useId();
 
   // Check if SLTs are locked (module is approved or on-chain)
-  const moduleStatus = data.courseModule?.status;
+  const moduleStatus = data.courseModule?.module_status;
   const isLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
 
   // Local state for optimistic updates - use LocalSLT with stable IDs
@@ -97,16 +97,16 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     const text = newSltText.trim();
     const nextIndex = localSlts.length > 0
-      ? Math.max(...localSlts.map((s) => s.module_index)) + 1
+      ? Math.max(...localSlts.map((s) => s.index ?? 0)) + 1
       : 1;
     const opId = `create-${nextIndex}`;
 
     // Optimistic update - compute the list we'll set
+    // Note: course_module_code and course_id are not on the SLT response type
+    // (they're sent separately in the API request), so we don't include them here
     const optimisticSlt: LocalSLT = {
-      module_index: nextIndex,
+      index: nextIndex,
       slt_text: text,
-      module_code: moduleCode,
-      course_id: courseNftPolicyId,
       _localId: generateLocalId(),
     };
     const optimisticList = [...localSlts, optimisticSlt];
@@ -154,10 +154,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !editingText.trim()) return;
 
     const text = editingText.trim();
-    const opId = `update-${slt.module_index}`;
+    const opId = `update-${slt.index}`;
 
     // Compute the optimistic list and set it
-    const updatedList = localSlts.map((s) => s.module_index === slt.module_index ? { ...s, slt_text: text } : s);
+    const updatedList = localSlts.map((s) => s.index === slt.index ? { ...s, slt_text: text } : s);
     setLocalSlts(updatedList);
     setEditingIndex(null);
     setEditingText("");
@@ -174,7 +174,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            index: slt.module_index,
+            index: slt.index,
             slt_text: text,
           }),
         }
@@ -186,7 +186,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback
       setLocalSlts((prev) =>
-        prev.map((s) => s.module_index === slt.module_index ? slt : s)
+        prev.map((s) => s.index === slt.index ? slt : s)
       );
       setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
@@ -205,8 +205,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     // Remove SLT and re-index remaining ones sequentially
     const filteredList = localSlts
       .filter((s) => s._localId !== slt._localId)
-      .sort((a, b) => a.module_index - b.module_index)
-      .map((s, idx) => ({ ...s, module_index: idx + 1 }));
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .map((s, idx) => ({ ...s, index: idx + 1 }));
 
     setLocalSlts(filteredList);
     setError(null);
@@ -222,7 +222,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            index: slt.module_index,
+            index: slt.index,
           }),
         }
       );
@@ -231,11 +231,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
       // Step 2: Re-index remaining SLTs if there are any
       if (filteredList.length > 0) {
-        // Build mapping: module_index (current in DB) -> new_index (target)
+        // Build mapping: index (current in DB) -> new_index (target)
         const reorderData = filteredList.map((s) => ({
-          module_index: localSlts.find((orig) => orig._localId === s._localId)?.module_index ?? s.module_index,
-          new_index: s.module_index,
-        })).filter((item) => item.module_index !== item.new_index);
+          index: localSlts.find((orig) => orig._localId === s._localId)?.index ?? s.index,
+          new_index: s.index,
+        })).filter((item) => item.index !== item.new_index);
 
         if (reorderData.length > 0) {
           const reorderResponse = await authenticatedFetch(
@@ -262,7 +262,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback - restore the deleted SLT
       setLocalSlts((prev) => {
-        const newList = [...prev, slt].sort((a, b) => a.module_index - b.module_index);
+        const newList = [...prev, slt].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
         return newList;
       });
       setError(err instanceof Error ? err.message : "Failed to delete");
@@ -272,7 +272,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   }, [isAuthenticated, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
 
   const startEditing = (slt: SLT) => {
-    setEditingIndex(slt.module_index);
+    setEditingIndex(slt.index ?? null);
     setEditingText(slt.slt_text ?? "");
   };
 
@@ -312,16 +312,16 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     // Reorder the array
     const reorderedArray = arrayMove(localSlts, oldArrayIndex, newArrayIndex);
 
-    // Build the mapping for the API: module_index (current) -> new_index (target)
+    // Build the mapping for the API: index (current) -> new_index (target)
     const reorderData = reorderedArray.map((slt, idx) => ({
-      module_index: slt.module_index,  // Current index in DB
-      new_index: idx + 1,              // Target sequential index
-    })).filter((item) => item.module_index !== item.new_index);
+      index: slt.index,     // Current index in DB
+      new_index: idx + 1,   // Target sequential index
+    })).filter((item) => item.index !== item.new_index);
 
     // Update local state with new sequential indexes
     const reorderedSlts = reorderedArray.map((slt, idx) => ({
       ...slt,
-      module_index: idx + 1,
+      index: idx + 1,
     }));
     setLocalSlts(reorderedSlts);
 
@@ -438,8 +438,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                     key={slt._localId}
                     slt={slt}
                     moduleCode={moduleCode}
-                    isEditing={editingIndex === slt.module_index}
-                    isUpdating={pendingOps.has(`update-${slt.module_index}`)}
+                    isEditing={editingIndex === slt.index}
+                    isUpdating={pendingOps.has(`update-${slt.index}`)}
                     isLocked={isLocked}
                     editingText={editingText}
                     onEditingTextChange={setEditingText}
@@ -538,9 +538,9 @@ function SortableSltItem({
         </button>
       )}
 
-      {/* SLT Reference: <module-code>.<module-index> */}
+      {/* SLT Reference: <module-code>.<index> */}
       <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
-        {moduleCode}.{slt.module_index}
+        {moduleCode}.{slt.index}
       </span>
 
       {/* Content */}

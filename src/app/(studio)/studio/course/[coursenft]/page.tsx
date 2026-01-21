@@ -231,8 +231,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const getDbSlts = (dbModule: CourseModuleResponse): string[] => {
     if (!dbModule.slts || dbModule.slts.length === 0) return [];
     return [...dbModule.slts]
-      .sort((a, b) => a.module_index - b.module_index)
-      .map((slt) => slt.slt_text);
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .map((slt) => slt.slt_text)
+      .filter((text): text is string => typeof text === "string");
   };
 
   // Helper to check if two SLT arrays match
@@ -257,9 +258,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       let hashMismatch = false;
 
       // First, try hash match (using stored hash)
-      if (dbModule.module_hash) {
+      if (dbModule.slt_hash) {
         const hashMatch = onChainModules.find(
-          (m) => m.assignment_id === dbModule.module_hash
+          (m) => m.assignment_id === dbModule.slt_hash
         );
         if (hashMatch?.assignment_id) {
           matchedOnChain = hashMatch;
@@ -296,11 +297,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       }
 
       result.push({
-        moduleCode: dbModule.module_code,
-        dbStoredHash: dbModule.module_hash ?? null,
+        moduleCode: dbModule.course_module_code ?? "",
+        dbStoredHash: typeof dbModule.slt_hash === "string" ? dbModule.slt_hash : null,
         dbComputedHash,
         onChainHash: matchedOnChain?.assignment_id ?? null,
-        title: dbModule.title,
+        title: typeof dbModule.title === "string" ? dbModule.title : null,
         syncStatus: matchedOnChain ? "synced" : "db-only",
         matchType,
         hashMismatch,
@@ -344,14 +345,14 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Modules that are APPROVED in DB but NOT yet on-chain (truly ready to mint)
   const modulesReadyToMint = useMemo(() =>
     modules.filter((m) =>
-      m.status === "APPROVED" && !syncedModuleCodes.has(m.module_code)
+      m.module_status === "APPROVED" && !syncedModuleCodes.has(m.course_module_code ?? "")
     ),
     [modules, syncedModuleCodes]
   );
 
   // Hybrid module stats
   // Use database modules.length for total since that's the authoritative source
-  // hybridModules can double-count when db modules don't have module_hash set yet
+  // hybridModules can double-count when db modules don't have slt_hash set yet
   const hybridStats = useMemo(() => ({
     total: modules.length, // Database is source of truth for "how many modules"
     synced: hybridModules.filter((m) => m.syncStatus === "synced").length,
@@ -361,10 +362,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     dbOnly: hybridModules.filter((m) => m.syncStatus === "db-only").length,
     // Database status breakdown (for modules that exist in DB)
     // Cast status to string to handle extended statuses like APPROVED
-    dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
-    dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
-    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
-    dbDraft: modules.filter((m) => m.status === "DRAFT").length,
+    dbOnChain: modules.filter((m) => m.module_status === "ON_CHAIN").length,
+    dbPending: modules.filter((m) => m.module_status === "PENDING_TX").length,
+    dbApproved: modules.filter((m) => m.module_status === "APPROVED").length,
+    dbDraft: modules.filter((m) => m.module_status === "DRAFT").length,
     // Truly ready to mint: APPROVED but not yet on-chain
     readyToMint: modulesReadyToMint.length,
   }), [hybridModules, modules, modulesReadyToMint]);
@@ -753,10 +754,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <div className="grid gap-4">
                     {modules.map((courseModule) => (
                       <StudioModuleCard
-                        key={courseModule.module_code}
+                        key={courseModule.course_module_code ?? ""}
                         courseModule={courseModule}
                         courseNftPolicyId={courseNftPolicyId}
-                        onDelete={() => handleDeleteModule(courseModule.module_code, courseModule.title)}
+                        onDelete={() => handleDeleteModule(courseModule.course_module_code ?? "", courseModule.title ?? null)}
                         isDeleting={deleteModuleMutation.isPending}
                       />
                     ))}

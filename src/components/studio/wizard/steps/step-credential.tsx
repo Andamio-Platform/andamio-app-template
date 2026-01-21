@@ -36,8 +36,12 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule, onModuleCreated } = useWizard();
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
-  const [title, setTitle] = useState(data.courseModule?.title ?? "");
-  const [description, setDescription] = useState(data.courseModule?.description ?? "");
+  const [title, setTitle] = useState(
+    typeof data.courseModule?.title === "string" ? data.courseModule.title : ""
+  );
+  const [description, setDescription] = useState(
+    typeof data.courseModule?.description === "string" ? data.courseModule.description : ""
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Use hooks for API calls
@@ -60,7 +64,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
    */
   const generateModuleCode = () => {
     const numericCodes = existingModules
-      .map((m) => parseInt(m.module_code, 10))
+      .map((m) => parseInt(m.course_module_code ?? "", 10))
       .filter((n) => !isNaN(n));
     const nextNumber = numericCodes.length > 0 ? Math.max(...numericCodes) + 1 : 101;
     return String(nextNumber);
@@ -84,21 +88,21 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
   // Check if module code already exists
   const moduleCodeExists = existingModules.some(
-    (m) => m.module_code === editableModuleCode && m.module_code !== moduleCode
+    (m) => m.course_module_code === editableModuleCode && m.course_module_code !== moduleCode
   );
 
   // Check if duplicate module code already exists
   const duplicateCodeExists = existingModules.some(
-    (m) => m.module_code === duplicateModuleCode
+    (m) => m.course_module_code === duplicateModuleCode
   );
 
   // Check if module is locked (approved or on-chain)
-  const moduleStatus = data.courseModule?.status;
+  const moduleStatus = data.courseModule?.module_status;
   const isModuleLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
 
   const hasChanges =
-    title !== (data.courseModule?.title ?? "") ||
-    description !== (data.courseModule?.description ?? "");
+    title !== (typeof data.courseModule?.title === "string" ? data.courseModule.title : "") ||
+    description !== (typeof data.courseModule?.description === "string" ? data.courseModule.description : "");
 
   const canProceed = title.trim().length > 0 && editableModuleCode.trim().length > 0 && !moduleCodeExists;
   const isSaving = createModule.isPending || updateModule.isPending;
@@ -114,7 +118,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
     try {
       await createModule.mutateAsync({
         course_nft_policy_id: courseNftPolicyId,
-        module_code: editableModuleCode.trim(),
+        course_module_code: editableModuleCode.trim(),
         title,
         description,
       });
@@ -164,7 +168,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       // 1. Create new module with DRAFT status
       await createModule.mutateAsync({
         course_nft_policy_id: courseNftPolicyId,
-        module_code: newCode,
+        course_module_code: newCode,
         title: `${title} (Copy)`,
         description,
       });
@@ -175,8 +179,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
           await createSLT.mutateAsync({
             courseNftPolicyId,
             moduleCode: newCode,
-            moduleIndex: slt.module_index,
-            sltText: slt.slt_text,
+            moduleIndex: slt.index ?? 0,
+            sltText: typeof slt.slt_text === "string" ? slt.slt_text : "",
           });
         }
       }
@@ -207,8 +211,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
           await createLesson.mutateAsync({
             courseNftPolicyId,
             moduleCode: newCode,
-            moduleIndex: lesson.module_index,
-            title: lesson.title,
+            moduleIndex: lesson.slt_index ?? 0,
+            title: typeof lesson.title === "string" ? lesson.title : "",
             contentJson: lesson.content_json as object | undefined,
           });
         }

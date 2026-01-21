@@ -36,51 +36,56 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
           </AndamioTableRow>
         </AndamioTableHeader>
         <AndamioTableBody>
-          {courses.map((courseData) => (
-            <AndamioTableRow key={courseData.course_code}>
-              {/* Status Icon */}
-              <AndamioTableCell>
-                <CourseStatusIcon isPublished={!!courseData.course_nft_policy_id} />
-              </AndamioTableCell>
+          {courses.map((courseData) => {
+            const courseId = courseData.course_id ?? "";
+            const title = typeof courseData.title === "string" ? courseData.title : "";
+            const description = typeof courseData.description === "string" ? courseData.description : "";
+            return (
+              <AndamioTableRow key={courseId}>
+                {/* Status Icon */}
+                <AndamioTableCell>
+                  <CourseStatusIcon isPublished={!!courseId} />
+                </AndamioTableCell>
 
-              {/* Course Code */}
-              <AndamioTableCell className="font-mono text-xs">{courseData.course_code}</AndamioTableCell>
+                {/* Course Code */}
+                <AndamioTableCell className="font-mono text-xs">{courseId}</AndamioTableCell>
 
-              {/* Title */}
-              <AndamioTableCell className="font-medium">
-                <div className="line-clamp-2">{courseData.title}</div>
-              </AndamioTableCell>
+                {/* Title */}
+                <AndamioTableCell className="font-medium">
+                  <div className="line-clamp-2">{title}</div>
+                </AndamioTableCell>
 
-              {/* Description (hidden on mobile) */}
-              <AndamioTableCell className="hidden md:table-cell">
-                {courseData.description ? (
-                  <div className="line-clamp-2 text-sm text-muted-foreground">{courseData.description}</div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">-</span>
-                )}
-              </AndamioTableCell>
+                {/* Description (hidden on mobile) */}
+                <AndamioTableCell className="hidden md:table-cell">
+                  {description ? (
+                    <div className="line-clamp-2 text-sm text-muted-foreground">{description}</div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </AndamioTableCell>
 
-              {/* Module Count */}
-              <AndamioTableCell className="text-center">
-                <CourseModuleCount count={moduleCounts[courseData.course_code]} showIcon={false} />
-                {moduleCounts[courseData.course_code] === undefined && (
-                  <span className="text-xs text-muted-foreground">-</span>
-                )}
-              </AndamioTableCell>
+                {/* Module Count */}
+                <AndamioTableCell className="text-center">
+                  <CourseModuleCount count={moduleCounts[courseId]} showIcon={false} />
+                  {moduleCounts[courseId] === undefined && (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </AndamioTableCell>
 
-              {/* Actions */}
-              <AndamioTableCell className="text-right">
-                {courseData.course_nft_policy_id && (
-                  <Link href={`/studio/course/${courseData.course_nft_policy_id}`}>
-                    <AndamioButton variant="ghost" size="sm">
-                      <SettingsIcon className="h-4 w-4 md:mr-1" />
-                      <span className="hidden md:inline">Manage</span>
-                    </AndamioButton>
-                  </Link>
-                )}
-              </AndamioTableCell>
-            </AndamioTableRow>
-          ))}
+                {/* Actions */}
+                <AndamioTableCell className="text-right">
+                  {courseId && (
+                    <Link href={`/studio/course/${courseId}`}>
+                      <AndamioButton variant="ghost" size="sm">
+                        <SettingsIcon className="h-4 w-4 md:mr-1" />
+                        <span className="hidden md:inline">Manage</span>
+                      </AndamioButton>
+                    </Link>
+                  )}
+                </AndamioTableCell>
+              </AndamioTableRow>
+            );
+          })}
         </AndamioTableBody>
       </AndamioTable>
     </div>

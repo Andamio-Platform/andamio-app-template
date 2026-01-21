@@ -15,7 +15,7 @@ export type CourseFilter = {
 };
 
 // Sort options (using only available API fields)
-export type CourseSortField = "title" | "course_code" | "moduleCount";
+export type CourseSortField = "title" | "course_id" | "moduleCount";
 export type CourseSortDirection = "asc" | "desc";
 export type CourseSortConfig = {
   field: CourseSortField;
@@ -34,6 +34,12 @@ export const defaultCourseSortConfig: CourseSortConfig = {
   direction: "asc",
 };
 
+// Helper to safely get string value from NullableString
+function getStringValue(value: string | object | undefined | null): string {
+  if (typeof value === "string") return value;
+  return "";
+}
+
 /**
  * Filter courses based on filter criteria
  */
@@ -42,22 +48,28 @@ export function filterCourses(
   filter: CourseFilter
 ): CourseListResponse {
   return courses.filter((courseData) => {
-    // Search filter (title, code, description)
+    // Search filter (title, id, description)
     if (filter.search) {
       const searchLower = filter.search.toLowerCase();
+      const title = getStringValue(courseData.title);
+      const courseId = courseData.course_id ?? "";
+      const description = getStringValue(courseData.description);
       const matchesSearch =
-        courseData.title.toLowerCase().includes(searchLower) ||
-        courseData.course_code.toLowerCase().includes(searchLower) ||
-        (courseData.description?.toLowerCase().includes(searchLower) ?? false);
+        title.toLowerCase().includes(searchLower) ||
+        courseId.toLowerCase().includes(searchLower) ||
+        description.toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
 
     // Publication status filter
+    // Note: In the new API, course_id serves as the identifier
+    // Published courses have course_status set
     if (filter.publicationStatus !== "all") {
-      if (filter.publicationStatus === "published" && !courseData.course_nft_policy_id) {
+      const isPublished = courseData.course_status === "PUBLISHED" || courseData.course_status === "ON_CHAIN";
+      if (filter.publicationStatus === "published" && !isPublished) {
         return false;
       }
-      if (filter.publicationStatus === "draft" && courseData.course_nft_policy_id) {
+      if (filter.publicationStatus === "draft" && isPublished) {
         return false;
       }
     }
@@ -80,15 +92,21 @@ export function sortCourses(
     let compareValue = 0;
 
     switch (sortConfig.field) {
-      case "title":
-        compareValue = a.title.localeCompare(b.title);
+      case "title": {
+        const aTitle = getStringValue(a.title);
+        const bTitle = getStringValue(b.title);
+        compareValue = aTitle.localeCompare(bTitle);
         break;
-      case "course_code":
-        compareValue = a.course_code.localeCompare(b.course_code);
+      }
+      case "course_id": {
+        const aId = a.course_id ?? "";
+        const bId = b.course_id ?? "";
+        compareValue = aId.localeCompare(bId);
         break;
+      }
       case "moduleCount": {
-        const aCount = moduleCounts[a.course_code] ?? 0;
-        const bCount = moduleCounts[b.course_code] ?? 0;
+        const aCount = moduleCounts[a.course_id ?? ""] ?? 0;
+        const bCount = moduleCounts[b.course_id ?? ""] ?? 0;
         compareValue = aCount - bCount;
         break;
       }
@@ -108,7 +126,9 @@ export function calculateCourseStats(
   moduleCounts: Record<string, number>
 ) {
   const total = courses.length;
-  const published = courses.filter((c) => c.course_nft_policy_id !== null).length;
+  const published = courses.filter(
+    (c) => c.course_status === "PUBLISHED" || c.course_status === "ON_CHAIN"
+  ).length;
   const draft = total - published;
 
   const totalModules = Object.values(moduleCounts).reduce((sum, count) => sum + count, 0);

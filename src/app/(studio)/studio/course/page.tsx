@@ -304,8 +304,8 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
   // Module stats
   const moduleStats = useMemo(() => {
     const total = modules.length;
-    const onChain = modules.filter((m) => m.status === "ON_CHAIN").length;
-    const draft = modules.filter((m) => m.status === "DRAFT").length;
+    const onChain = modules.filter((m) => m.module_status === "ON_CHAIN").length;
+    const draft = modules.filter((m) => m.module_status === "DRAFT").length;
     const approved = 0; // APPROVED status no longer exists
     const totalSlts = modules.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
     return { total, onChain, draft, approved, totalSlts };
@@ -438,14 +438,18 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
                 Modules
               </AndamioText>
               <ul className="space-y-1.5 text-left">
-                {modules.map((courseModule) => (
-                  <li key={courseModule.module_code} className="text-sm text-foreground/80">
-                    <span className="font-mono text-primary/80">{courseModule.module_code}</span>
-                    {courseModule.title && (
-                      <span className="text-muted-foreground ml-2">— {courseModule.title}</span>
-                    )}
-                  </li>
-                ))}
+                {modules.map((courseModule) => {
+                  const moduleCode = courseModule.course_module_code ?? "";
+                  const title = typeof courseModule.title === "string" ? courseModule.title : "";
+                  return (
+                    <li key={moduleCode} className="text-sm text-foreground/80">
+                      <span className="font-mono text-primary/80">{moduleCode}</span>
+                      {title && (
+                        <span className="text-muted-foreground ml-2">— {title}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

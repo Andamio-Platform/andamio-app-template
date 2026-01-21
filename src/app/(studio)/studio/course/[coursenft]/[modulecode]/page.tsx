@@ -77,22 +77,23 @@ function ModuleWizardContent({
   // Handle header updates when data loads
   const handleDataLoaded = useCallback(
     (course: CourseResponse | null, courseModule: CourseModuleResponse | null) => {
+      const courseTitle = typeof course?.title === "string" ? course.title : "Course";
       if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
-          { label: course?.title ?? "Course", href: `/studio/course/${courseNftPolicyId}` },
+          { label: courseTitle, href: `/studio/course/${courseNftPolicyId}` },
           { label: "New Module" },
         ]);
         setTitle("New Module");
       } else {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
-          { label: course?.title ?? "Course", href: `/studio/course/${courseNftPolicyId}` },
+          { label: courseTitle, href: `/studio/course/${courseNftPolicyId}` },
           { label: courseModule?.title ?? moduleCode },
         ]);
         setTitle(courseModule?.title ?? "Module");
-        if (courseModule?.status) {
-          setStatus(courseModule.status, courseModule.status === "ON_CHAIN" ? "default" : "secondary");
+        if (courseModule?.module_status) {
+          setStatus(courseModule.module_status, courseModule.module_status === "ON_CHAIN" ? "default" : "secondary");
         }
       }
     },
@@ -229,7 +230,7 @@ function ModuleWizardContent({
         </div>
 
         {/* On-Chain Link */}
-        {data.courseModule?.status === "ON_CHAIN" && (
+        {data.courseModule?.module_status === "ON_CHAIN" && (
           <AndamioButton
             variant="outline"
             size="sm"

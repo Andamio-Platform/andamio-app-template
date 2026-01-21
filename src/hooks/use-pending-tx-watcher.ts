@@ -177,7 +177,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             instance_id: courseNftPolicyId,
             metadata: {
               course_id: courseNftPolicyId,
-              module_code: moduleCode,
+              course_module_code: moduleCode,
               module_hash: moduleHash ?? undefined,
             },
           }),
@@ -224,7 +224,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
             instance_id: courseNftPolicyId,
             metadata: {
               course_id: courseNftPolicyId,
-              module_code: moduleCode,
+              course_module_code: moduleCode,
               access_token_alias: tx.entityId, // entityId is the student's alias
             },
           }),

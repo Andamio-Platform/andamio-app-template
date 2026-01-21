@@ -134,7 +134,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
           <div className="space-y-2">
             {slts.map((slt, index) => (
               <motion.div
-                key={slt.module_index}
+                key={slt.index ?? index}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}

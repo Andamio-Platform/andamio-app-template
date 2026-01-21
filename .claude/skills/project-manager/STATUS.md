@@ -1,28 +1,41 @@
 # Project Status
 
-> **Last Updated**: January 21, 2026 (Session 26 - L1 Core Implementation Complete)
+> **Last Updated**: January 21, 2026 (Session 27 - Gateway Taxonomy Compliance Complete)
 
 Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## 📋 REMINDER: Tomorrow (January 22, 2026)
+## ✅ RESOLVED: Gateway Taxonomy Compliance (January 21, 2026)
 
-**Cover next round of API spec fixes with Andamio API team:**
+**NullableString Type Errors - FIXED**
 
-1. **NullableString/NullableInt32 typing** - OpenAPI spec types these as `object` instead of `string | null` / `number | null`. Causes 200+ type errors.
+The OpenAPI spec generates `NullableString` as `object` type. Rather than waiting for API team fixes, we implemented client-side handling:
 
-2. **Field renames discovered during type regen:**
-   | Old Field | New Field | Type |
-   |-----------|-----------|------|
-   | `module_code` | `course_module_code` | CourseModuleV2 |
-   | `live` | `is_live` | LessonV2 |
-   | `module_index` | `index` | SltV2 |
-   | `module_hash` | `slt_hash` | CourseModuleV2 |
+1. **Created `src/lib/type-helpers.ts`** with `getString()` and `getOptionalString()` utilities
+2. **Fixed 41 files** with proper type checking patterns
+3. **Extended `LessonResponse`** type in `src/types/generated/index.ts` to include `slt_index`
 
-**Blocked until**: API team fixes OpenAPI spec for nullable types.
+**Field Renames Applied**:
+| Old Field | New Field | Type |
+|-----------|-----------|------|
+| `status` | `module_status` / `task_status` / `commitment_status` | Various |
+| `module_code` | `course_module_code` | CourseModuleV2 |
+| `module_index` | `index` | SltV2 |
+| `module_hash` | `slt_hash` | CourseModuleV2 |
+| `course_nft_policy_id` | `course_id` | Various |
+| `lovelace` | `lovelace_amount` | Task types |
 
-**REPL note ready**: `/tmp/repl-note-nullable-types.md`
+**NullableString Pattern**:
+```typescript
+// API generates NullableString as `object` type, cast to unknown first
+const rawTitle = task.title as unknown;
+const title = typeof rawTitle === "string" ? rawTitle : "";
+
+// Or use the helper function
+import { getString } from "~/lib/type-helpers";
+const title = getString(task.title);
+```
 
 ---
 
@@ -723,7 +736,7 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
-| **OpenAPI NullableString Typing** | 🚨 **Blocking** | OpenAPI spec defines `NullableString` as `object` instead of `string | null`. Causes 200+ type errors. REPL note sent to API team. |
+| **OpenAPI NullableString Typing** | ✅ **Resolved (Jan 21)** | Client-side fix implemented. Created `src/lib/type-helpers.ts` with `getString()` utility. Fixed 41 files. |
 | **SLT Endpoints Schema Mismatch** | 🚨 **Blocking** | SLT create/update/delete endpoints expect camelCase (`policyId`, `moduleCode`, `sltText`) while all other teacher endpoints use snake_case. Even with camelCase, returns "Invalid request body". **GitHub Issue**: [andamio-api#3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
 | **Course Creation Metadata** | ✅ **Resolved** | Auto-registration now works! Gateway v2.0.0-preprod-20260119-e captures `owner_alias` from JWT and uses service-to-service auth. |
 | **Atlas TX API Task Commit** | ✅ **Resolved** | Client-side fix implemented. End-to-end testing ready. |

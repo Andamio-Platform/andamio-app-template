@@ -217,7 +217,7 @@ export default function ManagerDashboardPage() {
 
       <AndamioPageHeader
         title="Manager Dashboard"
-        description={project.title ?? undefined}
+        description={typeof project.title === "string" ? project.title : undefined}
       />
 
       {/* Stats Cards */}

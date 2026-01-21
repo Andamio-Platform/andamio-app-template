@@ -257,9 +257,9 @@ export default function DraftTasksPage() {
   }
 
   // Separate tasks by status
-  const draftTasks = tasks.filter((t) => t.status === "DRAFT");
-  const liveTasks = tasks.filter((t) => t.status === "ON_CHAIN");
-  const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.status));
+  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
+  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN");
+  const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.task_status ?? ""));
 
   return (
     <div className="space-y-6">
@@ -346,27 +346,32 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {draftTasks.map((task, index) => (
-                  <AndamioTableRow key={task.task_hash ?? `draft-${task.index}-${index}`}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
-                    <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant={getStatusVariant(task.status)}>{task.status}</AndamioBadge>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-right">
-                      <AndamioRowActions
-                        editHref={`/studio/project/${projectId}/draft-tasks/${task.index}`}
-                        onDelete={() => handleDeleteTask(task.index)}
-                        itemName="task"
-                        deleteDescription={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-                        isDeleting={deletingTaskIndex === task.index}
-                      />
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                ))}
+                {draftTasks.map((task, index) => {
+                  const taskHash = typeof task.task_hash === "string" ? task.task_hash : null;
+                  const taskIndex = task.index ?? 0;
+                  const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
+                  return (
+                    <AndamioTableRow key={taskHash ?? `draft-${taskIndex}-${index}`}>
+                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+                      <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelace_amount ?? 0)}</AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant={getStatusVariant(task.task_status ?? "")}>{task.task_status}</AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-right">
+                        <AndamioRowActions
+                          editHref={`/studio/project/${projectId}/draft-tasks/${taskIndex}`}
+                          onDelete={() => handleDeleteTask(taskIndex)}
+                          itemName="task"
+                          deleteDescription={`Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`}
+                          isDeleting={deletingTaskIndex === taskIndex}
+                        />
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  );
+                })}
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>
@@ -390,31 +395,39 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {liveTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
-                    <AndamioTableCell className="font-medium">
-                      <Link
-                        href={`/project/${projectId}/${task.task_hash}`}
-                        className="hover:underline"
-                      >
-                        {task.title}
-                      </Link>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="font-mono text-xs">
-                      {task.task_hash ? `${task.task_hash.slice(0, 16)}...` : "-"}
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant="default" className="bg-success text-success-foreground">
-                        <OnChainIcon className="h-3 w-3 mr-1" />
-                        On-Chain
-                      </AndamioBadge>
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                ))}
+                {liveTasks.map((task) => {
+                  // NullableString types are generated as `object`, cast to unknown first for type check
+                  const rawHash = task.task_hash as unknown;
+                  const rawTitle = task.title as unknown;
+                  const taskHash = typeof rawHash === "string" ? rawHash : null;
+                  const taskIndex = task.index ?? 0;
+                  const taskTitle = typeof rawTitle === "string" ? rawTitle : "Untitled Task";
+                  return (
+                    <AndamioTableRow key={taskHash ?? taskIndex}>
+                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+                      <AndamioTableCell className="font-medium">
+                        <Link
+                          href={`/project/${projectId}/${taskHash ?? ""}`}
+                          className="hover:underline"
+                        >
+                          {taskTitle}
+                        </Link>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="font-mono text-xs">
+                        {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                          <OnChainIcon className="h-3 w-3 mr-1" />
+                          On-Chain
+                        </AndamioBadge>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  );
+                })}
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>
@@ -436,18 +449,23 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {otherTasks.map((task) => (
-                  <AndamioTableRow key={task.task_hash ?? task.index}>
-                    <AndamioTableCell className="font-mono text-xs">{task.index}</AndamioTableCell>
-                    <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-center">
-                      <AndamioBadge variant={getStatusVariant(task.status)}>{task.status}</AndamioBadge>
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                ))}
+                {otherTasks.map((task) => {
+                  const taskHash = typeof task.task_hash === "string" ? task.task_hash : null;
+                  const taskIndex = task.index ?? 0;
+                  const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
+                  return (
+                    <AndamioTableRow key={taskHash ?? taskIndex}>
+                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+                      <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelace_amount ?? 0)}</AndamioBadge>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-center">
+                        <AndamioBadge variant={getStatusVariant(task.task_status ?? "")}>{task.task_status}</AndamioBadge>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  );
+                })}
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>

@@ -60,7 +60,7 @@ export default function LessonDetailPage() {
           <CourseBreadcrumb
             mode="public"
             course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
-            courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+            courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
             lesson={{ index: moduleIndex }}
             currentPage="lesson"
           />
@@ -93,17 +93,17 @@ export default function LessonDetailPage() {
         <CourseBreadcrumb
           mode="public"
           course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
-          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
-          lesson={{ index: lesson.module_index, title: lesson.title ?? undefined }}
+          courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
+          lesson={{ index: moduleIndex, title: typeof lesson.title === "string" ? lesson.title : undefined }}
           currentPage="lesson"
         />
       )}
 
       {/* Header with status badge */}
       <div className="flex items-center justify-end">
-        {lesson.live !== null && (
-          <AndamioBadge variant={lesson.live ? "default" : "secondary"}>
-            {lesson.live ? "Live" : "Draft"}
+        {lesson.is_live !== undefined && (
+          <AndamioBadge variant={lesson.is_live ? "default" : "secondary"}>
+            {lesson.is_live ? "Live" : "Draft"}
           </AndamioBadge>
         )}
       </div>
@@ -113,8 +113,8 @@ export default function LessonDetailPage() {
         <AndamioCardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <AndamioCardDescription>Learning Target #{lesson.module_index}</AndamioCardDescription>
-              <AndamioCardTitle>{lesson.slt_text}</AndamioCardTitle>
+              <AndamioCardDescription>Learning Target #{moduleIndex}</AndamioCardDescription>
+              <AndamioCardTitle>SLT {moduleIndex}</AndamioCardTitle>
             </div>
           </div>
         </AndamioCardHeader>
@@ -124,9 +124,9 @@ export default function LessonDetailPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-            {lesson.title ?? `Lesson ${lesson.module_index}`}
+            {typeof lesson.title === "string" ? lesson.title : `Lesson ${moduleIndex}`}
           </h1>
-          {lesson.description && (
+          {typeof lesson.description === "string" && lesson.description && (
             <AndamioText variant="lead" className="mt-2">
               {lesson.description}
             </AndamioText>
@@ -136,9 +136,9 @@ export default function LessonDetailPage() {
 
       {/* Media Section */}
       <LessonMediaSection
-        videoUrl={lesson.video_url}
-        imageUrl={lesson.image_url}
-        imageAlt={lesson.title ?? "Lesson image"}
+        videoUrl={typeof lesson.video_url === "string" ? lesson.video_url : undefined}
+        imageUrl={typeof lesson.image_url === "string" ? lesson.image_url : undefined}
+        imageAlt={typeof lesson.title === "string" ? lesson.title : "Lesson image"}
       />
 
       {/* Lesson Content */}

@@ -51,27 +51,29 @@ export default function ModuleLessonsPage() {
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
 
   // Combine SLTs and Lessons - derived from query data
+  // Note: In the new API, lessons are nested inside SLTs
   const combinedData = useMemo<CombinedSLTLesson[]>(() => {
     if (!slts) return [];
 
     return slts.map((slt) => {
-      const lesson = lessons?.find((l) => l.module_index === slt.module_index);
+      // In new API, lesson is directly on the SLT
+      const lesson = slt.lesson;
       return {
-        module_index: slt.module_index,
-        slt_text: slt.slt_text,
-        slt_id: `slt-${slt.module_index}`,
+        module_index: slt.index ?? 0,
+        slt_text: slt.slt_text ?? "",
+        slt_id: `slt-${slt.index}`,
         lesson: lesson
           ? {
-              title: lesson.title ?? null,
-              description: lesson.description ?? null,
-              image_url: lesson.image_url ?? null,
-              video_url: lesson.video_url ?? null,
-              live: lesson.live ?? null,
+              title: typeof lesson.title === "string" ? lesson.title : null,
+              description: typeof lesson.description === "string" ? lesson.description : null,
+              image_url: typeof lesson.image_url === "string" ? lesson.image_url : null,
+              video_url: typeof lesson.video_url === "string" ? lesson.video_url : null,
+              live: lesson.is_live ?? null,
             }
           : undefined,
       };
     });
-  }, [slts, lessons]);
+  }, [slts]);
 
   // Find matching on-chain module by SLT content overlap
   const onChainModule = useMemo(() => {
@@ -117,14 +119,14 @@ export default function ModuleLessonsPage() {
         <CourseBreadcrumb
           mode="public"
           course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
-          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+          courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
           currentPage="module"
         />
       )}
 
       <AndamioPageHeader
-        title={courseModule.title}
-        description={courseModule.description ?? undefined}
+        title={courseModule.title ?? "Module"}
+        description={typeof courseModule.description === "string" ? courseModule.description : undefined}
         action={
           isAuthenticated ? (
             <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
@@ -138,9 +140,9 @@ export default function ModuleLessonsPage() {
       />
       <div className="flex gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {courseModule.module_code}
+          {courseModule.course_module_code}
         </AndamioBadge>
-        <AndamioBadge variant="outline">{courseModule.status}</AndamioBadge>
+        <AndamioBadge variant="outline">{courseModule.module_status}</AndamioBadge>
       </div>
 
       {/* Student Learning Targets & Lessons Combined */}

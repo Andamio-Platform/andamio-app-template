@@ -152,7 +152,7 @@ export default function ManageTreasuryPage() {
         tasks: tasksData?.map((t) => ({
           index: t.index,
           title: t.title,
-          status: t.status,
+          task_status: t.task_status,
           task_hash: t.task_hash,
         })),
       });
@@ -168,7 +168,7 @@ export default function ManageTreasuryPage() {
           taskCount: projectDetails?.tasks?.length ?? 0,
           tasks: projectDetails?.tasks?.map((t) => ({
             task_id: t.task_id,
-            lovelace: t.lovelace,
+            lovelace_amount: t.lovelace_amount,
             content: hexToText(t.content),
           })),
         });
@@ -212,13 +212,13 @@ export default function ManageTreasuryPage() {
   };
 
   const handleSelectAll = () => {
-    const draftTasks = tasks.filter((t) => t.status === "DRAFT");
+    const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
     if (selectedTaskIndices.size === draftTasks.length) {
       // Deselect all
       setSelectedTaskIndices(new Set());
     } else {
-      // Select all draft tasks
-      setSelectedTaskIndices(new Set(draftTasks.map((t) => t.index)));
+      // Select all draft tasks - filter out undefined indices
+      setSelectedTaskIndices(new Set(draftTasks.map((t) => t.index).filter((idx): idx is number => idx !== undefined)));
     }
   };
 
@@ -343,22 +343,25 @@ export default function ManageTreasuryPage() {
   }
 
   // Filter draft tasks
-  const draftTasks = tasks.filter((t) => t.status === "DRAFT");
-  const liveTasks = tasks.filter((t) => t.status === "ON_CHAIN");
+  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
+  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN");
 
-  // Get selected tasks
-  const selectedTasks = draftTasks.filter((t) => selectedTaskIndices.has(t.index));
+  // Get selected tasks (filter for valid indices)
+  const selectedTasks = draftTasks.filter((t) => t.index !== undefined && selectedTaskIndices.has(t.index));
 
   // Convert selected tasks to ProjectData format for the transaction
   // IMPORTANT: project_content is the task description (max 140 chars), NOT a hash!
   // expiration_posix must be in MILLISECONDS
   const tasksToAdd: ProjectData[] = selectedTasks.map((task) => {
     // Use task title/description as project_content (truncate to 140 chars)
-    const projectContent = (task.title ?? task.content ?? "Task").substring(0, 140);
+    const taskTitle = typeof task.title === "string" ? task.title : "";
+    const taskContent = typeof task.content === "string" ? task.content : "";
+    const projectContent = (taskTitle || taskContent || "Task").substring(0, 140);
 
     // Ensure expiration_posix is in milliseconds
     // If it's a small number (< year 2000 in ms), it might be in seconds
-    let expirationMs = parseInt(task.expiration_time) || 0;
+    const expirationStr = typeof task.expiration_time === "string" ? task.expiration_time : "0";
+    let expirationMs = parseInt(expirationStr) || 0;
     if (expirationMs < 946684800000) {
       // If less than year 2000 in ms, assume it's in seconds
       expirationMs = expirationMs * 1000;
@@ -367,7 +370,7 @@ export default function ManageTreasuryPage() {
     const projectData: ProjectData = {
       project_content: projectContent,
       expiration_posix: expirationMs,
-      lovelace_amount: parseInt(task.lovelace) || 5000000,
+      lovelace_amount: parseInt(task.lovelace_amount ?? "5000000") || 5000000,
       native_assets: [], // Empty for now - could add native tokens later
     };
 
@@ -377,7 +380,7 @@ export default function ManageTreasuryPage() {
 
   // Task codes and indices for side effects
   const taskCodes = selectedTasks.map((t) => `TASK_${t.index}`);
-  const taskIndices = selectedTasks.map((t) => t.index);
+  const taskIndices = selectedTasks.map((t) => t.index).filter((idx): idx is number => idx !== undefined);
 
   // Convert selected on-chain tasks to ProjectData format for removal
   // IMPORTANT: tasks_to_remove requires full ProjectData objects, NOT just hashes!
@@ -393,7 +396,7 @@ export default function ManageTreasuryPage() {
     return {
       project_content: projectContent,
       expiration_posix: expirationMs,
-      lovelace_amount: task.lovelace,
+      lovelace_amount: task.lovelace_amount,
       native_assets: [], // On-chain tasks from Andamioscan don't include native_assets yet
     };
   });
@@ -499,29 +502,35 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {draftTasks.map((task) => {
-                    const isSelected = selectedTaskIndices.has(task.index);
+                    // NullableString types are generated as `object`, cast to unknown first for type check
+                    const rawTitle = task.title as unknown;
+                    const rawHash = task.task_hash as unknown;
+                    const taskIndex = task.index ?? 0;
+                    const taskTitle = typeof rawTitle === "string" ? rawTitle : "";
+                    const taskHash = typeof rawHash === "string" ? rawHash : null;
+                    const isSelected = selectedTaskIndices.has(taskIndex);
                     // Task is valid if it has a title (used as project_content)
-                    const isValid = task.title && task.title.length > 0 && task.title.length <= 140;
+                    const isValid = taskTitle.length > 0 && taskTitle.length <= 140;
 
                     return (
                       <AndamioTableRow
-                        key={task.task_hash ?? `draft-${task.index}`}
+                        key={taskHash ?? `draft-${taskIndex}`}
                         className={isSelected ? "bg-primary/5" : ""}
                       >
                         <AndamioTableCell>
                           <AndamioCheckbox
                             checked={isSelected}
-                            onCheckedChange={() => handleToggleTask(task.index)}
+                            onCheckedChange={() => handleToggleTask(taskIndex)}
                             disabled={!isValid}
-                            aria-label={`Select task ${task.index}`}
+                            aria-label={`Select task ${taskIndex}`}
                           />
                         </AndamioTableCell>
                         <AndamioTableCell className="font-mono text-xs">
-                          {task.index}
+                          {taskIndex}
                         </AndamioTableCell>
                         <AndamioTableCell>
                           <div>
-                            <AndamioText as="div" className="font-medium">{task.title}</AndamioText>
+                            <AndamioText as="div" className="font-medium">{taskTitle || "Untitled Task"}</AndamioText>
                             {!isValid && (
                               <AndamioText variant="small" className="text-warning">
                                 Title required (max 140 chars) for on-chain content
@@ -530,10 +539,10 @@ export default function ManageTreasuryPage() {
                           </div>
                         </AndamioTableCell>
                         <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {task.task_hash ? `${task.task_hash.slice(0, 16)}...` : "-"}
+                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
                         </AndamioTableCell>
                       </AndamioTableRow>
                     );
@@ -732,7 +741,7 @@ export default function ManageTreasuryPage() {
                           {task.task_id.slice(0, 16)}...
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(String(task.lovelace))}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(String(task.lovelace_amount))}</AndamioBadge>
                         </AndamioTableCell>
                         <AndamioTableCell className="hidden sm:table-cell text-center text-xs text-muted-foreground">
                           {expirationDate.toLocaleDateString()}
@@ -800,26 +809,34 @@ export default function ManageTreasuryPage() {
                   </AndamioTableRow>
                 </AndamioTableHeader>
                 <AndamioTableBody>
-                  {liveTasks.map((task) => (
-                    <AndamioTableRow key={task.task_hash ?? task.index}>
-                      <AndamioTableCell className="font-mono text-xs">
-                        {task.index}
-                      </AndamioTableCell>
-                      <AndamioTableCell className="font-medium">{task.title}</AndamioTableCell>
-                      <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                        {task.task_hash ? `${task.task_hash.slice(0, 16)}...` : "-"}
-                      </AndamioTableCell>
-                      <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(task.lovelace)}</AndamioBadge>
-                      </AndamioTableCell>
-                      <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="default" className="bg-success text-success-foreground">
-                          <OnChainIcon className="h-3 w-3 mr-1" />
-                          On-Chain
-                        </AndamioBadge>
-                      </AndamioTableCell>
-                    </AndamioTableRow>
-                  ))}
+                  {liveTasks.map((task) => {
+                    // NullableString types are generated as `object`, cast to unknown first for type check
+                    const rawTitle = task.title as unknown;
+                    const rawHash = task.task_hash as unknown;
+                    const taskIndex = task.index ?? 0;
+                    const taskTitle = typeof rawTitle === "string" ? rawTitle : "Untitled Task";
+                    const taskHash = typeof rawHash === "string" ? rawHash : null;
+                    return (
+                      <AndamioTableRow key={taskHash ?? taskIndex}>
+                        <AndamioTableCell className="font-mono text-xs">
+                          {taskIndex}
+                        </AndamioTableCell>
+                        <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                        <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
+                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                        </AndamioTableCell>
+                        <AndamioTableCell className="text-center">
+                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
+                        </AndamioTableCell>
+                        <AndamioTableCell className="text-center">
+                          <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                            <OnChainIcon className="h-3 w-3 mr-1" />
+                            On-Chain
+                          </AndamioBadge>
+                        </AndamioTableCell>
+                      </AndamioTableRow>
+                    );
+                  })}
                 </AndamioTableBody>
               </AndamioTable>
             </AndamioTableContainer>

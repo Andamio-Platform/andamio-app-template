@@ -90,6 +90,39 @@ This fetches the latest OpenAPI spec from the gateway and generates TypeScript t
 - `ProjectTaskV2Output` - Task data
 - `AssignmentCommitmentResponse` - Assignment commitments
 
+### NullableString Type Handling
+
+**CRITICAL**: The API generates `NullableString` fields as `object` type (not `string | null`). This requires special handling.
+
+**Why this happens**: The OpenAPI spec defines `NullableString` in a way that causes the type generator to output `object` instead of `string | null`.
+
+**Solution**: Use the type helper utilities:
+
+```typescript
+import { getString, getOptionalString } from "~/lib/type-helpers";
+
+// Convert NullableString to string (empty string if null/undefined)
+const title = getString(task.title);
+
+// Convert to optional string (undefined if null/undefined)
+const description = getOptionalString(task.description);
+```
+
+**Alternative Pattern** (for inline use without importing):
+
+```typescript
+// Cast to unknown first, then check type
+const rawTitle = task.title as unknown;
+const title = typeof rawTitle === "string" ? rawTitle : "";
+```
+
+**Common NullableString Fields**:
+- `title`, `description`, `content` on most entities
+- `policy_id`, `asset_name` on token types
+- `task_hash`, `slt_hash` on various types
+
+**Type Helper File**: `src/lib/type-helpers.ts`
+
 ## Coding Conventions
 
 ### Variable Naming
@@ -734,6 +767,7 @@ const data = (await response.json()) as YourOutputType;
 - `src/lib/gateway.ts` - **Primary** - Unified gateway client
 - `src/lib/andamio-gateway.ts` - Merged endpoints helper functions
 - `src/lib/andamioscan.ts` - On-chain indexed data helper functions
+- `src/lib/type-helpers.ts` - NullableString handling utilities (`getString`, `getOptionalString`)
 - `src/app/api/gateway/[...path]/route.ts` - Unified gateway proxy (single route for all API calls)
 
 **Generated Types**:

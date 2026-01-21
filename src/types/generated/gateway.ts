@@ -36,143 +36,6 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientAddTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientAssignmentCommitmentV2 {
-  assignment?: AndamioApiInternalInternalApiAndamioDbClientAssignmentV2;
-  assignment_evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  commitment_status?: string;
-  course_id?: string;
-  course_module_code?: string;
-  /** JSON evidence data */
-  evidence?: Record<string, any>;
-  /** Access token alias of the participant */
-  participant_alias?: string;
-  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientAssignmentV2 {
-  /** Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_live?: boolean;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientClaimCredentialV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2 {
-  assignment?: AndamioApiInternalInternalApiAndamioDbClientAssignmentV2;
-  course_module_code?: string;
-  created_by_alias?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  introduction?: AndamioApiInternalInternalApiAndamioDbClientIntroductionV2;
-  is_live?: boolean;
-  module_status?: string;
-  /** Hash of SLT list, used as module token name on-chain */
-  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  slts?: AndamioApiInternalInternalApiAndamioDbClientSltV2[];
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2Brief {
-  course_module_code?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_live?: boolean;
-  module_status?: string;
-  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCourseTeacherV2 {
-  added_at?: string;
-  alias?: string;
-  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCourseV2 {
-  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  /** Unique course identifier */
-  course_id?: string;
-  course_status?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_public?: boolean;
-  modules?: AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2Brief[];
-  /** Access token alias of the course owner */
-  owner_alias?: string;
-  teachers?: AndamioApiInternalInternalApiAndamioDbClientCourseTeacherV2[];
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentV2Request {
-  content_json?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateCourseV2Request {
-  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  course_id?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_public?: boolean;
-  pending_tx_hash?: string;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionV2Request {
-  /** Tiptap JSON content */
-  content?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  title?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateLessonV2Request {
-  content_json?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  slt_index?: number;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: string;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest {
   description?: string;
   image_url?: string;
@@ -182,14 +45,6 @@ export interface AndamioApiInternalInternalApiAndamioDbClientCreateProjectReques
   project_id?: string;
   title?: string;
   treasury_address?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateSltV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  /** Optional, appends to end if not provided */
-  index?: AndamioApiInternalInternalApiAndamioDbClientNullableInt32;
-  slt_text?: string;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientCreateTaskCommitmentRequest {
@@ -219,77 +74,10 @@ export interface AndamioApiInternalInternalApiAndamioDbClientCreateTaskToken {
   quantity?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteAssignmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteIntroductionV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteLessonV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  slt_index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteSltV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientGetAssignmentCommitmentV2Request {
-  /** Course NFT policy ID */
-  course_id?: string;
-  /** Module code within course */
-  course_module_code?: string;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientInitRolesResponse {
   message?: string;
   roles_created?: string[];
   success?: boolean;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientIntroductionV2 {
-  /** Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_live?: boolean;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientLessonV2 {
-  /** Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_live?: boolean;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientListModulesV2Request {
-  /** Optional course filter */
-  course_id?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientLoginSessionResponse {
@@ -394,69 +182,11 @@ export interface AndamioApiInternalInternalApiAndamioDbClientProjectTaskToken {
   ticker?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientPublishModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientRegisterCourseV2Request {
-  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  course_id?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_public?: boolean;
-  title?: string;
-  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
   description?: string;
   image_url?: string;
   project_id?: string;
   title?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientRemoveTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientReorderSltV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  new_index?: number;
-  old_index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  decision?: string;
-  participant_alias?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSignatureData {
-  /** CIP-30 COSE_Key (hex) */
-  key?: string;
-  /** CIP-30 COSE_Sign1 signature (hex) */
-  signature?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSltV2 {
-  created_by_alias?: string;
-  index?: number;
-  lesson?: AndamioApiInternalInternalApiAndamioDbClientLessonV2;
-  slt_text?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: Record<string, any>;
-  evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  pending_tx_hash?: string;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientSuccessResponse {
@@ -488,60 +218,6 @@ export interface AndamioApiInternalInternalApiAndamioDbClientTaskCommitment {
   task_outcome?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: Record<string, any>;
-  evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentV2Request {
-  /** Tiptap JSON content */
-  content?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateCourseV2Request {
-  course_id?: string;
-  data?: AndamioApiInternalInternalApiAndamioDbClientUpdateCourseV2RequestData;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateCourseV2RequestData {
-  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  is_public?: boolean;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateIntroductionV2Request {
-  /** Tiptap JSON content */
-  content?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateLessonV2Request {
-  /** Tiptap JSON content */
-  content?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  slt_index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientUpdateProjectRequest {
   data?: AndamioApiInternalInternalApiAndamioDbClientUpdateProjectRequestData;
   project_id?: string;
@@ -553,13 +229,6 @@ export interface AndamioApiInternalInternalApiAndamioDbClientUpdateProjectReques
   project_address?: string;
   title?: string;
   treasury_address?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateSltV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  index?: number;
-  slt_text?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTaskCommitmentRequest {
@@ -582,31 +251,8 @@ export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTaskRequest {
   tokens?: AndamioApiInternalInternalApiAndamioDbClientCreateTaskToken[];
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Request {
-  /** Aliases to add as teachers */
-  add?: string[];
-  course_id?: string;
-  /** Aliases to remove as teachers */
-  remove?: string[];
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Response {
-  course_id?: string;
-  success?: boolean;
-  teachers_added?: string[];
-  /** Final list of teachers after updates */
-  teachers_current?: string[];
-  teachers_removed?: string[];
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientUserAccessTokenAliasPostRequest {
   access_token_alias?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUserSummary {
-  access_token_alias?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  cardano_bech32_addr?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
-  id?: string;
 }
 
 export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRequest {
@@ -618,7 +264,7 @@ export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRe
   convert_utf8?: boolean;
   /** Session ID from /auth/login/session */
   id?: string;
-  signature?: AndamioApiInternalInternalApiAndamioDbClientSignatureData;
+  signature?: AndamioDbClientSignatureData;
   /** Wallet name for debugging */
   wallet_preference?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
 }
@@ -626,7 +272,361 @@ export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureRe
 export interface AndamioApiInternalInternalApiAndamioDbClientValidateSignatureResponse {
   /** JWT token for authenticated requests */
   jwt?: string;
-  user?: AndamioApiInternalInternalApiAndamioDbClientUserSummary;
+  user?: AndamioDbClientUserSummary;
+}
+
+export interface AndamioDbClientAddTeachersV2Request {
+  aliases?: string[];
+  course_id?: string;
+}
+
+export interface AndamioDbClientAssignmentCommitmentV2 {
+  assignment?: AndamioDbClientAssignmentV2;
+  assignment_evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  commitment_status?: string;
+  course_id?: string;
+  course_module_code?: string;
+  /** JSON evidence data */
+  evidence?: Record<string, any>;
+  /** Access token alias of the participant */
+  participant_alias?: string;
+  pending_tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientAssignmentV2 {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_live?: boolean;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientClaimCredentialV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientCourseModuleV2 {
+  assignment?: AndamioDbClientAssignmentV2;
+  course_module_code?: string;
+  created_by_alias?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  introduction?: AndamioDbClientIntroductionV2;
+  is_live?: boolean;
+  module_status?: string;
+  /** Hash of SLT list, used as module token name on-chain */
+  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  slts?: AndamioDbClientSltV2[];
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCourseModuleV2Brief {
+  course_module_code?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_live?: boolean;
+  module_status?: string;
+  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: string;
+}
+
+export interface AndamioDbClientCourseTeacherV2 {
+  added_at?: string;
+  alias?: string;
+  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCourseV2 {
+  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  /** Unique course identifier */
+  course_id?: string;
+  course_status?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_public?: boolean;
+  modules?: AndamioDbClientCourseModuleV2Brief[];
+  /** Access token alias of the course owner */
+  owner_alias?: string;
+  teachers?: AndamioDbClientCourseTeacherV2[];
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCreateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientCreateAssignmentV2Request {
+  content_json?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCreateCourseV2Request {
+  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  course_id?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_public?: boolean;
+  pending_tx_hash?: string;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCreateIntroductionV2Request {
+  /** Tiptap JSON content */
+  content?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  title?: string;
+}
+
+export interface AndamioDbClientCreateLessonV2Request {
+  content_json?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  slt_index?: number;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCreateModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: string;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientCreateSltV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  /** Optional, appends to end if not provided */
+  index?: AndamioApiInternalInternalApiAndamioDbClientNullableInt32;
+  slt_text?: string;
+}
+
+export interface AndamioDbClientDeleteAssignmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientDeleteIntroductionV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientDeleteLessonV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  slt_index?: number;
+}
+
+export interface AndamioDbClientDeleteModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientDeleteSltV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  index?: number;
+}
+
+export interface AndamioDbClientGetAssignmentCommitmentV2Request {
+  /** Course NFT policy ID */
+  course_id?: string;
+  /** Module code within course */
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientIntroductionV2 {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_live?: boolean;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientLeaveAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientLessonV2 {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_live?: boolean;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientListModulesV2Request {
+  /** Optional course filter */
+  course_id?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientPublishModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientRegisterCourseV2Request {
+  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  course_id?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_public?: boolean;
+  title?: string;
+  tx_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientRemoveTeachersV2Request {
+  aliases?: string[];
+  course_id?: string;
+}
+
+export interface AndamioDbClientReorderSltV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  new_index?: number;
+  old_index?: number;
+}
+
+export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  decision?: string;
+  participant_alias?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientSignatureData {
+  /** CIP-30 COSE_Key (hex) */
+  key?: string;
+  /** CIP-30 COSE_Sign1 signature (hex) */
+  signature?: string;
+}
+
+export interface AndamioDbClientSltV2 {
+  created_by_alias?: string;
+  index?: number;
+  lesson?: AndamioDbClientLessonV2;
+  slt_text?: string;
+}
+
+export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  evidence?: Record<string, any>;
+  evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientUpdateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  evidence?: Record<string, any>;
+  evidence_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateAssignmentV2Request {
+  /** Tiptap JSON content */
+  content?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateCourseV2Request {
+  course_id?: string;
+  data?: AndamioDbClientUpdateCourseV2RequestData;
+}
+
+export interface AndamioDbClientUpdateCourseV2RequestData {
+  category?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  is_public?: boolean;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateIntroductionV2Request {
+  /** Tiptap JSON content */
+  content?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateLessonV2Request {
+  /** Tiptap JSON content */
+  content?: Record<string, any>;
+  course_id?: string;
+  course_module_code?: string;
+  slt_index?: number;
+}
+
+export interface AndamioDbClientUpdateModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  description?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  image_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  title?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  video_url?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateSltV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  index?: number;
+  slt_text?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+}
+
+export interface AndamioDbClientUpdateTeachersV2Request {
+  /** Aliases to add as teachers */
+  add?: string[];
+  course_id?: string;
+  /** Aliases to remove as teachers */
+  remove?: string[];
+}
+
+export interface AndamioDbClientUpdateTeachersV2Response {
+  course_id?: string;
+  success?: boolean;
+  teachers_added?: string[];
+  /** Final list of teachers after updates */
+  teachers_current?: string[];
+  teachers_removed?: string[];
+}
+
+export interface AndamioDbClientUserSummary {
+  access_token_alias?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  cardano_bech32_addr?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  id?: string;
 }
 
 export interface ApiKeyViewmodelsAPIKeyRequest {
@@ -1376,12 +1376,12 @@ export interface MergedHandlersTeacherAssignmentCommitmentsResponse {
 }
 
 export interface OrchestrationAssignmentCommitmentContent {
+  /** Hash for on-chain verification */
+  assignment_evidence_hash?: string;
+  /** DRAFT, SUBMITTED, APPROVED, etc. */
+  commitment_status?: string;
   /** JSON evidence data */
   evidence?: any;
-  /** Hash for on-chain verification */
-  evidence_hash?: string;
-  /** DRAFT, SUBMITTED, APPROVED, etc. */
-  status?: string;
 }
 
 export interface OrchestrationContributorCommitmentItem {
@@ -1454,7 +1454,7 @@ export interface OrchestrationManagerCommitmentTaskInfo {
   assets?: any;
   expiration?: string;
   expiration_posix?: number;
-  lovelace?: number;
+  lovelace_amount?: number;
   on_chain_content?: string;
 }
 
@@ -1556,7 +1556,7 @@ export interface OrchestrationMergedTaskListItem {
   /** ISO timestamp */
   expiration?: string;
   expiration_posix?: number;
-  lovelace?: number;
+  lovelace_amount?: number;
   /** Hex-encoded */
   on_chain_content?: string;
   project_id?: string;
@@ -1567,9 +1567,9 @@ export interface OrchestrationMergedTaskListItem {
 }
 
 export interface OrchestrationMyCommitmentSummary {
-  content?: OrchestrationTaskCommitmentContent;
   /** committed, submitted, approved, rejected */
-  status?: string;
+  commitment_status?: string;
+  content?: OrchestrationTaskCommitmentContent;
   task_id?: string;
 }
 
@@ -1623,7 +1623,7 @@ export interface OrchestrationProjectTaskOnChain {
   /** ISO timestamp */
   expiration?: string;
   expiration_posix?: number;
-  lovelace?: number;
+  lovelace_amount?: number;
   /** Hex-encoded */
   on_chain_content?: string;
   task_id?: string;
@@ -1632,7 +1632,7 @@ export interface OrchestrationProjectTaskOnChain {
 export interface OrchestrationProjectTreasuryFundingOnChain {
   alias?: string;
   assets?: any;
-  lovelace?: number;
+  lovelace_amount?: number;
   slot?: number;
   tx_hash?: string;
 }
@@ -1672,14 +1672,14 @@ export interface OrchestrationStudentCourseListItem {
 export interface OrchestrationTaskCommitmentContent {
   /** Manager who assessed */
   assessed_by?: string;
-  /** ACCEPTED, REFUSED, DENIED */
-  assessment_decision?: string;
+  /** DRAFT, COMMITTED, SUBMITTED, ACCEPTED, etc. */
+  commitment_status?: string;
   /** Tiptap JSON document */
   evidence?: any;
   /** Hash for on-chain verification */
-  evidence_hash?: string;
-  /** DRAFT, COMMITTED, SUBMITTED, ACCEPTED, etc. */
-  status?: string;
+  task_evidence_hash?: string;
+  /** ACCEPTED, REFUSED, DENIED */
+  task_outcome?: string;
 }
 
 export interface OrchestrationTaskContent {

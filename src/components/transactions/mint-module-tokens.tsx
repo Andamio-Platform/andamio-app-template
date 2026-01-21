@@ -110,13 +110,14 @@ export function MintModuleTokens({
     }
   );
 
-  // Helper to get sorted SLT texts (by module_index for consistent ordering)
-  const getSortedSltTexts = useCallback((slts: typeof courseModules[0]["slts"]) => {
+  // Helper to get sorted SLT texts (by index for consistent ordering)
+  const getSortedSltTexts = useCallback((slts: typeof courseModules[0]["slts"]): string[] => {
     if (!slts || slts.length === 0) return [];
-    // Sort by module_index to ensure consistent hash computation
+    // Sort by index to ensure consistent hash computation
     return [...slts]
-      .sort((a, b) => a.module_index - b.module_index)
-      .map((slt) => slt.slt_text);
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .map((slt) => slt.slt_text)
+      .filter((text): text is string => typeof text === "string");
   }, []);
 
   // Compute module hashes for display
@@ -125,13 +126,13 @@ export function MintModuleTokens({
       try {
         const sltTexts = getSortedSltTexts(courseModule.slts);
         return {
-          moduleCode: courseModule.module_code,
+          moduleCode: courseModule.course_module_code,
           hash: computeSltHashDefinite(sltTexts),
           sltCount: sltTexts.length,
         };
       } catch {
         return {
-          moduleCode: courseModule.module_code,
+          moduleCode: courseModule.course_module_code,
           hash: null,
           sltCount: 0,
         };
@@ -153,7 +154,7 @@ export function MintModuleTokens({
         const slts = getSortedSltTexts(courseModule.slts);
         const hash = computeSltHashDefinite(slts);
         return {
-          moduleCode: courseModule.module_code,
+          moduleCode: courseModule.course_module_code,
           slts,
           hash,
         };
@@ -255,7 +256,7 @@ export function MintModuleTokens({
             <div className="text-xs">
               <AndamioText variant="small" className="font-medium text-warning-foreground">Some modules have no SLTs</AndamioText>
               <AndamioText variant="small">
-                {modulesWithoutSlts.map((m) => m.module_code).join(", ")} need Student Learning Targets before minting.
+                {modulesWithoutSlts.map((m) => m.course_module_code).join(", ")} need Student Learning Targets before minting.
               </AndamioText>
             </div>
           </div>

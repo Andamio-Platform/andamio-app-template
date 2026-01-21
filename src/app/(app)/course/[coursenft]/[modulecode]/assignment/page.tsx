@@ -178,9 +178,10 @@ export default function LearnerAssignmentPage() {
 
   // Determine the sltHash to use:
   // 1. On-chain hash (authoritative, from Andamioscan) - if verified to match
-  // 2. Database module_hash (if available)
+  // 2. Database slt_hash (if available)
   // 3. Computed hash (fallback)
-  const sltHash = onChainModuleHash ?? courseModule?.module_hash ?? computedSltHash;
+  const dbSltHash = typeof courseModule?.slt_hash === "string" ? courseModule.slt_hash : null;
+  const sltHash = onChainModuleHash ?? dbSltHash ?? computedSltHash;
 
   // Check for hash mismatch between computed and on-chain
   const hashMismatch = useMemo(() => {
@@ -203,8 +204,8 @@ export default function LearnerAssignmentPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
-            courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+            course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
+            courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
             currentPage="assignment"
           />
         )}
@@ -223,8 +224,8 @@ export default function LearnerAssignmentPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title }}
-          courseModule={{ code: courseModule.module_code, title: courseModule.title }}
+          course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
+          courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
           currentPage="assignment"
         />
       )}

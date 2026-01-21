@@ -24,7 +24,7 @@ import {
  * Input for creating a course module
  */
 interface CreateCourseModuleInput {
-  module_code: string;
+  course_module_code: string;
   title: string;
   description?: string;
 }
@@ -61,7 +61,7 @@ export const courseModuleKeys = {
  *   const { data: modules, isLoading } = useCourseModules(courseId);
  *
  *   if (isLoading) return <Skeleton />;
- *   return modules?.map(m => <ModuleCard key={m.module_code} module={m} />);
+ *   return modules?.map(m => <ModuleCard key={m.course_module_code} module={m} />);
  * }
  * ```
  */
@@ -127,7 +127,7 @@ export function useCourseModule(
 
       const result = await response.json() as { data?: CourseModuleListResponse };
       const modules = result.data ?? [];
-      const courseModule = modules.find((m) => m.module_code === moduleCode);
+      const courseModule = modules.find((m) => m.course_module_code === moduleCode);
 
       if (!courseModule) {
         throw new Error(`Module ${moduleCode} not found`);
@@ -180,7 +180,7 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
       }
 
       return response.json() as Promise<
-        Record<string, Array<{ module_code: string; title: string }>>
+        Record<string, Array<{ course_module_code: string; title: string }>>
       >;
     },
     enabled: courseNftPolicyIds.length > 0,
@@ -221,11 +221,11 @@ export function useCreateCourseModule() {
     ) => {
       // Go API: POST /course/teacher/course-module/create
       // API expects "course_id" and "course_module_code"
-      const { course_nft_policy_id, module_code, ...rest } = input;
+      const { course_nft_policy_id, course_module_code, ...rest } = input;
       const url = `/api/gateway/api/v2/course/teacher/course-module/create`;
       const body = {
         course_id: course_nft_policy_id,
-        course_module_code: module_code,
+        course_module_code,
         ...rest,
       };
       console.log("[CreateModule] URL:", url);

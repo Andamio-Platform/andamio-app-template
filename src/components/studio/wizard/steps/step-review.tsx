@@ -47,12 +47,14 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isUnapproving, setIsUnapproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const moduleStatus = data.courseModule?.status;
+  const moduleStatus = data.courseModule?.module_status;
   const [isApproved, setIsApproved] = useState(moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN");
 
   const slts = data.slts;
   const lessons = data.lessons;
-  const moduleTitle = data.courseModule?.title ?? "Untitled Module";
+  const moduleTitle = typeof data.courseModule?.title === "string" ? data.courseModule.title : "Untitled Module";
+  const assignmentTitle = typeof data.assignment?.title === "string" ? data.assignment.title : "Not created";
+  const introductionTitle = typeof data.introduction?.title === "string" ? data.introduction.title : "Not created";
 
   const reviewItems = [
     {
@@ -75,7 +77,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
       id: "assignment",
       icon: AssignmentIcon,
       label: "Assignment",
-      value: data.assignment?.title ?? "Not created",
+      value: assignmentTitle,
       completed: completion.assignment,
       step: "assignment" as const,
     },
@@ -92,7 +94,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
       id: "introduction",
       icon: IntroductionIcon,
       label: "Introduction",
-      value: data.introduction?.title ?? "Not created",
+      value: introductionTitle,
       completed: completion.introduction,
       step: "introduction" as const,
     },
@@ -107,10 +109,11 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
-      // Compute the module hash from SLTs (sorted by module_index)
+      // Compute the module hash from SLTs (sorted by index)
       const sortedSltTexts = [...slts]
-        .sort((a, b) => a.module_index - b.module_index)
-        .map((slt) => slt.slt_text);
+        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+        .map((slt) => slt.slt_text)
+        .filter((text): text is string => typeof text === "string");
       const moduleHash = computeSltHashDefinite(sortedSltTexts);
 
       // Go API: POST /course/teacher/course-module/update-status

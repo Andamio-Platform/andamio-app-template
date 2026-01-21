@@ -94,10 +94,10 @@ export default function CourseDetailPage() {
   }
 
   // Build map of on-chain SLTs per module by matching SLT text content
-  const getOnChainStatus = (moduleSlts: Array<{ slt_text: string }>) => {
+  const getOnChainStatus = (moduleSlts: Array<{ slt_text?: string }>) => {
     if (onChainModules.length === 0) return { onChainSlts: new Set<string>(), moduleHash: null };
 
-    const dbSltTexts = new Set(moduleSlts.map((s) => s.slt_text));
+    const dbSltTexts = new Set(moduleSlts.map((s) => s.slt_text).filter((t): t is string => !!t));
 
     for (const mod of onChainModules) {
       const modSlts = mod.slts ?? [];
@@ -112,7 +112,7 @@ export default function CourseDetailPage() {
   };
 
   // Calculate total SLT count
-  const totalSlts = moduleList.reduce((sum, m) => sum + m.slts.length, 0);
+  const totalSlts = moduleList.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
 
   // Course and modules display
   return (
@@ -159,17 +159,21 @@ export default function CourseDetailPage() {
 
         {/* Module Cards with SLTs */}
         <div className="space-y-4">
-          {moduleList.map((module, moduleIndex) => {
-            const { onChainSlts, moduleHash } = getOnChainStatus(module.slts);
+          {moduleList.map((courseModule, moduleIndex) => {
+            const { onChainSlts, moduleHash } = getOnChainStatus(courseModule.slts ?? []);
             const hasOnChain = moduleHash !== null;
+            // Filter and map SLTs to ensure valid slt_text values
+            const validSlts = (courseModule.slts ?? [])
+              .filter((s) => !!s.slt_text)
+              .map((s) => ({ slt_text: s.slt_text! }));
 
             return (
               <CourseModuleCard
-                key={module.module_code}
-                moduleCode={module.module_code}
-                title={module.title}
+                key={courseModule.course_module_code}
+                moduleCode={courseModule.course_module_code ?? ""}
+                title={courseModule.title ?? "Untitled Module"}
                 index={moduleIndex + 1}
-                slts={module.slts}
+                slts={validSlts}
                 onChainSlts={onChainSlts}
                 isOnChain={hasOnChain}
                 courseNftPolicyId={courseNftPolicyId}

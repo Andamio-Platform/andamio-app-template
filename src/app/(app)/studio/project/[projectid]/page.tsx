@@ -142,9 +142,9 @@ export default function ProjectDashboardPage() {
 
       setProject(projectData);
       setUserRole(detectedRole);
-      setTitle(projectData.title ?? "");
-      setDescription(projectData.description ?? "");
-      setImageUrl(projectData.image_url ?? "");
+      setTitle(typeof projectData.title === "string" ? projectData.title : "");
+      setDescription(typeof projectData.description === "string" ? projectData.description : "");
+      setImageUrl(typeof projectData.image_url === "string" ? projectData.image_url : "");
       // Note: video_url not available in V2 API
 
       // V2 API: POST /project/manager/tasks/list with {project_id} in body
@@ -234,7 +234,8 @@ export default function ProjectDashboardPage() {
   };
 
   const handleSync = async () => {
-    const projectStatePolicyId = project?.states?.[0]?.project_state_policy_id;
+    const rawPolicyId = project?.states?.[0]?.project_state_policy_id;
+    const projectStatePolicyId = typeof rawPolicyId === "string" ? rawPolicyId : null;
     if (!projectStatePolicyId) {
       toast.error("Cannot sync: missing project state policy ID");
       return;
@@ -302,10 +303,10 @@ export default function ProjectDashboardPage() {
   }
 
   // Count tasks by status
-  const draftTasks = tasks.filter((t) => t.status === "DRAFT").length;
-  const liveTasks = tasks.filter((t) => t.status === "ON_CHAIN").length;
+  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT").length;
+  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN").length;
   // Count tasks that are ON_CHAIN but missing task_hash - these need syncing
-  const tasksNeedingHashSync = tasks.filter((t) => t.status === "ON_CHAIN" && !t.task_hash).length;
+  const tasksNeedingHashSync = tasks.filter((t) => t.task_status === "ON_CHAIN" && !t.task_hash).length;
   // Check if any tasks need syncing (either status or hash)
   const needsSync = onChainTaskCount > liveTasks || tasksNeedingHashSync > 0;
 
@@ -344,7 +345,7 @@ export default function ProjectDashboardPage() {
 
       <AndamioPageHeader
         title="Project Dashboard"
-        description={project.title ?? "Manage project details and tasks"}
+        description={typeof project.title === "string" ? project.title : "Manage project details and tasks"}
       />
 
       {/* Success/Error Messages */}

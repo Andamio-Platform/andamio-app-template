@@ -35,9 +35,10 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
   const introduction = data.introduction;
   const slts = data.slts;
-  const moduleTitle = data.courseModule?.title ?? "";
+  const moduleTitle = typeof data.courseModule?.title === "string" ? data.courseModule.title : "";
 
-  const [title, setTitle] = useState(introduction?.title ?? `Welcome to ${moduleTitle}`);
+  const introTitle = typeof introduction?.title === "string" ? introduction.title : "";
+  const [title, setTitle] = useState(introTitle || `Welcome to ${moduleTitle}`);
   const [content, setContent] = useState<JSONContent | null>(
     introduction?.content_json ? (introduction.content_json as JSONContent) : null
   );
@@ -47,7 +48,8 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
   // Track unsaved changes
   useEffect(() => {
-    const titleChanged = title !== (introduction?.title ?? `Welcome to ${moduleTitle}`);
+    const originalTitle = typeof introduction?.title === "string" ? introduction.title : "";
+    const titleChanged = title !== (originalTitle || `Welcome to ${moduleTitle}`);
     const contentChanged = JSON.stringify(content) !== JSON.stringify(introduction?.content_json ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, introduction, moduleTitle]);
@@ -122,7 +124,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
   const generateSuggestion = () => {
     if (slts.length === 0) return null;
 
-    const sltList = slts.map((slt) => `• ${slt.slt_text}`).join("\n");
+    const sltList = slts.map((slt) => `• ${typeof slt.slt_text === "string" ? slt.slt_text : ""}`).join("\n");
     return `In this module, you'll learn to:\n\n${sltList}\n\nBy the end, you'll have completed an assignment that demonstrates your mastery of these skills.`;
   };
 

@@ -844,7 +844,7 @@ export type AndamioscanTask = {
   task_id: string;
   content: string;
   created_by: string;
-  lovelace: number;
+  lovelace_amount: number;
   assets: AndamioscanAsset[];
   contributor_state_policy_id: string;
   expiration: string;
@@ -914,7 +914,7 @@ export type AndamioscanTreasuryFunding = {
   id: number;
   project_id: string;
   alias: string;
-  lovelace: number;
+  lovelace_amount: number;
   slot: number;
   tx_hash: string;
   createdAt: string;
@@ -1139,7 +1139,7 @@ export type AndamioscanTaskSubmission = {
   content: string;
   expiration: string;
   expiration_posix: number;
-  lovelace: number;
+  lovelace_amount: number;
   assets: AndamioscanAsset[];
 };
 
@@ -1175,7 +1175,7 @@ type RawApiTaskSubmission = {
   content: string;
   expiration: string;
   expiration_posix: number;
-  lovelace: number;
+  lovelace_amount: number;
   assets: AndamioscanAsset[];
 };
 
@@ -1268,7 +1268,7 @@ export type AndamioscanProjectPendingAssessment = {
 type RawApiPendingAssessmentTask = {
   task_id: string;
   content: string;
-  lovelace: number;
+  lovelace_amount: number;
   expiration: string;
   expiration_posix: number;
 };
@@ -1308,7 +1308,7 @@ export async function getManagerPendingAssessments(
     return raw.map((assessment) => ({
       project_id: assessment.project_id,
       task_id: assessment.task?.task_id ?? "",
-      task_lovelace: assessment.task?.lovelace ?? 0,
+      task_lovelace: assessment.task?.lovelace_amount ?? 0,
       task_content: assessment.task?.content ?? "",
       contributor_alias: assessment.submitted_by,
       content: assessment.content,

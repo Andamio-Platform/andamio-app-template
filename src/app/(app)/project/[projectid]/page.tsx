@@ -101,7 +101,7 @@ function ProjectDataCard({
   const prerequisites = project.prerequisites ?? [];
 
   const totalFunding = treasuryFundings.reduce(
-    (sum, f) => sum + (f.lovelace ?? 0),
+    (sum, f) => sum + (f.lovelace_amount ?? 0),
     0
   );
   const pendingSubmissions = submissions.length;
@@ -367,7 +367,7 @@ export default function ProjectDetailPage() {
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
                     <AndamioBadge variant="outline">
-                      {formatLovelace(task.lovelace ?? 0)}
+                      {formatLovelace(task.lovelace_amount ?? 0)}
                     </AndamioBadge>
                   </AndamioTableCell>
                 </AndamioTableRow>

@@ -490,7 +490,7 @@ export default function SitemapPage() {
                   let canNavigate = false;
 
                   if (category.category === "Learner Course Pages" && examplePublishedCourse) {
-                    const courseNftPolicyId = examplePublishedCourse.course_nft_policy_id;
+                    const courseNftPolicyId = examplePublishedCourse.course_id;
                     if (courseNftPolicyId) {
                       if (route.path === "/course/[courseNftPolicyId]") {
                         exampleUrl = `/course/${courseNftPolicyId}`;
@@ -507,8 +507,7 @@ export default function SitemapPage() {
                     category.category === "Creator Studio Course Pages" &&
                     exampleOwnedCourse
                   ) {
-                    const courseNftPolicyId =
-                      exampleOwnedCourse.course_nft_policy_id ?? exampleOwnedCourse.course_code;
+                    const courseNftPolicyId = exampleOwnedCourse.course_id ?? "";
                     if (route.path === "/studio/course/[courseNftPolicyId]") {
                       exampleUrl = `/studio/course/${courseNftPolicyId}`;
                       canNavigate = true;

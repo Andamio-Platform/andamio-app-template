@@ -122,7 +122,9 @@ export function StudioModuleCard({
   isDeleting = false,
 }: StudioModuleCardProps) {
   const sltCount = courseModule.slts?.length ?? 0;
-  const status = courseModule.status;
+  const status = courseModule.module_status ?? "DRAFT";
+  const moduleCode = courseModule.course_module_code ?? "";
+  const description = typeof courseModule.description === "string" ? courseModule.description : "";
   // Only allow delete for DRAFT modules (not minted or pending)
   const canDelete = onDelete && status === "DRAFT";
 
@@ -134,7 +136,7 @@ export function StudioModuleCard({
 
   return (
     <Link
-      href={`/studio/course/${courseNftPolicyId}/${courseModule.module_code}`}
+      href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}
       className="group block"
     >
       <AndamioCard className="p-5 transition-all duration-200 hover:shadow-md">
@@ -145,7 +147,7 @@ export function StudioModuleCard({
             <div className="flex items-center gap-2 mb-1">
               <ModuleStatusIcon status={status} />
               <span className="text-xs font-mono text-primary/70 bg-primary/5 px-2 py-0.5 rounded">
-                {courseModule.module_code}
+                {moduleCode}
               </span>
             </div>
 
@@ -155,9 +157,9 @@ export function StudioModuleCard({
             </div>
 
             {/* Description */}
-            {showDescription && courseModule.description && (
+            {showDescription && description && (
               <AndamioText variant="muted" className="text-sm mt-1 line-clamp-2">
-                {courseModule.description}
+                {description}
               </AndamioText>
             )}
           </div>

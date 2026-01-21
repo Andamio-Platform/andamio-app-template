@@ -166,8 +166,8 @@ export default function ProjectCommitmentsPage() {
   // Get task title from commitment
   const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
     const task = findMatchingTask(commitment);
-    if (task?.task_id && task?.lovelace) {
-      return `Task ${task.task_id.slice(0, 8)}... (${(task.lovelace / 1_000_000).toFixed(0)} ADA)`;
+    if (task?.task_id && task?.lovelace_amount) {
+      return `Task ${task.task_id.slice(0, 8)}... (${(task.lovelace_amount / 1_000_000).toFixed(0)} ADA)`;
     }
     // Task not found in project
     return `Task ${commitment.task_id.slice(0, 8)}...`;
@@ -527,9 +527,9 @@ export default function ProjectCommitmentsPage() {
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
                   {selectedTaskId ? `${selectedTaskId.slice(0, 16)}...` : "Unknown"}
                 </AndamioText>
-                {selectedMatchedTask?.lovelace && (
+                {selectedMatchedTask?.lovelace_amount && (
                   <AndamioText variant="small" className="text-muted-foreground">
-                    {(selectedMatchedTask.lovelace / 1_000_000).toFixed(0)} ADA reward
+                    {(selectedMatchedTask.lovelace_amount / 1_000_000).toFixed(0)} ADA reward
                   </AndamioText>
                 )}
               </div>

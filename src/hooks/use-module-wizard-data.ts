@@ -121,7 +121,7 @@ export function useModuleWizardData({
         const result = await modulesResponse.json() as { data?: CourseModuleListResponse };
         modules = result.data ?? [];
       }
-      const courseModule = modules.find((m) => m.module_code === effectiveModuleCode) ?? null;
+      const courseModule = modules.find((m) => m.course_module_code === effectiveModuleCode) ?? null;
 
       // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
       const sltsResponse = await fetch(

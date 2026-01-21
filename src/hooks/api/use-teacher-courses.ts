@@ -63,7 +63,6 @@ export interface TeacherCourse {
   description?: string;
   image_url?: string;
   video_url?: string;
-  course_code?: string;
 
   // Metadata
   source?: string; // "merged" | "chain_only" | "db_only"
@@ -85,7 +84,7 @@ export interface TeacherAssignmentCommitment {
   content?: string;
 
   // Off-chain content
-  module_code?: string;
+  course_module_code?: string;
   module_title?: string;
   evidence_url?: string;
   evidence_text?: string;
@@ -170,7 +169,6 @@ export function useTeacherCourses() {
         description: course.content?.description ?? course.description,
         image_url: course.content?.image_url ?? course.image_url,
         video_url: course.video_url, // video_url not in OrchestrationCourseContent
-        course_code: course.course_code, // code field removed from OrchestrationCourseContent
       }));
 
       return courses;

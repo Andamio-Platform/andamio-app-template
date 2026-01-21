@@ -85,7 +85,8 @@ export default function NewTaskPage() {
         }
 
         const projectData = (await response.json()) as ProjectV2Output;
-        const statePolicyId = projectData.states?.[0]?.project_state_policy_id;
+        const rawStatePolicyId = projectData.states?.[0]?.project_state_policy_id;
+        const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
 
         if (!statePolicyId) {
           throw new Error("Project has no on-chain state yet. Please ensure the project is minted first.");

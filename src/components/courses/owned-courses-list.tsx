@@ -79,31 +79,36 @@ export function OwnedCoursesList() {
           </AndamioTableRow>
         </AndamioTableHeader>
         <AndamioTableBody>
-          {courses.map((course) => (
-            <AndamioTableRow key={course.course_code}>
-              <AndamioTableCell className="font-mono text-xs">
-                {course.course_code}
-              </AndamioTableCell>
-              <AndamioTableCell className="font-medium">
-                {course.title}
-              </AndamioTableCell>
-              <AndamioTableCell className="max-w-md truncate hidden sm:table-cell">
-                {course.description}
-              </AndamioTableCell>
-              <AndamioTableCell className="text-center">
-                <CourseModuleCount count={moduleCounts[course.course_code]} showIcon={false} />
-                {moduleCounts[course.course_code] === undefined && (
-                  <span className="text-xs text-muted-foreground">-</span>
-                )}
-              </AndamioTableCell>
-              <AndamioTableCell className="text-right">
-                <CourseManageButton
-                  courseNftPolicyId={course.course_nft_policy_id ?? null}
-                  variant="ghost"
-                />
-              </AndamioTableCell>
-            </AndamioTableRow>
-          ))}
+          {courses.map((course) => {
+            const courseId = course.course_id ?? "";
+            const title = typeof course.title === "string" ? course.title : "";
+            const description = typeof course.description === "string" ? course.description : "";
+            return (
+              <AndamioTableRow key={courseId}>
+                <AndamioTableCell className="font-mono text-xs">
+                  {courseId}
+                </AndamioTableCell>
+                <AndamioTableCell className="font-medium">
+                  {title}
+                </AndamioTableCell>
+                <AndamioTableCell className="max-w-md truncate hidden sm:table-cell">
+                  {description}
+                </AndamioTableCell>
+                <AndamioTableCell className="text-center">
+                  <CourseModuleCount count={moduleCounts[courseId]} showIcon={false} />
+                  {moduleCounts[courseId] === undefined && (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </AndamioTableCell>
+                <AndamioTableCell className="text-right">
+                  <CourseManageButton
+                    courseNftPolicyId={courseId || null}
+                    variant="ghost"
+                  />
+                </AndamioTableCell>
+              </AndamioTableRow>
+            );
+          })}
         </AndamioTableBody>
       </AndamioTable>
     </div>

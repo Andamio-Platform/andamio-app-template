@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { MobileNav } from "./mobile-nav";
-import { PendingTxIndicator } from "./pending-tx-indicator";
+import { PendingTxPopover } from "~/components/pending-tx-popover";
 import {
   WalletIcon,
   ShieldIcon,
@@ -162,7 +162,7 @@ export function AuthStatusBar() {
           </div>
 
           {/* Pending Transaction Indicator - Shows when there are pending txs */}
-          {isAuthenticated && <PendingTxIndicator />}
+          {isAuthenticated && <PendingTxPopover />}
 
           {/* JWT Timer - Only show when authenticated, hidden on small screens */}
           {isAuthenticated && timeUntilExpiry && (

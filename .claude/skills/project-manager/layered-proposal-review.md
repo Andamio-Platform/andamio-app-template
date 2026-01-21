@@ -1,14 +1,14 @@
 # Layered Architecture Proposal - Review Notes
 
-**Last Updated**: 2026-01-20
+**Last Updated**: 2026-01-21
 **Proposal**: `layered-proposal.md`
 
 ## Status
 
 | Layer | Status | Notes |
 |-------|--------|-------|
-| L1: Core | 🔄 Planning | Hash utils + constants first |
-| L2: Integration | 🔄 Planning | Single Gateway API |
+| L1: Core | ✅ **Complete** | `@andamio/core` package created with hashing + constants |
+| L2: Integration | 🔄 Next | Single Gateway API, hooks reorganization |
 | L3: Components | 🔄 Planning | V2 TX State Machine pattern |
 | L4: Features | ⏸️ Deferred | Post-v2 launch extraction |
 | L5: App | 🔄 Planning | Routes aligned with API |
@@ -32,7 +32,7 @@ packages/core/
 ├── utils/
 │   ├── hashing/
 │   │   ├── slt-hash.ts          # Module token name computation
-│   │   ├── task-hash.ts         # Task ID computation
+│   │   ├── task-hash.ts         # Task hash computation
 │   │   ├── commitment-hash.ts   # Assignment/task evidence hash
 │   │   └── index.ts
 │   ├── cbor-decoder.ts          # Transaction CBOR decoding
@@ -81,8 +81,8 @@ packages/core/
 
 ### Priorities
 
-1. **Start now**: Hash utilities (`utils/hashing/`) - pure protocol math, no dependencies on API
-2. **Start now**: Constants (`constants/`) - explorer URLs, policy IDs, network config
+1. ✅ **Complete**: Hash utilities (`utils/hashing/`) - `slt-hash.ts`, `task-hash.ts`, `commitment-hash.ts`
+2. ✅ **Complete**: Constants (`constants/`) - `cardano.ts`, `policies.ts`
 3. **Hold**: Types - keep auto-generated from API spec until stable
 4. **Decided**: Transaction schemas - Gateway API is authority (see Decisions Made)
 
@@ -115,16 +115,18 @@ src/
 │       └── course-filters.ts
 │
 ├── hooks/
-│   ├── api/                    # should we organize into /course and /project?
-│   │   ├── use-course.ts
-│   │   ├── use-course-module.ts
-│   │   ├── use-slt.ts
-│   │   ├── use-lesson.ts
-│   │   ├── use-project.ts
-│   │   ├── use-student-courses.ts
-│   │   ├── use-teacher-courses.ts
-│   │   ├── use-contributor-projects.ts
-│   │   └── use-manager-projects.ts
+│   ├── api/                    # Organized by system per API taxonomy
+│   │   ├── course/
+│   │   │   ├── use-course.ts
+│   │   │   ├── use-course-module.ts
+│   │   │   ├── use-slt.ts
+│   │   │   ├── use-lesson.ts
+│   │   │   ├── use-student-courses.ts
+│   │   │   └── use-teacher-courses.ts
+│   │   └── project/
+│   │       ├── use-project.ts
+│   │       ├── use-contributor-projects.ts
+│   │       └── use-manager-projects.ts
 │   ├── tx/
 │   │   ├── use-transaction.ts      # Rename from use-simple-transaction.ts
 │   │   └── use-tx-watcher.ts
@@ -477,7 +479,7 @@ Each feature that involves transactions uses V2 TX State Machine:
 | `[coursenft]` | `[courseId]` | Matches API param, clearer |
 | `[projectid]` | `[projectId]` | camelCase consistency |
 | `[moduleindex]` | `[lessonIndex]` | Clearer - it's the lesson index |
-| `[taskindex]` | `[taskIndex]` | camelCase consistency |
+| `[taskindex]` | `[taskHash]` | Content-addressed identifier per API taxonomy |
 
 ### Config Files
 
@@ -527,8 +529,10 @@ Each feature that involves transactions uses V2 TX State Machine:
 4. [x] Review Layer 4 scope (deferred to post-launch)
 5. [x] Review Layer 5 scope
 6. [x] Resolve TX schema ownership question with team
-7. [ ] Assign layer owners based on time + interests
-8. [ ] Create Phase 1 task breakdown
+7. [x] **L1 Core Implementation** - `@andamio/core` package complete
+8. [ ] **L2 Integration** - Reorganize hooks, remove deprecated files
+9. [ ] Assign layer owners based on time + interests
+10. [ ] Create Phase 2 task breakdown
 
 ### Build Order for V2 Launch
 

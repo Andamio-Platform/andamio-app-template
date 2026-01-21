@@ -1,171 +1,281 @@
 /**
  * useTransaction Hook
  *
- * Core hook for handling Cardano transaction lifecycle:
- * 1. Fetch unsigned CBOR from transaction API endpoint
- * 2. Sign transaction with user's wallet
- * 3. Submit signed transaction to blockchain
- * 4. Handle confirmation and callbacks
+ * Primary transaction hook for the V2 gateway auto-confirmation flow.
+ * The gateway handles all DB updates automatically via TxTypeRegistry.
  *
- * Supports the unified gateway API backend:
- * - gateway: Unified Andamio API Gateway (consolidates all services)
+ * ## TX Lifecycle
  *
- * Will be extracted to @andamio/transactions package.
+ * 1. **BUILD**: POST to `/api/v2/tx/*` endpoint → get unsigned CBOR
+ * 2. **SIGN**: User signs with wallet
+ * 3. **SUBMIT**: Submit to blockchain → get txHash
+ * 4. **REGISTER**: POST to `/api/v2/tx/register` → gateway starts monitoring
+ * 5. **(auto) CONFIRM**: Gateway monitors and updates DB automatically
+ *
+ * ## Tracking Confirmation
+ *
+ * After execution, use `useTxWatcher(result?.txHash)` to poll for confirmation:
+ *
+ * ```tsx
+ * const { execute, result } = useTransaction();
+ * const { status, isSuccess } = useTxWatcher(result?.txHash);
+ *
+ * // status.state will be: pending → confirmed → updated
+ * ```
+ *
+ * ## Usage
+ *
+ * ```tsx
+ * import { useTransaction } from "~/hooks/use-transaction";
+ * import { useTxWatcher } from "~/hooks/use-tx-watcher";
+ *
+ * function MintAccessToken() {
+ *   const { execute, state, result, reset } = useTransaction();
+ *   const { status, isSuccess } = useTxWatcher(result?.txHash);
+ *
+ *   const handleMint = async () => {
+ *     await execute({
+ *       txType: "GLOBAL_GENERAL_ACCESS_TOKEN_MINT",
+ *       params: {
+ *         initiator_data: walletAddress,
+ *         alias: "myalias",
+ *       },
+ *     });
+ *   };
+ *
+ *   return (
+ *     <div>
+ *       <TransactionButton state={state} onClick={handleMint} />
+ *       {status && <div>Gateway status: {status.state}</div>}
+ *       {isSuccess && <div>✓ Transaction complete!</div>}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see ~/hooks/use-tx-watcher.ts - TX status polling hook
+ * @see ~/config/transaction-ui.ts - UI strings and endpoints
+ * @see ~/config/transaction-schemas.ts - Zod validation schemas
  */
 
 import { useState, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
+import { toast } from "sonner";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
-import { getTransactionExplorerUrl, type CardanoNetwork } from "~/lib/constants";
-import type {
-  TransactionConfig,
-  TransactionState,
-  TransactionResult,
-  UnsignedTxResponse,
-} from "~/types/transaction";
+import { getTransactionExplorerUrl } from "~/lib/constants";
+import {
+  type TransactionType,
+  TRANSACTION_ENDPOINTS,
+  getTransactionUI,
+} from "~/config/transaction-ui";
+import { validateTxParams, type TxParams } from "~/config/transaction-schemas";
+import { registerTransaction, getGatewayTxType } from "~/hooks/use-tx-watcher";
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 
-// Feature flag for transaction API readiness
-const TX_API_ENABLED = true;
+// =============================================================================
+// Types
+// =============================================================================
 
-export function useTransaction<TParams = unknown>() {
+/**
+ * Transaction states - compatible with TransactionState from ~/types/transaction
+ * for seamless use with existing UI components (TransactionButton, TransactionStatus)
+ */
+export type SimpleTransactionState =
+  | "idle"
+  | "fetching"   // Building transaction (fetching unsigned CBOR)
+  | "signing"
+  | "submitting"
+  | "success"
+  | "error";
+
+/**
+ * Transaction result - compatible with TransactionResult from ~/types/transaction
+ */
+export interface SimpleTransactionResult {
+  txHash: string;
+  success: boolean;
+  blockchainExplorerUrl?: string;
+  /** Raw API response (may contain additional fields like course_id, project_id) */
+  apiResponse?: Record<string, unknown>;
+  /** Whether this TX requires DB updates (determines if polling is needed) */
+  requiresDBUpdate: boolean;
+}
+
+export interface SimpleTransactionConfig<T extends TransactionType> {
+  /** Transaction type from TransactionType union */
+  txType: T;
+  /** Transaction parameters (validated against schema) */
+  params: TxParams[T];
+  /** Callback fired on successful submission and registration */
+  onSuccess?: (result: SimpleTransactionResult) => void | Promise<void>;
+  /** Callback fired on error */
+  onError?: (error: Error) => void;
+  /** Skip schema validation (use with caution) */
+  skipValidation?: boolean;
+  /** Optional metadata for TX registration (e.g., course title for instance creation) */
+  metadata?: Record<string, string>;
+}
+
+interface UnsignedTxResponse {
+  unsigned_tx?: string;
+  unsignedTxCBOR?: string;
+  // Additional fields returned by some endpoints
+  course_id?: string;
+  project_id?: string;
+  [key: string]: unknown;
+}
+
+// =============================================================================
+// Hook
+// =============================================================================
+
+export function useTransaction() {
   const { wallet, connected } = useWallet();
-  const [state, setState] = useState<TransactionState>("idle");
-  const [result, setResult] = useState<TransactionResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { jwt } = useAndamioAuth();
+  const [state, setState] = useState<SimpleTransactionState>("idle");
+  const [error, setError] = useState<Error | null>(null);
+  const [result, setResult] = useState<SimpleTransactionResult | null>(null);
 
   const execute = useCallback(
-    async (config: TransactionConfig<TParams>) => {
-      if (!TX_API_ENABLED) {
-        const err = "Transaction building is temporarily unavailable.";
-        setError(err);
-        setState("error");
-        config.onError?.(new Error(err));
-        return;
-      }
+    async <T extends TransactionType>(config: SimpleTransactionConfig<T>) => {
+      const { txType, params, onSuccess, onError, skipValidation, metadata } = config;
+      const ui = getTransactionUI(txType);
 
-      if (!connected || !wallet) {
-        const err = "Wallet not connected";
-        setError(err);
-        setState("error");
-        config.onError?.(new Error(err));
-        return;
-      }
+      // Reset state
+      setError(null);
+      setResult(null);
 
       try {
-        // Reset state
-        setError(null);
-        setResult(null);
-
-        // Step 1: Fetch unsigned CBOR from transaction API
-        setState("fetching");
-        config.onStateChange?.("fetching");
-
-        const txType = config.txType ?? config.endpoint;
-        const method = config.method ?? "POST";
-        const apiBackend = config.apiBackend ?? "gateway";
-
-        // Build URL based on API backend
-        let url = `/api/${apiBackend}${config.endpoint}`;
-        const fetchOptions: RequestInit = {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        };
-
-        if (method === "GET") {
-          const queryParams = new URLSearchParams(
-            config.params as Record<string, string>
-          );
-          url = `${url}?${queryParams.toString()}`;
-        } else {
-          fetchOptions.body = JSON.stringify(config.params);
+        // Step 0: Check wallet connection
+        if (!connected || !wallet) {
+          throw new Error("Wallet not connected");
         }
 
-        // Log the build request
-        txLogger.buildRequest(txType, url, method, config.params);
+        // Step 1: Validate params (part of "fetching" state)
+        setState("fetching");
+        if (!skipValidation) {
+          const validation = validateTxParams(txType, params);
+          if (!validation.success) {
+            const errorMsg = validation.error.errors
+              .map((e) => `${e.path.join(".")}: ${e.message}`)
+              .join(", ");
+            throw new Error(`Invalid parameters: ${errorMsg}`);
+          }
+        }
 
-        const apiResponse = await fetch(url, fetchOptions);
+        // Step 2: Build transaction (fetch unsigned CBOR)
+        const endpoint = TRANSACTION_ENDPOINTS[txType];
+        const url = `/api/gateway${endpoint}`;
 
-        if (!apiResponse.ok) {
-          const errorText = await apiResponse.text();
+        txLogger.buildRequest(txType, url, "POST", params);
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
           let errorDetails: string;
           try {
-            // Try to parse as JSON to get more details
-            const errorJson = JSON.parse(errorText) as { error?: string; details?: string; message?: string };
-            errorDetails = errorJson.details ?? errorJson.message ?? errorJson.error ?? errorText;
+            const errorJson = JSON.parse(errorText) as {
+              error?: string;
+              details?: string;
+              message?: string;
+            };
+            errorDetails =
+              errorJson.details ?? errorJson.message ?? errorJson.error ?? errorText;
           } catch {
             errorDetails = errorText;
           }
-          txLogger.buildResult(txType, false, { status: apiResponse.status, error: errorDetails });
-          throw new Error(`Transaction API error: ${apiResponse.status} - ${errorDetails}`);
+          txLogger.buildResult(txType, false, { status: response.status, error: errorDetails });
+          throw new Error(`Transaction API error: ${response.status} - ${errorDetails}`);
         }
 
-        const unsignedTx = (await apiResponse.json()) as UnsignedTxResponse;
+        const apiResponse = (await response.json()) as UnsignedTxResponse;
+        const unsignedCbor = apiResponse.unsigned_tx ?? apiResponse.unsignedTxCBOR;
 
-        // V2 API uses unsigned_tx, legacy uses unsignedTxCBOR
-        const unsignedCbor = unsignedTx.unsigned_tx ?? unsignedTx.unsignedTxCBOR;
         if (!unsignedCbor) {
-          console.error("[Transaction API] Missing CBOR in response. Response keys:", Object.keys(unsignedTx));
-          txLogger.buildResult(txType, false, { error: "No CBOR in response", response: unsignedTx });
-          throw new Error(`No CBOR returned from transaction API. Response: ${JSON.stringify(unsignedTx)}`);
+          txLogger.buildResult(txType, false, { error: "No CBOR in response" });
+          throw new Error("No unsigned transaction returned from API");
         }
 
-        txLogger.buildResult(txType, true, unsignedTx);
+        txLogger.buildResult(txType, true, apiResponse);
 
-        // Step 2: Sign transaction with wallet
+        // Step 3: Sign transaction
         setState("signing");
-        config.onStateChange?.("signing");
+        const signedTx = await wallet.signTx(unsignedCbor, true); // partialSign=true for V2
 
-        const signedTx = await wallet.signTx(unsignedCbor, config.partialSign);
-
-        // Step 3: Submit to blockchain
+        // Step 4: Submit to blockchain
         setState("submitting");
-        config.onStateChange?.("submitting");
-
         const txHash = await wallet.submitTx(signedTx);
-        console.log("[Transaction] ✓ Submitted successfully. TxHash:", txHash);
-
-        // Step 4: Success!
-        setState("success");
-        config.onStateChange?.("success");
 
         const explorerUrl = getExplorerUrl(txHash);
         txLogger.txSubmitted(txType, txHash, explorerUrl);
 
-        const txResult: TransactionResult = {
+        // Step 5: Register with gateway (only for TXs that need DB updates)
+        if (ui.requiresDBUpdate) {
+          if (jwt) {
+            try {
+              const gatewayTxType = getGatewayTxType(txType);
+              await registerTransaction(txHash, gatewayTxType, jwt, metadata);
+              console.log(`[${txType}] Transaction registered with gateway`);
+            } catch (regError) {
+              // Registration failure is non-critical - gateway may still pick it up
+              console.warn(`[${txType}] Failed to register TX:`, regError);
+            }
+          } else {
+            console.warn(`[${txType}] No JWT - skipping TX registration`);
+          }
+        } else {
+          console.log(`[${txType}] Pure on-chain TX - skipping registration (no DB updates needed)`);
+        }
+
+        // Step 6: Success!
+        setState("success");
+
+        const txResult: SimpleTransactionResult = {
           txHash,
           success: true,
           blockchainExplorerUrl: explorerUrl,
-          apiResponse: unsignedTx as unknown as Record<string, unknown>,
+          apiResponse: apiResponse as Record<string, unknown>,
+          requiresDBUpdate: ui.requiresDBUpdate,
         };
-
         setResult(txResult);
+
+        // Show success toast (different message based on whether DB updates are needed)
+        toast.success(ui.successInfo, {
+          description: ui.requiresDBUpdate
+            ? "Transaction submitted. Waiting for confirmation..."
+            : "Transaction submitted to blockchain!",
+          action: explorerUrl
+            ? {
+                label: "View Transaction",
+                onClick: () => window.open(explorerUrl, "_blank"),
+              }
+            : undefined,
+        });
 
         // Call success callback
-        await config.onSuccess?.(txResult);
+        await onSuccess?.(txResult);
       } catch (err) {
-        console.error("[Transaction] ✗ Transaction failed:", err);
-        txLogger.txError(config.txType ?? config.endpoint, err);
+        const error = err instanceof Error ? err : new Error(String(err));
+        console.error(`[${txType}] Transaction failed:`, error);
+        txLogger.txError(txType, error);
 
-        const errorMessage = err instanceof Error ? err.message : "Transaction failed";
-        console.error("[Transaction] Error message:", errorMessage);
-
-        setError(errorMessage);
+        setError(error);
         setState("error");
-        config.onStateChange?.("error");
 
-        const txResult: TransactionResult = {
-          success: false,
-          error: errorMessage,
-        };
+        toast.error("Transaction Failed", {
+          description: error.message,
+        });
 
-        setResult(txResult);
-        config.onError?.(err instanceof Error ? err : new Error(errorMessage));
+        onError?.(error);
       }
     },
-    [connected, wallet]
+    [connected, wallet, jwt]
   );
 
   const reset = useCallback(() => {
@@ -175,26 +285,30 @@ export function useTransaction<TParams = unknown>() {
   }, []);
 
   return {
+    // State
     state,
-    result,
     error,
+    result,
+
+    // Actions
     execute,
     reset,
+
+    // Derived state (for convenience)
     isIdle: state === "idle",
     isFetching: state === "fetching",
     isSigning: state === "signing",
     isSubmitting: state === "submitting",
-    isConfirming: state === "confirming",
     isSuccess: state === "success",
     isError: state === "error",
-    isLoading: state === "fetching" || state === "signing" || state === "submitting" || state === "confirming",
+    isLoading: ["fetching", "signing", "submitting"].includes(state),
   };
 }
 
-/**
- * Get Cardano explorer URL for a transaction hash
- */
+// =============================================================================
+// Helpers
+// =============================================================================
+
 function getExplorerUrl(txHash: string): string {
-  const network = (env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod") satisfies CardanoNetwork;
-  return getTransactionExplorerUrl(txHash, network);
+  return getTransactionExplorerUrl(txHash, env.NEXT_PUBLIC_CARDANO_NETWORK);
 }

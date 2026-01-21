@@ -17,7 +17,7 @@ import { AssignmentCommitment } from "~/components/learner/assignment-commitment
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { getCourse } from "~/lib/andamioscan";
 import { type CourseResponse, type CourseModuleResponse } from "~/types/generated";
-import { computeSltHashDefinite } from "~/lib/utils/slt-hash";
+import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 

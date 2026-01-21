@@ -11,7 +11,7 @@
  *
  * The gateway still tracks the transaction for analytics and state updates.
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -19,7 +19,7 @@
 
 import React from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -81,7 +81,7 @@ export function ProjectCredentialClaim({
   onSuccess,
 }: ProjectCredentialClaimProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(

@@ -7,7 +7,7 @@
  * ## TX Lifecycle
  *
  * 1. User enters code, title, and optional teachers, clicks "Create Course"
- * 2. `useSimpleTransaction` builds, signs, submits, and registers TX
+ * 2. `useTransaction` builds, signs, submits, and registers TX
  * 3. `useTxWatcher` polls gateway for confirmation status
  * 4. When status is "confirmed", calls manual registration endpoint
  *    (Workaround: TX State Machine auto-registration fails with 401 because
@@ -21,7 +21,7 @@
  * `/course/gateway/course/register`, the TX State Machine will auto-register
  * courses and this workaround can be removed.
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -30,7 +30,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -60,7 +60,7 @@ export interface CreateCourseProps {
 /**
  * CreateCourse - Full UI for creating a course on-chain (V2)
  *
- * Uses useSimpleTransaction with gateway auto-confirmation.
+ * Uses useTransaction with gateway auto-confirmation.
  *
  * @example
  * ```tsx
@@ -70,7 +70,7 @@ export interface CreateCourseProps {
 export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [code, setCode] = useState("");

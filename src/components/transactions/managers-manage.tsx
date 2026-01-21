@@ -4,7 +4,7 @@
  * UI for adding or removing managers from a project.
  * Uses PROJECT_OWNER_MANAGERS_MANAGE transaction with gateway auto-confirmation.
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -12,7 +12,7 @@
 
 import React, { useState } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -67,7 +67,7 @@ export function ManagersManage({
   onSuccess,
 }: ManagersManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
 
   const [managerInput, setManagerInput] = useState("");
   const [action, setAction] = useState<"add" | "remove">("add");

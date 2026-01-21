@@ -11,11 +11,6 @@ export type { TransactionButtonProps } from "./transaction-button";
 export { TransactionStatus } from "./transaction-status";
 export type { TransactionStatusProps } from "./transaction-status";
 
-// AndamioTransaction is deprecated - use specific transaction components instead
-// (e.g., AssessAssignment, EnrollInCourse, TaskCommit, etc.)
-export { AndamioTransaction } from "./andamio-transaction";
-export type { AndamioTransactionProps } from "./andamio-transaction";
-
 // MintAccessToken (V1) is deprecated - use MintAccessTokenSimple instead
 export { MintAccessTokenSimple } from "./mint-access-token-simple";
 export type { MintAccessTokenSimpleProps } from "./mint-access-token-simple";

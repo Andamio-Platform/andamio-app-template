@@ -7,12 +7,12 @@
  * ## TX Lifecycle
  *
  * 1. User enters title, managers, deposit, and prerequisites
- * 2. `useSimpleTransaction` builds, signs, submits, and registers TX
+ * 2. `useTransaction` builds, signs, submits, and registers TX
  * 3. `useTxWatcher` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI shows success and calls onSuccess callback
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -21,7 +21,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -52,7 +52,7 @@ export interface CreateProjectProps {
 /**
  * CreateProject - Full UI for creating a project on-chain (V2)
  *
- * Uses useSimpleTransaction with gateway auto-confirmation.
+ * Uses useTransaction with gateway auto-confirmation.
  *
  * @example
  * ```tsx
@@ -62,7 +62,7 @@ export interface CreateProjectProps {
 export function CreateProject({ onSuccess }: CreateProjectProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");

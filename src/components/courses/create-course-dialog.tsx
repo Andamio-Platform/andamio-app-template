@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -54,7 +54,7 @@ import { useInvalidateTeacherCourses } from "~/hooks/api/use-teacher-courses";
 export function CreateCourseDialog() {
   const { user, authenticatedFetch } = useAndamioAuth();
   const { wallet, connected } = useWallet();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
   const invalidateTeacherCourses = useInvalidateTeacherCourses();
 
   const [open, setOpen] = useState(false);

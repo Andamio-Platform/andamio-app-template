@@ -1,6 +1,6 @@
 # API Coverage Report
 
-> **Generated**: 2026-01-21T00:35:02.280Z
+> **Generated**: 2026-01-21T19:58:44.013Z
 > **Overall Coverage**: 63% (68/108 endpoints)
 
 ## Summary

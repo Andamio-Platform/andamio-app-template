@@ -4,7 +4,7 @@
  * Teacher UI for burning (removing) course module tokens.
  * Uses COURSE_TEACHER_MODULES_MANAGE transaction type with gateway auto-confirmation.
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -13,7 +13,7 @@
 import React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { courseModuleKeys } from "~/hooks/api/use-course-module";
 import { TransactionButton } from "./transaction-button";
@@ -83,7 +83,7 @@ export function BurnModuleTokens({
   onError,
 }: BurnModuleTokensProps) {
   const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
   const queryClient = useQueryClient();
 
   // Watch for gateway confirmation after TX submission

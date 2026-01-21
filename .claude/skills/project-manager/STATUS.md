@@ -1,12 +1,158 @@
 # Project Status
 
-> **Last Updated**: January 21, 2026 (Session 23 - API Gateway URL Updated + Coverage Audit)
+> **Last Updated**: January 21, 2026 (Session 26 - L1 Core Implementation Complete)
 
 Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## 🚨 CURRENT: New API Gateway Migration
+## 📋 REMINDER: Tomorrow (January 22, 2026)
+
+**Cover next round of API spec fixes with Andamio API team:**
+
+1. **NullableString/NullableInt32 typing** - OpenAPI spec types these as `object` instead of `string | null` / `number | null`. Causes 200+ type errors.
+
+2. **Field renames discovered during type regen:**
+   | Old Field | New Field | Type |
+   |-----------|-----------|------|
+   | `module_code` | `course_module_code` | CourseModuleV2 |
+   | `live` | `is_live` | LessonV2 |
+   | `module_index` | `index` | SltV2 |
+   | `module_hash` | `slt_hash` | CourseModuleV2 |
+
+**Blocked until**: API team fixes OpenAPI spec for nullable types.
+
+**REPL note ready**: `/tmp/repl-note-nullable-types.md`
+
+---
+
+## 🚨 CURRENT: Layered Architecture Implementation
+
+**Status**: 🔄 Phase 1 - L1 Core Complete, Ready for L2/L3
+
+Implementing the layered architecture proposal (`layered-proposal-review.md`).
+
+### Session 26 Progress (January 21, 2026)
+
+**L1 Core Package Implementation - COMPLETE** ✅
+
+Created `@andamio/core` package at `packages/core/`:
+
+**Package Structure**:
+```
+packages/core/
+├── src/
+│   ├── utils/
+│   │   └── hashing/
+│   │       ├── slt-hash.ts          # Module token name computation
+│   │       ├── task-hash.ts         # Task hash computation
+│   │       ├── commitment-hash.ts   # Evidence hash (renamed from assignment-info-hash)
+│   │       └── index.ts
+│   ├── constants/
+│   │   ├── cardano.ts               # Explorer URLs, networks
+│   │   ├── policies.ts              # Policy IDs, asset name helpers
+│   │   └── index.ts
+│   └── index.ts
+├── package.json
+├── tsconfig.json
+└── tsup.config.ts
+```
+
+**Files Created**:
+| File | Purpose |
+|------|---------|
+| `packages/core/package.json` | Package config with `blakejs` dependency |
+| `packages/core/tsconfig.json` | TypeScript config (ES2020, strict) |
+| `packages/core/tsup.config.ts` | Build config (ESM + CJS + types) |
+| `packages/core/src/utils/hashing/slt-hash.ts` | SLT hash with Plutus CBOR encoding |
+| `packages/core/src/utils/hashing/task-hash.ts` | Task hash matching on-chain validators |
+| `packages/core/src/utils/hashing/commitment-hash.ts` | Evidence commitment hash |
+| `packages/core/src/utils/hashing/index.ts` | Barrel export |
+| `packages/core/src/constants/cardano.ts` | Network constants, explorer URLs |
+| `packages/core/src/constants/policies.ts` | Policy ID helpers |
+| `packages/core/src/constants/index.ts` | Barrel export |
+| `packages/core/src/index.ts` | Main entry point |
+
+**Package Exports**:
+```typescript
+// Hashing utilities
+import { computeSltHash, computeTaskHash, computeCommitmentHash } from "@andamio/core/hashing";
+
+// Constants
+import { getTxExplorerUrl, isValidPolicyId, CardanoNetwork } from "@andamio/core/constants";
+```
+
+**Codebase Updates**:
+- ✅ Updated 11 source files to import from `@andamio/core/hashing`
+- ✅ Old utility files in `src/lib/utils/` now re-export from `@andamio/core` for backwards compatibility
+- ✅ Fixed stale `PendingTxIndicator` → `PendingTxPopover` import in `auth-status-bar.tsx`
+- ✅ Package builds successfully (ESM, CJS, TypeScript declarations)
+
+**Build Output**:
+```
+dist/index.js, dist/index.mjs         (~13KB)
+dist/utils/hashing/index.js, .mjs     (~10KB)
+dist/constants/index.js, .mjs         (~3KB)
++ TypeScript declaration files
+```
+
+**Next Steps** (L2 Integration):
+1. [ ] Reorganize hooks into `course/` and `project/` subdirectories
+2. [ ] Remove deprecated `andamioscan.ts` (1497 lines)
+3. [ ] Clean up remaining V1 patterns
+
+### Session 25 Progress (January 21, 2026)
+
+**API Taxonomy Audit + Type Regeneration**:
+- ✅ Audited gateway API spec against `api-taxonomy` skill
+- ✅ Identified 6 taxonomy violations, wrote REPL note to API team
+- ✅ API team deployed fixes:
+  - `admin_alias` → `owner_alias` (Project)
+  - `status` → `project_status`, `task_status`, `commitment_status`
+  - `lovelace` → `lovelace_amount`
+  - `evidence_hash` → `assignment_evidence_hash`, `task_evidence_hash`
+  - `assessment_decision` → `task_outcome`
+  - New endpoint: `POST /v2/course/owner/teachers/update`
+- ✅ Regenerated types from updated spec (`npm run generate:types`)
+- ✅ Created `src/types/generated/index.ts` with type aliases
+- ✅ Fixed `admin_alias` → `owner_alias` in `studio/project/[projectid]/page.tsx`
+
+**Blocked by**:
+- OpenAPI spec types `NullableString` as `object` (should be `string | null`)
+- 339 type errors until API team fixes the spec
+
+### Session 24 Progress (January 21, 2026)
+
+**Completed**:
+- ✅ Deleted 6 deprecated/unused files
+- ✅ Renamed `use-simple-transaction.ts` → `use-transaction.ts`
+- ✅ Renamed `useSimpleTransaction()` → `useTransaction()`
+- ✅ Updated 21 import references
+- ✅ Aligned proposal with API taxonomy rules
+
+**Files Deleted**:
+| File | Size | Reason |
+|------|------|--------|
+| `src/lib/andamio-gateway.ts` | 14KB | Replaced by `gateway.ts` |
+| `src/hooks/use-andamio-fetch.ts` | 9KB | Replaced by React Query hooks |
+| `src/hooks/use-andamio-transaction.ts` | 16KB | V1 pattern, replaced by V2 |
+| `src/hooks/use-transaction.ts` (old) | 200 lines | Unused older version |
+| `src/components/layout/pending-tx-indicator.tsx` | 2KB | Replaced by `pending-tx-popover.tsx` |
+| `src/components/transactions/andamio-transaction.tsx` | 5KB | V1 component, replaced by specific TX components |
+
+### Build Order (from proposal)
+
+```
+L1 (Core)         ─┐
+L2 (Integration)  ─┼─ concurrent → LAUNCH
+L3 (Components)   ─┤
+L5 (App)          ─┘       ↓
+                    L4 (Features) - post-launch extraction
+```
+
+---
+
+## 🔄 API Gateway Migration
 
 **Status**: 🔄 In Progress
 
@@ -184,7 +330,7 @@ The unified V2 Gateway API consolidates all 3 subsystems (DB API, Andamioscan, T
 Created new simplified transaction system that leverages gateway auto-confirmation instead of client-side Koios polling.
 
 **New Files Created**:
-1. `src/hooks/use-simple-transaction.ts` - Simplified TX hook (BUILD → SIGN → SUBMIT → REGISTER)
+1. `src/hooks/use-transaction.ts` - Primary TX hook (BUILD → SIGN → SUBMIT → REGISTER) *(renamed from use-simple-transaction.ts in Session 24)*
 2. `src/hooks/use-tx-watcher.ts` - Gateway status polling hook + TX registration helper
 3. `src/components/transactions/mint-access-token-simple.tsx` - Reference implementation
 4. `src/config/transaction-ui.ts` - Added `requiresDBUpdate` flag to all 17 TX types
@@ -577,6 +723,7 @@ When implementing new endpoints or debugging API issues, fetch the live schema r
 
 | Blocker | Status | Impact |
 |---------|--------|--------|
+| **OpenAPI NullableString Typing** | 🚨 **Blocking** | OpenAPI spec defines `NullableString` as `object` instead of `string | null`. Causes 200+ type errors. REPL note sent to API team. |
 | **SLT Endpoints Schema Mismatch** | 🚨 **Blocking** | SLT create/update/delete endpoints expect camelCase (`policyId`, `moduleCode`, `sltText`) while all other teacher endpoints use snake_case. Even with camelCase, returns "Invalid request body". **GitHub Issue**: [andamio-api#3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
 | **Course Creation Metadata** | ✅ **Resolved** | Auto-registration now works! Gateway v2.0.0-preprod-20260119-e captures `owner_alias` from JWT and uses service-to-service auth. |
 | **Atlas TX API Task Commit** | ✅ **Resolved** | Client-side fix implemented. End-to-end testing ready. |
@@ -1172,11 +1319,15 @@ Full roadmap: `audit-api-coverage/api-recommendations-2025-12-19.md`
 
 | Component | Status | Purpose |
 |-----------|--------|---------|
-| `useAndamioTransaction` | **Primary** | Transaction hook with automatic side effects |
-| `useTransaction` | Stable | Base hook (used internally by useAndamioTransaction) |
+| `useTransaction` | **Primary** | V2 TX hook with gateway auto-confirmation (BUILD → SIGN → SUBMIT → REGISTER) |
+| `useTxWatcher` | Stable | Gateway status polling for TX confirmation |
 | `TransactionButton` | Stable | Reusable transaction button |
 | `TransactionStatus` | Stable | Transaction result display |
-| `PendingTxWatcher` | Stable | Automatic tx monitoring via Koios |
+| `PendingTxWatcher` | Stable | Global TX monitoring (V1 pattern, uses Koios) |
+
+**Deprecated (Deleted in Session 24)**:
+- `useAndamioTransaction` - V1 hook with client-side Koios polling
+- `AndamioTransaction` - Generic TX component (use specific components instead)
 
 ### V2 Transaction Components: 16/16 Complete ✅
 

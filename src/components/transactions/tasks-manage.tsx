@@ -4,16 +4,16 @@
  * UI for project managers to add or remove tasks from a project.
  * Uses PROJECT_MANAGER_TASKS_MANAGE transaction with gateway auto-confirmation.
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
 "use client";
 
 import React, { useState } from "react";
-import { computeTaskHash } from "~/lib/utils/task-hash";
+import { computeTaskHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -176,7 +176,7 @@ export function TasksManage({
   onSuccess,
 }: TasksManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
 
   const [action, setAction] = useState<"add" | "remove">("add");
 

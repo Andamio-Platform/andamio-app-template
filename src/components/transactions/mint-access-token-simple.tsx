@@ -7,7 +7,7 @@
  * ## TX Lifecycle
  *
  * 1. User enters alias and clicks "Mint"
- * 2. `useSimpleTransaction` builds, signs, submits, and registers TX
+ * 2. `useTransaction` builds, signs, submits, and registers TX
  * 3. `useTxWatcher` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI refreshes to show the new access token
@@ -16,11 +16,11 @@
  *
  * | Original | Simplified |
  * |----------|------------|
- * | Uses `useAndamioTransaction` | Uses `useSimpleTransaction` |
+ * | Uses `useAndamioTransaction` | Uses `useTransaction` |
  * | Client-side Koios polling | Server-side gateway monitoring |
  * | Manual DB side effects | Gateway handles DB updates |
  *
- * @see ~/hooks/use-simple-transaction.ts
+ * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-watcher.ts
  */
 
@@ -29,7 +29,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
@@ -73,7 +73,7 @@ function isValidAlias(alias: string): boolean {
 export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps) {
   const { wallet, connected } = useWallet();
   const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
-  const { state, result, error, execute, reset } = useSimpleTransaction();
+  const { state, result, error, execute, reset } = useTransaction();
   const [alias, setAlias] = useState("");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 

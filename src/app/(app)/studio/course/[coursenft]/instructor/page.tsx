@@ -46,7 +46,7 @@ import {
 } from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { TransactionButton } from "~/components/transactions/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
@@ -99,7 +99,7 @@ export default function InstructorDashboardPage() {
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
 
   // V2 Transaction hooks
-  const assessTx = useSimpleTransaction();
+  const assessTx = useTransaction();
 
   // Watch for gateway confirmation after assess TX submission
   const { status: assessTxStatus, isSuccess: assessTxConfirmed } = useTxWatcher(

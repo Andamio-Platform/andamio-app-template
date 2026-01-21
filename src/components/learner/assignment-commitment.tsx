@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/use-success-notification";
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/use-transaction";
 import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -116,8 +116,8 @@ export function AssignmentCommitment({
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
 
   // V2 Transaction hooks
-  const commitTx = useSimpleTransaction();
-  const updateTx = useSimpleTransaction();
+  const commitTx = useTransaction();
+  const updateTx = useTransaction();
 
   // Watch for gateway confirmation after commit TX submission
   const { status: commitTxStatus, isSuccess: commitTxConfirmed } = useTxWatcher(

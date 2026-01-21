@@ -114,8 +114,8 @@ export default function ProjectDashboardPage() {
 
       if (projectResponse.ok) {
         projectData = (await projectResponse.json()) as ProjectV2Output;
-        // Check if user is admin/owner
-        if (user?.accessTokenAlias && projectData.admin_alias === user.accessTokenAlias) {
+        // Check if user is owner
+        if (user?.accessTokenAlias && projectData.owner_alias === user.accessTokenAlias) {
           detectedRole = "owner";
         }
       }

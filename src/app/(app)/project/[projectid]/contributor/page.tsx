@@ -36,7 +36,7 @@ import { formatLovelace } from "~/lib/cardano-utils";
 import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
 import { createCommitmentRecord, hexToText, confirmCommitmentTransaction } from "~/lib/project-commitment-sync";
-import { computeTaskHash, type TaskData } from "~/lib/utils/task-hash";
+import { computeTaskHash, type TaskData } from "@andamio/core/hashing";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";

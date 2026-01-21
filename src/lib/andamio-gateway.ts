@@ -495,7 +495,7 @@ export async function registerCourse(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy_id: policyId, title }),
+      body: JSON.stringify({ course_id: policyId, title }),
     }
   );
 }
@@ -530,7 +530,7 @@ export async function registerProject(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy_id: policyId, title }),
+      body: JSON.stringify({ project_id: policyId, title }),
     }
   );
 }

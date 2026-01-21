@@ -128,8 +128,8 @@ export function BurnModuleTokens({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              policy_id: courseNftPolicyId,
-              module_code: m.moduleCode,
+              course_id: courseNftPolicyId,
+              course_module_code: m.moduleCode,
               status: "DRAFT",
             }),
           }

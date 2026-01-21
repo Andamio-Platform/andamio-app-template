@@ -67,8 +67,8 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              policy_id: courseNftPolicyId,
-              module_code: moduleCode,
+              course_id: courseNftPolicyId,
+              course_module_code: moduleCode,
               assignment_code: assignmentCode,
               title,
               content_json: content,
@@ -87,8 +87,8 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              policy_id: courseNftPolicyId,
-              module_code: moduleCode,
+              course_id: courseNftPolicyId,
+              course_module_code: moduleCode,
               assignment_code: assignmentCode,
               title,
               content_json: content,

@@ -111,14 +111,16 @@ export function useModuleWizardData({
         ? ((await courseResponse.json()) as CourseResponse)
         : null;
 
-      // V2: GET /course/user/course-module/get was removed
-      // Use list endpoint and filter client-side
+      // Go API: GET /course/user/modules/{course_id}
+      // Public endpoint - no auth required
       const modulesResponse = await fetch(
-        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
       );
-      const modules = modulesResponse.ok
-        ? ((await modulesResponse.json()) as CourseModuleListResponse)
-        : [];
+      let modules: CourseModuleListResponse = [];
+      if (modulesResponse.ok) {
+        const result = await modulesResponse.json() as { data?: CourseModuleListResponse };
+        modules = result.data ?? [];
+      }
       const courseModule = modules.find((m) => m.module_code === effectiveModuleCode) ?? null;
 
       // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}

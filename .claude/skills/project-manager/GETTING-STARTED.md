@@ -19,7 +19,7 @@ For pioneers, use these production API URLs in your `.env`:
 
 ```bash
 # Unified API Gateway (combines all services)
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev-api.andamio.io"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-701452636305.us-central1.run.app"
 ANDAMIO_API_KEY="your-api-key-here"
 
 # Cardano Network
@@ -29,7 +29,7 @@ NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="4758613867a8a7aa500b5d57a0e877f01a8e63c13654
 
 ### API Documentation
 
-- [Unified API Gateway](https://dev-api.andamio.io/api/v1/docs/doc.json) - Combined API docs
+- [Unified API Gateway](https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json) - Combined API docs
 
 ---
 

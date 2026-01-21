@@ -65,9 +65,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: sltIndex,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
+            slt_index: sltIndex,
             title: newLessonTitle.trim(),
           }),
         }
@@ -339,9 +339,9 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: (lesson as { slt_index?: number }).slt_index ?? lesson.module_index,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
+            slt_index: (lesson as { slt_index?: number }).slt_index ?? lesson.module_index,
             title,
             content_json: content,
           }),

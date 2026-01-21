@@ -174,8 +174,9 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
           body: JSON.stringify({
             tx_hash: tx.txHash,
             tx_type: "module_mint",
+            instance_id: courseNftPolicyId,
             metadata: {
-              course_nft_policy_id: courseNftPolicyId,
+              course_id: courseNftPolicyId,
               module_code: moduleCode,
               module_hash: moduleHash ?? undefined,
             },
@@ -220,8 +221,9 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
           body: JSON.stringify({
             tx_hash: tx.txHash,
             tx_type: "assignment_submit",
+            instance_id: courseNftPolicyId,
             metadata: {
-              policy_id: courseNftPolicyId,
+              course_id: courseNftPolicyId,
               module_code: moduleCode,
               access_token_alias: tx.entityId, // entityId is the student's alias
             },

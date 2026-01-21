@@ -79,8 +79,8 @@ interface CoverageReport {
 const CONFIG = {
   gateway: {
     name: "Unified API Gateway",
-    specUrl: "https://dev-api.andamio.io/api/v1/docs/doc.json",
-    baseUrl: "https://dev-api.andamio.io",
+    specUrl: "https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json",
+    baseUrl: "https://andamio-api-gateway-701452636305.us-central1.run.app",
   },
 };
 
@@ -123,35 +123,37 @@ async function fetchSpec(url: string): Promise<OpenAPISpec | null> {
 }
 
 function categorizeEndpoint(pathStr: string, method: string): EndpointCategory {
-  // Auth endpoints
-  if (pathStr.startsWith("/auth/")) return "auth";
+  // TX endpoints (check first - most specific)
+  if (pathStr.includes("/tx/course/")) return "tx-courses";
+  if (pathStr.includes("/tx/project/")) return "tx-projects";
+  if (pathStr.includes("/tx/global/") || pathStr.includes("/tx/instance/")) return "tx-instance";
+  // TX state machine endpoints (register, status, pending, types)
+  if (pathStr.match(/\/v2\/tx\/(register|status|pending|types)/)) return "tx-instance";
 
-  // User management
-  if (pathStr.startsWith("/user/")) return "user";
+  // Auth endpoints (v1 and v2)
+  if (pathStr.match(/\/v[12]\/auth\//)) return "auth";
 
-  // API key management
-  if (pathStr.startsWith("/apikey/")) return "apikey";
+  // Admin endpoints (v1 and v2)
+  if (pathStr.match(/\/v[12]\/admin\//)) return "admin";
 
-  // Admin functions
-  if (pathStr.startsWith("/admin/")) return "admin";
+  // API key management (v1 and v2)
+  if (pathStr.match(/\/v[12]\/apikey\//)) return "apikey";
 
-  // Merged course endpoints
-  if (pathStr.startsWith("/api/v2/course/")) return "merged-courses";
+  // User management (v1 and v2)
+  if (pathStr.match(/\/v[12]\/user\//)) return "user";
 
-  // Merged project endpoints
-  if (pathStr.startsWith("/api/v2/project/")) return "merged-projects";
+  // Merged course endpoints (v2)
+  if (pathStr.startsWith("/v2/course/")) return "merged-courses";
 
-  // Scan endpoints (on-chain indexed)
+  // Merged project endpoints (v2)
+  if (pathStr.startsWith("/v2/project/")) return "merged-projects";
+
+  // Scan endpoints (on-chain indexed) - these may be in a separate API
   if (pathStr.startsWith("/v2/courses")) return "scan-courses";
   if (pathStr.startsWith("/v2/projects")) return "scan-projects";
   if (pathStr.startsWith("/v2/transactions")) return "scan-transactions";
 
-  // TX endpoints
-  if (pathStr.includes("/tx/course/")) return "tx-courses";
-  if (pathStr.includes("/tx/project/")) return "tx-projects";
-  if (pathStr.includes("/tx/global/") || pathStr.includes("/tx/instance/")) return "tx-instance";
-
-  // Default to user (unlikely)
+  // Default to user (catch-all for unknown v1/v2 endpoints)
   return "user";
 }
 
@@ -205,24 +207,26 @@ function scanAuthImplementations(endpoints: EndpointInfo[]): void {
   const contextFile = path.join(PROJECT_ROOT, "src/contexts/andamio-auth-context.tsx");
 
   const filesToScan = [authFile, contextFile].filter((f) => fs.existsSync(f));
-  const implementedPaths = new Set<string>();
 
   for (const file of filesToScan) {
     const content = fs.readFileSync(file, "utf-8");
     const relativePath = path.relative(PROJECT_ROOT, file);
 
-    // Look for gateway URL + auth paths
-    if (content.includes("/auth/login") || content.includes("auth/login")) {
-      implementedPaths.add("/auth/login");
-    }
-    if (content.includes("/auth/register") || content.includes("auth/register")) {
-      implementedPaths.add("/auth/register");
-    }
-
     for (const endpoint of endpoints) {
-      if (endpoint.category === "auth" && implementedPaths.has(endpoint.path)) {
-        endpoint.implemented = true;
-        endpoint.implementationLocation = relativePath;
+      if (endpoint.category === "auth") {
+        // Extract the path without version prefix for matching
+        // e.g., /v1/auth/login -> auth/login, /v2/auth/login/session -> auth/login/session
+        const pathWithoutVersion = endpoint.path.replace(/^\/v[12]\//, "");
+
+        // Check for various patterns in the file
+        if (
+          content.includes(endpoint.path) ||
+          content.includes(pathWithoutVersion) ||
+          content.includes(`/${pathWithoutVersion}`)
+        ) {
+          endpoint.implemented = true;
+          endpoint.implementationLocation = relativePath;
+        }
       }
     }
   }
@@ -252,22 +256,47 @@ function scanUserImplementations(endpoints: EndpointInfo[]): void {
 }
 
 function scanMergedImplementations(endpoints: EndpointInfo[]): void {
-  const hooksDir = path.join(PROJECT_ROOT, "src/hooks/api");
+  // Scan multiple directories for merged endpoint implementations
+  const dirsToScan = [
+    path.join(PROJECT_ROOT, "src/hooks/api"),
+    path.join(PROJECT_ROOT, "src/lib"),
+    path.join(PROJECT_ROOT, "src/app"),
+    path.join(PROJECT_ROOT, "src/components"),
+    path.join(PROJECT_ROOT, "src/config"),
+  ];
 
-  if (!fs.existsSync(hooksDir)) {
-    return;
+  const allFiles: string[] = [];
+  for (const dir of dirsToScan) {
+    if (fs.existsSync(dir)) {
+      allFiles.push(...scanDirectory(dir));
+    }
   }
 
-  const files = scanDirectory(hooksDir);
-
-  for (const file of files) {
+  for (const file of allFiles) {
     const content = fs.readFileSync(file, "utf-8");
     const relativePath = path.relative(PROJECT_ROOT, file);
 
     for (const endpoint of endpoints) {
       if (endpoint.category === "merged-courses" || endpoint.category === "merged-projects") {
-        // Check for the merged endpoint paths
-        if (content.includes(endpoint.path) || content.includes(endpoint.path.replace(/\{[^}]+\}/g, ""))) {
+        // Skip if already found
+        if (endpoint.implemented) continue;
+
+        // New paths are /v2/course/... and /v2/project/...
+        // Also check for old /api/v2/course/... patterns for backwards compatibility
+        const pathWithoutParams = endpoint.path.replace(/\{[^}]+\}/g, "");
+        const oldStylePath = endpoint.path.replace("/v2/", "/api/v2/");
+        const oldStylePathWithoutParams = oldStylePath.replace(/\{[^}]+\}/g, "");
+
+        // Extract the endpoint suffix (e.g., "owner/courses/list")
+        const endpointSuffix = endpoint.path.replace(/^\/v2\/(course|project)\//, "");
+
+        if (
+          content.includes(endpoint.path) ||
+          content.includes(pathWithoutParams) ||
+          content.includes(oldStylePath) ||
+          content.includes(oldStylePathWithoutParams) ||
+          content.includes(`/${endpointSuffix}`)
+        ) {
           endpoint.implemented = true;
           endpoint.implementationLocation = relativePath;
         }
@@ -330,38 +359,84 @@ function scanAndamioscanImplementations(endpoints: EndpointInfo[]): void {
 }
 
 function scanTxImplementations(endpoints: EndpointInfo[]): void {
-  const txDir = path.join(PROJECT_ROOT, "packages/andamio-transactions/src/definitions");
-
-  if (!fs.existsSync(txDir)) {
-    console.log("  ⚠️ Transaction definitions directory not found");
-    return;
-  }
-
-  const txFiles = scanDirectory(txDir);
   const implementedEndpoints = new Set<string>();
   const locationMap = new Map<string, string>();
 
-  for (const file of txFiles) {
-    if (file.includes("index.ts")) continue;
+  // Check new V2 transaction config files and hooks
+  const txConfigFiles = [
+    path.join(PROJECT_ROOT, "src/config/transaction-ui.ts"),
+    path.join(PROJECT_ROOT, "src/config/transaction-schemas.ts"),
+    path.join(PROJECT_ROOT, "src/hooks/use-tx-watcher.ts"),
+    path.join(PROJECT_ROOT, "src/hooks/use-simple-transaction.ts"),
+    path.join(PROJECT_ROOT, "src/hooks/use-pending-tx-watcher.ts"),
+  ];
+
+  for (const file of txConfigFiles) {
+    if (!fs.existsSync(file)) continue;
 
     const content = fs.readFileSync(file, "utf-8");
     const relativePath = path.relative(PROJECT_ROOT, file);
 
-    // Look for builder endpoint patterns
-    const builderEndpointMatches = content.matchAll(/builderEndpoint:\s*["'`]([^"'`]+)["'`]/g);
-    for (const match of builderEndpointMatches) {
+    // Look for TX_ENDPOINTS patterns like: "/api/v2/tx/course/student/assignment/commit"
+    // The T3 app uses /api/v2/tx/... but gateway spec uses /v2/tx/...
+    // Also match template literals with ${} interpolation
+    const txEndpointMatches = content.matchAll(/["'`](\/(?:api\/gateway\/api\/|api\/)?v2\/tx\/[^"'`$]+)/g);
+    for (const match of txEndpointMatches) {
       if (match[1]) {
-        implementedEndpoints.add(match[1]);
-        locationMap.set(match[1], relativePath);
+        // Normalize to /v2/tx/ format (without /api prefix or /api/gateway/api prefix)
+        let normalized = match[1]
+          .replace("/api/gateway/api/v2/tx/", "/v2/tx/")
+          .replace("/api/v2/tx/", "/v2/tx/");
+
+        // Handle template literal variable interpolation (e.g., ${txHash} -> {tx_hash})
+        // Extract the base path for matching
+        implementedEndpoints.add(normalized);
+        locationMap.set(normalized, relativePath);
       }
     }
 
-    // Pattern: builder: { type: "api-endpoint", endpoint: "..." }
-    const builderObjectMatches = content.matchAll(/endpoint:\s*["'`](\/v2\/tx\/[^"'`]+)["'`]/g);
-    for (const match of builderObjectMatches) {
+    // Also look for template literals like `/api/gateway/api/v2/tx/status/${txHash}`
+    const templateMatches = content.matchAll(/`(\/(?:api\/gateway\/api\/|api\/)?v2\/tx\/[^`]+)`/g);
+    for (const match of templateMatches) {
       if (match[1]) {
-        implementedEndpoints.add(match[1]);
-        locationMap.set(match[1], relativePath);
+        // Normalize and convert ${var} to {param} format
+        let normalized = match[1]
+          .replace("/api/gateway/api/v2/tx/", "/v2/tx/")
+          .replace("/api/v2/tx/", "/v2/tx/")
+          .replace(/\$\{[^}]+\}/g, "{id}"); // Convert ${txHash} to {id} for matching
+        implementedEndpoints.add(normalized);
+        locationMap.set(normalized, relativePath);
+      }
+    }
+  }
+
+  // Also check legacy packages/andamio-transactions if it exists
+  const txDir = path.join(PROJECT_ROOT, "packages/andamio-transactions/src/definitions");
+  if (fs.existsSync(txDir)) {
+    const txFiles = scanDirectory(txDir);
+
+    for (const file of txFiles) {
+      if (file.includes("index.ts")) continue;
+
+      const content = fs.readFileSync(file, "utf-8");
+      const relativePath = path.relative(PROJECT_ROOT, file);
+
+      // Look for builder endpoint patterns
+      const builderEndpointMatches = content.matchAll(/builderEndpoint:\s*["'`]([^"'`]+)["'`]/g);
+      for (const match of builderEndpointMatches) {
+        if (match[1]) {
+          implementedEndpoints.add(match[1]);
+          locationMap.set(match[1], relativePath);
+        }
+      }
+
+      // Pattern: builder: { type: "api-endpoint", endpoint: "..." }
+      const builderObjectMatches = content.matchAll(/endpoint:\s*["'`](\/v2\/tx\/[^"'`]+)["'`]/g);
+      for (const match of builderObjectMatches) {
+        if (match[1]) {
+          implementedEndpoints.add(match[1]);
+          locationMap.set(match[1], relativePath);
+        }
       }
     }
   }
@@ -369,8 +444,17 @@ function scanTxImplementations(endpoints: EndpointInfo[]): void {
   // Match endpoints
   for (const endpoint of endpoints) {
     if (endpoint.category.startsWith("tx-")) {
+      // Normalize the endpoint path for comparison (replace {param} with {id})
+      const normalizedEndpoint = endpoint.path.replace(/\{[^}]+\}/g, "{id}");
+
       for (const implEndpoint of implementedEndpoints) {
-        if (endpoint.path === implEndpoint || endpoint.path.endsWith(implEndpoint)) {
+        const normalizedImpl = implEndpoint.replace(/\{[^}]+\}/g, "{id}");
+        if (
+          endpoint.path === implEndpoint ||
+          normalizedEndpoint === normalizedImpl ||
+          endpoint.path.endsWith(implEndpoint) ||
+          normalizedEndpoint.endsWith(normalizedImpl)
+        ) {
           endpoint.implemented = true;
           endpoint.implementationLocation = locationMap.get(implEndpoint);
           break;

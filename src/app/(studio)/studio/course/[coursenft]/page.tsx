@@ -556,7 +556,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-mono text-muted-foreground">
-                      {course.content?.code ?? courseNftPolicyId.slice(0, 12) + "..."}
+                      {courseNftPolicyId.slice(0, 12) + "..."}
                     </span>
                     {course.course_id && (
                       <AndamioBadge variant="default" className="text-[10px]">
@@ -604,7 +604,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <div className="text-center mb-10">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    {course.content?.code ?? courseNftPolicyId.slice(0, 12) + "..."}
+                    {courseNftPolicyId.slice(0, 12) + "..."}
                   </span>
                   {course.course_id && (
                     <AndamioBadge variant="default" className="text-[10px]">
@@ -1110,15 +1110,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
             {/* Settings Tab */}
             <AndamioTabsContent value="settings" className="mt-0 space-y-6">
-              <StudioFormSection title="Course Code">
+              <StudioFormSection title="Course ID">
                 <div className="space-y-2">
                   <AndamioInput
-                    value={course.content?.code ?? ""}
+                    value={course.course_id ?? courseNftPolicyId}
                     disabled
                     className="font-mono"
                   />
                   <AndamioText variant="small">
-                    Course code cannot be changed after creation
+                    Course ID cannot be changed after creation
                   </AndamioText>
                 </div>
               </StudioFormSection>

@@ -103,7 +103,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ course_nft_policy_ids: courseNftPolicyIds }),
+                body: JSON.stringify({ course_ids: courseNftPolicyIds }),
               }
             );
 

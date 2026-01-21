@@ -182,7 +182,7 @@ export default function InstructorDashboardPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ policy_id: courseNftPolicyId }),
+          body: JSON.stringify({ course_id: courseNftPolicyId }),
         }
       );
 
@@ -225,8 +225,8 @@ export default function InstructorDashboardPage() {
     try {
       // DB API: POST /course/shared/assignment-commitment/get
       const requestBody = {
-        policy_id: courseNftPolicyId,
-        module_code: commitment.module_code,
+        course_id: courseNftPolicyId,
+        course_module_code: commitment.module_code,
         access_token_alias: commitment.access_token_alias,
       };
       console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);

@@ -120,8 +120,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
             status: "APPROVED",
             module_hash: moduleHash,
           }),
@@ -156,8 +156,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
             status: "DRAFT",
           }),
         }

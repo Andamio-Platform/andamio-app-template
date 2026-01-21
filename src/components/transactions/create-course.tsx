@@ -110,8 +110,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    policy_id: courseMetadata.policyId,
-                    code: courseMetadata.code,
+                    course_id: courseMetadata.policyId,
                     title: courseMetadata.title,
                   }),
                 }

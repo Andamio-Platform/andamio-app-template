@@ -89,10 +89,10 @@ export default function CoursePage() {
               const courseId = course.course_id ?? (course as unknown as { course_nft_policy_id?: string }).course_nft_policy_id;
               const title = course.content?.title ?? (course as unknown as { title?: string }).title;
               const description = course.content?.description ?? (course as unknown as { description?: string }).description;
-              const code = course.content?.code ?? (course as unknown as { course_code?: string }).course_code;
+              // Note: code field removed from OrchestrationCourseContent - course_id is the identifier
 
               return (
-                <AndamioTableRow key={courseId ?? code ?? `course-${index}`}>
+                <AndamioTableRow key={courseId ?? `course-${index}`}>
                   <AndamioTableCell>
                     <Link
                       href={`/course/${courseId}`}
@@ -100,11 +100,6 @@ export default function CoursePage() {
                     >
                       {title ?? courseId?.slice(0, 16) ?? "Untitled"}
                     </Link>
-                    {code && (
-                      <AndamioText variant="small" className="text-muted-foreground">
-                        {code}
-                      </AndamioText>
-                    )}
                   </AndamioTableCell>
                   <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
                     {courseId ? (

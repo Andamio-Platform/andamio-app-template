@@ -1,8 +1,50 @@
 # Project Status
 
-> **Last Updated**: January 19, 2026 (Session 22 - Course Auto-Registration Fixed! 🎉)
+> **Last Updated**: January 21, 2026 (Session 23 - API Gateway URL Updated + Coverage Audit)
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## 🚨 CURRENT: New API Gateway Migration
+
+**Status**: 🔄 In Progress
+
+The Andamio API Gateway has been deployed to a new URL:
+- **New URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+- **Old URL**: `https://dev-api.andamio.io` (deprecated)
+
+### Migration Status
+
+- ✅ All `.claude/skills/` documentation updated with new URL
+- ✅ Coverage audit script updated for new path structure (`/api/v2/*` → `/v2/*`)
+- ✅ Coverage report generated (63% overall - 68/108 endpoints)
+- ⏳ Environment variables need updating
+- ⏳ Proxy route compatibility needs verification
+- ⏳ Types need regeneration from new OpenAPI spec
+
+### Coverage Summary (January 21, 2026)
+
+| Category | Coverage | Status |
+|----------|----------|--------|
+| TX: Courses | **100%** (6/6) | ✅ Complete |
+| TX: Projects | **100%** (8/8) | ✅ Complete |
+| Merged Projects | **85%** (17/20) | ✅ Good |
+| Authentication | **83%** (5/6) | ✅ Good |
+| TX: Instance/Global | **71%** (5/7) | 🔄 Minor gaps |
+| Merged Courses | **55%** (23/42) | ⚠️ **19 missing** |
+| API Key Management | **33%** (3/9) | ⚠️ 6 missing |
+| User Management | **17%** (1/6) | ⚠️ 5 missing |
+| Admin Functions | **0%** (0/4) | Low priority |
+
+**Full details**: See `API-UPGRADE-PLAN.md` for implementation roadmap.
+
+### Immediate Actions
+
+1. **Update `.env`** with new gateway URL
+2. **Run `npm run generate:types`** to fetch new OpenAPI spec
+3. **Test core flows** (auth, courses, projects)
+4. **Verify proxy route** handles new path structure
 
 ---
 
@@ -12,15 +54,15 @@ Current implementation status of the Andamio T3 App Template.
 
 **What Was Fixed**:
 The TX State Machine now auto-registers courses correctly. The Gateway:
-1. Captures `owner_alias` from JWT at `POST /api/v2/tx/register`
+1. Captures `owner_alias` from JWT at `POST /v2/tx/register`
 2. Stores it in Redis metadata alongside `code` and `title`
 3. When TX confirms, calls new `POST /course/gateway/course/register` with service-to-service auth
 4. Course appears with correct title automatically
 
 **Expected Flow** (auto-registration):
 1. Build TX → Sign → Submit → Get `tx_hash`
-2. Register TX: `POST /api/v2/tx/register` (with metadata `{code, title}`)
-3. Poll: `GET /api/v2/tx/status/{tx_hash}` until `"updated"`
+2. Register TX: `POST /v2/tx/register` (with metadata `{code, title}`)
+3. Poll: `GET /v2/tx/status/{tx_hash}` until `"updated"`
 4. Course auto-registered by Gateway ← **Now works!**
 5. Course appears with title in UI
 
@@ -40,13 +82,13 @@ The TX State Machine now auto-registers courses correctly. The Gateway:
 Note: `owner_alias` is captured automatically from JWT - no need to include it.
 
 **Manual Fallback** (still available):
-- `POST /api/v2/course/owner/course/register` - requires user JWT
+- `POST /v2/course/owner/course/register` - requires user JWT
 - Useful for existing on-chain courses without DB records
 
 **Frontend Implementation Status**:
 - ✅ Added `code` field to `CreateCourseDialog` component
 - ✅ Added `code` field to `CreateCourse` component
-- ✅ Both components pass `{ code, title }` in metadata to `/api/v2/tx/register`
+- ✅ Both components pass `{ code, title }` in metadata to `/v2/tx/register`
 - ✅ Fixed API response handling for wrapped `{ data: [...] }` format
 - ✅ Manual registration call after TX confirms (fallback, may not be needed now)
 - ✅ `RegisterCourseDrawer` updated with `policy_id` and `code` fields
@@ -57,14 +99,16 @@ Note: `owner_alias` is captured automatically from JWT - no need to include it.
 
 ## 🎯 IMMEDIATE PRIORITIES
 
-### Current Focus: UX Testing with Issue Handling
+### Current Focus: Gateway Migration + Testing
 
-**Status**: Ready to test now that course auto-registration is fixed!
+**Status**: Complete gateway URL migration, then test all flows.
 
 **Next Steps**:
-1. Test course creation flow - verify auto-registration works
-2. Continue testing all Course and Project UX flows
-3. Run `/issue-handler` to capture and route any bugs found
+1. Update environment variables to new gateway URL
+2. Regenerate types from new OpenAPI spec
+3. Test authentication flow
+4. Test course creation flow
+5. Test project flows
 
 ### High-Priority Skills to Refine
 
@@ -500,23 +544,30 @@ Error in $.tasks[0]: parsing API.ProjectInstance.Task(Task) failed, key "contrib
 
 ---
 
-## API Coverage Summary (All 3 Sub-Systems)
+## API Coverage Summary (Unified Gateway)
 
-| API | Endpoints | Implemented | Coverage | Priority |
-|-----|-----------|-------------|----------|----------|
-| **Andamio DB API** | 88 | 50 | **57%** | High |
-| **Andamio Tx API** | 16 | 16 definitions | **100%** | Complete |
-| **Andamioscan** | 34 | 32 functions | **94%** | Low |
-| **Overall** | **138** | **98** | **71%** | - |
+| Category | Endpoints | Implemented | Coverage | Priority |
+|----------|-----------|-------------|----------|----------|
+| **TX: Courses** | 6 | 6 | **100%** | ✅ Complete |
+| **TX: Projects** | 8 | 8 | **100%** | ✅ Complete |
+| **Merged Projects** | 20 | 17 | **85%** | Low |
+| **Authentication** | 6 | 5 | **83%** | Low |
+| **TX: Instance/Global** | 7 | 5 | **71%** | Medium |
+| **Merged Courses** | 42 | 23 | **55%** | **High** |
+| **API Key Management** | 9 | 3 | **33%** | Medium |
+| **User Management** | 6 | 1 | **17%** | Medium |
+| **Admin Functions** | 4 | 0 | **0%** | Low |
+| **Overall** | **108** | **68** | **63%** | - |
 
 > Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for live metrics.
 > Full report: `.claude/skills/audit-api-coverage/COVERAGE-REPORT.md`
+> Implementation plan: `.claude/skills/project-manager/API-UPGRADE-PLAN.md`
 
 ### API Source of Truth
 
 **Always use the deployed API schema as the source of truth:**
-- **OpenAPI Spec**: https://andamio-db-api-343753432212.us-central1.run.app/docs/doc.json
-- **Swagger UI**: https://andamio-db-api-343753432212.us-central1.run.app/docs
+- **Gateway URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+- **OpenAPI Spec**: `https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json`
 
 When implementing new endpoints or debugging API issues, fetch the live schema rather than reading local code.
 

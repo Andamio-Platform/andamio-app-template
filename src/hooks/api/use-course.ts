@@ -263,7 +263,7 @@ export function useUpdateCourse() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_nft_policy_id: courseNftPolicyId,
+            course_id: courseNftPolicyId,
             ...data,
           }),
         }
@@ -322,7 +322,7 @@ export function useDeleteCourse() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_id: courseNftPolicyId }),
+          body: JSON.stringify({ course_id: courseNftPolicyId }),
         }
       );
 

@@ -30,6 +30,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { AddIcon, SparkleIcon, CourseIcon, ExternalLinkIcon, AlertIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { useInvalidateTeacherCourses } from "~/hooks/api/use-teacher-courses";
 
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
@@ -54,6 +55,7 @@ export function CreateCourseDialog() {
   const { user, authenticatedFetch } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useSimpleTransaction();
+  const invalidateTeacherCourses = useInvalidateTeacherCourses();
 
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -96,8 +98,7 @@ export function CreateCourseDialog() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                      policy_id: courseMetadata.policyId,
-                      code: courseMetadata.code,
+                      course_id: courseMetadata.policyId,
                       title: courseMetadata.title,
                     }),
                   }
@@ -105,6 +106,8 @@ export function CreateCourseDialog() {
 
                 if (regResponse.ok) {
                   console.log("[CreateCourse] Course registered successfully!");
+                  // Invalidate teacher courses cache so the list refreshes
+                  await invalidateTeacherCourses();
                   toast.success("Course Ready!", {
                     description: `"${courseMetadata.title}" is now live and registered`,
                   });

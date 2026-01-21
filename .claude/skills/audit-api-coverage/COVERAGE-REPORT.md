@@ -1,78 +1,78 @@
 # API Coverage Report
 
-> **Generated**: 2026-01-16T18:06:40.494Z
-> **Overall Coverage**: 56% (25/45 endpoints)
+> **Generated**: 2026-01-21T00:35:02.280Z
+> **Overall Coverage**: 63% (68/108 endpoints)
 
 ## Summary
 
 | Category | Total | Implemented | Coverage |
 |----------|-------|-------------|----------|
-| Authentication | 2 | 1 | **50%** |
-| User Management | 5 | 1 | **20%** |
-| API Key Management | 3 | 0 | **0%** |
-| Admin Functions | 3 | 0 | **0%** |
-| Merged Courses | 3 | 0 | **0%** |
-| Merged Projects | 3 | 0 | **0%** |
-| Scan: Courses | 4 | 4 | **100%** |
-| Scan: Projects | 4 | 4 | **100%** |
-| Scan: Transactions | 1 | 0 | **0%** |
+| Authentication | 6 | 5 | **83%** |
+| User Management | 6 | 1 | **17%** |
+| API Key Management | 9 | 3 | **33%** |
+| Admin Functions | 4 | 0 | **0%** |
+| Merged Courses | 42 | 23 | **55%** |
+| Merged Projects | 20 | 17 | **85%** |
 | TX: Courses | 6 | 6 | **100%** |
-| TX: Projects | 8 | 7 | **88%** |
-| TX: Instance/Global | 3 | 2 | **67%** |
+| TX: Projects | 8 | 8 | **100%** |
+| TX: Instance/Global | 7 | 5 | **71%** |
 
 ---
 
 ## Unified API Gateway
 
-**Base URL**: `https://dev-api.andamio.io`
-**Coverage**: 25/45 (56%)
+**Base URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+**Coverage**: 68/108 (63%)
 
 ### Implemented Categories
 
 | Category | Coverage | Notes |
 |----------|----------|-------|
-| Scan: Courses | 4/4 (100%) | `src/lib/andamioscan.ts` |
-| Scan: Projects | 4/4 (100%) | `src/lib/andamioscan.ts` |
-| TX: Courses | 6/6 (100%) | `packages/andamio-transactions/src/definitions/v2/course/owner/teachers-manage.ts` |
+| TX: Courses | 6/6 (100%) | `src/config/transaction-ui.ts` |
+| TX: Projects | 8/8 (100%) | `src/config/transaction-ui.ts` |
 
 ### Missing Categories
 
 | Category | Count | Notes |
 |----------|-------|-------|
 | Authentication | 1 | Partially implemented |
-| User Management | 4 | Partially implemented |
-| API Key Management | 3 | Not implemented |
-| Admin Functions | 3 | Not implemented |
-| Merged Courses | 3 | Not implemented |
-| Merged Projects | 3 | Not implemented |
-| Scan: Transactions | 1 | Not implemented |
-| TX: Projects | 1 | Partially implemented |
-| TX: Instance/Global | 1 | Partially implemented |
+| User Management | 5 | Partially implemented |
+| API Key Management | 6 | Partially implemented |
+| Admin Functions | 4 | Not implemented |
+| Merged Courses | 19 | Partially implemented |
+| Merged Projects | 3 | Partially implemented |
+| TX: Instance/Global | 2 | Partially implemented |
 
 ### Missing Endpoints
 
 | Method | Path |
 |--------|------|
-| POST | `/auth/register` |
-| POST | `/user/delete` |
-| GET | `/user/me` |
-| GET | `/user/usage` |
-| POST | `/user/usage/daily` |
-| POST | `/apikey/delete` |
-| POST | `/apikey/request` |
-| POST | `/apikey/rotate` |
-| POST | `/admin/set-user-role` |
-| POST | `/admin/usage/any-user-daily-api-usage` |
-| POST | `/admin/usage/user-api-usage` |
-| POST | `/api/v2/course/student/course-status` |
-| GET | `/api/v2/course/user/course/get/{policy_id}` |
-| GET | `/api/v2/course/user/courses/list` |
-| GET | `/api/v2/project/contributor/status/{project_id}/{alias}` |
-| GET | `/api/v2/project/user/project/{project_id}` |
-| GET | `/api/v2/project/user/projects/list` |
-| GET | `/v2/transactions` |
-| POST | `/v2/tx/project/user/treasury/add-funds` |
-| POST | `/v2/tx/global/user/access-token/mint` |
+| POST | `/v1/auth/register` |
+| POST | `/v1/user/delete` |
+| GET | `/v1/user/me` |
+| GET | `/v1/user/usage` |
+| POST | `/v1/user/usage/daily` |
+| POST | `/v2/user/init-roles` |
+| POST | `/v2/apikey/developer/account/delete` |
+| POST | `/v2/apikey/developer/key/delete` |
+| POST | `/v2/apikey/developer/key/request` |
+| POST | `/v2/apikey/developer/key/rotate` |
+| GET | `/v2/apikey/developer/profile/get` |
+| GET | `/v2/apikey/developer/usage/get` |
+| POST | `/v1/admin/set-user-role` |
+| POST | `/v1/admin/usage/any-user-daily-api-usage` |
+| POST | `/v1/admin/usage/user-api-usage` |
+| GET | `/v2/admin/tx/stats` |
+| POST | `/v2/course/owner/teacher/add` |
+| POST | `/v2/course/owner/teacher/remove` |
+| POST | `/v2/course/shared/commitment/get` |
+| POST | `/v2/course/student/assignment-commitments/list` |
+| POST | `/v2/course/student/commitment/claim` |
+| POST | `/v2/course/student/commitment/create` |
+| POST | `/v2/course/student/commitment/leave` |
+| POST | `/v2/course/student/commitment/submit` |
+| POST | `/v2/course/student/commitment/update` |
+| ... | *15 more endpoints* |
 
 ---
 

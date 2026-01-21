@@ -1,11 +1,19 @@
 # Unified API Gateway Endpoints
 
-> **Source of Truth**: [API Documentation](https://dev-api.andamio.io/api/v1/docs/doc.json)
-> **Base URL**: `https://dev-api.andamio.io`
-> **Total Endpoints**: ~90+
-> **Last Updated**: January 18, 2026
+> **Source of Truth**: [API Documentation](https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json)
+> **Base URL**: `https://andamio-api-gateway-701452636305.us-central1.run.app`
+> **Total Endpoints**: 108
+> **Last Updated**: January 20, 2026
 
 This file documents the main endpoints available in the Unified Andamio API Gateway.
+
+---
+
+## API Version Structure
+
+The gateway uses two API versions:
+- **v1** (`/v1/*`): Legacy auth, user, admin, API key endpoints
+- **v2** (`/v2/*`): Courses, projects, transactions, and new auth
 
 ---
 
@@ -13,315 +21,269 @@ This file documents the main endpoints available in the Unified Andamio API Gate
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Authentication](#authentication-2-endpoints) | 2 | User login and registration |
-| [User Management](#user-management-4-endpoints) | 4 | User profile and usage metrics |
-| [API Key Management](#api-key-management-3-endpoints) | 3 | API key lifecycle |
-| [Admin Functions](#admin-functions-3-endpoints) | 3 | Admin-only operations |
-| [Merged Courses](#merged-courses-3-endpoints) | 3 | Combined off-chain + on-chain course data |
-| [Merged Projects](#merged-projects-3-endpoints) | 3 | Combined off-chain + on-chain project data |
-| [Scan: Courses](#scan-courses-4-endpoints) | 4 | On-chain indexed course data |
-| [Scan: Projects](#scan-projects-4-endpoints) | 4 | On-chain indexed project data |
-| [Scan: Transactions](#scan-transactions-1-endpoint) | 1 | Transaction list |
-| [TX: Course Operations](#tx-course-operations-6-endpoints) | 6 | Course transaction building |
-| [TX: Project Operations](#tx-project-operations-8-endpoints) | 8 | Project transaction building |
-| [TX: Instance/Global](#tx-instanceglobal-operations-3-endpoints) | 3 | Instance and global transaction building |
+| [Authentication](#authentication-6-endpoints) | 6 | User login and registration (v1 & v2) |
+| [User Management](#user-management-6-endpoints) | 6 | User profile and access token management |
+| [API Key Management](#api-key-management-9-endpoints) | 9 | API key lifecycle (v1 & v2) |
+| [Admin Functions](#admin-functions-4-endpoints) | 4 | Admin-only operations |
+| [Courses](#courses-42-endpoints) | 42 | Course CRUD, modules, SLTs, assignments |
+| [Projects](#projects-20-endpoints) | 20 | Project CRUD, tasks, commitments |
+| [TX: Courses](#tx-courses-6-endpoints) | 6 | Course transaction building |
+| [TX: Projects](#tx-projects-8-endpoints) | 8 | Project transaction building |
+| [TX: Instance/Global](#tx-instanceglobal-7-endpoints) | 7 | Instance, global, and TX state machine |
 
 ---
 
-## Authentication (4 endpoints)
+## Authentication (6 endpoints)
 
+### v1 Auth
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/auth/login/session` | Create login session, get nonce for signing |
-| POST | `/api/v2/auth/login/validate` | Validate wallet signature, get JWT |
-| POST | `/api/v2/auth/login` | Direct login (no wallet verification) |
-| POST | `/api/v2/auth/developer/account/login` | Developer account login |
+| POST | `/v1/auth/login` | Direct login (API key users) |
+| POST | `/v1/auth/register` | Register new user |
 
-### Authentication Flows
+### v2 Auth (Wallet-based)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/auth/login/session` | Create login session, get nonce |
+| POST | `/v2/auth/login/validate` | Validate wallet signature, get JWT |
+| POST | `/v2/auth/developer/account/login` | Developer account login |
+| POST | `/v2/auth/developer/account/register` | Developer account registration |
+
+### Authentication Flow
 
 **Browser-based (CIP-30 signing)** - Used by T3 App Template:
 ```
-1. POST /api/v2/auth/login/session → { id, nonce }
+1. POST /v2/auth/login/session → { id, nonce }
 2. wallet.signData(nonce) → signature
-3. POST /api/v2/auth/login/validate → { jwt, user }
-```
-
-**Programmatic (no verification)** - For API key access:
-```
-POST /api/v2/auth/login → { jwt, user }
-```
-
-### Request/Response Details
-
-**POST `/api/v2/auth/login/session`**
-```typescript
-// Request
-{ }  // Empty body
-
-// Response
-{
-  id: string;     // Session ID
-  nonce: string;  // Random nonce to sign
-}
-```
-
-**POST `/api/v2/auth/login/validate`**
-```typescript
-// Request
-{
-  id: string;                    // Session ID from step 1
-  signature: { signature: string; key: string };
-  address: string;               // Wallet address (bech32)
-  convert_utf8: boolean;
-  wallet_preference: string;
-  andamio_access_token_unit?: string;
-}
-
-// Response
-{
-  jwt: string;  // JWT token
-  user: {
-    id: string;
-    cardano_bech32_addr: string;
-    access_token_alias: string | null;
-  }
-}
+3. POST /v2/auth/login/validate → { jwt, user }
 ```
 
 ---
 
-## User Management (4 endpoints)
+## User Management (6 endpoints)
 
+### v1 User
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/user/me` | Retrieve authenticated user's full profile |
-| POST | `/api/v1/user/delete` | Delete user account and associated data |
-| GET | `/api/v1/user/usage` | Get current usage metrics for authenticated user |
-| POST | `/api/v1/user/usage/daily` | Retrieve aggregated daily API usage data |
+| GET | `/v1/user/me` | Get authenticated user's profile |
+| POST | `/v1/user/delete` | Delete user account |
+| GET | `/v1/user/usage` | Get current usage metrics |
+| POST | `/v1/user/usage/daily` | Get daily API usage data |
+
+### v2 User
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/user/access-token-alias` | Get access token alias for wallet |
+| POST | `/v2/user/init-roles` | Initialize user roles |
 
 ---
 
-## API Key Management (3 endpoints)
+## API Key Management (9 endpoints)
 
+### v1 API Key
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/apikey/request` | Generate new API key for authenticated user |
-| POST | `/api/v1/apikey/delete` | Revoke or delete specific API key |
-| POST | `/api/v1/apikey/rotate` | Extend expiration of existing API key |
+| POST | `/v1/apikey/request` | Generate new API key |
+| POST | `/v1/apikey/delete` | Revoke API key |
+| POST | `/v1/apikey/rotate` | Extend API key expiration |
 
-### Notes
-- API keys are for programmatic access (not web app users)
-- Requires access token to generate API key
+### v2 Developer API Key
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/apikey/developer/account/delete` | Delete developer account |
+| POST | `/v2/apikey/developer/key/request` | Request new developer key |
+| POST | `/v2/apikey/developer/key/delete` | Delete developer key |
+| POST | `/v2/apikey/developer/key/rotate` | Rotate developer key |
+| GET | `/v2/apikey/developer/profile/get` | Get developer profile |
+| GET | `/v2/apikey/developer/usage/get` | Get developer usage stats |
 
 ---
 
-## Admin Functions (3 endpoints)
+## Admin Functions (4 endpoints)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/admin/set-user-role` | Set user subscription tier |
-| POST | `/api/v1/admin/usage/user-api-usage` | Get API usage metrics for specified user |
-| POST | `/api/v1/admin/usage/any-user-daily-api-usage` | Retrieve aggregated daily usage for multiple users |
-
-### Notes
-- Requires admin role
-- Used for platform management
+| POST | `/v1/admin/set-user-role` | Set user subscription tier |
+| POST | `/v1/admin/usage/user-api-usage` | Get user API usage |
+| POST | `/v1/admin/usage/any-user-daily-api-usage` | Get daily usage for users |
+| GET | `/v2/admin/tx/stats` | Get transaction statistics |
 
 ---
 
-## Merged Courses (18+ endpoints)
+## Courses (42 endpoints)
 
-These endpoints combine off-chain (DB) and on-chain (Andamioscan) data into unified responses.
-
-### Public Endpoints
+### Owner Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v2/course/user/courses/list` | List all published courses with on-chain state |
-| GET | `/api/v2/course/user/course/get/{policy_id}` | Get course details with on-chain state |
+| POST | `/v2/course/owner/courses/list` | List owner's courses |
+| POST | `/v2/course/owner/course/create` | Create course (on-chain TX) |
+| POST | `/v2/course/owner/course/register` | Register on-chain course in DB |
+| POST | `/v2/course/owner/course/update` | Update course metadata |
+| POST | `/v2/course/owner/teacher/add` | Add teacher to course |
+| POST | `/v2/course/owner/teacher/remove` | Remove teacher from course |
 
-### Owner Endpoints (requires auth)
+### Teacher Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/course/owner/courses/list` | List owner's courses (includes unregistered) |
-| POST | `/api/v2/course/owner/course/register` | Register on-chain course in DB |
+| POST | `/v2/course/teacher/courses/list` | List courses where user is teacher |
+| POST | `/v2/course/teacher/course-modules/list` | List modules for course |
+| POST | `/v2/course/teacher/course-module/create` | Create course module |
+| POST | `/v2/course/teacher/course-module/update` | Update course module |
+| POST | `/v2/course/teacher/course-module/delete` | Delete course module |
+| POST | `/v2/course/teacher/course-module/publish` | Publish module on-chain |
+| POST | `/v2/course/teacher/slt/create` | Create SLT |
+| POST | `/v2/course/teacher/slt/update` | Update SLT |
+| POST | `/v2/course/teacher/slt/delete` | Delete SLT |
+| POST | `/v2/course/teacher/slt/reorder` | Reorder SLTs |
+| POST | `/v2/course/teacher/lesson/create` | Create lesson |
+| POST | `/v2/course/teacher/lesson/update` | Update lesson |
+| POST | `/v2/course/teacher/lesson/delete` | Delete lesson |
+| POST | `/v2/course/teacher/introduction/create` | Create introduction |
+| POST | `/v2/course/teacher/introduction/update` | Update introduction |
+| POST | `/v2/course/teacher/introduction/delete` | Delete introduction |
+| POST | `/v2/course/teacher/assignment/create` | Create assignment |
+| POST | `/v2/course/teacher/assignment/update` | Update assignment |
+| POST | `/v2/course/teacher/assignment/delete` | Delete assignment |
+| POST | `/v2/course/teacher/assignment-commitments/list` | List pending assessments |
+| POST | `/v2/course/teacher/assignment-commitment/review` | Review assignment |
 
-### Teacher Endpoints (requires auth)
+### Student Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/course/teacher/courses/list` | List courses where user is teacher |
-| POST | `/api/v2/course/teacher/assignment-commitments/list` | List pending assignments to assess |
+| POST | `/v2/course/student/courses/list` | List enrolled courses |
+| POST | `/v2/course/student/commitment/create` | Create enrollment commitment |
+| POST | `/v2/course/student/commitment/submit` | Submit assignment |
+| POST | `/v2/course/student/commitment/update` | Update commitment |
+| POST | `/v2/course/student/commitment/claim` | Claim credential |
+| POST | `/v2/course/student/commitment/leave` | Leave course |
+| POST | `/v2/course/student/assignment-commitments/list` | List student's commitments |
+| POST | `/v2/course/student/assignment-commitment/get` | Get specific commitment |
 
-### Student Endpoints (requires auth)
+### User (Public) Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/course/student/courses/list` | List enrolled courses |
-| POST | `/api/v2/course/student/assignment-commitments/list` | List student's commitments |
+| GET | `/v2/course/user/courses/list` | List all published courses |
+| GET | `/v2/course/user/course/get/{course_id}` | Get course details |
+| GET | `/v2/course/user/modules/{course_id}` | Get course modules |
+| GET | `/v2/course/user/slts/{course_id}/{course_module_code}` | Get module SLTs |
+| GET | `/v2/course/user/assignment/{course_id}/{course_module_code}` | Get assignment |
+| GET | `/v2/course/user/lesson/{course_id}/{course_module_code}/{slt_index}` | Get lesson |
 
-### Response Format
-```typescript
-{
-  data: Array<{
-    course_id: string;
-    owner: string;
-    teachers: string[];
-    content?: { title: string; code: string; live: boolean };  // Nested!
-    source: "merged" | "chain_only";  // Indicates data origin
-  }>;
-}
-```
-
-**Note**: Hooks flatten `content.*` to top level for backward compatibility.
+### Shared Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/course/shared/commitment/get` | Get commitment (any role) |
 
 ---
 
-## Merged Projects (18+ endpoints)
+## Projects (20 endpoints)
 
-These endpoints combine off-chain (DB) and on-chain (Andamioscan) data into unified responses.
-
-### Public Endpoints
+### Owner Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v2/project/user/projects/list` | List all published projects with on-chain state |
-| POST | `/api/v2/project/user/project/get` | Get project details with on-chain state |
+| POST | `/v2/project/owner/projects/list` | List owner's projects |
+| POST | `/v2/project/owner/project/create` | Create project (on-chain TX) |
+| POST | `/v2/project/owner/project/register` | Register on-chain project in DB |
+| POST | `/v2/project/owner/project/update` | Update project metadata |
 
-### Owner Endpoints (requires auth)
+### Manager Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/project/owner/projects/list` | List owner's projects (includes unregistered) |
-| POST | `/api/v2/project/owner/project/register` | Register on-chain project in DB |
+| POST | `/v2/project/manager/projects/list` | List managed projects |
+| POST | `/v2/project/manager/tasks/list` | List tasks (POST body) |
+| GET | `/v2/project/manager/tasks/{project_state_policy_id}` | List tasks (GET param) |
+| POST | `/v2/project/manager/task/create` | Create task |
+| POST | `/v2/project/manager/task/update` | Update task |
+| POST | `/v2/project/manager/task/delete` | Delete task |
+| POST | `/v2/project/manager/commitments/list` | List pending assessments |
 
-### Manager Endpoints (requires auth)
+### Contributor Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/project/manager/projects/list` | List projects where user is manager |
-| POST | `/api/v2/project/manager/commitments/list` | List pending task commitments to assess |
+| POST | `/v2/project/contributor/projects/list` | List contributor projects |
+| POST | `/v2/project/contributor/commitments/list` | List contributor commitments |
+| POST | `/v2/project/contributor/commitment/create` | Create task commitment |
+| POST | `/v2/project/contributor/commitment/get` | Get commitment details |
+| POST | `/v2/project/contributor/commitment/update` | Update commitment |
+| POST | `/v2/project/contributor/commitment/delete` | Delete commitment |
 
-### Contributor Endpoints (requires auth)
+### User (Public) Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v2/project/contributor/projects/list` | List projects where user is contributor |
-| POST | `/api/v2/project/contributor/commitments/list` | List contributor's commitments |
-
-### Response Format
-Same pattern as courses - `content` is nested, `source` indicates data origin.
+| GET | `/v2/project/user/projects/list` | List all published projects |
+| GET | `/v2/project/user/project/{project_id}` | Get project details |
+| POST | `/v2/project/user/tasks/list` | List project tasks |
 
 ---
 
-## Scan: Courses (4 endpoints)
-
-Direct passthrough to Andamioscan for on-chain indexed course data.
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v2/courses` | List all courses from on-chain index |
-| GET | `/api/v2/courses/{course_id}/details` | Get consolidated course details |
-| GET | `/api/v2/courses/{course_id}/students/{student_alias}/status` | Get student progress in course |
-| GET | `/api/v2/courses/teachers/{alias}/assessments/pending` | Get pending assessments for teacher |
-
----
-
-## Scan: Projects (4 endpoints)
-
-Direct passthrough to Andamioscan for on-chain indexed project data.
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v2/projects` | List all projects from on-chain index |
-| GET | `/api/v2/projects/{project_id}/details` | Get consolidated project details |
-| GET | `/api/v2/projects/{project_id}/contributors/{contributor_alias}/status` | Get contributor project progress |
-| GET | `/api/v2/projects/managers/{alias}/assessments/pending` | Get pending task assessments for manager |
-
----
-
-## Scan: Transactions (1 endpoint)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v2/transactions` | List paginated tracked transactions |
-
----
-
-## TX: Course Operations (6 endpoints)
-
-Transaction building endpoints for course-related operations.
+## TX: Courses (6 endpoints)
 
 | Method | Path | Description | Transaction Type |
 |--------|------|-------------|------------------|
-| POST | `/api/v2/tx/course/student/assignment/commit` | Build transaction to commit to assignment | `COURSE_STUDENT_ASSIGNMENT_COMMIT` |
-| POST | `/api/v2/tx/course/student/assignment/update` | Build transaction to update assignment completion | `COURSE_STUDENT_ASSIGNMENT_UPDATE` |
-| POST | `/api/v2/tx/course/student/credential/claim` | Build transaction to claim course credentials | `COURSE_STUDENT_CREDENTIAL_CLAIM` |
-| POST | `/api/v2/tx/course/teacher/assignments/assess` | Build transaction to assess student assignments | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` |
-| POST | `/api/v2/tx/course/teacher/modules/manage` | Build transaction to manage course modules | `COURSE_TEACHER_MODULES_MANAGE` |
-| POST | `/api/v2/tx/course/owner/teachers/manage` | Build transaction to add/remove course teachers | `COURSE_OWNER_TEACHERS_MANAGE` |
+| POST | `/v2/tx/course/owner/teachers/manage` | Add/remove teachers | `COURSE_OWNER_TEACHERS_MANAGE` |
+| POST | `/v2/tx/course/teacher/modules/manage` | Manage modules | `COURSE_TEACHER_MODULES_MANAGE` |
+| POST | `/v2/tx/course/teacher/assignments/assess` | Assess assignments | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` |
+| POST | `/v2/tx/course/student/assignment/commit` | Commit to assignment | `COURSE_STUDENT_ASSIGNMENT_COMMIT` |
+| POST | `/v2/tx/course/student/assignment/update` | Update assignment | `COURSE_STUDENT_ASSIGNMENT_UPDATE` |
+| POST | `/v2/tx/course/student/credential/claim` | Claim credential | `COURSE_STUDENT_CREDENTIAL_CLAIM` |
 
 ---
 
-## TX: Project Operations (8 endpoints)
-
-Transaction building endpoints for project-related operations.
+## TX: Projects (8 endpoints)
 
 | Method | Path | Description | Transaction Type |
 |--------|------|-------------|------------------|
-| POST | `/api/v2/tx/project/contributor/task/commit` | Build transaction to commit to project task | `PROJECT_CONTRIBUTOR_TASK_COMMIT` |
-| POST | `/api/v2/tx/project/contributor/task/action` | Build transaction for task actions | `PROJECT_CONTRIBUTOR_TASK_ACTION` |
-| POST | `/api/v2/tx/project/contributor/credential/claim` | Build transaction to claim project credentials | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` |
-| POST | `/api/v2/tx/project/manager/tasks/assess` | Build transaction to assess task submissions | `PROJECT_MANAGER_TASKS_ASSESS` |
-| POST | `/api/v2/tx/project/manager/tasks/manage` | Manage project tasks | `PROJECT_MANAGER_TASKS_MANAGE` |
-| POST | `/api/v2/tx/project/owner/managers/manage` | Manage project managers | `PROJECT_OWNER_MANAGERS_MANAGE` |
-| POST | `/api/v2/tx/project/owner/contributor-blacklist/manage` | Manage contributor blacklist | `PROJECT_OWNER_BLACKLIST_MANAGE` |
-| POST | `/api/v2/tx/project/user/treasury/add-funds` | Add funds to project treasury | `PROJECT_TREASURY_ADD_FUNDS` |
+| POST | `/v2/tx/project/owner/managers/manage` | Add/remove managers | `PROJECT_OWNER_MANAGERS_MANAGE` |
+| POST | `/v2/tx/project/owner/contributor-blacklist/manage` | Manage blacklist | `PROJECT_OWNER_BLACKLIST_MANAGE` |
+| POST | `/v2/tx/project/manager/tasks/manage` | Manage tasks | `PROJECT_MANAGER_TASKS_MANAGE` |
+| POST | `/v2/tx/project/manager/tasks/assess` | Assess tasks | `PROJECT_MANAGER_TASKS_ASSESS` |
+| POST | `/v2/tx/project/contributor/task/commit` | Commit to task | `PROJECT_CONTRIBUTOR_TASK_COMMIT` |
+| POST | `/v2/tx/project/contributor/task/action` | Task action | `PROJECT_CONTRIBUTOR_TASK_ACTION` |
+| POST | `/v2/tx/project/contributor/credential/claim` | Claim credential | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` |
+| POST | `/v2/tx/project/user/treasury/add-funds` | Add treasury funds | `PROJECT_USER_TREASURY_ADD_FUNDS` |
 
 ---
 
-## TX: Instance/Global Operations (3 endpoints)
+## TX: Instance/Global (7 endpoints)
 
-Transaction building endpoints for instance and global operations.
-
+### Instance Creation
 | Method | Path | Description | Transaction Type |
 |--------|------|-------------|------------------|
-| POST | `/api/v2/tx/global/user/access-token/mint` | Build transaction to mint user access token | `GLOBAL_ACCESS_TOKEN_MINT` |
-| POST | `/api/v2/tx/instance/owner/course/create` | Build transaction to initialize new course | `INSTANCE_COURSE_CREATE` |
-| POST | `/api/v2/tx/instance/owner/project/create` | Build transaction to initialize new project | `INSTANCE_PROJECT_CREATE` |
+| POST | `/v2/tx/instance/owner/course/create` | Create course on-chain | `INSTANCE_COURSE_CREATE` |
+| POST | `/v2/tx/instance/owner/project/create` | Create project on-chain | `INSTANCE_PROJECT_CREATE` |
+
+### Global Operations
+| Method | Path | Description | Transaction Type |
+|--------|------|-------------|------------------|
+| POST | `/v2/tx/global/user/access-token/mint` | Mint access token | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` |
+
+### TX State Machine
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/tx/register` | Register TX for monitoring |
+| GET | `/v2/tx/status/{tx_hash}` | Get TX status |
+| GET | `/v2/tx/pending` | List pending TXs |
+| GET | `/v2/tx/types` | Get valid TX types |
 
 ---
 
 ## Migration Notes
 
-### From 3 APIs to 1
+### Path Changes (January 2026)
 
-| Before (3 APIs) | After (Unified Gateway) |
-|-----------------|-------------------------|
-| DB API: `andamio-db-api-343753432212.us-central1.run.app` | `dev-api.andamio.io` |
-| Andamioscan: `preprod.andamioscan.io/api` | Same gateway, `/api/v2/*` paths |
-| Atlas TX API: `atlas-api-preprod-507341199760.us-central1.run.app` | Same gateway, `/api/v2/tx/*` paths |
+The API paths were restructured for cleaner URL generation:
 
-### Key Changes
+| Old Pattern | New Pattern |
+|-------------|-------------|
+| `/api/v1/auth/*` | `/v1/auth/*` |
+| `/api/v2/course/*` | `/v2/course/*` |
+| `/api/v2/project/*` | `/v2/project/*` |
+| `/api/v2/tx/*` | `/v2/tx/*` |
 
-1. **Merged Endpoints**: `/api/v2/course/*` and `/api/v2/project/*` endpoints that combine DB + on-chain data
-2. **Simplified Auth**: `/api/v1/auth/login` endpoint (no cryptographic verification - see security note above)
-3. **API Key Support**: New capability for programmatic access via `/api/v1/apikey/*`
-4. **Admin Endpoints**: Usage tracking and role management via `/api/v1/admin/*`
+### Removed: Scan Endpoints
 
-### Endpoint Path Mapping
-
-| Old Path Pattern | New Path Pattern |
-|------------------|------------------|
-| DB API: `/course/*` | Gateway: `/api/v2/course/*` (merged) |
-| DB API: `/project-v2/*` | Gateway: `/api/v2/project/*` (merged) |
-| Andamioscan: `/api/v2/*` | Gateway: `/api/v2/*` (passthrough) |
-| Atlas TX: `/v2/tx/*` | Gateway: `/api/v2/tx/*` (passthrough) |
-
-### Important: All Gateway Routes Require `/api` Prefix
-
-**CRITICAL**: All gateway endpoints require the `/api` prefix:
-- Auth: `/api/v1/auth/*`
-- User: `/api/v1/user/*`
-- Admin: `/api/v1/admin/*`
-- API Key: `/api/v1/apikey/*`
-- Courses/Projects (merged): `/api/v2/course/*`, `/api/v2/project/*`
-- On-chain (scan): `/api/v2/courses`, `/api/v2/projects`, `/api/v2/users/*`
-- Transactions: `/api/v2/tx/*`
+On-chain indexed data endpoints (`/v2/courses`, `/v2/projects`) are no longer in this gateway. The merged endpoints (`/v2/course/*`, `/v2/project/*`) now include on-chain state where applicable.
 
 ---
 
-**Last Updated**: January 16, 2026
+**Last Updated**: January 20, 2026

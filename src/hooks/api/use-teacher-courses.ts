@@ -169,8 +169,8 @@ export function useTeacherCourses() {
         title: course.content?.title ?? course.title,
         description: course.content?.description ?? course.description,
         image_url: course.content?.image_url ?? course.image_url,
-        video_url: course.content?.video_url ?? course.video_url,
-        course_code: course.content?.code ?? course.course_code,
+        video_url: course.video_url, // video_url not in OrchestrationCourseContent
+        course_code: course.course_code, // code field removed from OrchestrationCourseContent
       }));
 
       return courses;

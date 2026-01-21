@@ -189,8 +189,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              policy_id: courseNftPolicyId,
-              module_code: newCode,
+              course_id: courseNftPolicyId,
+              course_module_code: newCode,
               title: data.assignment.title,
               content_json: data.assignment.content_json,
             }),
@@ -222,8 +222,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              policy_id: courseNftPolicyId,
-              module_code: newCode,
+              course_id: courseNftPolicyId,
+              course_module_code: newCode,
               title: data.introduction.title,
               content_json: data.introduction.content_json,
             }),

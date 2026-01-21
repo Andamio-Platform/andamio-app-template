@@ -136,9 +136,9 @@ export function useCreateLesson() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
-            module_index: moduleIndex,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
+            slt_index: moduleIndex,
             title,
             description,
             content_json: contentJson,

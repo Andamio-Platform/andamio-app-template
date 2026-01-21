@@ -360,7 +360,7 @@ After consolidation:
 ### 10.1 Variables to Keep
 
 ```bash
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev-api.andamio.io"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-701452636305.us-central1.run.app"
 ANDAMIO_API_KEY="your-api-key"
 NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="..."

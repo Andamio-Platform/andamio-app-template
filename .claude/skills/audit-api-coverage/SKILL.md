@@ -11,28 +11,30 @@ Audit and maintain API coverage for the Unified Andamio API Gateway.
 
 | Property | Value |
 |----------|-------|
-| **Base URL** | `https://dev-api.andamio.io` |
-| **API Docs** | [doc.json](https://dev-api.andamio.io/api/v1/docs/doc.json) |
-| **Total Endpoints** | ~90+ |
-| **T3 Coverage** | ~79% (37/47 core endpoints) |
+| **Base URL** | `https://andamio-api-gateway-701452636305.us-central1.run.app` |
+| **API Docs** | [doc.json](https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json) |
+| **Total Endpoints** | 108 |
+| **T3 Coverage** | 63% (68/108 endpoints) |
 
 **Always use the live docs as source of truth.** The files in this skill directory are derived from these sources.
 
 ## Endpoint Categories
 
-The unified gateway consolidates what was previously 3 separate APIs:
+The unified gateway uses two API versions:
+- **v1** (`/v1/*`): Legacy auth, user, admin, API key endpoints
+- **v2** (`/v2/*`): Courses, projects, transactions, and new auth
 
 | Category | Count | T3 Status | Description |
 |----------|-------|-----------|-------------|
-| Authentication | 4 | ✅ 100% | Login session, validate, direct login |
-| User Management | 4 | ⏳ 0% | Profile and usage metrics |
-| API Key Management | 3 | ⏳ 0% | API key lifecycle |
-| Admin Functions | 3 | ⏳ 0% | Platform management |
-| Merged Courses | 8+ | ✅ 100% | Combined off-chain + on-chain course data |
-| Merged Projects | 8+ | ✅ 100% | Combined off-chain + on-chain project data |
+| Authentication | 6 | 🔶 83% | Login session, validate, direct login (v1 & v2) |
+| User Management | 6 | 🔶 17% | Profile and access token management |
+| API Key Management | 9 | 🔶 33% | API key lifecycle (v1 & v2) |
+| Admin Functions | 4 | ⏳ 0% | Platform management |
+| Courses | 42 | 🔶 55% | Course CRUD, modules, SLTs, assignments |
+| Projects | 20 | 🔶 85% | Project CRUD, tasks, commitments |
 | TX (Courses) | 6 | ✅ 100% | Course transaction building |
 | TX (Projects) | 8 | ✅ 100% | Project transaction building |
-| TX (Instance/Global) | 3 | ✅ 100% | Instance and global operations |
+| TX (Instance/Global) | 7 | 🔶 71% | Instance, global, and TX state machine |
 
 ## Quick Reference Files
 
@@ -74,7 +76,7 @@ Before implementing, verify the endpoint exists in the live OpenAPI spec:
 
 ```bash
 # Check specific endpoint
-curl -s https://dev-api.andamio.io/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
+curl -s https://andamio-api-gateway-701452636305.us-central1.run.app/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
 ```
 
 ### 2. Implement
@@ -170,9 +172,9 @@ The unified gateway consolidates what was previously:
 
 | Old API | Old Base URL | New Gateway Path |
 |---------|--------------|------------------|
-| Andamio DB API | `andamio-db-api-343753432212.us-central1.run.app` | `/auth/*`, `/user/*`, `/api/v2/*` |
-| Andamioscan | `preprod.andamioscan.io/api` | `/v2/*` (passthrough) |
-| Atlas TX API | `atlas-api-preprod-507341199760.us-central1.run.app` | `/v2/tx/*` (passthrough) |
+| Andamio DB API | `andamio-db-api-343753432212.us-central1.run.app` | `/v1/*`, `/v2/course/*`, `/v2/project/*` |
+| Andamioscan | `preprod.andamioscan.io/api` | Removed (merged into course/project endpoints) |
+| Atlas TX API | `atlas-api-preprod-507341199760.us-central1.run.app` | `/v2/tx/*` |
 
 ### Key Benefits
 
@@ -180,17 +182,26 @@ The unified gateway consolidates what was previously:
 2. **Merged Endpoints**: Combined off-chain + on-chain data in single calls
 3. **API Key Support**: New capability for programmatic access
 4. **Simplified Auth**: Single login endpoint
+5. **Cleaner Paths**: `/v1/*` and `/v2/*` without `/api` prefix
 
 ## Current Stats
 
 Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current coverage.
 
-The unified gateway has approximately **40 endpoints** across these categories:
+The unified gateway has **108 endpoints** across these categories:
 
 | Category | Count |
 |----------|-------|
-| Auth + User + Admin + API Key | 12 |
-| Merged Data (Courses + Projects) | 6 |
-| Scan (On-chain indexed) | 9 |
-| TX (Transaction building) | 13 |
-| **Total** | **~40** |
+| Auth (v1 + v2) | 6 |
+| User (v1 + v2) | 6 |
+| API Key (v1 + v2) | 9 |
+| Admin (v1 + v2) | 4 |
+| Courses | 42 |
+| Projects | 20 |
+| TX (Course + Project + Instance/Global) | 21 |
+| **Total** | **108** |
+
+### Path Structure
+
+- `/v1/*` - Legacy endpoints (auth, user, admin, apikey)
+- `/v2/*` - V2 endpoints (courses, projects, transactions, new auth)

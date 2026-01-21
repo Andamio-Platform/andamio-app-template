@@ -51,7 +51,9 @@ export const courseModuleKeys = {
 // =============================================================================
 
 /**
- * Fetch all modules for a course
+ * Fetch all modules for a course (public endpoint)
+ *
+ * Uses the user endpoint which does not require authentication.
  *
  * @example
  * ```tsx
@@ -67,23 +69,29 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/modules/list/{policy_id}
+      // Go API: GET /course/user/modules/{course_id}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
       );
+
+      // 404 means no modules yet - return empty array
+      if (response.status === 404) {
+        return [] as CourseModuleListResponse;
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseModuleListResponse>;
+      const result = await response.json() as { data?: CourseModuleListResponse };
+      return result.data ?? [];
     },
     enabled: !!courseNftPolicyId,
   });
 }
 
 /**
- * Fetch a single module by course and module code
+ * Fetch a single module by course and module code (public endpoint)
  *
  * NOTE: The single-module GET endpoint was removed in V2.
  * This now fetches the module list and filters client-side.
@@ -107,17 +115,18 @@ export function useCourseModule(
   return useQuery({
     queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // V2: GET /course/user/course-module/get was removed
-      // Use list endpoint and filter client-side
+      // Go API: GET /course/user/modules/{course_id}
+      // Fetch list and filter client-side
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/list/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const modules = (await response.json()) as CourseModuleListResponse;
+      const result = await response.json() as { data?: CourseModuleListResponse };
+      const modules = result.data ?? [];
       const courseModule = modules.find((m) => m.module_code === moduleCode);
 
       if (!courseModule) {
@@ -162,7 +171,7 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_nft_policy_ids: courseNftPolicyIds }),
+          body: JSON.stringify({ course_ids: courseNftPolicyIds }),
         }
       );
 
@@ -211,11 +220,12 @@ export function useCreateCourseModule() {
       input: CreateCourseModuleInput & { course_nft_policy_id: string }
     ) => {
       // Go API: POST /course/teacher/course-module/create
-      // API expects "policy_id" not "course_nft_policy_id"
-      const { course_nft_policy_id, ...rest } = input;
+      // API expects "course_id" and "course_module_code"
+      const { course_nft_policy_id, module_code, ...rest } = input;
       const url = `/api/gateway/api/v2/course/teacher/course-module/create`;
       const body = {
-        policy_id: course_nft_policy_id,
+        course_id: course_nft_policy_id,
+        course_module_code: module_code,
         ...rest,
       };
       console.log("[CreateModule] URL:", url);
@@ -266,15 +276,14 @@ export function useUpdateCourseModule() {
       data: Partial<{ title: string; description: string }>;
     }) => {
       // Go API: POST /course/teacher/course-module/update
-      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
             ...data,
           }),
         }
@@ -320,15 +329,14 @@ export function useUpdateCourseModuleStatus() {
       status: string;
     }) => {
       // Go API: POST /course/teacher/course-module/update-status
-      // API expects "policy_id" not "course_nft_policy_id"
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
             status,
           }),
         }
@@ -400,8 +408,8 @@ export function useDeleteCourseModule() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            policy_id: courseNftPolicyId,
-            module_code: moduleCode,
+            course_id: courseNftPolicyId,
+            course_module_code: moduleCode,
           }),
         }
       );

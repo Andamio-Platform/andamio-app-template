@@ -112,7 +112,7 @@ export function EnrollInCourse({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[EnrollInCourse] TX confirmed and DB updated by gateway");
 
           toast.success("Successfully Enrolled!", {

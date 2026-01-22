@@ -14,7 +14,7 @@ import {
 } from "~/components/andamio";
 import { SettingsIcon, LessonIcon, OnChainIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourse, useCourseModule, useSLTs, useLessons } from "~/hooks/api";
+import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
 
@@ -45,7 +45,6 @@ export default function ModuleLessonsPage() {
     error: moduleError,
   } = useCourseModule(courseNftPolicyId, moduleCode);
   const { data: slts, isLoading: sltsLoading } = useSLTs(courseNftPolicyId, moduleCode);
-  const { data: lessons, isLoading: lessonsLoading } = useLessons(courseNftPolicyId, moduleCode);
 
   // Get on-chain modules from the merged course data - memoized to stabilize reference
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
@@ -95,7 +94,7 @@ export default function ModuleLessonsPage() {
   }, [onChainModules, combinedData]);
 
   // Combined loading state
-  const isLoading = moduleLoading || sltsLoading || lessonsLoading;
+  const isLoading = moduleLoading || sltsLoading;
 
   // Loading state
   if (isLoading) {

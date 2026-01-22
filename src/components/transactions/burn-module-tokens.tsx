@@ -91,7 +91,7 @@ export function BurnModuleTokens({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[BurnModuleTokens] TX confirmed and DB updated by gateway");
 
           const moduleCount = modulesToBurn.length;

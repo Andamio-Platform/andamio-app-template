@@ -194,7 +194,7 @@ export function TasksManage({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[TasksManage] TX confirmed and DB updated by gateway");
 
           const actionText = action === "add" ? "added" : "removed";
@@ -232,14 +232,12 @@ export function TasksManage({
     let tasks_to_add: ProjectData[] = [];
     let tasks_to_remove: ProjectData[] = [];
     let deposit_value: ListValue = [];
-    let task_codes: string[] = [];
 
     if (preConfiguredTasksToAdd || preConfiguredTasksToRemove) {
       // Batch mode - use pre-configured values
       tasks_to_add = preConfiguredTasksToAdd ?? [];
       tasks_to_remove = preConfiguredTasksToRemove ?? [];
       deposit_value = preConfiguredDepositValue ?? [];
-      task_codes = preConfiguredTaskCodes ?? [];
     } else if (action === "add") {
       // Single task add mode via form
       if (!taskHash.trim() || !taskCode.trim()) {
@@ -269,7 +267,6 @@ export function TasksManage({
 
       // Calculate deposit value (sum of all task lovelace amounts)
       deposit_value = [["lovelace", lovelaceAmount]];
-      task_codes = [taskCode.trim()];
     } else {
       // Remove mode - need full ProjectData, not just hashes
       toast.error("Task removal via form not yet implemented - use batch mode");

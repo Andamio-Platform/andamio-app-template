@@ -90,7 +90,7 @@ export interface TaskActionProps {
  */
 export function TaskAction({
   projectNftPolicyId,
-  taskHash,
+  taskHash: _taskHash,
   taskCode,
   taskTitle,
   projectInfo,
@@ -106,7 +106,7 @@ export function TaskAction({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[TaskAction] TX confirmed and DB updated by gateway");
 
           toast.success("Task Action Completed!", {

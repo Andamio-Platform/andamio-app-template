@@ -41,8 +41,10 @@ export type TxState = "pending" | "confirmed" | "updated" | "failed" | "expired"
 
 /**
  * Terminal states - stop polling when reached
+ * Includes "confirmed" because once TX is on-chain, we can proceed with our own
+ * DB updates rather than waiting for gateway's background processing
  */
-export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
+export const TERMINAL_STATES: TxState[] = ["confirmed", "updated", "failed", "expired"];
 
 /**
  * TX status response from gateway
@@ -70,7 +72,7 @@ export interface TxRegisterRequest {
 // =============================================================================
 
 export interface UseTxWatcherOptions {
-  /** Polling interval in ms (default: 10000 = 10 seconds) */
+  /** Polling interval in ms (default: 15000 = 15 seconds, ~1 per Cardano block) */
   pollInterval?: number;
   /** Callback when TX reaches terminal state */
   onComplete?: (status: TxStatus) => void;
@@ -88,18 +90,39 @@ export function useTxWatcher(
   txHash: string | null,
   options: UseTxWatcherOptions = {}
 ) {
-  const { pollInterval = 10_000, onComplete, onError } = options;
+  const { pollInterval = 15_000, onComplete, onError } = options;
   const { authenticatedFetch, jwt } = useAndamioAuth();
 
   const [status, setStatus] = useState<TxStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Use refs for callbacks to prevent effect restarts
+  const onCompleteRef = useRef(onComplete);
+  const onErrorRef = useRef(onError);
+  const authenticatedFetchRef = useRef(authenticatedFetch);
+
+  // Keep refs updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    authenticatedFetchRef.current = authenticatedFetch;
+  }, [authenticatedFetch]);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Stable check function that uses refs
   const checkStatus = useCallback(async (): Promise<TxStatus | null> => {
     if (!txHash || !jwt) return null;
 
     try {
-      const response = await authenticatedFetch(
+      const response = await authenticatedFetchRef.current(
         `/api/gateway/api/v2/tx/status/${txHash}`
       );
 
@@ -115,15 +138,13 @@ export function useTxWatcher(
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
-      onError?.(error);
+      onErrorRef.current?.(error);
       return null;
     }
-  }, [txHash, jwt, authenticatedFetch, onError]);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  }, [txHash, jwt]);
 
   useEffect(() => {
-    if (!txHash) {
+    if (!txHash || !jwt) {
       setStatus(null);
       setIsPolling(false);
       return;
@@ -146,27 +167,28 @@ export function useTxWatcher(
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        onComplete?.(result);
+        onCompleteRef.current?.(result);
       }
     };
 
     setIsPolling(true);
     setError(null);
 
-    // Initial check
-    void poll();
+    // Initial check after a short delay (give registration time to complete)
+    const initialTimeout = setTimeout(() => void poll(), 1000);
 
-    // Start polling
+    // Start polling after initial check
     intervalRef.current = setInterval(() => void poll(), pollInterval);
 
     return () => {
       cancelled = true;
+      clearTimeout(initialTimeout);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [txHash, pollInterval, checkStatus, onComplete]);
+  }, [txHash, jwt, pollInterval, checkStatus]);
 
   return {
     status,
@@ -176,8 +198,8 @@ export function useTxWatcher(
     checkNow: checkStatus,
     /** Whether TX is in a terminal state */
     isTerminal: status ? TERMINAL_STATES.includes(status.state) : false,
-    /** Whether TX completed successfully */
-    isSuccess: status?.state === "updated",
+    /** Whether TX completed successfully (confirmed on-chain or DB updated) */
+    isSuccess: status?.state === "confirmed" || status?.state === "updated",
     /** Whether TX failed */
     isFailed: status?.state === "failed" || status?.state === "expired",
   };

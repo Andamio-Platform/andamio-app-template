@@ -1,8 +1,69 @@
 # Project Status
 
-> **Last Updated**: January 21, 2026 (Session 27 - Gateway Taxonomy Compliance Complete)
+> **Last Updated**: January 21, 2026 (Session 28 - TX Watcher & Confirmation Fixes)
 
 Current implementation status of the Andamio T3 App Template.
+
+---
+
+## ✅ RESOLVED: TX Watcher Confirmation Bug (January 21, 2026)
+
+**Problem**: Transaction components stuck on "Confirming on blockchain..." even after TX confirmed on-chain.
+
+**Root Cause Analysis**:
+1. `useTxWatcher` only treated `["updated", "failed", "expired"]` as terminal states
+2. Gateway TX state machine flow: `pending` → `confirmed` → `updated`
+3. Gateway slow to transition from `confirmed` to `updated` (background DB processing)
+4. `onComplete` callbacks only checked for `status.state === "updated"`
+5. Result: UI stuck waiting for `"updated"` that might take 30+ seconds after on-chain confirmation
+
+**Fixes Applied**:
+
+| Fix | Description |
+|-----|-------------|
+| Add "confirmed" to terminal states | `use-tx-watcher.ts` - Stop polling when TX confirmed on-chain |
+| Update `isSuccess` check | Return `true` for both `"confirmed"` and `"updated"` |
+| Fix stale closure in CreateCourseDialog | Use refs for metadata to avoid closure capture issues |
+| Stabilize polling effect | Use refs for callbacks to prevent effect restarts |
+| Increase poll interval | 10s → 15s (closer to Cardano block time) |
+
+**Files Updated (21 total)**:
+
+*Core hooks*:
+- `src/hooks/use-tx-watcher.ts` - Terminal states, polling stability
+
+*Transaction components (17)*:
+- `src/components/transactions/*.tsx` - All `onComplete` callbacks updated to check `"confirmed" || "updated"`
+- `src/components/learner/assignment-commitment.tsx` (2 occurrences)
+- `src/components/courses/create-course-dialog.tsx` - Complete rewrite with no-redirect pattern
+
+*Other*:
+- `src/app/(app)/course/[coursenft]/[modulecode]/page.tsx` - Removed unused `useLessons` hook
+- `src/hooks/api/use-slt.ts` - Fixed unused `moduleIndex` param
+
+**New Pattern for Transaction Components**:
+```typescript
+const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  result?.requiresDBUpdate ? result.txHash : null,
+  {
+    onComplete: (status) => {
+      // Check for BOTH states - confirmed means on-chain, updated means DB done
+      if (status.state === "confirmed" || status.state === "updated") {
+        // Handle success
+        toast.success("Transaction Complete!");
+        void onSuccess?.();
+      } else if (status.state === "failed" || status.state === "expired") {
+        toast.error("Transaction Failed");
+      }
+    },
+  }
+);
+```
+
+**CreateCourseDialog UX Improvement**:
+- Before: Provisioning overlay → redirect via `window.location.href` → wallet disconnects
+- After: Watch TX in drawer → invalidate cache → close drawer → course appears in list → toast with "Open Course" action
+- No page reload, wallet stays connected
 
 ---
 

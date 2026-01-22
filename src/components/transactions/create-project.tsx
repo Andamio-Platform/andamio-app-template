@@ -76,7 +76,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[CreateProject] TX confirmed and DB updated by gateway");
 
           toast.success("Project Created!", {
@@ -132,9 +132,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
       .split(",")
       .map((m) => m.trim())
       .filter((m) => m.length > 0);
-
-    // Parse deposit
-    const lovelaceAmount = parseInt(depositLovelace, 10) || 5000000;
 
     await execute({
       txType: "INSTANCE_PROJECT_CREATE",

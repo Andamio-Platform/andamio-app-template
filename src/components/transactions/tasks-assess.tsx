@@ -32,13 +32,6 @@ import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 type AssessmentOutcome = "accept" | "refuse" | "deny";
 
-// Map lowercase TX API outcomes to uppercase DB API decisions
-const outcomeToDbDecision: Record<AssessmentOutcome, "ACCEPTED" | "REFUSED" | "DENIED"> = {
-  accept: "ACCEPTED",
-  refuse: "REFUSED",
-  deny: "DENIED",
-};
-
 export interface TasksAssessProps {
   /**
    * Project NFT Policy ID
@@ -100,7 +93,7 @@ export function TasksAssess({
   projectNftPolicyId,
   contributorStateId,
   contributorAlias,
-  taskHash,
+  taskHash: _taskHash,
   taskCode,
   taskTitle,
   onSuccess,
@@ -115,7 +108,7 @@ export function TasksAssess({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[TasksAssess] TX confirmed and DB updated by gateway");
 
           const actionText =

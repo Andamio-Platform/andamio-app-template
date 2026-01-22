@@ -74,7 +74,7 @@ export function useCreateSLT() {
     mutationFn: async ({
       courseNftPolicyId,
       moduleCode,
-      moduleIndex,
+      moduleIndex: _moduleIndex,
       sltText,
     }: {
       courseNftPolicyId: string;
@@ -84,6 +84,7 @@ export function useCreateSLT() {
     }) => {
       // Go API: POST /course/teacher/slt/create
       // API requires camelCase: policyId, moduleCode, sltText
+      // Note: moduleIndex is auto-assigned by the API on create
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/create`,
         {

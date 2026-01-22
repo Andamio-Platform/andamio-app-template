@@ -77,7 +77,7 @@ export function BlacklistManage({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[BlacklistManage] TX confirmed and DB updated by gateway");
 
           const actionText = action === "add" ? "added to" : "removed from";

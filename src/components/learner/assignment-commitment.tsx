@@ -124,7 +124,7 @@ export function AssignmentCommitment({
     commitTx.result?.requiresDBUpdate ? commitTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           triggerSuccess("Assignment committed to blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
@@ -139,7 +139,7 @@ export function AssignmentCommitment({
     updateTx.result?.requiresDBUpdate ? updateTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           triggerSuccess("Assignment updated on blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {

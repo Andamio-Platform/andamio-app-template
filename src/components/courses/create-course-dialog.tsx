@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 import { useTransaction } from "~/hooks/use-transaction";
+import { useTxWatcher } from "~/hooks/use-tx-watcher";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -21,13 +23,15 @@ import {
 } from "~/components/andamio";
 import { TransactionButton } from "~/components/transactions/transaction-button";
 import { TransactionStatus } from "~/components/transactions/transaction-status";
-import {
-  ProvisioningOverlay,
-  useProvisioningState,
-  type ProvisioningConfig,
-} from "~/components/provisioning";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AddIcon, SparkleIcon, CourseIcon, ExternalLinkIcon, AlertIcon } from "~/components/icons";
+import {
+  AddIcon,
+  SparkleIcon,
+  CourseIcon,
+  ExternalLinkIcon,
+  AlertIcon,
+  LoadingIcon,
+} from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import { useInvalidateTeacherCourses } from "~/hooks/api/use-teacher-courses";
@@ -38,20 +42,16 @@ import { useInvalidateTeacherCourses } from "~/hooks/api/use-teacher-courses";
  * The Course NFT is the foundation of your Andamio app. This component
  * guides users through the minting process with clear explanation.
  *
- * After transaction submission, transforms to show a provisioning overlay
- * that tracks blockchain confirmation and redirects to Course Studio.
+ * ## Flow
+ * 1. User enters code + title, clicks "Mint Course NFT"
+ * 2. TX builds, signs, submits → useTxWatcher polls for confirmation
+ * 3. On confirmation → register course in DB → invalidate cache
+ * 4. Close drawer → course appears in list → toast with "Open Course" action
  *
- * ## Manual Registration Workaround
- *
- * After TX confirms on-chain, calls `POST /api/v2/course/owner/course/register`
- * to register the course in the database. This is needed because the TX State
- * Machine auto-registration fails (401 - background poller runs without user JWT).
- *
- * This workaround is temporary. Once DB API team implements gateway-level auth
- * for `/course/gateway/course/register`, auto-registration will work and this
- * workaround can be removed.
+ * No page redirect, no wallet disconnect. Clean and elegant.
  */
 export function CreateCourseDialog() {
+  const router = useRouter();
   const { user, authenticatedFetch } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
@@ -65,84 +65,115 @@ export function CreateCourseDialog() {
     change_address: string;
   } | null>(null);
 
-  // Provisioning state for tracking blockchain confirmation
-  const [provisioningConfig, setProvisioningConfig] = useState<ProvisioningConfig | null>(null);
-  // Store course metadata for manual registration after TX confirms
+  // Store course metadata for registration after TX confirms
+  // Use BOTH state (for UI) and ref (for callback access without stale closure)
   const [courseMetadata, setCourseMetadata] = useState<{
     policyId: string;
     code: string;
     title: string;
   } | null>(null);
+  const courseMetadataRef = useRef<typeof courseMetadata>(null);
 
-  const {
-    currentStep,
-    errorMessage: provisioningError,
-    startProvisioning,
-    navigateToEntity,
-    isProvisioning,
-  } = useProvisioningState(
-    provisioningConfig
-      ? {
-          ...provisioningConfig,
-          onReady: () => {
-            // Wrap async registration in void to satisfy callback signature
-            void (async () => {
-            // Manual registration workaround: Call registration endpoint after TX confirms
-            // This is needed because TX State Machine auto-registration fails (401 - no user JWT)
-            if (courseMetadata) {
-              try {
-                console.log("[CreateCourse] Registering course with DB...", courseMetadata);
-                const regResponse = await authenticatedFetch(
-                  "/api/gateway/api/v2/course/owner/course/register",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      course_id: courseMetadata.policyId,
-                      title: courseMetadata.title,
-                    }),
-                  }
-                );
-
-                if (regResponse.ok) {
-                  console.log("[CreateCourse] Course registered successfully!");
-                  // Invalidate teacher courses cache so the list refreshes
-                  await invalidateTeacherCourses();
-                  toast.success("Course Ready!", {
-                    description: `"${courseMetadata.title}" is now live and registered`,
-                  });
-                } else {
-                  const errorText = await regResponse.text();
-                  console.error("[CreateCourse] Registration failed:", errorText);
-                  // Still show partial success - course is on-chain even if DB registration failed
-                  toast.warning("Course Created (Registration Pending)", {
-                    description: `Course is on-chain but DB registration may need manual sync`,
-                  });
-                }
-              } catch (err) {
-                console.error("[CreateCourse] Registration error:", err);
-                toast.warning("Course Created (Registration Pending)", {
-                  description: `Course is on-chain but DB registration may need manual sync`,
-                });
-              }
-            } else {
-              // Fallback if metadata not available
-              toast.success("Course Ready!", {
-                description: `"${provisioningConfig.title}" has been confirmed on-chain`,
-              });
-            }
-            })();
-          },
-        }
-      : null
-  );
-
-  // Start provisioning when config is set
+  // Keep ref in sync with state
   useEffect(() => {
-    if (provisioningConfig && !isProvisioning) {
-      startProvisioning();
+    courseMetadataRef.current = courseMetadata;
+  }, [courseMetadata]);
+
+  // Track if we've already handled confirmation (prevent double-registration)
+  const hasRegisteredRef = useRef(false);
+
+  // Watch for TX confirmation
+  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+    result?.requiresDBUpdate ? result.txHash : null,
+    {
+      onComplete: (status) => {
+        // Wrap async handler to satisfy void return type
+        void (async () => {
+        // Use ref to get current metadata (avoids stale closure)
+        const metadata = courseMetadataRef.current;
+
+        // Handle both "confirmed" and "updated" states
+        if (
+          (status.state === "confirmed" || status.state === "updated") &&
+          !hasRegisteredRef.current &&
+          metadata
+        ) {
+          hasRegisteredRef.current = true;
+
+          // Register course in DB
+          let registrationSucceeded = false;
+          try {
+            console.log("[CreateCourse] Registering course with DB...", metadata);
+            const regResponse = await authenticatedFetch(
+              "/api/gateway/api/v2/course/owner/course/register",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  course_id: metadata.policyId,
+                  title: metadata.title,
+                }),
+              }
+            );
+
+            if (regResponse.ok) {
+              console.log("[CreateCourse] Course registered successfully!");
+              registrationSucceeded = true;
+            } else {
+              const errorText = await regResponse.text();
+              console.error("[CreateCourse] Registration failed:", errorText);
+            }
+          } catch (err) {
+            console.error("[CreateCourse] Registration error:", err);
+          }
+
+          // Invalidate cache so course appears in list
+          await invalidateTeacherCourses();
+
+          // Close drawer
+          setOpen(false);
+
+          // Show success toast with action to open course
+          const courseTitle = metadata.title;
+          const courseId = metadata.policyId;
+
+          if (registrationSucceeded) {
+            toast.success("Course Created!", {
+              description: `"${courseTitle}" is now live`,
+              action: {
+                label: "Open Course",
+                onClick: () => router.push(`/studio/course/${courseId}`),
+              },
+            });
+          } else {
+            toast.warning("Course Created (Registration Pending)", {
+              description: "Course is on-chain. It may take a moment to appear.",
+              action: {
+                label: "View On-Chain",
+                onClick: () =>
+                  window.open(
+                    `https://preprod.cardanoscan.io/token/${courseId}`,
+                    "_blank"
+                  ),
+              },
+            });
+          }
+
+          // Reset form state
+          setCode("");
+          setTitle("");
+          setCourseMetadata(null);
+          hasRegisteredRef.current = false;
+          reset();
+        } else if (status.state === "failed" || status.state === "expired") {
+          toast.error("Course Creation Failed", {
+            description: status.last_error ?? "Please try again or contact support.",
+          });
+        }
+        })();
+      },
     }
-  }, [provisioningConfig, isProvisioning, startProvisioning]);
+  );
 
   // Fetch wallet addresses when wallet is connected
   useEffect(() => {
@@ -175,58 +206,30 @@ export function CreateCourseDialog() {
       return;
     }
 
+    // Reset registration flag for new attempt
+    hasRegisteredRef.current = false;
+
     await execute({
       txType: "INSTANCE_COURSE_CREATE",
       params: {
-        // Transaction API params (snake_case per V2 API)
         alias: user.accessTokenAlias,
         teachers: [user.accessTokenAlias],
         initiator_data: initiatorData,
       },
-      // Pass metadata for gateway auto-registration (code + title required)
       metadata: {
         code: code.trim(),
         title: title.trim(),
       },
       onSuccess: async (txResult) => {
-        // Extract course_id from the V2 API response
         const courseNftPolicyId = txResult.apiResponse?.course_id as string | undefined;
-        const txHash = txResult.txHash;
 
-        if (courseNftPolicyId && txHash) {
-          // Store metadata for manual registration after TX confirms
+        if (courseNftPolicyId) {
+          // Store metadata for registration after TX confirms
           setCourseMetadata({
             policyId: courseNftPolicyId,
             code: code.trim(),
             title: title.trim(),
           });
-
-          // Set up provisioning config to show the overlay
-          setProvisioningConfig({
-            entityType: "course",
-            entityId: courseNftPolicyId,
-            txHash,
-            title: title.trim(),
-            successRedirectPath: `/studio/course/${courseNftPolicyId}`,
-            explorerUrl: txResult.blockchainExplorerUrl,
-            autoRedirect: true,
-            autoRedirectDelay: 3000, // Increased delay to allow registration to complete
-          });
-        } else {
-          // Fallback: If no courseNftPolicyId, show success and close
-          toast.success("Course NFT Minted!", {
-            description: `"${title.trim()}" is now on-chain`,
-            action: txResult.blockchainExplorerUrl
-              ? {
-                  label: "View Transaction",
-                  onClick: () =>
-                    window.open(txResult.blockchainExplorerUrl, "_blank"),
-                }
-              : undefined,
-          });
-          setOpen(false);
-          setTitle("");
-          reset();
         }
       },
       onError: (txError) => {
@@ -239,8 +242,8 @@ export function CreateCourseDialog() {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    // Don't allow closing during provisioning
-    if (isProvisioning && !newOpen) {
+    // Don't allow closing while TX is in progress
+    if (!newOpen && state !== "idle" && state !== "error" && state !== "success") {
       return;
     }
 
@@ -248,8 +251,8 @@ export function CreateCourseDialog() {
     if (!newOpen) {
       setCode("");
       setTitle("");
-      setProvisioningConfig(null);
       setCourseMetadata(null);
+      hasRegisteredRef.current = false;
       reset();
     }
   };
@@ -261,6 +264,9 @@ export function CreateCourseDialog() {
   const hasTitle = title.trim().length > 0;
   const canCreate = hasAccessToken && hasInitiatorData && hasCode && hasTitle;
 
+  // Determine if we're waiting for confirmation
+  const isWaitingForConfirmation = state === "success" && result?.requiresDBUpdate && !txConfirmed;
+
   return (
     <AndamioDrawer open={open} onOpenChange={handleOpenChange}>
       <AndamioDrawerTrigger asChild>
@@ -271,141 +277,156 @@ export function CreateCourseDialog() {
       </AndamioDrawerTrigger>
       <AndamioDrawerContent>
         <div className="mx-auto w-full max-w-lg">
-          {/* Show provisioning overlay when in provisioning state */}
-          {isProvisioning && provisioningConfig ? (
-            <ProvisioningOverlay
-              {...provisioningConfig}
-              currentStep={currentStep}
-              errorMessage={provisioningError ?? undefined}
-              onNavigate={navigateToEntity}
-            />
-          ) : (
-            /* Normal form state */
-            <>
-              <AndamioDrawerHeader className="text-left">
-                <div className="mb-2 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <SparkleIcon className="h-5 w-5 text-primary" />
-                  </div>
-                  <AndamioDrawerTitle className="text-xl">
-                    Mint Your Course NFT
-                  </AndamioDrawerTitle>
-                </div>
-                <AndamioDrawerDescription className="text-base leading-relaxed">
-                  Your Course NFT is the key to your custom app on Andamio. It
-                  establishes your course on the Cardano blockchain and enables you
-                  to manage learners, issue credentials, and build your educational
-                  experience.
-                </AndamioDrawerDescription>
-              </AndamioDrawerHeader>
+          <AndamioDrawerHeader className="text-left">
+            <div className="mb-2 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <SparkleIcon className="h-5 w-5 text-primary" />
+              </div>
+              <AndamioDrawerTitle className="text-xl">
+                Mint Your Course NFT
+              </AndamioDrawerTitle>
+            </div>
+            <AndamioDrawerDescription className="text-base leading-relaxed">
+              Your Course NFT is the key to your custom app on Andamio. It
+              establishes your course on the Cardano blockchain and enables you
+              to manage learners, issue credentials, and build your educational
+              experience.
+            </AndamioDrawerDescription>
+          </AndamioDrawerHeader>
 
-              <div className="space-y-6 px-4">
-                {/* Requirements Alert */}
-                {!hasAccessToken && (
-                  <AndamioAlert variant="destructive">
-                    <AlertIcon className="h-4 w-4" />
-                    <AndamioAlertDescription>
-                      You need an Access Token to create a course. Mint one first!
-                    </AndamioAlertDescription>
-                  </AndamioAlert>
-                )}
+          <div className="space-y-6 px-4">
+            {/* Requirements Alert */}
+            {!hasAccessToken && (
+              <AndamioAlert variant="destructive">
+                <AlertIcon className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  You need an Access Token to create a course. Mint one first!
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            )}
 
-                {hasAccessToken && !hasInitiatorData && (
-                  <AndamioAlert>
-                    <AlertIcon className="h-4 w-4" />
-                    <AndamioAlertDescription>
-                      Loading wallet data... Please ensure your wallet is connected.
-                    </AndamioAlertDescription>
-                  </AndamioAlert>
-                )}
+            {hasAccessToken && !hasInitiatorData && (
+              <AndamioAlert>
+                <AlertIcon className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  Loading wallet data... Please ensure your wallet is connected.
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            )}
 
-                {/* Course Code Input */}
-                {hasAccessToken && hasInitiatorData && state !== "success" && (
-                  <div className="space-y-2">
-                    <AndamioLabel htmlFor="course-code" className="text-base">
-                      Course Code <span className="text-destructive">*</span>
-                    </AndamioLabel>
-                    <AndamioInput
-                      id="course-code"
-                      placeholder="CARDANO-101"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.toUpperCase())}
-                      disabled={state !== "idle" && state !== "error"}
-                      className="h-12 text-base font-mono"
-                      maxLength={50}
-                      autoFocus
-                    />
-                    <AndamioText variant="small">
-                      A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
+            {/* Course Code Input */}
+            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="course-code" className="text-base">
+                  Course Code <span className="text-destructive">*</span>
+                </AndamioLabel>
+                <AndamioInput
+                  id="course-code"
+                  placeholder="CARDANO-101"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  disabled={state !== "idle" && state !== "error"}
+                  className="h-12 text-base font-mono"
+                  maxLength={50}
+                  autoFocus
+                />
+                <AndamioText variant="small">
+                  A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
+                </AndamioText>
+              </div>
+            )}
+
+            {/* Title Input */}
+            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
+              <div className="space-y-2">
+                <AndamioLabel htmlFor="course-title" className="text-base">
+                  Course Title <span className="text-destructive">*</span>
+                </AndamioLabel>
+                <AndamioInput
+                  id="course-title"
+                  placeholder="Introduction to Cardano Development"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={state !== "idle" && state !== "error"}
+                  className="h-12 text-base"
+                  maxLength={200}
+                />
+                <AndamioText variant="small">
+                  The display name shown to learners. You can change this later.
+                </AndamioText>
+              </div>
+            )}
+
+            {/* Transaction Status */}
+            {state !== "idle" && !isWaitingForConfirmation && (
+              <TransactionStatus
+                state={state}
+                result={result}
+                error={error?.message ?? null}
+                onRetry={() => reset()}
+                messages={{
+                  success: ui.successInfo,
+                }}
+              />
+            )}
+
+            {/* Waiting for Confirmation */}
+            {isWaitingForConfirmation && (
+              <div className="rounded-lg border bg-muted/30 p-6 text-center">
+                <LoadingIcon className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                <AndamioText className="font-medium mb-1">
+                  Confirming on blockchain...
+                </AndamioText>
+                <AndamioText variant="small">
+                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                  {txStatus?.state === "confirmed" && "Registering course..."}
+                  {!txStatus && "Registering transaction..."}
+                </AndamioText>
+                {courseMetadata && (
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      Creating &quot;{courseMetadata.title}&quot;
                     </AndamioText>
                   </div>
                 )}
+              </div>
+            )}
 
-                {/* Title Input */}
-                {hasAccessToken && hasInitiatorData && state !== "success" && (
-                  <div className="space-y-2">
-                    <AndamioLabel htmlFor="course-title" className="text-base">
-                      Course Title <span className="text-destructive">*</span>
-                    </AndamioLabel>
-                    <AndamioInput
-                      id="course-title"
-                      placeholder="Introduction to Cardano Development"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      disabled={state !== "idle" && state !== "error"}
-                      className="h-12 text-base"
-                      maxLength={200}
-                    />
-                    <AndamioText variant="small">
-                      The display name shown to learners. You can change this later.
-                    </AndamioText>
-                  </div>
-                )}
-
-                {/* Transaction Status */}
-                {state !== "idle" && (
-                  <TransactionStatus
-                    state={state}
-                    result={result}
-                    error={error?.message ?? null}
-                    onRetry={() => reset()}
-                    messages={{
-                      success: ui.successInfo,
-                    }}
-                  />
-                )}
-
-                {/* Learn More Links */}
-                <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
-                  <AndamioText variant="small" className="font-medium text-foreground">
-                    Want to learn more?
-                  </AndamioText>
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      href="https://docs.andamio.io"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <CourseIcon className="h-4 w-4" />
-                      Documentation
-                      <ExternalLinkIcon className="h-3 w-3" />
-                    </a>
-                    <a
-                      href="https://app.andamio.io/courses/andamio-101"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <SparkleIcon className="h-4 w-4" />
-                      Andamio 101 Course
-                      <ExternalLinkIcon className="h-3 w-3" />
-                    </a>
-                  </div>
+            {/* Learn More Links */}
+            {!isWaitingForConfirmation && (
+              <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
+                <AndamioText variant="small" className="font-medium text-foreground">
+                  Want to learn more?
+                </AndamioText>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="https://docs.andamio.io"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <CourseIcon className="h-4 w-4" />
+                    Documentation
+                    <ExternalLinkIcon className="h-3 w-3" />
+                  </a>
+                  <a
+                    href="https://app.andamio.io/courses/andamio-101"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <SparkleIcon className="h-4 w-4" />
+                    Andamio 101 Course
+                    <ExternalLinkIcon className="h-3 w-3" />
+                  </a>
                 </div>
               </div>
+            )}
+          </div>
 
-              <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+          <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+            {!isWaitingForConfirmation && (
+              <>
                 <AndamioDrawerClose asChild>
                   <AndamioButton
                     variant="outline"
@@ -429,9 +450,9 @@ export function CreateCourseDialog() {
                     }}
                   />
                 )}
-              </AndamioDrawerFooter>
-            </>
-          )}
+              </>
+            )}
+          </AndamioDrawerFooter>
         </div>
       </AndamioDrawerContent>
     </AndamioDrawer>

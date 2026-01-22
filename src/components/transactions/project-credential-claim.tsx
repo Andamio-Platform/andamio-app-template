@@ -88,7 +88,7 @@ export function ProjectCredentialClaim({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "updated") {
+        if (status.state === "confirmed" || status.state === "updated") {
           console.log("[ProjectCredentialClaim] TX confirmed and tracked by gateway");
 
           toast.success("Credentials Claimed!", {

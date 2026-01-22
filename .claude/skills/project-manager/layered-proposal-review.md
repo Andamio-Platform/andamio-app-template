@@ -1,7 +1,8 @@
 # Layered Architecture Proposal - Review Notes
 
-**Last Updated**: 2026-01-22
+**Last Updated**: 2026-01-23
 **Proposal**: `layered-proposal.md`
+**Last Verified**: 2026-01-23 (codebase matches documentation)
 
 ## Status
 
@@ -14,6 +15,18 @@
 | L5: App | ✅ **Phase 1 Complete** | Config files created, sidebar using config |
 
 **Build Order**: L1 + L2 + L3 + L5 (concurrent) → LAUNCH → L4 (extraction)
+
+### Verification Summary (2026-01-23)
+
+| Item | Verified |
+|------|----------|
+| `packages/core/` exists with hashing utils | ✅ |
+| `src/hooks/` reorganized (api/course, api/project, tx, auth, ui) | ✅ |
+| `src/components/tx/` has 22 files including V2 components | ✅ |
+| `src/config/` has all 5 new config files | ✅ |
+| `use-pending-transactions.ts` removed | ✅ |
+| V1 components still exist (deprecated) | ✅ Correct |
+| `andamioscan.ts` still exists | ✅ Deferred |
 
 ---
 

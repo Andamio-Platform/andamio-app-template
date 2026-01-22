@@ -6,106 +6,20 @@ import { usePathname } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import {
-  DashboardIcon,
-  LearnerIcon,
-  CourseIcon,
-  ProjectIcon,
-  NextIcon,
-  ModuleIcon,
-  EditIcon,
-  LogOutIcon,
-  SitemapIcon,
-  ThemeIcon,
-  KeyIcon,
-} from "~/components/icons";
+import { NextIcon, ModuleIcon, LogOutIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
-import type { NavSection } from "~/types/ui";
-
-/**
- * Navigation structure organized by user intent:
- *
- * - Overview: Personal hub (Dashboard)
- * - Discover: Public browsing for Learners & Contributors
- * - Studio: Creator tools for managing owned courses & projects
- * - Dev Tools: Development utilities (muted styling)
- */
-const navigationSections: NavSection[] = [
-  {
-    title: "Overview",
-    items: [
-      {
-        name: "Dashboard",
-        href: "/dashboard",
-        icon: DashboardIcon,
-        description: "Your personal hub",
-      },
-    ],
-  },
-  {
-    title: "Discover",
-    items: [
-      {
-        name: "Browse Courses",
-        href: "/course",
-        icon: LearnerIcon,
-        description: "Learn new skills",
-      },
-      {
-        name: "Browse Projects",
-        href: "/project",
-        icon: ProjectIcon,
-        description: "Find opportunities",
-      },
-    ],
-  },
-  {
-    title: "Studio",
-    requiresAuth: true,
-    items: [
-      {
-        name: "Course Studio",
-        href: "/studio/course",
-        icon: CourseIcon,
-        description: "Manage your courses",
-      },
-      {
-        name: "Project Studio",
-        href: "/studio/project",
-        icon: EditIcon,
-        description: "Manage your projects",
-      },
-    ],
-  },
-  {
-    title: "Dev Tools",
-    muted: true,
-    items: [
-      {
-        name: "API Setup",
-        href: "/api-setup",
-        icon: KeyIcon,
-        description: "Gateway registration",
-      },
-      {
-        name: "Component Library",
-        href: "/components",
-        icon: ThemeIcon,
-        description: "Andamio UI reference",
-      },
-      {
-        name: "Sitemap",
-        href: "/sitemap",
-        icon: SitemapIcon,
-        description: "All routes",
-      },
-    ],
-  },
-];
+import {
+  getNavigationSections,
+  isNavItemActive,
+  BRANDING,
+} from "~/config";
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout } = useAndamioAuth();
+
+  // Get navigation sections filtered by auth state
+  const navigationSections = getNavigationSections(isAuthenticated);
 
   return (
     <div className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar">
@@ -115,21 +29,19 @@ export function AppSidebar() {
           <ModuleIcon className="h-3.5 w-3.5" />
         </div>
         <Link href="/" className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-sidebar-foreground truncate">Andamio</span>
-          <span className="text-[9px] text-muted-foreground truncate leading-tight">App Template</span>
+          <span className="text-sm font-semibold text-sidebar-foreground truncate">
+            {BRANDING.name}
+          </span>
+          <span className="text-[9px] text-muted-foreground truncate leading-tight">
+            {BRANDING.tagline}
+          </span>
         </Link>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         <div className="space-y-4">
-          {navigationSections.map((section) => {
-            // Hide auth-required sections when not authenticated
-            if (section.requiresAuth && !isAuthenticated) {
-              return null;
-            }
-
-            return (
+          {navigationSections.map((section) => (
               <div key={section.title} className="space-y-0.5">
                 {/* Section Header */}
                 <h3
@@ -145,8 +57,7 @@ export function AppSidebar() {
 
                 {/* Section Items */}
                 {section.items.map((item) => {
-                  const isActive =
-                    pathname === item.href || pathname.startsWith(item.href + "/");
+                  const isActive = isNavItemActive(pathname, item.href);
                   const Icon = item.icon;
 
                   return (
@@ -185,8 +96,7 @@ export function AppSidebar() {
                   );
                 })}
               </div>
-            );
-          })}
+          ))}
         </div>
       </nav>
 

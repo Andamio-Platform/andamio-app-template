@@ -11,7 +11,7 @@
 | L2: Integration | ✅ **Phase 1 Complete** | Hooks reorganized; Phase 2 (andamioscan removal) deferred |
 | L3: Components | ✅ **Phase 1 Complete** | Folder renamed, V2 components added, V1 deprecated |
 | L4: Features | ⏸️ Deferred | Post-v2 launch extraction |
-| L5: App | 🔄 Planning | Routes aligned with API |
+| L5: App | ✅ **Phase 1 Complete** | Config files created, sidebar using config |
 
 **Build Order**: L1 + L2 + L3 + L5 (concurrent) → LAUNCH → L4 (extraction)
 
@@ -530,6 +530,44 @@ Each feature that involves transactions uses V2 TX State Machine:
 
 ---
 
+## L5 Progress (2026-01-22)
+
+### Completed
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `branding.ts` | ✅ Complete | App name, tagline, logo paths, external links |
+| Create `features.ts` | ✅ Complete | Feature flags by category (core, studio, devTools, auth, experimental) |
+| Create `navigation.ts` | ✅ Complete | Extracted from app-sidebar, includes helper functions |
+| Create `routes.ts` | ✅ Complete | PUBLIC_ROUTES, AUTH_ROUTES, STUDIO_ROUTES with metadata |
+| Create `ui-constants.ts` | ✅ Complete | UI_TIMEOUTS, PAGINATION, FORM_LIMITS, LAYOUT, ANIMATIONS, Z_INDEX |
+| Update config/index.ts | ✅ Complete | All new exports added |
+| Update app-sidebar | ✅ Complete | Now uses `getNavigationSections()` and `BRANDING` from config |
+
+### Current Structure
+
+```
+src/config/
+├── index.ts                    # Barrel export for all config
+├── branding.ts                 # App identity (name, logo, links)
+├── features.ts                 # Feature flags
+├── navigation.ts               # Sidebar navigation structure
+├── routes.ts                   # Route definitions + metadata
+├── ui-constants.ts             # UI timing, pagination, layout
+├── transaction-ui.ts           # TX UI config (existing)
+└── transaction-schemas.ts      # Zod validation (existing)
+```
+
+### L5 Phase 2 - Outstanding Work
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Route parameter renames | Medium | `[coursenft]` → `[courseId]`, etc. (breaking change) |
+| Migrate `lib/constants.ts` usages | Low | 4 files still import from old location |
+| Create route group layouts | Low | Optimize `(app)/`, `(studio)/` layouts |
+
+---
+
 ## Layer 5: App - Working Scope (v2 launch)
 
 | | |
@@ -680,8 +718,10 @@ Each feature that involves transactions uses V2 TX State Machine:
 9. [x] **L1 Fix** - Fix `@andamio/core/hashing` export (package built + linked)
 10. [ ] **L2 Integration - Phase 2** - Migrate 10 files from `andamioscan.ts` to merged hooks (deferred)
 11. [x] **L3 Components - Phase 1** - Folder renamed `tx/`, V2 components added, V1 deprecated
-12. [ ] Assign layer owners based on time + interests
-13. [ ] Create Phase 2 task breakdown
+12. [x] **L5 App - Phase 1** - Config files created (branding, features, navigation, routes, ui-constants)
+13. [ ] **L5 App - Phase 2** - Route parameter renames (`[coursenft]` → `[courseId]`, etc.)
+14. [ ] Assign layer owners based on time + interests
+15. [ ] Create Phase 2 task breakdown
 
 ### Build Order for V2 Launch
 

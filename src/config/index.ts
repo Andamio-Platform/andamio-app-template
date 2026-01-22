@@ -1,8 +1,58 @@
 /**
  * Config Exports
  *
- * Centralized configuration for transactions, validation, and UI strings.
+ * Centralized configuration for the application.
+ *
+ * Layer 5 (App) configuration:
+ * - branding: App identity (name, logo, links)
+ * - features: Feature flags
+ * - navigation: Sidebar navigation structure
+ * - routes: Route definitions and metadata
+ * - ui-constants: UI timing and layout values
+ * - transaction-ui: Transaction UI config
+ * - transaction-schemas: Zod validation schemas
  */
+
+// Branding configuration
+export { BRANDING, getPageTitle, type Branding } from "./branding";
+
+// Feature flags
+export {
+  FEATURES,
+  isFeatureEnabled,
+  getEnabledFeatures,
+  type Features,
+} from "./features";
+
+// Navigation configuration
+export {
+  SIDEBAR_NAVIGATION,
+  getNavigationSections,
+  getAllNavigationItems,
+  findNavigationItem,
+  isNavItemActive,
+} from "./navigation";
+
+// Route definitions
+export {
+  PUBLIC_ROUTES,
+  AUTH_ROUTES,
+  STUDIO_ROUTES,
+  API_ROUTES,
+  ROUTE_METADATA,
+  getRouteMetadata,
+  routeRequiresAuth,
+} from "./routes";
+
+// UI constants
+export {
+  UI_TIMEOUTS,
+  PAGINATION,
+  FORM_LIMITS,
+  LAYOUT,
+  ANIMATIONS,
+  Z_INDEX,
+} from "./ui-constants";
 
 // Transaction UI configuration
 export {

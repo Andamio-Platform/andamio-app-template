@@ -82,6 +82,58 @@ T3 App Template → Andamio API Gateway → Backend teams
 **API issues**: Route to Gateway team (andamio-api repo)
 **Indexing issues**: Route through Gateway team (they coordinate with Andamioscan)
 
+## Rabbit Hole Mode
+
+When the user says "rabbit hole mode", this means:
+
+1. **Assume the API is complete and functional** - Focus fixes on T3 App Template only
+2. **Follow issues to their root cause** - Don't just fix symptoms, find the underlying problem
+3. **Search for similar patterns** - After fixing one issue, grep/search for the same pattern elsewhere
+4. **Fix all instances** - Apply the fix consistently across the entire codebase
+
+### Rabbit Hole Workflow
+
+```
+Issue reported
+    ↓
+Diagnose root cause (not just symptoms)
+    ↓
+Fix the immediate issue
+    ↓
+Search: "Does this pattern exist elsewhere?"
+    ↓
+Fix ALL instances of the same pattern
+    ↓
+Verify build passes
+    ↓
+Update /project-manager STATUS.md
+    ↓
+Commit with detailed message
+```
+
+### Example: TX Confirmation Bug (Session 28)
+
+1. **Symptom**: UI stuck on "Confirming on blockchain..."
+2. **Root cause**: `useTxWatcher` only treated `"updated"` as terminal, not `"confirmed"`
+3. **Search**: `grep 'status.state === "updated"'` → found 17 files with same pattern
+4. **Fix all**: Updated all 17 transaction components
+5. **Verify**: `npm run build` passes
+6. **Document**: Updated STATUS.md with full analysis
+
+### Key Search Patterns
+
+When fixing a pattern, search for similar issues:
+```bash
+# Find all usages of a pattern
+grep -r "pattern" src/components/
+
+# Find all files using a hook
+grep -l "useTxWatcher" src/
+
+# Check generated types match API spec
+curl -s "$GATEWAY_URL/api/v1/docs/doc.json" | jq '.definitions["TypeName"]'
+```
+
 ## Common Error Patterns
 
 | Error Pattern | Likely Source | Action |
@@ -92,6 +144,9 @@ T3 App Template → Andamio API Gateway → Backend teams
 | `Type mismatch` | Generated types out of sync | Run `npm run generate:types` |
 | `Network error` | Gateway URL or CORS | Check env vars, proxy config |
 | `On-chain data missing` | Indexer lag | Wait or check Andamioscan |
+| `UI stuck after TX success` | Terminal state check | Verify `"confirmed"` is handled |
+| `Stale data in callback` | Closure capturing old state | Use refs for callback data |
+| `Rapid API polling` | Unstable effect dependencies | Use refs for callbacks in useEffect |
 
 ## Outputs
 

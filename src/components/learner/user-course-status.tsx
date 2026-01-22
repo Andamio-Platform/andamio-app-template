@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCourse, useCourseModules, useStudentCourses } from "~/hooks/api";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";

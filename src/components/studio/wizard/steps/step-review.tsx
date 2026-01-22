@@ -22,7 +22,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } 
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import type { WizardStepConfig } from "../types";
 

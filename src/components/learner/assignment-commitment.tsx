@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSuccessNotification } from "~/hooks/use-success-notification";
-import { useTransaction } from "~/hooks/use-transaction";
-import { useTxWatcher } from "~/hooks/use-tx-watcher";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -14,9 +14,9 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
-import { TransactionButton } from "~/components/transactions/transaction-button";
+import { TransactionButton } from "~/components/tx/transaction-button";
 import { ContentDisplay } from "~/components/content-display";
-import { CredentialClaim } from "~/components/transactions/credential-claim";
+import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
 import {

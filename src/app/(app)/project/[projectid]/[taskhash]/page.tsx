@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -16,7 +16,7 @@ import { type ProjectTaskV2Output, type CommitmentV2Output } from "~/types/gener
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanTask } from "~/lib/andamioscan";
-import { TaskCommit } from "~/components/transactions";
+import { TaskCommit } from "~/components/tx";
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality

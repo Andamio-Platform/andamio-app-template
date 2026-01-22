@@ -28,7 +28,7 @@ import {
   type ApiKeyResponse,
   type AuthResponse,
 } from "~/lib/andamio-auth";
-import { useCopyFeedback } from "~/hooks/use-success-notification";
+import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
 
 type SetupStep = "connect" | "register" | "api-key" | "complete";
 

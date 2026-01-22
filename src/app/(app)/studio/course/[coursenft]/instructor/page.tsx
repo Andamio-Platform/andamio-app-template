@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
@@ -46,9 +46,9 @@ import {
 } from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
-import { useTransaction } from "~/hooks/use-transaction";
-import { useTxWatcher } from "~/hooks/use-tx-watcher";
-import { TransactionButton } from "~/components/transactions/transaction-button";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/instructor/pending-reviews-list";

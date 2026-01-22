@@ -1,11 +1,21 @@
 /**
+ * @deprecated V1 PATTERN - Replaced by Gateway TX State Machine
+ *
+ * This file provides client-side Koios polling for TX confirmation. With V2 TX
+ * State Machine, the Gateway handles confirmation server-side via Andamioscan.
+ *
+ * Only used by deprecated `use-pending-tx-watcher.ts` hook.
+ * This file will be removed in a future release.
+ *
+ * @see ~/hooks/tx/use-tx-watcher.ts - V2 pattern (polls Gateway, not Koios)
+ *
+ * ---
+ * Original description:
+ *
  * Cardano Blockchain Indexer Utilities
  *
  * Provides blockchain query functionality for transaction confirmation checking.
  * Uses Koios API (free, no API key required for basic usage).
- *
- * Note: This is a temporary solution for the T3 app template.
- * In production, this functionality should be moved to a backend monitoring service.
  */
 
 export interface TransactionConfirmation {

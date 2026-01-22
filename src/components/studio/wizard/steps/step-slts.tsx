@@ -24,7 +24,7 @@ import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { SLTListResponse } from "~/types/generated";
 import { AndamioInput } from "~/components/andamio";

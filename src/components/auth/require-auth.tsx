@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { AndamioText } from "~/components/andamio";
 

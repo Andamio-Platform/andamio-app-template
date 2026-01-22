@@ -11,7 +11,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { ContentEditor } from "~/components/editor";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 

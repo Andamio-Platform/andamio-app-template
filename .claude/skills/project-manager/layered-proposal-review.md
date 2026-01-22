@@ -1,19 +1,165 @@
 # Layered Architecture Proposal - Review Notes
 
-**Last Updated**: 2026-01-21
+**Last Updated**: 2026-01-22
 **Proposal**: `layered-proposal.md`
 
 ## Status
 
 | Layer | Status | Notes |
 |-------|--------|-------|
-| L1: Core | ✅ **Complete** | `@andamio/core` package created with hashing + constants |
-| L2: Integration | 🔄 Next | Single Gateway API, hooks reorganization |
-| L3: Components | 🔄 Planning | V2 TX State Machine pattern |
+| L1: Core | ✅ **Complete** | `@andamio/core` package built and linked, exports working |
+| L2: Integration | ✅ **Phase 1 Complete** | Hooks reorganized; Phase 2 (andamioscan removal) deferred |
+| L3: Components | ✅ **Phase 1 Complete** | Folder renamed, V2 components added, V1 deprecated |
 | L4: Features | ⏸️ Deferred | Post-v2 launch extraction |
 | L5: App | 🔄 Planning | Routes aligned with API |
 
 **Build Order**: L1 + L2 + L3 + L5 (concurrent) → LAUNCH → L4 (extraction)
+
+---
+
+## L2 Progress (2026-01-22)
+
+### Completed
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Hooks reorganization | ✅ Complete | `api/course/`, `api/project/`, `tx/`, `auth/`, `ui/` |
+| Remove `use-pending-transactions.ts` | ✅ Complete | Was no-op stub, no usages |
+| Update all imports | ✅ Complete | 35+ files updated to new paths |
+| Create barrel exports | ✅ Complete | `src/hooks/index.ts` + subdirectory indexes |
+
+### Current Structure
+
+```
+src/hooks/
+├── index.ts                    # Main barrel export
+├── api/
+│   ├── index.ts               # API hooks barrel
+│   ├── course/
+│   │   ├── index.ts
+│   │   ├── use-course.ts
+│   │   ├── use-course-module.ts
+│   │   ├── use-slt.ts
+│   │   ├── use-lesson.ts
+│   │   ├── use-student-courses.ts
+│   │   ├── use-teacher-courses.ts
+│   │   ├── use-owned-courses.ts
+│   │   └── use-module-wizard-data.ts
+│   └── project/
+│       ├── index.ts
+│       ├── use-project.ts
+│       ├── use-contributor-projects.ts
+│       └── use-manager-projects.ts
+├── tx/
+│   ├── index.ts
+│   ├── use-transaction.ts
+│   ├── use-tx-watcher.ts
+│   ├── use-pending-tx-watcher.ts
+│   └── use-event-confirmation.ts
+├── auth/
+│   ├── index.ts
+│   └── use-andamio-auth.ts
+└── ui/
+    ├── index.ts
+    ├── use-success-notification.ts
+    └── use-wizard-navigation.ts
+```
+
+### L2 Phase 2 - Deferred Breaking Changes
+
+| File | Issue | Dependents | Migration Path |
+|------|-------|------------|----------------|
+| `andamioscan.ts` (1497 lines) | Raw on-chain data | 10 files | Migrate to `useProject`, `useCourse` hooks (merged endpoints) |
+| `cardano-indexer.ts` | TX confirmation | 1 file | Gateway TX State Machine handles this |
+| `project-commitment-sync.ts` | Sync utilities | 2 files | Gateway auto-updates on TX confirmation |
+| `project-task-sync.ts` | Sync utilities | 3 files | Gateway auto-updates on TX confirmation |
+
+**Migration Notes:**
+- `getProject()` → `useProject(projectId)` hook (already exists)
+- `getCourse()` → `useCourse(courseId)` hook (already exists)
+- `getManagingProjects()` → `useManagerProjects()` hook (already exists)
+- Types need mapping: `AndamioscanTask` → `OrchestrationMergedProjectDetail.tasks`
+- Sync utilities are no longer needed - Gateway TX State Machine handles DB updates automatically
+
+### L1 Issue Resolved (2026-01-22)
+
+`@andamio/core/hashing` module was not resolving because:
+1. Package wasn't built (`dist/` folder missing)
+2. Package wasn't linked in root `node_modules/`
+
+**Fixed by:**
+1. Running `npm run build` in `packages/core/`
+2. Running `npm install` at root to link the package
+3. TypeScript now resolves all 15 files correctly
+
+---
+
+## L3 Progress (2026-01-22)
+
+### Completed
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Rename `transactions/` to `tx/` | ✅ Complete | `git mv` preserves history |
+| Update all imports | ✅ Complete | 14 files updated to `~/components/tx/` |
+| Create `TxStatusBadge` | ✅ Complete | V2 inline status indicator |
+| Create `PendingTxList` | ✅ Complete | V2 gateway-based pending TX list |
+| Mark V1 components deprecated | ✅ Complete | See deprecation notes below |
+
+### Current Structure
+
+```
+src/components/tx/
+├── index.ts                    # Exports all TX components
+├── transaction-button.tsx      # V2 - Build → Sign → Submit → Register
+├── transaction-status.tsx      # V2 - Inline status display
+├── tx-status-badge.tsx         # V2 - Compact status badge (NEW)
+├── pending-tx-list.tsx         # V2 - Gateway pending TXs (NEW)
+├── mint-access-token-simple.tsx
+├── create-course.tsx
+├── create-project.tsx
+├── enroll-in-course.tsx
+├── mint-module-tokens.tsx
+├── burn-module-tokens.tsx
+├── teachers-update.tsx
+├── assess-assignment.tsx
+├── assignment-update.tsx
+├── credential-claim.tsx
+├── managers-manage.tsx
+├── blacklist-manage.tsx
+├── tasks-manage.tsx
+├── tasks-assess.tsx
+├── task-commit.tsx
+├── task-action.tsx
+├── project-credential-claim.tsx
+└── course-prereqs-selector.tsx
+```
+
+### V1 Components Deprecated (2026-01-22)
+
+The following V1 components are marked deprecated and will be removed in a future release:
+
+| File | Reason | Replacement |
+|------|--------|-------------|
+| `src/components/pending-tx-watcher.tsx` | V1 client-side Koios polling | V2 `useTxWatcher` polls Gateway |
+| `src/components/pending-tx-popover.tsx` | V1 UI for pending-tx-watcher | V2 `PendingTxList` uses Gateway |
+| `src/components/provisioning/` | V1 TX monitoring overlay | V2 inline `TransactionStatus` |
+| `src/hooks/tx/use-pending-tx-watcher.ts` | V1 Koios polling hook | V2 `useTxWatcher` |
+| `src/lib/cardano-indexer.ts` | V1 Koios API calls | Gateway handles confirmation |
+
+**Why V1 is deprecated:**
+- V1 used client-side Koios polling to check TX confirmation
+- V2 TX State Machine: Gateway polls Andamioscan server-side
+- All 20+ TX components now use V2 `useTxWatcher` pattern
+- V1 components have no active usages (verified via grep)
+
+### L3 Phase 2 - Future Work
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Remove V1 deprecated components | Low | Breaking change, do in major version |
+| Add TX history component | Medium | Show past TXs from `/api/v2/tx/history` |
+| Add batch TX status | Low | Multiple TXs in one view |
 
 ---
 
@@ -530,9 +676,12 @@ Each feature that involves transactions uses V2 TX State Machine:
 5. [x] Review Layer 5 scope
 6. [x] Resolve TX schema ownership question with team
 7. [x] **L1 Core Implementation** - `@andamio/core` package complete
-8. [ ] **L2 Integration** - Reorganize hooks, remove deprecated files
-9. [ ] Assign layer owners based on time + interests
-10. [ ] Create Phase 2 task breakdown
+8. [x] **L2 Integration - Phase 1** - Reorganize hooks into new structure
+9. [x] **L1 Fix** - Fix `@andamio/core/hashing` export (package built + linked)
+10. [ ] **L2 Integration - Phase 2** - Migrate 10 files from `andamioscan.ts` to merged hooks (deferred)
+11. [x] **L3 Components - Phase 1** - Folder renamed `tx/`, V2 components added, V1 deprecated
+12. [ ] Assign layer owners based on time + interests
+13. [ ] Create Phase 2 task breakdown
 
 ### Build Order for V2 Launch
 

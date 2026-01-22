@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudentCourses, type StudentCourse } from "~/hooks/api";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioBadge,
@@ -31,7 +31,7 @@ import {
   PendingIcon,
 } from "~/components/icons";
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
-import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/transactions";
+import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
@@ -41,7 +41,7 @@ import { ContentEditor, ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { useTaskSubmitConfirmation } from "~/hooks/use-event-confirmation";
+import { useTaskSubmitConfirmation } from "~/hooks/tx/use-event-confirmation";
 
 // Helper to extract string from NullableString (API returns object type for nullable strings)
 function getString(value: string | object | undefined | null): string {

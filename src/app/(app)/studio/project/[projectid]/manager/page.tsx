@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import {
   AndamioBadge,
   AndamioButton,
@@ -42,7 +42,7 @@ import {
   BlockIcon,
 } from "~/components/icons";
 import { type ProjectV2Output } from "~/types/generated";
-import { TasksAssess } from "~/components/transactions";
+import { TasksAssess } from "~/components/tx";
 
 interface TaskSubmission {
   id: string;

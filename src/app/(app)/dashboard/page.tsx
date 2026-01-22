@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import { MyLearning } from "~/components/learner/my-learning";
-import { MintAccessTokenSimple } from "~/components/transactions";
+import { MintAccessTokenSimple } from "~/components/tx";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-token-confirmation-alert";

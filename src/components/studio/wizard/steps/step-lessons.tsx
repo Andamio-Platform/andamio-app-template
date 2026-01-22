@@ -13,7 +13,7 @@ import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-ca
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 import type { LessonResponse } from "~/types/generated";

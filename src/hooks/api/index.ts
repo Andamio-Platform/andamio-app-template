@@ -48,7 +48,7 @@
  * ```
  */
 
-// Course hooks
+// Course hooks (courses, modules, SLTs, lessons)
 export {
   useCourse,
   usePublishedCourses,
@@ -56,9 +56,8 @@ export {
   useUpdateCourse,
   useDeleteCourse,
   courseKeys,
-} from "./use-course";
+} from "./course/use-course";
 
-// Course Module hooks
 export {
   useCourseModules,
   useCourseModule,
@@ -68,34 +67,23 @@ export {
   useUpdateCourseModuleStatus,
   useDeleteCourseModule,
   courseModuleKeys,
-} from "./use-course-module";
+} from "./course/use-course-module";
 
-// SLT hooks
 export {
   useSLTs,
   useCreateSLT,
   useUpdateSLT,
   useDeleteSLT,
   sltKeys,
-} from "./use-slt";
+} from "./course/use-slt";
 
-// Lesson hooks
 export {
   useLessons,
   useLesson,
   useCreateLesson,
   lessonKeys,
-} from "./use-lesson";
+} from "./course/use-lesson";
 
-// Project hooks (public access)
-export {
-  useProject,
-  useProjects,
-  useInvalidateProjects,
-  projectKeys,
-} from "./use-project";
-
-// Teacher courses (merged data for studio)
 export {
   useTeacherCourses,
   useTeacherCommitments,
@@ -107,9 +95,28 @@ export {
   type TeacherAssignmentCommitment,
   type TeacherAssignmentCommitmentsResponse,
   type TeacherCourseWithModules,
-} from "./use-teacher-courses";
+} from "./course/use-teacher-courses";
 
-// Manager projects (merged data for studio)
+export {
+  useStudentCourses,
+  useInvalidateStudentCourses,
+  studentCourseKeys,
+  type StudentCourse,
+  type StudentCoursesResponse,
+} from "./course/use-student-courses";
+
+export { useOwnedCourses } from "./course/use-owned-courses";
+
+export { useModuleWizardData } from "./course/use-module-wizard-data";
+
+// Project hooks
+export {
+  useProject,
+  useProjects,
+  useInvalidateProjects,
+  projectKeys,
+} from "./project/use-project";
+
 export {
   useManagerProjects,
   useManagerCommitments,
@@ -119,22 +126,12 @@ export {
   type ManagerProjectsResponse,
   type ManagerCommitment,
   type ManagerCommitmentsResponse,
-} from "./use-manager-projects";
+} from "./project/use-manager-projects";
 
-// Student courses (merged data for learners)
-export {
-  useStudentCourses,
-  useInvalidateStudentCourses,
-  studentCourseKeys,
-  type StudentCourse,
-  type StudentCoursesResponse,
-} from "./use-student-courses";
-
-// Contributor projects (merged data for contributors)
 export {
   useContributorProjects,
   useInvalidateContributorProjects,
   contributorProjectKeys,
   type ContributorProject,
   type ContributorProjectsResponse,
-} from "./use-contributor-projects";
+} from "./project/use-contributor-projects";

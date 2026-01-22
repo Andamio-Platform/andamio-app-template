@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSuccessNotification } from "~/hooks/use-success-notification";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import {
   AndamioAlert,
   AndamioAlertTitle,
@@ -33,7 +33,7 @@ import {
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
-import { ManagersManage, BlacklistManage } from "~/components/transactions";
+import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan";
 import { syncProjectTasks } from "~/lib/project-task-sync";

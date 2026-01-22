@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerCommitments, useProject, type ManagerCommitment } from "~/hooks/api";
 import { syncPendingAssessment, checkCommitmentExists } from "~/lib/project-commitment-sync";
 import {
@@ -43,7 +43,7 @@ import {
   DatabaseIcon,
 } from "~/components/icons";
 import { type OrchestrationProjectTaskOnChain } from "~/types/generated";
-import { TasksAssess } from "~/components/transactions";
+import { TasksAssess } from "~/components/tx";
 import { toast } from "sonner";
 
 /**

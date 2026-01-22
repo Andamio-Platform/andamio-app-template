@@ -1,15 +1,21 @@
 /**
+ * @deprecated V1 PATTERN - Will be replaced by pending-tx-list.tsx
+ *
+ * This component is part of the V1 pending TX system which uses client-side
+ * Koios polling. The V2 TX State Machine handles confirmation server-side.
+ *
+ * This file will be removed in a future release.
+ *
+ * @see ~/hooks/tx/use-tx-watcher.ts - V2 pattern
+ * @see ~/components/tx/ - V2 transaction components
+ *
+ * ---
+ * Original description:
+ *
  * PendingTxPopover Component
  *
  * Displays a popover in the bottom right corner showing all pending transactions
  * being monitored by the pending transaction watcher.
- *
- * Features:
- * - Badge indicator with count
- * - List of pending transactions with links to explorer
- * - Time since submission
- * - Manual "Check Now" button
- * - Visual feedback when checking
  */
 
 "use client";

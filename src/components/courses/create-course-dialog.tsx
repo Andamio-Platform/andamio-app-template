@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useTransaction } from "~/hooks/use-transaction";
-import { useTxWatcher } from "~/hooks/use-tx-watcher";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -21,8 +21,8 @@ import {
   AndamioDrawerTitle,
   AndamioDrawerTrigger,
 } from "~/components/andamio";
-import { TransactionButton } from "~/components/transactions/transaction-button";
-import { TransactionStatus } from "~/components/transactions/transaction-status";
+import { TransactionButton } from "~/components/tx/transaction-button";
+import { TransactionStatus } from "~/components/tx/transaction-status";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   AddIcon,
@@ -34,7 +34,7 @@ import {
 } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import { useInvalidateTeacherCourses } from "~/hooks/api/use-teacher-courses";
+import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-teacher-courses";
 
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT

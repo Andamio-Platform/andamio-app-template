@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useProject } from "~/hooks/api";
 import {
   AndamioCard,

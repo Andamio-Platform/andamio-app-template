@@ -1,31 +1,29 @@
 /**
+ * @deprecated V1 PATTERN - Use V2 TX State Machine instead
+ *
+ * This component uses client-side Koios polling which is replaced by the Gateway
+ * TX State Machine pattern. All TX components now use `useTxWatcher` from
+ * `~/hooks/tx/use-tx-watcher.ts` which polls the Gateway `/api/v2/tx/status/{hash}`.
+ *
+ * This file will be removed in a future release.
+ *
+ * @see ~/hooks/tx/use-tx-watcher.ts - V2 pattern
+ * @see ~/hooks/tx/use-transaction.ts - V2 transaction hook
+ *
+ * ---
+ * Original description:
+ *
  * PendingTxWatcher Component
  *
  * Global component that monitors pending blockchain transactions and automatically
  * updates entity status when transactions are confirmed.
- *
- * Add this component to your root layout to enable automatic transaction monitoring:
- *
- * ```tsx
- * // app/layout.tsx
- * export default function RootLayout({ children }) {
- *   return (
- *     <html>
- *       <body>
- *         <PendingTxWatcher />
- *         {children}
- *       </body>
- *     </html>
- *   );
- * }
- * ```
  */
 
 "use client";
 
 import React, { createContext, useContext, type ReactNode } from "react";
-import { usePendingTxWatcher, type PendingTransaction } from "~/hooks/use-pending-tx-watcher";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { usePendingTxWatcher, type PendingTransaction } from "~/hooks/tx/use-pending-tx-watcher";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { PendingTxPopover } from "./pending-tx-popover";

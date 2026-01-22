@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import {
   AndamioBadge,
   AndamioCard,
@@ -28,7 +28,7 @@ import {
 import { TaskIcon, TreasuryIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { type ProjectTaskV2Output } from "~/types/generated";
-import { TasksManage } from "~/components/transactions";
+import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan";
 import { syncProjectTasks } from "~/lib/project-task-sync";

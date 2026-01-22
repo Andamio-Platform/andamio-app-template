@@ -4,8 +4,8 @@ import React, { useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useStudioHeader } from "~/components/layout/studio-header";
-import { useModuleWizardData } from "~/hooks/use-module-wizard-data";
-import { useWizardNavigation, STEP_ORDER } from "~/hooks/use-wizard-navigation";
+import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
+import { useWizardNavigation, STEP_ORDER } from "~/hooks/ui/use-wizard-navigation";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
   StudioOutlinePanel,

@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useSuccessNotification } from "~/hooks/use-success-notification";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
 import {
   AndamioAlert,

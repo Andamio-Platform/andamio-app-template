@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useOwnedCourses } from "~/hooks/use-owned-courses";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useOwnedCourses } from "~/hooks/api/course/use-owned-courses";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";

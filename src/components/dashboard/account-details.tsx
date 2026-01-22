@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCopyFeedback } from "~/hooks/use-success-notification";
+import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { WalletIcon, AccessTokenIcon, ShieldIcon, CopyIcon, CompletedIcon } from "~/components/icons";

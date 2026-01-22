@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { env } from "~/env";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerProjects, type ManagerProject } from "~/hooks/api";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
@@ -45,7 +45,7 @@ import {
   LoadingIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { CreateProject } from "~/components/transactions";
+import { CreateProject } from "~/components/tx";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
 

@@ -1,46 +1,22 @@
 /**
+ * @deprecated V1 PATTERN - Replaced by V2 TX State Machine
+ *
+ * The provisioning overlay system was designed for V1's client-side TX confirmation.
+ * With V2 TX State Machine, the Gateway handles confirmation server-side and updates
+ * the DB automatically. TX components now show inline status via `useTxWatcher`.
+ *
+ * This folder will be removed in a future release.
+ *
+ * @see ~/hooks/tx/use-tx-watcher.ts - V2 pattern
+ * @see ~/components/tx/transaction-status.tsx - V2 inline status display
+ *
+ * ---
+ * Original description:
+ *
  * Provisioning Components
  *
  * Components and hooks for the "mint first" provisioning UX pattern.
  * Used when creating Courses, Projects, or other blockchain-first entities.
- *
- * @example
- * ```tsx
- * import {
- *   ProvisioningOverlay,
- *   useProvisioningState,
- *   type ProvisioningConfig,
- * } from "~/components/provisioning";
- *
- * function CreateCourseDialog() {
- *   const [provisioningConfig, setProvisioningConfig] = useState<ProvisioningConfig | null>(null);
- *   const { currentStep, navigateToEntity, isProvisioning } = useProvisioningState(
- *     provisioningConfig
- *   );
- *
- *   const handleTransactionSuccess = (result: { txHash: string }) => {
- *     setProvisioningConfig({
- *       entityType: "course",
- *       entityId: courseNftPolicyId,
- *       txHash: result.txHash,
- *       title: courseTitle,
- *       successRedirectPath: `/studio/course/${courseNftPolicyId}`,
- *     });
- *   };
- *
- *   if (isProvisioning) {
- *     return (
- *       <ProvisioningOverlay
- *         {...provisioningConfig!}
- *         currentStep={currentStep}
- *         onNavigate={navigateToEntity}
- *       />
- *     );
- *   }
- *
- *   return <CreateCourseForm onSuccess={handleTransactionSuccess} />;
- * }
- * ```
  */
 
 // Types

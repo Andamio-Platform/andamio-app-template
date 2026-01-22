@@ -21,10 +21,10 @@ import {
   AndamioDialogDescription,
   AndamioDialogFooter,
 } from "~/components/andamio/andamio-dialog";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
-import { useCreateCourseModule, useUpdateCourseModule, useCourseModules } from "~/hooks/api/use-course-module";
-import { useCreateSLT } from "~/hooks/api/use-slt";
-import { useCreateLesson } from "~/hooks/api/use-lesson";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useCreateCourseModule, useUpdateCourseModule, useCourseModules } from "~/hooks/api/course/use-course-module";
+import { useCreateSLT } from "~/hooks/api/course/use-slt";
+import { useCreateLesson } from "~/hooks/api/course/use-lesson";
 import type { WizardStepConfig } from "../types";
 
 interface StepCredentialProps {

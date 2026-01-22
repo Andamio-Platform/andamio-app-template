@@ -45,10 +45,10 @@ import {
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/use-course";
-import { useCourseModules, useDeleteCourseModule } from "~/hooks/api/use-course-module";
-import { MintModuleTokens } from "~/components/transactions/mint-module-tokens";
-import { BurnModuleTokens, type ModuleToBurn } from "~/components/transactions/burn-module-tokens";
+import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course";
+import { useCourseModules, useDeleteCourseModule } from "~/hooks/api/course/use-course-module";
+import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
+import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";

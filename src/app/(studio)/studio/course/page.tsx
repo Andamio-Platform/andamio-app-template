@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAndamioAuth } from "~/hooks/use-andamio-auth";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
 import {
@@ -47,7 +47,7 @@ import {
 import { getTokenExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourseModules } from "~/hooks/api/use-course-module";
+import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import { cn } from "~/lib/utils";
 import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 

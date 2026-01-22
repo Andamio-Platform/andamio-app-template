@@ -1,61 +1,25 @@
 /**
- * Application constants
+ * Cardano Utilities
  *
- * Centralizes magic numbers and configuration values used across the application.
+ * This file contains Cardano-specific utilities (explorer URLs, network helpers).
+ * These will eventually move to @andamio/core/constants/cardano.ts (Layer 1).
+ *
+ * UI constants have been moved to ~/config/ui-constants.ts (Layer 5).
+ * @see ~/config for UI_TIMEOUTS, PAGINATION, FORM_LIMITS, etc.
  */
 
-/**
- * UI timing constants for notifications and feedback
- */
-export const UI_TIMEOUTS = {
-  /** Duration for copy feedback messages (e.g., "Copied!") */
-  COPY_FEEDBACK: 2000,
-  /** Duration for save success notifications */
-  SAVE_SUCCESS: 3000,
-  /** Duration for general toast notifications */
-  TOAST_DEFAULT: 3000,
-  /** Duration for error notifications (longer for readability) */
-  ERROR_NOTIFICATION: 5000,
-  /** Duration to show success state before transitioning (confirmation alerts) */
-  SUCCESS_TRANSITION: 3000,
-  /** Threshold to show "taking longer than expected" warning */
-  LONG_WAIT_WARNING: 120000, // 2 minutes
-} as const;
-
-/**
- * Blockchain polling intervals by entity type (in milliseconds)
- */
-export const POLLING_INTERVALS = {
-  /** Default polling interval for most transactions */
-  DEFAULT: 30000, // 30 seconds
-  /** Fast polling for access token minting (user waiting on onboarding) */
-  ACCESS_TOKEN: 5000, // 5 seconds
-} as const;
-
-/**
- * Pagination defaults
- */
-export const PAGINATION = {
-  /** Default page size for lists */
-  DEFAULT_PAGE_SIZE: 10,
-  /** Maximum page size allowed */
-  MAX_PAGE_SIZE: 100,
-} as const;
-
-/**
- * Form validation limits
- */
-export const FORM_LIMITS = {
-  /** Maximum title length */
-  MAX_TITLE_LENGTH: 200,
-  /** Maximum description length */
-  MAX_DESCRIPTION_LENGTH: 2000,
-  /** Maximum module code length */
-  MAX_MODULE_CODE_LENGTH: 50,
-} as const;
+// Re-export from config for backwards compatibility (deprecated)
+export {
+  UI_TIMEOUTS,
+  POLLING_INTERVALS,
+  PAGINATION,
+  FORM_LIMITS,
+} from "~/config/ui-constants";
 
 /**
  * Cardano explorer URLs by network
+ *
+ * @todo Move to @andamio/core/constants/cardano.ts
  */
 export const EXPLORER_URLS = {
   mainnet: "https://cardanoscan.io",

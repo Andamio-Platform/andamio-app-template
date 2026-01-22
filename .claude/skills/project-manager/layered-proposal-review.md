@@ -563,8 +563,16 @@ src/config/
 | Task | Priority | Notes |
 |------|----------|-------|
 | Route parameter renames | Medium | `[coursenft]` → `[courseId]`, etc. (breaking change) |
-| Migrate `lib/constants.ts` usages | Low | 4 files still import from old location |
+| ~~Migrate `lib/constants.ts` usages~~ | ✅ Done | UI constants moved; Cardano utils remain (→ @andamio/core later) |
 | Create route group layouts | Low | Optimize `(app)/`, `(studio)/` layouts |
+
+### Migration Note (2026-01-22)
+
+**lib/constants.ts restructured:**
+- UI constants (`UI_TIMEOUTS`, `PAGINATION`, `FORM_LIMITS`, `POLLING_INTERVALS`) → `~/config/ui-constants.ts`
+- Cardano utilities (`getTransactionExplorerUrl`, etc.) remain in `lib/constants.ts` (will move to `@andamio/core` later)
+- `lib/constants.ts` now re-exports from config for backwards compatibility
+- `use-success-notification.ts` updated to import directly from `~/config`
 
 ---
 

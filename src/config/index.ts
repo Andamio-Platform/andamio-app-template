@@ -47,6 +47,7 @@ export {
 // UI constants
 export {
   UI_TIMEOUTS,
+  POLLING_INTERVALS,
   PAGINATION,
   FORM_LIMITS,
   LAYOUT,

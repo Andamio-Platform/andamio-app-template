@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { UI_TIMEOUTS } from "~/lib/constants";
+import { UI_TIMEOUTS } from "~/config";
 
 /**
  * useSuccessNotification - Manages temporary success notification state

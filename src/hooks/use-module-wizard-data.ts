@@ -123,33 +123,37 @@ export function useModuleWizardData({
       }
       const courseModule = modules.find((m) => m.course_module_code === effectiveModuleCode) ?? null;
 
-      // Fetch SLTs - Go API: GET /course/user/slts/list/{policy_id}/{module_code}
+      // Fetch SLTs - Go API: GET /course/user/slts/{course_id}/{course_module_code}
       const sltsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const slts = sltsResponse.ok
         ? ((await sltsResponse.json()) as SLTListResponse)
         : [];
 
-      // Fetch assignment - Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
+      // Fetch assignment - Go API: GET /course/user/assignment/{course_id}/{course_module_code}
       const assignmentResponse = await fetch(
-        `/api/gateway/api/v2/course/user/assignment/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const assignment = assignmentResponse.ok
         ? ((await assignmentResponse.json()) as AssignmentResponse)
         : null;
 
-      // Fetch introduction - Go API: GET /course/user/introduction/get/{policy_id}/{module_code}
+      // NOTE: No user-facing introduction endpoint exists in API
+      // Introduction is created/updated via teacher endpoints only
+      // This call will 404; introduction data not available via public API
       const introResponse = await fetch(
-        `/api/gateway/api/v2/course/user/introduction/get/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/introduction/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const introduction = introResponse.ok
         ? ((await introResponse.json()) as IntroductionResponse)
         : null;
 
-      // Fetch lessons - Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
+      // NOTE: No lessons list endpoint exists in API
+      // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
+      // This call will 404; to get lessons, iterate SLTs and fetch each individually
       const lessonsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/lessons/list/${courseNftPolicyId}/${effectiveModuleCode}`
+        `/api/gateway/api/v2/course/user/lessons/${courseNftPolicyId}/${effectiveModuleCode}`
       );
       const lessons = lessonsResponse.ok
         ? ((await lessonsResponse.json()) as LessonListResponse)

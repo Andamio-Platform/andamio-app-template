@@ -44,9 +44,9 @@ export function useSLTs(
   return useQuery({
     queryKey: sltKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/slts/list/{policy_id}/{module_code}
+      // Go API: GET /course/user/slts/{course_id}/{course_module_code}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {

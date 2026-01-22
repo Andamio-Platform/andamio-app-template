@@ -44,9 +44,11 @@ export function useLessons(
   return useQuery({
     queryKey: lessonKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/lessons/list/{policy_id}/{module_code}
+      // NOTE: No list endpoint exists in API - only individual lesson fetch
+      // Go API: GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
+      // This call will 404; to get lessons, iterate SLTs and fetch each individually
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/lessons/list/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/lessons/${courseNftPolicyId}/${moduleCode}`
       );
 
       if (!response.ok) {
@@ -86,9 +88,9 @@ export function useLesson(
       moduleIndex ?? 0
     ),
     queryFn: async () => {
-      // Go API: GET /course/user/lesson/get/{policy_id}/{module_code}/{index}
+      // Go API: GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/lesson/get/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
+        `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`
       );
 
       if (!response.ok) {

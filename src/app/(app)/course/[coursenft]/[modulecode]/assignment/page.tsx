@@ -96,9 +96,9 @@ export default function LearnerAssignmentPage() {
         }
 
         // Fetch SLTs for the module
-        // Go API: GET /course/user/slts/list/{policy_id}/{module_code}
+        // Go API: GET /course/user/slts/{course_id}/{course_module_code}
         const sltsResponse = await fetch(
-          `/api/gateway/api/v2/course/user/slts/list/${courseNftPolicyId}/${moduleCode}`
+          `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (sltsResponse.ok) {
@@ -106,9 +106,9 @@ export default function LearnerAssignmentPage() {
           setSlts(sltsData);
         }
 
-        // Go API: GET /course/user/assignment/get/{policy_id}/{module_code}
+        // Go API: GET /course/user/assignment/{course_id}/{course_module_code}
         const response = await fetch(
-          `/api/gateway/api/v2/course/user/assignment/get/${courseNftPolicyId}/${moduleCode}`
+          `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
         );
 
         if (response.status === 404) {

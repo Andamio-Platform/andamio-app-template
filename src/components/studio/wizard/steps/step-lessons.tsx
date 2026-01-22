@@ -334,6 +334,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
 
     try {
       // Go API: POST /course/teacher/lesson/update
+      // UpdateLessonV2Request uses `content` not `content_json`, no `title` field
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/lesson/update`,
         {
@@ -343,8 +344,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
             slt_index: lesson.slt_index,
-            title,
-            content_json: content,
+            content,
           }),
         }
       );

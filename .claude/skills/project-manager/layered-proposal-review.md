@@ -741,8 +741,7 @@ src/config/
 11. [x] **L3 Components - Phase 1** - Folder renamed `tx/`, V2 components added, V1 deprecated
 12. [x] **L5 App - Phase 1** - Config files created (branding, features, navigation, routes, ui-constants)
 13. [ ] **L5 App - Phase 2** - Route parameter renames (`[coursenft]` → `[courseId]`, etc.)
-14. [ ] Assign layer owners based on time + interests
-15. [ ] Create Phase 2 task breakdown
+14. [x] Create Phase 2 task breakdown
 
 ### Build Order for V2 Launch
 
@@ -814,5 +813,4 @@ All open questions have been resolved. Answers recorded here for reference.
 
 ## Remaining Open Items
 
-1. **Platform Engineering roles** - Assign an owner to each Layer based on time constraints + interests
-2. **Minimal template scope** - Define after T3 App Template is stable
+1. **Minimal template scope** - Define after T3 App Template is stable

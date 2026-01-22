@@ -46,7 +46,7 @@ import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } 
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course";
-import { useCourseModules, useDeleteCourseModule } from "~/hooks/api/course/use-course-module";
+import { useTeacherCourseModules, useDeleteCourseModule } from "~/hooks/api/course/use-course-module";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
@@ -222,7 +222,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
   // React Query hooks - Database
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
-  const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useCourseModules(courseNftPolicyId);
+  const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
 
   // On-chain modules from merged course data
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);

@@ -1,9 +1,9 @@
 # Unified API Gateway Endpoints
 
-> **Source of Truth**: [API Documentation](https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json)
-> **Base URL**: `https://andamio-api-gateway-666713068234.us-central1.run.app`
-> **Total Endpoints**: 108
-> **Last Updated**: January 20, 2026
+> **Source of Truth**: [API Documentation](https://dev.api.andamio.io/api/v1/docs/index.html)
+> **Base URL**: `https://dev.api.andamio.io`
+> **Total Endpoints**: 106
+> **Last Updated**: January 22, 2026
 
 This file documents the main endpoints available in the Unified Andamio API Gateway.
 
@@ -12,8 +12,8 @@ This file documents the main endpoints available in the Unified Andamio API Gate
 ## API Version Structure
 
 The gateway uses two API versions:
-- **v1** (`/v1/*`): Legacy auth, user, admin, API key endpoints
-- **v2** (`/v2/*`): Courses, projects, transactions, and new auth
+- **v1** (`/v1/*`): Admin, user management endpoints
+- **v2** (`/v2/*`): Auth, courses, projects, transactions, API key management
 
 ---
 
@@ -21,42 +21,27 @@ The gateway uses two API versions:
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Authentication](#authentication-6-endpoints) | 6 | User login and registration (v1 & v2) |
-| [User Management](#user-management-6-endpoints) | 6 | User profile and access token management |
-| [API Key Management](#api-key-management-9-endpoints) | 9 | API key lifecycle (v1 & v2) |
 | [Admin Functions](#admin-functions-4-endpoints) | 4 | Admin-only operations |
-| [Courses](#courses-42-endpoints) | 42 | Course CRUD, modules, SLTs, assignments |
-| [Projects](#projects-20-endpoints) | 20 | Project CRUD, tasks, commitments |
+| [User Management](#user-management-6-endpoints) | 6 | User profile and access token management |
+| [Authentication](#authentication-6-endpoints) | 6 | User login and registration (v2) |
+| [API Key Management](#api-key-management-6-endpoints) | 6 | Developer API key lifecycle (v2) |
+| [Courses](#courses-37-endpoints) | 37 | Course CRUD, modules, SLTs, assignments |
+| [Projects](#projects-17-endpoints) | 17 | Project CRUD, tasks, commitments |
 | [TX: Courses](#tx-courses-6-endpoints) | 6 | Course transaction building |
 | [TX: Projects](#tx-projects-8-endpoints) | 8 | Project transaction building |
 | [TX: Instance/Global](#tx-instanceglobal-7-endpoints) | 7 | Instance, global, and TX state machine |
+| [TX: Admin](#tx-admin-1-endpoint) | 1 | TX state machine stats |
 
 ---
 
-## Authentication (6 endpoints)
+## Admin Functions (4 endpoints)
 
-### v1 Auth
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/v1/auth/login` | Direct login (API key users) |
-| POST | `/v1/auth/register` | Register new user |
-
-### v2 Auth (Wallet-based)
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/v2/auth/login/session` | Create login session, get nonce |
-| POST | `/v2/auth/login/validate` | Validate wallet signature, get JWT |
-| POST | `/v2/auth/developer/account/login` | Developer account login |
-| POST | `/v2/auth/developer/account/register` | Developer account registration |
-
-### Authentication Flow
-
-**Browser-based (CIP-30 signing)** - Used by T3 App Template:
-```
-1. POST /v2/auth/login/session → { id, nonce }
-2. wallet.signData(nonce) → signature
-3. POST /v2/auth/login/validate → { jwt, user }
-```
+| POST | `/v1/admin/set-user-role` | Set user subscription tier |
+| POST | `/v1/admin/usage/user-api-usage` | Get user API usage |
+| POST | `/v1/admin/usage/any-user-daily-api-usage` | Get daily usage for users |
+| GET | `/v2/admin/tx/stats` | Get transaction statistics |
 
 ---
 
@@ -78,14 +63,34 @@ The gateway uses two API versions:
 
 ---
 
-## API Key Management (9 endpoints)
+## Authentication (6 endpoints)
 
-### v1 API Key
+### v2 Auth (Wallet-based)
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/v1/apikey/request` | Generate new API key |
-| POST | `/v1/apikey/delete` | Revoke API key |
-| POST | `/v1/apikey/rotate` | Extend API key expiration |
+| POST | `/v2/auth/login/session` | Create login session, get nonce |
+| POST | `/v2/auth/login/validate` | Validate wallet signature, get JWT |
+
+### v2 Developer Auth
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v2/auth/developer/account/login` | Developer account login |
+| POST | `/v2/auth/developer/account/register` | Developer account registration |
+| POST | `/v2/auth/developer/register/session` | Initiate wallet-based dev registration |
+| POST | `/v2/auth/developer/register/complete` | Complete wallet-based dev registration |
+
+### Authentication Flow
+
+**Browser-based (CIP-30 signing)** - Used by T3 App Template:
+```
+1. POST /v2/auth/login/session → { id, nonce }
+2. wallet.signData(nonce) → signature
+3. POST /v2/auth/login/validate → { jwt, user }
+```
+
+---
+
+## API Key Management (6 endpoints)
 
 ### v2 Developer API Key
 | Method | Path | Description |
@@ -99,30 +104,20 @@ The gateway uses two API versions:
 
 ---
 
-## Admin Functions (4 endpoints)
+## Courses (37 endpoints)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/v1/admin/set-user-role` | Set user subscription tier |
-| POST | `/v1/admin/usage/user-api-usage` | Get user API usage |
-| POST | `/v1/admin/usage/any-user-daily-api-usage` | Get daily usage for users |
-| GET | `/v2/admin/tx/stats` | Get transaction statistics |
-
----
-
-## Courses (42 endpoints)
-
-### Owner Endpoints
+### Owner Endpoints (7)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/course/owner/courses/list` | List owner's courses |
-| POST | `/v2/course/owner/course/create` | Create course (on-chain TX) |
+| POST | `/v2/course/owner/course/create` | Create course |
 | POST | `/v2/course/owner/course/register` | Register on-chain course in DB |
 | POST | `/v2/course/owner/course/update` | Update course metadata |
-| POST | `/v2/course/owner/teacher/add` | Add teacher to course |
-| POST | `/v2/course/owner/teacher/remove` | Remove teacher from course |
+| POST | `/v2/course/owner/teacher/add` | Add teacher to course (DEPRECATED) |
+| POST | `/v2/course/owner/teacher/remove` | Remove teacher from course (DEPRECATED) |
+| POST | `/v2/course/owner/teachers/update` | Bulk update teachers |
 
-### Teacher Endpoints
+### Teacher Endpoints (19)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/course/teacher/courses/list` | List courses where user is teacher |
@@ -147,7 +142,7 @@ The gateway uses two API versions:
 | POST | `/v2/course/teacher/assignment-commitments/list` | List pending assessments |
 | POST | `/v2/course/teacher/assignment-commitment/review` | Review assignment |
 
-### Student Endpoints
+### Student Endpoints (8)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/course/student/courses/list` | List enrolled courses |
@@ -159,7 +154,7 @@ The gateway uses two API versions:
 | POST | `/v2/course/student/assignment-commitments/list` | List student's commitments |
 | POST | `/v2/course/student/assignment-commitment/get` | Get specific commitment |
 
-### User (Public) Endpoints
+### User (Public) Endpoints (6)
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/v2/course/user/courses/list` | List all published courses |
@@ -169,24 +164,24 @@ The gateway uses two API versions:
 | GET | `/v2/course/user/assignment/{course_id}/{course_module_code}` | Get assignment |
 | GET | `/v2/course/user/lesson/{course_id}/{course_module_code}/{slt_index}` | Get lesson |
 
-### Shared Endpoints
+### Shared Endpoints (1)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/course/shared/commitment/get` | Get commitment (any role) |
 
 ---
 
-## Projects (20 endpoints)
+## Projects (17 endpoints)
 
-### Owner Endpoints
+### Owner Endpoints (4)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/project/owner/projects/list` | List owner's projects |
-| POST | `/v2/project/owner/project/create` | Create project (on-chain TX) |
+| POST | `/v2/project/owner/project/create` | Create project |
 | POST | `/v2/project/owner/project/register` | Register on-chain project in DB |
 | POST | `/v2/project/owner/project/update` | Update project metadata |
 
-### Manager Endpoints
+### Manager Endpoints (7)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/project/manager/projects/list` | List managed projects |
@@ -197,7 +192,7 @@ The gateway uses two API versions:
 | POST | `/v2/project/manager/task/delete` | Delete task |
 | POST | `/v2/project/manager/commitments/list` | List pending assessments |
 
-### Contributor Endpoints
+### Contributor Endpoints (6)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v2/project/contributor/projects/list` | List contributor projects |
@@ -207,7 +202,7 @@ The gateway uses two API versions:
 | POST | `/v2/project/contributor/commitment/update` | Update commitment |
 | POST | `/v2/project/contributor/commitment/delete` | Delete commitment |
 
-### User (Public) Endpoints
+### User (Public) Endpoints (3)
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/v2/project/user/projects/list` | List all published projects |
@@ -267,23 +262,41 @@ The gateway uses two API versions:
 
 ---
 
-## Migration Notes
+## TX: Admin (1 endpoint)
 
-### Path Changes (January 2026)
-
-The API paths were restructured for cleaner URL generation:
-
-| Old Pattern | New Pattern |
-|-------------|-------------|
-| `/api/v1/auth/*` | `/v1/auth/*` |
-| `/api/v2/course/*` | `/v2/course/*` |
-| `/api/v2/project/*` | `/v2/project/*` |
-| `/api/v2/tx/*` | `/v2/tx/*` |
-
-### Removed: Scan Endpoints
-
-On-chain indexed data endpoints (`/v2/courses`, `/v2/projects`) are no longer in this gateway. The merged endpoints (`/v2/course/*`, `/v2/project/*`) now include on-chain state where applicable.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/v2/admin/tx/stats` | Get TX state machine statistics |
 
 ---
 
-**Last Updated**: January 20, 2026
+## Changes from Previous API
+
+### API Base URL Changed
+| Old | New |
+|-----|-----|
+| `https://andamio-api-gateway-666713068234.us-central1.run.app` | `https://dev.api.andamio.io` |
+
+### Removed Endpoints (v1 Auth, v1 API Key)
+The following v1 endpoints have been removed in favor of v2 equivalents:
+
+| Removed | Replacement |
+|---------|-------------|
+| `/v1/auth/login` | `/v2/auth/developer/account/login` |
+| `/v1/auth/register` | `/v2/auth/developer/account/register` |
+| `/v1/apikey/request` | `/v2/apikey/developer/key/request` |
+| `/v1/apikey/delete` | `/v2/apikey/developer/key/delete` |
+| `/v1/apikey/rotate` | `/v2/apikey/developer/key/rotate` |
+
+### New Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `/v2/auth/developer/register/session` | Wallet-based dev registration (step 1) |
+| `/v2/auth/developer/register/complete` | Wallet-based dev registration (step 2) |
+| `/v2/course/teacher/course-module/publish` | Publish module on-chain |
+| `/v2/course/teacher/introduction/*` | Introduction CRUD (3 endpoints) |
+| `/v2/course/owner/teachers/update` | Bulk update teachers |
+
+---
+
+**Last Updated**: January 22, 2026

@@ -22,7 +22,7 @@ import {
   AndamioDialogFooter,
 } from "~/components/andamio/andamio-dialog";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useCreateCourseModule, useUpdateCourseModule, useCourseModules } from "~/hooks/api/course/use-course-module";
+import { useCreateCourseModule, useUpdateCourseModule, useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
 import { useCreateSLT } from "~/hooks/api/course/use-slt";
 import { useCreateLesson } from "~/hooks/api/course/use-lesson";
 import type { WizardStepConfig } from "../types";
@@ -56,8 +56,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const router = useRouter();
 
-  // For new modules, fetch existing modules to generate a unique code
-  const { data: existingModules = [] } = useCourseModules(courseNftPolicyId);
+  // For new modules, fetch existing modules to generate a unique code (use teacher endpoint to see drafts)
+  const { data: existingModules = [] } = useTeacherCourseModules(courseNftPolicyId);
 
   /**
    * Generate a unique module code based on existing modules
@@ -174,12 +174,12 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       });
 
       // 2. Copy SLTs (if any) - must be done sequentially to maintain order
+      // Note: index is auto-assigned by the API on create (appends to end)
       if (data.slts.length > 0) {
         for (const slt of data.slts) {
           await createSLT.mutateAsync({
             courseNftPolicyId,
             moduleCode: newCode,
-            moduleIndex: slt.index ?? 0,
             sltText: typeof slt.slt_text === "string" ? slt.slt_text : "",
           });
         }

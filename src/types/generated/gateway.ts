@@ -1170,6 +1170,12 @@ export interface AuthViewmodelsLoginResponse {
   user_id?: string;
 }
 
+export interface AuthViewmodelsRegisterCompleteRequest {
+  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
+  session_id: string;
+  signature: AuthViewmodelsSignatureData;
+}
+
 export interface AuthViewmodelsRegisterRequest {
   /**
    * @minLength 1
@@ -1200,6 +1206,43 @@ export interface AuthViewmodelsRegisterResponse {
   tier?: string;
   /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
   user_id?: string;
+}
+
+export interface AuthViewmodelsRegisterSessionRequest {
+  /**
+   * @minLength 1
+   * @maxLength 32
+   * @example "johndoe"
+   */
+  alias: string;
+  /**
+   * @minLength 1
+   * @maxLength 254
+   * @example "john.doe@example.com"
+   */
+  email: string;
+  /**
+   * @minLength 103
+   * @maxLength 108
+   * @example "addr1q..."
+   */
+  wallet_address: string;
+}
+
+export interface AuthViewmodelsRegisterSessionResponse {
+  /** @example "2026-01-22T15:30:00Z" */
+  expires_at?: string;
+  /** @example "Please sign this message to verify wallet ownership: abc123..." */
+  nonce?: string;
+  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
+  session_id?: string;
+}
+
+export interface AuthViewmodelsSignatureData {
+  /** @example "a4010103272006215820..." */
+  key: string;
+  /** @example "84582aa201276761..." */
+  signature: string;
 }
 
 export interface ErrorsBadGatewayErrorResponse {
@@ -1239,6 +1282,14 @@ export interface ErrorsForbiddenErrorResponse {
   /** @example "Forbidden: Insufficient permissions or tier access." */
   message?: string;
   /** @example 403 */
+  status_code?: number;
+}
+
+export interface ErrorsGoneErrorResponse {
+  details?: string;
+  /** @example "Gone - The requested resource is no longer available." */
+  message?: string;
+  /** @example 410 */
   status_code?: number;
 }
 

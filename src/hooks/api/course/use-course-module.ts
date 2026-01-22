@@ -39,6 +39,9 @@ export const courseModuleKeys = {
   lists: () => [...courseModuleKeys.all, "list"] as const,
   list: (courseNftPolicyId: string) =>
     [...courseModuleKeys.lists(), courseNftPolicyId] as const,
+  teacherLists: () => [...courseModuleKeys.all, "teacherList"] as const,
+  teacherList: (courseNftPolicyId: string) =>
+    [...courseModuleKeys.teacherLists(), courseNftPolicyId] as const,
   details: () => [...courseModuleKeys.all, "detail"] as const,
   detail: (courseNftPolicyId: string, moduleCode: string) =>
     [...courseModuleKeys.details(), courseNftPolicyId, moduleCode] as const,
@@ -87,6 +90,58 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
       return result.data ?? [];
     },
     enabled: !!courseNftPolicyId,
+  });
+}
+
+/**
+ * Fetch all modules for a course as a teacher (authenticated endpoint)
+ *
+ * Uses the teacher endpoint which returns ALL modules including drafts.
+ * Use this in studio/edit contexts where teachers need to see unpublished modules.
+ *
+ * @example
+ * ```tsx
+ * function StudioModuleList({ courseId }: { courseId: string }) {
+ *   const { data: modules, isLoading } = useTeacherCourseModules(courseId);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   return modules?.map(m => <ModuleEditor key={m.course_module_code} module={m} />);
+ * }
+ * ```
+ */
+export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
+  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
+
+  return useQuery({
+    queryKey: courseModuleKeys.teacherList(courseNftPolicyId ?? ""),
+    queryFn: async () => {
+      // Go API: POST /course/teacher/course-modules/list
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/course/teacher/course-modules/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_id: courseNftPolicyId }),
+        }
+      );
+
+      // 404 means no modules yet - return empty array
+      if (response.status === 404) {
+        return [] as CourseModuleListResponse;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch teacher modules: ${response.statusText}`);
+      }
+
+      const result = await response.json() as { data?: CourseModuleListResponse } | CourseModuleListResponse;
+      // Handle both wrapped { data: [...] } and raw array formats
+      if (Array.isArray(result)) {
+        return result;
+      }
+      return result.data ?? [];
+    },
+    enabled: !!courseNftPolicyId && isAuthenticated,
   });
 }
 
@@ -246,9 +301,13 @@ export function useCreateCourseModule() {
       return response.json() as Promise<CourseModuleResponse>;
     },
     onSuccess: (_, variables) => {
-      // Invalidate the module list for this course
+      // Invalidate the module list for this course (public endpoint)
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.list(variables.course_nft_policy_id),
+      });
+      // Invalidate the teacher module list (authenticated endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.teacherList(variables.course_nft_policy_id),
       });
       // Also invalidate the course detail to update module counts
       void queryClient.invalidateQueries({
@@ -303,9 +362,13 @@ export function useUpdateCourseModule() {
           variables.moduleCode
         ),
       });
-      // Invalidate the module list
+      // Invalidate the module list (public endpoint)
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+      });
+      // Invalidate the teacher module list (authenticated endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
       });
     },
   });
@@ -357,6 +420,10 @@ export function useUpdateCourseModuleStatus() {
       });
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+      });
+      // Invalidate the teacher module list (authenticated endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
       });
     },
   });
@@ -429,9 +496,13 @@ export function useDeleteCourseModule() {
           variables.moduleCode
         ),
       });
-      // Invalidate the list
+      // Invalidate the list (public endpoint)
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+      });
+      // Invalidate the teacher module list (authenticated endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
       });
     },
   });

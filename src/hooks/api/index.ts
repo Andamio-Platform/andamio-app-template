@@ -60,6 +60,7 @@ export {
 
 export {
   useCourseModules,
+  useTeacherCourseModules,
   useCourseModule,
   useCourseModuleMap,
   useCreateCourseModule,

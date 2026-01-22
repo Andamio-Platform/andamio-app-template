@@ -33,7 +33,7 @@ import {
   PendingIcon,
   EmptyIcon,
 } from "~/components/icons";
-import type { TxState, TxStatus } from "~/hooks/tx/use-tx-watcher";
+import type { TxStatus } from "~/hooks/tx/use-tx-watcher";
 import { cn } from "~/lib/utils";
 
 export interface PendingTxListProps {
@@ -231,7 +231,7 @@ export function PendingTxList({
                         {getTxTypeLabel(tx.tx_type)}
                       </AndamioText>
                       <TxStatusBadge
-                        state={tx.state as TxState}
+                        state={tx.state}
                         showSpinner
                         size="sm"
                       />

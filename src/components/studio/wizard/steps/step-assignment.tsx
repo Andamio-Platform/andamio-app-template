@@ -35,7 +35,6 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
 
   const assignment = data.assignment;
   const slts = data.slts;
-  const assignmentCode = `${moduleCode}-ASSIGNMENT`;
 
   const [title, setTitle] = useState(assignment?.title ?? "Module Assignment");
   const [content, setContent] = useState<JSONContent | null>(
@@ -61,6 +60,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     try {
       if (assignment) {
         // Go API: POST /course/teacher/assignment/update
+        // UpdateAssignmentV2Request: content, course_id, course_module_code, title
         const response = await authenticatedFetch(
           `/api/gateway/api/v2/course/teacher/assignment/update`,
           {
@@ -69,9 +69,8 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
             body: JSON.stringify({
               course_id: courseNftPolicyId,
               course_module_code: moduleCode,
-              assignment_code: assignmentCode,
               title,
-              content_json: content,
+              content,
             }),
           }
         );
@@ -81,6 +80,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         }
       } else {
         // Go API: POST /course/teacher/assignment/create
+        // CreateAssignmentV2Request: content_json, course_id, course_module_code, title, etc.
         const response = await authenticatedFetch(
           `/api/gateway/api/v2/course/teacher/assignment/create`,
           {
@@ -89,7 +89,6 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
             body: JSON.stringify({
               course_id: courseNftPolicyId,
               course_module_code: moduleCode,
-              assignment_code: assignmentCode,
               title,
               content_json: content,
             }),

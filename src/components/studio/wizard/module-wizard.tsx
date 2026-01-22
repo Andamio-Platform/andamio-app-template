@@ -131,23 +131,14 @@ export function ModuleWizard({
 
       // NOTE: No user-facing introduction endpoint exists in API
       // Introduction is created/updated via teacher endpoints only
-      // This call will 404; introduction data not available via public API
-      const introResponse = await fetch(
-        `/api/gateway/api/v2/course/user/introduction/${courseNftPolicyId}/${moduleCode}`
-      );
-      const introduction = introResponse.ok
-        ? ((await introResponse.json()) as IntroductionResponse)
-        : null;
+      // Introduction data is not available via public API - set to null
+      const introduction: IntroductionResponse | null = null;
 
       // NOTE: No lessons list endpoint exists in API
       // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
-      // This call will 404; to get lessons, iterate SLTs and fetch each individually
-      const lessonsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/lessons/${courseNftPolicyId}/${moduleCode}`
-      );
-      const lessons = lessonsResponse.ok
-        ? ((await lessonsResponse.json()) as LessonListResponse)
-        : [];
+      // To get all lessons, iterate SLTs and fetch each individually
+      // For now, set to empty array - lessons can be fetched on demand per SLT
+      const lessons: LessonListResponse = [];
 
       // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(

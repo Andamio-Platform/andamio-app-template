@@ -47,7 +47,7 @@ import {
 import { getTokenExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourseModules } from "~/hooks/api/course/use-course-module";
+import { useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
 import { cn } from "~/lib/utils";
 import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 
@@ -296,8 +296,8 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
   const hasDbContent = course.title !== undefined && course.title !== null;
   const isOnChain = course.source === "merged" || course.source === "chain_only";
 
-  // Fetch modules for this course (only if we have DB content)
-  const { data: modules = [], isLoading: isLoadingModules } = useCourseModules(
+  // Fetch modules for this course using teacher endpoint (returns drafts too)
+  const { data: modules = [], isLoading: isLoadingModules } = useTeacherCourseModules(
     hasDbContent ? course.course_id : undefined
   );
 

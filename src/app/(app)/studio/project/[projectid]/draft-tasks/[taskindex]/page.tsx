@@ -161,12 +161,13 @@ export default function EditTaskPage() {
     try {
       // V2 API: POST /project/manager/task/update
       // Use task.index from loaded task data, not URL param
+      // UpdateTaskRequest uses `lovelace_amount` not `lovelace`
       const requestBody = {
         project_state_policy_id: projectStatePolicyId,
         index: task.index,
         title: title.trim(),
         content: content.trim() || undefined,
-        lovelace: lovelace,
+        lovelace_amount: lovelace,
         expiration_time: expirationTime,
         content_json: contentJson,
       };

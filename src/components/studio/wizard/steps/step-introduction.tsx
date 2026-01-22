@@ -63,6 +63,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
     try {
       if (introduction) {
         // Go API: POST /course/teacher/introduction/update
+        // UpdateIntroductionV2Request uses `content` not `content_json`
         const response = await authenticatedFetch(
           `/api/gateway/api/v2/course/teacher/introduction/update`,
           {
@@ -72,7 +73,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
               course_id: courseNftPolicyId,
               course_module_code: moduleCode,
               title,
-              content_json: content,
+              content,
             }),
           }
         );

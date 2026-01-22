@@ -11,30 +11,31 @@ Audit and maintain API coverage for the Unified Andamio API Gateway.
 
 | Property | Value |
 |----------|-------|
-| **Base URL** | `https://andamio-api-gateway-666713068234.us-central1.run.app` |
-| **API Docs** | [doc.json](https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json) |
-| **Total Endpoints** | 108 |
-| **T3 Coverage** | 63% (68/108 endpoints) |
+| **Base URL** | `https://dev.api.andamio.io` |
+| **API Docs** | [Swagger UI](https://dev.api.andamio.io/api/v1/docs/index.html) |
+| **OpenAPI Spec** | [doc.json](https://dev.api.andamio.io/api/v1/docs/doc.json) |
+| **Total Endpoints** | 106 |
 
 **Always use the live docs as source of truth.** The files in this skill directory are derived from these sources.
 
 ## Endpoint Categories
 
 The unified gateway uses two API versions:
-- **v1** (`/v1/*`): Legacy auth, user, admin, API key endpoints
-- **v2** (`/v2/*`): Courses, projects, transactions, and new auth
+- **v1** (`/v1/*`): Admin, user management endpoints
+- **v2** (`/v2/*`): Auth, courses, projects, transactions, API key management
 
-| Category | Count | T3 Status | Description |
-|----------|-------|-----------|-------------|
-| Authentication | 6 | 🔶 83% | Login session, validate, direct login (v1 & v2) |
-| User Management | 6 | 🔶 17% | Profile and access token management |
-| API Key Management | 9 | 🔶 33% | API key lifecycle (v1 & v2) |
-| Admin Functions | 4 | ⏳ 0% | Platform management |
-| Courses | 42 | 🔶 55% | Course CRUD, modules, SLTs, assignments |
-| Projects | 20 | 🔶 85% | Project CRUD, tasks, commitments |
-| TX (Courses) | 6 | ✅ 100% | Course transaction building |
-| TX (Projects) | 8 | ✅ 100% | Project transaction building |
-| TX (Instance/Global) | 7 | 🔶 71% | Instance, global, and TX state machine |
+| Category | Count | Description |
+|----------|-------|-------------|
+| Admin Functions | 4 | Platform management |
+| User Management | 6 | Profile and access token management |
+| Authentication | 6 | Login session, validate, developer auth (v2) |
+| API Key Management | 6 | Developer API key lifecycle (v2) |
+| Courses | 37 | Course CRUD, modules, SLTs, assignments |
+| Projects | 17 | Project CRUD, tasks, commitments |
+| TX (Courses) | 6 | Course transaction building |
+| TX (Projects) | 8 | Project transaction building |
+| TX (Instance/Global) | 7 | Instance, global, and TX state machine |
+| TX (Admin) | 1 | TX state machine stats |
 
 ## Quick Reference Files
 
@@ -64,7 +65,6 @@ This will:
 |-------------------|----------------|---------|
 | Auth, User, Admin | `src/lib/andamio-auth.ts`, `src/contexts/` | Auth context |
 | Merged Courses/Projects | `src/hooks/api/*.ts` | React Query hooks |
-| Scan (Andamioscan) | `src/lib/andamioscan.ts` | Typed client functions |
 | TX (Transactions) | `src/config/transaction-schemas.ts`, `src/config/transaction-ui.ts` | TX State Machine |
 
 ## Workflow: Adding a New Endpoint
@@ -75,7 +75,7 @@ Before implementing, verify the endpoint exists in the live OpenAPI spec:
 
 ```bash
 # Check specific endpoint
-curl -s https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
+curl -s https://dev.api.andamio.io/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
 ```
 
 ### 2. Implement
@@ -84,7 +84,7 @@ curl -s https://andamio-api-gateway-666713068234.us-central1.run.app/api/v1/docs
 ```typescript
 // src/lib/andamio-auth.ts or context
 const response = await fetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/auth/login`,
+  `${env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/v2/auth/login/session`,
   { method: 'POST', body: JSON.stringify(payload) }
 );
 ```
@@ -97,19 +97,11 @@ export function use{Resource}() {
     queryKey: ['{resource}', params],
     queryFn: async () => {
       const response = await authenticatedFetch(
-        `${GATEWAY_URL}/api/v2/course/user/courses/list`
+        `/api/gateway/v2/course/user/courses/list`
       );
       return response.json() as MergedCourseList;
     },
   });
-}
-```
-
-**For Scan endpoints (on-chain data):**
-```typescript
-// src/lib/andamioscan.ts
-export async function getAllCourses(): Promise<CourseList> {
-  return fetchGateway(`/v2/courses`);
 }
 ```
 
@@ -141,12 +133,6 @@ When a user needs to integrate a new endpoint, ask:
 5. Error handling? (toast, inline)
 6. Cache invalidation needed?
 
-### For Scan Endpoints (On-chain Data)
-
-1. Which on-chain data is needed?
-2. Polling for updates? (pending tx confirmation)
-3. Indexer lag handling?
-
 ### For TX Endpoints
 
 1. Which transaction definition?
@@ -165,42 +151,38 @@ When the gateway API changes:
 
 **Don't manually maintain endpoint lists** - let the audit script detect drift.
 
-## Migration from 3 APIs
+## API History
 
-The unified gateway consolidates what was previously:
+### January 2026 Update
 
-| Old API | Old Base URL | New Gateway Path |
-|---------|--------------|------------------|
-| Andamio DB API | `andamio-db-api-343753432212.us-central1.run.app` | `/v1/*`, `/v2/course/*`, `/v2/project/*` |
-| Andamioscan | `preprod.andamioscan.io/api` | Removed (merged into course/project endpoints) |
-| Atlas TX API | `atlas-api-preprod-507341199760.us-central1.run.app` | `/v2/tx/*` |
+The API base URL changed from Cloud Run to a custom domain:
 
-### Key Benefits
+| Old | New |
+|-----|-----|
+| `https://andamio-api-gateway-666713068234.us-central1.run.app` | `https://dev.api.andamio.io` |
 
-1. **Single Base URL**: One environment variable instead of 3
-2. **Merged Endpoints**: Combined off-chain + on-chain data in single calls
-3. **API Key Support**: New capability for programmatic access
-4. **Simplified Auth**: Single login endpoint
-5. **Cleaner Paths**: `/v1/*` and `/v2/*` without `/api` prefix
+Key changes:
+- v1 auth and API key endpoints removed (replaced by v2 developer endpoints)
+- New wallet-based developer registration flow
+- New introduction CRUD endpoints for courses
+- New course module publish endpoint
 
 ## Current Stats
 
-Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for current coverage.
-
-The unified gateway has **108 endpoints** across these categories:
+The unified gateway has **106 endpoints** across these categories:
 
 | Category | Count |
 |----------|-------|
-| Auth (v1 + v2) | 6 |
+| Admin | 4 |
 | User (v1 + v2) | 6 |
-| API Key (v1 + v2) | 9 |
-| Admin (v1 + v2) | 4 |
-| Courses | 42 |
-| Projects | 20 |
-| TX (Course + Project + Instance/Global) | 21 |
-| **Total** | **108** |
+| Auth (v2) | 6 |
+| API Key (v2) | 6 |
+| Courses | 37 |
+| Projects | 17 |
+| TX (Course + Project + Instance/Global + Admin) | 22 |
+| **Total** | **106** |
 
 ### Path Structure
 
-- `/v1/*` - Legacy endpoints (auth, user, admin, apikey)
-- `/v2/*` - V2 endpoints (courses, projects, transactions, new auth)
+- `/v1/*` - Admin and user management endpoints
+- `/v2/*` - Everything else (auth, apikey, courses, projects, transactions)

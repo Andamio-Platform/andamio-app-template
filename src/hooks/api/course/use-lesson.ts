@@ -44,18 +44,14 @@ export function useLessons(
   return useQuery({
     queryKey: lessonKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // NOTE: No list endpoint exists in API - only individual lesson fetch
-      // Go API: GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
-      // This call will 404; to get lessons, iterate SLTs and fetch each individually
-      const response = await fetch(
-        `/api/gateway/api/v2/course/user/lessons/${courseNftPolicyId}/${moduleCode}`
+      // NOTE: No list endpoint exists in API - only individual lesson fetch via:
+      // GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
+      // To get all lessons for a module, you must iterate SLTs and fetch each individually.
+      // Return empty array since batch fetch is not supported.
+      console.warn(
+        "[useLessons] No batch lesson endpoint exists. Use useLesson() for individual lessons."
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch lessons: ${response.statusText}`);
-      }
-
-      return response.json() as Promise<LessonListResponse>;
+      return [] as LessonListResponse;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });

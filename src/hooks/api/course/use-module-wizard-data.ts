@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
   CourseModuleResponse,
   CourseModuleListResponse,
@@ -40,6 +41,8 @@ export function useModuleWizardData({
   isNewModule,
   onDataLoaded,
 }: UseModuleWizardDataProps): UseModuleWizardDataReturn {
+  const { authenticatedFetch } = useAndamioAuth();
+
   const [data, setData] = useState<WizardData>({
     course: null,
     courseModule: null,
@@ -111,15 +114,21 @@ export function useModuleWizardData({
         ? ((await courseResponse.json()) as CourseResponse)
         : null;
 
-      // Go API: GET /course/user/modules/{course_id}
-      // Public endpoint - no auth required
-      const modulesResponse = await fetch(
-        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
+      // Go API: POST /course/teacher/course-modules/list
+      // Teacher endpoint - returns ALL modules including drafts
+      const modulesResponse = await authenticatedFetch(
+        `/api/gateway/api/v2/course/teacher/course-modules/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ course_id: courseNftPolicyId }),
+        }
       );
       let modules: CourseModuleListResponse = [];
       if (modulesResponse.ok) {
-        const result = await modulesResponse.json() as { data?: CourseModuleListResponse };
-        modules = result.data ?? [];
+        const result = await modulesResponse.json() as { data?: CourseModuleListResponse } | CourseModuleListResponse;
+        // Handle both wrapped { data: [...] } and raw array formats
+        modules = Array.isArray(result) ? result : (result.data ?? []);
       }
       const courseModule = modules.find((m) => m.course_module_code === effectiveModuleCode) ?? null;
 
@@ -141,23 +150,14 @@ export function useModuleWizardData({
 
       // NOTE: No user-facing introduction endpoint exists in API
       // Introduction is created/updated via teacher endpoints only
-      // This call will 404; introduction data not available via public API
-      const introResponse = await fetch(
-        `/api/gateway/api/v2/course/user/introduction/${courseNftPolicyId}/${effectiveModuleCode}`
-      );
-      const introduction = introResponse.ok
-        ? ((await introResponse.json()) as IntroductionResponse)
-        : null;
+      // Introduction data is not available via public API - set to null
+      const introduction: IntroductionResponse | null = null;
 
       // NOTE: No lessons list endpoint exists in API
       // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
-      // This call will 404; to get lessons, iterate SLTs and fetch each individually
-      const lessonsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/lessons/${courseNftPolicyId}/${effectiveModuleCode}`
-      );
-      const lessons = lessonsResponse.ok
-        ? ((await lessonsResponse.json()) as LessonListResponse)
-        : [];
+      // To get all lessons, iterate SLTs and fetch each individually
+      // For now, set to empty array - lessons can be fetched on demand per SLT
+      const lessons: LessonListResponse = [];
 
       setData({
         course,
@@ -180,7 +180,7 @@ export function useModuleWizardData({
         error: err instanceof Error ? err.message : "Failed to load",
       }));
     }
-  }, [courseNftPolicyId, moduleCode, isNewModule, onDataLoaded]);
+  }, [courseNftPolicyId, moduleCode, isNewModule, onDataLoaded, authenticatedFetch]);
 
   // Fetch data on mount
   useEffect(() => {

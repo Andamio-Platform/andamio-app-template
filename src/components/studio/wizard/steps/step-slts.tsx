@@ -25,6 +25,12 @@ import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import {
+  useCreateSLT,
+  useUpdateSLT,
+  useDeleteSLT,
+  useReorderSLT,
+} from "~/hooks/api/course/use-slt";
 import type { WizardStepConfig } from "../types";
 import type { SLTListResponse } from "~/types/generated";
 import { AndamioInput } from "~/components/andamio";
@@ -63,8 +69,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     moduleCode,
     updateSlts,
   } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
   const inputId = useId();
+
+  // Use SLT mutation hooks (handles cache invalidation automatically)
+  const createSLT = useCreateSLT();
+  const updateSLT = useUpdateSLT();
+  const deleteSLT = useDeleteSLT();
+  const reorderSLT = useReorderSLT();
 
   // Check if SLTs are locked (module is approved or on-chain)
   const moduleStatus = data.courseModule?.module_status;
@@ -96,14 +108,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !newSltText.trim()) return;
 
     const text = newSltText.trim();
-    const nextIndex = localSlts.length > 0
-      ? Math.max(...localSlts.map((s) => s.index ?? 0)) + 1
-      : 1;
+    // Use 0-based index to match API storage (new item gets next sequential index)
+    const nextIndex = localSlts.length;
     const opId = `create-${nextIndex}`;
 
     // Optimistic update - compute the list we'll set
-    // Note: course_module_code and course_id are not on the SLT response type
-    // (they're sent separately in the API request), so we don't include them here
     const optimisticSlt: LocalSLT = {
       index: nextIndex,
       slt_text: text,
@@ -116,27 +125,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     addPendingOp(opId);
 
     try {
-      // Go API: POST /course/teacher/slt/create
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/slt/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            slt_text: text,
-          }),
-        }
-      );
+      // Use the hook - it handles cache invalidation automatically
+      await createSLT.mutateAsync({
+        courseNftPolicyId,
+        moduleCode,
+        sltText: text,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message ?? "Failed to create");
-      }
-
-      // Sync to context - the optimistic item is already correct
-      await response.json();
+      // Sync to context so wizard stepper updates
       updateSlts(optimisticList);
     } catch (err) {
       // Rollback optimistic update using stable _localId
@@ -145,7 +141,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, newSltText, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
+  }, [isAuthenticated, newSltText, localSlts, courseNftPolicyId, moduleCode, updateSlts, createSLT]);
 
   /**
    * Update SLT with optimistic update
@@ -155,6 +151,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     const text = editingText.trim();
     const opId = `update-${slt.index}`;
+    // API stores 0-based but expects 1-based for update calls
+    const sltIndex = (slt.index ?? 0) + 1;
 
     // Compute the optimistic list and set it
     const updatedList = localSlts.map((s) => s.index === slt.index ? { ...s, slt_text: text } : s);
@@ -165,23 +163,16 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     addPendingOp(opId);
 
     try {
-      // Go API: POST /course/teacher/slt/update
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/slt/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            index: slt.index,
-            slt_text: text,
-          }),
-        }
-      );
+      // Use the hook - it handles cache invalidation automatically
+      // API expects 1-based index
+      await updateSLT.mutateAsync({
+        courseNftPolicyId,
+        moduleCode,
+        index: sltIndex,
+        sltText: text,
+      });
 
-      if (!response.ok) throw new Error("Failed to update");
-      // Sync to context so sidebar count updates
+      // Sync to context so wizard stepper updates
       updateSlts(updatedList);
     } catch (err) {
       // Rollback
@@ -192,7 +183,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, editingText, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
+  }, [isAuthenticated, editingText, localSlts, courseNftPolicyId, moduleCode, updateSlts, updateSLT]);
 
   /**
    * Delete SLT with optimistic update and re-index remaining SLTs
@@ -201,63 +192,33 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated) return;
 
     const opId = `delete-${slt._localId}`;
+    // API stores 0-based but expects 1-based for delete calls
+    const sltIndex = (slt.index ?? 0) + 1;
 
-    // Remove SLT and re-index remaining ones sequentially
+    // Remove SLT and re-index remaining ones sequentially (0-based to match API storage)
     const filteredList = localSlts
       .filter((s) => s._localId !== slt._localId)
       .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-      .map((s, idx) => ({ ...s, index: idx + 1 }));
+      .map((s, idx) => ({ ...s, index: idx }));
 
     setLocalSlts(filteredList);
     setError(null);
     addPendingOp(opId);
 
     try {
-      // Step 1: Delete the SLT
-      const deleteResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/slt/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            index: slt.index,
-          }),
-        }
-      );
+      // Use the hook - it handles cache invalidation automatically
+      // API expects 1-based index
+      await deleteSLT.mutateAsync({
+        courseNftPolicyId,
+        moduleCode,
+        index: sltIndex,
+      });
 
-      if (!deleteResponse.ok) throw new Error("Failed to delete");
+      // Note: Re-indexing remaining SLTs after delete
+      // The API may handle this automatically, or indices may have gaps.
+      // If gaps occur, refetching from API will get correct indices.
 
-      // Step 2: Re-index remaining SLTs if there are any
-      if (filteredList.length > 0) {
-        // Build mapping: index (current in DB) -> new_index (target)
-        const reorderData = filteredList.map((s) => ({
-          index: localSlts.find((orig) => orig._localId === s._localId)?.index ?? s.index,
-          new_index: s.index,
-        })).filter((item) => item.index !== item.new_index);
-
-        if (reorderData.length > 0) {
-          const reorderResponse = await authenticatedFetch(
-            `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                course_id: courseNftPolicyId,
-                course_module_code: moduleCode,
-                slts: reorderData,
-              }),
-            }
-          );
-
-          if (!reorderResponse.ok) {
-            console.warn("Failed to re-index SLTs after delete, but delete succeeded");
-          }
-        }
-      }
-
-      // Sync to context so sidebar count updates
+      // Sync to context so wizard stepper updates
       updateSlts(filteredList);
     } catch (err) {
       // Rollback - restore the deleted SLT
@@ -269,7 +230,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } finally {
       removePendingOp(opId);
     }
-  }, [isAuthenticated, localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
+  }, [isAuthenticated, localSlts, courseNftPolicyId, moduleCode, updateSlts, deleteSLT]);
 
   const startEditing = (slt: SLT) => {
     setEditingIndex(slt.index ?? null);
@@ -309,44 +270,37 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     const newArrayIndex = localSlts.findIndex((s) => s._localId === over.id);
     if (oldArrayIndex === -1 || newArrayIndex === -1) return;
 
-    // Reorder the array
+    if (oldArrayIndex === newArrayIndex) return;
+
+    // Get the dragged item
+    const draggedItem = localSlts[oldArrayIndex];
+    // API stores 0-based indices but expects 1-based for reorder calls
+    // Use stored index if available, otherwise fall back to array position
+    const storedIndex = draggedItem?.index ?? oldArrayIndex;
+    // Convert to 1-based for API
+    const oldDbIndex = storedIndex + 1;
+    const newDbIndex = newArrayIndex + 1;
+
+    // Reorder the array locally
     const reorderedArray = arrayMove(localSlts, oldArrayIndex, newArrayIndex);
 
-    // Build the mapping for the API: index (current) -> new_index (target)
-    const reorderData = reorderedArray.map((slt, idx) => ({
-      index: slt.index,     // Current index in DB
-      new_index: idx + 1,   // Target sequential index
-    })).filter((item) => item.index !== item.new_index);
-
-    // Update local state with new sequential indexes
+    // Update local state with new 0-based indexes (matching API storage)
     const reorderedSlts = reorderedArray.map((slt, idx) => ({
       ...slt,
-      index: idx + 1,
+      index: idx,
     }));
     setLocalSlts(reorderedSlts);
 
-    // Only call API if there are actual changes
-    if (reorderData.length === 0) {
-      updateSlts(reorderedSlts);
-      return;
-    }
-
     try {
-      // Go API: POST /course/teacher/slts/batch-reorder
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/slts/batch-reorder`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            slts: reorderData,
-          }),
-        }
-      );
+      // Use the hook - it handles cache invalidation automatically
+      // API expects 1-based indices
+      await reorderSLT.mutateAsync({
+        courseNftPolicyId,
+        moduleCode,
+        oldIndex: oldDbIndex,
+        newIndex: newDbIndex,
+      });
 
-      if (!response.ok) throw new Error("Failed to reorder");
       // Sync to context
       updateSlts(reorderedSlts);
     } catch (err) {
@@ -354,7 +308,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       setLocalSlts(localSlts);
       setError(err instanceof Error ? err.message : "Failed to reorder");
     }
-  }, [localSlts, authenticatedFetch, courseNftPolicyId, moduleCode, updateSlts]);
+  }, [localSlts, courseNftPolicyId, moduleCode, updateSlts, reorderSLT]);
 
   const isPending = pendingOps.size > 0;
 
@@ -538,9 +492,9 @@ function SortableSltItem({
         </button>
       )}
 
-      {/* SLT Reference: <module-code>.<index> */}
+      {/* SLT Reference: <module-code>.<display-index> (1-based for users) */}
       <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
-        {moduleCode}.{slt.index}
+        {moduleCode}.{(slt.index ?? 0) + 1}
       </span>
 
       {/* Content */}

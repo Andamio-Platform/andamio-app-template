@@ -109,14 +109,17 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
-      // Compute the module hash from SLTs (sorted by index)
+      // Compute the module hash from SLTs (sorted by slt_index)
+      // API v2.0.0+: slt_index is 1-based
+      // TODO: Send module_hash when DB API supports it
       const sortedSltTexts = [...slts]
-        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+        .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
         .map((slt) => slt.slt_text)
         .filter((text): text is string => typeof text === "string");
-      const moduleHash = computeSltHashDefinite(sortedSltTexts);
+      const _moduleHash = computeSltHashDefinite(sortedSltTexts);
 
       // Go API: POST /course/teacher/course-module/update-status
+      // Note: module_hash not supported yet by DB API
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
@@ -126,7 +129,6 @@ export function StepReview({ config, direction }: StepReviewProps) {
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
             status: "APPROVED",
-            module_hash: moduleHash,
           }),
         }
       );

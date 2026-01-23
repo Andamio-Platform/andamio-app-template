@@ -601,7 +601,7 @@ The app uses a unified gateway client:
 |--------|------|---------|
 | `gateway.ts` | `src/lib/gateway.ts` | **Primary** - All gateway API calls |
 | `andamio-auth.ts` | `src/lib/andamio-auth.ts` | Authentication (hybrid gateway/legacy) |
-| `andamioscan.ts` | `src/lib/andamioscan.ts` | On-chain indexed data (uses gateway proxy) |
+| `andamioscan-events.ts` | `src/lib/andamioscan-events.ts` | On-chain data (events API, raw project/course data) |
 
 ### Gateway Client (Recommended)
 Use the gateway client for all API calls:
@@ -766,7 +766,7 @@ const data = (await response.json()) as YourOutputType;
 **API Clients**:
 - `src/lib/gateway.ts` - **Primary** - Unified gateway client
 - `src/lib/andamio-gateway.ts` - Merged endpoints helper functions
-- `src/lib/andamioscan.ts` - On-chain indexed data helper functions
+- `src/lib/andamioscan-events.ts` - Events API + raw on-chain data (projects, courses, user state)
 - `src/lib/type-helpers.ts` - NullableString handling utilities (`getString`, `getOptionalString`)
 - `src/app/api/gateway/[...path]/route.ts` - Unified gateway proxy (single route for all API calls)
 

@@ -33,7 +33,7 @@ import {
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan";
+import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan-events";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
 import { createCommitmentRecord, hexToText, confirmCommitmentTransaction } from "~/lib/project-commitment-sync";
 import { computeTaskHash, type TaskData } from "@andamio/core/hashing";

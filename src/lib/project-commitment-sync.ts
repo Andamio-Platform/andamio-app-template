@@ -12,7 +12,7 @@ import {
   getProject,
   type AndamioscanSubmission,
   type AndamioscanProjectDetails,
-} from "~/lib/andamioscan";
+} from "~/lib/andamioscan-events";
 
 /**
  * Commitment sync status for a single submission

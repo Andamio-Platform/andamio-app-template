@@ -28,7 +28,7 @@ import {
 import { TaskIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject } from "~/lib/andamioscan";
+import { getProject } from "~/lib/andamioscan-events";
 import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 

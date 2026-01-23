@@ -15,7 +15,7 @@ import {
 } from "~/components/andamio";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
-import { getCourse } from "~/lib/andamioscan";
+import { getCourse } from "~/lib/andamioscan-events";
 import { type CourseResponse, type CourseModuleResponse } from "~/types/generated";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";

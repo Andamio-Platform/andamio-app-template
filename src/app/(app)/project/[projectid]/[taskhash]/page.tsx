@@ -15,7 +15,7 @@ import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icon
 import { type ProjectTaskV2Output, type CommitmentV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject, type AndamioscanTask } from "~/lib/andamioscan";
+import { getProject, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { TaskCommit } from "~/components/tx";
 
 /**

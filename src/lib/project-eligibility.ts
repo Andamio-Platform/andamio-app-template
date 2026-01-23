@@ -10,7 +10,7 @@ import {
   getUserGlobalState,
   getCourseStudent,
   type AndamioscanPrerequisite,
-} from "~/lib/andamioscan";
+} from "~/lib/andamioscan-events";
 
 /**
  * Missing prerequisite info for UI display

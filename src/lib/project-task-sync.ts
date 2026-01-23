@@ -5,7 +5,11 @@
  * Matches tasks by content and updates DB with on-chain task_id.
  */
 
-import { getProject, type AndamioscanTask, type AndamioscanProjectDetails } from "~/lib/andamioscan";
+import {
+  getProject,
+  type AndamioscanTask,
+  type AndamioscanProjectDetails,
+} from "~/lib/andamioscan-events";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { computeTaskHash, type TaskData } from "@andamio/core/hashing";
 

@@ -35,7 +35,7 @@ import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, Lesso
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
-import { getManagingProjects, getProject } from "~/lib/andamioscan";
+import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
 import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 

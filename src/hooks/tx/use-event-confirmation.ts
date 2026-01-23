@@ -15,7 +15,7 @@ import {
   getTaskSubmitEvent,
   waitForEventConfirmation,
   type AndamioscanTaskSubmitEvent,
-} from "~/lib/andamioscan";
+} from "~/lib/andamioscan-events";
 
 export type EventConfirmationStatus = "idle" | "checking" | "confirmed" | "not_found" | "error";
 

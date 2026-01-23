@@ -219,3 +219,25 @@ export type GatewayTxType =
   | "task_assess"
   | "project_credential_claim"
   | "treasury_fund";
+
+// =============================================================================
+// Andamioscan Types (re-exports from andamioscan-events.ts)
+// =============================================================================
+
+export type {
+  AndamioscanAsset,
+  AndamioscanTask,
+  AndamioscanSubmission,
+  AndamioscanTreasuryFunding,
+  AndamioscanPrerequisite,
+  AndamioscanProjectDetails,
+  AndamioscanProject,
+  AndamioscanModule,
+  AndamioscanCourse,
+  AndamioscanStudent,
+  AndamioscanUserCourse,
+  AndamioscanUserGlobalState,
+  AndamioscanTaskSubmission,
+  AndamioscanContributorStatus,
+  AndamioscanTaskSubmitEvent,
+} from "~/lib/andamioscan-events";

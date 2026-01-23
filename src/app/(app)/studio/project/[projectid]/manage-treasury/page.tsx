@@ -30,7 +30,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan";
+import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 

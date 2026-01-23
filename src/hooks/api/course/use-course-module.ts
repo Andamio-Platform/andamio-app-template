@@ -376,6 +376,29 @@ export function useUpdateCourseModule() {
 
 /**
  * Update course module status
+ *
+ * When setting status to "APPROVED", the slt_hash is required.
+ * The slt_hash should be computed from the module's SLTs using computeSltHash().
+ *
+ * @example
+ * ```tsx
+ * const updateStatus = useUpdateCourseModuleStatus();
+ *
+ * // Approve a module (requires slt_hash)
+ * await updateStatus.mutateAsync({
+ *   courseNftPolicyId: "...",
+ *   moduleCode: "101",
+ *   status: "APPROVED",
+ *   sltHash: computeSltHash(slts),
+ * });
+ *
+ * // Revert to draft (no slt_hash needed)
+ * await updateStatus.mutateAsync({
+ *   courseNftPolicyId: "...",
+ *   moduleCode: "101",
+ *   status: "DRAFT",
+ * });
+ * ```
  */
 export function useUpdateCourseModuleStatus() {
   const queryClient = useQueryClient();
@@ -386,22 +409,32 @@ export function useUpdateCourseModuleStatus() {
       courseNftPolicyId,
       moduleCode,
       status,
+      sltHash,
     }: {
       courseNftPolicyId: string;
       moduleCode: string;
       status: string;
+      /** Required when status is "APPROVED" */
+      sltHash?: string;
     }) => {
       // Go API: POST /course/teacher/course-module/update-status
+      const body: Record<string, string> = {
+        course_id: courseNftPolicyId,
+        course_module_code: moduleCode,
+        status,
+      };
+
+      // Include slt_hash when approving (required by API)
+      if (sltHash) {
+        body.slt_hash = sltHash;
+      }
+
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            status,
-          }),
+          body: JSON.stringify(body),
         }
       );
 

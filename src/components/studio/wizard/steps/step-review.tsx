@@ -24,6 +24,7 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
+import { getOptionalString } from "~/lib/type-helpers";
 import type { WizardStepConfig } from "../types";
 
 interface StepReviewProps {
@@ -214,6 +215,16 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 <AndamioBadge className="bg-success text-success-foreground">
                   APPROVED
                 </AndamioBadge>
+                {getOptionalString(data.courseModule?.slt_hash) && (
+                  <div className="flex flex-col items-center gap-1">
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      SLT Hash
+                    </AndamioText>
+                    <code className="text-xs font-mono bg-muted px-2 py-1 rounded max-w-[280px] truncate">
+                      {getOptionalString(data.courseModule?.slt_hash)}
+                    </code>
+                  </div>
+                )}
                 <Link
                   href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
                   className="hover:opacity-80 transition-opacity"

@@ -194,6 +194,43 @@ export type {
 } from "./gateway";
 
 // =============================================================================
+// Auth Types (re-exports for developer registration)
+// =============================================================================
+
+export type {
+  // Developer registration (two-step flow)
+  AuthViewmodelsRegisterSessionRequest,
+  AuthViewmodelsRegisterSessionResponse,
+  AuthViewmodelsRegisterCompleteRequest,
+  AuthViewmodelsRegisterResponse,
+  AuthViewmodelsSignatureData,
+
+  // Developer login
+  AuthViewmodelsLoginRequest,
+  AuthViewmodelsLoginResponse,
+  AuthViewmodelsJWTResponse,
+} from "./gateway";
+
+// =============================================================================
+// API Key Types (re-exports for developer API key management)
+// =============================================================================
+
+export type {
+  ApiKeyViewmodelsAPIKeyRequest,
+  ApiKeyViewmodelsAPIKeyResponse,
+  ApiKeyViewmodelsDeleteAPIKeyRequest,
+  ApiKeyViewmodelsDeleteAPIKeyResponse,
+  ApiKeyViewmodelsRotateAPIKeyRequest,
+  ApiKeyViewmodelsRotateAPIKeyResponse,
+} from "./gateway";
+
+// Developer profile type (returned from /v2/apikey/developer/profile/get)
+export type { UserViewmodelsMeResponse as DeveloperProfileResponse } from "./gateway";
+
+// Developer usage type (returned from /v2/apikey/developer/usage/get)
+export type { UserViewmodelsUsageResponse as DeveloperUsageResponse } from "./gateway";
+
+// =============================================================================
 // Custom Types (not in API spec)
 // =============================================================================
 

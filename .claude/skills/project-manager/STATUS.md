@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 21, 2026
+> **Last Updated**: January 23, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -18,9 +18,22 @@ Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## Current Focus: Layered Architecture L2/L3
+## Current Focus: API v2.0.0 Field Alignment
 
-**Status**: Phase 1 Complete, Ready for Phase 2
+**Status**: Active - Syncing with Gateway API spec updates
+
+**Latest Work (January 23, 2026)**:
+- **Developer Auth V2 Migration**: Implemented two-step wallet-verified registration flow
+  - `createDevRegisterSession()` + `completeDevRegistration()` with CIP-30 signing
+  - Updated `/api-setup` page with new 4-step flow (connect → register → sign → api-key)
+  - Migrated API key endpoints from v1 to v2 paths
+  - Added `getDeveloperProfile()`, `getDeveloperUsage()`, `deleteDeveloperAccount()`
+  - Regenerated types from updated OpenAPI spec
+- Replaced deprecated `andamioscan.ts` (1497 lines) with minimal `andamioscan-events.ts`
+- Display `slt_hash` in module review step when SLTs are approved
+- Added `slt_hash` support to module status update endpoint
+- Synced with API v2.0.0 field names and embedded data patterns
+- Removed `module_hash` from module status update request (field removed from API)
 
 **Completed (L1 Core)**:
 - `@andamio/core` package with hashing utilities and constants
@@ -28,10 +41,11 @@ Current implementation status of the Andamio T3 App Template.
 - Gateway taxonomy compliance (41 files fixed)
 - NullableString type helper utilities
 
-**Next Steps (L2 Integration)**:
-1. [ ] Reorganize hooks into `course/` and `project/` subdirectories
-2. [ ] Remove deprecated `andamioscan.ts` (1497 lines)
-3. [ ] Clean up remaining V1 patterns
+**Next Steps**:
+1. [ ] Continue API v2.0.0 field alignment as spec evolves
+2. [ ] Reorganize hooks into `course/` and `project/` subdirectories
+3. [x] ~~Remove deprecated `andamioscan.ts` (1497 lines)~~ - Replaced with `andamioscan-events.ts`
+4. [ ] Clean up remaining V1 patterns
 
 ---
 
@@ -40,6 +54,9 @@ Current implementation status of the Andamio T3 App Template.
 | Blocker | Status | Notes |
 |---------|--------|-------|
 | **SLT Endpoints Schema Mismatch** | Blocking | SLT create/update/delete expect camelCase. [GitHub Issue #3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
+
+**Resolved Recently**:
+- Developer Registration Signature → Fixed by API team. Now requires End User JWT auth.
 | **Project V2 Task Update/Delete** | Blocking | API returns 404 for existing tasks |
 | **@andamio/transactions NPM** | Waiting | Available locally via workspace link |
 | **Wallet Testing** | Pending | Nami, Flint, Yoroi, Lace need testing (Eternl works) |

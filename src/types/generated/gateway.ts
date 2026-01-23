@@ -545,6 +545,17 @@ export interface AndamioApiInternalInternalApiAndamioDbClientUpdateLessonV2Reque
   slt_index?: number;
 }
 
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleStatusV2Request {
+  /** Course identifier */
+  course_id?: string;
+  /** Module code within the course */
+  course_module_code?: string;
+  /** Hash of the SLT list. Required when status = APPROVED. This becomes the module token name on-chain. */
+  slt_hash?: AndamioApiInternalInternalApiAndamioDbClientNullableString;
+  /** Target status (DRAFT or APPROVED) */
+  status?: string;
+}
+
 export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleV2Request {
   course_id?: string;
   course_module_code?: string;

@@ -58,6 +58,7 @@ export {
   OnChainIcon,
   TransactionIcon,
   TokenIcon,
+  SignatureIcon,
 } from "./entity-icons";
 
 // =============================================================================

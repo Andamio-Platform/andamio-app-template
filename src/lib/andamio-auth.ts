@@ -86,16 +86,31 @@ interface GatewayRegisterApiResponse {
 // =============================================================================
 
 /**
+ * Developer registration session response
+ */
+export interface DevRegisterSession {
+  session_id: string;
+  nonce: string;
+  expires_at: string;
+}
+
+/**
+ * Developer registration result (after completing with signature)
+ */
+export interface DevRegisterResult {
+  user_id: string;
+  alias: string;
+  tier: string;
+  subscription_expiration: string;
+}
+
+/**
  * Login via Developer API (requires access token alias)
  *
  * Returns a DEVELOPER JWT for API key management operations.
  * This is separate from the end-user JWT obtained via wallet signing.
  *
  * **IMPORTANT**: Store the returned JWT using `storeDevJWT()`, NOT `storeJWT()`.
- *
- * **SECURITY NOTE**: This endpoint performs NO cryptographic wallet verification.
- * It simply looks up the alias and checks if it belongs to the provided wallet address.
- * Do NOT use this for end-user authentication in browsers.
  *
  * @param alias - The user's access token alias (e.g., "alice")
  * @param walletAddress - The user's wallet address in bech32 format
@@ -147,29 +162,33 @@ export async function loginWithGateway(params: {
 }
 
 /**
- * Register a new user via Gateway API
+ * Step 1: Create a developer registration session
  *
- * Creates a new user account and returns a DEVELOPER JWT.
- * This is separate from the end-user JWT obtained via wallet signing.
+ * Returns a nonce that must be signed with the user's wallet to prove ownership.
+ * The session expires after 5 minutes.
  *
- * **IMPORTANT**: Store the returned JWT using `storeDevJWT()`, NOT `storeJWT()`.
+ * **IMPORTANT**: Requires End User JWT authentication. Users must be signed in
+ * via the standard wallet auth flow before registering as developers.
  *
- * @param alias - The desired username/alias (1-32 characters)
+ * @param alias - The desired username/alias (1-64 characters)
  * @param email - The user's email address
- * @param walletAddress - The user's wallet address in bech32 format
- * @returns AuthResponse with developer JWT (use storeDevJWT to persist)
+ * @param walletAddress - The user's wallet address in bech32 format (must match JWT)
+ * @param endUserJwt - End User JWT from standard wallet authentication
+ * @returns Session with nonce to sign
  */
-export async function registerWithGateway(params: {
+export async function createDevRegisterSession(params: {
   alias: string;
   email: string;
   walletAddress: string;
-}): Promise<AuthResponse> {
-  authLogger.info("Attempting gateway registration for alias:", params.alias);
+  endUserJwt: string;
+}): Promise<DevRegisterSession> {
+  authLogger.info("Creating developer registration session for alias:", params.alias);
 
-  const response = await fetch(`${API_PROXY}/api/v2/auth/developer/account/register`, {
+  const response = await fetch(`${API_PROXY}/api/v2/auth/developer/register/session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${params.endUserJwt}`,
     },
     body: JSON.stringify({
       alias: params.alias,
@@ -179,31 +198,119 @@ export async function registerWithGateway(params: {
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as { message?: string; error?: string };
-    authLogger.error("Gateway registration failed:", {
+    const error = (await response.json()) as { message?: string; error?: string; code?: string };
+    authLogger.error("Developer registration session failed:", {
       status: response.status,
       error,
     });
-    throw new Error(error.message ?? error.error ?? "Gateway registration failed");
+
+    // Provide user-friendly error messages for known error codes
+    if (error.code === "alias_already_exists") {
+      throw new Error("This alias is already taken. Please choose a different one.");
+    }
+    if (error.code === "wallet_address_already_registered") {
+      throw new Error("This wallet is already registered. Try logging in instead.");
+    }
+
+    throw new Error(error.message ?? error.error ?? "Failed to create registration session");
   }
 
-  const apiResponse = (await response.json()) as GatewayRegisterApiResponse;
-  authLogger.info("Gateway registration successful for alias:", apiResponse.alias);
+  const apiResponse = (await response.json()) as {
+    session_id: string;
+    nonce: string;
+    expires_at: string;
+  };
 
-  // Validate expected structure (JWT is uppercase, token field)
-  if (!apiResponse.JWT || typeof apiResponse.JWT !== "object" || !apiResponse.JWT.token) {
-    authLogger.error("Unexpected response structure - JWT field:", apiResponse.JWT);
-    throw new Error("Invalid registration response: missing or malformed JWT field");
-  }
+  authLogger.info("Developer registration session created, nonce received");
 
   return {
-    jwt: apiResponse.JWT.token,
-    user: {
-      id: apiResponse.user_id,
-      cardanoBech32Addr: params.walletAddress,
-      accessTokenAlias: apiResponse.alias,
-    },
+    session_id: apiResponse.session_id,
+    nonce: apiResponse.nonce,
+    expires_at: apiResponse.expires_at,
   };
+}
+
+/**
+ * Step 2: Complete developer registration with wallet signature
+ *
+ * Verifies the CIP-30 signature and creates the developer account.
+ *
+ * **IMPORTANT**: Requires End User JWT authentication (same as step 1).
+ *
+ * @param sessionId - The session ID from createDevRegisterSession
+ * @param signature - The CIP-30 wallet signature of the nonce
+ * @param endUserJwt - End User JWT from standard wallet authentication
+ * @returns Registration result with user info
+ */
+export async function completeDevRegistration(params: {
+  sessionId: string;
+  signature: WalletSignature;
+  endUserJwt: string;
+}): Promise<DevRegisterResult> {
+  authLogger.info("Completing developer registration with signature");
+
+  const response = await fetch(`${API_PROXY}/api/v2/auth/developer/register/complete`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${params.endUserJwt}`,
+    },
+    body: JSON.stringify({
+      session_id: params.sessionId,
+      signature: {
+        signature: params.signature.signature,
+        key: params.signature.key,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string; code?: string };
+    authLogger.error("Developer registration completion failed:", {
+      status: response.status,
+      error,
+    });
+
+    // Provide user-friendly error messages for known error codes
+    if (error.code === "session_expired") {
+      throw new Error("Registration session expired. Please start again.");
+    }
+    if (error.code === "signature_verification_failed") {
+      throw new Error("Wallet signature verification failed. Please try again.");
+    }
+
+    throw new Error(error.message ?? error.error ?? "Failed to complete registration");
+  }
+
+  const apiResponse = (await response.json()) as {
+    user_id: string;
+    alias: string;
+    tier: string;
+    subscription_expiration: string;
+  };
+
+  authLogger.info("Developer registration completed for alias:", apiResponse.alias);
+
+  return {
+    user_id: apiResponse.user_id,
+    alias: apiResponse.alias,
+    tier: apiResponse.tier,
+    subscription_expiration: apiResponse.subscription_expiration,
+  };
+}
+
+/**
+ * @deprecated Use createDevRegisterSession + completeDevRegistration instead.
+ * This function will fail as the old endpoint returns 410 Gone.
+ */
+export async function registerWithGateway(_params: {
+  alias: string;
+  email: string;
+  walletAddress: string;
+}): Promise<AuthResponse> {
+  throw new Error(
+    "registerWithGateway is deprecated. Use createDevRegisterSession + completeDevRegistration instead."
+  );
 }
 
 // =============================================================================
@@ -460,25 +567,56 @@ export function isJWTExpired(jwt: string): boolean {
  */
 export interface ApiKeyResponse {
   apiKey: string;
+  name: string;
+  createdAt: string;
   expiresAt: string;
+  isActive: boolean;
+}
+
+/**
+ * Developer profile response
+ */
+export interface DeveloperProfile {
+  userId: string;
+  alias: string;
+  tier: string;
+  createdAt: string;
+  activeKeys: ApiKeyResponse[];
+}
+
+/**
+ * Developer usage response
+ */
+export interface DeveloperUsage {
+  dailyQuotaConsumed: number;
+  dailyQuotaLimit: number;
 }
 
 /**
  * Request a new API key from the gateway
  *
- * **IMPORTANT**: Requires a DEVELOPER JWT from `loginWithGateway()` or `registerWithGateway()`.
+ * **IMPORTANT**: Requires a DEVELOPER JWT from `loginWithGateway()`.
  * Do NOT use the end-user JWT from wallet signing.
  *
  * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
- * @param name - Name/label for the API key (for identification)
- * @returns API key and expiration date
+ * @param name - Name/label for the API key (for identification, 3-64 chars)
+ * @param expiresInDays - Optional expiration in days (default varies by tier)
+ * @returns API key details
  */
-export async function requestApiKey(jwt: string, name: string): Promise<ApiKeyResponse> {
-  // Try snake_case field name (common in Go APIs)
-  const requestBody = { api_key_name: name };
-  authLogger.info("Requesting API key from gateway:", { name, requestBody });
+export async function requestApiKey(
+  jwt: string,
+  name: string,
+  expiresInDays?: number
+): Promise<ApiKeyResponse> {
+  const requestBody: { api_key_name: string; expires_in_days?: number } = {
+    api_key_name: name,
+  };
+  if (expiresInDays !== undefined) {
+    requestBody.expires_in_days = expiresInDays;
+  }
+  authLogger.info("Requesting API key from gateway:", { name });
 
-  const response = await fetch(`${API_PROXY}/api/v1/apikey/request`, {
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/key/request`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -488,35 +626,23 @@ export async function requestApiKey(jwt: string, name: string): Promise<ApiKeyRe
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    let errorData: { message?: string; error?: string } = {};
-    try {
-      errorData = JSON.parse(errorText) as { message?: string; error?: string };
-    } catch {
-      // Not JSON
-    }
+    const error = (await response.json()) as { message?: string; error?: string };
     authLogger.error("API key request failed:", {
       status: response.status,
-      statusText: response.statusText,
-      errorText,
-      errorData,
+      error,
     });
-    throw new Error(errorData.message ?? errorData.error ?? `Failed to request API key: ${response.status} ${errorText}`);
+    throw new Error(error.message ?? error.error ?? "Failed to request API key");
   }
 
-  const responseText = await response.text();
-  authLogger.info("API key response:", responseText);
+  const data = (await response.json()) as {
+    api_key?: string;
+    api_key_name?: string;
+    created_at?: string;
+    expires_at?: string;
+    is_active?: boolean;
+  };
 
-  let data: { api_key?: string; apiKey?: string; expires_at?: string; expiresAt?: string };
-  try {
-    data = JSON.parse(responseText) as typeof data;
-  } catch {
-    throw new Error(`Invalid API key response: ${responseText}`);
-  }
-  const apiKey = data.api_key ?? data.apiKey;
-  const expiresAt = data.expires_at ?? data.expiresAt;
-
-  if (!apiKey) {
+  if (!data.api_key) {
     authLogger.error("API key response missing key field:", data);
     throw new Error("API key response missing api_key field");
   }
@@ -524,8 +650,11 @@ export async function requestApiKey(jwt: string, name: string): Promise<ApiKeyRe
   authLogger.info("API key generated successfully");
 
   return {
-    apiKey,
-    expiresAt: expiresAt ?? "",
+    apiKey: data.api_key,
+    name: data.api_key_name ?? name,
+    createdAt: data.created_at ?? "",
+    expiresAt: data.expires_at ?? "",
+    isActive: data.is_active ?? true,
   };
 }
 
@@ -535,18 +664,31 @@ export async function requestApiKey(jwt: string, name: string): Promise<ApiKeyRe
  * **IMPORTANT**: Requires a DEVELOPER JWT, not the end-user JWT.
  *
  * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
- * @returns Updated API key info
+ * @param name - Name of the API key to rotate
+ * @param expiresInDays - Optional new expiration in days
+ * @returns Confirmation message
  */
-export async function rotateApiKey(jwt: string): Promise<ApiKeyResponse> {
-  authLogger.info("Rotating API key");
+export async function rotateApiKey(
+  jwt: string,
+  name: string,
+  expiresInDays?: number
+): Promise<{ confirmation: string }> {
+  authLogger.info("Rotating API key:", name);
 
-  const response = await fetch(`${API_PROXY}/api/v1/apikey/rotate`, {
+  const requestBody: { api_key_name: string; expires_in_days?: number } = {
+    api_key_name: name,
+  };
+  if (expiresInDays !== undefined) {
+    requestBody.expires_in_days = expiresInDays;
+  }
+
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/key/rotate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${jwt}`,
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -558,12 +700,11 @@ export async function rotateApiKey(jwt: string): Promise<ApiKeyResponse> {
     throw new Error(error.message ?? error.error ?? "Failed to rotate API key");
   }
 
-  const data = (await response.json()) as { api_key: string; expires_at: string };
+  const data = (await response.json()) as { confirmation?: string };
   authLogger.info("API key rotated successfully");
 
   return {
-    apiKey: data.api_key,
-    expiresAt: data.expires_at,
+    confirmation: data.confirmation ?? "API key rotated successfully",
   };
 }
 
@@ -573,17 +714,22 @@ export async function rotateApiKey(jwt: string): Promise<ApiKeyResponse> {
  * **IMPORTANT**: Requires a DEVELOPER JWT, not the end-user JWT.
  *
  * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @param name - Name of the API key to delete
+ * @returns Confirmation message
  */
-export async function deleteApiKey(jwt: string): Promise<void> {
-  authLogger.info("Deleting API key");
+export async function deleteApiKey(
+  jwt: string,
+  name: string
+): Promise<{ confirmation: string }> {
+  authLogger.info("Deleting API key:", name);
 
-  const response = await fetch(`${API_PROXY}/api/v1/apikey/delete`, {
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/key/delete`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${jwt}`,
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ api_key_name: name }),
   });
 
   if (!response.ok) {
@@ -595,5 +741,144 @@ export async function deleteApiKey(jwt: string): Promise<void> {
     throw new Error(error.message ?? error.error ?? "Failed to delete API key");
   }
 
+  const data = (await response.json()) as { confirmation?: string };
   authLogger.info("API key deleted successfully");
+
+  return {
+    confirmation: data.confirmation ?? "API key deleted successfully",
+  };
+}
+
+/**
+ * Get developer profile
+ *
+ * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @returns Developer profile with active API keys
+ */
+export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile> {
+  authLogger.info("Fetching developer profile");
+
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/profile/get`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string };
+    authLogger.error("Failed to get developer profile:", {
+      status: response.status,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to get developer profile");
+  }
+
+  const data = (await response.json()) as {
+    user_id?: string;
+    alias?: string;
+    tier?: string;
+    created_at?: string;
+    active_keys?: Array<{
+      api_key?: string;
+      api_key_name?: string;
+      created_at?: string;
+      expires_at?: string;
+      is_active?: boolean;
+    }>;
+  };
+
+  authLogger.info("Developer profile fetched successfully");
+
+  return {
+    userId: data.user_id ?? "",
+    alias: data.alias ?? "",
+    tier: data.tier ?? "",
+    createdAt: data.created_at ?? "",
+    activeKeys: (data.active_keys ?? []).map((key) => ({
+      apiKey: key.api_key ?? "",
+      name: key.api_key_name ?? "",
+      createdAt: key.created_at ?? "",
+      expiresAt: key.expires_at ?? "",
+      isActive: key.is_active ?? true,
+    })),
+  };
+}
+
+/**
+ * Get developer usage statistics
+ *
+ * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @returns Usage statistics
+ */
+export async function getDeveloperUsage(jwt: string): Promise<DeveloperUsage> {
+  authLogger.info("Fetching developer usage");
+
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/usage/get`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string };
+    authLogger.error("Failed to get developer usage:", {
+      status: response.status,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to get developer usage");
+  }
+
+  const data = (await response.json()) as {
+    daily_quota_consumed?: number;
+    daily_quota_limit?: number;
+  };
+
+  authLogger.info("Developer usage fetched successfully");
+
+  return {
+    dailyQuotaConsumed: data.daily_quota_consumed ?? 0,
+    dailyQuotaLimit: data.daily_quota_limit ?? 0,
+  };
+}
+
+/**
+ * Delete developer account
+ *
+ * **WARNING**: This permanently deletes the developer account and all associated API keys.
+ *
+ * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @returns Confirmation message
+ */
+export async function deleteDeveloperAccount(jwt: string): Promise<{ confirmation: string }> {
+  authLogger.info("Deleting developer account");
+
+  const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/account/delete`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwt}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string };
+    authLogger.error("Failed to delete developer account:", {
+      status: response.status,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to delete developer account");
+  }
+
+  const data = (await response.json()) as { message?: string };
+  authLogger.info("Developer account deleted successfully");
+
+  // Clear stored JWT since account is gone
+  clearStoredDevJWT();
+
+  return {
+    confirmation: data.message ?? "Developer account deleted successfully",
+  };
 }

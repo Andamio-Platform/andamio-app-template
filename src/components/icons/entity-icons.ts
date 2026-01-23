@@ -98,3 +98,6 @@ export { Hash as TransactionIcon } from "lucide-react";
 
 /** Token - fungible or non-fungible tokens */
 export { Coins as TokenIcon } from "lucide-react";
+
+/** Signature - wallet/cryptographic signature verification */
+export { PenLine as SignatureIcon } from "lucide-react";

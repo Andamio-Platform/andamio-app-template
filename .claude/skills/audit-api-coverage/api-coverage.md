@@ -2,8 +2,8 @@
 
 > **Unified API Gateway Coverage for T3 App Template**
 > **Base URL**: `https://dev.api.andamio.io`
-> Last Updated: January 22, 2026
-> **Status**: Needs Review (API Updated)
+> Last Updated: January 23, 2026
+> **Status**: Updated - Developer Auth V2 Complete
 
 This document tracks which API endpoints are implemented in the T3 App Template.
 
@@ -11,16 +11,16 @@ This document tracks which API endpoints are implemented in the T3 App Template.
 
 | Category | Total | Implemented | Coverage |
 |----------|-------|-------------|----------|
-| [Authentication](#authentication) | 6 | 2 | **33%** |
+| [Authentication](#authentication) | 6 | 6 | **100%** |
 | [User Management](#user-management) | 6 | 2 | **33%** |
-| [API Key Management](#api-key-management) | 6 | 0 | **0%** |
+| [API Key Management](#api-key-management) | 6 | 6 | **100%** |
 | [Admin Functions](#admin-functions) | 4 | 0 | **0%** |
 | [Courses](#courses) | 37 | ~20 | **~54%** |
 | [Projects](#projects) | 17 | ~12 | **~71%** |
 | [TX: Courses](#tx-course-operations) | 6 | 6 | **100%** |
 | [TX: Projects](#tx-project-operations) | 8 | 7 | **88%** |
 | [TX: Instance/Global](#tx-instanceglobal-operations) | 7 | 6 | **86%** |
-| **TOTAL** | **106** | **~55** | **~52%** |
+| **TOTAL** | **106** | **~65** | **~61%** |
 
 ---
 
@@ -45,21 +45,21 @@ Browser → /api/gateway/[...path] → Unified Gateway → Response
 
 ## Authentication
 
-**Status**: 🔶 **Partial** (core wallet auth implemented)
+**Status**: ✅ **Complete** (all auth endpoints implemented)
 
 | Endpoint | Method | Implementation | Status |
 |----------|--------|----------------|--------|
 | `/v2/auth/login/session` | POST | `andamio-auth.ts` → `createLoginSession()` | ✅ |
 | `/v2/auth/login/validate` | POST | `andamio-auth.ts` → `validateSignature()` | ✅ |
-| `/v2/auth/developer/account/login` | POST | - | ⏳ |
-| `/v2/auth/developer/account/register` | POST | - | ⏳ |
-| `/v2/auth/developer/register/session` | POST | - | ⏳ |
-| `/v2/auth/developer/register/complete` | POST | - | ⏳ |
+| `/v2/auth/developer/account/login` | POST | `andamio-auth.ts` → `loginWithGateway()` | ✅ |
+| `/v2/auth/developer/register/session` | POST | `andamio-auth.ts` → `createDevRegisterSession()` | ✅ |
+| `/v2/auth/developer/register/complete` | POST | `andamio-auth.ts` → `completeDevRegistration()` | ✅ |
 
 **Implementation Notes**:
-- Core wallet auth (session/validate) is fully implemented
-- Developer account endpoints are for API key users (not wallet users)
-- JWT stored in localStorage, refreshed on page load
+- User auth (session/validate) for end-user CIP-30 wallet signing
+- Developer auth now uses two-step wallet verification (session → sign → complete)
+- JWT stored in localStorage with separate keys for user vs developer tokens
+- UI: `/api-setup` page provides guided flow for developer registration
 
 ---
 
@@ -80,16 +80,21 @@ Browser → /api/gateway/[...path] → Unified Gateway → Response
 
 ## API Key Management
 
-**Status**: ⏳ **Not Implemented** - Future feature for programmatic access
+**Status**: ✅ **Complete** - All v2 API key endpoints implemented
 
 | Endpoint | Method | Implementation | Status |
 |----------|--------|----------------|--------|
-| `POST /v2/apikey/developer/account/delete` | POST | - | ⏳ |
-| `POST /v2/apikey/developer/key/request` | POST | - | ⏳ |
-| `POST /v2/apikey/developer/key/delete` | POST | - | ⏳ |
-| `POST /v2/apikey/developer/key/rotate` | POST | - | ⏳ |
-| `GET /v2/apikey/developer/profile/get` | GET | - | ⏳ |
-| `GET /v2/apikey/developer/usage/get` | GET | - | ⏳ |
+| `POST /v2/apikey/developer/key/request` | POST | `andamio-auth.ts` → `requestApiKey()` | ✅ |
+| `POST /v2/apikey/developer/key/rotate` | POST | `andamio-auth.ts` → `rotateApiKey()` | ✅ |
+| `POST /v2/apikey/developer/key/delete` | POST | `andamio-auth.ts` → `deleteApiKey()` | ✅ |
+| `GET /v2/apikey/developer/profile/get` | GET | `andamio-auth.ts` → `getDeveloperProfile()` | ✅ |
+| `GET /v2/apikey/developer/usage/get` | GET | `andamio-auth.ts` → `getDeveloperUsage()` | ✅ |
+| `POST /v2/apikey/developer/account/delete` | POST | `andamio-auth.ts` → `deleteDeveloperAccount()` | ✅ |
+
+**Implementation Notes**:
+- All functions require Developer JWT (from `loginWithGateway()`)
+- UI: `/api-setup` page allows key generation after registration
+- Profile includes list of active API keys with expiration dates
 
 ---
 

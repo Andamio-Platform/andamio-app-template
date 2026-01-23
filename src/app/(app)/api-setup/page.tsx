@@ -18,19 +18,23 @@ import {
   KeyIcon,
   WalletIcon,
   UserIcon,
+  SignatureIcon,
 } from "~/components/icons";
 import { env } from "~/env";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import {
-  registerWithGateway,
+  createDevRegisterSession,
+  completeDevRegistration,
   loginWithGateway,
   requestApiKey,
   type ApiKeyResponse,
-  type AuthResponse,
+  type DevRegisterSession,
+  type WalletSignature,
 } from "~/lib/andamio-auth";
 import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 
-type SetupStep = "connect" | "register" | "api-key" | "complete";
+type SetupStep = "connect" | "register" | "sign" | "api-key" | "complete";
 
 interface WalletInfo {
   address: string;
@@ -41,6 +45,7 @@ interface WalletInfo {
 export default function ApiSetupPage() {
   const { connected, wallet } = useWallet();
   const { isCopied, copy } = useCopyFeedback();
+  const { jwt: endUserJwt, isAuthenticated } = useAndamioAuth();
 
   const [currentStep, setCurrentStep] = useState<SetupStep>("connect");
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
@@ -48,6 +53,7 @@ export default function ApiSetupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gatewayJwt, setGatewayJwt] = useState<string | null>(null);
+  const [registerSession, setRegisterSession] = useState<DevRegisterSession | null>(null);
 
   // Debug: log current step on each render
   console.log("[API Setup] Current step:", currentStep, "JWT:", gatewayJwt ? "set" : "null");
@@ -125,26 +131,27 @@ export default function ApiSetupPage() {
     }
   };
 
-  // Register with gateway (or login if already registered)
+  // Step 1: Create registration session (get nonce to sign)
   const handleRegister = async () => {
-    if (!walletInfo?.alias || !walletInfo.address) return;
+    if (!walletInfo?.alias || !walletInfo.address || !email || !endUserJwt) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response: AuthResponse = await registerWithGateway({
+      const session = await createDevRegisterSession({
         alias: walletInfo.alias,
         email,
         walletAddress: walletInfo.address,
+        endUserJwt,
       });
 
-      setGatewayJwt(response.jwt);
-      setCurrentStep("api-key");
+      setRegisterSession(session);
+      setCurrentStep("sign");
     } catch (err) {
-      // If already registered (409 Conflict), try to login instead
       const errorMessage = err instanceof Error ? err.message : "";
-      if (errorMessage.includes("409") || errorMessage.toLowerCase().includes("already") || errorMessage.toLowerCase().includes("conflict")) {
+      // If wallet already registered, try to login instead
+      if (errorMessage.toLowerCase().includes("already registered")) {
         try {
           const loginResponse = await loginWithGateway({
             alias: walletInfo.alias,
@@ -154,11 +161,54 @@ export default function ApiSetupPage() {
           setCurrentStep("api-key");
           return;
         } catch (loginErr) {
-          setError(loginErr instanceof Error ? loginErr.message : "Login failed after registration conflict");
+          setError(loginErr instanceof Error ? loginErr.message : "Login failed");
           return;
         }
       }
       setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 2: Sign nonce with wallet and complete registration
+  const handleSign = async () => {
+    if (!wallet || !walletInfo?.address || !registerSession || !endUserJwt) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Sign the nonce with wallet (CIP-30)
+      // Mesh SDK ISigner interface: signData(payload: string, address?: string)
+      // Note: payload (nonce) comes FIRST, address is optional second parameter
+      const signResult = await wallet.signData(registerSession.nonce, walletInfo.address);
+
+      // Complete registration with signature (requires End User JWT)
+      await completeDevRegistration({
+        sessionId: registerSession.session_id,
+        signature: signResult as WalletSignature,
+        endUserJwt,
+      });
+
+      // Now login to get the JWT
+      const loginResponse = await loginWithGateway({
+        alias: walletInfo.alias!,
+        walletAddress: walletInfo.address,
+      });
+
+      setGatewayJwt(loginResponse.jwt);
+      setRegisterSession(null);
+      setCurrentStep("api-key");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      if (errorMessage.includes("session expired") || errorMessage.includes("expired")) {
+        setError("Registration session expired. Please start again.");
+        setRegisterSession(null);
+        setCurrentStep("register");
+      } else {
+        setError(err instanceof Error ? err.message : "Signature verification failed");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -202,11 +252,18 @@ export default function ApiSetupPage() {
           step={2}
           label="Register"
           active={currentStep === "register"}
-          complete={currentStep === "api-key" || currentStep === "complete"}
+          complete={currentStep === "sign" || currentStep === "api-key" || currentStep === "complete"}
         />
         <Separator className="flex-1" />
         <StepIndicator
           step={3}
+          label="Sign"
+          active={currentStep === "sign"}
+          complete={currentStep === "api-key" || currentStep === "complete"}
+        />
+        <Separator className="flex-1" />
+        <StepIndicator
+          step={4}
           label="API Key"
           active={currentStep === "api-key"}
           complete={currentStep === "complete"}
@@ -240,6 +297,15 @@ export default function ApiSetupPage() {
                 <AlertTitle>Wallet Required</AlertTitle>
                 <AlertDescription>
                   Please connect your wallet using the button in the sidebar.
+                </AlertDescription>
+              </Alert>
+            ) : !isAuthenticated ? (
+              <Alert>
+                <WalletIcon className="h-4 w-4" />
+                <AlertTitle>Authentication Required</AlertTitle>
+                <AlertDescription>
+                  Your wallet is connected, but you need to sign in first.
+                  Please click &quot;Auth&quot; in the header bar to authenticate.
                   Your wallet must contain an Andamio Access Token.
                 </AlertDescription>
               </Alert>
@@ -353,7 +419,73 @@ export default function ApiSetupPage() {
         </Card>
       )}
 
-      {/* Step 3: Generate API Key */}
+      {/* Step 3: Sign with Wallet */}
+      {currentStep === "sign" && registerSession && walletInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <SignatureIcon className="h-5 w-5" />
+              Verify Wallet Ownership
+            </CardTitle>
+            <CardDescription>
+              Sign a message with your wallet to prove you own this address
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <WalletIcon className="h-4 w-4" />
+              <AlertTitle>Wallet Signature Required</AlertTitle>
+              <AlertDescription>
+                Click the button below to sign with your wallet. This proves you own the wallet
+                address and is required to create your developer account.
+              </AlertDescription>
+            </Alert>
+
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Alias</span>
+                <Badge variant="secondary">{walletInfo.alias}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Email</span>
+                <span className="text-sm">{email}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Session Expires</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(registerSession.expires_at).toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleSign}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                <SignatureIcon className="mr-2 h-4 w-4" />
+                Sign with Wallet
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRegisterSession(null);
+                  setCurrentStep("register");
+                }}
+                disabled={isLoading}
+                className="w-full"
+              >
+                Back to Registration
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Generate API Key */}
       {currentStep === "api-key" && (
         <Card>
           <CardHeader>

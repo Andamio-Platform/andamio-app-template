@@ -19,7 +19,6 @@ import type {
   CourseResponse,
   SLTListResponse,
   AssignmentResponse,
-  IntroductionResponse,
   LessonListResponse,
 } from "~/types/generated";
 
@@ -125,14 +124,22 @@ export function ModuleWizard({
       const assignmentResponse = await fetch(
         `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
       );
-      const assignment = assignmentResponse.ok
-        ? ((await assignmentResponse.json()) as AssignmentResponse)
-        : null;
-
-      // NOTE: No user-facing introduction endpoint exists in API
-      // Introduction is created/updated via teacher endpoints only
-      // Introduction data is not available via public API - set to null
-      const introduction: IntroductionResponse | null = null;
+      let assignment: AssignmentResponse | null = null;
+      if (assignmentResponse.ok) {
+        const assignmentResult = await assignmentResponse.json() as AssignmentResponse | { data?: AssignmentResponse };
+        // Handle both wrapped { data: {...} } and raw object formats
+        if (assignmentResult && typeof assignmentResult === "object") {
+          if ("data" in assignmentResult && assignmentResult.data) {
+            assignment = assignmentResult.data;
+            console.log("[ModuleWizard] Assignment response was wrapped, unwrapped:", assignment);
+          } else if ("title" in assignmentResult || "content_json" in assignmentResult) {
+            assignment = assignmentResult;
+            console.log("[ModuleWizard] Assignment response (raw):", assignment);
+          } else {
+            console.log("[ModuleWizard] Assignment response has unexpected shape:", assignmentResult);
+          }
+        }
+      }
 
       // NOTE: No lessons list endpoint exists in API
       // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
@@ -147,6 +154,13 @@ export function ModuleWizard({
       const updatedModule = moduleResponse.ok
         ? ((await moduleResponse.json()) as CourseModuleResponse)
         : courseModule;
+
+      // Introduction data is embedded in the module response (updatedModule.introduction)
+      const introduction = updatedModule?.introduction ?? null;
+      console.log("[ModuleWizard] Introduction from module:", {
+        hasIntroduction: !!introduction,
+        title: introduction?.title,
+      });
 
       setData({
         course,
@@ -175,11 +189,14 @@ export function ModuleWizard({
 
   /**
    * Calculate step completion
+   * Note: We check for actual saved content (title with value) rather than just truthy objects
+   * because the API may return empty/partial objects before content is saved
    */
   const completion = useMemo<StepCompletion>(() => {
     const hasTitle = !!data.courseModule?.title?.trim();
     const hasSLTs = data.slts.length > 0;
-    const hasAssignment = !!data.assignment;
+    // Assignment must have a saved title to be considered complete
+    const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
     const hasIntroduction = !!data.introduction;
 
     return {

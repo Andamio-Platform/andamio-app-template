@@ -34,25 +34,24 @@ import type { JSONContent } from "@tiptap/core";
  * - GET /assignments/{courseNftPolicyId}/{moduleCode} (public)
  */
 
+/**
+ * Assignment data from the API
+ * Uses snake_case to match the API response (AssignmentResponse type)
+ */
 interface Assignment {
-  id: string;
-  assignmentCode: string;
-  title: string;
-  description: string | null;
-  contentJson: Record<string, unknown> | null;
-  imageUrl: string | null;
-  videoUrl: string | null;
-  live: boolean | null;
-  slts: Array<{
-    id: string;
-    moduleIndex: number;
-    sltText: string;
-  }>;
+  title?: string;
+  description?: object; // NullableString in API
+  content_json?: Record<string, unknown>;
+  image_url?: object; // NullableString in API
+  video_url?: object; // NullableString in API
+  is_live?: boolean;
+  created_by_alias?: string;
 }
 
 interface SLT {
   id: string;
-  module_index: number;
+  /** 1-based SLT index (API v2.0.0+) */
+  slt_index: number;
   slt_text: string;
 }
 
@@ -120,8 +119,21 @@ export default function LearnerAssignmentPage() {
           throw new Error("Failed to fetch assignment");
         }
 
-        const data = (await response.json()) as Assignment;
-        setAssignment(data);
+        const assignmentResult = await response.json() as Assignment | { data?: Assignment };
+        // Handle both wrapped { data: {...} } and raw object formats
+        let assignmentData: Assignment | null = null;
+        if (assignmentResult && typeof assignmentResult === "object") {
+          if ("data" in assignmentResult && assignmentResult.data) {
+            assignmentData = assignmentResult.data;
+            console.log("[LearnerAssignmentPage] Assignment was wrapped, unwrapped:", assignmentData);
+          } else if ("title" in assignmentResult || "content_json" in assignmentResult) {
+            assignmentData = assignmentResult;
+            console.log("[LearnerAssignmentPage] Assignment (raw):", assignmentData);
+          } else {
+            console.log("[LearnerAssignmentPage] Assignment has unexpected shape:", assignmentResult);
+          }
+        }
+        setAssignment(assignmentData);
       } catch (err) {
         console.error("Error fetching assignment:", err);
         setError(err instanceof Error ? err.message : "Failed to load assignment");
@@ -136,8 +148,9 @@ export default function LearnerAssignmentPage() {
   // Compute sltHash from fetched SLTs
   const computedSltHash = useMemo(() => {
     if (slts.length > 0) {
+      // API v2.0.0+: slt_index is 1-based
       const sltTexts = [...slts]
-        .sort((a, b) => a.module_index - b.module_index)
+        .sort((a, b) => a.slt_index - b.slt_index)
         .map((slt) => slt.slt_text);
       return computeSltHashDefinite(sltTexts);
     }
@@ -231,15 +244,15 @@ export default function LearnerAssignmentPage() {
       )}
 
       <AndamioPageHeader
-        title={assignment.title}
-        description={assignment.description ?? undefined}
+        title={assignment.title ?? "Assignment"}
+        description={undefined}
       />
 
       <div className="flex items-center gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {assignment.assignmentCode}
+          {moduleCode}
         </AndamioBadge>
-        {assignment.live ? (
+        {assignment.is_live ? (
           <AndamioBadge>Live</AndamioBadge>
         ) : (
           <AndamioBadge variant="secondary">Draft</AndamioBadge>
@@ -258,11 +271,11 @@ export default function LearnerAssignmentPage() {
           <AndamioCardContent>
             <div className="space-y-2">
               {slts
-                .sort((a, b) => a.module_index - b.module_index)
+                .sort((a, b) => a.slt_index - b.slt_index)
                 .map((slt) => (
-                  <div key={`slt-${slt.module_index}`} className="flex items-start gap-3 p-3 border rounded-md">
+                  <div key={`slt-${slt.slt_index}`} className="flex items-start gap-3 p-3 border rounded-md">
                     <AndamioBadge variant="outline" className="mt-0.5">
-                      {slt.module_index}
+                      {slt.slt_index}
                     </AndamioBadge>
                     <AndamioText variant="small" className="flex-1 text-foreground">{slt.slt_text}</AndamioText>
                   </div>
@@ -273,54 +286,19 @@ export default function LearnerAssignmentPage() {
       )}
 
       {/* Assignment Content */}
-      {assignment.contentJson && (
+      {assignment.content_json && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Assignment Details</AndamioCardTitle>
             <AndamioCardDescription>Read the full assignment below</AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
-            <ContentViewer content={assignment.contentJson as JSONContent} />
+            <ContentViewer content={assignment.content_json as JSONContent} />
           </AndamioCardContent>
         </AndamioCard>
       )}
 
-      {/* Media */}
-      {(assignment.imageUrl || assignment.videoUrl) && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle>Assignment Media</AndamioCardTitle>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            {assignment.imageUrl && (
-              <div>
-                <AndamioText variant="small" className="font-medium text-foreground mb-2">Image</AndamioText>
-                <a
-                  href={assignment.imageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  {assignment.imageUrl}
-                </a>
-              </div>
-            )}
-            {assignment.videoUrl && (
-              <div>
-                <AndamioText variant="small" className="font-medium text-foreground mb-2">Video</AndamioText>
-                <a
-                  href={assignment.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  {assignment.videoUrl}
-                </a>
-              </div>
-            )}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
+      {/* Media section removed - image_url and video_url are NullableString (object type) */}
 
       <AndamioSeparator />
 
@@ -355,8 +333,6 @@ export default function LearnerAssignmentPage() {
 
       {/* Assignment Commitment Component */}
       <AssignmentCommitment
-        assignmentId={assignment.id}
-        assignmentCode={assignment.assignmentCode}
         assignmentTitle={assignment.title}
         courseNftPolicyId={courseNftPolicyId}
         moduleCode={moduleCode}

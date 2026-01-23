@@ -49,7 +49,7 @@ interface OnChainModuleCardProps {
  * Card displaying a single on-chain module's SLTs
  */
 function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) {
-  const assignmentId = module.assignment_id ?? "";
+  const assignmentId = module.slt_hash ?? "";
   const slts = module.slts ?? [];
   const truncatedHash = assignmentId
     ? `${assignmentId.slice(0, 8)}...${assignmentId.slice(-8)}`
@@ -212,7 +212,7 @@ export function OnChainSltsViewer({
 
   // Filter to specific module if hash provided
   const modulesToShow = moduleHash
-    ? onChainModules.filter((m) => m.assignment_id === moduleHash)
+    ? onChainModules.filter((m) => m.slt_hash === moduleHash)
     : onChainModules;
 
   if (moduleHash && modulesToShow.length === 0) {
@@ -230,7 +230,7 @@ export function OnChainSltsViewer({
     <div className="space-y-4">
       {modulesToShow.map((courseModule, index) => (
         <OnChainModuleCard
-          key={courseModule.assignment_id ?? index}
+          key={courseModule.slt_hash ?? index}
           module={courseModule}
           compact={compact}
         />

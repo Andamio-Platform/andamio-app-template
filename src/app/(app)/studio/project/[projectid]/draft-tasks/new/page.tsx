@@ -132,6 +132,7 @@ export default function NewTaskPage() {
 
     try {
       // V2 API: POST /project/manager/task/create
+      // API v2.0.0+: uses lovelace_amount instead of lovelace
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/project/manager/task/create`,
         {
@@ -141,7 +142,7 @@ export default function NewTaskPage() {
             project_state_policy_id: projectStatePolicyId,
             title: title.trim(),
             content: content.trim() || undefined,
-            lovelace: lovelace,
+            lovelace_amount: lovelace,
             expiration_time: expirationTime,
             content_json: contentJson,
           }),

@@ -69,6 +69,42 @@ function setCachedResponse(key: string, data: unknown): void {
   }
 }
 
+/**
+ * Invalidate cache entries related to a mutation
+ * Called after POST requests that modify data
+ *
+ * @param mutationPath - The API path (e.g., /course/teacher/assignment/update)
+ * @param requestBody - The parsed request body containing course_id or project_id
+ */
+function invalidateRelatedCache(mutationPath: string, requestBody?: Record<string, unknown>): void {
+  const keysToDelete: string[] = [];
+
+  // Extract entity ID from request body (course_id or project_id)
+  const courseId = requestBody?.course_id as string | undefined;
+  const projectId = requestBody?.project_id as string | undefined;
+
+  for (const [cacheKey] of cache) {
+    // If mutation is a course-related update, invalidate course-related GET caches
+    if (mutationPath.includes("/course/") && cacheKey.includes("/course/")) {
+      if (courseId && cacheKey.includes(courseId)) {
+        keysToDelete.push(cacheKey);
+      }
+    }
+
+    // If mutation is a project-related update, invalidate project-related caches
+    if (mutationPath.includes("/project/") && cacheKey.includes("/project/")) {
+      if (projectId && cacheKey.includes(projectId)) {
+        keysToDelete.push(cacheKey);
+      }
+    }
+  }
+
+  if (keysToDelete.length > 0) {
+    console.log(`[Gateway Proxy] Invalidating ${keysToDelete.length} cache entries after mutation:`, keysToDelete);
+    keysToDelete.forEach(key => cache.delete(key));
+  }
+}
+
 async function proxyRequest(
   request: NextRequest,
   params: Promise<{ path: string[] }>,
@@ -114,9 +150,17 @@ async function proxyRequest(
       headers,
     };
 
+    let parsedBody: Record<string, unknown> | undefined;
     if (method === "POST") {
-      fetchOptions.body = await request.text();
-      console.log(`[Gateway Proxy] Request body:`, fetchOptions.body);
+      const bodyText = await request.text();
+      fetchOptions.body = bodyText;
+      console.log(`[Gateway Proxy] Request body:`, bodyText);
+      // Parse body for cache invalidation
+      try {
+        parsedBody = JSON.parse(bodyText) as Record<string, unknown>;
+      } catch {
+        // Body might not be JSON, that's okay
+      }
     }
 
     const response = await fetch(gatewayUrl, fetchOptions);
@@ -140,6 +184,11 @@ async function proxyRequest(
     // Cache successful GET responses
     if (method === "GET") {
       setCachedResponse(fullPath, data);
+    }
+
+    // Invalidate related cache entries after successful POST mutations
+    if (method === "POST") {
+      invalidateRelatedCache(gatewayPath, parsedBody);
     }
 
     return NextResponse.json(data);

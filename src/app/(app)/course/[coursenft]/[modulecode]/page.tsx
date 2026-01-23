@@ -56,11 +56,12 @@ export default function ModuleLessonsPage() {
 
     return slts.map((slt) => {
       // In new API, lesson is directly on the SLT
+      // API v2.0.0+: slt_index is 1-based
       const lesson = slt.lesson;
       return {
-        module_index: slt.index ?? 0,
+        module_index: slt.slt_index ?? 1,
         slt_text: slt.slt_text ?? "",
-        slt_id: `slt-${slt.index}`,
+        slt_id: `slt-${slt.slt_index}`,
         lesson: lesson
           ? {
               title: typeof lesson.title === "string" ? lesson.title : null,

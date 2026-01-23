@@ -230,8 +230,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Helper to get sorted SLT texts from a DB module
   const getDbSlts = (dbModule: CourseModuleResponse): string[] => {
     if (!dbModule.slts || dbModule.slts.length === 0) return [];
+    // API v2.0.0+: slt_index is 1-based
     return [...dbModule.slts]
-      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
       .map((slt) => slt.slt_text)
       .filter((text): text is string => typeof text === "string");
   };
@@ -260,37 +261,37 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       // First, try hash match (using stored hash)
       if (dbModule.slt_hash) {
         const hashMatch = onChainModules.find(
-          (m) => m.assignment_id === dbModule.slt_hash
+          (m) => m.slt_hash === dbModule.slt_hash
         );
-        if (hashMatch?.assignment_id) {
+        if (hashMatch?.slt_hash) {
           matchedOnChain = hashMatch;
           matchType = "hash";
-          matchedOnChainIds.add(hashMatch.assignment_id);
+          matchedOnChainIds.add(hashMatch.slt_hash);
         }
       }
 
       // If no hash match, try computed hash match
       if (!matchedOnChain && dbComputedHash) {
         const computedHashMatch = onChainModules.find(
-          (m) => m.assignment_id === dbComputedHash
+          (m) => m.slt_hash === dbComputedHash
         );
-        if (computedHashMatch?.assignment_id && !matchedOnChainIds.has(computedHashMatch.assignment_id)) {
+        if (computedHashMatch?.slt_hash && !matchedOnChainIds.has(computedHashMatch.slt_hash)) {
           matchedOnChain = computedHashMatch;
           matchType = "hash";
-          matchedOnChainIds.add(computedHashMatch.assignment_id);
+          matchedOnChainIds.add(computedHashMatch.slt_hash);
         }
       }
 
       // If still no match, try SLT content matching
       if (!matchedOnChain && dbSlts.length > 0) {
         for (const onChainModule of onChainModules) {
-          if (!onChainModule.assignment_id || matchedOnChainIds.has(onChainModule.assignment_id)) continue;
+          if (!onChainModule.slt_hash || matchedOnChainIds.has(onChainModule.slt_hash)) continue;
 
           if (sltsMatch(dbSlts, onChainModule.slts ?? [])) {
             matchedOnChain = onChainModule;
             matchType = "slt-content";
             hashMismatch = true; // SLTs match but hashes don't
-            matchedOnChainIds.add(onChainModule.assignment_id);
+            matchedOnChainIds.add(onChainModule.slt_hash);
             break;
           }
         }
@@ -300,7 +301,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         moduleCode: dbModule.course_module_code ?? "",
         dbStoredHash: typeof dbModule.slt_hash === "string" ? dbModule.slt_hash : null,
         dbComputedHash,
-        onChainHash: matchedOnChain?.assignment_id ?? null,
+        onChainHash: matchedOnChain?.slt_hash ?? null,
         title: typeof dbModule.title === "string" ? dbModule.title : null,
         syncStatus: matchedOnChain ? "synced" : "db-only",
         matchType,
@@ -314,14 +315,14 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
     // Step 2: Add any unmatched on-chain modules (orphans)
     for (const onChainModule of onChainModules) {
-      const assignmentId = onChainModule.assignment_id;
-      if (!assignmentId || matchedOnChainIds.has(assignmentId)) continue;
+      const moduleHash = onChainModule.slt_hash;
+      if (!moduleHash || matchedOnChainIds.has(moduleHash)) continue;
 
       result.push({
-        moduleCode: `hash:${assignmentId.slice(0, 8)}`,
+        moduleCode: `hash:${moduleHash.slice(0, 8)}`,
         dbStoredHash: null,
         dbComputedHash: null,
-        onChainHash: assignmentId,
+        onChainHash: moduleHash,
         title: null,
         syncStatus: "onchain-only",
         matchType: "none",

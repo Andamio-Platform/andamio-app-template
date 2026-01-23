@@ -104,7 +104,7 @@ export default function CourseDetailPage() {
       const onChainTexts = new Set(modSlts);
       const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
       if (intersection.length > 0 && modSlts.length > 0 && intersection.length >= modSlts.length * 0.5) {
-        return { onChainSlts: onChainTexts, moduleHash: mod.assignment_id ?? null };
+        return { onChainSlts: onChainTexts, moduleHash: mod.slt_hash ?? null };
       }
     }
 

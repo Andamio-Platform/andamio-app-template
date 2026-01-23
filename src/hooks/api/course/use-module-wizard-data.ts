@@ -140,24 +140,50 @@ export function useModuleWizardData({
         ? ((await sltsResponse.json()) as SLTListResponse)
         : [];
 
-      // Fetch assignment - Go API: GET /course/user/assignment/{course_id}/{course_module_code}
-      const assignmentResponse = await fetch(
-        `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${effectiveModuleCode}`
-      );
-      const assignment = assignmentResponse.ok
-        ? ((await assignmentResponse.json()) as AssignmentResponse)
-        : null;
+      // Try embedded assignment from courseModule first, then fall back to dedicated endpoint
+      let assignment: AssignmentResponse | null = courseModule?.assignment ?? null;
+      console.log("[useModuleWizardData] Assignment from courseModule:", {
+        hasAssignment: !!assignment,
+        title: assignment?.title,
+        hasContentJson: !!assignment?.content_json,
+      });
 
-      // NOTE: No user-facing introduction endpoint exists in API
-      // Introduction is created/updated via teacher endpoints only
-      // Introduction data is not available via public API - set to null
-      const introduction: IntroductionResponse | null = null;
+      // If embedded assignment is empty, fetch from dedicated endpoint
+      if (!assignment?.title) {
+        const assignmentResponse = await fetch(
+          `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${effectiveModuleCode}`
+        );
+        if (assignmentResponse.ok) {
+          const assignmentResult = await assignmentResponse.json() as AssignmentResponse | null;
+          if (assignmentResult && typeof assignmentResult === "object" && "title" in assignmentResult) {
+            assignment = assignmentResult;
+            console.log("[useModuleWizardData] Assignment from dedicated endpoint:", {
+              hasAssignment: !!assignment,
+              title: assignment?.title,
+            });
+          }
+        }
+      }
 
-      // NOTE: No lessons list endpoint exists in API
-      // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
-      // To get all lessons, iterate SLTs and fetch each individually
-      // For now, set to empty array - lessons can be fetched on demand per SLT
-      const lessons: LessonListResponse = [];
+      // Introduction data is embedded in the module response (courseModule.introduction)
+      // Use it from there instead of a separate fetch
+      const introduction: IntroductionResponse | null = courseModule?.introduction ?? null;
+      console.log("[useModuleWizardData] Introduction from module:", {
+        hasIntroduction: !!introduction,
+        title: introduction?.title,
+      });
+
+      // Extract lessons from SLTs - each SLT may have an embedded lesson
+      const lessons: LessonListResponse = slts
+        .filter((slt) => slt.lesson?.title)
+        .map((slt) => ({
+          ...slt.lesson!,
+          slt_index: slt.slt_index,
+        }));
+      console.log("[useModuleWizardData] Lessons extracted from SLTs:", {
+        totalSlts: slts.length,
+        lessonsFound: lessons.length,
+      });
 
       setData({
         course,
@@ -197,11 +223,14 @@ export function useModuleWizardData({
 
   /**
    * Calculate step completion based on data
+   * Note: We check for actual saved content (title with value) rather than just truthy objects
+   * because the API may return empty/partial objects before content is saved
    */
   const completion = useMemo<StepCompletion>(() => {
     const hasTitle = !!data.courseModule?.title?.trim();
     const hasSLTs = data.slts.length > 0;
-    const hasAssignment = !!data.assignment;
+    // Assignment must have a saved title to be considered complete
+    const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
     const hasIntroduction = !!data.introduction;
 
     return {

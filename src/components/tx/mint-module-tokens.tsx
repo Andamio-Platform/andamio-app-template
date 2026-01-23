@@ -110,12 +110,13 @@ export function MintModuleTokens({
     }
   );
 
-  // Helper to get sorted SLT texts (by index for consistent ordering)
+  // Helper to get sorted SLT texts (by slt_index for consistent ordering)
   const getSortedSltTexts = useCallback((slts: typeof courseModules[0]["slts"]): string[] => {
     if (!slts || slts.length === 0) return [];
-    // Sort by index to ensure consistent hash computation
+    // Sort by slt_index to ensure consistent hash computation
+    // API v2.0.0+: slt_index is 1-based
     return [...slts]
-      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
       .map((slt) => slt.slt_text)
       .filter((text): text is string => typeof text === "string");
   }, []);

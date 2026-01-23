@@ -14,36 +14,36 @@
 // =============================================================================
 
 export type {
-  AndamioDbClientCourseV2 as CourseResponse,
-  AndamioDbClientCourseModuleV2 as CourseModuleResponse,
-  AndamioDbClientCourseModuleV2Brief as CourseModuleBriefResponse,
-  AndamioDbClientSltV2 as SLTResponse,
-  AndamioDbClientAssignmentV2 as AssignmentResponse,
-  AndamioDbClientIntroductionV2 as IntroductionResponse,
-  AndamioDbClientAssignmentCommitmentV2 as AssignmentCommitmentResponse,
-  AndamioDbClientCourseTeacherV2 as CourseTeacherResponse,
+  AndamioApiInternalInternalApiAndamioDbClientCourseV2 as CourseResponse,
+  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2 as CourseModuleResponse,
+  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2Brief as CourseModuleBriefResponse,
+  AndamioApiInternalInternalApiAndamioDbClientSltV2 as SLTResponse,
+  AndamioApiInternalInternalApiAndamioDbClientAssignmentV2 as AssignmentResponse,
+  AndamioApiInternalInternalApiAndamioDbClientIntroductionV2 as IntroductionResponse,
+  AndamioApiInternalInternalApiAndamioDbClientAssignmentCommitmentV2 as AssignmentCommitmentResponse,
+  AndamioApiInternalInternalApiAndamioDbClientCourseTeacherV2 as CourseTeacherResponse,
 } from "./gateway";
 
 // Extended type for lesson response - includes slt_index which the API returns but OpenAPI spec doesn't document
-import type { AndamioDbClientLessonV2 } from "./gateway";
-export type LessonResponse = AndamioDbClientLessonV2 & {
+import type { AndamioApiInternalInternalApiAndamioDbClientLessonV2 } from "./gateway";
+export type LessonResponse = AndamioApiInternalInternalApiAndamioDbClientLessonV2 & {
   /** The SLT index this lesson is associated with (returned by API but not in OpenAPI spec) */
   slt_index?: number;
 };
 
 // List type aliases (arrays of base types)
 import type {
-  AndamioDbClientCourseV2,
-  AndamioDbClientCourseModuleV2,
-  AndamioDbClientSltV2,
-  AndamioDbClientAssignmentV2,
+  AndamioApiInternalInternalApiAndamioDbClientCourseV2,
+  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2,
+  AndamioApiInternalInternalApiAndamioDbClientSltV2,
+  AndamioApiInternalInternalApiAndamioDbClientAssignmentV2,
 } from "./gateway";
 
-export type CourseListResponse = AndamioDbClientCourseV2[];
-export type CourseModuleListResponse = AndamioDbClientCourseModuleV2[];
-export type SLTListResponse = AndamioDbClientSltV2[];
+export type CourseListResponse = AndamioApiInternalInternalApiAndamioDbClientCourseV2[];
+export type CourseModuleListResponse = AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2[];
+export type SLTListResponse = AndamioApiInternalInternalApiAndamioDbClientSltV2[];
 export type LessonListResponse = LessonResponse[];
-export type AssignmentListResponse = AndamioDbClientAssignmentV2[];
+export type AssignmentListResponse = AndamioApiInternalInternalApiAndamioDbClientAssignmentV2[];
 
 // =============================================================================
 // DB Client Type Aliases - Project System
@@ -165,24 +165,24 @@ export type {
 
 export type {
   // Course requests
-  AndamioDbClientCreateCourseV2Request,
-  AndamioDbClientUpdateCourseV2Request,
-  AndamioDbClientCreateModuleV2Request,
-  AndamioDbClientUpdateModuleV2Request,
-  AndamioDbClientCreateSltV2Request,
-  AndamioDbClientUpdateSltV2Request,
-  AndamioDbClientCreateLessonV2Request,
-  AndamioDbClientUpdateLessonV2Request,
-  AndamioDbClientCreateAssignmentV2Request,
-  AndamioDbClientUpdateAssignmentV2Request,
-  AndamioDbClientCreateIntroductionV2Request,
-  AndamioDbClientUpdateIntroductionV2Request,
-  AndamioDbClientCreateAssignmentCommitmentV2Request,
-  AndamioDbClientUpdateAssignmentCommitmentV2Request,
-  AndamioDbClientSubmitAssignmentCommitmentV2Request,
-  AndamioDbClientReviewAssignmentCommitmentV2Request,
-  AndamioDbClientLeaveAssignmentCommitmentV2Request,
-  AndamioDbClientGetAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateCourseV2Request as AndamioDbClientCreateCourseV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateCourseV2Request as AndamioDbClientUpdateCourseV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateModuleV2Request as AndamioDbClientCreateModuleV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateModuleV2Request as AndamioDbClientUpdateModuleV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateSltV2Request as AndamioDbClientCreateSltV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateSltV2Request as AndamioDbClientUpdateSltV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateLessonV2Request as AndamioDbClientCreateLessonV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateLessonV2Request as AndamioDbClientUpdateLessonV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentV2Request as AndamioDbClientCreateAssignmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentV2Request as AndamioDbClientUpdateAssignmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionV2Request as AndamioDbClientCreateIntroductionV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateIntroductionV2Request as AndamioDbClientUpdateIntroductionV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request as AndamioDbClientCreateAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request as AndamioDbClientUpdateAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request as AndamioDbClientSubmitAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request as AndamioDbClientReviewAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request as AndamioDbClientLeaveAssignmentCommitmentV2Request,
+  AndamioApiInternalInternalApiAndamioDbClientGetAssignmentCommitmentV2Request as AndamioDbClientGetAssignmentCommitmentV2Request,
 
   // Project requests
   AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest,

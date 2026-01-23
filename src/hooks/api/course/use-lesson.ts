@@ -93,7 +93,19 @@ export function useLesson(
         throw new Error(`Failed to fetch lesson: ${response.statusText}`);
       }
 
-      return response.json() as Promise<LessonResponse>;
+      const result = await response.json() as LessonResponse | { data?: LessonResponse };
+      // Handle both wrapped { data: {...} } and raw object formats
+      if (result && typeof result === "object") {
+        if ("data" in result && result.data) {
+          console.log("[useLesson] Response was wrapped, unwrapped:", result.data);
+          return result.data;
+        } else if ("title" in result || "content_json" in result || "slt_index" in result) {
+          console.log("[useLesson] Response (raw):", result);
+          return result;
+        }
+      }
+      console.log("[useLesson] Response has unexpected shape:", result);
+      return result as LessonResponse; // Fallback cast for unexpected shapes
     },
     enabled:
       !!courseNftPolicyId && !!moduleCode && moduleIndex !== undefined,

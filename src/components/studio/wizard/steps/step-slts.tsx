@@ -108,13 +108,13 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !newSltText.trim()) return;
 
     const text = newSltText.trim();
-    // Use 0-based index to match API storage (new item gets next sequential index)
-    const nextIndex = localSlts.length;
-    const opId = `create-${nextIndex}`;
+    // API v2.0.0+: slt_index is 1-based (new item gets next sequential index)
+    const nextSltIndex = localSlts.length + 1;
+    const opId = `create-${nextSltIndex}`;
 
     // Optimistic update - compute the list we'll set
     const optimisticSlt: LocalSLT = {
-      index: nextIndex,
+      slt_index: nextSltIndex,
       slt_text: text,
       _localId: generateLocalId(),
     };
@@ -150,12 +150,12 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !editingText.trim()) return;
 
     const text = editingText.trim();
-    const opId = `update-${slt.index}`;
-    // API stores 0-based but expects 1-based for update calls
-    const sltIndex = (slt.index ?? 0) + 1;
+    const opId = `update-${slt.slt_index}`;
+    // API v2.0.0+: slt_index is already 1-based, no conversion needed
+    const sltIndex = slt.slt_index ?? 1;
 
     // Compute the optimistic list and set it
-    const updatedList = localSlts.map((s) => s.index === slt.index ? { ...s, slt_text: text } : s);
+    const updatedList = localSlts.map((s) => s.slt_index === slt.slt_index ? { ...s, slt_text: text } : s);
     setLocalSlts(updatedList);
     setEditingIndex(null);
     setEditingText("");
@@ -164,11 +164,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Use the hook - it handles cache invalidation automatically
-      // API expects 1-based index
+      // API v2.0.0+: slt_index is 1-based
       await updateSLT.mutateAsync({
         courseNftPolicyId,
         moduleCode,
-        index: sltIndex,
+        sltIndex,
         sltText: text,
       });
 
@@ -177,7 +177,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback
       setLocalSlts((prev) =>
-        prev.map((s) => s.index === slt.index ? slt : s)
+        prev.map((s) => s.slt_index === slt.slt_index ? slt : s)
       );
       setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
@@ -192,14 +192,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated) return;
 
     const opId = `delete-${slt._localId}`;
-    // API stores 0-based but expects 1-based for delete calls
-    const sltIndex = (slt.index ?? 0) + 1;
+    // API v2.0.0+: slt_index is already 1-based, no conversion needed
+    const sltIndex = slt.slt_index ?? 1;
 
-    // Remove SLT and re-index remaining ones sequentially (0-based to match API storage)
+    // Remove SLT and re-index remaining ones sequentially (1-based for API v2.0.0+)
     const filteredList = localSlts
       .filter((s) => s._localId !== slt._localId)
-      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-      .map((s, idx) => ({ ...s, index: idx }));
+      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
+      .map((s, idx) => ({ ...s, slt_index: idx + 1 }));
 
     setLocalSlts(filteredList);
     setError(null);
@@ -207,11 +207,11 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Use the hook - it handles cache invalidation automatically
-      // API expects 1-based index
+      // API v2.0.0+: slt_index is 1-based
       await deleteSLT.mutateAsync({
         courseNftPolicyId,
         moduleCode,
-        index: sltIndex,
+        sltIndex,
       });
 
       // Note: Re-indexing remaining SLTs after delete
@@ -223,7 +223,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback - restore the deleted SLT
       setLocalSlts((prev) => {
-        const newList = [...prev, slt].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+        const newList = [...prev, slt].sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1));
         return newList;
       });
       setError(err instanceof Error ? err.message : "Failed to delete");
@@ -233,7 +233,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   }, [isAuthenticated, localSlts, courseNftPolicyId, moduleCode, updateSlts, deleteSLT]);
 
   const startEditing = (slt: SLT) => {
-    setEditingIndex(slt.index ?? null);
+    setEditingIndex(slt.slt_index ?? null);
     setEditingText(slt.slt_text ?? "");
   };
 
@@ -272,33 +272,27 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     if (oldArrayIndex === newArrayIndex) return;
 
-    // Get the dragged item
-    const draggedItem = localSlts[oldArrayIndex];
-    // API stores 0-based indices but expects 1-based for reorder calls
-    // Use stored index if available, otherwise fall back to array position
-    const storedIndex = draggedItem?.index ?? oldArrayIndex;
-    // Convert to 1-based for API
-    const oldDbIndex = storedIndex + 1;
-    const newDbIndex = newArrayIndex + 1;
-
     // Reorder the array locally
     const reorderedArray = arrayMove(localSlts, oldArrayIndex, newArrayIndex);
 
-    // Update local state with new 0-based indexes (matching API storage)
+    // Update local state with new 1-based indexes (API v2.0.0+)
     const reorderedSlts = reorderedArray.map((slt, idx) => ({
       ...slt,
-      index: idx,
+      slt_index: idx + 1,
     }));
     setLocalSlts(reorderedSlts);
 
+    // Build the list of current indices in the new order for the batch API
+    // API v2.0.0+: batch reorder endpoint takes array of current indices in desired order
+    const sltIndices = reorderedArray.map((slt) => slt.slt_index ?? 1);
+
     try {
       // Use the hook - it handles cache invalidation automatically
-      // API expects 1-based indices
+      // API v2.0.0+: batch endpoint with slt_indices array
       await reorderSLT.mutateAsync({
         courseNftPolicyId,
         moduleCode,
-        oldIndex: oldDbIndex,
-        newIndex: newDbIndex,
+        sltIndices,
       });
 
       // Sync to context
@@ -392,8 +386,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                     key={slt._localId}
                     slt={slt}
                     moduleCode={moduleCode}
-                    isEditing={editingIndex === slt.index}
-                    isUpdating={pendingOps.has(`update-${slt.index}`)}
+                    isEditing={editingIndex === slt.slt_index}
+                    isUpdating={pendingOps.has(`update-${slt.slt_index}`)}
                     isLocked={isLocked}
                     editingText={editingText}
                     onEditingTextChange={setEditingText}
@@ -492,9 +486,9 @@ function SortableSltItem({
         </button>
       )}
 
-      {/* SLT Reference: <module-code>.<display-index> (1-based for users) */}
+      {/* SLT Reference: <module-code>.<slt_index> (API v2.0.0+: already 1-based) */}
       <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
-        {moduleCode}.{(slt.index ?? 0) + 1}
+        {moduleCode}.{slt.slt_index ?? 1}
       </span>
 
       {/* Content */}

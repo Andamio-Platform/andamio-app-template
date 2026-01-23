@@ -72,6 +72,15 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       );
 
       if (!response.ok) {
+        // Handle 409 Conflict: lesson already exists, just refetch and open for editing
+        if (response.status === 409) {
+          console.log("[StepLessons] 409 Conflict: lesson exists, refetching and opening for editing");
+          setNewLessonTitle("");
+          setCreatingForSlt(null);
+          await refetchData();
+          setEditingLessonIndex(sltIndex);
+          return;
+        }
         const errorData = await response.json() as { message?: string };
         throw new Error(errorData.message ?? "Failed to create lesson");
       }
@@ -90,7 +99,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 
   const lessonsCreated = lessons.length;
   const totalSLTs = slts.length;
-  const hasAssignment = !!data.assignment;
+  // Assignment must have a saved title to be considered complete
+  const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
 
   return (
     <WizardStep config={config} direction={direction}>
@@ -108,7 +118,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {slts.map((slt, index) => {
-            const sltIndex = slt.index ?? 0;
+            // API v2.0.0+: slt_index is 1-based
+            const sltIndex = slt.slt_index ?? (index + 1);
             const lesson = lessonBySltIndex[sltIndex];
             const isCreatingThis = creatingForSlt === sltIndex;
             const isEditingThis = editingLessonIndex === sltIndex;
@@ -318,6 +329,28 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
   );
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasInitializedFromLesson, setHasInitializedFromLesson] = useState(false);
+
+  // Sync local state when lesson data loads from API (after refetch)
+  useEffect(() => {
+    console.log("[LessonEditor] lesson changed:", {
+      hasLesson: !!lesson,
+      title: lesson?.title,
+      hasContentJson: !!lesson?.content_json,
+      hasInitializedFromLesson,
+    });
+
+    // Only sync if we have lesson data and haven't initialized yet
+    if (lesson?.title && !hasInitializedFromLesson) {
+      const newTitle = typeof lesson.title === "string" ? lesson.title : "";
+      setTitle(newTitle);
+      if (lesson.content_json) {
+        setContent(lesson.content_json as JSONContent);
+      }
+      setHasInitializedFromLesson(true);
+      console.log("[LessonEditor] Synced state from lesson:", newTitle);
+    }
+  }, [lesson, hasInitializedFromLesson]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -334,7 +367,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
 
     try {
       // Go API: POST /course/teacher/lesson/update
-      // UpdateLessonV2Request uses `content` not `content_json`, no `title` field
+      // Note: DB API expects `content_json` (generated types incorrectly show `content`)
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/lesson/update`,
         {
@@ -344,7 +377,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
             slt_index: lesson.slt_index,
-            content,
+            content_json: content,
           }),
         }
       );

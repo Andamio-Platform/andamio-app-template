@@ -45,6 +45,28 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasInitializedFromIntro, setHasInitializedFromIntro] = useState(false);
+
+  // Sync local state when introduction data loads from API (after refetch)
+  useEffect(() => {
+    console.log("[StepIntroduction] introduction changed:", {
+      hasIntroduction: !!introduction,
+      title: introduction?.title,
+      hasContentJson: !!introduction?.content_json,
+      hasInitializedFromIntro,
+    });
+
+    // Only sync if we have introduction data with a title and haven't initialized yet
+    if (introduction?.title && !hasInitializedFromIntro) {
+      const newTitle = typeof introduction.title === "string" ? introduction.title : "";
+      setTitle(newTitle);
+      if (introduction.content_json) {
+        setContent(introduction.content_json as JSONContent);
+      }
+      setHasInitializedFromIntro(true);
+      console.log("[StepIntroduction] Synced state from introduction:", newTitle);
+    }
+  }, [introduction, hasInitializedFromIntro]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -63,7 +85,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
     try {
       if (introduction) {
         // Go API: POST /course/teacher/introduction/update
-        // UpdateIntroductionV2Request uses `content` not `content_json`
+        // Note: DB API expects `content_json` (generated types incorrectly show `content`)
         const response = await authenticatedFetch(
           `/api/gateway/api/v2/course/teacher/introduction/update`,
           {
@@ -73,7 +95,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
               course_id: courseNftPolicyId,
               course_module_code: moduleCode,
               title,
-              content,
+              content_json: content,
             }),
           }
         );

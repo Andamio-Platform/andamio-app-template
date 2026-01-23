@@ -44,12 +44,43 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Track if we've done initial sync to avoid overwriting user edits
+  const [hasInitializedFromAssignment, setHasInitializedFromAssignment] = useState(false);
+
+  // Sync local state when assignment data loads from API (after refetch or initial load)
+  // This handles the case where assignment is null initially, then data arrives from refetch
+  useEffect(() => {
+    // Debug logging to trace assignment data
+    console.log("[StepAssignment] assignment changed:", {
+      hasAssignment: !!assignment,
+      title: assignment?.title,
+      hasContentJson: !!assignment?.content_json,
+      hasInitializedFromAssignment,
+    });
+
+    // Only sync if:
+    // 1. We have assignment data with a title (from DB)
+    // 2. We haven't already initialized OR the user hasn't made changes
+    if (assignment?.title && !hasInitializedFromAssignment) {
+      setTitle(assignment.title);
+      if (assignment.content_json) {
+        setContent(assignment.content_json as JSONContent);
+      }
+      setHasInitializedFromAssignment(true);
+      console.log("[StepAssignment] Synced state from assignment:", assignment.title);
+    }
+  }, [assignment, hasInitializedFromAssignment]);
+
   // Track unsaved changes
   useEffect(() => {
     const titleChanged = title !== (assignment?.title ?? "Module Assignment");
     const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.content_json ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, assignment]);
+
+  // Check if assignment actually exists in the database (has a saved title)
+  // The API may return an empty/partial object even when no assignment record exists
+  const assignmentExistsInDb = !!(assignment && typeof assignment.title === "string" && assignment.title.trim().length > 0);
 
   const handleSave = async () => {
     if (!isAuthenticated) return;
@@ -58,9 +89,8 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     setError(null);
 
     try {
-      if (assignment) {
+      if (assignmentExistsInDb) {
         // Go API: POST /course/teacher/assignment/update
-        // UpdateAssignmentV2Request: content, course_id, course_module_code, title
         const response = await authenticatedFetch(
           `/api/gateway/api/v2/course/teacher/assignment/update`,
           {
@@ -70,7 +100,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
               course_id: courseNftPolicyId,
               course_module_code: moduleCode,
               title,
-              content,
+              content_json: content,
             }),
           }
         );
@@ -96,8 +126,31 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         );
 
         if (!response.ok) {
-          const errorData = await response.json() as { message?: string };
-          throw new Error(errorData.message ?? "Failed to create assignment");
+          // Handle 409 Conflict: assignment already exists, refetch and retry with update
+          if (response.status === 409) {
+            console.log("[StepAssignment] 409 Conflict: assignment exists, refetching and retrying with update");
+            await refetchData();
+            // After refetch, the assignment should now be available - retry as update
+            const updateResponse = await authenticatedFetch(
+              `/api/gateway/api/v2/course/teacher/assignment/update`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  course_id: courseNftPolicyId,
+                  course_module_code: moduleCode,
+                  title,
+                  content_json: content,
+                }),
+              }
+            );
+            if (!updateResponse.ok) {
+              throw new Error("Failed to update assignment");
+            }
+          } else {
+            const errorData = await response.json() as { message?: string };
+            throw new Error(errorData.message ?? "Failed to create assignment");
+          }
         }
       }
 
@@ -117,7 +170,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     goNext();
   };
 
-  const canProceed = !!data.assignment || (title.trim().length > 0);
+  const canProceed = assignmentExistsInDb || (title.trim().length > 0);
 
   return (
     <WizardStep config={config} direction={direction}>
@@ -133,7 +186,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
           <div className="space-y-2">
             {slts.map((slt, index) => (
               <motion.div
-                key={slt.index ?? index}
+                key={slt.slt_index ?? (index + 1)}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -208,7 +261,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         canGoPrevious={canGoPrevious}
         canGoNext={canProceed}
         nextLabel="Add Lessons"
-        canSkip={!!data.assignment}
+        canSkip={assignmentExistsInDb}
         skipLabel="Skip to Introduction"
         onSkip={() => goToStep("introduction")}
         isLoading={isSaving}

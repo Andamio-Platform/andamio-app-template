@@ -47,9 +47,7 @@ import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
  */
 
 interface AssignmentCommitmentProps {
-  assignmentId: string;
-  assignmentCode: string;
-  assignmentTitle: string;
+  assignmentTitle?: string;
   courseNftPolicyId: string;
   moduleCode: string;
   sltHash: string | null; // Module hash (64-char hex) - required for on-chain transactions
@@ -82,10 +80,10 @@ interface AssignmentCommitmentProps {
 
 // Response from /course/shared/assignment-commitment/get
 // API uses network_* prefixed fields
+// Note: API v2.0.0 removed assignment_code - use course_id + module_code instead
 interface CommitmentApiResponse {
   policy_id: string;
   module_code: string;
-  assignment_code: string;
   access_token_alias: string;
   network_status: string;
   network_evidence: Record<string, unknown> | null;
@@ -97,7 +95,6 @@ interface CommitmentApiResponse {
 interface Commitment {
   policyId: string;
   moduleCode: string;
-  assignmentCode: string;
   accessTokenAlias: string;
   networkStatus: string;
   networkEvidence: Record<string, unknown> | null;
@@ -106,7 +103,6 @@ interface Commitment {
 }
 
 export function AssignmentCommitment({
-  assignmentCode: _assignmentCode,
   assignmentTitle,
   courseNftPolicyId,
   moduleCode,
@@ -246,10 +242,10 @@ export function AssignmentCommitment({
       console.log("[AssignmentCommitment] API response:", apiResponse);
 
       // Transform snake_case API response to camelCase
+      // Note: API v2.0.0 removed assignment_code - use course_id + module_code instead
       const existingCommitment: Commitment = {
         policyId: apiResponse.policy_id,
         moduleCode: apiResponse.module_code,
-        assignmentCode: apiResponse.assignment_code,
         accessTokenAlias: apiResponse.access_token_alias,
         networkStatus: apiResponse.network_status,
         networkEvidence: apiResponse.network_evidence,

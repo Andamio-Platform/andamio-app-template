@@ -53,7 +53,16 @@ export function useSLTs(
         throw new Error(`Failed to fetch SLTs: ${response.statusText}`);
       }
 
-      return response.json() as Promise<SLTListResponse>;
+      const result = await response.json() as SLTListResponse | { data?: SLTListResponse };
+      // Handle both wrapped { data: [...] } and raw array formats
+      if (Array.isArray(result)) {
+        return result;
+      } else if (result && typeof result === "object" && "data" in result && result.data) {
+        console.log("[useSLTs] Response was wrapped, unwrapped:", result.data.length, "SLTs");
+        return result.data;
+      }
+      console.log("[useSLTs] Response has unexpected shape:", result);
+      return [] as SLTListResponse;
     },
     enabled: !!courseNftPolicyId && !!moduleCode,
   });
@@ -133,16 +142,17 @@ export function useUpdateSLT() {
     mutationFn: async ({
       courseNftPolicyId,
       moduleCode,
-      index,
+      sltIndex,
       sltText,
     }: {
       courseNftPolicyId: string;
       moduleCode: string;
-      index: number;
+      sltIndex: number;
       sltText: string;
     }) => {
       // Go API: POST /course/teacher/slt/update
-      // API requires snake_case: course_id, course_module_code, index, slt_text
+      // API requires snake_case: course_id, course_module_code, slt_index, slt_text
+      // Note: slt_index is 1-based (API v2.0.0+)
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/update`,
         {
@@ -151,7 +161,7 @@ export function useUpdateSLT() {
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            index,
+            slt_index: sltIndex,
             slt_text: sltText,
           }),
         }
@@ -183,14 +193,15 @@ export function useDeleteSLT() {
     mutationFn: async ({
       courseNftPolicyId,
       moduleCode,
-      index,
+      sltIndex,
     }: {
       courseNftPolicyId: string;
       moduleCode: string;
-      index: number;
+      sltIndex: number;
     }) => {
       // Go API: POST /course/teacher/slt/delete
-      // API requires snake_case: course_id, course_module_code, index
+      // API requires snake_case: course_id, course_module_code, slt_index
+      // Note: slt_index is 1-based (API v2.0.0+)
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
@@ -199,7 +210,7 @@ export function useDeleteSLT() {
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            index,
+            slt_index: sltIndex,
           }),
         }
       );
@@ -240,34 +251,31 @@ export function useReorderSLT() {
     mutationFn: async ({
       courseNftPolicyId,
       moduleCode,
-      oldIndex,
-      newIndex,
+      sltIndices,
     }: {
       courseNftPolicyId: string;
       moduleCode: string;
-      oldIndex: number;
-      newIndex: number;
+      /** Array of current SLT indices in the desired new order (1-based) */
+      sltIndices: number[];
     }) => {
-      // Go API: POST /course/teacher/slt/reorder
-      // API requires snake_case: course_id, course_module_code, old_index, new_index
-      // Note: indices are 1-based
+      // Go API v2.0.0+: POST /api/v2/course/teacher/slts/reorder (batch endpoint)
+      // Accepts full list of indices in desired order
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/slt/reorder`,
+        `/api/gateway/api/v2/course/teacher/slts/reorder`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            old_index: oldIndex,
-            new_index: newIndex,
+            slt_indices: sltIndices,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(errorData.message ?? `Failed to reorder SLT: ${response.statusText}`);
+        throw new Error(errorData.message ?? `Failed to reorder SLTs: ${response.statusText}`);
       }
 
       return response.json();

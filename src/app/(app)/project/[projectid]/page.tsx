@@ -195,7 +195,7 @@ function ProjectDataCard({
                 {prerequisites.map((prereq, i) => (
                   <AndamioBadge key={i} variant="outline" className="font-mono text-xs">
                     <CourseIcon className="h-3 w-3 mr-1" />
-                    {prereq.course_id?.slice(0, 12)}... ({prereq.assignment_ids?.length ?? 0} assignments)
+                    {prereq.course_id?.slice(0, 12)}... ({prereq.slt_hashes?.length ?? 0} modules)
                   </AndamioBadge>
                 ))}
               </div>

@@ -43,6 +43,8 @@ You should be aware of the other Claude Skills that are available. Delegate task
 | `/documentarian` | After code changes, doc updates needed |
 | `/review-pr` | PR reviews, code quality checks |
 | `/tx-loop-guide` | Testing transaction flows end-to-end |
+| `/typescript-types-expert` | Type issues, NullableString handling, import discipline, Zod schema alignment |
+| `/getting-started` | Onboarding new developers, skill discovery |
 
 ### 4. Work With the Documentarian
 

@@ -43,6 +43,7 @@ When changes involve specific domains, delegate documentation updates to the app
 | API endpoint changes | `/audit-api-coverage` | Endpoint coverage, API integration docs |
 | Styling/components | `/design-system reference` | Component patterns, color system |
 | Project status | `/project-manager` | STATUS.md, ROADMAP.md, feature tracking |
+| Type system issues | `/typescript-types-expert audit` | Type imports, NullableString, generated types |
 
 ### 6. Suggest New Claude Skills
 

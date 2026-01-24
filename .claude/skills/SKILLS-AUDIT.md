@@ -1,6 +1,6 @@
 # Skills Audit Report
 
-> **Last Updated**: January 21, 2026
+> **Last Updated**: January 24, 2026
 
 ## Summary
 
@@ -9,14 +9,16 @@
 | `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints, 63% coverage) |
 | `design-system` | ✅ Active | High | 11 files | 3 modes (review, diagnose, reference) |
 | `documentarian` | ✅ Active | High | 2 files | Active backlog with skill suggestions |
+| `getting-started` | ✅ Active | Medium | 3 files | Interactive onboarding and skill discovery |
 | `issue-handler` | ✅ Active | Medium | 0 files | Issue routing to appropriate repos |
 | `project-manager` | ✅ Active | High | 16+ files | Comprehensive project tracking |
 | `react-query-auditor` | ✅ Active | Medium | 0 files | Audit hooks for type safety |
 | `review-pr` | ✅ Active | High | 3 files | Orchestrates other skills |
 | `transaction-auditor` | ✅ Active | Medium | 0 files | Sync TX schemas with Gateway API |
 | `tx-loop-guide` | ✅ Active | Medium | 2 files | Guide testers through TX loops |
+| `typescript-types-expert` | ✅ Active | High | 8 files | 3 modes (audit, fix, design) |
 
-**Total**: 9 active skills, all relevant
+**Total**: 11 active skills, all relevant
 
 ---
 
@@ -155,6 +157,52 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 
 ---
 
+### 10. `typescript-types-expert` ✅
+
+**Purpose**: Audit, fix, and design TypeScript types (3 modes)
+
+**Modes**:
+1. `audit` - Analyze type usage, generate health report
+2. `fix` - Correct type violations
+3. `design` - Create types for new features
+
+**Key Capabilities**:
+- Generated types from OpenAPI spec
+- NullableString handling with type-helpers.ts
+- Zod schema alignment with API
+- Import discipline enforcement
+
+**Files** (8):
+- `SKILL.md` - Main instructions
+- `type-architecture.md` - Type hierarchy and organization
+- `type-colocation.md` - When inline types are correct
+- `audit-rules.md` - Pass/fail criteria and scoring
+- `generated-types.md` - Working with auto-generated types
+- `zod-schemas.md` - Runtime validation patterns
+- `anti-patterns.md` - What NOT to do
+- `checklist.md` - Quick reference
+
+---
+
+### 11. `getting-started` ✅
+
+**Purpose**: Interactive onboarding for new developers
+
+**Entry Point**: Best first skill for newcomers
+
+**Features**:
+- Role-based skill recommendations
+- Curated learning paths
+- Quick reference for all skills
+- Interactive conversation-based onboarding
+
+**Files** (3):
+- `SKILL.md` - Main instructions with interactive flow
+- `skill-reference.md` - Quick reference table of all skills
+- `learning-paths.md` - Curated paths by developer role
+
+---
+
 ## Skill Relationships
 
 ```
@@ -162,9 +210,13 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 │                   User-Invocable Skills                 │
 ├────────────────────────────────────────────────────────┤
 │                                                         │
+│  getting-started ───────► (all skills via guidance)    │
+│                                                         │
 │  review-pr ──────────► design-system (review mode)     │
 │      │                                                  │
 │      ├──────────► audit-api-coverage                   │
+│      │                                                  │
+│      ├──────────► typescript-types-expert              │
 │      │                                                  │
 │      └──────────► documentarian                        │
 │                         │                               │
@@ -173,6 +225,7 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 │                                                         │
 │  transaction-auditor (sync TX schemas)                 │
 │  react-query-auditor (audit hooks)                     │
+│  typescript-types-expert (type system)                 │
 │  tx-loop-guide (for Pioneers testing)                  │
 │  issue-handler (route issues)                          │
 │                                                         │
@@ -181,11 +234,13 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 
 ---
 
-## Verdict: All 9 Skills Relevant ✅
+## Verdict: All 11 Skills Relevant ✅
 
 All skills are actively used and well-maintained.
 
 **Recent Changes** (since January 11, 2026):
+- Added `getting-started` skill (January 24, 2026)
+- Added `typescript-types-expert` skill (January 24, 2026)
 - Added `issue-handler` skill (error routing)
 - Added `react-query-auditor` skill (hook auditing)
 - Added `transaction-auditor` skill (schema sync)

@@ -916,14 +916,17 @@ This project uses Claude Skills for AI-assisted development workflows:
 
 | Skill | Purpose |
 |-------|---------|
+| `getting-started` | Interactively onboard new developers to all available skills and learning paths |
 | `review-pr` | Comprehensive PR review with automatic skill delegation |
 | `design-system` | Unified design system skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns) |
 | `documentarian` | Review changes and update documentation |
 | `audit-api-coverage` | Track API coverage across all 3 sub-systems + interview-based implementation planning |
+| `issue-handler` | Route error logs and issues to the appropriate repos |
 | `project-manager` | Track project status and roadmap |
 | `react-query-auditor` | Audit React Query hooks for type safety, proper patterns, and cache management issues |
 | `transaction-auditor` | Sync transaction schemas with Andamio Gateway API spec when breaking changes are published |
 | `tx-loop-guide` | Guide testers through transaction loops to validate functionality |
+| `typescript-types-expert` | Audit, fix, and design TypeScript types with 3 modes: `audit` (analyze usage), `fix` (correct issues), `design` (new features) |
 
 Skills are defined in `.claude/skills/*/SKILL.md` with supporting documentation in the same directory.
 

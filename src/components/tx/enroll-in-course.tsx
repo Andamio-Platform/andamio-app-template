@@ -19,6 +19,7 @@ import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useInvalidateStudentCourses } from "~/hooks/api";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { MintAccessTokenSimple } from "./mint-access-token-simple";
@@ -105,6 +106,7 @@ export function EnrollInCourse({
 }: EnrollInCourseProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const invalidateStudentCourses = useInvalidateStudentCourses();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
@@ -114,6 +116,9 @@ export function EnrollInCourse({
       onComplete: (status) => {
         if (status.state === "confirmed" || status.state === "updated") {
           console.log("[EnrollInCourse] TX confirmed and DB updated by gateway");
+
+          // Invalidate student courses cache so dashboard updates automatically
+          void invalidateStudentCourses();
 
           toast.success("Successfully Enrolled!", {
             description: `You're now enrolled in ${courseTitle ?? "this course"}`,

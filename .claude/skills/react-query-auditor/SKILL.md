@@ -34,12 +34,12 @@ Hooks are organized by domain under `src/hooks/api/`:
 
 | File | Purpose | Exports |
 |------|---------|---------|
-| `use-course.ts` | Course queries & mutations | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse`, `courseKeys` |
-| `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `courseModuleKeys` |
+| `use-course.ts` | Course queries & mutations | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse`, `courseKeys`; Types: `CourseSource`, `FlattenedCourseListItem`, `FlattenedCourseDetail` |
+| `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useTeacherCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `courseModuleKeys`; Types: `MergedCourseModule`, `ModuleSource` |
 | `use-slt.ts` | SLT queries & mutations | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT`, `sltKeys` |
 | `use-lesson.ts` | Lesson queries & mutations | `useLessons`, `useLesson`, `useCreateLesson`, `lessonKeys` |
-| `use-teacher-courses.ts` | Teacher queries | `useTeacherCourses`, `useTeacherCommitments`, `useTeacherCoursesWithModules`, `useInvalidateTeacherCourses`, `teacherCourseKeys` |
-| `use-student-courses.ts` | Student queries | `useStudentCourses`, `useInvalidateStudentCourses`, `studentCourseKeys` |
+| `use-teacher-courses.ts` | Teacher queries | `useTeacherCourses`, `useTeacherCommitments`, `useTeacherCoursesWithModules`, `useInvalidateTeacherCourses`, `teacherCourseKeys`; Types: `TeacherCourse`, `TeacherCoursesResponse`, `TeacherAssignmentCommitment`, `TeacherAssignmentCommitmentsResponse`, `TeacherCourseWithModules` |
+| `use-student-courses.ts` | Student queries | `useStudentCourses`, `useInvalidateStudentCourses`, `studentCourseKeys`; Types: `StudentCourse`, `StudentCoursesResponse` |
 | `use-owned-courses.ts` | Owned courses | `useOwnedCourses` |
 | `use-module-wizard-data.ts` | Module wizard data | `useModuleWizardData` |
 
@@ -48,8 +48,8 @@ Hooks are organized by domain under `src/hooks/api/`:
 | File | Purpose | Exports |
 |------|---------|---------|
 | `use-project.ts` | Project queries | `useProject`, `useProjects`, `useInvalidateProjects`, `projectKeys` |
-| `use-contributor-projects.ts` | Contributor queries | `useContributorProjects`, `useInvalidateContributorProjects`, `contributorProjectKeys` |
-| `use-manager-projects.ts` | Manager queries | `useManagerProjects`, `useManagerCommitments`, `useInvalidateManagerProjects`, `managerProjectKeys` |
+| `use-contributor-projects.ts` | Contributor queries | `useContributorProjects`, `useInvalidateContributorProjects`, `contributorProjectKeys`; Types: `ContributorProject`, `ContributorProjectsResponse` |
+| `use-manager-projects.ts` | Manager queries | `useManagerProjects`, `useManagerCommitments`, `useInvalidateManagerProjects`, `managerProjectKeys`; Types: `ManagerProject`, `ManagerProjectsResponse`, `ManagerCommitment`, `ManagerCommitmentsResponse` |
 
 ### Centralized Exports
 

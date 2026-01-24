@@ -9,7 +9,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AlertIcon, CourseIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { AlertIcon, CourseIcon, OnChainIcon } from "~/components/icons";
 
 /**
  * My Learning component - Shows learner's enrolled courses
@@ -60,7 +60,7 @@ export function MyLearning() {
   const { isAuthenticated, user } = useAndamioAuth();
 
   // Fetch enrolled courses from merged API
-  const { data: enrolledCourses, isLoading, error, refetch } = useStudentCourses();
+  const { data: enrolledCourses, isLoading, error } = useStudentCourses();
 
   // Not authenticated or no access token
   if (!isAuthenticated || !user?.accessTokenAlias) {
@@ -142,16 +142,11 @@ export function MyLearning() {
               {enrolledCourses.length} {enrolledCourses.length === 1 ? "course" : "courses"} enrolled on-chain
             </AndamioCardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
-              <RefreshIcon className="h-4 w-4" />
+          <Link href="/course">
+            <AndamioButton variant="outline" size="sm">
+              Browse More
             </AndamioButton>
-            <Link href="/course">
-              <AndamioButton variant="outline" size="sm">
-                Browse More
-              </AndamioButton>
-            </Link>
-          </div>
+          </Link>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent>

@@ -3,11 +3,11 @@
 import React from "react";
 import { AndamioDashboardStat } from "~/components/andamio";
 import { CourseIcon, LessonIcon, ModuleIcon } from "~/components/icons";
-import { type CourseListResponse } from "~/types/generated";
+import { type FlattenedCourseListItem } from "~/hooks/api/course/use-course";
 import { calculateCourseStats } from "~/lib/course-filters";
 
 interface CourseStatsDashboardProps {
-  courses: CourseListResponse;
+  courses: FlattenedCourseListItem[];
   moduleCounts: Record<string, number>;
 }
 

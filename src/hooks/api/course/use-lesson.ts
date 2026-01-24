@@ -83,7 +83,7 @@ export function useLesson(
       moduleCode ?? "",
       moduleIndex ?? 0
     ),
-    queryFn: async () => {
+    queryFn: async (): Promise<LessonResponse> => {
       // Go API: GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
       const response = await fetch(
         `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${moduleIndex}`

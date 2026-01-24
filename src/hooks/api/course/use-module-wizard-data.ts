@@ -130,7 +130,11 @@ export function useModuleWizardData({
         // Handle both wrapped { data: [...] } and raw array formats
         modules = Array.isArray(result) ? result : (result.data ?? []);
       }
-      const courseModule = modules.find((m) => m.course_module_code === effectiveModuleCode) ?? null;
+      // Find the merged module item and extract its content with slt_hash
+      const mergedModuleItem = modules.find((m) => m.content?.course_module_code === effectiveModuleCode);
+      const courseModule = mergedModuleItem?.content
+        ? { ...mergedModuleItem.content, slt_hash: mergedModuleItem.slt_hash }
+        : null;
 
       // Fetch SLTs - Go API: GET /course/user/slts/{course_id}/{course_module_code}
       const sltsResponse = await fetch(
@@ -141,7 +145,7 @@ export function useModuleWizardData({
         : [];
 
       // Try embedded assignment from courseModule first, then fall back to dedicated endpoint
-      let assignment: AssignmentResponse | null = courseModule?.assignment ?? null;
+      let assignment: AssignmentResponse | null = (courseModule?.assignment as AssignmentResponse | undefined) ?? null;
       console.log("[useModuleWizardData] Assignment from courseModule:", {
         hasAssignment: !!assignment,
         title: assignment?.title,
@@ -167,7 +171,7 @@ export function useModuleWizardData({
 
       // Introduction data is embedded in the module response (courseModule.introduction)
       // Use it from there instead of a separate fetch
-      const introduction: IntroductionResponse | null = courseModule?.introduction ?? null;
+      const introduction: IntroductionResponse | null = (courseModule?.introduction as IntroductionResponse | undefined) ?? null;
       console.log("[useModuleWizardData] Introduction from module:", {
         hasIntroduction: !!introduction,
         title: introduction?.title,

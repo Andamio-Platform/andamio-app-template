@@ -121,6 +121,33 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
                 toast.success("Course Created!", {
                   description: `"${courseMetadata.title}" is now live and registered`,
                 });
+              } else if (regResponse.status === 409) {
+                // Course already exists (indexer created it) - update with title instead
+                console.log("[CreateCourse] Course exists, updating with title...");
+                const updateResponse = await authenticatedFetch(
+                  "/api/gateway/api/v2/course/owner/course/update",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      course_id: courseMetadata.policyId,
+                      data: { title: courseMetadata.title },
+                    }),
+                  }
+                );
+
+                if (updateResponse.ok) {
+                  console.log("[CreateCourse] Course title updated successfully!");
+                  toast.success("Course Created!", {
+                    description: `"${courseMetadata.title}" is now live and registered`,
+                  });
+                } else {
+                  const updateError = await updateResponse.text();
+                  console.error("[CreateCourse] Update failed:", updateError);
+                  toast.warning("Course Created (Title Pending)", {
+                    description: `Course is on-chain but title may need manual update`,
+                  });
+                }
               } else {
                 const errorText = await regResponse.text();
                 console.error("[CreateCourse] Registration failed:", errorText);

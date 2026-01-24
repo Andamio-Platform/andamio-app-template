@@ -119,6 +119,28 @@ export function CreateCourseDialog() {
             if (regResponse.ok) {
               console.log("[CreateCourse] Course registered successfully!");
               registrationSucceeded = true;
+            } else if (regResponse.status === 409) {
+              // Course already exists (indexer created it) - update with title instead
+              console.log("[CreateCourse] Course exists, updating with title...");
+              const updateResponse = await authenticatedFetch(
+                "/api/gateway/api/v2/course/owner/course/update",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    course_id: metadata.policyId,
+                    data: { title: metadata.title },
+                  }),
+                }
+              );
+
+              if (updateResponse.ok) {
+                console.log("[CreateCourse] Course title updated successfully!");
+                registrationSucceeded = true;
+              } else {
+                const updateError = await updateResponse.text();
+                console.error("[CreateCourse] Update failed:", updateError);
+              }
             } else {
               const errorText = await regResponse.text();
               console.error("[CreateCourse] Registration failed:", errorText);

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardFooter, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { type CourseListResponse } from "~/types/generated";
+import { type FlattenedCourseListItem } from "~/hooks/api";
 import {
   CourseStatusBadge,
   CourseStatusIcon,
@@ -12,7 +12,7 @@ import {
 } from "./course-ui";
 
 interface CourseGridViewProps {
-  courses: CourseListResponse;
+  courses: FlattenedCourseListItem[];
   moduleCounts: Record<string, number>;
 }
 

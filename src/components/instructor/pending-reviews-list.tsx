@@ -214,7 +214,7 @@ export function PendingReviewsList({
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <code className="text-xs font-mono truncate block max-w-[120px]">
-                      {assessment.assignment_id.slice(0, 12)}...
+                      {(assessment.assignment_id ?? assessment.slt_hash ?? "").slice(0, 12)}...
                     </code>
                   </AndamioTableCell>
                   {!courseId && (
@@ -230,7 +230,7 @@ export function PendingReviewsList({
                   <AndamioTableCell>
                     <div className="flex items-center gap-2">
                       <AndamioText variant="small" className="max-w-[150px] truncate">
-                        {assessment.content || <span className="italic text-muted-foreground">No content</span>}
+                        {assessment.evidence_text ?? assessment.evidence_url ?? <span className="italic text-muted-foreground">No content</span>}
                       </AndamioText>
                       {onSelectAssessment && (
                         <ExternalLinkIcon className="h-3 w-3 text-muted-foreground shrink-0" />

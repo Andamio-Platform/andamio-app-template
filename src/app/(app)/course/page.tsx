@@ -85,11 +85,10 @@ export default function CoursePage() {
           </AndamioTableHeader>
           <AndamioTableBody>
             {courses.map((course, index) => {
-              // Handle both merged format (content.title, course_id) and legacy format (title, course_nft_policy_id)
-              const courseId = course.course_id ?? (course as unknown as { course_nft_policy_id?: string }).course_nft_policy_id;
-              const title = course.content?.title ?? (course as unknown as { title?: string }).title;
-              const description = course.content?.description ?? (course as unknown as { description?: string }).description;
-              // Note: code field removed from OrchestrationCourseContent - course_id is the identifier
+              // Flattened course data from hook - direct access to fields
+              const courseId = course.course_id;
+              const title = course.title;
+              const description = course.description;
 
               return (
                 <AndamioTableRow key={courseId ?? `course-${index}`}>

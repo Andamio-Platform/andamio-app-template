@@ -2,48 +2,146 @@
  * Type re-exports from generated gateway types
  *
  * This file provides:
- * 1. Clean type aliases for internal DB client types
- * 2. Re-exports for orchestration types (already well-named)
+ * 1. Clean type aliases for orchestration types (courses are now orchestration-based)
+ * 2. DB client types for projects (still using DB client pattern)
  * 3. Custom types not in the API spec
+ *
+ * NOTE: As of API v2.0.0, course-related types have been consolidated into
+ * orchestration types. The old DB client course types no longer exist in the API.
  *
  * @see gateway.ts - Raw auto-generated types from OpenAPI spec
  */
 
 // =============================================================================
-// DB Client Type Aliases - Course System
+// Course System Types (now using Orchestration types)
 // =============================================================================
 
-export type {
-  AndamioApiInternalInternalApiAndamioDbClientCourseV2 as CourseResponse,
-  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2 as CourseModuleResponse,
-  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2Brief as CourseModuleBriefResponse,
-  AndamioApiInternalInternalApiAndamioDbClientSltV2 as SLTResponse,
-  AndamioApiInternalInternalApiAndamioDbClientAssignmentV2 as AssignmentResponse,
-  AndamioApiInternalInternalApiAndamioDbClientIntroductionV2 as IntroductionResponse,
-  AndamioApiInternalInternalApiAndamioDbClientAssignmentCommitmentV2 as AssignmentCommitmentResponse,
-  AndamioApiInternalInternalApiAndamioDbClientCourseTeacherV2 as CourseTeacherResponse,
+// Course types - using orchestration types for merged data
+export type { OrchestrationCourseContent as CourseContent } from "./gateway";
+export type { OrchestrationModuleContent as ModuleContent } from "./gateway";
+export type { OrchestrationMergedCourseDetail as CourseDetailResponse } from "./gateway";
+export type { OrchestrationMergedCourseListItem as CourseListItem } from "./gateway";
+export type { OrchestrationMergedCourseModuleItem as CourseModuleItem } from "./gateway";
+
+// Legacy type aliases for backward compatibility
+// These are now orchestration types but aliased for existing code
+import type {
+  OrchestrationMergedCourseDetail,
+  OrchestrationMergedCourseListItem,
+  OrchestrationMergedCourseModuleItem,
+  OrchestrationModuleContent,
 } from "./gateway";
 
-// Extended type for lesson response - includes slt_index which the API returns but OpenAPI spec doesn't document
-import type { AndamioApiInternalInternalApiAndamioDbClientLessonV2 } from "./gateway";
-export type LessonResponse = AndamioApiInternalInternalApiAndamioDbClientLessonV2 & {
-  /** The SLT index this lesson is associated with (returned by API but not in OpenAPI spec) */
-  slt_index?: number;
+/**
+ * Course response type (backward compatibility)
+ * Maps to OrchestrationMergedCourseDetail for full course data
+ */
+export type CourseResponse = OrchestrationMergedCourseDetail;
+
+/**
+ * Course module response type (backward compatibility)
+ * Extends OrchestrationModuleContent with slt_hash from the parent merged item
+ */
+export interface CourseModuleResponse extends OrchestrationModuleContent {
+  /** SLT hash from the merged module item (copied from parent) */
+  slt_hash?: string;
+}
+
+/**
+ * Course module brief response type (backward compatibility)
+ */
+export type CourseModuleBriefResponse = {
+  course_module_code?: string;
+  title?: string;
+  module_status?: string;
 };
 
-// List type aliases (arrays of base types)
-import type {
-  AndamioApiInternalInternalApiAndamioDbClientCourseV2,
-  AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2,
-  AndamioApiInternalInternalApiAndamioDbClientSltV2,
-  AndamioApiInternalInternalApiAndamioDbClientAssignmentV2,
-} from "./gateway";
+/**
+ * SLT response type (backward compatibility)
+ * SLTs are now embedded in OrchestrationModuleContent.slts
+ */
+export interface SLTResponse {
+  id?: number;
+  slt_id?: string;
+  slt_text?: string;
+  module_index?: number;
+  slt_index?: number; // Alias for module_index
+  course_module_code?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Nested lesson data (populated by some endpoints)
+  lesson?: LessonResponse | null;
+}
 
-export type CourseListResponse = AndamioApiInternalInternalApiAndamioDbClientCourseV2[];
-export type CourseModuleListResponse = AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2[];
-export type SLTListResponse = AndamioApiInternalInternalApiAndamioDbClientSltV2[];
+/**
+ * Assignment response type (backward compatibility)
+ * Assignments are now embedded in OrchestrationModuleContent.assignment
+ */
+export interface AssignmentResponse {
+  id?: number;
+  title?: string;
+  assignment_content?: unknown;
+  content_json?: unknown; // Alias for assignment_content (TipTap JSON)
+  course_module_code?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Introduction response type (backward compatibility)
+ * Introductions are now embedded in OrchestrationModuleContent.introduction
+ */
+export interface IntroductionResponse {
+  id?: number;
+  title?: string;
+  introduction_content?: unknown;
+  content_json?: unknown; // Alias for introduction_content (TipTap JSON)
+  course_module_code?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Lesson response type (backward compatibility)
+ */
+export interface LessonResponse {
+  id?: number;
+  lesson_content?: unknown;
+  content_json?: unknown; // Alias for lesson_content (TipTap JSON)
+  slt_id?: string;
+  slt_index?: number;
+  course_module_code?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Additional display fields
+  title?: string;
+  description?: string;
+  is_live?: boolean;
+  image_url?: string;
+  video_url?: string;
+}
+
+/**
+ * Assignment commitment response type (backward compatibility)
+ */
+export type { OrchestrationAssignmentCommitmentContent as AssignmentCommitmentResponse } from "./gateway";
+
+/**
+ * Course teacher response type (backward compatibility)
+ */
+export interface CourseTeacherResponse {
+  id?: number;
+  course_nft_policy_id?: string;
+  teacher_alias?: string;
+  created_at?: string;
+}
+
+// List type aliases
+export type CourseListResponse = OrchestrationMergedCourseListItem[];
+export type CourseModuleListResponse = OrchestrationMergedCourseModuleItem[];
+export type SLTListResponse = SLTResponse[];
 export type LessonListResponse = LessonResponse[];
-export type AssignmentListResponse = AndamioApiInternalInternalApiAndamioDbClientAssignmentV2[];
+export type AssignmentListResponse = AssignmentResponse[];
 
 // =============================================================================
 // DB Client Type Aliases - Project System
@@ -66,8 +164,10 @@ export type {
   // Course orchestration
   OrchestrationCourseModule,
   OrchestrationCourseContent,
+  OrchestrationModuleContent,
   OrchestrationMergedCourseDetail,
   OrchestrationMergedCourseListItem,
+  OrchestrationMergedCourseModuleItem,
   OrchestrationStudentCourseListItem,
   OrchestrationStudentAssignmentCommitmentItem,
   OrchestrationTeacherAssignmentCommitmentItem,
@@ -104,6 +204,7 @@ export type {
   // Course merged handlers
   MergedHandlersMergedCoursesResponse,
   MergedHandlersMergedCourseDetailResponse,
+  MergedHandlersMergedCourseModulesResponse,
   MergedHandlersStudentCoursesResponse,
   MergedHandlersStudentAssignmentCommitmentResponse,
   MergedHandlersStudentAssignmentCommitmentsResponse,
@@ -160,31 +261,139 @@ export type {
 } from "./gateway";
 
 // =============================================================================
-// Request/Response Types (re-exports)
+// Request Types (backward compatibility - custom definitions)
 // =============================================================================
 
-export type {
-  // Course requests
-  AndamioApiInternalInternalApiAndamioDbClientCreateCourseV2Request as AndamioDbClientCreateCourseV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateCourseV2Request as AndamioDbClientUpdateCourseV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateModuleV2Request as AndamioDbClientCreateModuleV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateModuleV2Request as AndamioDbClientUpdateModuleV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateSltV2Request as AndamioDbClientCreateSltV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateSltV2Request as AndamioDbClientUpdateSltV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateLessonV2Request as AndamioDbClientCreateLessonV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateLessonV2Request as AndamioDbClientUpdateLessonV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentV2Request as AndamioDbClientCreateAssignmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentV2Request as AndamioDbClientUpdateAssignmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionV2Request as AndamioDbClientCreateIntroductionV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateIntroductionV2Request as AndamioDbClientUpdateIntroductionV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request as AndamioDbClientCreateAssignmentCommitmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request as AndamioDbClientUpdateAssignmentCommitmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request as AndamioDbClientSubmitAssignmentCommitmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request as AndamioDbClientReviewAssignmentCommitmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request as AndamioDbClientLeaveAssignmentCommitmentV2Request,
-  AndamioApiInternalInternalApiAndamioDbClientGetAssignmentCommitmentV2Request as AndamioDbClientGetAssignmentCommitmentV2Request,
+/**
+ * Course request types (backward compatibility)
+ * These are now custom types since the API no longer exposes these directly
+ */
+export interface AndamioDbClientCreateCourseV2Request {
+  course_id: string;
+  title: string;
+  description?: string;
+  image_url?: string;
+}
 
-  // Project requests
+export interface AndamioDbClientUpdateCourseV2Request {
+  course_id: string;
+  data: {
+    title?: string;
+    description?: string;
+    image_url?: string;
+    is_public?: boolean;
+  };
+}
+
+export interface AndamioDbClientCreateModuleV2Request {
+  course_id: string;
+  course_module_code: string;
+  title: string;
+  description?: string;
+}
+
+export interface AndamioDbClientUpdateModuleV2Request {
+  course_id: string;
+  course_module_code: string;
+  title?: string;
+  description?: string;
+}
+
+export interface AndamioDbClientCreateSltV2Request {
+  course_id: string;
+  course_module_code: string;
+  slt_text: string;
+  module_index: number;
+}
+
+export interface AndamioDbClientUpdateSltV2Request {
+  course_id: string;
+  course_module_code: string;
+  slt_id: string;
+  slt_text?: string;
+  module_index?: number;
+}
+
+export interface AndamioDbClientCreateLessonV2Request {
+  course_id: string;
+  course_module_code: string;
+  slt_id: string;
+  lesson_content: unknown;
+}
+
+export interface AndamioDbClientUpdateLessonV2Request {
+  course_id: string;
+  course_module_code: string;
+  slt_id: string;
+  lesson_content: unknown;
+}
+
+export interface AndamioDbClientCreateAssignmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  assignment_content: unknown;
+}
+
+export interface AndamioDbClientUpdateAssignmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  assignment_content: unknown;
+}
+
+export interface AndamioDbClientCreateIntroductionV2Request {
+  course_id: string;
+  course_module_code: string;
+  introduction_content: unknown;
+}
+
+export interface AndamioDbClientUpdateIntroductionV2Request {
+  course_id: string;
+  course_module_code: string;
+  introduction_content: unknown;
+}
+
+export interface AndamioDbClientCreateAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+}
+
+export interface AndamioDbClientUpdateAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+  evidence_text?: string;
+  evidence_url?: string;
+}
+
+export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+}
+
+export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+  approved: boolean;
+  feedback?: string;
+}
+
+export interface AndamioDbClientLeaveAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+}
+
+export interface AndamioDbClientGetAssignmentCommitmentV2Request {
+  course_id: string;
+  course_module_code: string;
+  student_alias: string;
+}
+
+// Project requests (still available from API)
+export type {
   AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest,
   AndamioApiInternalInternalApiAndamioDbClientUpdateProjectRequest,
   AndamioApiInternalInternalApiAndamioDbClientCreateTaskRequest,

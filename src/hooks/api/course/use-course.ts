@@ -23,6 +23,107 @@ import type {
   OrchestrationMergedCourseListItem,
   MergedHandlersMergedCoursesResponse,
 } from "~/types/generated";
+import type { MergedCourseModule } from "./use-course-module";
+
+// =============================================================================
+// Flattened Course Types
+// =============================================================================
+
+/**
+ * Data source for a merged course
+ * - "merged": Course exists in both on-chain and DB (full data)
+ * - "chain_only": Course on-chain but no DB content (needs registration)
+ * - "db_only": Course in DB but not on-chain (draft)
+ */
+export type CourseSource = "merged" | "chain_only" | "db_only";
+
+/**
+ * Flattened course list item for UI components
+ * Combines on-chain fields with off-chain content for backward compatibility.
+ */
+export interface FlattenedCourseListItem {
+  // On-chain fields
+  course_id?: string;
+  course_address?: string;
+  owner?: string;
+  teachers?: string[];
+  student_state_id?: string;
+  created_tx?: string;
+  created_slot?: number;
+
+  // Data source
+  source?: CourseSource;
+
+  // Flattened content fields (from content.*)
+  title?: string;
+  description?: string;
+  image_url?: string;
+  is_public?: boolean;
+}
+
+/**
+ * Flattened course detail for UI components
+ * Extends list item with modules and additional detail fields.
+ */
+export interface FlattenedCourseDetail extends FlattenedCourseListItem {
+  // Modules (flattened from nested format)
+  modules?: MergedCourseModule[];
+}
+
+/**
+ * Transform API response to flattened course list item format
+ * Exported for reuse in other hooks (e.g., useOwnedCourses)
+ */
+export function flattenCourseListItem(item: OrchestrationMergedCourseListItem): FlattenedCourseListItem {
+  return {
+    // On-chain fields
+    course_id: item.course_id,
+    course_address: item.course_address,
+    owner: item.owner,
+    teachers: item.teachers,
+    student_state_id: item.student_state_id,
+    created_tx: item.created_tx,
+    created_slot: item.created_slot,
+    source: item.source as CourseSource,
+
+    // Flattened content fields
+    title: item.content?.title,
+    description: item.content?.description,
+    image_url: item.content?.image_url,
+    is_public: item.content?.is_public,
+  };
+}
+
+/**
+ * Transform API response to flattened course detail format
+ */
+function flattenCourseDetail(detail: OrchestrationMergedCourseDetail): FlattenedCourseDetail {
+  return {
+    // On-chain fields (note: owner, created_tx, created_slot not available in detail endpoint)
+    course_id: detail.course_id,
+    course_address: detail.course_address,
+    teachers: detail.teachers,
+    student_state_id: detail.student_state_id,
+    source: detail.source as CourseSource,
+
+    // Flattened content fields
+    title: detail.content?.title,
+    description: detail.content?.description,
+    image_url: detail.content?.image_url,
+    is_public: detail.content?.is_public,
+
+    // Modules - map to flattened format
+    modules: detail.modules?.map((m) => ({
+      slt_hash: m.slt_hash,
+      course_id: detail.course_id,
+      created_by: m.created_by,
+      prerequisites: m.prerequisites,
+      on_chain_slts: m.slts,
+      source: "merged" as const, // Detail modules are always merged
+      // Note: module content is not included in course detail response
+    })),
+  };
+}
 
 // =============================================================================
 // Query Keys
@@ -68,7 +169,7 @@ export const courseKeys = {
 export function useCourse(courseId: string | undefined) {
   return useQuery({
     queryKey: courseKeys.detail(courseId ?? ""),
-    queryFn: async (): Promise<OrchestrationMergedCourseDetail | null> => {
+    queryFn: async (): Promise<FlattenedCourseDetail | null> => {
       // Merged endpoint: GET /api/v2/course/user/course/get/{course_id}
       // Returns both on-chain and off-chain data
       const response = await fetch(
@@ -89,7 +190,10 @@ export function useCourse(courseId: string | undefined) {
         console.warn("[useCourse] API warning:", result.warning);
       }
 
-      return result.data ?? null;
+      if (!result.data) return null;
+
+      // Transform to flattened format for backward compatibility
+      return flattenCourseDetail(result.data);
     },
     enabled: !!courseId,
     staleTime: 30 * 1000,
@@ -131,7 +235,7 @@ export function useCourse(courseId: string | undefined) {
 export function usePublishedCourses() {
   return useQuery({
     queryKey: courseKeys.published(),
-    queryFn: async (): Promise<OrchestrationMergedCourseListItem[]> => {
+    queryFn: async (): Promise<FlattenedCourseListItem[]> => {
       const response = await fetch(
         `/api/gateway/api/v2/course/user/courses/list`
       );
@@ -148,17 +252,20 @@ export function usePublishedCourses() {
       const result = await response.json() as MergedHandlersMergedCoursesResponse | OrchestrationMergedCourseListItem[];
 
       // Handle both wrapped { data: [...] } and raw array formats
+      let items: OrchestrationMergedCourseListItem[];
       if (Array.isArray(result)) {
         // Legacy/raw array format
-        return result;
+        items = result;
+      } else {
+        // Wrapped format with data property
+        if (result.warning) {
+          console.warn("[usePublishedCourses] API warning:", result.warning);
+        }
+        items = result.data ?? [];
       }
 
-      // Wrapped format with data property
-      if (result.warning) {
-        console.warn("[usePublishedCourses] API warning:", result.warning);
-      }
-
-      return result.data ?? [];
+      // Transform to flattened format for backward compatibility
+      return items.map(flattenCourseListItem);
     },
   });
 }
@@ -186,7 +293,7 @@ export function useOwnedCoursesQuery() {
 
   return useQuery({
     queryKey: courseKeys.owned(),
-    queryFn: async (): Promise<OrchestrationMergedCourseListItem[]> => {
+    queryFn: async (): Promise<FlattenedCourseListItem[]> => {
       // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/owner/courses/list`,
@@ -206,7 +313,10 @@ export function useOwnedCoursesQuery() {
         | MergedHandlersMergedCoursesResponse;
 
       // Handle both wrapped { data: [...] } and raw array formats
-      return Array.isArray(result) ? result : (result.data ?? []);
+      const items = Array.isArray(result) ? result : (result.data ?? []);
+
+      // Transform to flattened format for backward compatibility
+      return items.map(flattenCourseListItem);
     },
     enabled: isAuthenticated,
   });
@@ -257,6 +367,7 @@ export function useUpdateCourse() {
       }>;
     }) => {
       // Go API: POST /course/owner/course/update
+      // API expects: { course_id, data: { title?, description?, ... } }
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/owner/course/update`,
         {
@@ -264,7 +375,7 @@ export function useUpdateCourse() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             course_id: courseNftPolicyId,
-            ...data,
+            data,
           }),
         }
       );

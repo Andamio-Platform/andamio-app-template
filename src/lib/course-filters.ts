@@ -3,7 +3,7 @@
  * Used by Course Creator interface for managing course data
  */
 
-import { type CourseListResponse } from "~/types/generated";
+import { type FlattenedCourseListItem } from "~/hooks/api/course/use-course";
 
 // View mode options
 export type CourseViewMode = "grid" | "table" | "list";
@@ -44,9 +44,9 @@ function getStringValue(value: string | object | undefined | null): string {
  * Filter courses based on filter criteria
  */
 export function filterCourses(
-  courses: CourseListResponse,
+  courses: FlattenedCourseListItem[],
   filter: CourseFilter
-): CourseListResponse {
+): FlattenedCourseListItem[] {
   return courses.filter((courseData) => {
     // Search filter (title, id, description)
     if (filter.search) {
@@ -62,10 +62,11 @@ export function filterCourses(
     }
 
     // Publication status filter
-    // Note: In the new API, course_id serves as the identifier
-    // Published courses have course_status set
+    // In the new API, "source" indicates data origin:
+    // - "merged" or "chain_only" = published (on-chain)
+    // - "db_only" = draft (not yet on chain)
     if (filter.publicationStatus !== "all") {
-      const isPublished = courseData.course_status === "PUBLISHED" || courseData.course_status === "ON_CHAIN";
+      const isPublished = courseData.source === "merged" || courseData.source === "chain_only";
       if (filter.publicationStatus === "published" && !isPublished) {
         return false;
       }
@@ -82,10 +83,10 @@ export function filterCourses(
  * Sort courses based on sort configuration
  */
 export function sortCourses(
-  courses: CourseListResponse,
+  courses: FlattenedCourseListItem[],
   sortConfig: CourseSortConfig,
   moduleCounts: Record<string, number>
-): CourseListResponse {
+): FlattenedCourseListItem[] {
   const sorted = [...courses];
 
   sorted.sort((a, b) => {
@@ -122,12 +123,13 @@ export function sortCourses(
  * Calculate course statistics
  */
 export function calculateCourseStats(
-  courses: CourseListResponse,
+  courses: FlattenedCourseListItem[],
   moduleCounts: Record<string, number>
 ) {
   const total = courses.length;
+  // Published = on-chain (merged or chain_only source)
   const published = courses.filter(
-    (c) => c.course_status === "PUBLISHED" || c.course_status === "ON_CHAIN"
+    (c) => c.source === "merged" || c.source === "chain_only"
   ).length;
   const draft = total - published;
 

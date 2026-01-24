@@ -59,7 +59,7 @@ export default function LessonDetailPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
+            course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
             courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
             lesson={{ index: moduleIndex }}
             currentPage="lesson"
@@ -92,7 +92,7 @@ export default function LessonDetailPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
           courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
           lesson={{ index: moduleIndex, title: typeof lesson.title === "string" ? lesson.title : undefined }}
           currentPage="lesson"
@@ -142,7 +142,7 @@ export default function LessonDetailPage() {
       />
 
       {/* Lesson Content */}
-      {lesson.content_json && (
+      {!!lesson.content_json && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Lesson Content</AndamioCardTitle>

@@ -217,7 +217,7 @@ export default function LearnerAssignmentPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
+            course={{ nftPolicyId: courseNftPolicyId, title: typeof course.content?.title === "string" ? course.content.title : "Course" }}
             courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
             currentPage="assignment"
           />
@@ -237,7 +237,7 @@ export default function LearnerAssignmentPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
+          course={{ nftPolicyId: courseNftPolicyId, title: typeof course.content?.title === "string" ? course.content.title : "Course" }}
           courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
           currentPage="assignment"
         />

@@ -5,14 +5,14 @@ import Link from "next/link";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { SettingsIcon } from "~/components/icons";
-import { type CourseListResponse } from "~/types/generated";
+import { type FlattenedCourseListItem } from "~/hooks/api";
 import {
   CourseStatusIcon,
   CourseModuleCount,
 } from "./course-ui";
 
 interface CourseTableViewProps {
-  courses: CourseListResponse;
+  courses: FlattenedCourseListItem[];
   moduleCounts: Record<string, number>;
 }
 

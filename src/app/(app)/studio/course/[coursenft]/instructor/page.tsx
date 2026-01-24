@@ -41,9 +41,9 @@ import { TeacherIcon, SuccessIcon, PendingIcon, CloseIcon, LoadingIcon } from "~
 import { ContentDisplay } from "~/components/content-display";
 import type { JSONContent } from "@tiptap/core";
 import {
-  type CourseResponse,
-  type AssignmentCommitmentResponse,
-} from "~/types/generated";
+  type FlattenedCourseDetail,
+  type TeacherAssignmentCommitment,
+} from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -118,14 +118,14 @@ export default function InstructorDashboardPage() {
     }
   );
 
-  const [course, setCourse] = useState<CourseResponse | null>(null);
-  const [commitments, setCommitments] = useState<AssignmentCommitmentResponse[]>([]);
-  const [filteredCommitments, setFilteredCommitments] = useState<AssignmentCommitmentResponse[]>([]);
+  const [course, setCourse] = useState<FlattenedCourseDetail | null>(null);
+  const [commitments, setCommitments] = useState<TeacherAssignmentCommitment[]>([]);
+  const [filteredCommitments, setFilteredCommitments] = useState<TeacherAssignmentCommitment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Selected commitment for management
-  const [selectedCommitment, setSelectedCommitment] = useState<AssignmentCommitmentResponse | null>(null);
+  const [selectedCommitment, setSelectedCommitment] = useState<TeacherAssignmentCommitment | null>(null);
   const [detailedCommitment, setDetailedCommitment] = useState<{
     evidence: JSONContent | null;
     status: string;
@@ -168,7 +168,7 @@ export default function InstructorDashboardPage() {
         throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
       }
 
-      const courseData = (await courseResponse.json()) as CourseResponse;
+      const courseData = (await courseResponse.json()) as FlattenedCourseDetail;
       setCourse(courseData);
 
       // Fetch assignment commitments for this course
@@ -192,7 +192,7 @@ export default function InstructorDashboardPage() {
       }
 
       const commitmentsData =
-        (await commitmentsResponse.json()) as AssignmentCommitmentResponse[];
+        (await commitmentsResponse.json()) as TeacherAssignmentCommitment[];
 
       // Debug: log the actual API response to see field names
       console.log("[InstructorDashboard] Assignment commitments response:", commitmentsData);
@@ -213,8 +213,8 @@ export default function InstructorDashboardPage() {
   }, [courseNftPolicyId, isAuthenticated]);
 
   // Fetch detailed commitment data when a commitment is selected
-  const fetchCommitmentDetail = async (commitment: AssignmentCommitmentResponse) => {
-    if (!commitment.participant_alias) {
+  const fetchCommitmentDetail = async (commitment: TeacherAssignmentCommitment) => {
+    if (!commitment.student_alias) {
       setDetailedCommitment(null);
       return;
     }
@@ -227,7 +227,7 @@ export default function InstructorDashboardPage() {
       const requestBody = {
         course_id: courseNftPolicyId,
         course_module_code: commitment.course_module_code,
-        participant_alias: commitment.participant_alias,
+        participant_alias: commitment.student_alias,
       };
       console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
 
@@ -274,7 +274,7 @@ export default function InstructorDashboardPage() {
   };
 
   // Handle commitment selection - fetch detailed data
-  const handleSelectCommitment = (commitment: AssignmentCommitmentResponse) => {
+  const handleSelectCommitment = (commitment: TeacherAssignmentCommitment) => {
     setSelectedCommitment(commitment);
     void fetchCommitmentDetail(commitment);
   };
@@ -296,7 +296,7 @@ export default function InstructorDashboardPage() {
     // Search query (by learner participant alias)
     if (searchQuery) {
       filtered = filtered.filter((c) =>
-        c.participant_alias?.toLowerCase().includes(searchQuery.toLowerCase())
+        c.student_alias?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -459,12 +459,12 @@ export default function InstructorDashboardPage() {
             <AndamioTableBody>
               {filteredCommitments.map((commitment) => (
                 <AndamioTableRow
-                  key={`${commitment.course_module_code}-${commitment.participant_alias}`}
+                  key={`${commitment.course_module_code}-${commitment.student_alias}`}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSelectCommitment(commitment)}
                 >
                   <AndamioTableCell className="font-mono text-xs">
-                    {commitment.participant_alias ?? "No access token"}
+                    {commitment.student_alias ?? "No access token"}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <div>
@@ -526,7 +526,7 @@ export default function InstructorDashboardPage() {
               <div>
                 <AndamioLabel>Learner Access Token</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedCommitment.participant_alias ?? "No access token"}
+                  {selectedCommitment.student_alias ?? "No access token"}
                 </AndamioText>
               </div>
               <div>
@@ -605,13 +605,13 @@ export default function InstructorDashboardPage() {
             <div className="pt-4 space-y-3">
               {/* Requirements Check */}
               {!(
-                selectedCommitment.participant_alias &&
+                selectedCommitment.student_alias &&
                 (detailedCommitment?.status ?? selectedCommitment.commitment_status) === "PENDING_APPROVAL"
               ) && (
                 <AndamioAlert>
                   <AlertIcon className="h-4 w-4" />
                   <AndamioAlertDescription>
-                    {selectedCommitment.participant_alias
+                    {selectedCommitment.student_alias
                       ? "This assignment is not ready for assessment"
                       : "Learner does not have an access token"}
                   </AndamioAlertDescription>
@@ -668,7 +668,7 @@ export default function InstructorDashboardPage() {
                 <TransactionButton
                   txState={assessTx.state}
                   onClick={async () => {
-                    if (!user?.accessTokenAlias || !selectedCommitment.participant_alias) {
+                    if (!user?.accessTokenAlias || !selectedCommitment.student_alias) {
                       return;
                     }
                     await assessTx.execute({
@@ -678,7 +678,7 @@ export default function InstructorDashboardPage() {
                         course_id: courseNftPolicyId,
                         assignment_decisions: [
                           {
-                            alias: selectedCommitment.participant_alias,
+                            alias: selectedCommitment.student_alias,
                             outcome: assessmentDecision,
                           },
                         ],
@@ -690,7 +690,7 @@ export default function InstructorDashboardPage() {
                   }}
                   disabled={
                     !user?.accessTokenAlias ||
-                    !selectedCommitment.participant_alias ||
+                    !selectedCommitment.student_alias ||
                     (detailedCommitment?.status ?? selectedCommitment.commitment_status) !== "PENDING_APPROVAL"
                   }
                   stateText={{

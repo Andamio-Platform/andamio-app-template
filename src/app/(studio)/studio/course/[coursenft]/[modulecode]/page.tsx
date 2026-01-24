@@ -77,7 +77,7 @@ function ModuleWizardContent({
   // Handle header updates when data loads
   const handleDataLoaded = useCallback(
     (course: CourseResponse | null, courseModule: CourseModuleResponse | null) => {
-      const courseTitle = typeof course?.title === "string" ? course.title : "Course";
+      const courseTitle = typeof course?.content?.title === "string" ? course.content.title : "Course";
       if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },

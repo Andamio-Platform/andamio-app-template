@@ -602,14 +602,37 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
         }
       );
 
-      if (!response.ok) {
+      if (response.ok) {
+        toast.success("Course Registered!", {
+          description: `"${title.trim()}" is now ready for content.`,
+        });
+      } else if (response.status === 409) {
+        // Course already exists (indexer created it) - update with title instead
+        console.log("[RegisterCourse] Course exists, updating with title...");
+        const updateResponse = await authenticatedFetch(
+          `/api/gateway/api/v2/course/owner/course/update`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              course_id: courseId,
+              data: { title: title.trim() },
+            }),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          const updateError = (await updateResponse.json()) as { message?: string };
+          throw new Error(updateError.message ?? "Failed to update course title");
+        }
+
+        toast.success("Course Registered!", {
+          description: `"${title.trim()}" is now ready for content.`,
+        });
+      } else {
         const errorData = (await response.json()) as { message?: string };
         throw new Error(errorData.message ?? "Failed to register course");
       }
-
-      toast.success("Course Registered!", {
-        description: `"${title.trim()}" is now ready for content.`,
-      });
 
       // Invalidate teacher courses cache so the list refreshes
       await invalidateTeacherCourses();

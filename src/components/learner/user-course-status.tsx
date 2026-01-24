@@ -68,7 +68,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
             <div>
               <AndamioCardTitle>Get Started</AndamioCardTitle>
               <AndamioCardDescription>
-                Begin your learning journey in {course?.content?.title ?? "this course"}
+                Begin your learning journey in {course?.title ?? "this course"}
               </AndamioCardDescription>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
   const isCompleted = studentCourseStatus.enrollment_status === "completed";
   const totalModules = dbModules?.length ?? 0;
-  const courseTitle = course?.content?.title ?? "this course";
+  const courseTitle = course?.title ?? "this course";
 
   // Completed state
   if (isCompleted) {

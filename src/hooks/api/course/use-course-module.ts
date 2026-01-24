@@ -18,6 +18,9 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import {
   type CourseModuleResponse,
   type CourseModuleListResponse,
+  type OrchestrationMergedCourseModuleItem,
+  type MergedHandlersMergedCourseModulesResponse,
+  type SLTResponse,
 } from "~/types/generated";
 
 /**
@@ -28,6 +31,82 @@ interface CreateCourseModuleInput {
   title: string;
   description?: string;
 }
+
+// =============================================================================
+// Merged Module Types
+// =============================================================================
+
+/**
+ * Data source for a merged module
+ * - "merged": Module exists in both on-chain and DB (full data)
+ * - "chain_only": Module on-chain but no DB content (needs registration)
+ * - "db_only": Module in DB but not on-chain (draft or not yet published)
+ */
+export type ModuleSource = "merged" | "chain_only" | "db_only";
+
+/**
+ * Flattened merged module type for UI components
+ *
+ * Combines on-chain fields (slt_hash, prerequisites, on_chain_slts)
+ * with off-chain content fields (title, description, slts, etc.)
+ * for backward compatibility with existing components.
+ */
+export interface MergedCourseModule {
+  // Primary identifier (on-chain slts_hash / DB slt_hash)
+  slt_hash?: string;
+
+  // Course context
+  course_id?: string;
+
+  // On-chain fields
+  created_by?: string;
+  prerequisites?: string[];
+  on_chain_slts?: string[];
+
+  // Data source indicator
+  source?: ModuleSource;
+
+  // Flattened content fields (from content.*)
+  course_module_code?: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+  video_url?: string;
+  is_live?: boolean;
+  module_status?: string;
+  slts?: SLTResponse[];
+  assignment?: unknown;
+  introduction?: unknown;
+}
+
+/**
+ * Transform API response to flattened module format
+ * Extracts content.* fields to top level for backward compatibility
+ */
+function flattenMergedModule(item: OrchestrationMergedCourseModuleItem): MergedCourseModule {
+  return {
+    // On-chain fields
+    slt_hash: item.slt_hash,
+    course_id: item.course_id,
+    created_by: item.created_by,
+    prerequisites: item.prerequisites,
+    on_chain_slts: item.on_chain_slts,
+    source: item.source as ModuleSource,
+
+    // Flattened content fields
+    course_module_code: item.content?.course_module_code,
+    title: item.content?.title,
+    description: item.content?.description,
+    image_url: item.content?.image_url,
+    video_url: item.content?.video_url,
+    is_live: item.content?.is_live,
+    module_status: item.content?.module_status,
+    slts: item.content?.slts as SLTResponse[] | undefined,
+    assignment: item.content?.assignment,
+    introduction: item.content?.introduction,
+  };
+}
+
 import { courseKeys } from "./use-course";
 
 // =============================================================================
@@ -57,6 +136,7 @@ export const courseModuleKeys = {
  * Fetch all modules for a course (public endpoint)
  *
  * Uses the user endpoint which does not require authentication.
+ * Returns flattened module data for backward compatibility with UI components.
  *
  * @example
  * ```tsx
@@ -71,7 +151,7 @@ export const courseModuleKeys = {
 export function useCourseModules(courseNftPolicyId: string | undefined) {
   return useQuery({
     queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
-    queryFn: async () => {
+    queryFn: async (): Promise<MergedCourseModule[]> => {
       // Go API: GET /course/user/modules/{course_id}
       const response = await fetch(
         `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
@@ -79,25 +159,35 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
 
       // 404 means no modules yet - return empty array
       if (response.status === 404) {
-        return [] as CourseModuleListResponse;
+        return [];
       }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as { data?: CourseModuleListResponse };
-      return result.data ?? [];
+      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+
+      // Log warning if partial data returned
+      if (result.warning) {
+        console.warn("[useCourseModules] API warning:", result.warning);
+      }
+
+      // Transform to flattened format for backward compatibility
+      return (result.data ?? []).map(flattenMergedModule);
     },
     enabled: !!courseNftPolicyId,
   });
 }
 
 /**
- * Fetch all modules for a course as a teacher (authenticated endpoint)
+ * Fetch all modules for a course as a teacher (merged endpoint)
  *
- * Uses the teacher endpoint which returns ALL modules including drafts.
- * Use this in studio/edit contexts where teachers need to see unpublished modules.
+ * Uses the merged teacher endpoint which returns UNION of on-chain and DB modules.
+ * This gives teachers visibility into:
+ * - `chain_only`: Modules on-chain but no DB content (needs registration)
+ * - `db_only`: Draft modules not yet published on-chain
+ * - `merged`: Full modules with both on-chain and DB data
  *
  * @example
  * ```tsx
@@ -105,7 +195,13 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
  *   const { data: modules, isLoading } = useTeacherCourseModules(courseId);
  *
  *   if (isLoading) return <Skeleton />;
- *   return modules?.map(m => <ModuleEditor key={m.course_module_code} module={m} />);
+ *   return modules?.map(m => (
+ *     <ModuleEditor
+ *       key={m.course_module_code ?? m.slt_hash}
+ *       module={m}
+ *       needsContent={m.source === "chain_only"}
+ *     />
+ *   ));
  * }
  * ```
  */
@@ -114,8 +210,9 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
 
   return useQuery({
     queryKey: courseModuleKeys.teacherList(courseNftPolicyId ?? ""),
-    queryFn: async () => {
-      // Go API: POST /course/teacher/course-modules/list
+    queryFn: async (): Promise<MergedCourseModule[]> => {
+      // Merged endpoint: POST /api/v2/course/teacher/course-modules/list
+      // Returns UNION of on-chain and DB modules with source indicator
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-modules/list`,
         {
@@ -127,19 +224,22 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
 
       // 404 means no modules yet - return empty array
       if (response.status === 404) {
-        return [] as CourseModuleListResponse;
+        return [];
       }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch teacher modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as { data?: CourseModuleListResponse } | CourseModuleListResponse;
-      // Handle both wrapped { data: [...] } and raw array formats
-      if (Array.isArray(result)) {
-        return result;
+      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+
+      // Log warning if partial data returned
+      if (result.warning) {
+        console.warn("[useTeacherCourseModules] API warning:", result.warning);
       }
-      return result.data ?? [];
+
+      // Transform to flattened format for backward compatibility
+      return (result.data ?? []).map(flattenMergedModule);
     },
     enabled: !!courseNftPolicyId && isAuthenticated,
   });
@@ -150,6 +250,7 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
  *
  * NOTE: The single-module GET endpoint was removed in V2.
  * This now fetches the module list and filters client-side.
+ * Returns flattened module data for backward compatibility with UI components.
  *
  * @example
  * ```tsx
@@ -169,7 +270,7 @@ export function useCourseModule(
 ) {
   return useQuery({
     queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
-    queryFn: async () => {
+    queryFn: async (): Promise<MergedCourseModule | null> => {
       // Go API: GET /course/user/modules/{course_id}
       // Fetch list and filter client-side
       const response = await fetch(
@@ -180,12 +281,14 @@ export function useCourseModule(
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as { data?: CourseModuleListResponse };
-      const modules = result.data ?? [];
+      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+
+      // Transform to flattened format
+      const modules = (result.data ?? []).map(flattenMergedModule);
       const courseModule = modules.find((m) => m.course_module_code === moduleCode);
 
       if (!courseModule) {
-        throw new Error(`Module ${moduleCode} not found`);
+        return null;
       }
 
       return courseModule;

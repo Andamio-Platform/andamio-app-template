@@ -56,6 +56,9 @@ export {
   useUpdateCourse,
   useDeleteCourse,
   courseKeys,
+  type CourseSource,
+  type FlattenedCourseListItem,
+  type FlattenedCourseDetail,
 } from "./course/use-course";
 
 export {
@@ -68,6 +71,8 @@ export {
   useUpdateCourseModuleStatus,
   useDeleteCourseModule,
   courseModuleKeys,
+  type MergedCourseModule,
+  type ModuleSource,
 } from "./course/use-course-module";
 
 export {

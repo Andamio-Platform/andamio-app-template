@@ -13,7 +13,7 @@ import {
   AndamioTableRow,
 } from "~/components/andamio/andamio-table";
 import { AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
-import { type OrchestrationCourseModule } from "~/types/generated";
+import { type MergedCourseModule } from "~/hooks/api";
 
 /**
  * Combined SLT + Lesson data type
@@ -38,8 +38,8 @@ export interface SLTLessonTableProps {
   courseNftPolicyId: string;
   /** Module code for links */
   moduleCode: string;
-  /** On-chain module data for verification badges */
-  onChainModule?: OrchestrationCourseModule | null;
+  /** On-chain module data for verification badges (flattened format) */
+  onChainModule?: MergedCourseModule | null;
 }
 
 /**
@@ -55,7 +55,8 @@ export function SLTLessonTable({
   onChainModule,
 }: SLTLessonTableProps) {
   // Build set of on-chain SLT texts for quick lookup
-  const onChainSltTexts = new Set(onChainModule?.slts ?? []);
+  // Note: on_chain_slts contains SLT hashes/IDs from the chain
+  const onChainSltTexts = new Set(onChainModule?.on_chain_slts ?? []);
 
   if (data.length === 0) {
     return (

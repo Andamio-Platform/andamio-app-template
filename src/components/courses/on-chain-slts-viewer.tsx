@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCourse } from "~/hooks/api";
+import { useCourse, type MergedCourseModule } from "~/hooks/api";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -22,7 +22,6 @@ import {
   AlertIcon,
   OnChainIcon,
 } from "~/components/icons";
-import { type OrchestrationCourseModule } from "~/types/generated";
 import { AndamioText } from "~/components/andamio/andamio-text";
 
 // =============================================================================
@@ -37,7 +36,7 @@ interface OnChainSltsViewerProps {
 }
 
 interface OnChainModuleCardProps {
-  module: OrchestrationCourseModule;
+  module: MergedCourseModule;
   compact?: boolean;
 }
 
@@ -50,7 +49,7 @@ interface OnChainModuleCardProps {
  */
 function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) {
   const assignmentId = module.slt_hash ?? "";
-  const slts = module.slts ?? [];
+  const slts = module.on_chain_slts ?? [];
   const truncatedHash = assignmentId
     ? `${assignmentId.slice(0, 8)}...${assignmentId.slice(-8)}`
     : "Unknown";
@@ -259,7 +258,7 @@ export function OnChainSltsBadge({
   }
 
   const totalSlts = onChainModules.reduce(
-    (sum: number, m) => sum + (m.slts?.length ?? 0),
+    (sum: number, m) => sum + (m.on_chain_slts?.length ?? 0),
     0
   );
 

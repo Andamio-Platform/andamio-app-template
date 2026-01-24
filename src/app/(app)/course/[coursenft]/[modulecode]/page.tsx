@@ -76,15 +76,16 @@ export default function ModuleLessonsPage() {
   }, [slts]);
 
   // Find matching on-chain module by SLT content overlap
+  // Note: on_chain_slts contains SLT hashes/IDs from the chain
   const onChainModule = useMemo(() => {
     if (onChainModules.length === 0 || combinedData.length === 0) return null;
 
     const dbSltTexts = new Set(combinedData.map((s) => s.slt_text));
 
     for (const mod of onChainModules) {
-      const modSlts = mod.slts ?? [];
+      const modSlts = mod.on_chain_slts ?? [];
       const onChainTexts = new Set(modSlts);
-      // Check if there's significant overlap
+      // Check if there's significant overlap (comparing texts with chain data)
       const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
       if (intersection.length > 0 && modSlts.length > 0 && intersection.length >= modSlts.length * 0.5) {
         return mod;
@@ -118,7 +119,7 @@ export default function ModuleLessonsPage() {
       {course && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.content?.title ?? "Course" }}
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
           courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
           currentPage="module"
         />

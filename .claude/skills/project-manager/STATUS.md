@@ -23,6 +23,17 @@ Current implementation status of the Andamio T3 App Template.
 **Status**: Active - Syncing with Gateway API spec updates
 
 **Latest Work (January 23, 2026)**:
+- **Merged Endpoint Type Migration**: API v2.0.0 changed response shapes significantly
+  - `GET /api/v2/course/user/courses/list` now returns INTERSECTION (courses must be BOTH on-chain AND have DB content)
+  - Response has nested `content` field structure (data lives in `.content`)
+  - Added `source` field indicating data origin (`chain_only`, `db_only`, `merged`)
+  - Created flattening layer (`flattenCourseListItem`, `FlattenedCourseListItem`) to maintain backward compatibility
+  - Updated `use-owned-courses.ts`, `course-filters.ts` to use flattened types
+  - Fixed `MergedCourseModule` vs `OrchestrationCourseModule` type mismatches
+  - Changed `.slts` → `.on_chain_slts` for merged module items
+  - Fixed `unknown` type issues in lesson page with boolean coercion (`!!value`)
+  - **Build passes** - all type errors resolved
+
 - **Developer Auth V2 Migration**: Implemented two-step wallet-verified registration flow
   - `createDevRegisterSession()` + `completeDevRegistration()` with CIP-30 signing
   - Updated `/api-setup` page with new 4-step flow (connect → register → sign → api-key)
@@ -42,10 +53,12 @@ Current implementation status of the Andamio T3 App Template.
 - NullableString type helper utilities
 
 **Next Steps**:
-1. [ ] Continue API v2.0.0 field alignment as spec evolves
+1. [x] ~~API v2.0.0 field alignment~~ - Merged endpoint types updated, build passes
 2. [ ] Reorganize hooks into `course/` and `project/` subdirectories
 3. [x] ~~Remove deprecated `andamioscan.ts` (1497 lines)~~ - Replaced with `andamioscan-events.ts`
 4. [ ] Clean up remaining V1 patterns
+5. [ ] Test all course routes with new merged data structure
+6. [ ] Update remaining components that might have stale type assumptions
 
 ---
 

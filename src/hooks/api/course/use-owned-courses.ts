@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { type CourseListResponse } from "~/types/generated";
+import type { OrchestrationMergedCourseListItem, MergedHandlersMergedCoursesResponse } from "~/types/generated";
+import { flattenCourseListItem, type FlattenedCourseListItem } from "./use-course";
 
 /**
  * useOwnedCourses - Fetches owned courses with module counts
@@ -24,8 +25,9 @@ import { type CourseListResponse } from "~/types/generated";
 export interface UseOwnedCoursesResult {
   /**
    * List of owned courses (empty array until loaded)
+   * Uses flattened format for backward compatibility with UI components
    */
-  courses: CourseListResponse;
+  courses: FlattenedCourseListItem[];
 
   /**
    * Module counts per course code
@@ -50,7 +52,7 @@ export interface UseOwnedCoursesResult {
 
 export function useOwnedCourses(): UseOwnedCoursesResult {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [courses, setCourses] = useState<CourseListResponse>([]);
+  const [courses, setCourses] = useState<FlattenedCourseListItem[]>([]);
   const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,11 +84,14 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       }
 
       const result = (await response.json()) as
-        | CourseListResponse
-        | { data?: CourseListResponse; warning?: string };
+        | OrchestrationMergedCourseListItem[]
+        | MergedHandlersMergedCoursesResponse;
 
       // Handle both wrapped { data: [...] } and raw array formats
-      const data = Array.isArray(result) ? result : (result.data ?? []);
+      const items = Array.isArray(result) ? result : (result.data ?? []);
+
+      // Flatten to backward-compatible format for UI components
+      const data = items.map(flattenCourseListItem);
       setCourses(data);
 
       // Fetch module counts for all courses using batch endpoint

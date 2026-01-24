@@ -77,18 +77,28 @@ export type TeacherCoursesResponse = TeacherCourse[];
 export interface TeacherAssignmentCommitment {
   // On-chain fields
   course_id: string;
-  assignment_id: string;
+  assignment_id?: string;
   student_alias: string;
+  slt_hash?: string;
   submission_tx_hash?: string;
+  submission_tx?: string;
   submission_slot?: number;
-  content?: string;
+  on_chain_content?: string;
 
   // Off-chain content
   course_module_code?: string;
   module_title?: string;
   evidence_url?: string;
   evidence_text?: string;
+  evidence?: unknown; // JSON evidence data
   submitted_at?: string;
+  commitment_status?: string; // DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN
+
+  // Nested assignment data (if populated)
+  assignment?: {
+    title?: string;
+    content?: unknown;
+  };
 
   // Metadata
   source?: string;

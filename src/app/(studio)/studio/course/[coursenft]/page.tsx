@@ -52,7 +52,8 @@ import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
-import type { CourseModuleResponse, OrchestrationCourseModule } from "~/types/generated";
+import type { CourseModuleResponse } from "~/types/generated";
+import type { MergedCourseModule } from "~/hooks/api";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 
 // =============================================================================
@@ -92,7 +93,7 @@ interface HybridModule {
   /** Database record (if exists) */
   dbModule: CourseModuleResponse | null;
   /** On-chain data (if exists) */
-  onChainModule: OrchestrationCourseModule | null;
+  onChainModule: MergedCourseModule | null;
   /** SLTs from database */
   dbSlts: string[];
   /** SLTs from on-chain (source of truth when on-chain) */
@@ -254,7 +255,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       const dbComputedHash = dbSlts.length > 0 ? computeSltHashDefinite(dbSlts) : null;
 
       // Try to find matching on-chain module
-      let matchedOnChain: OrchestrationCourseModule | null = null;
+      let matchedOnChain: MergedCourseModule | null = null;
       let matchType: MatchType = "none";
       let hashMismatch = false;
 
@@ -287,7 +288,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         for (const onChainModule of onChainModules) {
           if (!onChainModule.slt_hash || matchedOnChainIds.has(onChainModule.slt_hash)) continue;
 
-          if (sltsMatch(dbSlts, onChainModule.slts ?? [])) {
+          if (sltsMatch(dbSlts, onChainModule.on_chain_slts ?? [])) {
             matchedOnChain = onChainModule;
             matchType = "slt-content";
             hashMismatch = true; // SLTs match but hashes don't
@@ -309,7 +310,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         dbModule,
         onChainModule: matchedOnChain,
         dbSlts,
-        onChainSlts: matchedOnChain?.slts ?? [],
+        onChainSlts: matchedOnChain?.on_chain_slts ?? [],
       });
     }
 
@@ -330,7 +331,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         dbModule: null,
         onChainModule,
         dbSlts: [],
-        onChainSlts: onChainModule.slts ?? [],
+        onChainSlts: onChainModule.on_chain_slts ?? [],
       });
     }
 
@@ -419,9 +420,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Sync form state when course data loads
   useEffect(() => {
     if (course && !formInitialized) {
-      setFormTitle(course.content?.title ?? "");
-      setFormDescription(course.content?.description ?? "");
-      setFormImageUrl(course.content?.image_url ?? "");
+      setFormTitle(course.title ?? "");
+      setFormDescription(course.description ?? "");
+      setFormImageUrl(course.image_url ?? "");
       // Note: video_url not available in merged OrchestrationCourseContent
       setFormVideoUrl("");
       setFormInitialized(true);
@@ -431,10 +432,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Update header when course loads
   useEffect(() => {
     if (course) {
-      setTitle(course.content?.title ?? "Untitled Course");
+      setTitle(course.title ?? "Untitled Course");
       setBreadcrumbs([
         { label: "Course Studio", href: "/studio/course" },
-        { label: course.content?.title ?? "Course" },
+        { label: course.title ?? "Course" },
       ]);
     }
   }, [course, setBreadcrumbs, setTitle]);
@@ -518,9 +519,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const isLoading = isLoadingCourse || isLoadingModules;
   // Note: video_url comparison is always vs "" since it's not in merged type
   const hasChanges = course && (
-    formTitle !== (course.content?.title ?? "") ||
-    formDescription !== (course.content?.description ?? "") ||
-    formImageUrl !== (course.content?.image_url ?? "") ||
+    formTitle !== (course.title ?? "") ||
+    formDescription !== (course.description ?? "") ||
+    formImageUrl !== (course.image_url ?? "") ||
     formVideoUrl !== ""
   );
 
@@ -568,11 +569,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     )}
                   </div>
                   <h1 className="text-2xl font-bold text-foreground mb-1">
-                    {course.content?.title ?? "Untitled Course"}
+                    {course.title ?? "Untitled Course"}
                   </h1>
-                  {course.content?.description && (
+                  {course.description && (
                     <AndamioText variant="muted" className="line-clamp-2">
-                      {course.content.description}
+                      {course.description}
                     </AndamioText>
                   )}
                 </div>
@@ -616,11 +617,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   )}
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-                  {course.content?.title ?? "Untitled Course"}
+                  {course.title ?? "Untitled Course"}
                 </h1>
-                {course.content?.description && (
+                {course.description && (
                   <AndamioText variant="muted" className="mt-2 max-w-lg mx-auto">
-                    {course.content.description}
+                    {course.description}
                   </AndamioText>
                 )}
               </div>
@@ -1141,7 +1142,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       </AndamioButton>
                     }
                     title="Delete Course"
-                    description={`Are you sure you want to delete "${course.content?.title ?? "this course"}"? This will remove all modules, lessons, and assignments.`}
+                    description={`Are you sure you want to delete "${course.title ?? "this course"}"? This will remove all modules, lessons, and assignments.`}
                     confirmText="Delete Course"
                     variant="destructive"
                     onConfirm={handleDelete}

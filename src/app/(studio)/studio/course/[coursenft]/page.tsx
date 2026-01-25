@@ -45,7 +45,8 @@ import {
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { useCourse, useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course";
+import { useCourse } from "~/hooks/api/course/use-course";
+import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule } from "~/hooks/api/course/use-course-module";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
@@ -469,12 +470,12 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
     try {
       await updateCourseMutation.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         data: {
           title: formTitle || undefined,
           description: formDescription || undefined,
-          image_url: formImageUrl || undefined,
-          video_url: formVideoUrl || undefined,
+          imageUrl: formImageUrl || undefined,
+          videoUrl: formVideoUrl || undefined,
         },
       });
       toast.success("Course updated");

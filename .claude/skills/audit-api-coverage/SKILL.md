@@ -5,191 +5,187 @@ description: Audit the usage of Andamio API endpoints across all three sub-syste
 
 # Audit API Coverage
 
-Audit and maintain API coverage for the Unified Andamio API Gateway.
+Ensure consistent, well-designed hooks connect the Andamio API to the app. This skill audits API hooks, TX hooks, and the patterns that make them work together.
 
-## The Unified API Gateway
+## 🔄 Session Resume
 
-| Property | Value |
-|----------|-------|
-| **Base URL** | `https://dev.api.andamio.io` |
-| **API Docs** | [Swagger UI](https://dev.api.andamio.io/api/v1/docs/index.html) |
-| **OpenAPI Spec** | [doc.json](https://dev.api.andamio.io/api/v1/docs/doc.json) |
-| **Total Endpoints** | 106 |
+**Before starting new work**, check [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md) for in-progress work.
 
-**Always use the live docs as source of truth.** The files in this skill directory are derived from these sources.
+**Current state** (as of January 25, 2026):
+- ✅ `use-course.ts` - APPROVED
+- ✅ `use-course-owner.ts` - APPROVED
+- 🔶 `use-course-module.ts` - Next up (needs Task 6 + cross-file fix)
+- 🔶 5 more hooks need work
 
-## Endpoint Categories
+**Ask the user**: "Would you like to continue the API hooks cleanup from where we left off? Next hook is `use-course-module.ts`."
 
-The unified gateway uses two API versions:
-- **v1** (`/v1/*`): Admin, user management endpoints
-- **v2** (`/v2/*`): Auth, courses, projects, transactions, API key management
+---
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| Admin Functions | 4 | Platform management |
-| User Management | 6 | Profile and access token management |
-| Authentication | 6 | Login session, validate, developer auth (v2) |
-| API Key Management | 6 | Developer API key lifecycle (v2) |
-| Courses | 37 | Course CRUD, modules, SLTs, assignments |
-| Projects | 17 | Project CRUD, tasks, commitments |
-| TX (Courses) | 6 | Course transaction building |
-| TX (Projects) | 8 | Project transaction building |
-| TX (Instance/Global) | 7 | Instance, global, and TX state machine |
-| TX (Admin) | 1 | TX state machine stats |
+## 🚧 Current Priority: API Hooks Cleanup
 
-## Quick Reference Files
+**Active work tracked in**: [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md)
 
-| File | Content | Auto-generated? |
-|------|---------|-----------------|
-| [unified-api-endpoints.md](./unified-api-endpoints.md) | All gateway endpoints | Manual (from live docs) |
-| [api-coverage.md](./api-coverage.md) | Implementation status per endpoint | Manual tracking |
-| [tx-state-machine.md](./tx-state-machine.md) | TX registration and polling flow | Manual |
-| [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Coverage summary | **Auto-generated** |
-| [coverage-report.json](./coverage-report.json) | Full coverage data | **Auto-generated** |
+We're standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. This involves:
+- Adding app-level types with camelCase fields
+- Adding transform functions for API → App conversion
+- Ensuring consistent exports
 
-### Archived Session Notes
+**When this work is complete**, archive or delete `API-HOOKS-CLEANUP-PLAN.md` and remove this priority notice.
 
-Historical migration docs are in `archived-sessions/`:
-- `V2-MIGRATION-CHECKLIST-2026-01-17.md` - V2 Gateway migration (complete)
-- `API-REFINEMENT-SESSION-2026-01-17.md` - Pre-migration planning
+---
 
-## Running the Audit
+## Quick Links
 
-Generate a fresh coverage report:
+| Resource | Description |
+|----------|-------------|
+| [API Docs](https://dev.api.andamio.io/api/v1/docs/index.html) | Live Swagger UI |
+| [OpenAPI Spec](https://dev.api.andamio.io/api/v1/docs/doc.json) | Machine-readable spec |
 
-```bash
-npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts
+## Subskills
+
+This skill has two focused subskills:
+
+| Subskill | File | Purpose |
+|----------|------|---------|
+| **api-hooks** | [api-hooks-audit.md](./api-hooks-audit.md) | Audit `src/hooks/api/` for patterns, types, transformers |
+| **tx-hooks** | [tx-hooks-audit.md](./tx-hooks-audit.md) | Audit `src/hooks/tx/` and transaction config consistency |
+
+### Related Skill: transaction-auditor
+
+The **transaction-auditor** skill handles syncing with gateway API spec changes:
+
+```
+Run /transaction-auditor
+```
+
+Use when the gateway publishes breaking changes to TX endpoints. It provides step-by-step commands to fetch the latest spec, compare schemas, and update local files.
+
+## Core Principle: Hooks as the Connection Layer
+
+The hooks layer (`src/hooks/api/` and `src/hooks/tx/`) is the critical connection between:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Gateway API   │ ──► │     HOOKS       │ ──► │   Components    │
+│  (snake_case)   │     │ (transformers)  │     │  (camelCase)    │
+│  Generated Types│     │ App-ready Types │     │  Clean Props    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+**Hooks must:**
+1. Import from `~/types/generated` (gateway types)
+2. Export app-ready types with direct names (Course, Task, Assignment)
+3. Provide transformers that convert API → App types
+4. Use React Query for caching and deduplication
+5. Handle auth via `useAndamioAuth`
+
+## Running Audits
+
+### Interactive Mode (Recommended)
+
+Ask Claude to run a specific subskill:
+
+```
+Run /audit-api-coverage api-hooks
+Run /audit-api-coverage tx-hooks
 ```
 
 This will:
-1. Fetch live OpenAPI spec from the gateway
-2. Scan `src/` for API client usage
-3. Generate `COVERAGE-REPORT.md` and `coverage-report.json`
+1. Scan the relevant files
+2. Check against the pattern checklists
+3. Report issues interactively
+4. Suggest or apply fixes
 
-## Implementation Locations
+### Full Audit
 
-| Endpoint Category | Implementation | Pattern |
-|-------------------|----------------|---------|
-| Auth, User, Admin | `src/lib/andamio-auth.ts`, `src/contexts/` | Auth context |
-| Merged Courses/Projects | `src/hooks/api/*.ts` | React Query hooks |
-| TX (Transactions) | `src/config/transaction-schemas.ts`, `src/config/transaction-ui.ts` | TX State Machine |
-
-## Workflow: Adding a New Endpoint
-
-### 1. Check the Live Docs
-
-Before implementing, verify the endpoint exists in the live OpenAPI spec:
-
-```bash
-# Check specific endpoint
-curl -s https://dev.api.andamio.io/api/v1/docs/doc.json | jq '.paths | keys | map(select(contains("your-endpoint")))'
+```
+Run /audit-api-coverage
 ```
 
-### 2. Implement
+Runs both subskills and produces a consolidated report.
 
-**For Auth/User endpoints:**
-```typescript
-// src/lib/andamio-auth.ts or context
-const response = await fetch(
-  `${env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/v2/auth/login/session`,
-  { method: 'POST', body: JSON.stringify(payload) }
-);
-```
+## Reference Files
 
-**For Merged Data endpoints (courses/projects):**
+| File | Purpose |
+|------|---------|
+| [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md) | **🚧 Active** - Current cleanup tasks |
+| [unified-api-endpoints.md](./unified-api-endpoints.md) | All gateway endpoints |
+| [api-coverage.md](./api-coverage.md) | Implementation status per endpoint |
+| [tx-state-machine.md](./tx-state-machine.md) | TX registration and polling flow |
+| [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Coverage summary |
+
+## Key Directories
+
+| Directory | Contents |
+|-----------|----------|
+| `src/hooks/api/` | API hooks (course, project, etc.) |
+| `src/hooks/api/course/` | Course-related hooks |
+| `src/hooks/api/project/` | Project-related hooks |
+| `src/hooks/tx/` | Transaction hooks |
+| `src/config/` | Transaction schemas and UI config |
+| `src/types/generated/` | Auto-generated gateway types |
+
+## Pattern Summary
+
+### API Hooks Pattern
+
+Every API hook file should have:
+
 ```typescript
-// src/hooks/api/use-{resource}.ts
-export function use{Resource}() {
+// 1. App-level types (camelCase, direct names)
+export interface Course { ... }
+export interface CourseDetail extends Course { ... }
+
+// 2. Transform functions
+export function transformCourse(item: ApiType): Course { ... }
+
+// 3. Query keys
+export const courseKeys = {
+  all: ["courses"] as const,
+  detail: (id: string) => [...courseKeys.all, "detail", id] as const,
+};
+
+// 4. Query hooks (return transformed types)
+export function useCourse(id: string) {
   return useQuery({
-    queryKey: ['{resource}', params],
-    queryFn: async () => {
-      const response = await authenticatedFetch(
-        `/api/gateway/v2/course/user/courses/list`
-      );
-      return response.json() as MergedCourseList;
-    },
+    queryKey: courseKeys.detail(id),
+    queryFn: async () => transformCourse(await fetchCourse(id)),
+  });
+}
+
+// 5. Mutation hooks (invalidate cache)
+export function useUpdateCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: courseKeys.all }),
   });
 }
 ```
 
-**For TX endpoints:**
-Transaction schemas in `src/config/transaction-schemas.ts` and UI config in `src/config/transaction-ui.ts`.
+### TX Hooks Pattern
 
-### 3. Update Coverage
+Transaction flow requires consistency across:
 
-After implementing:
-1. Run the audit script to verify detection
-2. Update `api-coverage.md` with the implementation status
+```
+transaction-ui.ts      → TransactionType, UI strings, endpoints
+transaction-schemas.ts → Zod validation schemas
+use-tx-watcher.ts      → TX_TYPE_MAP, registration, polling
+```
 
-## Interview Mode: Planning New Features
-
-When a user needs to integrate a new endpoint, ask:
-
-### For Auth/User Endpoints
-
-1. Is this a login flow change or user management?
-2. Does it affect the global auth context?
-3. Error handling strategy?
-
-### For Merged Data Endpoints
-
-1. Which route(s) will use this data?
-2. Query or mutation?
-3. Loading state? (skeleton, spinner)
-4. Empty state? (message, CTA)
-5. Error handling? (toast, inline)
-6. Cache invalidation needed?
-
-### For TX Endpoints
-
-1. Which transaction definition?
-2. What side effects on confirmation?
-   - onSubmit: Set PENDING_TX status
-   - onConfirmation: Finalize status
-3. Transaction state UI?
-
-## Keeping Docs Updated
-
-When the gateway API changes:
-
-1. **Run the audit script** - catches new/removed endpoints
-2. **Update unified-api-endpoints.md** - only if significantly changed
-3. **Update api-coverage.md** - track new implementations
-
-**Don't manually maintain endpoint lists** - let the audit script detect drift.
-
-## API History
-
-### January 2026 Update
-
-The API base URL changed from Cloud Run to a custom domain:
-
-| Old | New |
-|-----|-----|
-| `https://andamio-api-gateway-666713068234.us-central1.run.app` | `https://dev.api.andamio.io` |
-
-Key changes:
-- v1 auth and API key endpoints removed (replaced by v2 developer endpoints)
-- New wallet-based developer registration flow
-- New introduction CRUD endpoints for courses
-- New course module publish endpoint
+Every TransactionType must have entries in all three files.
 
 ## Current Stats
 
-The unified gateway has **106 endpoints** across these categories:
+| Category | Endpoints | Notes |
+|----------|-----------|-------|
+| Admin | 4 | Not hooked (admin panel not built) |
+| User | 4 | Partial (auth flow only) |
+| Auth | 6 | Complete |
+| API Key | 6 | Complete |
+| Courses | 41 | ~60% hooked |
+| Projects | 17 | ~80% hooked |
+| TX | 21 | Complete |
 
-| Category | Count |
-|----------|-------|
-| Admin | 4 |
-| User (v1 + v2) | 6 |
-| Auth (v2) | 6 |
-| API Key (v2) | 6 |
-| Courses | 37 |
-| Projects | 17 |
-| TX (Course + Project + Instance/Global + Admin) | 22 |
-| **Total** | **106** |
+---
 
-### Path Structure
-
-- `/v1/*` - Admin and user management endpoints
-- `/v2/*` - Everything else (auth, apikey, courses, projects, transactions)
+**Last Updated**: January 25, 2026 (Session resume added, 2 hooks APPROVED)

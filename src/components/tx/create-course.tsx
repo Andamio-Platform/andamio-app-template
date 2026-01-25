@@ -48,6 +48,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseIcon, TeacherIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-course-owner";
 
 export interface CreateCourseProps {
   /**
@@ -68,9 +69,11 @@ export interface CreateCourseProps {
  * ```
  */
 export function CreateCourse({ onSuccess }: CreateCourseProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
+  const registerCourse = useRegisterCourse();
+  const updateCourse = useUpdateCourse();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [code, setCode] = useState("");
@@ -104,63 +107,40 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           if (courseMetadata && status.state === "confirmed") {
             try {
               console.log("[CreateCourse] Registering course with DB...", courseMetadata);
-              const regResponse = await authenticatedFetch(
-                "/api/gateway/api/v2/course/owner/course/register",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    course_id: courseMetadata.policyId,
-                    title: courseMetadata.title,
-                  }),
-                }
-              );
-
-              if (regResponse.ok) {
-                console.log("[CreateCourse] Course registered successfully!");
-                toast.success("Course Created!", {
-                  description: `"${courseMetadata.title}" is now live and registered`,
-                });
-              } else if (regResponse.status === 409) {
-                // Course already exists (indexer created it) - update with title instead
+              await registerCourse.mutateAsync({
+                courseId: courseMetadata.policyId,
+                title: courseMetadata.title,
+              });
+              console.log("[CreateCourse] Course registered successfully!");
+              toast.success("Course Created!", {
+                description: `"${courseMetadata.title}" is now live and registered`,
+              });
+            } catch (err) {
+              // Check if it's a 409 conflict (course already exists from indexer)
+              const error = err as Error & { status?: number };
+              if (error.status === 409) {
                 console.log("[CreateCourse] Course exists, updating with title...");
-                const updateResponse = await authenticatedFetch(
-                  "/api/gateway/api/v2/course/owner/course/update",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      course_id: courseMetadata.policyId,
-                      data: { title: courseMetadata.title },
-                    }),
-                  }
-                );
-
-                if (updateResponse.ok) {
+                try {
+                  await updateCourse.mutateAsync({
+                    courseId: courseMetadata.policyId,
+                    data: { title: courseMetadata.title },
+                  });
                   console.log("[CreateCourse] Course title updated successfully!");
                   toast.success("Course Created!", {
                     description: `"${courseMetadata.title}" is now live and registered`,
                   });
-                } else {
-                  const updateError = await updateResponse.text();
-                  console.error("[CreateCourse] Update failed:", updateError);
+                } catch (updateErr) {
+                  console.error("[CreateCourse] Update failed:", updateErr);
                   toast.warning("Course Created (Title Pending)", {
                     description: `Course is on-chain but title may need manual update`,
                   });
                 }
               } else {
-                const errorText = await regResponse.text();
-                console.error("[CreateCourse] Registration failed:", errorText);
-                // Still show partial success - course is on-chain even if DB registration failed
+                console.error("[CreateCourse] Registration failed:", err);
                 toast.warning("Course Created (Registration Pending)", {
                   description: `Course is on-chain but DB registration may need manual sync`,
                 });
               }
-            } catch (err) {
-              console.error("[CreateCourse] Registration error:", err);
-              toast.warning("Course Created (Registration Pending)", {
-                description: `Course is on-chain but DB registration may need manual sync`,
-              });
             }
           } else {
             // Auto-registration worked (status.state === "updated") or no metadata

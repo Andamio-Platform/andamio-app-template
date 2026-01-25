@@ -21,8 +21,7 @@
  * ```
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useQuery } from "@tanstack/react-query";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
   OrchestrationMergedCourseDetail,
@@ -37,12 +36,34 @@ import type { CourseModule } from "./use-course-module";
 // =============================================================================
 
 /**
- * Data source for a merged course
- * - "merged": Course exists in both on-chain and DB (full data)
- * - "chain_only": Course on-chain but no DB content (needs registration)
- * - "db_only": Course in DB but not on-chain (draft)
+ * Lifecycle status for a course
+ * - "draft": In DB only, not yet published on-chain
+ * - "active": On-chain and registered in DB (fully operational)
+ * - "unregistered": On-chain but missing DB registration (needs /register endpoint)
  */
-export type CourseSource = "merged" | "chain_only" | "db_only";
+export type CourseStatus = "draft" | "active" | "unregistered";
+
+/**
+ * API source field values (internal use in transformers)
+ * Maps to CourseStatus for developer-friendly semantics
+ */
+type ApiSource = "merged" | "chain_only" | "db_only";
+
+/**
+ * Derive semantic status from API source field
+ * Used whenever an API endpoint returns a `source` field
+ */
+function getStatusFromSource(source: string | undefined): CourseStatus {
+  switch (source) {
+    case "merged":
+      return "active";
+    case "chain_only":
+      return "unregistered";
+    case "db_only":
+    default:
+      return "draft";
+  }
+}
 
 /**
  * App-level Course type with camelCase fields
@@ -58,8 +79,8 @@ export interface Course {
   createdTx?: string;
   createdSlot?: number;
 
-  // Data source
-  source: CourseSource;
+  // Lifecycle status (derived from API source field)
+  status: CourseStatus;
 
   // Content fields (flattened from content.*)
   title: string;
@@ -95,7 +116,9 @@ export function transformCourse(item: OrchestrationMergedCourseListItem): Course
     studentStateId: item.student_state_id,
     createdTx: item.created_tx,
     createdSlot: item.created_slot,
-    source: (item.source as CourseSource) ?? "db_only",
+
+    // Lifecycle status (derived from API source field)
+    status: getStatusFromSource(item.source),
 
     // Flattened content fields
     title: item.content?.title ?? "",
@@ -116,7 +139,9 @@ export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): 
     courseAddress: detail.course_address,
     teachers: detail.teachers,
     studentStateId: detail.student_state_id,
-    source: (detail.source as CourseSource) ?? "db_only",
+
+    // Lifecycle status (derived from API source field)
+    status: getStatusFromSource(detail.source),
 
     // Flattened content fields
     title: detail.content?.title ?? "",
@@ -139,30 +164,6 @@ export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): 
 }
 
 // =============================================================================
-// Backward Compatibility Exports (DEPRECATED)
-// =============================================================================
-
-/**
- * @deprecated Use Course instead. Will be removed after component migration.
- */
-export type FlattenedCourseListItem = Course;
-
-/**
- * @deprecated Use CourseDetail instead. Will be removed after component migration.
- */
-export type FlattenedCourseDetail = CourseDetail;
-
-/**
- * @deprecated Use transformCourse instead. Will be removed after component migration.
- */
-export const flattenCourseListItem = transformCourse;
-
-/**
- * @deprecated Use transformCourseDetail instead. Will be removed after component migration.
- */
-export const flattenCourseDetail = transformCourseDetail;
-
-// =============================================================================
 // Query Keys
 // =============================================================================
 
@@ -173,11 +174,10 @@ export const courseKeys = {
   all: ["courses"] as const,
   lists: () => [...courseKeys.all, "list"] as const,
   list: (filters: string) => [...courseKeys.lists(), { filters }] as const,
-  published: () => [...courseKeys.all, "published"] as const,
-  owned: () => [...courseKeys.all, "owned"] as const,
+  active: () => [...courseKeys.all, "active"] as const,
   details: () => [...courseKeys.all, "detail"] as const,
-  detail: (courseNftPolicyId: string) =>
-    [...courseKeys.details(), courseNftPolicyId] as const,
+  detail: (courseId: string) =>
+    [...courseKeys.details(), courseId] as const,
 };
 
 // =============================================================================
@@ -185,7 +185,7 @@ export const courseKeys = {
 // =============================================================================
 
 /**
- * Fetch a single course by ID (merged endpoint)
+ * Fetch a single course by ID
  *
  * Returns both on-chain data (modules, teachers, students) and off-chain content.
  * Data is cached and shared across all components using the same courseId.
@@ -207,7 +207,7 @@ export function useCourse(courseId: string | undefined) {
   return useQuery({
     queryKey: courseKeys.detail(courseId ?? ""),
     queryFn: async (): Promise<CourseDetail | null> => {
-      // Merged endpoint: GET /api/v2/course/user/course/get/{course_id}
+      // Endpoint: GET /api/v2/course/user/course/get/{course_id}
       // Returns both on-chain and off-chain data
       const response = await fetch(
         `/api/gateway/api/v2/course/user/course/get/${courseId}`
@@ -238,9 +238,9 @@ export function useCourse(courseId: string | undefined) {
 }
 
 /**
- * Fetch all published courses (merged endpoint)
+ * Fetch all active courses
  *
- * Returns combined on-chain and off-chain data for all published courses.
+ * Returns combined on-chain and off-chain data for all active courses.
  * Used for the public course catalog. Cached globally.
  *
  * Uses: GET /api/v2/course/user/courses/list
@@ -252,7 +252,7 @@ export function useCourse(courseId: string | undefined) {
  * @example
  * ```tsx
  * function CourseCatalog() {
- *   const { data: courses, isLoading } = usePublishedCourses();
+ *   const { data: courses, isLoading } = useActiveCourses();
  *
  *   return (
  *     <div className="grid grid-cols-3 gap-4">
@@ -261,7 +261,7 @@ export function useCourse(courseId: string | undefined) {
  *           key={course.courseId}
  *           title={course.title}
  *           description={course.description}
- *           source={course.source}
+ *           status={course.status}
  *         />
  *       ))}
  *     </div>
@@ -269,9 +269,9 @@ export function useCourse(courseId: string | undefined) {
  * }
  * ```
  */
-export function usePublishedCourses() {
+export function useActiveCourses() {
   return useQuery({
-    queryKey: courseKeys.published(),
+    queryKey: courseKeys.active(),
     queryFn: async (): Promise<Course[]> => {
       const response = await fetch(
         `/api/gateway/api/v2/course/user/courses/list`
@@ -283,7 +283,7 @@ export function usePublishedCourses() {
       }
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch published courses: ${response.statusText}`);
+        throw new Error(`Failed to fetch active courses: ${response.statusText}`);
       }
 
       const result = await response.json() as MergedHandlersMergedCoursesResponse | OrchestrationMergedCourseListItem[];
@@ -296,7 +296,7 @@ export function usePublishedCourses() {
       } else {
         // Wrapped format with data property
         if (result.warning) {
-          console.warn("[usePublishedCourses] API warning:", result.warning);
+          console.warn("[useActiveCourses] API warning:", result.warning);
         }
         items = result.data ?? [];
       }
@@ -304,192 +304,6 @@ export function usePublishedCourses() {
       // Transform to app-level types with camelCase fields
       return items.map(transformCourse);
     },
-  });
-}
-
-/**
- * Fetch courses owned by the authenticated user
- *
- * Requires authentication. Automatically skips query if user is not authenticated.
- *
- * @example
- * ```tsx
- * function MyCoursesPage() {
- *   const { data: courses, isLoading, error } = useOwnedCoursesQuery();
- *
- *   if (isLoading) return <PageLoading />;
- *   if (error) return <ErrorAlert message={error.message} />;
- *   if (!courses?.length) return <EmptyState title="No courses yet" />;
- *
- *   return <CourseList courses={courses} />;
- * }
- * ```
- */
-export function useOwnedCoursesQuery() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-
-  return useQuery({
-    queryKey: courseKeys.owned(),
-    queryFn: async (): Promise<Course[]> => {
-      // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/courses/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch owned courses: ${response.statusText}`);
-      }
-
-      const result = (await response.json()) as
-        | OrchestrationMergedCourseListItem[]
-        | MergedHandlersMergedCoursesResponse;
-
-      // Handle both wrapped { data: [...] } and raw array formats
-      const items = Array.isArray(result) ? result : (result.data ?? []);
-
-      // Transform to app-level types with camelCase fields
-      return items.map(transformCourse);
-    },
-    enabled: isAuthenticated,
-  });
-}
-
-// =============================================================================
-// Mutation Hooks
-// =============================================================================
-
-/**
- * Update course metadata
- *
- * Automatically invalidates the course cache on success.
- *
- * @example
- * ```tsx
- * function EditCourseForm({ course }: { course: Course }) {
- *   const updateCourse = useUpdateCourse();
- *
- *   const handleSubmit = async (data: UpdateCourseInput) => {
- *     await updateCourse.mutateAsync({
- *       courseNftPolicyId: course.courseId,
- *       data,
- *     });
- *     toast.success("Course updated!");
- *   };
- *
- *   return <CourseForm onSubmit={handleSubmit} isLoading={updateCourse.isPending} />;
- * }
- * ```
- */
-export function useUpdateCourse() {
-  const queryClient = useQueryClient();
-  const { authenticatedFetch } = useAndamioAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      courseNftPolicyId,
-      data,
-    }: {
-      courseNftPolicyId: string;
-      data: Partial<{
-        title?: string;
-        description?: string;
-        image_url?: string;
-        video_url?: string;
-        live?: boolean;
-      }>;
-    }) => {
-      // Go API: POST /course/owner/course/update
-      // API expects: { course_id, data: { title?, description?, ... } }
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            data,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to update course: ${response.statusText}`);
-      }
-
-      // Response consumed but not returned - cache invalidation triggers refetch
-      await response.json();
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate the specific course
-      void queryClient.invalidateQueries({
-        queryKey: courseKeys.detail(variables.courseNftPolicyId),
-      });
-      // Also invalidate lists that might contain this course
-      void queryClient.invalidateQueries({
-        queryKey: courseKeys.lists(),
-      });
-    },
-  });
-}
-
-/**
- * Delete a course
- *
- * Automatically invalidates all course caches on success.
- *
- * @example
- * ```tsx
- * function DeleteCourseButton({ courseId }: { courseId: string }) {
- *   const deleteCourse = useDeleteCourse();
- *   const router = useRouter();
- *
- *   const handleDelete = async () => {
- *     if (confirm("Are you sure?")) {
- *       await deleteCourse.mutateAsync(courseId);
- *       router.push("/studio/course");
- *     }
- *   };
- *
- *   return <Button onClick={handleDelete} variant="destructive">Delete</Button>;
- * }
- * ```
- */
-export function useDeleteCourse() {
-  const queryClient = useQueryClient();
-  const { authenticatedFetch } = useAndamioAuth();
-
-  return useMutation({
-    mutationFn: async (courseNftPolicyId: string) => {
-      // Go API: POST /course/owner/course/delete
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_id: courseNftPolicyId }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete course: ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    onSuccess: (_, courseNftPolicyId) => {
-      // Remove the specific course from cache
-      queryClient.removeQueries({
-        queryKey: courseKeys.detail(courseNftPolicyId),
-      });
-      // Invalidate all lists
-      void queryClient.invalidateQueries({
-        queryKey: courseKeys.all,
-      });
-    },
+    staleTime: 30 * 1000,
   });
 }

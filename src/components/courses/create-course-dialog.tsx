@@ -34,7 +34,8 @@ import {
 } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-teacher-courses";
+import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-course-teacher";
+import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-course-owner";
 
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
@@ -52,10 +53,12 @@ import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-teacher-cour
  */
 export function CreateCourseDialog() {
   const router = useRouter();
-  const { user, authenticatedFetch } = useAndamioAuth();
+  const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
   const invalidateTeacherCourses = useInvalidateTeacherCourses();
+  const registerCourse = useRegisterCourse();
+  const updateCourse = useUpdateCourse();
 
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -100,53 +103,34 @@ export function CreateCourseDialog() {
         ) {
           hasRegisteredRef.current = true;
 
-          // Register course in DB
+          // Register course in DB using hooks
           let registrationSucceeded = false;
           try {
             console.log("[CreateCourse] Registering course with DB...", metadata);
-            const regResponse = await authenticatedFetch(
-              "/api/gateway/api/v2/course/owner/course/register",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  course_id: metadata.policyId,
-                  title: metadata.title,
-                }),
-              }
-            );
-
-            if (regResponse.ok) {
-              console.log("[CreateCourse] Course registered successfully!");
-              registrationSucceeded = true;
-            } else if (regResponse.status === 409) {
-              // Course already exists (indexer created it) - update with title instead
+            await registerCourse.mutateAsync({
+              courseId: metadata.policyId,
+              title: metadata.title,
+            });
+            console.log("[CreateCourse] Course registered successfully!");
+            registrationSucceeded = true;
+          } catch (err) {
+            // Check if it's a 409 conflict (course already exists from indexer)
+            const error = err as Error & { status?: number };
+            if (error.status === 409) {
               console.log("[CreateCourse] Course exists, updating with title...");
-              const updateResponse = await authenticatedFetch(
-                "/api/gateway/api/v2/course/owner/course/update",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    course_id: metadata.policyId,
-                    data: { title: metadata.title },
-                  }),
-                }
-              );
-
-              if (updateResponse.ok) {
+              try {
+                await updateCourse.mutateAsync({
+                  courseId: metadata.policyId,
+                  data: { title: metadata.title },
+                });
                 console.log("[CreateCourse] Course title updated successfully!");
                 registrationSucceeded = true;
-              } else {
-                const updateError = await updateResponse.text();
-                console.error("[CreateCourse] Update failed:", updateError);
+              } catch (updateErr) {
+                console.error("[CreateCourse] Update failed:", updateErr);
               }
             } else {
-              const errorText = await regResponse.text();
-              console.error("[CreateCourse] Registration failed:", errorText);
+              console.error("[CreateCourse] Registration failed:", err);
             }
-          } catch (err) {
-            console.error("[CreateCourse] Registration error:", err);
           }
 
           // Invalidate cache so course appears in list

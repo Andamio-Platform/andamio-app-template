@@ -34,14 +34,16 @@ Hooks are organized by domain under `src/hooks/api/`:
 
 | File | Purpose | Exports |
 |------|---------|---------|
-| `use-course.ts` | Course queries & mutations | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse`, `courseKeys`; Types: `Course`, `CourseDetail`, `CourseSource` |
-| `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useTeacherCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `courseModuleKeys`; Types: `MergedCourseModule`, `ModuleSource` |
-| `use-slt.ts` | SLT queries & mutations | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT`, `sltKeys` |
-| `use-lesson.ts` | Lesson queries & mutations | `useLessons`, `useLesson`, `useCreateLesson`, `lessonKeys` |
-| `use-teacher-courses.ts` | Teacher queries | `useTeacherCourses`, `useTeacherCommitments`, `useTeacherCoursesWithModules`, `useInvalidateTeacherCourses`, `teacherCourseKeys`; Types: `TeacherCourse`, `TeacherCoursesResponse`, `TeacherAssignmentCommitment`, `TeacherAssignmentCommitmentsResponse`, `TeacherCourseWithModules` |
-| `use-student-courses.ts` | Student queries | `useStudentCourses`, `useInvalidateStudentCourses`, `studentCourseKeys`; Types: `StudentCourse`, `StudentCoursesResponse` |
-| `use-owned-courses.ts` | Owned courses | `useOwnedCourses` |
-| `use-module-wizard-data.ts` | Module wizard data | `useModuleWizardData` |
+| `use-course.ts` | Course queries | `useCourse`, `useActiveCourses`, `courseKeys`; Types: `Course`, `CourseDetail`, `CourseStatus` |
+| `use-course-owner.ts` | Owner mutations | `useOwnerCourses`, `useCreateCourse`, `useUpdateCourse`, `useDeleteCourse`, `useRegisterCourse`, `ownerCourseKeys` |
+| `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useTeacherCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `useRegisterCourseModule`, `courseModuleKeys`; Types: `CourseModule`, `CourseModuleStatus`, `SLT`, `Lesson`, `Assignment`, `Introduction` |
+| `use-slt.ts` | SLT queries & mutations | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT`, `useReorderSLT`, `sltKeys` |
+| `use-lesson.ts` | Lesson queries & mutations | `useLessons`, `useLesson`, `useCreateLesson`, `useUpdateLesson`, `useDeleteLesson`, `lessonKeys` |
+| `use-assignment.ts` | Assignment queries & mutations | `useAssignment`, `useCreateAssignment`, `useUpdateAssignment`, `useDeleteAssignment` |
+| `use-introduction.ts` | Introduction mutations | `useCreateIntroduction`, `useUpdateIntroduction`, `useDeleteIntroduction` |
+| `use-course-teacher.ts` | Teacher queries | `useTeacherCourses`, `useTeacherAssignmentCommitments`, `useTeacherCoursesWithModules`, `useInvalidateTeacherCourses`, `courseTeacherKeys`; Types: `TeacherCourse`, `TeacherCourseStatus`, `TeacherAssignmentCommitment` |
+| `use-course-student.ts` | Student queries | `useStudentCourses`, `useInvalidateStudentCourses`, `courseStudentKeys`; Types: `StudentCourse` |
+| `use-module-wizard-data.ts` | Module wizard composite | `useModuleWizardData` - Composes course hooks for wizard UI |
 
 ### Project Hooks (`src/hooks/api/project/`)
 

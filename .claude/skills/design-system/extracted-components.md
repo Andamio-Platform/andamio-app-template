@@ -509,15 +509,16 @@ const course: HybridCourseStatus = {
 
 ### useModuleWizardData
 
-**File**: `src/hooks/use-module-wizard-data.ts`
+**File**: `src/hooks/api/course/use-module-wizard-data.ts`
 
 **Extracted From**: Refactoring of `/studio/course/[coursenft]/[modulecode]/page.tsx` (2024-12)
+**Refactored**: January 25, 2026 - Now composes React Query hooks instead of direct fetch()
 
-**Purpose**: Encapsulates all data fetching logic for the module wizard, including course, module, SLTs, assignment, introduction, and lessons.
+**Purpose**: Encapsulates all data fetching logic for the module wizard by composing `useCourse`, `useTeacherCourseModules`, `useSLTs`, and `useAssignment` hooks.
 
 **Usage**:
 ```tsx
-import { useModuleWizardData } from "~/hooks/use-module-wizard-data";
+import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
 
 const { data, completion, refetchData } = useModuleWizardData({
   courseNftPolicyId,

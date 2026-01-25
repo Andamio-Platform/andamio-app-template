@@ -112,15 +112,22 @@ This template continues as the **reference implementation** and will receive upd
 - ✅ 74 type errors reduced to 0
 - ✅ typescript-types-expert skill updated with transform documentation
 
-### 🔄 Next: L2/L3 Hook Reorganization
+### 🔄 Phase 3.9: API Hooks Cleanup (In Progress)
 
-**Goal**: Reorganize hooks into `course/` and `project/` subdirectories.
+**Goal**: Standardize all API hooks to colocated types pattern.
 
-**Testing Remaining**:
-1. Verify all course routes work with gateway
-2. Verify all project routes work with gateway
-3. Test transaction flows (mint, commit, assess, claim)
-4. Wallet compatibility testing (Nami, Flint, Yoroi, Lace, Vespr)
+**Completed**:
+- ✅ 6/11 hooks approved (`use-course`, `use-course-owner`, `use-course-module`, `use-slt`, `use-lesson`, `use-course-student`)
+- ✅ New hook files: `use-assignment.ts`, `use-introduction.ts`
+- ✅ Module wizard refactored to use React Query hooks (pending UX testing)
+- ✅ Hook reorganization into `course/` and `project/` subdirectories
+
+**Remaining**:
+1. Manual UX testing of wizard flow
+2. Approve remaining hooks: `use-course-teacher`, `use-project`, `use-project-manager`, `use-project-contributor`
+3. Move project types into hook files
+
+**Tracking**: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
 
 See `STATUS.md` for detailed session notes.
 
@@ -134,6 +141,7 @@ Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━�
 Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (10/13 routes, 9/9 tx)
 Phase 3.5: V2 Gateway Migration   ━━━━━━━━━━━━━━━━ ✅ Complete (all APIs unified)
 Phase 3.8: Type Transformation    ━━━━━━━━━━━━━━━━ ✅ Complete (snake_case → camelCase)
+Phase 3.9: API Hooks Cleanup      ━━━━━━━━━━━━━━━━ 🔄 In Progress (6/11 hooks approved)
 Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 

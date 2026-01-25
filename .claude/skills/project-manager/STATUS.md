@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 24, 2026
+> **Last Updated**: January 25, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -15,15 +15,15 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
-| **Colocated Types Pattern** | **Course Side Complete** | Project side pending |
+| **API Hooks Cleanup** | **🔄 In Progress** | 6/11 hooks approved |
 
 ---
 
-## 🎯 TOP PRIORITY: Formalize Hook Architecture Pattern
+## 🎯 TOP PRIORITY: API Hooks Cleanup
 
-**Status**: Active - Course side complete, need to document and apply to all hooks
+**Status**: Active - 6 hooks approved, 5 remaining + wizard refactored
 
-The **Colocated Types Pattern** has been successfully implemented for Course hooks. This pattern MUST be formalized and applied consistently to ALL hooks.
+Standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. Tracking in: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
 
 ### The Pattern (Established)
 
@@ -32,76 +32,72 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ```
 
 **Key Rules**:
-1. App-level types (camelCase) are defined IN hook files, not separate type files
-2. Transform functions convert API snake_case to app camelCase
+1. App-level types (camelCase) defined IN hook files
+2. Transform functions convert API snake_case → app camelCase
 3. Components import types from hooks, NEVER from `~/types/generated`
-4. Clean domain names: `Course`, `CourseModule`, `Task` - never "Merged" or "Flattened" prefixes
-5. The `source` field indicates data origin, not the type name
+4. Clean domain names: `Course`, `CourseModule`, `SLT` - never "Merged" prefixes
+5. Semantic `status` field replaces raw `source` field
 
-### Course Hooks (✅ Complete)
+### Hook Approval Status
 
-| Hook | Types | Transform Functions | Status |
-|------|-------|-------------------|--------|
-| `use-course.ts` | `Course`, `CourseDetail`, `CourseSource` | `transformCourse()`, `transformCourseDetail()` | ✅ Complete |
-| `use-course-module.ts` | `CourseModule`, `SLT`, `Lesson`, `ModuleSource` | `transformCourseModule()`, `transformSLT()`, `transformLesson()` | ✅ Complete |
-| `use-teacher-courses.ts` | `TeacherCourse`, `TeacherAssignmentCommitment`, `TeacherCourseWithModules` | `transformTeacherCourse()`, `transformTeacherCommitment()` | ✅ Complete |
-| `use-owned-courses.ts` | Uses `Course` from use-course | Uses `transformCourse()` | ✅ Complete |
+| Hook | Types | Status |
+|------|-------|--------|
+| `use-course.ts` | `Course`, `CourseDetail` | ✅ APPROVED |
+| `use-course-owner.ts` | Uses Course types | ✅ APPROVED |
+| `use-course-module.ts` | `CourseModule`, `SLT`, `Lesson`, `Assignment`, `Introduction` | ✅ APPROVED |
+| `use-slt.ts` | Imports from use-course-module | ✅ APPROVED |
+| `use-lesson.ts` | Imports from use-course-module | ✅ APPROVED |
+| `use-course-student.ts` | `StudentCourse` | ✅ APPROVED |
+| `use-course-teacher.ts` | `TeacherCourse`, `TeacherAssignmentCommitment` | 🔶 Needs review |
+| `use-project.ts` | Has transformers in `types/project.ts` | 🔶 Move types INTO hook |
+| `use-project-manager.ts` | Raw API types | ⬜ Needs migration |
+| `use-project-contributor.ts` | Raw API types | ⬜ Needs migration |
 
-**Migration complete** (January 25, 2026):
-- ~~`FlattenedCourseListItem`~~ → `Course` (deprecated alias removed)
-- ~~`FlattenedCourseDetail`~~ → `CourseDetail` (deprecated alias removed)
-- `MergedCourseModule` → `CourseModule` (still aliased)
+### New Files Created
 
-### Project Hooks (⬜ Needs Migration)
+| File | Purpose |
+|------|---------|
+| `use-course-owner.ts` | Owner mutations (create, update, delete, register) |
+| `use-assignment.ts` | Assignment CRUD (query + mutations) |
+| `use-introduction.ts` | Introduction CRUD (mutations only) |
 
-| Hook | Current State | Action Needed |
-|------|---------------|---------------|
-| `use-project.ts` | Has transformers in `types/project.ts` | Move types INTO hook |
-| `use-contributor-projects.ts` | Raw API types | Add colocated types + transforms |
-| `use-manager-projects.ts` | Raw API types | Add colocated types + transforms |
+### Module Wizard Refactored (Pending UX Testing)
 
-### Other Hooks (⬜ Not Started)
+**Commit**: `74ef3f4` - wip: Refactor wizard to use hook types
 
-| Hook | Current State | Action Needed |
-|------|---------------|---------------|
-| `use-slt.ts` | Raw API types | Add `SLT` type + `transformSLT()` |
-| `use-lesson.ts` | Raw API types | Add `Lesson` type + `transformLesson()` |
-| `use-student-courses.ts` | Raw API types | Add `StudentCourse` type + transform |
+- `wizard/types.ts` now imports from `~/hooks/api`
+- `use-module-wizard-data.ts` composes React Query hooks (no direct fetch)
+- All step components use camelCase fields
+- Legacy `module-wizard.tsx` updated with transform functions
 
-### Next Steps (Prioritized)
-
-1. **Document the pattern formally** in HOOK-ARCHITECTURE-GUIDE.md
-2. **Delete `src/types/project.ts`** - migrate types into `use-project.ts`
-3. **Apply pattern to remaining hooks**
-4. **Audit pages for raw fetch() calls** - replace with hooks
-5. ⬜ **CONFIRM: Hooks are the ONLY interface between UX components/pages and the API**
-   - Run `/audit-api-coverage api-hooks` to verify
-   - No direct `fetch()` or `authenticatedFetch()` in components/pages
-   - All API access must go through `src/hooks/api/` or `src/hooks/tx/`
+**Next**: Manual UX testing of wizard flow
 
 ---
 
 ## Recent Completions
 
-**January 24, 2026 (Session 2)**:
-- ✅ Migrated `use-course.ts` to colocated types pattern (camelCase)
-- ✅ Migrated `use-course-module.ts` to colocated types pattern
-- ✅ Migrated `use-teacher-courses.ts` to colocated types pattern
-- ✅ Updated 10+ component files to use new camelCase field names
-- ✅ Fixed all TypeScript errors (build passes)
-- ✅ Established rule: "App-level types use clean domain names - never 'Merged' or 'Flattened' prefixes"
+**January 25, 2026 (Session 3)**:
+- ✅ Refactored module wizard to use hook types (camelCase)
+- ✅ `use-module-wizard-data.ts` now composes React Query hooks
+- ✅ All 6 wizard step components updated to camelCase fields
+- ✅ Added `useReorderSLT` to index.ts exports
+- ✅ Created `use-assignment.ts` and `use-introduction.ts`
 
-**January 24, 2026 (Session 1)**:
-- Fixed module wizard infinite API polling (dependency loop in `use-module-wizard-data.ts`)
-- Added `transformMergedTask()` function in `types/project.ts`
-- Added `useProjectTasks()` hook in `use-project.ts`
-- Created `HOOK-ARCHITECTURE-GUIDE.md` tracking document
+**January 25, 2026 (Session 2)**:
+- ✅ Approved `use-course-module.ts` with CourseModuleStatus refactor
+- ✅ Approved `use-slt.ts`, `use-lesson.ts`, `use-course-student.ts`
+- ✅ Added `useRegisterCourseModule` hook
+- ✅ Updated 15+ consumer files to camelCase
 
-**January 23, 2026**:
-- **Merged Endpoint Type Migration**: API v2.0.0 response shape changes
-- Created flattening layer (`transformCourse`, `Course`)
-- **Developer Auth V2 Migration**: Two-step wallet-verified registration
-- Replaced deprecated `andamioscan.ts` with minimal `andamioscan-events.ts`
+**January 25, 2026 (Session 1)**:
+- ✅ Approved `use-course.ts` and `use-course-owner.ts`
+- ✅ Created hook reorganization with subdirectories
+- ✅ Updated skill docs for audit-api-coverage
+
+**January 24, 2026**:
+- Fixed module wizard infinite API polling
+- Created HOOK-ARCHITECTURE-GUIDE.md
+- Established colocated types pattern
 
 ---
 
@@ -109,8 +105,8 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Status | Notes |
 |---------|--------|-------|
-| **SLT Endpoints Schema Mismatch** | Blocking | SLT create/update/delete expect camelCase. [GitHub Issue #3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
-| **Project V2 Task Update/Delete** | Blocking | API returns 404 for existing tasks |
+| **Module Wizard UX Testing** | Pending | Hook refactor complete (74ef3f4), needs manual testing |
+| **Project Hooks Migration** | Pending | 3 project hooks need colocated types pattern |
 | **Wallet Testing** | Pending | Nami, Flint, Yoroi, Lace need testing (Eternl works) |
 
 ---

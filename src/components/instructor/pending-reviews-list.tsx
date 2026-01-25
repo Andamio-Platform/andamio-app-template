@@ -27,7 +27,7 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useTeacherCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
+import { useTeacherAssignmentCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
 
 interface PendingReviewsListProps {
   courseId?: string; // Optional: filter to specific course
@@ -49,7 +49,7 @@ export function PendingReviewsList({
   courseId,
   onSelectAssessment,
 }: PendingReviewsListProps) {
-  const { data: allPendingAssessments, isLoading, error, refetch } = useTeacherCommitments();
+  const { data: allPendingAssessments, isLoading, error, refetch } = useTeacherAssignmentCommitments();
 
   // Filter by course if courseId is provided
   const pendingAssessments = React.useMemo(() => {

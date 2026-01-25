@@ -25,10 +25,10 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Query Keys
 // =============================================================================
 
-export const teacherCourseKeys = {
+export const courseTeacherKeys = {
   all: ["teacher-courses"] as const,
-  list: () => [...teacherCourseKeys.all, "list"] as const,
-  commitments: () => [...teacherCourseKeys.all, "commitments"] as const,
+  list: () => [...courseTeacherKeys.all, "list"] as const,
+  commitments: () => [...courseTeacherKeys.all, "commitments"] as const,
 };
 
 // =============================================================================
@@ -231,7 +231,7 @@ export function useTeacherCourses() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: teacherCourseKeys.list(),
+    queryKey: courseTeacherKeys.list(),
     queryFn: async (): Promise<TeacherCoursesResponse> => {
       // Merged endpoint: POST /api/v2/course/teacher/courses/list
       console.log("[useTeacherCourses] Making request...");
@@ -286,7 +286,7 @@ export function useTeacherCourses() {
  * @example
  * ```tsx
  * function PendingReviews() {
- *   const { data: commitments, isLoading, error, refetch } = useTeacherCommitments();
+ *   const { data: commitments, isLoading, error, refetch } = useTeacherAssignmentCommitments();
  *
  *   if (isLoading) return <Skeleton />;
  *   if (error) return <ErrorAlert message={error.message} />;
@@ -296,11 +296,11 @@ export function useTeacherCourses() {
  * }
  * ```
  */
-export function useTeacherCommitments() {
+export function useTeacherAssignmentCommitments() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: teacherCourseKeys.commitments(),
+    queryKey: courseTeacherKeys.commitments(),
     queryFn: async (): Promise<TeacherAssignmentCommitmentsResponse> => {
       // Merged endpoint: POST /api/v2/course/teacher/assignment-commitments/list
       const response = await authenticatedFetch(
@@ -371,7 +371,7 @@ export function useTeacherCoursesWithModules() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: [...teacherCourseKeys.all, "with-modules"],
+    queryKey: [...courseTeacherKeys.all, "with-modules"],
     queryFn: async (): Promise<TeacherCourseWithModules[]> => {
       // Step 1: Fetch teacher courses list
       const coursesResponse = await authenticatedFetch(
@@ -464,7 +464,7 @@ export function useInvalidateTeacherCourses() {
 
   return async () => {
     await queryClient.invalidateQueries({
-      queryKey: teacherCourseKeys.all,
+      queryKey: courseTeacherKeys.all,
     });
   };
 }

@@ -40,7 +40,7 @@ When changes involve specific domains, delegate documentation updates to the app
 | Change Type | Delegate To | Description |
 |-------------|-------------|-------------|
 | Transaction schemas | `/transaction-auditor` | API schema sync, TX_TYPE_MAP, tx-state-machine.md |
-| API endpoint changes | `/audit-api-coverage` | Endpoint coverage, API integration docs |
+| API hooks/patterns | `/audit-api-coverage` | **Hook patterns, transformers, query keys, API coverage** - Use to refine hooks following best practices |
 | Styling/components | `/design-system reference` | Component patterns, color system |
 | Project status | `/project-manager` | STATUS.md, ROADMAP.md, feature tracking |
 | Type system issues | `/typescript-types-expert audit` | Type imports, NullableString, generated types |
@@ -57,6 +57,19 @@ Add any new skill suggestions to the `BACKLOG.md` file in this skill directory. 
 Review the backlog periodically and move completed items to the archive section.
 
 ## Key Documentation Files
+
+### Hooks (API Connection Layer)
+
+**Important**: Hooks are the ONLY interface between UX components/pages and the API.
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/api/` | All API hooks (course, project, etc.) |
+| `src/hooks/tx/` | Transaction hooks |
+| `.claude/skills/audit-api-coverage/api-hooks-audit.md` | API hook patterns and checklist |
+| `.claude/skills/audit-api-coverage/tx-hooks-audit.md` | TX hook patterns and checklist |
+
+When reviewing hook changes, use `/audit-api-coverage api-hooks` to verify patterns.
 
 ### Transaction-Related
 

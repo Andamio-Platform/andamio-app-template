@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useOwnedCourses } from "~/hooks/api/course/use-owned-courses";
+import { useOwnerCourses } from "~/hooks/api/course/use-course-owner";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -18,7 +18,9 @@ import { CourseModuleCount, CourseManageButton } from "./course-ui";
  */
 export function OwnedCoursesList() {
   const { isAuthenticated } = useAndamioAuth();
-  const { courses, moduleCounts, isLoading, error } = useOwnedCourses();
+  const { data: courses = [], isLoading, error } = useOwnerCourses();
+  // Module counts temporarily disabled during hook migration
+  const moduleCounts: Record<string, number> = {};
 
   // Not authenticated state
   if (!isAuthenticated) {
@@ -48,7 +50,7 @@ export function OwnedCoursesList() {
       <AndamioAlert variant="destructive">
         <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
-        <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        <AndamioAlertDescription>{error.message}</AndamioAlertDescription>
       </AndamioAlert>
     );
   }

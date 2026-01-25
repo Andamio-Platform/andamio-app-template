@@ -23,11 +23,11 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Query Keys
 // =============================================================================
 
-export const managerProjectKeys = {
+export const projectManagerKeys = {
   all: ["manager-projects"] as const,
-  list: () => [...managerProjectKeys.all, "list"] as const,
+  list: () => [...projectManagerKeys.all, "list"] as const,
   commitments: (projectId?: string) =>
-    [...managerProjectKeys.all, "commitments", projectId] as const,
+    [...projectManagerKeys.all, "commitments", projectId] as const,
 };
 
 // =============================================================================
@@ -130,7 +130,7 @@ export function useManagerProjects() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: managerProjectKeys.list(),
+    queryKey: projectManagerKeys.list(),
     queryFn: async (): Promise<ManagerProjectsResponse> => {
       // Merged endpoint: POST /api/v2/project/manager/projects/list
       const response = await authenticatedFetch(
@@ -202,7 +202,7 @@ export function useManagerCommitments(projectId?: string) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: managerProjectKeys.commitments(projectId),
+    queryKey: projectManagerKeys.commitments(projectId),
     queryFn: async (): Promise<ManagerCommitmentsResponse> => {
       // Merged endpoint: POST /api/v2/project/manager/commitments/list
       const response = await authenticatedFetch(
@@ -256,7 +256,7 @@ export function useInvalidateManagerProjects() {
 
   return async () => {
     await queryClient.invalidateQueries({
-      queryKey: managerProjectKeys.all,
+      queryKey: projectManagerKeys.all,
     });
   };
 }

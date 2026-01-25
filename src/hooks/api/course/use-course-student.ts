@@ -27,11 +27,11 @@ import {
 // Query Keys
 // =============================================================================
 
-export const studentCourseKeys = {
+export const courseStudentKeys = {
   all: ["student-courses"] as const,
-  list: () => [...studentCourseKeys.all, "list"] as const,
-  commitments: () => [...studentCourseKeys.all, "commitments"] as const,
-  courseStatus: (courseId: string) => [...studentCourseKeys.all, "status", courseId] as const,
+  list: () => [...courseStudentKeys.all, "list"] as const,
+  commitments: () => [...courseStudentKeys.all, "commitments"] as const,
+  courseStatus: (courseId: string) => [...courseStudentKeys.all, "status", courseId] as const,
 };
 
 // =============================================================================
@@ -73,7 +73,7 @@ export function useStudentCourses() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: studentCourseKeys.list(),
+    queryKey: courseStudentKeys.list(),
     queryFn: async (): Promise<StudentCoursesResponse> => {
       // Merged endpoint: POST /api/v2/course/student/courses/list
       const response = await authenticatedFetch(
@@ -124,7 +124,7 @@ export function useInvalidateStudentCourses() {
 
   return async () => {
     await queryClient.invalidateQueries({
-      queryKey: studentCourseKeys.all,
+      queryKey: courseStudentKeys.all,
     });
   };
 }

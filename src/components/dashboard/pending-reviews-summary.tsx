@@ -19,7 +19,7 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useTeacherCommitments } from "~/hooks/api";
+import { useTeacherAssignmentCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
 
 interface PendingReviewsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -39,7 +39,7 @@ interface PendingReviewsSummaryProps {
  * - Error: Inline alert with retry button
  */
 export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummaryProps) {
-  const { data: pendingAssessments, isLoading, error, refetch } = useTeacherCommitments();
+  const { data: pendingAssessments, isLoading, error, refetch } = useTeacherAssignmentCommitments();
 
   // No access token - don't show this component
   if (!accessTokenAlias) {

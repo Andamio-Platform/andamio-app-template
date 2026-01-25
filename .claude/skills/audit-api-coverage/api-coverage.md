@@ -2,7 +2,7 @@
 
 > **Unified API Gateway Coverage for T3 App Template**
 > **Base URL**: `https://dev.api.andamio.io`
-> Last Updated: January 23, 2026
+> Last Updated: January 24, 2026
 > **Status**: Updated - Developer Auth V2 Complete
 
 This document tracks which API endpoints are implemented in the T3 App Template.
@@ -20,7 +20,7 @@ This document tracks which API endpoints are implemented in the T3 App Template.
 | [TX: Courses](#tx-course-operations) | 6 | 6 | **100%** |
 | [TX: Projects](#tx-project-operations) | 8 | 7 | **88%** |
 | [TX: Instance/Global](#tx-instanceglobal-operations) | 7 | 6 | **86%** |
-| **TOTAL** | **106** | **~65** | **~61%** |
+| **TOTAL** | **~99** | **~65** | **~66%** |
 
 ---
 
@@ -329,5 +329,5 @@ export function useResource(id: string) {
 
 ---
 
-**Last Updated**: January 22, 2026
+**Last Updated**: January 24, 2026
 **API Base URL**: `https://dev.api.andamio.io`

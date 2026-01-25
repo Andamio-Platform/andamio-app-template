@@ -1,6 +1,6 @@
 # Hook Architecture Guide
 
-> **Last Updated**: January 24, 2026
+> **Last Updated**: January 25, 2026
 > **Status**: Pattern established and validated on Course side. Ready for Project side migration.
 
 ---
@@ -28,6 +28,7 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 3. **Components import from hooks**, NEVER from `~/types/generated`
 4. **Clean domain names**: `Course`, `CourseModule`, `Task` - never "Merged" or "Flattened" prefixes
 5. **The `source` field** indicates data origin (`"merged"`, `"chain_only"`, `"db_only"`), not the type name
+6. **Types flow UP the hierarchy** - hooks can import types from "lower" hooks (e.g., `use-course.ts` imports from `use-course-module.ts`), but never the reverse (no circular imports)
 
 ### File Structure
 
@@ -165,6 +166,39 @@ function MyComponent() {
 import type { SomeApiResponseType } from "~/types/generated"; // NO!
 ```
 
+### Type Hierarchy (Cross-Hook Imports)
+
+Types flow UP the hierarchy. Hooks can import types from "lower" hooks, but never the reverse.
+
+```
+use-course.ts (owns Course, CourseDetail)
+    ↑ imports CourseModule
+use-course-module.ts (owns CourseModule, SLT, Lesson)
+    ↑ can be imported by
+use-slt.ts, use-lesson.ts (use imported types, don't redefine)
+```
+
+**Rules**:
+1. Each hook owns its primary types
+2. Import from the owner, don't duplicate
+3. No circular imports allowed
+4. Lower-level hooks can be imported by higher-level hooks
+
+```typescript
+// ✅ CORRECT - use-slt.ts imports from the owner hook
+import { type SLT, transformSLT } from "./use-course-module";
+
+export function useSLTs(courseId: string, moduleCode: string) {
+  return useQuery<SLT[]>({ ... });
+}
+
+// ❌ WRONG - Duplicating types that exist elsewhere
+export interface SLT {  // Don't redefine, import instead!
+  sltHash: string;
+  ...
+}
+```
+
 ---
 
 ## Migration Status
@@ -178,10 +212,10 @@ import type { SomeApiResponseType } from "~/types/generated"; // NO!
 | `use-teacher-courses.ts` | `TeacherCourse`, `TeacherAssignmentCommitment`, `TeacherCourseWithModules`, `TeacherCourseSource` | `transformTeacherCourse()`, `transformTeacherCommitment()` | ✅ Complete |
 | `use-owned-courses.ts` | Uses `Course` from use-course | Uses `transformCourse()` | ✅ Complete |
 
-**Backward Compatibility Aliases** (deprecated, will be removed):
-- `FlattenedCourseListItem` → `Course`
-- `FlattenedCourseDetail` → `CourseDetail`
-- `MergedCourseModule` → `CourseModule`
+**Backward Compatibility Aliases**:
+- ~~`FlattenedCourseListItem`~~ → `Course` (removed January 25, 2026)
+- ~~`FlattenedCourseDetail`~~ → `CourseDetail` (removed January 25, 2026)
+- `MergedCourseModule` → `CourseModule` (still aliased, remove when consumers migrated)
 
 ### ⬜ Project Side (Needs Migration)
 
@@ -221,9 +255,9 @@ export interface Course { ... }
 ### 2. "Merged" or "Flattened" prefixes
 
 ```typescript
-// ❌ BAD - Confusing prefixes
-export interface MergedCourseModule { ... }
-export interface FlattenedCourseDetail { ... }
+// ❌ BAD - Confusing prefixes (these have been removed)
+// export interface MergedCourseModule { ... }
+// export interface FlattenedCourseDetail { ... }
 
 // ✅ GOOD - Clean domain names
 export interface CourseModule { ... }

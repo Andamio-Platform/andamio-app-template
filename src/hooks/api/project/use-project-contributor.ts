@@ -23,10 +23,10 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Query Keys
 // =============================================================================
 
-export const contributorProjectKeys = {
+export const projectContributorKeys = {
   all: ["contributor-projects"] as const,
-  list: () => [...contributorProjectKeys.all, "list"] as const,
-  commitments: () => [...contributorProjectKeys.all, "commitments"] as const,
+  list: () => [...projectContributorKeys.all, "list"] as const,
+  commitments: () => [...projectContributorKeys.all, "commitments"] as const,
 };
 
 // =============================================================================
@@ -92,7 +92,7 @@ export function useContributorProjects() {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: contributorProjectKeys.list(),
+    queryKey: projectContributorKeys.list(),
     queryFn: async (): Promise<ContributorProjectsResponse> => {
       // Merged endpoint: POST /api/v2/project/contributor/projects/list
       const response = await authenticatedFetch(
@@ -143,7 +143,7 @@ export function useInvalidateContributorProjects() {
 
   return async () => {
     await queryClient.invalidateQueries({
-      queryKey: contributorProjectKeys.all,
+      queryKey: projectContributorKeys.all,
     });
   };
 }

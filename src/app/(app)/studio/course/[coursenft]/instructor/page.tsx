@@ -41,7 +41,7 @@ import { TeacherIcon, SuccessIcon, PendingIcon, CloseIcon, LoadingIcon } from "~
 import { ContentDisplay } from "~/components/content-display";
 import type { JSONContent } from "@tiptap/core";
 import {
-  type FlattenedCourseDetail,
+  type CourseDetail,
   type TeacherAssignmentCommitment,
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -118,7 +118,7 @@ export default function InstructorDashboardPage() {
     }
   );
 
-  const [course, setCourse] = useState<FlattenedCourseDetail | null>(null);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
   const [commitments, setCommitments] = useState<TeacherAssignmentCommitment[]>([]);
   const [filteredCommitments, setFilteredCommitments] = useState<TeacherAssignmentCommitment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,7 +168,7 @@ export default function InstructorDashboardPage() {
         throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
       }
 
-      const courseData = (await courseResponse.json()) as FlattenedCourseDetail;
+      const courseData = (await courseResponse.json()) as CourseDetail;
       setCourse(courseData);
 
       // Fetch assignment commitments for this course

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useOwnedCourses } from "~/hooks/api/course/use-owned-courses";
+import { useOwnerCourses } from "~/hooks/api/course/use-course-owner";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -33,7 +33,10 @@ import {
  */
 export function CourseManager() {
   const { isAuthenticated } = useAndamioAuth();
-  const { courses: allCourses, moduleCounts, isLoading, error } = useOwnedCourses();
+  const { data: allCourses = [], isLoading, error } = useOwnerCourses();
+  // Module counts temporarily disabled during hook migration
+  // TODO: Add useModuleCounts hook to restore this feature
+  const moduleCounts: Record<string, number> = {};
 
   // Filter, sort, and view state
   const [filter, setFilter] = useState<CourseFilter>(defaultCourseFilter);
@@ -85,7 +88,7 @@ export function CourseManager() {
       <AndamioAlert variant="destructive">
         <AlertIcon className="h-4 w-4" />
         <AndamioAlertTitle>Error</AndamioAlertTitle>
-        <AndamioAlertDescription>{error}</AndamioAlertDescription>
+        <AndamioAlertDescription>{error.message}</AndamioAlertDescription>
       </AndamioAlert>
     );
   }

@@ -34,7 +34,7 @@ Hooks are organized by domain under `src/hooks/api/`:
 
 | File | Purpose | Exports |
 |------|---------|---------|
-| `use-course.ts` | Course queries & mutations | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse`, `courseKeys`; Types: `CourseSource`, `FlattenedCourseListItem`, `FlattenedCourseDetail` |
+| `use-course.ts` | Course queries & mutations | `useCourse`, `usePublishedCourses`, `useOwnedCoursesQuery`, `useUpdateCourse`, `useDeleteCourse`, `courseKeys`; Types: `Course`, `CourseDetail`, `CourseSource` |
 | `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useTeacherCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `courseModuleKeys`; Types: `MergedCourseModule`, `ModuleSource` |
 | `use-slt.ts` | SLT queries & mutations | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT`, `sltKeys` |
 | `use-lesson.ts` | Lesson queries & mutations | `useLessons`, `useLesson`, `useCreateLesson`, `lessonKeys` |

@@ -47,10 +47,10 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 | `use-teacher-courses.ts` | `TeacherCourse`, `TeacherAssignmentCommitment`, `TeacherCourseWithModules` | `transformTeacherCourse()`, `transformTeacherCommitment()` | ✅ Complete |
 | `use-owned-courses.ts` | Uses `Course` from use-course | Uses `transformCourse()` | ✅ Complete |
 
-**Deprecated aliases added for backward compatibility**:
-- `FlattenedCourseListItem` → `Course`
-- `FlattenedCourseDetail` → `CourseDetail`
-- `MergedCourseModule` → `CourseModule`
+**Migration complete** (January 25, 2026):
+- ~~`FlattenedCourseListItem`~~ → `Course` (deprecated alias removed)
+- ~~`FlattenedCourseDetail`~~ → `CourseDetail` (deprecated alias removed)
+- `MergedCourseModule` → `CourseModule` (still aliased)
 
 ### Project Hooks (⬜ Needs Migration)
 
@@ -74,6 +74,10 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 2. **Delete `src/types/project.ts`** - migrate types into `use-project.ts`
 3. **Apply pattern to remaining hooks**
 4. **Audit pages for raw fetch() calls** - replace with hooks
+5. ⬜ **CONFIRM: Hooks are the ONLY interface between UX components/pages and the API**
+   - Run `/audit-api-coverage api-hooks` to verify
+   - No direct `fetch()` or `authenticatedFetch()` in components/pages
+   - All API access must go through `src/hooks/api/` or `src/hooks/tx/`
 
 ---
 
@@ -95,7 +99,7 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 **January 23, 2026**:
 - **Merged Endpoint Type Migration**: API v2.0.0 response shape changes
-- Created flattening layer (`flattenCourseListItem`, `FlattenedCourseListItem`)
+- Created flattening layer (`transformCourse`, `Course`)
 - **Developer Auth V2 Migration**: Two-step wallet-verified registration
 - Replaced deprecated `andamioscan.ts` with minimal `andamioscan-events.ts`
 

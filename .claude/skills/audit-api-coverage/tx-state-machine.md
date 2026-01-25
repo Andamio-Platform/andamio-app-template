@@ -7,7 +7,7 @@ The gateway provides dedicated endpoints for tracking pending transactions with 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v2/tx/register` | POST | Register TX after wallet submit |
-| `/api/v2/tx/status/:tx_hash` | GET | Poll individual TX status |
+| `/api/v2/tx/status/{tx_hash}` | GET | Poll individual TX status |
 | `/api/v2/tx/pending` | GET | Get all user's pending TXs |
 | `/api/v2/tx/types` | GET | List valid TX types |
 

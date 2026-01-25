@@ -12,7 +12,7 @@ import {
   AndamioResizableHandle,
 } from "~/components/andamio/andamio-resizable";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
-import { useTeacherCourses, useInvalidateTeacherCourses, type TeacherCourse } from "~/hooks/api";
+import { useTeacherCourses, useInvalidateTeacherCourses, useRegisterCourse, useUpdateCourse, type TeacherCourse } from "~/hooks/api";
 import {
   AndamioButton,
   AndamioBadge,
@@ -580,61 +580,28 @@ interface RegisterCourseDrawerProps {
 }
 
 function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps) {
-  const { authenticatedFetch } = useAndamioAuth();
+  const registerCourse = useRegisterCourse();
+  const updateCourse = useUpdateCourse();
   const invalidateTeacherCourses = useInvalidateTeacherCourses();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSubmitting = registerCourse.isPending || updateCourse.isPending;
 
   const handleRegister = async () => {
     if (!title.trim()) return;
 
-    setIsSubmitting(true);
+    const trimmedTitle = title.trim();
+
     try {
-      // Go API: POST /course/owner/course/register
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseId,
-            title: title.trim(),
-          }),
-        }
-      );
+      await registerCourse.mutateAsync({
+        courseId,
+        title: trimmedTitle,
+      });
 
-      if (response.ok) {
-        toast.success("Course Registered!", {
-          description: `"${title.trim()}" is now ready for content.`,
-        });
-      } else if (response.status === 409) {
-        // Course already exists (indexer created it) - update with title instead
-        console.log("[RegisterCourse] Course exists, updating with title...");
-        const updateResponse = await authenticatedFetch(
-          `/api/gateway/api/v2/course/owner/course/update`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseId,
-              data: { title: title.trim() },
-            }),
-          }
-        );
-
-        if (!updateResponse.ok) {
-          const updateError = (await updateResponse.json()) as { message?: string };
-          throw new Error(updateError.message ?? "Failed to update course title");
-        }
-
-        toast.success("Course Registered!", {
-          description: `"${title.trim()}" is now ready for content.`,
-        });
-      } else {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to register course");
-      }
+      toast.success("Course Registered!", {
+        description: `"${trimmedTitle}" is now ready for content.`,
+      });
 
       // Invalidate teacher courses cache so the list refreshes
       await invalidateTeacherCourses();
@@ -643,12 +610,40 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
       setTitle("");
       onSuccess?.();
     } catch (err) {
+      // Handle 409 conflict: course already exists (indexer created it)
+      // Fall back to update with title instead
+      const isConflict = (err as Error & { status?: number }).status === 409;
+
+      if (isConflict) {
+        try {
+          console.log("[RegisterCourse] Course exists, updating with title...");
+          await updateCourse.mutateAsync({
+            courseId,
+            data: { title: trimmedTitle },
+          });
+
+          toast.success("Course Registered!", {
+            description: `"${trimmedTitle}" is now ready for content.`,
+          });
+
+          await invalidateTeacherCourses();
+          setOpen(false);
+          setTitle("");
+          onSuccess?.();
+          return;
+        } catch (updateErr) {
+          console.error("Error updating course:", updateErr);
+          toast.error("Registration Failed", {
+            description: updateErr instanceof Error ? updateErr.message : "Failed to update course title",
+          });
+          return;
+        }
+      }
+
       console.error("Error registering course:", err);
       toast.error("Registration Failed", {
         description: err instanceof Error ? err.message : "Failed to register course",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

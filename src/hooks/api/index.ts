@@ -1,7 +1,7 @@
 /**
  * React Query API Hooks
  *
- * Centralized exports for all Andamio Database API hooks.
+ * Centralized exports for all Andamio API hooks.
  * These hooks provide cached, deduplicated access to API data.
  *
  * ## Benefits over raw fetch():
@@ -25,7 +25,7 @@
  *   const updateCourse = useUpdateCourse();
  *
  *   const handleSave = async (data: UpdateCourseInput) => {
- *     await updateCourse.mutateAsync({ courseNftPolicyId: courseId, data });
+ *     await updateCourse.mutateAsync({ courseId, data });
  *     // Cache is automatically invalidated - no manual refetch needed!
  *   };
  *
@@ -48,24 +48,34 @@
  * ```
  */
 
-// Course hooks (courses, modules, SLTs, lessons)
+// =============================================================================
+// Course Hooks
+// =============================================================================
+
+// Core course (public queries + types)
 export {
   useCourse,
-  usePublishedCourses,
-  useOwnedCoursesQuery,
-  useUpdateCourse,
-  useDeleteCourse,
+  useActiveCourses,
   courseKeys,
   transformCourse,
   transformCourseDetail,
   type Course,
   type CourseDetail,
-  type CourseSource,
-  // Deprecated aliases - use Course/CourseDetail instead
-  type FlattenedCourseListItem,
-  type FlattenedCourseDetail,
+  type CourseStatus,
 } from "./course/use-course";
 
+// Course owner (mutations)
+export {
+  useOwnerCourses,
+  useCreateCourse,
+  useUpdateCourse,
+  useDeleteCourse,
+  useRegisterCourse,
+  useInvalidateOwnerCourses,
+  ownerCourseKeys,
+} from "./course/use-course-owner";
+
+// Course modules
 export {
   useCourseModules,
   useTeacherCourseModules,
@@ -85,6 +95,7 @@ export {
   type MergedCourseModule,
 } from "./course/use-course-module";
 
+// SLTs
 export {
   useSLTs,
   useCreateSLT,
@@ -93,6 +104,7 @@ export {
   sltKeys,
 } from "./course/use-slt";
 
+// Lessons
 export {
   useLessons,
   useLesson,
@@ -100,32 +112,37 @@ export {
   lessonKeys,
 } from "./course/use-lesson";
 
+// Course teacher (role-based)
 export {
   useTeacherCourses,
-  useTeacherCommitments,
+  useTeacherAssignmentCommitments,
   useTeacherCoursesWithModules,
   useInvalidateTeacherCourses,
-  teacherCourseKeys,
+  courseTeacherKeys,
   type TeacherCourse,
   type TeacherCoursesResponse,
   type TeacherAssignmentCommitment,
   type TeacherAssignmentCommitmentsResponse,
   type TeacherCourseWithModules,
-} from "./course/use-teacher-courses";
+} from "./course/use-course-teacher";
 
+// Course student (role-based)
 export {
   useStudentCourses,
   useInvalidateStudentCourses,
-  studentCourseKeys,
+  courseStudentKeys,
   type StudentCourse,
   type StudentCoursesResponse,
-} from "./course/use-student-courses";
+} from "./course/use-course-student";
 
-export { useOwnedCourses } from "./course/use-owned-courses";
-
+// Module wizard (composite UI hook)
 export { useModuleWizardData } from "./course/use-module-wizard-data";
 
-// Project hooks
+// =============================================================================
+// Project Hooks
+// =============================================================================
+
+// Core project (public queries)
 export {
   useProject,
   useProjects,
@@ -133,21 +150,23 @@ export {
   projectKeys,
 } from "./project/use-project";
 
+// Project manager (role-based)
 export {
   useManagerProjects,
   useManagerCommitments,
   useInvalidateManagerProjects,
-  managerProjectKeys,
+  projectManagerKeys,
   type ManagerProject,
   type ManagerProjectsResponse,
   type ManagerCommitment,
   type ManagerCommitmentsResponse,
-} from "./project/use-manager-projects";
+} from "./project/use-project-manager";
 
+// Project contributor (role-based)
 export {
   useContributorProjects,
   useInvalidateContributorProjects,
-  contributorProjectKeys,
+  projectContributorKeys,
   type ContributorProject,
   type ContributorProjectsResponse,
-} from "./project/use-contributor-projects";
+} from "./project/use-project-contributor";

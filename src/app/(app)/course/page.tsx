@@ -14,7 +14,7 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
 import { CourseIcon, OnChainIcon, SuccessIcon, PendingIcon } from "~/components/icons";
-import { usePublishedCourses } from "~/hooks/api";
+import { useActiveCourses } from "~/hooks/api";
 
 /**
  * Public page displaying all published courses
@@ -29,7 +29,7 @@ export default function CoursePage() {
     data: courses = [],
     isLoading,
     error: coursesError,
-  } = usePublishedCourses();
+  } = useActiveCourses();
 
   const error = coursesError?.message ?? null;
 
@@ -115,14 +115,14 @@ export default function CoursePage() {
                     </AndamioText>
                   </AndamioTableCell>
                 <AndamioTableCell className="text-center">
-                  {course.source === "merged" ? (
+                  {course.status === "active" ? (
                     <AndamioTooltip>
                       <AndamioTooltipTrigger asChild>
                         <div className="flex items-center justify-center gap-1.5">
                           <SuccessIcon className="h-4 w-4 text-success" />
                           <AndamioBadge variant="outline" className="text-success border-success/30">
                             <OnChainIcon className="h-3 w-3 mr-1" />
-                            Live
+                            Active
                           </AndamioBadge>
                         </div>
                       </AndamioTooltipTrigger>
@@ -130,18 +130,18 @@ export default function CoursePage() {
                         Published on-chain with verified off-chain content
                       </AndamioTooltipContent>
                     </AndamioTooltip>
-                  ) : course.source === "chain_only" ? (
+                  ) : course.status === "unregistered" ? (
                     <AndamioTooltip>
                       <AndamioTooltipTrigger asChild>
                         <div className="flex items-center justify-center gap-1.5">
                           <OnChainIcon className="h-4 w-4 text-info" />
                           <AndamioBadge variant="outline" className="text-info border-info/30">
-                            On-Chain
+                            Unregistered
                           </AndamioBadge>
                         </div>
                       </AndamioTooltipTrigger>
                       <AndamioTooltipContent>
-                        Published on-chain (off-chain content pending)
+                        On-chain but needs DB registration
                       </AndamioTooltipContent>
                     </AndamioTooltip>
                   ) : (

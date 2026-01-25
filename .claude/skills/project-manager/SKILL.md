@@ -38,7 +38,7 @@ You should be aware of the other Claude Skills that are available. Delegate task
 | Skill | When to Use |
 |-------|-------------|
 | `/transaction-auditor` | API schema changes, TX type mismatches, sync with gateway spec |
-| `/audit-api-coverage` | API endpoint coverage, new endpoint integration |
+| `/audit-api-coverage` | **Hook patterns, API coverage, transformers, query keys** - Use to refine all hooks following best practices |
 | `/design-system` | UI component patterns, styling issues |
 | `/documentarian` | After code changes, doc updates needed |
 | `/review-pr` | PR reviews, code quality checks |
@@ -64,10 +64,11 @@ If a document is no longer relevant, remove it. Your job is to only keep updated
 When the user asks what to work on next, you should be ready with an answer.
 
 **Priority areas:**
-1. API schema alignment (use `/transaction-auditor`)
-2. Missing TX State Machine handlers
-3. Component type errors after API changes
-4. Documentation sync
+1. **Hook architecture** - Ensure hooks are the ONLY interface between UX and API (use `/audit-api-coverage api-hooks`)
+2. API schema alignment (use `/transaction-auditor`)
+3. Missing TX State Machine handlers
+4. Component type errors after API changes
+5. Documentation sync
 
 ## Transaction Schema Sync Workflow
 

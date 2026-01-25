@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { CloseIcon, LessonIcon } from "~/components/icons";
@@ -172,10 +172,11 @@ export function ContentEditor({
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
+  const extensions = useMemo(() => EditorExtensionKit(), []);
 
   // Initialize editor
   const editor = useEditor({
-    extensions: EditorExtensionKit(),
+    extensions,
     content: content ?? undefined,
     editable: !disabled,
     autofocus: autoFocus,
@@ -533,9 +534,10 @@ export function useContentEditor(
   options: Pick<ContentEditorProps, "content" | "onContentChange" | "onUpdate" | "disabled"> = {},
 ) {
   const { content, onContentChange, onUpdate, disabled = false } = options;
+  const extensions = useMemo(() => EditorExtensionKit(), []);
 
   const editor = useEditor({
-    extensions: EditorExtensionKit(),
+    extensions,
     content: content ?? undefined,
     editable: !disabled,
     editorProps: {

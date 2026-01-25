@@ -53,17 +53,37 @@ export function useAssignment(
 
       const result = (await response.json()) as unknown;
 
-      // Handle both wrapped { data: {...} } and raw object formats
+      const asRecord = (value: unknown): Record<string, unknown> | null =>
+        value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+
+      // Handle wrapped and nested formats
       let raw: Record<string, unknown> | null = null;
-      if (result && typeof result === "object") {
-        if ("data" in result && (result as { data?: unknown }).data) {
-          raw = (result as { data: Record<string, unknown> }).data;
+      const resultRecord = asRecord(result);
+      if (resultRecord) {
+        if ("data" in resultRecord && resultRecord.data) {
+          const dataRecord = asRecord(resultRecord.data);
+          if (dataRecord) {
+            if ("assignment" in dataRecord && dataRecord.assignment) {
+              raw = asRecord(dataRecord.assignment);
+            } else if ("data" in dataRecord && dataRecord.data) {
+              const innerRecord = asRecord(dataRecord.data);
+              if (innerRecord && "assignment" in innerRecord && innerRecord.assignment) {
+                raw = asRecord(innerRecord.assignment);
+              } else {
+                raw = innerRecord;
+              }
+            } else {
+              raw = dataRecord;
+            }
+          }
+        } else if ("assignment" in resultRecord && resultRecord.assignment) {
+          raw = asRecord(resultRecord.assignment);
         } else if (
-          "title" in result ||
-          "content_json" in result ||
-          "assignment_content" in result
+          "title" in resultRecord ||
+          "content_json" in resultRecord ||
+          "assignment_content" in resultRecord
         ) {
-          raw = result as Record<string, unknown>;
+          raw = resultRecord;
         }
       }
 

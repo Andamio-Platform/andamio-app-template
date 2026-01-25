@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   AndamioSectionHeader,
   AndamioPageLoading,
@@ -14,7 +14,7 @@ import { UserCourseStatus } from "~/components/learner/user-course-status";
 import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { CourseModuleCard } from "~/components/courses/course-module-card";
-import { useCourse, useCourseModules } from "~/hooks/api";
+import { useCourse, useCourseModules, useTeacherCourseModules } from "~/hooks/api";
 
 /**
  * Public page displaying course details and module list with SLT counts
@@ -31,7 +31,9 @@ import { useCourse, useCourseModules } from "~/hooks/api";
 
 export default function CourseDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const courseNftPolicyId = params.coursenft as string;
+  const isTeacherPreview = searchParams.get("preview") === "teacher";
 
   // React Query hooks - automatically cached and deduplicated
   // useCourse returns merged data with both on-chain and off-chain content
@@ -47,9 +49,27 @@ export default function CourseDetailPage() {
     error: modulesError,
   } = useCourseModules(courseNftPolicyId);
 
+  const {
+    data: teacherModules,
+    isLoading: teacherModulesLoading,
+    error: teacherModulesError,
+  } = useTeacherCourseModules(courseNftPolicyId);
+
+  const resolvedModules = isTeacherPreview
+    ? (teacherModules?.length ? teacherModules : modules ?? [])
+    : modules ?? [];
+
+  const resolvedModulesLoading = isTeacherPreview
+    ? (modulesLoading || teacherModulesLoading)
+    : modulesLoading;
+
+  const resolvedModulesError = isTeacherPreview
+    ? (modulesError ?? teacherModulesError)
+    : modulesError;
+
   // Combined loading state
-  const isLoading = courseLoading || modulesLoading;
-  const error = courseError ?? modulesError;
+  const isLoading = courseLoading || resolvedModulesLoading;
+  const error = courseError ?? resolvedModulesError;
 
   // Get on-chain modules from the merged course data
   const onChainModules = course?.modules ?? [];
@@ -74,7 +94,7 @@ export default function CourseDetailPage() {
   const courseDescription = course.description;
 
   // Empty modules state
-  const moduleList = modules ?? [];
+  const moduleList = resolvedModules;
   if (moduleList.length === 0) {
     return (
       <div className="space-y-6">

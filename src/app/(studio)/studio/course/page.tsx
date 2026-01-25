@@ -413,7 +413,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           {/* Secondary Actions */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <Link
-              href={`/course/${course.courseId}`}
+              href={`/course/${course.courseId}?preview=teacher`}
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <PreviewIcon className="h-3.5 w-3.5" />

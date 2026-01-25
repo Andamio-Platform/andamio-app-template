@@ -124,11 +124,11 @@ export function StudioModuleCard({
 }: StudioModuleCardProps) {
   // Use camelCase fields from CourseModule (app-level type)
   const sltCount = courseModule.slts?.length ?? 0;
-  const status = courseModule.status ?? "DRAFT";
+  const status = courseModule.status;
   const moduleCode = courseModule.moduleCode ?? "";
   const description = typeof courseModule.description === "string" ? courseModule.description : "";
-  // Only allow delete for DRAFT modules (not minted or pending)
-  const canDelete = onDelete && status === "DRAFT";
+  // Only allow delete for draft modules (not minted or pending)
+  const canDelete = onDelete && status === "draft";
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();

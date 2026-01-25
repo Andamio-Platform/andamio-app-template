@@ -36,9 +36,17 @@ export const courseTeacherKeys = {
 // =============================================================================
 
 /**
- * Data source for a teacher course
+ * Data source/status for a teacher course
+ * - "synced": Data exists both on-chain and in database (merged)
+ * - "onchain_only": Only on-chain data (not in database)
+ * - "db_only": Only in database (not yet on-chain or minting failed)
  */
-export type TeacherCourseSource = "merged" | "chain_only" | "db_only";
+export type TeacherCourseStatus = "synced" | "onchain_only" | "db_only";
+
+/**
+ * @deprecated Use TeacherCourseStatus instead
+ */
+export type TeacherCourseSource = TeacherCourseStatus;
 
 /**
  * Teacher course item with camelCase fields
@@ -62,7 +70,7 @@ export interface TeacherCourse {
   isLive?: boolean;
 
   // Metadata
-  source?: TeacherCourseSource;
+  status?: TeacherCourseStatus;
 }
 
 export type TeacherCoursesResponse = TeacherCourse[];
@@ -98,7 +106,7 @@ export interface TeacherAssignmentCommitment {
   };
 
   // Metadata
-  source?: TeacherCourseSource;
+  status?: TeacherCourseStatus;
 }
 
 export type TeacherAssignmentCommitmentsResponse = TeacherAssignmentCommitment[];
@@ -158,6 +166,23 @@ interface RawTeacherCommitment {
 // =============================================================================
 
 /**
+ * Convert API source value to status
+ */
+function mapSourceToStatus(source?: string): TeacherCourseStatus | undefined {
+  if (!source) return undefined;
+  switch (source) {
+    case "merged":
+      return "synced";
+    case "chain_only":
+      return "onchain_only";
+    case "db_only":
+      return "db_only";
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Transform raw API course to app-level TeacherCourse type
  */
 function transformTeacherCourse(raw: RawTeacherCourse): TeacherCourse {
@@ -175,7 +200,7 @@ function transformTeacherCourse(raw: RawTeacherCourse): TeacherCourse {
     imageUrl: raw.content?.image_url ?? raw.image_url,
     videoUrl: raw.video_url, // video_url not in OrchestrationCourseContent
     isLive: raw.content?.live,
-    source: raw.source as TeacherCourseSource | undefined,
+    status: mapSourceToStatus(raw.source),
   };
 }
 
@@ -200,7 +225,7 @@ function transformTeacherCommitment(raw: RawTeacherCommitment): TeacherAssignmen
     submittedAt: raw.submitted_at,
     commitmentStatus: raw.commitment_status,
     assignment: raw.assignment,
-    source: raw.source as TeacherCourseSource | undefined,
+    status: mapSourceToStatus(raw.source),
   };
 }
 
@@ -233,9 +258,7 @@ export function useTeacherCourses() {
   return useQuery({
     queryKey: courseTeacherKeys.list(),
     queryFn: async (): Promise<TeacherCoursesResponse> => {
-      // Merged endpoint: POST /api/v2/course/teacher/courses/list
-      console.log("[useTeacherCourses] Making request...");
-
+      // Endpoint: POST /api/v2/course/teacher/courses/list
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/courses/list`,
         {
@@ -245,24 +268,16 @@ export function useTeacherCourses() {
         }
       );
 
-      console.log("[useTeacherCourses] Response status:", response.status);
-
       // 404 means no courses - return empty array
       if (response.status === 404) {
-        console.log("[useTeacherCourses] Got 404 - returning empty array");
         return [];
       }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[useTeacherCourses] Error response:", errorText);
         throw new Error(`Failed to fetch teacher courses: ${response.statusText}`);
       }
 
       const result = await response.json() as { data?: RawTeacherCourse[]; warning?: string };
-
-      // Debug: log the full response
-      console.log("[useTeacherCourses] API response:", JSON.stringify(result, null, 2));
 
       // Log warning if partial data returned
       if (result.warning) {
@@ -437,7 +452,6 @@ export function useTeacherCoursesWithModules() {
           }
         } catch {
           // Skip courses that fail to load details
-          console.warn(`Failed to load details for course ${course.courseId}`);
         }
       }
 

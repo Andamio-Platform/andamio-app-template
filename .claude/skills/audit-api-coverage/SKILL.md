@@ -14,10 +14,28 @@ Ensure consistent, well-designed hooks connect the Andamio API to the app. This 
 **Current state** (as of January 25, 2026):
 - ✅ `use-course.ts` - APPROVED
 - ✅ `use-course-owner.ts` - APPROVED
-- 🔶 `use-course-module.ts` - Next up (needs Task 6 + cross-file fix)
-- 🔶 5 more hooks need work
+- ✅ `use-course-module.ts` - COMPLETE (+ `useRegisterCourseModule` hook)
+- ✅ `use-slt.ts` - COMPLETE
+- ✅ `use-lesson.ts` - COMPLETE (+ `useUpdateLesson`, `useDeleteLesson`)
+- ✅ `use-assignment.ts` - COMPLETE (full CRUD: query + create/update/delete)
+- ✅ `use-introduction.ts` - COMPLETE (create/update/delete mutations)
+- ✅ `use-course-student.ts` - COMPLETE
+- ✅ `use-course-teacher.ts` - COMPLETE (source → status migration done)
+- 🔶 2 hooks need work (use-project-manager.ts, use-project-contributor.ts)
 
-**Ask the user**: "Would you like to continue the API hooks cleanup from where we left off? Next hook is `use-course-module.ts`."
+**File Organization** (established pattern):
+- Types colocated in owner file (`use-course-module.ts` owns SLT, Lesson, Assignment, Introduction types)
+- Each entity has its own file with queries AND mutations (use-slt.ts, use-lesson.ts, use-assignment.ts, use-introduction.ts)
+
+**Consumer Migration Progress**:
+- ✅ `assignment/page.tsx` - Migrated to hooks
+- ✅ `require-course-access.tsx` - Migrated to `useOwnerCourses`
+- ✅ `studio/course/[coursenft]/page.tsx` - Unregistered modules UX added
+- ✅ `studio/course/page.tsx` - Fixed source → status usage
+- 🔶 `instructor/page.tsx` - Needs migration (complex TX handling)
+- 🔶 `sitemap/page.tsx` - Needs migration (low priority dev tool)
+
+**Ask the user**: "Would you like to continue with project hooks cleanup? `use-project-manager.ts` and `use-project-contributor.ts` need camelCase type conversion."
 
 ---
 
@@ -188,4 +206,4 @@ Every TransactionType must have entries in all three files.
 
 ---
 
-**Last Updated**: January 25, 2026 (Session resume added, 2 hooks APPROVED)
+**Last Updated**: January 25, 2026 (Source→Status migration complete in use-course-teacher.ts; file organization consolidated - useAssignment moved to use-assignment.ts; all 9 content CRUD hooks complete)

@@ -45,7 +45,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
   // Find this course in student's courses
   const studentCourseStatus = useMemo(() => {
     if (!studentCourses) return null;
-    return studentCourses.find((c) => c.course_id === courseNftPolicyId);
+    return studentCourses.find((c) => c.courseId === courseNftPolicyId);
   }, [studentCourses, courseNftPolicyId]);
 
   if (!isAuthenticated) {
@@ -85,7 +85,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
     );
   }
 
-  const isCompleted = studentCourseStatus.enrollment_status === "completed";
+  const isCompleted = studentCourseStatus.enrollmentStatus === "completed";
   const totalModules = dbModules?.length ?? 0;
   const courseTitle = course?.title ?? "this course";
 

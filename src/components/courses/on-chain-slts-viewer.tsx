@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCourse, type MergedCourseModule } from "~/hooks/api";
+import { useCourse, type CourseModule } from "~/hooks/api";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -36,7 +36,7 @@ interface OnChainSltsViewerProps {
 }
 
 interface OnChainModuleCardProps {
-  module: MergedCourseModule;
+  module: CourseModule;
   compact?: boolean;
 }
 

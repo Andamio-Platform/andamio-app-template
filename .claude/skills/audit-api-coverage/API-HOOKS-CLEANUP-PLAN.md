@@ -11,12 +11,344 @@ This document tracks the cleanup work needed to bring all API hooks up to the ex
 
 ## Recent Changes (January 25, 2026)
 
+### Consumer Migration to Hooks - IN PROGRESS
+
+**Goal**: Migrate all pages and components from direct `fetch()` calls to React Query hooks.
+
+#### Completed Migrations ✅
+
+| File | Hooks Used | Notes |
+|------|------------|-------|
+| `assignment/page.tsx` | `useCourse`, `useCourseModule`, `useSLTs`, `useAssignment` | Full migration, removed all useState/useEffect patterns |
+| `require-course-access.tsx` | `useOwnerCourses` | Replaced manual auth check with hook |
+
+#### Remaining Migrations (Lower Priority)
+
+| File | Needs | Complexity |
+|------|-------|------------|
+| `instructor/page.tsx` | `useCourse`, `useTeacherAssignmentCommitments` + query invalidation | High (TX handling) |
+| `sitemap/page.tsx` | `useActiveCourses`, `useOwnerCourses`, `useProjects`, `useManagerProjects` | Medium (dev tool) |
+| `module-wizard.tsx` | Already uses `use-module-wizard-data` internally | N/A (already hooked) |
+
+---
+
+### useAssignment Hook - MOVED TO use-assignment.ts
+
+**File**: `src/hooks/api/course/use-assignment.ts` (NEW FILE)
+
+The `useAssignment` query hook was moved from `use-course-module.ts` to its own file for consistent file organization. Each entity (SLT, Lesson, Assignment, Introduction) now has its own file with queries AND mutations.
+
+**Exports** (from use-assignment.ts):
+- `useAssignment` - Query hook for fetching assignment by courseId + moduleCode
+- `useCreateAssignment` - Mutation for creating assignments
+- `useUpdateAssignment` - Mutation for updating assignments
+- `useDeleteAssignment` - Mutation for deleting assignments
+
+**Types** remain in `use-course-module.ts` (owner file):
+- `Assignment` interface with camelCase fields
+- `transformAssignment()` function
+- `assignmentKeys` query key factory
+
+---
+
+### Type Fix: unknown in JSX Conditionals - IMPORTANT
+
+**Issue**: When using `&&` in JSX with `unknown` typed values, the expression can return `unknown` which is not a valid ReactNode.
+
+```typescript
+// ❌ WRONG - assignment.contentJson is unknown, can return unknown
+{assignment.contentJson && (<Content />)}
+
+// ✅ CORRECT - Coerce to boolean first
+{!!assignment.contentJson && (<Content />)}
+```
+
+**Why**: The `&&` operator returns the last truthy value or first falsy value. If `contentJson` is truthy but typed as `unknown`, the expression returns `unknown` (not a boolean), which TypeScript rejects as ReactNode.
+
+**Affected Types**: Any interface with `?: unknown` fields (like `Assignment.contentJson`)
+
+**Fix Applied**: `assignment/page.tsx` line 176 - Changed to `!!assignment.contentJson`
+
+---
+
+### React Query Type Parameters - RECOMMENDED
+
+For proper type inference, add explicit type parameters to `useQuery`:
+
+```typescript
+// Before - type inference may not work
+return useQuery({
+  queryFn: async (): Promise<SLT[]> => { ... },
+});
+
+// After - explicit type parameters
+return useQuery<SLT[], Error>({
+  queryFn: async () => { ... },
+});
+```
+
+**Applied**: `useSLTs` hook now has `useQuery<SLT[], Error>` for reliable type inference.
+
+---
+
+### use-course-teacher.ts Source → Status Migration - COMPLETE
+
+**File**: `src/hooks/api/course/use-course-teacher.ts`
+
+Migrated from API's `source` field to semantic `status` field to match the pattern in `use-course.ts`.
+
+**Changes**:
+- Added `TeacherCourseStatus` type: `"synced" | "onchain_only" | "db_only"`
+- Deprecated `TeacherCourseSource` as type alias (for backward compatibility)
+- Added `mapSourceToStatus()` helper function
+- Updated `TeacherCourse.status` and `TeacherAssignmentCommitment.status` fields
+- Removed 6 debug console.log statements
+- Changed "Go API:" comments to "Endpoint:"
+
+**Status Mapping**:
+| API source | → App status |
+|------------|--------------|
+| `"merged"` | `"synced"` |
+| `"chain_only"` | `"onchain_only"` |
+| `"db_only"` | `"db_only"` |
+
+**Consumer Updates**:
+- `studio/course/page.tsx` - Changed `course.source` to `course.status` with new values
+
+---
+
+### use-introduction.ts - CREATED
+
+**File**: `src/hooks/api/course/use-introduction.ts` (NEW FILE)
+
+Created mutations for Introduction CRUD (no dedicated query endpoint exists):
+- `useCreateIntroduction` - Create introduction for module
+- `useUpdateIntroduction` - Update introduction content
+- `useDeleteIntroduction` - Delete introduction
+
+**Types** in `use-course-module.ts`:
+- `Introduction` interface
+- `transformIntroduction()` function
+- `introductionKeys` query key factory
+
+---
+
+### Previous Session:
+
+### use-course-student.ts Audit - COMPLETE
+
+**Audited**: January 25, 2026
+
+**Changes**:
+- Defined proper `StudentCourse` interface with camelCase fields (flattened from nested `content`)
+- Added `transformStudentCourse` function that flattens nested content
+- Updated `useStudentCourses` hook to return `StudentCoursesResponse` (transformed)
+- Added `staleTime: 30 * 1000` to query
+- Added `useInvalidateStudentCourses` hook for cache invalidation
+
+**Interface Fields** (flattened from API response):
+| App Field | API Source |
+|-----------|------------|
+| `courseId` | `course_id` |
+| `courseAddress` | `course_address` |
+| `title` | `content.title` |
+| `description` | `content.description` |
+| `imageUrl` | `content.image_url` |
+| `isPublic` | `content.is_public` |
+| `enrollmentStatus` | `enrollment_status` |
+| `studentStateId` | `student_state_id` |
+| `owner` | `owner` |
+| `teachers` | `teachers` |
+| `createdSlot` | `created_slot` |
+| `createdTx` | `created_tx` |
+| `source` | `source` |
+
+**Consumer Updates** (6 files):
+- `credentials/page.tsx` - Updated to use camelCase fields (`course.enrollmentStatus`, `course.courseId`, `course.title`)
+- `credentials-summary.tsx` - Updated to use camelCase fields
+- `enrolled-courses-summary.tsx` - Updated to use camelCase fields
+- `on-chain-status.tsx` - Updated to use camelCase fields
+- `my-learning.tsx` - Updated to use camelCase fields (`course.courseId`, `course.title`, `course.description`)
+- `user-course-status.tsx` - Updated to use camelCase fields
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### use-lesson.ts Audit - COMPLETE
+
+**Audited**: January 25, 2026
+
+**Changes**:
+- Import `Lesson`, `transformLesson` from `./use-course-module` (owner file pattern)
+- Removed raw type imports (`LessonResponse`, `LessonListResponse`)
+- `useLesson` now returns `Lesson | null` with camelCase fields
+- `useCreateLesson` returns `Lesson` (transformed)
+- Renamed `courseNftPolicyId` → `courseId` and `moduleIndex` → `sltIndex`
+- Changed "Go API:" → "Endpoint:" in comments
+- Added `staleTime: 30 * 1000` to queries
+- Removed debug console.logs
+- Updated `useLessons` JSDoc to recommend `useSLTs()` pattern (no batch endpoint exists)
+
+**Consumer Updates**:
+- `course/[coursenft]/[modulecode]/[moduleindex]/page.tsx` - Updated to use camelCase fields (`lesson.isLive`, `lesson.contentJson`, `lesson.imageUrl`, `lesson.videoUrl`)
+- `step-credential.tsx` - Updated mutation call to use `courseId:` and `sltIndex:`
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### use-slt.ts Audit - COMPLETE
+
+**Audited**: January 25, 2026
+
+**Changes**:
+- Import `SLT`, `transformSLT` from `./use-course-module` (types are colocated in owner file)
+- Removed raw type imports (`SLTListResponse`, `SLTResponse`)
+- `useSLTs` now returns `SLT[]` with camelCase fields
+- All mutations return `SLT` or `Promise<void>` (transformed)
+- Renamed `courseNftPolicyId` → `courseId` throughout (query keys, hooks, mutations)
+- Changed "Go API:" → "Endpoint:" in comments
+- Added `staleTime: 30 * 1000` to query
+- Removed debug console.logs
+
+**Consumer Updates**:
+- `course/[coursenft]/[modulecode]/page.tsx` - Updated to use camelCase fields (`slt.moduleIndex`, `slt.sltText`, `lesson.imageUrl`, etc.)
+- `step-credential.tsx` - Updated mutation call to use `courseId:`
+- `step-slts.tsx` - Updated all 4 mutation calls to use `courseId:`
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### Module Registration Endpoint - COMPLETE ✅
+
+**Issue**: The `CourseModuleStatus` refactor introduced the `"unregistered"` status for on-chain-only modules, but there was no API endpoint to register these modules in the database.
+
+**Solution**: Endpoint `POST /api/v2/course/teacher/course-module/register` now exists:
+- Accepts `course_id`, `course_module_code`, and `slt_hash`
+- Fetches on-chain SLT data from Andamioscan
+- Creates module + SLT records in DB
+- Returns `RegisteredModule` with slt_count and created SLTs
+
+**Hook Added**: `useRegisterCourseModule()` in `use-course-module.ts`
+
+**UX Added**: Studio course page (`/studio/course/:coursenft`) On-Chain tab now shows:
+- Unregistered modules with SLT preview
+- Registration form with module code input
+- Status badge in stats summary
+
+**Tracking**: [andamio-api#16](https://github.com/Andamio-Platform/andamio-api/issues/16) - RESOLVED
+
+---
+
+### CourseModuleStatus Refactor - PENDING APPROVAL
+
+**Major Refactor**: Replaced `source: ModuleSource` with `status: CourseModuleStatus`
+
+The `CourseModule` interface now exposes a semantic 5-value status enum instead of the raw API `source` field:
+
+| Status | Meaning |
+|--------|---------|
+| `draft` | DB only, Teacher editing, SLTs can change |
+| `approved` | DB only, SLTs locked, sltHash stored, ready for TX |
+| `pending_tx` | TX submitted but not confirmed |
+| `active` | On-chain + DB (merged) |
+| `unregistered` | On-chain only, needs DB registration |
+
+**Status derivation logic** (from API `source` + `module_status` fields):
+| source | module_status | → status |
+|--------|---------------|----------|
+| chain_only | * | unregistered |
+| merged | * | active |
+| db_only | DRAFT | draft |
+| db_only | APPROVED | approved |
+| db_only | PENDING_TX | pending_tx |
+
+**Changes to use-course-module.ts**:
+- Added `CourseModuleStatus` type (exported)
+- Added `getModuleStatus(source, moduleStatus)` helper function
+- Updated `CourseModule.status: CourseModuleStatus` (replaced `source: ModuleSource`)
+- Removed `transformModuleFromCourseDetail()` function
+- Removed `CourseDetailModule` interface
+- Removed `ModuleSource` type (internalized)
+- Removed debug console.logs from `useTeacherCourseModules` and `useCreateCourseModule`
+- Fixed JSDoc example in `useCourseModuleMap` (`policyIds` → `courseIds`)
+
+**Changes to use-course.ts**:
+- Removed import of `transformModuleFromCourseDetail`
+- Updated `transformCourseDetail()` with inline module mapping (modules always `status: "active"`)
+- Removed unused `ApiSource` type
+
+**Changes to index.ts**:
+- Replaced `type ModuleSource` with `type CourseModuleStatus` in exports
+
+**Consumer Updates**:
+- `studio/course/[coursenft]/page.tsx` - Updated status comparisons to lowercase
+- `studio/course/page.tsx` - Updated status comparisons to lowercase
+- `studio-module-card.tsx` - Updated status comparisons to lowercase
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### Assignment & Introduction Types - COMPLETE
+
+**Consistency Fix**: All four module content types now colocated in `use-course-module.ts`:
+
+| Type | Fields | Transform |
+|------|--------|-----------|
+| `SLT` | id, sltId, sltText, moduleIndex, moduleCode, createdAt, updatedAt, lesson | `transformSLT()` |
+| `Lesson` | id, contentJson, sltId, sltIndex, moduleCode, createdAt, updatedAt, title, description, isLive, imageUrl, videoUrl | `transformLesson()` |
+| `Assignment` | id, title, contentJson, moduleCode, createdAt, updatedAt | `transformAssignment()` |
+| `Introduction` | id, title, contentJson, moduleCode, createdAt, updatedAt | `transformIntroduction()` |
+
+**Changes**:
+- Added `Assignment` interface (camelCase fields)
+- Added `Introduction` interface (camelCase fields)
+- Added `transformAssignment()` function
+- Added `transformIntroduction()` function
+- Updated `CourseModule.assignment: Assignment | null` (was `unknown`)
+- Updated `CourseModule.introduction: Introduction | null` (was `unknown`)
+- Updated `transformCourseModule()` to transform nested entities
+- Exported all transforms and types from `index.ts`
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### Deprecated Exports Removed - COMPLETE
+
+Removed backward compatibility exports that were marked deprecated:
+- `MergedCourseModule` type alias → consumers migrated to `CourseModule`
+- `flattenMergedModule` function alias → consumers migrated to `transformCourseModule`
+
+**Consumer Updates**:
+- `slt-lesson-table.tsx` - Updated to use `CourseModule`
+- `on-chain-slts-viewer.tsx` - Updated to use `CourseModule`
+
+**Verification**: `npm run typecheck` and `npm run lint` pass.
+
+---
+
+### Previous Session: use-course-module.ts Task 6
+
+**Task 6 Complete**: Renamed `courseNftPolicyId` → `courseId` throughout:
+- Query key functions (list, teacherList, detail, map)
+- All hook parameters (useCourseModules, useTeacherCourseModules, useCourseModule, useCourseModuleMap)
+- All mutation inputs (useCreateCourseModule, useUpdateCourseModule, useUpdateCourseModuleStatus, useDeleteCourseModule)
+- JSDoc examples updated
+
+**Consumer Updates**:
+- `step-credential.tsx` - Updated mutation calls to use `courseId:`
+- `studio/course/[coursenft]/page.tsx` - Updated deleteModuleMutation call
+
 ### Completed Line-by-Line Review ✅
 
-**use-course.ts** - APPROVED
+**use-course.ts** - APPROVED ✅
 - Added `staleTime: 30 * 1000` to `useActiveCourses`
 - Removed "merged" terminology from comments (new style rule)
-- Cross-file issue noted: inline module transform should use shared `transformModule` (fix when reviewing use-course-module.ts)
+- Updated `transformCourseDetail()` to use inline module mapping with `status: "active"`
 
 **use-course-owner.ts** - APPROVED
 - Added `staleTime: 30 * 1000` to `useOwnerCourses`
@@ -106,16 +438,16 @@ We work through each hook one at a time. For every hook:
 |------|--------|--------|--------|--------|--------|--------|--------|--------|
 | `use-course.ts` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ **APPROVED** |
 | `use-course-owner.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ **APPROVED** |
-| `use-course-module.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | 🔶 Needs Task 6 |
+| `use-course-module.ts` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ **COMPLETE** |
 | `use-project.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | N/A | ✅ Exemplary |
-| `use-course-teacher.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | N/A | ✅ Complete (RENAMED) |
-| `use-slt.ts` | N/A | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | 🔶 Needs work |
-| `use-lesson.ts` | N/A | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | 🔶 Needs work |
-| `use-course-student.ts` | N/A | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | N/A | 🔶 Needs work (RENAMED) |
+| `use-course-teacher.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | N/A | ✅ **COMPLETE** (source→status) |
+| `use-slt.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ **COMPLETE** |
+| `use-lesson.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ **COMPLETE** |
+| `use-course-student.ts` | N/A | ✅ | ✅ | ✅ | ✅ | ✅ | N/A | ✅ **COMPLETE** |
 | `use-project-manager.ts` | N/A | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | N/A | 🔶 Needs work (RENAMED) |
 | `use-project-contributor.ts` | N/A | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | N/A | 🔶 Needs work (RENAMED) |
 
-**Legend**: ✅ Done | ⬜ TODO | N/A Not applicable | **APPROVED** = Line-by-line reviewed and approved
+**Legend**: ✅ Done | ⬜ TODO | N/A Not applicable | **APPROVED** = Line-by-line reviewed and approved | 🔵 **PENDING API** = Awaiting backend endpoint
 
 ---
 
@@ -123,16 +455,19 @@ We work through each hook one at a time. For every hook:
 
 Issues that span multiple hook files. Fix when reviewing the target file.
 
-### use-course.ts → use-course-module.ts
+### use-course.ts → use-course-module.ts ✅ RESOLVED (REVISED)
 
-**Issue**: `transformCourseDetail` in `use-course.ts` (lines 154-163) has an inline module mapping instead of using `transformModule` from `use-course-module.ts`.
+**Original Issue**: `transformCourseDetail` in `use-course.ts` had an inline module mapping instead of using a shared transformer.
 
-**Why**: The course detail endpoint returns modules in a different shape than the module endpoints, so the inline transform was a pragmatic choice. However, this creates inconsistency.
+**Original Resolution**: Created `transformModuleFromCourseDetail()` in `use-course-module.ts`.
 
-**Fix when reviewing use-course-module.ts**:
-1. Ensure `transformModule` can handle both shapes (or create a `transformModuleFromCourseDetail` variant)
-2. Update `use-course.ts` to import and use the shared transformer
-3. This ensures `CourseDetail.modules` has identical structure to standalone module queries
+**Revised Resolution** (CourseModuleStatus Refactor): Reverted to inline module mapping in `use-course.ts` for cleaner architectural separation:
+- `use-course.ts` handles its own embedded module data (simplified on-chain view)
+- `use-course-module.ts` handles module-specific endpoints only (full merged data)
+- Removed `transformModuleFromCourseDetail()` from `use-course-module.ts`
+- Modules from course detail always get `status: "active"` (they're from on-chain data)
+
+**Why inline**: The course detail endpoint returns a fundamentally different shape (on-chain only, no content fields). Rather than creating a special transform function, it's cleaner for `use-course.ts` to handle its own embedded data.
 
 ---
 
@@ -186,9 +521,10 @@ Audited **11 files** in `src/hooks/api/` (after reorganization).
 
 | Status | Count | Files |
 |--------|-------|-------|
-| ✅ Exemplary | 4 | use-course.ts, use-course-owner.ts, use-course-module.ts, use-project.ts |
-| ✅ Complete | 1 | use-course-teacher.ts |
-| 🔶 Needs Work | 5 | use-slt.ts, use-lesson.ts, use-course-student.ts, use-project-manager.ts, use-project-contributor.ts |
+| ✅ APPROVED | 2 | use-course.ts, use-course-owner.ts |
+| ✅ Complete | 7 | use-course-module.ts, use-course-teacher.ts, use-slt.ts, use-lesson.ts, use-assignment.ts, use-introduction.ts, use-course-student.ts |
+| ✅ Exemplary | 1 | use-project.ts |
+| 🔶 Needs Work | 2 | use-project-manager.ts, use-project-contributor.ts |
 
 ---
 
@@ -198,58 +534,52 @@ Audited **11 files** in `src/hooks/api/` (after reorganization).
 
 These hooks need app-level types and transformers.
 
-#### Task 1.1: Fix use-slt.ts
+#### Task 1.1: Fix use-slt.ts ✅ COMPLETE
 
 **File**: `src/hooks/api/course/use-slt.ts`
 
-**Current Issue**: Returns raw `SLTListResponse` and `SLTResponse` from generated types.
+**Solution**: Imported `SLT` type and `transformSLT` from `use-course-module.ts` (owner file pattern).
 
-**Solution**: Reuse `SLT` type and `transformSLT` from `use-course-module.ts`, or define local versions.
-
-**Changes Needed**:
-- [ ] Import or define app-level `SLT` interface
-- [ ] Add `transformSLT` function (or import from use-course-module)
-- [ ] Update `useSLTs` to return `SLT[]` instead of raw types
-- [ ] Export `SLT` type from this file
-
-**Estimated Complexity**: Low (types already exist in use-course-module.ts)
+**Changes Made**:
+- [x] Import `SLT`, `transformSLT` from use-course-module
+- [x] Update `useSLTs` to return `SLT[]` with transformation
+- [x] Update all mutations to use `courseId` instead of `courseNftPolicyId`
+- [x] Add `staleTime: 30 * 1000`
+- [x] Remove debug console.logs
+- [x] Update "Go API:" → "Endpoint:" comments
 
 ---
 
-#### Task 1.2: Fix use-lesson.ts
+#### Task 1.2: Fix use-lesson.ts ✅ COMPLETE
 
 **File**: `src/hooks/api/course/use-lesson.ts`
 
-**Current Issue**: Returns raw `LessonResponse` from generated types.
+**Solution**: Imported `Lesson` type and `transformLesson` from `use-course-module.ts` (owner file pattern).
 
-**Solution**: Reuse `Lesson` type and `transformLesson` from `use-course-module.ts`, or define local versions.
-
-**Changes Needed**:
-- [ ] Import or define app-level `Lesson` interface
-- [ ] Add `transformLesson` function (or import from use-course-module)
-- [ ] Update `useLesson` to return `Lesson` instead of raw type
-- [ ] Export `Lesson` type from this file
-
-**Estimated Complexity**: Low (types already exist in use-course-module.ts)
+**Changes Made**:
+- [x] Import `Lesson`, `transformLesson` from use-course-module
+- [x] Update `useLesson` to return `Lesson | null` with transformation
+- [x] Update `useCreateLesson` to return `Lesson`
+- [x] Rename `courseNftPolicyId` → `courseId` and `moduleIndex` → `sltIndex`
+- [x] Add `staleTime: 30 * 1000`
+- [x] Remove debug console.logs
+- [x] Update "Go API:" → "Endpoint:" comments
 
 ---
 
-#### Task 1.3: Fix use-course-student.ts
+#### Task 1.3: Fix use-course-student.ts ✅ COMPLETE
 
 **File**: `src/hooks/api/course/use-course-student.ts`
 
-**Current Issue**: Type alias points directly to API type:
-```typescript
-export type StudentCourse = OrchestrationStudentCourseListItem;
-```
+**Solution**: Defined proper `StudentCourse` interface with flattened `content` fields.
 
-**Changes Needed**:
-- [ ] Define proper `StudentCourse` interface with camelCase fields
-- [ ] Add `transformStudentCourse` function
-- [ ] Update `useStudentCourses` to apply transformation
-- [ ] Export transformer
-
-**Estimated Complexity**: Medium
+**Changes Made**:
+- [x] Define proper `StudentCourse` interface with camelCase fields
+- [x] Add `transformStudentCourse` function (flattens nested content)
+- [x] Update `useStudentCourses` to apply transformation
+- [x] Export transformer and type
+- [x] Add `staleTime: 30 * 1000`
+- [x] Add `useInvalidateStudentCourses` hook
 
 ---
 
@@ -317,14 +647,23 @@ These hooks are needed for complete user flows but can be added incrementally.
 
 #### High Priority (Core User Flows)
 
-| Endpoint | Hook Name | Purpose |
-|----------|-----------|---------|
-| `POST /course/student/commitment/create` | `useCreateStudentCommitment` | Student enrollment |
-| `POST /course/student/commitment/submit` | `useSubmitStudentCommitment` | Assignment submission |
-| `POST /course/student/commitment/claim` | `useClaimCredential` | Claim credential |
-| `POST /course/teacher/assignment-commitment/review` | `useReviewAssignment` | Teacher assessment |
-| `POST /project/contributor/commitment/create` | `useCreateTaskCommitment` | Task commitment |
-| `POST /project/contributor/commitments/list` | `useContributorCommitments` | List own commitments |
+| Endpoint | Hook Name | Purpose | Status |
+|----------|-----------|---------|--------|
+| `POST /course/teacher/course-module/register` | `useRegisterCourseModule` | Register on-chain module in DB | ✅ Done |
+| `POST /course/teacher/lesson/update` | `useUpdateLesson` | Update lesson content | ✅ Done |
+| `POST /course/teacher/lesson/delete` | `useDeleteLesson` | Delete lesson | ✅ Done |
+| `POST /course/teacher/assignment/create` | `useCreateAssignment` | Create assignment | ✅ Done |
+| `POST /course/teacher/assignment/update` | `useUpdateAssignment` | Update assignment | ✅ Done |
+| `POST /course/teacher/assignment/delete` | `useDeleteAssignment` | Delete assignment | ✅ Done |
+| `POST /course/teacher/introduction/create` | `useCreateIntroduction` | Create introduction | ✅ Done |
+| `POST /course/teacher/introduction/update` | `useUpdateIntroduction` | Update introduction | ✅ Done |
+| `POST /course/teacher/introduction/delete` | `useDeleteIntroduction` | Delete introduction | ✅ Done |
+| `POST /course/student/commitment/create` | `useCreateStudentCommitment` | Student enrollment | ⬜ TODO |
+| `POST /course/student/commitment/submit` | `useSubmitStudentCommitment` | Assignment submission | ⬜ TODO |
+| `POST /course/student/commitment/claim` | `useClaimCredential` | Claim credential | ⬜ TODO |
+| `POST /course/teacher/assignment-commitment/review` | `useReviewAssignment` | Teacher assessment | ⬜ TODO |
+| `POST /project/contributor/commitment/create` | `useCreateTaskCommitment` | Task commitment | ⬜ TODO |
+| `POST /project/contributor/commitments/list` | `useContributorCommitments` | List own commitments | ⬜ TODO |
 
 #### Medium Priority (Management)
 
@@ -371,12 +710,14 @@ After reorganization, the hook files are organized as:
 ```
 src/hooks/api/course/
 ├── use-course.ts              # Core types + PUBLIC queries only
-├── use-course-owner.ts        # Owner mutations (NEW)
-├── use-course-teacher.ts      # Teacher queries + mutations (RENAMED)
-├── use-course-student.ts      # Student queries + mutations (RENAMED)
-├── use-course-module.ts       # Module entity CRUD
-├── use-slt.ts                 # SLT entity CRUD
-├── use-lesson.ts              # Lesson entity CRUD
+├── use-course-owner.ts        # Owner mutations
+├── use-course-teacher.ts      # Teacher queries + mutations (source→status complete)
+├── use-course-student.ts      # Student queries + mutations
+├── use-course-module.ts       # Module types + CRUD (owns SLT, Lesson, Assignment, Introduction types)
+├── use-slt.ts                 # SLT queries + CRUD mutations
+├── use-lesson.ts              # Lesson queries + CRUD mutations
+├── use-assignment.ts          # Assignment query + CRUD mutations (NEW)
+├── use-introduction.ts        # Introduction CRUD mutations (NEW)
 └── use-module-wizard-data.ts  # Composite UI hook
 
 src/hooks/api/project/
@@ -402,11 +743,14 @@ This avoids circular dependencies and makes imports predictable.
 
 ### Status Pattern (source → status)
 
-The API returns a `source` field indicating data origin. Transformers convert this to semantic `status`:
+The API returns a `source` field indicating data origin. Transformers convert this to semantic `status`.
+
+#### Simple Status (3-value)
+
+For entities where `source` alone determines status (Course, Project):
 
 ```typescript
 export type CourseStatus = "draft" | "active" | "unregistered";
-// Also applies to Projects: ProjectStatus = "draft" | "active" | "unregistered"
 
 function getStatusFromSource(source: string | undefined): CourseStatus {
   switch (source) {
@@ -418,9 +762,33 @@ function getStatusFromSource(source: string | undefined): CourseStatus {
 }
 ```
 
+#### Complex Status (5-value)
+
+For entities with additional lifecycle states (CourseModule):
+
+```typescript
+export type CourseModuleStatus =
+  | "draft"        // DB only, Teacher editing, SLTs can change
+  | "approved"     // DB only, SLTs locked, sltHash stored, ready for TX
+  | "pending_tx"   // TX submitted but not confirmed
+  | "active"       // On-chain + DB (merged)
+  | "unregistered" // On-chain only, needs DB registration
+
+function getModuleStatus(source: string | undefined, moduleStatus: string | undefined): CourseModuleStatus {
+  if (source === "chain_only") return "unregistered";
+  if (source === "merged") return "active";
+  // DB-only modules: derive from module_status
+  switch (moduleStatus?.toUpperCase()) {
+    case "APPROVED": return "approved";
+    case "PENDING_TX": return "pending_tx";
+    default: return "draft";
+  }
+}
+```
+
 **Apply this pattern** whenever an API endpoint returns a `source` field.
 
-For complex status (e.g., Assignment Commitments), combine `source` with API-returned status fields.
+For complex status (e.g., CourseModule, Assignment Commitments), combine `source` with API-returned status fields.
 
 ### API-Taxonomy Alignment (Task 6)
 
@@ -440,4 +808,4 @@ Once all tasks are complete:
 
 ---
 
-**Last Updated**: January 25, 2026 (Hook organization complete, file renames, use-owned-courses.ts deleted)
+**Last Updated**: January 25, 2026 (Source→Status migration complete in use-course-teacher.ts; file organization consolidated - useAssignment moved to use-assignment.ts, use-introduction.ts created; all course hooks complete; 2 project hooks remaining)

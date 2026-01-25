@@ -42,7 +42,7 @@ export default function CredentialsPage() {
   // Filter to only completed courses
   const completedCourses = useMemo(() => {
     if (!studentCourses) return [];
-    return studentCourses.filter((course) => course.enrollment_status === "completed");
+    return studentCourses.filter((course) => course.enrollmentStatus === "completed");
   }, [studentCourses]);
 
   // Not authenticated state
@@ -177,7 +177,7 @@ export default function CredentialsPage() {
       {/* Credentials Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {completedCourses.map((course) => (
-          <AndamioCard key={course.course_id} className="group hover:shadow-md transition-shadow">
+          <AndamioCard key={course.courseId} className="group hover:shadow-md transition-shadow">
             <AndamioCardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <AndamioCardIconHeader
@@ -190,13 +190,13 @@ export default function CredentialsPage() {
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
               {/* Course Title */}
-              {course.content?.title && (
+              {course.title && (
                 <div className="space-y-1">
                   <AndamioText variant="small" className="text-xs uppercase tracking-wide text-muted-foreground">
                     Course
                   </AndamioText>
                   <AndamioText className="font-medium">
-                    {course.content.title}
+                    {course.title}
                   </AndamioText>
                 </div>
               )}
@@ -207,7 +207,7 @@ export default function CredentialsPage() {
                   Course ID
                 </AndamioText>
                 <code className="text-xs font-mono bg-muted px-2 py-1 rounded block truncate">
-                  {course.course_id}
+                  {course.courseId}
                 </code>
               </div>
 
@@ -221,7 +221,7 @@ export default function CredentialsPage() {
 
               {/* Action */}
               <Link
-                href={`/course/${course.course_id}`}
+                href={`/course/${course.courseId}`}
                 className="flex items-center justify-between p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors"
               >
                 <AndamioText variant="small" className="text-primary font-medium">

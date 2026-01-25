@@ -55,20 +55,19 @@ export default function ModuleLessonsPage() {
     if (!slts) return [];
 
     return slts.map((slt) => {
-      // In new API, lesson is directly on the SLT
-      // API v2.0.0+: slt_index is 1-based
+      // SLT and Lesson use camelCase (transformed from API)
       const lesson = slt.lesson;
       return {
-        module_index: slt.slt_index ?? 1,
-        slt_text: slt.slt_text ?? "",
-        slt_id: `slt-${slt.slt_index}`,
+        module_index: slt.moduleIndex ?? 1,
+        slt_text: slt.sltText ?? "",
+        slt_id: `slt-${slt.moduleIndex}`,
         lesson: lesson
           ? {
               title: typeof lesson.title === "string" ? lesson.title : null,
               description: typeof lesson.description === "string" ? lesson.description : null,
-              image_url: typeof lesson.image_url === "string" ? lesson.image_url : null,
-              video_url: typeof lesson.video_url === "string" ? lesson.video_url : null,
-              live: lesson.is_live ?? null,
+              image_url: typeof lesson.imageUrl === "string" ? lesson.imageUrl : null,
+              video_url: typeof lesson.videoUrl === "string" ? lesson.videoUrl : null,
+              live: lesson.isLive ?? null,
             }
           : undefined,
       };

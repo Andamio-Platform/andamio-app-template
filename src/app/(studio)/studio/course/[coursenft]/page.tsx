@@ -47,7 +47,7 @@ import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialo
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
-import { useTeacherCourseModules, useDeleteCourseModule } from "~/hooks/api/course/use-course-module";
+import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
@@ -344,10 +344,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     [hybridModules]
   );
 
-  // Modules that are APPROVED in DB but NOT yet on-chain (truly ready to mint)
+  // Modules that are approved in DB but NOT yet on-chain (truly ready to mint)
   const modulesReadyToMint = useMemo(() =>
     modules.filter((m) =>
-      m.status === "APPROVED" && !syncedModuleCodes.has(m.moduleCode ?? "")
+      m.status === "approved" && !syncedModuleCodes.has(m.moduleCode ?? "")
     ),
     [modules, syncedModuleCodes]
   );
@@ -362,20 +362,28 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     syncedBySlt: hybridModules.filter((m) => m.syncStatus === "synced" && m.matchType === "slt-content").length,
     hashMismatches: hybridModules.filter((m) => m.hashMismatch).length,
     dbOnly: hybridModules.filter((m) => m.syncStatus === "db-only").length,
+    // On-chain only modules (need registration)
+    unregistered: hybridModules.filter((m) => m.syncStatus === "onchain-only").length,
     // Database status breakdown (for modules that exist in DB)
-    // Cast status to string to handle extended statuses like APPROVED
-    dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
-    dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
-    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
-    dbDraft: modules.filter((m) => m.status === "DRAFT").length,
+    dbOnChain: modules.filter((m) => m.status === "active").length,
+    dbPending: modules.filter((m) => m.status === "pending_tx").length,
+    dbApproved: modules.filter((m) => m.status === "approved").length,
+    dbDraft: modules.filter((m) => m.status === "draft").length,
     // Truly ready to mint: APPROVED but not yet on-chain
     readyToMint: modulesReadyToMint.length,
   }), [hybridModules, modules, modulesReadyToMint]);
+
+  // Unregistered modules (on-chain only, need DB registration)
+  const unregisteredModules = useMemo(() =>
+    hybridModules.filter((m) => m.syncStatus === "onchain-only"),
+    [hybridModules]
+  );
 
   // Mutations
   const updateCourseMutation = useUpdateCourse();
   const deleteCourseMutation = useDeleteCourse();
   const deleteModuleMutation = useDeleteCourseModule();
+  const registerModuleMutation = useRegisterCourseModule();
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -386,6 +394,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
   // Burn selection state - stores on-chain hashes of selected modules
   const [selectedForBurn, setSelectedForBurn] = useState<Set<string>>(new Set());
+
+  // Registration state for unregistered modules
+  const [registeringHash, setRegisteringHash] = useState<string | null>(null);
+  const [registerModuleCode, setRegisterModuleCode] = useState("");
 
   // Get modules selected for burn with full details
   const modulesToBurn = useMemo<ModuleToBurn[]>(() => {
@@ -504,12 +516,36 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     }
     try {
       await deleteModuleMutation.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
       });
       toast.success(`Module "${moduleCode}" deleted`);
     } catch (err) {
       toast.error("Failed to delete module", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  };
+
+  const handleRegisterModule = async (sltHash: string) => {
+    if (!registerModuleCode.trim()) {
+      toast.error("Please enter a module code");
+      return;
+    }
+    try {
+      const result = await registerModuleMutation.mutateAsync({
+        courseId: courseNftPolicyId,
+        moduleCode: registerModuleCode.trim(),
+        sltHash,
+      });
+      toast.success(`Registered module "${registerModuleCode}" with ${result?.sltCount ?? 0} SLTs`);
+      setRegisteringHash(null);
+      setRegisterModuleCode("");
+      // Refetch to show updated data
+      await refetchModules();
+      await refetchCourse();
+    } catch (err) {
+      toast.error("Failed to register module", {
         description: err instanceof Error ? err.message : "Unknown error",
       });
     }
@@ -924,6 +960,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       <AndamioText variant="small" className="text-[10px]">Ready to Mint</AndamioText>
                     </div>
                   )}
+                  {hybridStats.unregistered > 0 && (
+                    <div className="rounded-xl border p-3 text-center bg-info/5 border-info/20">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <OnChainIcon className="h-4 w-4 text-info" />
+                        <span className="text-2xl font-bold text-info">{hybridStats.unregistered}</span>
+                      </div>
+                      <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
+                    </div>
+                  )}
                 </div>
 
                 {/* Module verification list - filter out archived/orphaned on-chain modules */}
@@ -1078,6 +1123,133 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     await refetchCourse();
                   }}
                 />
+              )}
+
+              {/* Unregistered Modules - On-chain but not in database */}
+              {unregisteredModules.length > 0 && (
+                <StudioFormSection title="Unregistered Modules">
+                  <AndamioAlert className="mb-4">
+                    <OnChainIcon className="h-4 w-4 text-info" />
+                    <AndamioAlertDescription>
+                      These modules exist on-chain but aren&apos;t registered in the database yet.
+                      Register them to add lessons, assignments, and other content.
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+
+                  <div className="space-y-3">
+                    {unregisteredModules.map((m) => (
+                      <div
+                        key={m.onChainHash}
+                        className="rounded-xl border p-4 bg-info/5 border-info/20 space-y-4"
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/20">
+                              <OnChainIcon className="h-4 w-4 text-info" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-sm font-medium text-info">
+                                  On-Chain Only
+                                </span>
+                                <AndamioBadge className="bg-info/20 text-info border-0 text-[10px]">
+                                  Needs Registration
+                                </AndamioBadge>
+                              </div>
+                              <AndamioText variant="small" className="font-mono text-[10px] truncate">
+                                {m.onChainHash}
+                              </AndamioText>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-medium">{m.onChainSlts.length} SLTs</div>
+                            <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
+                          </div>
+                        </div>
+
+                        {/* SLTs preview */}
+                        {m.onChainSlts.length > 0 && (
+                          <div className="space-y-1.5 pl-11">
+                            <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                              Learning Targets (On-Chain)
+                            </AndamioText>
+                            <div className="space-y-1">
+                              {m.onChainSlts.map((slt, i) => (
+                                <div key={i} className="flex items-start gap-2 text-sm">
+                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-info flex-shrink-0" />
+                                  <span className="text-muted-foreground">{slt}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Registration form */}
+                        {registeringHash === m.onChainHash ? (
+                          <div className="space-y-3 pl-11">
+                            <div className="space-y-2">
+                              <AndamioLabel htmlFor={`module-code-${m.onChainHash}`}>
+                                Module Code
+                              </AndamioLabel>
+                              <AndamioInput
+                                id={`module-code-${m.onChainHash}`}
+                                value={registerModuleCode}
+                                onChange={(e) => setRegisterModuleCode(e.target.value)}
+                                placeholder="e.g., 101 or MODULE-A"
+                                className="max-w-xs font-mono"
+                              />
+                              <AndamioText variant="small">
+                                Choose a unique code to identify this module in your course
+                              </AndamioText>
+                            </div>
+                            <div className="flex gap-2">
+                              <AndamioButton
+                                size="sm"
+                                onClick={() => handleRegisterModule(m.onChainHash!)}
+                                disabled={registerModuleMutation.isPending || !registerModuleCode.trim()}
+                              >
+                                {registerModuleMutation.isPending ? (
+                                  <>
+                                    <PendingIcon className="h-4 w-4 mr-1 animate-spin" />
+                                    Registering...
+                                  </>
+                                ) : (
+                                  <>
+                                    <AddIcon className="h-4 w-4 mr-1" />
+                                    Register Module
+                                  </>
+                                )}
+                              </AndamioButton>
+                              <AndamioButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setRegisteringHash(null);
+                                  setRegisterModuleCode("");
+                                }}
+                                disabled={registerModuleMutation.isPending}
+                              >
+                                Cancel
+                              </AndamioButton>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pl-11">
+                            <AndamioButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setRegisteringHash(m.onChainHash)}
+                            >
+                              <AddIcon className="h-4 w-4 mr-1" />
+                              Register This Module
+                            </AndamioButton>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </StudioFormSection>
               )}
 
               {/* Only show blockchain links after modules are minted */}

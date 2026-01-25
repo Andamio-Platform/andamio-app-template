@@ -29,7 +29,7 @@ import type {
   OrchestrationMergedCourseListItem,
   MergedHandlersMergedCoursesResponse,
 } from "~/types/generated/gateway";
-import type { CourseModule } from "./use-course-module";
+import { type CourseModule } from "./use-course-module";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -44,14 +44,16 @@ import type { CourseModule } from "./use-course-module";
 export type CourseStatus = "draft" | "active" | "unregistered";
 
 /**
- * API source field values (internal use in transformers)
- * Maps to CourseStatus for developer-friendly semantics
- */
-type ApiSource = "merged" | "chain_only" | "db_only";
-
-/**
  * Derive semantic status from API source field
- * Used whenever an API endpoint returns a `source` field
+ *
+ * API source values: "merged", "chain_only", "db_only"
+ *
+ * Status derivation logic:
+ * | source     | → status      |
+ * |------------|---------------|
+ * | merged     | active        |
+ * | chain_only | unregistered  |
+ * | db_only    | draft         |
  */
 function getStatusFromSource(source: string | undefined): CourseStatus {
   switch (source) {
@@ -131,8 +133,23 @@ export function transformCourse(item: OrchestrationMergedCourseListItem): Course
 /**
  * Transform API response to app-level CourseDetail type
  * Includes modules mapping
+ *
+ * Note: The course detail endpoint returns a simplified view of modules (on-chain metadata only).
+ * For full module data with content fields, use useCourseModules() or useTeacherCourseModules().
  */
 export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): CourseDetail {
+  // Transform modules inline - course detail endpoint provides simplified on-chain view
+  const modules = detail.modules?.map((m): CourseModule => ({
+    sltHash: (m as { slt_hash?: string }).slt_hash ?? "",
+    courseId: detail.course_id ?? "",
+    createdBy: (m as { created_by?: string }).created_by,
+    prerequisites: (m as { prerequisites?: string[] }).prerequisites,
+    onChainSlts: (m as { slts?: string[] }).slts,
+    // Modules from course detail are always from on-chain (active status)
+    status: "active",
+    // Note: Content fields (title, description, etc.) are not available in course detail response
+  }));
+
   return {
     // On-chain fields (note: owner, created_tx, created_slot not available in detail endpoint)
     courseId: detail.course_id ?? "",
@@ -149,17 +166,8 @@ export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): 
     imageUrl: detail.content?.image_url,
     isPublic: detail.content?.is_public,
 
-    // Modules - map to CourseModule format
-    // Note: This uses the old format temporarily until use-course-module is updated
-    modules: detail.modules?.map((m) => ({
-      sltHash: m.slt_hash ?? "",
-      courseId: detail.course_id ?? "",
-      createdBy: m.created_by,
-      prerequisites: m.prerequisites,
-      onChainSlts: m.slts,
-      source: "merged" as const,
-      // Note: module content is not included in course detail response
-    })),
+    // Modules
+    modules,
   };
 }
 

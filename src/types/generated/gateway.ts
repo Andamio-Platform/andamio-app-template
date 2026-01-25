@@ -1306,6 +1306,16 @@ export interface MergedHandlersMergedTasksResponse {
   warning?: string;
 }
 
+export interface MergedHandlersRegisterModuleFromChainRequest {
+  course_id?: string;
+  course_module_code?: string;
+  slt_hash?: string;
+}
+
+export interface MergedHandlersRegisterModuleResponse {
+  data?: OrchestrationRegisterModuleResponse;
+}
+
 export interface MergedHandlersStudentAssignmentCommitmentResponse {
   data?: OrchestrationStudentAssignmentCommitmentItem;
   warning?: string;
@@ -1470,7 +1480,10 @@ export interface OrchestrationMergedCourseModuleItem {
   on_chain_slts?: string[];
   /** On-chain prerequisite module hashes */
   prerequisites?: string[];
-  /** Primary identifier - matches on-chain slts_hash and DB slt_hash */
+  /**
+   * Primary identifier - matches on-chain slts_hash and DB slt_hash.
+   * Empty string for db_only drafts without SLTs computed yet.
+   */
   slt_hash?: string;
   /** Data source indicator */
   source?: string;
@@ -1619,6 +1632,26 @@ export interface OrchestrationProjectTreasuryFundingOnChain {
   lovelace_amount?: number;
   slot?: number;
   tx_hash?: string;
+}
+
+export interface OrchestrationRegisterModuleResponse {
+  course_id?: string;
+  course_module_code?: string;
+  /** Should be "APPROVED" */
+  module_status?: string;
+  /** Number of SLTs successfully created */
+  slt_count?: number;
+  slt_hash?: string;
+  slts?: OrchestrationRegisteredSltItem[];
+  /** "merged" */
+  source?: string;
+}
+
+export interface OrchestrationRegisteredSltItem {
+  /** 1-based index */
+  slt_index?: number;
+  /** The SLT content */
+  slt_text?: string;
 }
 
 export interface OrchestrationStudentAssignmentCommitmentItem {

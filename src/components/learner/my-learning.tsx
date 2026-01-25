@@ -24,9 +24,9 @@ import { AlertIcon, CourseIcon, OnChainIcon } from "~/components/icons";
  * Individual course card - title comes from merged API response
  */
 function EnrolledCourseCard({ course }: { course: StudentCourse }) {
-  const courseId = course.course_id ?? "";
-  const title = course.content?.title ?? `Course ${courseId.slice(0, 8)}...`;
-  const description = course.content?.description;
+  const courseId = course.courseId ?? "";
+  const title = course.title ?? `Course ${courseId.slice(0, 8)}...`;
+  const description = course.description;
 
   return (
     <Link
@@ -152,7 +152,7 @@ export function MyLearning() {
       <AndamioCardContent>
         <div className="space-y-3">
           {enrolledCourses.map((course) => (
-            <EnrolledCourseCard key={course.course_id} course={course} />
+            <EnrolledCourseCard key={course.courseId} course={course} />
           ))}
         </div>
       </AndamioCardContent>

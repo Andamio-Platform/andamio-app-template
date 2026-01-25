@@ -217,9 +217,9 @@ interface CourseListItemProps {
 }
 
 function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
-  // Determine status based on source field from API
+  // Determine status based on status field from API
   const hasDbContent = course.title !== undefined && course.title !== null;
-  const isOnChain = course.source === "merged" || course.source === "chain_only";
+  const isOnChain = course.status === "synced" || course.status === "onchain_only";
 
   return (
     <button
@@ -294,7 +294,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
   // Determine status from merged data
   const hasDbContent = course.title !== undefined && course.title !== null;
-  const isOnChain = course.source === "merged" || course.source === "chain_only";
+  const isOnChain = course.status === "synced" || course.status === "onchain_only";
 
   // Fetch modules for this course using teacher endpoint (returns drafts too)
   const { data: modules = [], isLoading: isLoadingModules } = useTeacherCourseModules(
@@ -304,9 +304,9 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
   // Module stats
   const moduleStats = useMemo(() => {
     const total = modules.length;
-    const onChain = modules.filter((m) => m.status === "ON_CHAIN").length;
-    const draft = modules.filter((m) => m.status === "DRAFT").length;
-    const approved = 0; // APPROVED status no longer exists
+    const onChain = modules.filter((m) => m.status === "active").length;
+    const draft = modules.filter((m) => m.status === "draft").length;
+    const approved = modules.filter((m) => m.status === "approved").length;
     const totalSlts = modules.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
     return { total, onChain, draft, approved, totalSlts };
   }, [modules]);

@@ -101,9 +101,9 @@ export default function LessonDetailPage() {
 
       {/* Header with status badge */}
       <div className="flex items-center justify-end">
-        {lesson.is_live !== undefined && (
-          <AndamioBadge variant={lesson.is_live ? "default" : "secondary"}>
-            {lesson.is_live ? "Live" : "Draft"}
+        {lesson.isLive !== undefined && (
+          <AndamioBadge variant={lesson.isLive ? "default" : "secondary"}>
+            {lesson.isLive ? "Live" : "Draft"}
           </AndamioBadge>
         )}
       </div>
@@ -136,20 +136,20 @@ export default function LessonDetailPage() {
 
       {/* Media Section */}
       <LessonMediaSection
-        videoUrl={typeof lesson.video_url === "string" ? lesson.video_url : undefined}
-        imageUrl={typeof lesson.image_url === "string" ? lesson.image_url : undefined}
+        videoUrl={typeof lesson.videoUrl === "string" ? lesson.videoUrl : undefined}
+        imageUrl={typeof lesson.imageUrl === "string" ? lesson.imageUrl : undefined}
         imageAlt={typeof lesson.title === "string" ? lesson.title : "Lesson image"}
       />
 
       {/* Lesson Content */}
-      {!!lesson.content_json && (
+      {!!lesson.contentJson && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Lesson Content</AndamioCardTitle>
           </AndamioCardHeader>
           <AndamioCardContent>
             <ContentViewer
-              content={lesson.content_json as JSONContent}
+              content={lesson.contentJson as JSONContent}
               emptyContent={
                 <AndamioText variant="muted" className="italic">Unable to parse lesson content</AndamioText>
               }
@@ -159,7 +159,7 @@ export default function LessonDetailPage() {
       )}
 
       {/* Empty content state */}
-      {!lesson.content_json && !lesson.image_url && !lesson.video_url && (
+      {!lesson.contentJson && !lesson.imageUrl && !lesson.videoUrl && (
         <AndamioCard>
           <AndamioCardContent className="pt-6">
             <AndamioEmptyState

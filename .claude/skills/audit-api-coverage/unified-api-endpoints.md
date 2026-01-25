@@ -3,7 +3,7 @@
 > **Source of Truth**: [API Documentation](https://dev.api.andamio.io/api/v1/docs/index.html)
 > **Base URL**: `https://dev.api.andamio.io`
 > **OpenAPI Spec**: [doc.json](https://dev.api.andamio.io/api/v1/docs/doc.json)
-> **Last Updated**: January 24, 2026
+> **Last Updated**: January 25, 2026
 
 This file documents all endpoints available in the Unified Andamio API Gateway.
 
@@ -111,12 +111,13 @@ The gateway uses two API versions:
 | POST | `/api/v2/course/owner/teacher/remove` | Remove teacher from course **(DEPRECATED)** |
 | POST | `/api/v2/course/owner/teachers/update` | Bulk update teachers |
 
-### Teacher Endpoints (19)
+### Teacher Endpoints (19 + 1 requested)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v2/course/teacher/courses/list` | List courses where user is teacher |
 | POST | `/api/v2/course/teacher/course-modules/list` | List modules for course |
 | POST | `/api/v2/course/teacher/course-module/create` | Create course module |
+| POST | `/api/v2/course/teacher/course-module/register` | Register on-chain module in DB ✅ |
 | POST | `/api/v2/course/teacher/course-module/update` | Update course module |
 | POST | `/api/v2/course/teacher/course-module/delete` | Delete course module |
 | POST | `/api/v2/course/teacher/course-module/publish` | Publish module on-chain |
@@ -272,4 +273,4 @@ The following endpoints have been removed or deprecated:
 
 ---
 
-**Last Updated**: January 24, 2026
+**Last Updated**: January 25, 2026

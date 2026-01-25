@@ -25,6 +25,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
   OrchestrationMergedCourseModuleItem,
   MergedHandlersMergedCourseModulesResponse,
+  MergedHandlersRegisterModuleResponse,
 } from "~/types/generated/gateway";
 
 import { courseKeys } from "./use-course";
@@ -34,12 +35,60 @@ import { courseKeys } from "./use-course";
 // =============================================================================
 
 /**
- * Data source for a module
- * - "merged": Module exists in both on-chain and DB (full data)
- * - "chain_only": Module on-chain but no DB content (needs registration)
- * - "db_only": Module in DB but not on-chain (draft or not yet published)
+ * Lifecycle status for a course module
+ * - "draft": DB only, Teacher editing, SLTs can change
+ * - "approved": DB only, SLTs locked, sltHash stored, ready for TX
+ * - "pending_tx": TX submitted but not confirmed
+ * - "active": On-chain + DB (merged)
+ * - "unregistered": On-chain only, needs DB registration
  */
-export type ModuleSource = "merged" | "chain_only" | "db_only";
+export type CourseModuleStatus =
+  | "draft"
+  | "approved"
+  | "pending_tx"
+  | "active"
+  | "unregistered";
+
+/**
+ * Derive semantic status from API source and module_status fields
+ *
+ * API source values: "merged", "chain_only", "db_only"
+ * API module_status values: "DRAFT", "APPROVED", "PENDING_TX"
+ *
+ * Status derivation logic:
+ * | source     | module_status | → status      |
+ * |------------|---------------|---------------|
+ * | chain_only | *             | unregistered  |
+ * | merged     | *             | active        |
+ * | db_only    | DRAFT         | draft         |
+ * | db_only    | APPROVED      | approved      |
+ * | db_only    | PENDING_TX    | pending_tx    |
+ */
+function getModuleStatus(
+  source: string | undefined,
+  moduleStatus: string | undefined
+): CourseModuleStatus {
+  // Chain-only modules need DB registration
+  if (source === "chain_only") {
+    return "unregistered";
+  }
+
+  // Merged modules are fully active
+  if (source === "merged") {
+    return "active";
+  }
+
+  // DB-only modules: derive from module_status
+  switch (moduleStatus?.toUpperCase()) {
+    case "APPROVED":
+      return "approved";
+    case "PENDING_TX":
+      return "pending_tx";
+    case "DRAFT":
+    default:
+      return "draft";
+  }
+}
 
 /**
  * App-level SLT (Student Learning Target) type with camelCase fields
@@ -75,6 +124,41 @@ export interface Lesson {
 }
 
 /**
+ * App-level Assignment type with camelCase fields
+ *
+ * Represents a module assignment (practice exercise for students).
+ * Content is stored as TipTap JSON.
+ */
+export interface Assignment {
+  id?: number;
+  title?: string;
+  description?: string;
+  contentJson?: unknown;
+  moduleCode?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  isLive?: boolean;
+  createdByAlias?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * App-level Introduction type with camelCase fields
+ *
+ * Represents a module introduction (overview content for students).
+ * Content is stored as TipTap JSON.
+ */
+export interface Introduction {
+  id?: number;
+  title?: string;
+  contentJson?: unknown;
+  moduleCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
  * App-level CourseModule type with camelCase fields
  *
  * Combines on-chain fields (sltHash, prerequisites, onChainSlts)
@@ -92,8 +176,8 @@ export interface CourseModule {
   prerequisites?: string[];
   onChainSlts?: string[];
 
-  // Data source indicator
-  source: ModuleSource;
+  // Lifecycle status (derived from API source + module_status fields)
+  status: CourseModuleStatus;
 
   // Content fields (flattened from content.*)
   moduleCode?: string;
@@ -102,10 +186,9 @@ export interface CourseModule {
   imageUrl?: string;
   videoUrl?: string;
   isLive?: boolean;
-  status?: string;
   slts?: SLT[];
-  assignment?: unknown;
-  introduction?: unknown;
+  assignment?: Assignment | null;
+  introduction?: Introduction | null;
 }
 
 /**
@@ -123,8 +206,9 @@ export interface CreateCourseModuleInput {
 
 /**
  * Transform raw API SLT to app-level SLT type
+ * Exported for use in use-slt.ts
  */
-function transformSLT(raw: Record<string, unknown>): SLT {
+export function transformSLT(raw: Record<string, unknown>): SLT {
   return {
     id: raw.id as number | undefined,
     sltId: raw.slt_id as string | undefined,
@@ -139,8 +223,9 @@ function transformSLT(raw: Record<string, unknown>): SLT {
 
 /**
  * Transform raw API Lesson to app-level Lesson type
+ * Exported for use in use-lesson.ts
  */
-function transformLesson(raw: Record<string, unknown>): Lesson {
+export function transformLesson(raw: Record<string, unknown>): Lesson {
   return {
     id: raw.id as number | undefined,
     contentJson: raw.lesson_content ?? raw.content_json,
@@ -158,13 +243,65 @@ function transformLesson(raw: Record<string, unknown>): Lesson {
 }
 
 /**
+ * Transform raw API Assignment to app-level Assignment type
+ * Exported for potential use in dedicated assignment hooks
+ */
+export function transformAssignment(raw: Record<string, unknown>): Assignment {
+  // Handle NullableString fields (object type in API)
+  const getStringField = (field: unknown): string | undefined => {
+    if (typeof field === "string") return field;
+    if (field && typeof field === "object" && "String" in field) {
+      return (field as { String?: string }).String;
+    }
+    return undefined;
+  };
+
+  return {
+    id: raw.id as number | undefined,
+    title: raw.title as string | undefined,
+    description: getStringField(raw.description),
+    // API uses assignment_content or content_json for TipTap JSON
+    contentJson: raw.assignment_content ?? raw.content_json,
+    moduleCode: raw.course_module_code as string | undefined,
+    imageUrl: getStringField(raw.image_url),
+    videoUrl: getStringField(raw.video_url),
+    isLive: raw.is_live as boolean | undefined,
+    createdByAlias: raw.created_by_alias as string | undefined,
+    createdAt: raw.created_at as string | undefined,
+    updatedAt: raw.updated_at as string | undefined,
+  };
+}
+
+/**
+ * Transform raw API Introduction to app-level Introduction type
+ * Exported for potential use in dedicated introduction hooks
+ */
+export function transformIntroduction(raw: Record<string, unknown>): Introduction {
+  return {
+    id: raw.id as number | undefined,
+    title: raw.title as string | undefined,
+    // API uses introduction_content or content_json for TipTap JSON
+    contentJson: raw.introduction_content ?? raw.content_json,
+    moduleCode: raw.course_module_code as string | undefined,
+    createdAt: raw.created_at as string | undefined,
+    updatedAt: raw.updated_at as string | undefined,
+  };
+}
+
+/**
  * Transform API response to app-level CourseModule type
  * Handles snake_case → camelCase conversion and field flattening
  */
 export function transformCourseModule(item: OrchestrationMergedCourseModuleItem): CourseModule {
-  // Transform SLTs if present
+  // Transform nested entities if present
   const rawSlts = item.content?.slts as Record<string, unknown>[] | undefined;
   const slts = rawSlts?.map(transformSLT);
+
+  const rawAssignment = item.content?.assignment as Record<string, unknown> | undefined;
+  const assignment = rawAssignment ? transformAssignment(rawAssignment) : null;
+
+  const rawIntroduction = item.content?.introduction as Record<string, unknown> | undefined;
+  const introduction = rawIntroduction ? transformIntroduction(rawIntroduction) : null;
 
   return {
     // On-chain fields
@@ -173,7 +310,9 @@ export function transformCourseModule(item: OrchestrationMergedCourseModuleItem)
     createdBy: item.created_by,
     prerequisites: item.prerequisites,
     onChainSlts: item.on_chain_slts,
-    source: (item.source as ModuleSource) ?? "db_only",
+
+    // Lifecycle status (derived from API source + module_status fields)
+    status: getModuleStatus(item.source, item.content?.module_status),
 
     // Flattened content fields
     moduleCode: item.content?.course_module_code,
@@ -182,26 +321,11 @@ export function transformCourseModule(item: OrchestrationMergedCourseModuleItem)
     imageUrl: item.content?.image_url,
     videoUrl: item.content?.video_url,
     isLive: item.content?.is_live,
-    status: item.content?.module_status,
     slts,
-    assignment: item.content?.assignment,
-    introduction: item.content?.introduction,
+    assignment,
+    introduction,
   };
 }
-
-// =============================================================================
-// Backward Compatibility Exports (DEPRECATED)
-// =============================================================================
-
-/**
- * @deprecated Use CourseModule instead. Will be removed after component migration.
- */
-export type MergedCourseModule = CourseModule;
-
-/**
- * @deprecated Use transformCourseModule instead. Will be removed after component migration.
- */
-export const flattenMergedModule = transformCourseModule;
 
 // =============================================================================
 // Query Keys
@@ -210,16 +334,30 @@ export const flattenMergedModule = transformCourseModule;
 export const courseModuleKeys = {
   all: ["courseModules"] as const,
   lists: () => [...courseModuleKeys.all, "list"] as const,
-  list: (courseNftPolicyId: string) =>
-    [...courseModuleKeys.lists(), courseNftPolicyId] as const,
+  list: (courseId: string) =>
+    [...courseModuleKeys.lists(), courseId] as const,
   teacherLists: () => [...courseModuleKeys.all, "teacherList"] as const,
-  teacherList: (courseNftPolicyId: string) =>
-    [...courseModuleKeys.teacherLists(), courseNftPolicyId] as const,
+  teacherList: (courseId: string) =>
+    [...courseModuleKeys.teacherLists(), courseId] as const,
   details: () => [...courseModuleKeys.all, "detail"] as const,
-  detail: (courseNftPolicyId: string, moduleCode: string) =>
-    [...courseModuleKeys.details(), courseNftPolicyId, moduleCode] as const,
-  map: (courseNftPolicyIds: string[]) =>
-    [...courseModuleKeys.all, "map", courseNftPolicyIds.sort().join(",")] as const,
+  detail: (courseId: string, moduleCode: string) =>
+    [...courseModuleKeys.details(), courseId, moduleCode] as const,
+  map: (courseIds: string[]) =>
+    [...courseModuleKeys.all, "map", courseIds.sort().join(",")] as const,
+};
+
+export const assignmentKeys = {
+  all: ["assignments"] as const,
+  details: () => [...assignmentKeys.all, "detail"] as const,
+  detail: (courseId: string, moduleCode: string) =>
+    [...assignmentKeys.details(), courseId, moduleCode] as const,
+};
+
+export const introductionKeys = {
+  all: ["introductions"] as const,
+  details: () => [...introductionKeys.all, "detail"] as const,
+  detail: (courseId: string, moduleCode: string) =>
+    [...introductionKeys.details(), courseId, moduleCode] as const,
 };
 
 // =============================================================================
@@ -242,13 +380,13 @@ export const courseModuleKeys = {
  * }
  * ```
  */
-export function useCourseModules(courseNftPolicyId: string | undefined) {
+export function useCourseModules(courseId: string | undefined) {
   return useQuery({
-    queryKey: courseModuleKeys.list(courseNftPolicyId ?? ""),
+    queryKey: courseModuleKeys.list(courseId ?? ""),
     queryFn: async (): Promise<CourseModule[]> => {
-      // Go API: GET /course/user/modules/{course_id}
+      // Endpoint: GET /course/user/modules/{course_id}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/${courseId}`
       );
 
       // 404 means no modules yet - return empty array
@@ -270,7 +408,7 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
       // Transform to app-level types with camelCase fields
       return (result.data ?? []).map(transformCourseModule);
     },
-    enabled: !!courseNftPolicyId,
+    enabled: !!courseId,
   });
 }
 
@@ -278,10 +416,12 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
  * Fetch all modules for a course as a teacher (merged endpoint)
  *
  * Uses the merged teacher endpoint which returns UNION of on-chain and DB modules.
- * This gives teachers visibility into:
- * - `chain_only`: Modules on-chain but no DB content (needs registration)
- * - `db_only`: Draft modules not yet published on-chain
- * - `merged`: Full modules with both on-chain and DB data
+ * This gives teachers visibility into all module lifecycle states:
+ * - `draft`: Teacher editing, SLTs can change
+ * - `approved`: SLTs locked, ready for TX
+ * - `pending_tx`: TX submitted but not confirmed
+ * - `active`: On-chain + DB (merged)
+ * - `unregistered`: On-chain only, needs DB registration
  *
  * @example
  * ```tsx
@@ -293,26 +433,26 @@ export function useCourseModules(courseNftPolicyId: string | undefined) {
  *     <ModuleEditor
  *       key={m.moduleCode ?? m.sltHash}
  *       module={m}
- *       needsContent={m.source === "chain_only"}
+ *       needsContent={m.status === "unregistered"}
  *     />
  *   ));
  * }
  * ```
  */
-export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
+export function useTeacherCourseModules(courseId: string | undefined) {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
   return useQuery({
-    queryKey: courseModuleKeys.teacherList(courseNftPolicyId ?? ""),
+    queryKey: courseModuleKeys.teacherList(courseId ?? ""),
     queryFn: async (): Promise<CourseModule[]> => {
-      // Merged endpoint: POST /api/v2/course/teacher/course-modules/list
+      // Endpoint: POST /api/v2/course/teacher/course-modules/list
       // Returns UNION of on-chain and DB modules with source indicator
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_id: courseNftPolicyId }),
+          body: JSON.stringify({ course_id: courseId }),
         }
       );
 
@@ -327,13 +467,6 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
 
       const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
 
-      // Debug: Log full API response to diagnose empty module list issue
-      console.log("[useTeacherCourseModules] API response:", {
-        dataLength: result.data?.length ?? 0,
-        data: result.data,
-        warning: result.warning,
-      });
-
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useTeacherCourseModules] API warning:", result.warning);
@@ -342,7 +475,7 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
       // Transform to app-level types with camelCase fields
       return (result.data ?? []).map(transformCourseModule);
     },
-    enabled: !!courseNftPolicyId && isAuthenticated,
+    enabled: !!courseId && isAuthenticated,
   });
 }
 
@@ -366,16 +499,16 @@ export function useTeacherCourseModules(courseNftPolicyId: string | undefined) {
  * ```
  */
 export function useCourseModule(
-  courseNftPolicyId: string | undefined,
+  courseId: string | undefined,
   moduleCode: string | undefined
 ) {
   return useQuery({
-    queryKey: courseModuleKeys.detail(courseNftPolicyId ?? "", moduleCode ?? ""),
+    queryKey: courseModuleKeys.detail(courseId ?? "", moduleCode ?? ""),
     queryFn: async (): Promise<CourseModule | null> => {
-      // Go API: GET /course/user/modules/{course_id}
+      // Endpoint: GET /course/user/modules/{course_id}
       // Fetch list and filter client-side
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/${courseNftPolicyId}`
+        `/api/gateway/api/v2/course/user/modules/${courseId}`
       );
 
       if (!response.ok) {
@@ -394,22 +527,30 @@ export function useCourseModule(
 
       return courseModule;
     },
-    enabled: !!courseNftPolicyId && !!moduleCode,
+    enabled: !!courseId && !!moduleCode,
   });
 }
 
 /**
- * Batch fetch modules for multiple courses by policy ID
+ * Simplified module info for batch lookups
+ */
+export interface CourseModuleSummary {
+  moduleCode: string;
+  title: string;
+}
+
+/**
+ * Batch fetch modules for multiple courses by course ID
  *
  * Used for dashboard views showing module counts across courses.
  * Uses POST /course/teacher/modules/list endpoint.
  *
  * @example
  * ```tsx
- * function CourseCards({ policyIds }: { policyIds: string[] }) {
- *   const { data: moduleMap } = useCourseModuleMap(policyIds);
+ * function CourseCards({ courseIds }: { courseIds: string[] }) {
+ *   const { data: moduleMap } = useCourseModuleMap(courseIds);
  *
- *   return policyIds.map(id => (
+ *   return courseIds.map(id => (
  *     <CourseCard
  *       key={id}
  *       moduleCount={moduleMap?.[id]?.length ?? 0}
@@ -418,19 +559,19 @@ export function useCourseModule(
  * }
  * ```
  */
-export function useCourseModuleMap(courseNftPolicyIds: string[]) {
+export function useCourseModuleMap(courseIds: string[]) {
   const { authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: courseModuleKeys.map(courseNftPolicyIds),
-    queryFn: async () => {
-      // Go API: POST /course/teacher/modules/list - returns modules grouped by policy ID
+    queryKey: courseModuleKeys.map(courseIds),
+    queryFn: async (): Promise<Record<string, CourseModuleSummary[]>> => {
+      // Endpoint: POST /course/teacher/modules/list - returns modules grouped by course ID
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_ids: courseNftPolicyIds }),
+          body: JSON.stringify({ course_ids: courseIds }),
         }
       );
 
@@ -438,11 +579,22 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
         throw new Error(`Failed to fetch module map: ${response.statusText}`);
       }
 
-      return response.json() as Promise<
-        Record<string, Array<{ course_module_code: string; title: string }>>
+      const raw = await response.json() as Record<
+        string,
+        Array<{ course_module_code: string; title: string }>
       >;
+
+      // Transform to camelCase
+      const result: Record<string, CourseModuleSummary[]> = {};
+      for (const [courseId, modules] of Object.entries(raw)) {
+        result[courseId] = modules.map((m) => ({
+          moduleCode: m.course_module_code,
+          title: m.title,
+        }));
+      }
+      return result;
     },
-    enabled: courseNftPolicyIds.length > 0,
+    enabled: courseIds.length > 0,
   });
 }
 
@@ -460,7 +612,7 @@ export function useCourseModuleMap(courseNftPolicyIds: string[]) {
  *
  *   const handleSubmit = async (data: CreateCourseModuleInput) => {
  *     await createModule.mutateAsync({
- *       courseNftPolicyId: courseId,
+ *       courseId,
  *       ...data,
  *     });
  *     toast.success("Module created!");
@@ -476,30 +628,27 @@ export function useCreateCourseModule() {
 
   return useMutation({
     mutationFn: async (
-      input: { courseNftPolicyId: string; moduleCode: string; title: string; description?: string }
+      input: { courseId: string; moduleCode: string; title: string; description?: string }
     ) => {
-      // Go API: POST /course/teacher/course-module/create
+      // Endpoint: POST /course/teacher/course-module/create
       // API expects "course_id" and "course_module_code"
-      const { courseNftPolicyId, moduleCode, ...rest } = input;
-      const url = `/api/gateway/api/v2/course/teacher/course-module/create`;
-      const body = {
-        course_id: courseNftPolicyId,
-        course_module_code: moduleCode,
-        ...rest,
-      };
-      console.log("[CreateModule] URL:", url);
-      console.log("[CreateModule] Body:", body);
-      const response = await authenticatedFetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      console.log("[CreateModule] Response status:", response.status);
-      const responseText = await response.clone().text();
-      console.log("[CreateModule] Response body:", responseText);
+      const { courseId, moduleCode, ...rest } = input;
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/course/teacher/course-module/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_id: courseId,
+            course_module_code: moduleCode,
+            ...rest,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to create module: ${response.statusText} - ${responseText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to create module: ${response.statusText} - ${errorText}`);
       }
 
       // Response consumed but not returned - cache invalidation triggers refetch
@@ -508,15 +657,15 @@ export function useCreateCourseModule() {
     onSuccess: (_, variables) => {
       // Invalidate the module list for this course (public endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.list(variables.courseId),
       });
       // Invalidate the teacher module list (authenticated endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
       // Also invalidate the course detail to update module counts
       void queryClient.invalidateQueries({
-        queryKey: courseKeys.detail(variables.courseNftPolicyId),
+        queryKey: courseKeys.detail(variables.courseId),
       });
     },
   });
@@ -531,22 +680,22 @@ export function useUpdateCourseModule() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       data,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
       data: Partial<{ title: string; description: string }>;
     }) => {
-      // Go API: POST /course/teacher/course-module/update
+      // Endpoint: POST /course/teacher/course-module/update
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
             ...data,
           }),
@@ -564,17 +713,17 @@ export function useUpdateCourseModule() {
       // Invalidate the specific module
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.detail(
-          variables.courseNftPolicyId,
+          variables.courseId,
           variables.moduleCode
         ),
       });
       // Invalidate the module list (public endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.list(variables.courseId),
       });
       // Invalidate the teacher module list (authenticated endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
     },
   });
@@ -592,7 +741,7 @@ export function useUpdateCourseModule() {
  *
  * // Approve a module (requires sltHash)
  * await updateStatus.mutateAsync({
- *   courseNftPolicyId: "...",
+ *   courseId: "...",
  *   moduleCode: "101",
  *   status: "APPROVED",
  *   sltHash: computeSltHash(slts),
@@ -600,7 +749,7 @@ export function useUpdateCourseModule() {
  *
  * // Revert to draft (no sltHash needed)
  * await updateStatus.mutateAsync({
- *   courseNftPolicyId: "...",
+ *   courseId: "...",
  *   moduleCode: "101",
  *   status: "DRAFT",
  * });
@@ -612,20 +761,20 @@ export function useUpdateCourseModuleStatus() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       status,
       sltHash,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
       status: string;
       /** Required when status is "APPROVED" */
       sltHash?: string;
     }) => {
-      // Go API: POST /course/teacher/course-module/update-status
+      // Endpoint: POST /course/teacher/course-module/update-status
       const body: Record<string, string> = {
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         course_module_code: moduleCode,
         status,
       };
@@ -654,16 +803,16 @@ export function useUpdateCourseModuleStatus() {
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
         queryKey: courseModuleKeys.detail(
-          variables.courseNftPolicyId,
+          variables.courseId,
           variables.moduleCode
         ),
       });
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.list(variables.courseId),
       });
       // Invalidate the teacher module list (authenticated endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
     },
   });
@@ -683,12 +832,12 @@ export function useUpdateCourseModuleStatus() {
  *
  * @example
  * ```tsx
- * function DeleteModuleButton({ courseNftPolicyId, moduleCode }: Props) {
+ * function DeleteModuleButton({ courseId, moduleCode }: Props) {
  *   const deleteModule = useDeleteCourseModule();
  *
  *   const handleDelete = async () => {
  *     if (confirm("Are you sure?")) {
- *       await deleteModule.mutateAsync({ courseNftPolicyId, moduleCode });
+ *       await deleteModule.mutateAsync({ courseId, moduleCode });
  *     }
  *   };
  *
@@ -702,20 +851,20 @@ export function useDeleteCourseModule() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
     }) => {
-      // Go API: POST /course/teacher/course-module/delete
+      // Endpoint: POST /course/teacher/course-module/delete
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
           }),
         }
@@ -732,18 +881,164 @@ export function useDeleteCourseModule() {
       // Remove the specific module from cache
       queryClient.removeQueries({
         queryKey: courseModuleKeys.detail(
-          variables.courseNftPolicyId,
+          variables.courseId,
           variables.moduleCode
         ),
       });
       // Invalidate the list (public endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.list(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.list(variables.courseId),
       });
       // Invalidate the teacher module list (authenticated endpoint)
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
     },
   });
 }
+
+// =============================================================================
+// Register Course Module (On-Chain → Database)
+// =============================================================================
+
+/**
+ * Input for registering an on-chain module in the database
+ */
+export interface RegisterCourseModuleInput {
+  /** Course policy ID (course_id) */
+  courseId: string;
+  /** Module code to assign to the registered module */
+  moduleCode: string;
+  /** On-chain SLT hash (identifies the module on-chain) */
+  sltHash: string;
+}
+
+/**
+ * Response from registering a module
+ */
+export interface RegisteredModule {
+  courseId: string;
+  moduleCode: string;
+  sltHash: string;
+  /** Status after registration (should be "APPROVED") */
+  moduleStatus: string;
+  /** Number of SLTs created in database */
+  sltCount: number;
+  /** Source after registration (should be "merged") */
+  source: string;
+  /** The SLTs that were registered */
+  slts: Array<{
+    sltIndex: number;
+    sltText: string;
+  }>;
+}
+
+/**
+ * Transform API response to RegisteredModule type
+ */
+function transformRegisteredModule(
+  data: MergedHandlersRegisterModuleResponse["data"]
+): RegisteredModule | null {
+  if (!data) return null;
+  return {
+    courseId: data.course_id ?? "",
+    moduleCode: data.course_module_code ?? "",
+    sltHash: data.slt_hash ?? "",
+    moduleStatus: data.module_status ?? "",
+    sltCount: data.slt_count ?? 0,
+    source: data.source ?? "",
+    slts: (data.slts ?? []).map((s) => ({
+      sltIndex: s.slt_index ?? 0,
+      sltText: s.slt_text ?? "",
+    })),
+  };
+}
+
+/**
+ * Register an on-chain module in the database
+ *
+ * This mutation takes an on-chain module (identified by its sltHash) and creates
+ * the corresponding database records. The API fetches the on-chain SLT data
+ * and creates the module + SLT records in the database.
+ *
+ * Use case: When a teacher sees an "unregistered" module (on-chain only) and wants
+ * to add content (lessons, assignments) to it, they first need to register it.
+ *
+ * @example
+ * ```tsx
+ * function RegisterModuleButton({ courseId, sltHash }: Props) {
+ *   const [moduleCode, setModuleCode] = useState("");
+ *   const registerModule = useRegisterCourseModule();
+ *
+ *   const handleRegister = async () => {
+ *     const result = await registerModule.mutateAsync({
+ *       courseId,
+ *       moduleCode,
+ *       sltHash,
+ *     });
+ *     toast.success(`Registered module with ${result?.sltCount} SLTs`);
+ *   };
+ *
+ *   return (
+ *     <div>
+ *       <Input value={moduleCode} onChange={e => setModuleCode(e.target.value)} />
+ *       <Button onClick={handleRegister} disabled={registerModule.isPending}>
+ *         Register Module
+ *       </Button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function useRegisterCourseModule() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async (
+      input: RegisterCourseModuleInput
+    ): Promise<RegisteredModule | null> => {
+      // Endpoint: POST /api/v2/course/teacher/course-module/register
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/course/teacher/course-module/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_id: input.courseId,
+            course_module_code: input.moduleCode,
+            slt_hash: input.sltHash,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to register module: ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const result = (await response.json()) as MergedHandlersRegisterModuleResponse;
+      return transformRegisteredModule(result.data);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate the module list for this course (public endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.list(variables.courseId),
+      });
+      // Invalidate the teacher module list (authenticated endpoint)
+      void queryClient.invalidateQueries({
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
+      });
+      // Also invalidate the course detail to update module state
+      void queryClient.invalidateQueries({
+        queryKey: courseKeys.detail(variables.courseId),
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Note: useAssignment query hook has been moved to use-assignment.ts
+// =============================================================================

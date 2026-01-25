@@ -140,17 +140,17 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
         <div className="space-y-1.5">
           {enrolledCourses.slice(0, 3).map((course, index) => (
             <Link
-              key={course.course_id ?? index}
-              href={`/course/${course.course_id ?? ""}`}
+              key={course.courseId ?? index}
+              href={`/course/${course.courseId ?? ""}`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <CourseIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {course.content?.title ? (
-                  <span className="text-xs truncate">{course.content.title}</span>
+                {course.title ? (
+                  <span className="text-xs truncate">{course.title}</span>
                 ) : (
                   <code className="text-xs font-mono truncate">
-                    {course.course_id?.slice(0, 16) ?? "Unknown"}...
+                    {course.courseId?.slice(0, 16) ?? "Unknown"}...
                   </code>
                 )}
               </div>

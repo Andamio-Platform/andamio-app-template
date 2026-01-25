@@ -16,7 +16,7 @@ import {
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { getCourse } from "~/lib/andamioscan-events";
-import { type CourseResponse, type CourseModuleResponse } from "~/types/generated";
+import { useCourse, useCourseModule, useSLTs, useAssignment, type SLT } from "~/hooks/api";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
@@ -30,128 +30,34 @@ import type { JSONContent } from "@tiptap/core";
  * - Submit evidence
  * - Track progress
  *
- * API Endpoints:
- * - GET /assignments/{courseNftPolicyId}/{moduleCode} (public)
+ * Uses React Query hooks for cached, deduplicated data fetching.
  */
-
-/**
- * Assignment data from the API
- * Uses snake_case to match the API response (AssignmentResponse type)
- */
-interface Assignment {
-  title?: string;
-  description?: object; // NullableString in API
-  content_json?: Record<string, unknown>;
-  image_url?: object; // NullableString in API
-  video_url?: object; // NullableString in API
-  is_live?: boolean;
-  created_by_alias?: string;
-}
-
-interface SLT {
-  id: string;
-  /** 1-based SLT index (API v2.0.0+) */
-  slt_index: number;
-  slt_text: string;
-}
 
 export default function LearnerAssignmentPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
 
-  const [course, setCourse] = useState<CourseResponse | null>(null);
-  const [courseModule, setCourseModule] = useState<CourseModuleResponse | null>(null);
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [slts, setSlts] = useState<SLT[]>([]);
+  // React Query hooks - data is cached and shared across components
+  const { data: course } = useCourse(courseNftPolicyId);
+  const { data: courseModule } = useCourseModule(courseNftPolicyId, moduleCode);
+  const { data: slts } = useSLTs(courseNftPolicyId, moduleCode);
+  const {
+    data: assignment,
+    isLoading,
+    error: assignmentError,
+  } = useAssignment(courseNftPolicyId, moduleCode);
+
   const [onChainModuleHash, setOnChainModuleHash] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAssignment = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Go API: GET /course/user/course/get/{policy_id}
-        const courseResponse = await fetch(
-          `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
-        );
-
-        if (courseResponse.ok) {
-          const courseData = (await courseResponse.json()) as CourseResponse;
-          setCourse(courseData);
-        }
-
-        // Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
-        const moduleResponse = await fetch(
-          `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
-        );
-
-        if (moduleResponse.ok) {
-          const moduleData = (await moduleResponse.json()) as CourseModuleResponse;
-          setCourseModule(moduleData);
-        }
-
-        // Fetch SLTs for the module
-        // Go API: GET /course/user/slts/{course_id}/{course_module_code}
-        const sltsResponse = await fetch(
-          `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
-        );
-
-        if (sltsResponse.ok) {
-          const sltsData = (await sltsResponse.json()) as SLT[];
-          setSlts(sltsData);
-        }
-
-        // Go API: GET /course/user/assignment/{course_id}/{course_module_code}
-        const response = await fetch(
-          `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
-        );
-
-        if (response.status === 404) {
-          setError("No assignment found for this module");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch assignment");
-        }
-
-        const assignmentResult = await response.json() as Assignment | { data?: Assignment };
-        // Handle both wrapped { data: {...} } and raw object formats
-        let assignmentData: Assignment | null = null;
-        if (assignmentResult && typeof assignmentResult === "object") {
-          if ("data" in assignmentResult && assignmentResult.data) {
-            assignmentData = assignmentResult.data;
-            console.log("[LearnerAssignmentPage] Assignment was wrapped, unwrapped:", assignmentData);
-          } else if ("title" in assignmentResult || "content_json" in assignmentResult) {
-            assignmentData = assignmentResult;
-            console.log("[LearnerAssignmentPage] Assignment (raw):", assignmentData);
-          } else {
-            console.log("[LearnerAssignmentPage] Assignment has unexpected shape:", assignmentResult);
-          }
-        }
-        setAssignment(assignmentData);
-      } catch (err) {
-        console.error("Error fetching assignment:", err);
-        setError(err instanceof Error ? err.message : "Failed to load assignment");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchAssignment();
-  }, [courseNftPolicyId, moduleCode]);
+  const error = assignmentError?.message ?? null;
 
   // Compute sltHash from fetched SLTs
   const computedSltHash = useMemo(() => {
-    if (slts.length > 0) {
-      // API v2.0.0+: slt_index is 1-based
+    if (slts && slts.length > 0) {
+      // API v2.0.0+: moduleIndex is 1-based
       const sltTexts = [...slts]
-        .sort((a, b) => a.slt_index - b.slt_index)
-        .map((slt) => slt.slt_text);
+        .sort((a, b) => (a.moduleIndex ?? 0) - (b.moduleIndex ?? 0))
+        .map((slt) => slt.sltText ?? "");
       return computeSltHashDefinite(sltTexts);
     }
     return null;
@@ -193,7 +99,7 @@ export default function LearnerAssignmentPage() {
   // 1. On-chain hash (authoritative, from Andamioscan) - if verified to match
   // 2. Database slt_hash (if available)
   // 3. Computed hash (fallback)
-  const dbSltHash = typeof courseModule?.slt_hash === "string" ? courseModule.slt_hash : null;
+  const dbSltHash = courseModule?.sltHash ?? null;
   const sltHash = onChainModuleHash ?? dbSltHash ?? computedSltHash;
 
   // Check for hash mismatch between computed and on-chain
@@ -203,6 +109,11 @@ export default function LearnerAssignmentPage() {
     }
     return null;
   }, [onChainModuleHash, computedSltHash]);
+
+  // Prepare sorted SLTs for rendering
+  const sortedSlts: SLT[] = slts
+    ? [...slts].sort((a, b) => (a.moduleIndex ?? 0) - (b.moduleIndex ?? 0))
+    : ([] as SLT[]);
 
   // Loading state
   if (isLoading) {
@@ -217,15 +128,15 @@ export default function LearnerAssignmentPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: typeof course.content?.title === "string" ? course.content.title : "Course" }}
-            courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
+            course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+            courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
             currentPage="assignment"
           />
         )}
 
         <AndamioNotFoundCard
           title="Assignment Not Found"
-          message={error ?? "Assignment not found"}
+          message={error ?? "No assignment found for this module"}
         />
       </div>
     );
@@ -237,8 +148,8 @@ export default function LearnerAssignmentPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: typeof course.content?.title === "string" ? course.content.title : "Course" }}
-          courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
+          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+          courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
           currentPage="assignment"
         />
       )}
@@ -252,53 +163,48 @@ export default function LearnerAssignmentPage() {
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {moduleCode}
         </AndamioBadge>
-        {assignment.is_live ? (
+        {assignment.isLive ? (
           <AndamioBadge>Live</AndamioBadge>
         ) : (
           <AndamioBadge variant="secondary">Draft</AndamioBadge>
         )}
       </div>
 
-      {/* Linked SLTs */}
-      {slts.length > 0 && (
+      {sortedSlts.length > 0 && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Learning Targets</AndamioCardTitle>
             <AndamioCardDescription>
-              This assignment covers {slts.length} Student Learning Target{slts.length !== 1 ? 's' : ''}
+              This assignment covers {sortedSlts.length} Student Learning Target{sortedSlts.length !== 1 ? 's' : ''}
             </AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
             <div className="space-y-2">
-              {slts
-                .sort((a, b) => a.slt_index - b.slt_index)
-                .map((slt) => (
-                  <div key={`slt-${slt.slt_index}`} className="flex items-start gap-3 p-3 border rounded-md">
-                    <AndamioBadge variant="outline" className="mt-0.5">
-                      {slt.slt_index}
-                    </AndamioBadge>
-                    <AndamioText variant="small" className="flex-1 text-foreground">{slt.slt_text}</AndamioText>
-                  </div>
-                ))}
+              {sortedSlts.map((slt) => (
+                <div key={`slt-${slt.moduleIndex ?? 0}`} className="flex items-start gap-3 p-3 border rounded-md">
+                  <AndamioBadge variant="outline" className="mt-0.5">
+                    {slt.moduleIndex ?? 0}
+                  </AndamioBadge>
+                  <AndamioText variant="small" className="flex-1 text-foreground">{slt.sltText ?? ""}</AndamioText>
+                </div>
+              ))}
             </div>
           </AndamioCardContent>
         </AndamioCard>
       )}
 
       {/* Assignment Content */}
-      {assignment.content_json && (
+      {!!assignment.contentJson && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle>Assignment Details</AndamioCardTitle>
             <AndamioCardDescription>Read the full assignment below</AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
-            <ContentViewer content={assignment.content_json as JSONContent} />
+            <ContentViewer content={assignment.contentJson as JSONContent} />
           </AndamioCardContent>
         </AndamioCard>
       )}
-
-      {/* Media section removed - image_url and video_url are NullableString (object type) */}
 
       <AndamioSeparator />
 

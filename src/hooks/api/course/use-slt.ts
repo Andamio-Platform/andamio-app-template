@@ -1,11 +1,13 @@
 /**
  * React Query hooks for SLT (Student Learning Target) API endpoints
+ *
+ * SLT types and transforms are defined in use-course-module.ts (the owner file).
+ * This file provides standalone SLT CRUD operations.
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { type SLTListResponse, type SLTResponse } from "~/types/generated";
-import { courseModuleKeys } from "./use-course-module";
+import { type SLT, transformSLT, courseModuleKeys } from "./use-course-module";
 
 // =============================================================================
 // Query Keys
@@ -14,11 +16,11 @@ import { courseModuleKeys } from "./use-course-module";
 export const sltKeys = {
   all: ["slts"] as const,
   lists: () => [...sltKeys.all, "list"] as const,
-  list: (courseNftPolicyId: string, moduleCode: string) =>
-    [...sltKeys.lists(), courseNftPolicyId, moduleCode] as const,
+  list: (courseId: string, moduleCode: string) =>
+    [...sltKeys.lists(), courseId, moduleCode] as const,
   details: () => [...sltKeys.all, "detail"] as const,
-  detail: (courseNftPolicyId: string, moduleCode: string, moduleIndex: number) =>
-    [...sltKeys.details(), courseNftPolicyId, moduleCode, moduleIndex] as const,
+  detail: (courseId: string, moduleCode: string, moduleIndex: number) =>
+    [...sltKeys.details(), courseId, moduleCode, moduleIndex] as const,
 };
 
 // =============================================================================
@@ -28,43 +30,56 @@ export const sltKeys = {
 /**
  * Fetch all SLTs for a module
  *
+ * @returns SLT[] with camelCase fields (sltText, moduleIndex, etc.)
+ *
  * @example
  * ```tsx
  * function SLTList({ courseId, moduleCode }: Props) {
  *   const { data: slts, isLoading } = useSLTs(courseId, moduleCode);
  *
- *   return slts?.map(slt => <SLTItem key={slt.id} slt={slt} />);
+ *   return slts?.map(slt => (
+ *     <div key={slt.moduleIndex}>{slt.sltText}</div>
+ *   ));
  * }
  * ```
  */
 export function useSLTs(
-  courseNftPolicyId: string | undefined,
+  courseId: string | undefined,
   moduleCode: string | undefined
 ) {
-  return useQuery({
-    queryKey: sltKeys.list(courseNftPolicyId ?? "", moduleCode ?? ""),
+  return useQuery<SLT[], Error>({
+    queryKey: sltKeys.list(courseId ?? "", moduleCode ?? ""),
     queryFn: async () => {
-      // Go API: GET /course/user/slts/{course_id}/{course_module_code}
+      // Endpoint: GET /course/user/slts/{course_id}/{course_module_code}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
+        `/api/gateway/api/v2/course/user/slts/${courseId}/${moduleCode}`
       );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch SLTs: ${response.statusText}`);
       }
 
-      const result = await response.json() as SLTListResponse | { data?: SLTListResponse };
+      const result = (await response.json()) as unknown;
+
       // Handle both wrapped { data: [...] } and raw array formats
+      let rawSlts: unknown[];
       if (Array.isArray(result)) {
-        return result;
-      } else if (result && typeof result === "object" && "data" in result && result.data) {
-        console.log("[useSLTs] Response was wrapped, unwrapped:", result.data.length, "SLTs");
-        return result.data;
+        rawSlts = result;
+      } else if (
+        result &&
+        typeof result === "object" &&
+        "data" in result &&
+        Array.isArray((result as { data?: unknown[] }).data)
+      ) {
+        rawSlts = (result as { data: unknown[] }).data;
+      } else {
+        return [];
       }
-      console.log("[useSLTs] Response has unexpected shape:", result);
-      return [] as SLTListResponse;
+
+      return rawSlts.map((raw) => transformSLT(raw as Record<string, unknown>));
     },
-    enabled: !!courseNftPolicyId && !!moduleCode,
+    staleTime: 30 * 1000,
+    enabled: !!courseId && !!moduleCode,
   });
 }
 
@@ -74,6 +89,8 @@ export function useSLTs(
 
 /**
  * Create a new SLT
+ *
+ * @returns The created SLT with camelCase fields
  */
 export function useCreateSLT() {
   const queryClient = useQueryClient();
@@ -81,16 +98,15 @@ export function useCreateSLT() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       sltText,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
       sltText: string;
-    }) => {
-      // Go API: POST /course/teacher/slt/create
-      // API requires snake_case: course_id, course_module_code, slt_text
+    }): Promise<SLT> => {
+      // Endpoint: POST /course/teacher/slt/create
       // Note: index is auto-assigned by the API on create (appends to end)
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/create`,
@@ -98,7 +114,7 @@ export function useCreateSLT() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
             slt_text: sltText,
           }),
@@ -106,26 +122,28 @@ export function useCreateSLT() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(errorData.message ?? `Failed to create SLT: ${response.statusText}`);
+        const errorData = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(
+          errorData.message ?? `Failed to create SLT: ${response.statusText}`
+        );
       }
 
-      return response.json() as Promise<SLTResponse>;
+      const raw = (await response.json()) as Record<string, unknown>;
+      return transformSLT(raw);
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: sltKeys.list(variables.courseNftPolicyId, variables.moduleCode),
+        queryKey: sltKeys.list(variables.courseId, variables.moduleCode),
       });
       // Also invalidate module as it might include SLT counts
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.detail(
-          variables.courseNftPolicyId,
-          variables.moduleCode
-        ),
+        queryKey: courseModuleKeys.detail(variables.courseId, variables.moduleCode),
       });
       // Invalidate teacher module list for sidebar updates
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
     },
   });
@@ -133,6 +151,8 @@ export function useCreateSLT() {
 
 /**
  * Update an SLT
+ *
+ * @returns The updated SLT with camelCase fields
  */
 export function useUpdateSLT() {
   const queryClient = useQueryClient();
@@ -140,26 +160,25 @@ export function useUpdateSLT() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       sltIndex,
       sltText,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
       sltIndex: number;
       sltText: string;
-    }) => {
-      // Go API: POST /course/teacher/slt/update
-      // API requires snake_case: course_id, course_module_code, slt_index, slt_text
-      // Note: slt_index is 1-based (API v2.0.0+)
+    }): Promise<SLT> => {
+      // Endpoint: POST /course/teacher/slt/update
+      // Note: slt_index is 1-based
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
             slt_index: sltIndex,
             slt_text: sltText,
@@ -168,15 +187,20 @@ export function useUpdateSLT() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(errorData.message ?? `Failed to update SLT: ${response.statusText}`);
+        const errorData = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(
+          errorData.message ?? `Failed to update SLT: ${response.statusText}`
+        );
       }
 
-      return response.json() as Promise<SLTResponse>;
+      const raw = (await response.json()) as Record<string, unknown>;
+      return transformSLT(raw);
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: sltKeys.list(variables.courseNftPolicyId, variables.moduleCode),
+        queryKey: sltKeys.list(variables.courseId, variables.moduleCode),
       });
     },
   });
@@ -191,24 +215,23 @@ export function useDeleteSLT() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       sltIndex,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
       sltIndex: number;
-    }) => {
-      // Go API: POST /course/teacher/slt/delete
-      // API requires snake_case: course_id, course_module_code, slt_index
-      // Note: slt_index is 1-based (API v2.0.0+)
+    }): Promise<void> => {
+      // Endpoint: POST /course/teacher/slt/delete
+      // Note: slt_index is 1-based
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slt/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
             slt_index: sltIndex,
           }),
@@ -216,32 +239,33 @@ export function useDeleteSLT() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(errorData.message ?? `Failed to delete SLT: ${response.statusText}`);
+        const errorData = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(
+          errorData.message ?? `Failed to delete SLT: ${response.statusText}`
+        );
       }
-
-      return response.json();
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: sltKeys.list(variables.courseNftPolicyId, variables.moduleCode),
+        queryKey: sltKeys.list(variables.courseId, variables.moduleCode),
       });
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.detail(
-          variables.courseNftPolicyId,
-          variables.moduleCode
-        ),
+        queryKey: courseModuleKeys.detail(variables.courseId, variables.moduleCode),
       });
       // Invalidate teacher module list for sidebar updates
       void queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(variables.courseNftPolicyId),
+        queryKey: courseModuleKeys.teacherList(variables.courseId),
       });
     },
   });
 }
 
 /**
- * Reorder an SLT (move from old index to new index)
+ * Reorder SLTs (batch operation)
+ *
+ * @param sltIndices - Array of current SLT indices in the desired new order (1-based)
  */
 export function useReorderSLT() {
   const queryClient = useQueryClient();
@@ -249,24 +273,22 @@ export function useReorderSLT() {
 
   return useMutation({
     mutationFn: async ({
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       sltIndices,
     }: {
-      courseNftPolicyId: string;
+      courseId: string;
       moduleCode: string;
-      /** Array of current SLT indices in the desired new order (1-based) */
       sltIndices: number[];
-    }) => {
-      // Go API v2.0.0+: POST /api/v2/course/teacher/slts/reorder (batch endpoint)
-      // Accepts full list of indices in desired order
+    }): Promise<void> => {
+      // Endpoint: POST /course/teacher/slts/reorder
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/slts/reorder`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             course_module_code: moduleCode,
             slt_indices: sltIndices,
           }),
@@ -274,15 +296,17 @@ export function useReorderSLT() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(errorData.message ?? `Failed to reorder SLTs: ${response.statusText}`);
+        const errorData = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(
+          errorData.message ?? `Failed to reorder SLTs: ${response.statusText}`
+        );
       }
-
-      return response.json();
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: sltKeys.list(variables.courseNftPolicyId, variables.moduleCode),
+        queryKey: sltKeys.list(variables.courseId, variables.moduleCode),
       });
     },
   });

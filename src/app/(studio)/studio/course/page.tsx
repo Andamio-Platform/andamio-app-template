@@ -301,14 +301,15 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
     hasDbContent ? course.courseId : undefined
   );
 
-  // Module stats
+  // Module stats by status
   const moduleStats = useMemo(() => {
     const total = modules.length;
-    const onChain = modules.filter((m) => m.status === "active").length;
-    const draft = modules.filter((m) => m.status === "draft").length;
-    const approved = modules.filter((m) => m.status === "approved").length;
+    const active = modules.filter((m) => m.status === "active").length;
+    const unregistered = modules.filter((m) => m.status === "unregistered").length;
+    const draft = modules.filter((m) => m.status === "draft" || m.status === "approved").length;
+    const pendingTx = modules.filter((m) => m.status === "pending_tx").length;
     const totalSlts = modules.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
-    return { total, onChain, draft, approved, totalSlts };
+    return { total, active, unregistered, draft, pendingTx, totalSlts };
   }, [modules]);
 
   // Show register UI if on-chain but no DB content
@@ -354,46 +355,46 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
             </AndamioText>
           )}
 
-          {/* Key Stats - Poppy Grid */}
+          {/* Key Stats - Module Status Grid */}
           <div className="grid grid-cols-3 gap-4 mb-8 max-w-sm mx-auto">
-            {/* Modules */}
-            <div className="group relative">
-              <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 p-4 ring-1 ring-primary/20 transition-all hover:ring-primary/40 hover:shadow-lg hover:shadow-primary/10">
-                {isLoadingModules ? (
-                  <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
-                ) : (
-                  <div className="text-3xl font-bold text-primary">{moduleStats.total}</div>
-                )}
-                <AndamioText variant="small" className="text-[11px] text-primary/70 font-medium">
-                  Modules
-                </AndamioText>
-              </div>
-            </div>
-
-            {/* On-Chain */}
+            {/* Active (Live on-chain) */}
             <div className="group relative">
               <div className="rounded-2xl bg-gradient-to-br from-success/15 via-success/10 to-success/5 p-4 ring-1 ring-success/20 transition-all hover:ring-success/40 hover:shadow-lg hover:shadow-success/10">
                 {isLoadingModules ? (
                   <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
-                  <div className="text-3xl font-bold text-success">{moduleStats.onChain}</div>
+                  <div className="text-3xl font-bold text-success">{moduleStats.active}</div>
                 )}
                 <AndamioText variant="small" className="text-[11px] text-success/70 font-medium">
-                  On-Chain
+                  Active
                 </AndamioText>
               </div>
             </div>
 
-            {/* Learning Targets */}
+            {/* Unregistered (on-chain but no DB content) */}
+            <div className="group relative">
+              <div className="rounded-2xl bg-gradient-to-br from-warning/15 via-warning/10 to-warning/5 p-4 ring-1 ring-warning/20 transition-all hover:ring-warning/40 hover:shadow-lg hover:shadow-warning/10">
+                {isLoadingModules ? (
+                  <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
+                ) : (
+                  <div className="text-3xl font-bold text-warning">{moduleStats.unregistered}</div>
+                )}
+                <AndamioText variant="small" className="text-[11px] text-warning/70 font-medium">
+                  Unregistered
+                </AndamioText>
+              </div>
+            </div>
+
+            {/* Draft (DB only, not on-chain) */}
             <div className="group relative">
               <div className="rounded-2xl bg-gradient-to-br from-info/15 via-info/10 to-info/5 p-4 ring-1 ring-info/20 transition-all hover:ring-info/40 hover:shadow-lg hover:shadow-info/10">
                 {isLoadingModules ? (
                   <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
-                  <div className="text-3xl font-bold text-info">{moduleStats.totalSlts}</div>
+                  <div className="text-3xl font-bold text-info">{moduleStats.draft}</div>
                 )}
                 <AndamioText variant="small" className="text-[11px] text-info/70 font-medium">
-                  SLTs
+                  Draft
                 </AndamioText>
               </div>
             </div>

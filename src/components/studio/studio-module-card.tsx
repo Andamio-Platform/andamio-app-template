@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon, DeleteIcon } from "~/components/icons";
-import { type CourseModule } from "~/hooks/api/course/use-course-module";
+import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon, DeleteIcon, OnChainIcon } from "~/components/icons";
+import { type CourseModule, type CourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -12,8 +12,14 @@ import { cn } from "~/lib/utils";
 // Module Status Configuration
 // =============================================================================
 
-type ModuleStatus = "ON_CHAIN" | "PENDING_TX" | "APPROVED" | "DRAFT" | "ARCHIVED" | "BACKLOG" | "DEPRECATED";
-
+/**
+ * Status config uses lowercase values matching CourseModuleStatus from use-course-module.ts:
+ * - "draft": DB only, teacher editing
+ * - "approved": DB only, SLTs locked, ready for TX
+ * - "pending_tx": TX submitted but not confirmed
+ * - "active": On-chain + DB (merged)
+ * - "unregistered": On-chain only, needs DB registration
+ */
 interface StatusConfig {
   icon: typeof SuccessIcon;
   iconColor: string;
@@ -21,53 +27,41 @@ interface StatusConfig {
   textColor: string;
 }
 
-const STATUS_CONFIG: Record<ModuleStatus, StatusConfig> = {
-  ON_CHAIN: {
+const STATUS_CONFIG: Record<CourseModuleStatus, StatusConfig> = {
+  active: {
     icon: SuccessIcon,
     iconColor: "text-success",
     label: "On-Chain",
     textColor: "text-success",
   },
-  PENDING_TX: {
+  pending_tx: {
     icon: PendingIcon,
     iconColor: "text-info animate-pulse",
     label: "Pending...",
     textColor: "text-info",
   },
-  APPROVED: {
+  approved: {
     icon: NeutralIcon,
     iconColor: "text-warning fill-warning",
     label: "Ready to Mint",
     textColor: "text-warning",
   },
-  DRAFT: {
+  draft: {
     icon: NeutralIcon,
     iconColor: "text-muted-foreground",
     label: "Draft",
     textColor: "text-muted-foreground",
   },
-  ARCHIVED: {
-    icon: NeutralIcon,
-    iconColor: "text-muted-foreground/50",
-    label: "Archived",
-    textColor: "text-muted-foreground/50",
-  },
-  BACKLOG: {
-    icon: NeutralIcon,
-    iconColor: "text-muted-foreground",
-    label: "Backlog",
-    textColor: "text-muted-foreground",
-  },
-  DEPRECATED: {
-    icon: NeutralIcon,
-    iconColor: "text-destructive/50",
-    label: "Deprecated",
-    textColor: "text-destructive/50",
+  unregistered: {
+    icon: OnChainIcon,
+    iconColor: "text-info",
+    label: "Unregistered",
+    textColor: "text-info",
   },
 };
 
 function getStatusConfig(status: string): StatusConfig {
-  return STATUS_CONFIG[status as ModuleStatus] ?? STATUS_CONFIG.DRAFT;
+  return STATUS_CONFIG[status as CourseModuleStatus] ?? STATUS_CONFIG.draft;
 }
 
 // =============================================================================
@@ -123,10 +117,15 @@ export function StudioModuleCard({
   isDeleting = false,
 }: StudioModuleCardProps) {
   // Use camelCase fields from CourseModule (app-level type)
-  const sltCount = courseModule.slts?.length ?? 0;
+  const sltCount = courseModule.slts?.length ?? courseModule.onChainSlts?.length ?? 0;
   const status = courseModule.status;
   const moduleCode = courseModule.moduleCode ?? "";
+  const sltHash = courseModule.sltHash ?? "";
   const description = typeof courseModule.description === "string" ? courseModule.description : "";
+
+  // Unregistered modules exist on-chain but aren't in the database yet
+  const isUnregistered = status === "unregistered";
+
   // Only allow delete for draft modules (not minted or pending)
   const canDelete = onDelete && status === "draft";
 
@@ -135,6 +134,54 @@ export function StudioModuleCard({
     e.stopPropagation();
     onDelete?.();
   };
+
+  // For unregistered modules, show a non-clickable card with registration guidance
+  if (isUnregistered) {
+    return (
+      <AndamioCard className="p-5 border-info/30 bg-info/5">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: Module Info */}
+          <div className="flex-1 min-w-0">
+            {/* Hash & Status Icon */}
+            <div className="flex items-center gap-2 mb-1">
+              <ModuleStatusIcon status={status} />
+              <span className="text-xs font-mono text-info/70 bg-info/10 px-2 py-0.5 rounded">
+                {sltHash.slice(0, 12)}...
+              </span>
+            </div>
+
+            {/* Title placeholder */}
+            <div className="text-lg font-semibold text-foreground">
+              On-Chain Module
+            </div>
+
+            {/* Registration guidance */}
+            <AndamioText variant="small" className="text-info mt-1">
+              This module exists on-chain but needs to be registered. Go to the On-Chain tab to register it.
+            </AndamioText>
+          </div>
+
+          {/* Right: Status & Metadata */}
+          <div className="flex items-center gap-4 flex-shrink-0">
+            {/* SLT Count */}
+            {showSltCount && sltCount > 0 && (
+              <AndamioText variant="small" className="text-muted-foreground whitespace-nowrap">
+                {sltCount} SLT{sltCount !== 1 ? "s" : ""}
+              </AndamioText>
+            )}
+
+            {/* Status Text */}
+            {showStatus && (
+              <>
+                <span className="text-muted-foreground/30">·</span>
+                <ModuleStatusText status={status} />
+              </>
+            )}
+          </div>
+        </div>
+      </AndamioCard>
+    );
+  }
 
   return (
     <Link
@@ -148,9 +195,11 @@ export function StudioModuleCard({
             {/* Module Code & Status Icon */}
             <div className="flex items-center gap-2 mb-1">
               <ModuleStatusIcon status={status} />
-              <span className="text-xs font-mono text-primary/70 bg-primary/5 px-2 py-0.5 rounded">
-                {moduleCode}
-              </span>
+              {moduleCode && (
+                <span className="text-xs font-mono text-primary/70 bg-primary/5 px-2 py-0.5 rounded">
+                  {moduleCode}
+                </span>
+              )}
             </div>
 
             {/* Title */}

@@ -102,7 +102,10 @@ export function useModuleWizardData({
   }, [teacherModules, effectiveModuleCode, effectiveIsNewModule]);
 
   // Use optimistic SLTs if set, otherwise use query data
-  const slts = optimisticSlts ?? sltsFromQuery ?? [];
+  // Wrapped in useMemo to provide stable reference for downstream useMemo hooks
+  const slts = useMemo(() => {
+    return optimisticSlts ?? sltsFromQuery ?? [];
+  }, [optimisticSlts, sltsFromQuery]);
 
   // Clear optimistic SLTs when query data updates (sync complete)
   useEffect(() => {

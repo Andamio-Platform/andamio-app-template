@@ -21,11 +21,9 @@ import {
   type Assignment,
   type Introduction,
   type Lesson,
-  transformCourse,
   transformCourseModule,
   transformSLT,
   transformAssignment,
-  transformIntroduction,
 } from "~/hooks/api";
 // Note: Raw generated types no longer needed - using transformed types from hooks
 
@@ -147,7 +145,7 @@ export function ModuleWizard({
             assignment = transformAssignment(assignmentResult.data as Record<string, unknown>);
             console.log("[ModuleWizard] Assignment response was wrapped, unwrapped:", assignment);
           } else if ("title" in assignmentResult || "content_json" in assignmentResult) {
-            assignment = transformAssignment(assignmentResult as Record<string, unknown>);
+            assignment = transformAssignment(assignmentResult);
             console.log("[ModuleWizard] Assignment response (raw):", assignment);
           } else {
             console.log("[ModuleWizard] Assignment response has unexpected shape:", assignmentResult);

@@ -19,7 +19,7 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useTeacherAssignmentCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
+import { useTeacherAssignmentCommitments } from "~/hooks/api";
 
 interface PendingReviewsSummaryProps {
   accessTokenAlias: string | null | undefined;

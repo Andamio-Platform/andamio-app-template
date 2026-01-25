@@ -40,7 +40,6 @@ import {
   SLTIcon,
   CredentialIcon,
   VerifiedIcon,
-  WarningIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -53,52 +52,15 @@ import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
-import type { CourseModule } from "~/hooks/api";
-import { computeSltHashDefinite } from "@andamio/core/hashing";
+// Note: computeSltHashDefinite removed - no longer needed with hook-based data
 
 // =============================================================================
-// Types
+// Types - Using hook types directly (CourseModule, CourseModuleStatus)
 // =============================================================================
-
-/**
- * Sync status for modules - indicates where data exists
- */
-type ModuleSyncStatus = "synced" | "db-only" | "onchain-only";
-
-/**
- * How the module was matched between DB and on-chain
- */
-type MatchType = "hash" | "slt-content" | "none";
-
-/**
- * Hybrid module data combining DB and on-chain sources
- */
-interface HybridModule {
-  /** Module code from database (or derived from on-chain data) */
-  moduleCode: string;
-  /** Module hash stored in database (may be null if not yet minted) */
-  dbStoredHash: string | null;
-  /** Hash computed from current DB SLTs (for verification) */
-  dbComputedHash: string | null;
-  /** On-chain hash (assignment_id from merged API) */
-  onChainHash: string | null;
-  /** Title from database */
-  title: string | null;
-  /** Where this module exists */
-  syncStatus: ModuleSyncStatus;
-  /** How the match was determined */
-  matchType: MatchType;
-  /** Whether there's a hash mismatch (SLTs match but hashes don't) */
-  hashMismatch: boolean;
-  /** Database record (if exists) */
-  dbModule: CourseModule | null;
-  /** On-chain data (if exists) */
-  onChainModule: CourseModule | null;
-  /** SLTs from database */
-  dbSlts: string[];
-  /** SLTs from on-chain (source of truth when on-chain) */
-  onChainSlts: string[];
-}
+// The useTeacherCourseModules hook returns merged data with status:
+// - "active": On-chain + DB (synced)
+// - "draft" / "approved" / "pending_tx": DB only
+// - "unregistered": On-chain only (needs registration)
 
 // =============================================================================
 // Helper Components
@@ -225,158 +187,53 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
 
-  // On-chain modules from merged course data
-  const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
+  // =============================================================================
+  // Module Stats - All derived from hook data (useTeacherCourseModules)
+  // =============================================================================
+  // The hook returns merged data where status indicates lifecycle:
+  // - "active": On-chain + DB (synced, verified)
+  // - "approved": DB only, ready to mint
+  // - "draft": DB only, still editing
+  // - "pending_tx": TX submitted, awaiting confirmation
+  // - "unregistered": On-chain only, needs DB registration
 
-  // Helper to get sorted SLT texts from a DB module
-  const getDbSlts = (dbModule: CourseModule): string[] => {
-    if (!dbModule.slts || dbModule.slts.length === 0) return [];
-    // API v2.0.0+: moduleIndex is 1-based
-    return [...dbModule.slts]
-      .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
-      .map((slt) => slt.sltText)
-      .filter((text): text is string => typeof text === "string");
-  };
-
-  // Helper to check if two SLT arrays match
-  const sltsMatch = (dbSlts: string[], onChainSlts: string[]): boolean => {
-    if (dbSlts.length !== onChainSlts.length) return false;
-    return dbSlts.every((slt, i) => slt === onChainSlts[i]);
-  };
-
-  // Merge database and on-chain modules into hybrid view
-  const hybridModules = useMemo<HybridModule[]>(() => {
-    const result: HybridModule[] = [];
-    const matchedOnChainIds = new Set<string>();
-
-    // Step 1: Process all database modules
-    for (const dbModule of modules) {
-      const dbSlts = getDbSlts(dbModule);
-      const dbComputedHash = dbSlts.length > 0 ? computeSltHashDefinite(dbSlts) : null;
-
-      // Try to find matching on-chain module
-      let matchedOnChain: CourseModule | null = null;
-      let matchType: MatchType = "none";
-      let hashMismatch = false;
-
-      // First, try hash match (using stored hash)
-      if (dbModule.sltHash) {
-        const hashMatch = onChainModules.find(
-          (m) => m.sltHash === dbModule.sltHash
-        );
-        if (hashMatch?.sltHash) {
-          matchedOnChain = hashMatch;
-          matchType = "hash";
-          matchedOnChainIds.add(hashMatch.sltHash);
-        }
-      }
-
-      // If no hash match, try computed hash match
-      if (!matchedOnChain && dbComputedHash) {
-        const computedHashMatch = onChainModules.find(
-          (m) => m.sltHash === dbComputedHash
-        );
-        if (computedHashMatch?.sltHash && !matchedOnChainIds.has(computedHashMatch.sltHash)) {
-          matchedOnChain = computedHashMatch;
-          matchType = "hash";
-          matchedOnChainIds.add(computedHashMatch.sltHash);
-        }
-      }
-
-      // If still no match, try SLT content matching
-      if (!matchedOnChain && dbSlts.length > 0) {
-        for (const onChainModule of onChainModules) {
-          if (!onChainModule.sltHash || matchedOnChainIds.has(onChainModule.sltHash)) continue;
-
-          if (sltsMatch(dbSlts, onChainModule.onChainSlts ?? [])) {
-            matchedOnChain = onChainModule;
-            matchType = "slt-content";
-            hashMismatch = true; // SLTs match but hashes don't
-            matchedOnChainIds.add(onChainModule.sltHash);
-            break;
-          }
-        }
-      }
-
-      result.push({
-        moduleCode: dbModule.moduleCode ?? "",
-        dbStoredHash: typeof dbModule.sltHash === "string" ? dbModule.sltHash : null,
-        dbComputedHash,
-        onChainHash: matchedOnChain?.sltHash ?? null,
-        title: typeof dbModule.title === "string" ? dbModule.title : null,
-        syncStatus: matchedOnChain ? "synced" : "db-only",
-        matchType,
-        hashMismatch,
-        dbModule,
-        onChainModule: matchedOnChain,
-        dbSlts,
-        onChainSlts: matchedOnChain?.onChainSlts ?? [],
-      });
-    }
-
-    // Step 2: Add any unmatched on-chain modules (orphans)
-    for (const onChainModule of onChainModules) {
-      const moduleHash = onChainModule.sltHash;
-      if (!moduleHash || matchedOnChainIds.has(moduleHash)) continue;
-
-      result.push({
-        moduleCode: `hash:${moduleHash.slice(0, 8)}`,
-        dbStoredHash: null,
-        dbComputedHash: null,
-        onChainHash: moduleHash,
-        title: null,
-        syncStatus: "onchain-only",
-        matchType: "none",
-        hashMismatch: false,
-        dbModule: null,
-        onChainModule,
-        dbSlts: [],
-        onChainSlts: onChainModule.onChainSlts ?? [],
-      });
-    }
-
-    return result;
-  }, [modules, onChainModules]);
-
-  // Get module codes that are already on-chain (synced)
-  const syncedModuleCodes = useMemo(() =>
-    new Set(hybridModules.filter((m) => m.syncStatus === "synced").map((m) => m.moduleCode)),
-    [hybridModules]
+  // Modules by status (for UI filtering)
+  const activeModules = useMemo(() =>
+    modules.filter((m) => m.status === "active"),
+    [modules]
   );
 
-  // Modules that are approved in DB but NOT yet on-chain (truly ready to mint)
   const modulesReadyToMint = useMemo(() =>
-    modules.filter((m) =>
-      m.status === "approved" && !syncedModuleCodes.has(m.moduleCode ?? "")
-    ),
-    [modules, syncedModuleCodes]
+    modules.filter((m) => m.status === "approved"),
+    [modules]
   );
 
-  // Hybrid module stats
-  // Use database modules.length for total since that's the authoritative source
-  // hybridModules can double-count when db modules don't have slt_hash set yet
-  const hybridStats = useMemo(() => ({
-    total: modules.length, // Database is source of truth for "how many modules"
-    synced: hybridModules.filter((m) => m.syncStatus === "synced").length,
-    syncedByHash: hybridModules.filter((m) => m.syncStatus === "synced" && m.matchType === "hash").length,
-    syncedBySlt: hybridModules.filter((m) => m.syncStatus === "synced" && m.matchType === "slt-content").length,
-    hashMismatches: hybridModules.filter((m) => m.hashMismatch).length,
-    dbOnly: hybridModules.filter((m) => m.syncStatus === "db-only").length,
-    // On-chain only modules (need registration)
-    unregistered: hybridModules.filter((m) => m.syncStatus === "onchain-only").length,
-    // Database status breakdown (for modules that exist in DB)
-    dbOnChain: modules.filter((m) => m.status === "active").length,
-    dbPending: modules.filter((m) => m.status === "pending_tx").length,
-    dbApproved: modules.filter((m) => m.status === "approved").length,
-    dbDraft: modules.filter((m) => m.status === "draft").length,
-    // Truly ready to mint: APPROVED but not yet on-chain
+  const draftModules = useMemo(() =>
+    modules.filter((m) => m.status === "draft"),
+    [modules]
+  );
+
+  const pendingModules = useMemo(() =>
+    modules.filter((m) => m.status === "pending_tx"),
+    [modules]
+  );
+
+  // Module stats for display
+  const moduleStats = useMemo(() => ({
+    total: modules.length,
+    active: activeModules.length,
+    approved: modulesReadyToMint.length,
+    draft: draftModules.length,
+    pending: pendingModules.length,
+    unregistered: modules.filter((m) => m.status === "unregistered").length,
     readyToMint: modulesReadyToMint.length,
-  }), [hybridModules, modules, modulesReadyToMint]);
+  }), [modules, activeModules, modulesReadyToMint, draftModules, pendingModules]);
 
   // Unregistered modules (on-chain only, need DB registration)
+  // Use hook data directly instead of hybridModules for consistency
   const unregisteredModules = useMemo(() =>
-    hybridModules.filter((m) => m.syncStatus === "onchain-only"),
-    [hybridModules]
+    modules.filter((m) => m.status === "unregistered"),
+    [modules]
   );
 
   // Mutations
@@ -400,16 +257,17 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const [registerModuleCode, setRegisterModuleCode] = useState("");
 
   // Get modules selected for burn with full details
+  // Active modules are on-chain, use sltHash as the on-chain identifier
   const modulesToBurn = useMemo<ModuleToBurn[]>(() => {
-    return hybridModules
-      .filter((m) => m.syncStatus === "synced" && m.onChainHash && selectedForBurn.has(m.onChainHash))
+    return activeModules
+      .filter((m) => m.sltHash && selectedForBurn.has(m.sltHash))
       .map((m) => ({
-        moduleCode: m.moduleCode,
-        title: m.title,
-        onChainHash: m.onChainHash!,
-        sltCount: m.onChainSlts.length,
+        moduleCode: m.moduleCode ?? "",
+        title: m.title ?? null,
+        onChainHash: m.sltHash,
+        sltCount: m.onChainSlts?.length ?? 0,
       }));
-  }, [hybridModules, selectedForBurn]);
+  }, [activeModules, selectedForBurn]);
 
   // Toggle selection for a module
   const toggleBurnSelection = (onChainHash: string) => {
@@ -614,16 +472,21 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   )}
                 </div>
 
-                {/* Right: Stats */}
+                {/* Right: Stats - Module Status */}
                 <div className="flex items-center gap-4 text-center flex-shrink-0">
                   <div>
-                    <div className="text-2xl font-bold text-foreground">{hybridStats.total}</div>
-                    <AndamioText variant="small" className="text-[10px]">Credentials</AndamioText>
+                    <div className="text-2xl font-bold text-success">{moduleStats.active}</div>
+                    <AndamioText variant="small" className="text-[10px]">Active</AndamioText>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div>
-                    <div className="text-2xl font-bold text-success">{onChainModules.length}</div>
-                    <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
+                    <div className="text-2xl font-bold text-warning">{moduleStats.unregistered}</div>
+                    <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <div className="text-2xl font-bold text-info">{moduleStats.draft + moduleStats.approved}</div>
+                    <AndamioText variant="small" className="text-[10px]">Draft</AndamioText>
                   </div>
                 </div>
               </div>
@@ -813,11 +676,31 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   </div>
 
                   {/* Footer Stats */}
-                  {hybridStats.dbPending > 0 && (
+                  {moduleStats.pending > 0 && (
                     <AndamioAlert className="mt-6">
                       <PendingIcon className="h-4 w-4 text-info animate-pulse" />
                       <AndamioAlertDescription>
-                        {hybridStats.dbPending} credential{hybridStats.dbPending !== 1 ? "s" : ""} pending blockchain confirmation
+                        {moduleStats.pending} credential{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
+                      </AndamioAlertDescription>
+                    </AndamioAlert>
+                  )}
+
+                  {/* Unregistered Modules CTA */}
+                  {moduleStats.unregistered > 0 && (
+                    <AndamioAlert className="mt-6 border-info/30 bg-info/5">
+                      <OnChainIcon className="h-4 w-4 text-info" />
+                      <AndamioAlertDescription className="flex items-center justify-between gap-4">
+                        <span>
+                          {moduleStats.unregistered} on-chain module{moduleStats.unregistered !== 1 ? "s need" : " needs"} to be registered before you can add content.
+                        </span>
+                        <AndamioButton
+                          size="sm"
+                          variant="outline"
+                          className="flex-shrink-0 border-info/30 text-info hover:bg-info/10"
+                          onClick={() => handleTabChange("on-chain")}
+                        >
+                          Go to On-Chain Tab
+                        </AndamioButton>
                       </AndamioAlertDescription>
                     </AndamioAlert>
                   )}
@@ -926,182 +809,160 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 {/* Summary stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                   <div className="rounded-xl border p-3 text-center">
-                    <div className="text-2xl font-bold">{hybridStats.total}</div>
+                    <div className="text-2xl font-bold">{moduleStats.total}</div>
                     <AndamioText variant="small" className="text-[10px]">Total Modules</AndamioText>
                   </div>
                   <div className="rounded-xl border p-3 text-center bg-success/5 border-success/20">
                     <div className="flex items-center justify-center gap-1.5">
                       <VerifiedIcon className="h-4 w-4 text-success" />
-                      <span className="text-2xl font-bold text-success">{hybridStats.syncedByHash}</span>
+                      <span className="text-2xl font-bold text-success">{moduleStats.active}</span>
                     </div>
                     <AndamioText variant="small" className="text-[10px]">Verified</AndamioText>
                   </div>
-                  {hybridStats.hashMismatches > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-warning/5 border-warning/20">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <WarningIcon className="h-4 w-4 text-warning" />
-                        <span className="text-2xl font-bold text-warning">{hybridStats.hashMismatches}</span>
-                      </div>
-                      <AndamioText variant="small" className="text-[10px]">Hash Mismatch</AndamioText>
-                    </div>
-                  )}
-                  {hybridStats.dbPending > 0 && (
+                  {moduleStats.pending > 0 && (
                     <div className="rounded-xl border p-3 text-center bg-info/5 border-info/20">
                       <div className="flex items-center justify-center gap-1.5">
                         <PendingIcon className="h-4 w-4 text-info animate-pulse" />
-                        <span className="text-2xl font-bold text-info">{hybridStats.dbPending}</span>
+                        <span className="text-2xl font-bold text-info">{moduleStats.pending}</span>
                       </div>
                       <AndamioText variant="small" className="text-[10px]">Pending</AndamioText>
                     </div>
                   )}
-                  {hybridStats.readyToMint > 0 && (
+                  {moduleStats.readyToMint > 0 && (
                     <div className="rounded-xl border p-3 text-center bg-warning/5 border-warning/20">
-                      <span className="text-2xl font-bold text-warning">{hybridStats.readyToMint}</span>
+                      <span className="text-2xl font-bold text-warning">{moduleStats.readyToMint}</span>
                       <AndamioText variant="small" className="text-[10px]">Ready to Mint</AndamioText>
                     </div>
                   )}
-                  {hybridStats.unregistered > 0 && (
+                  {moduleStats.unregistered > 0 && (
                     <div className="rounded-xl border p-3 text-center bg-info/5 border-info/20">
                       <div className="flex items-center justify-center gap-1.5">
                         <OnChainIcon className="h-4 w-4 text-info" />
-                        <span className="text-2xl font-bold text-info">{hybridStats.unregistered}</span>
+                        <span className="text-2xl font-bold text-info">{moduleStats.unregistered}</span>
                       </div>
                       <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
                     </div>
                   )}
                 </div>
 
-                {/* Module verification list - filter out archived/orphaned on-chain modules */}
+                {/* Module verification list - show registered modules by status */}
                 <div className="space-y-3">
-                  {hybridModules.filter((m) => m.syncStatus !== "onchain-only").map((m) => (
-                    <div
-                      key={m.moduleCode}
-                      className={cn(
-                        "rounded-xl border p-4 space-y-3",
-                        m.syncStatus === "synced" && !m.hashMismatch && "bg-success/5 border-success/20",
-                        m.hashMismatch && "bg-warning/5 border-warning/20",
-                        m.syncStatus === "db-only" && "bg-muted/30"
-                      )}
-                    >
-                      {/* Header row */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Selection checkbox for synced modules */}
-                          {m.syncStatus === "synced" && m.onChainHash ? (
-                            <AndamioCheckbox
-                              checked={selectedForBurn.has(m.onChainHash)}
-                              onCheckedChange={() => toggleBurnSelection(m.onChainHash!)}
-                              aria-label={`Select ${m.moduleCode} for removal`}
-                            />
-                          ) : null}
-                          {/* Status icon */}
-                          {m.syncStatus === "synced" && !m.hashMismatch && (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
-                              <VerifiedIcon className="h-4 w-4 text-success" />
-                            </div>
-                          )}
-                          {m.hashMismatch && (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20">
-                              <WarningIcon className="h-4 w-4 text-warning" />
-                            </div>
-                          )}
-                          {m.syncStatus === "db-only" && (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                              <CredentialIcon className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          {/* Module info */}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono text-sm font-medium">{m.moduleCode}</span>
-                              {m.syncStatus === "synced" && !m.hashMismatch && (
-                                <AndamioBadge className="bg-success/20 text-success border-0 text-[10px]">
-                                  Verified
-                                </AndamioBadge>
-                              )}
-                              {m.hashMismatch && (
-                                <AndamioBadge className="bg-warning/20 text-warning border-0 text-[10px]">
-                                  Hash Mismatch
-                                </AndamioBadge>
-                              )}
-                              {m.syncStatus === "db-only" && (
-                                <AndamioBadge variant="outline" className="text-[10px]">
-                                  Not Minted
-                                </AndamioBadge>
-                              )}
-                            </div>
-                            {m.title && (
-                              <AndamioText variant="small" className="truncate">{m.title}</AndamioText>
-                            )}
-                          </div>
-                        </div>
-                        {/* SLT count */}
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-sm font-medium">{m.onChainSlts.length || m.dbSlts.length} SLTs</div>
-                          <AndamioText variant="small" className="text-[10px]">
-                            {m.onChainSlts.length > 0 ? "On-Chain" : "Database"}
-                          </AndamioText>
-                        </div>
-                      </div>
+                  {modules.filter((m) => m.status !== "unregistered").map((m) => {
+                    const isActive = m.status === "active";
+                    const isPending = m.status === "pending_tx";
+                    const isDbOnly = m.status === "draft" || m.status === "approved";
+                    const sltCount = m.onChainSlts?.length ?? m.slts?.length ?? 0;
 
-                      {/* SLTs from on-chain */}
-                      {m.onChainSlts.length > 0 && (
-                        <div className="space-y-1.5 pl-11">
-                          <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            On-Chain Learning Targets
-                          </AndamioText>
-                          <div className="space-y-1">
-                            {m.onChainSlts.map((slt, i) => (
-                              <div key={i} className="flex items-start gap-2 text-sm">
-                                <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-success flex-shrink-0" />
-                                <span>{slt}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Hash comparison (only show for synced modules or mismatches) */}
-                      {(m.syncStatus === "synced" || m.hashMismatch) && (
-                        <div className="space-y-2 pl-11">
-                          <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Token Name (Hash)
-                          </AndamioText>
-                          <div className="space-y-1.5">
-                            {/* On-chain hash */}
-                            {m.onChainHash && (
-                              <div className="flex items-center gap-2">
-                                <OnChainIcon className="h-3 w-3 text-success flex-shrink-0" />
-                                <code className="text-[10px] font-mono text-foreground bg-success/10 px-1.5 py-0.5 rounded break-all">
-                                  {m.onChainHash}
-                                </code>
+                    return (
+                      <div
+                        key={m.sltHash || m.moduleCode || m.title}
+                        className={cn(
+                          "rounded-xl border p-4 space-y-3",
+                          isActive && "bg-success/5 border-success/20",
+                          isPending && "bg-info/5 border-info/20",
+                          isDbOnly && "bg-muted/30"
+                        )}
+                      >
+                        {/* Header row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Selection checkbox for active (on-chain) modules */}
+                            {isActive && m.sltHash ? (
+                              <AndamioCheckbox
+                                checked={selectedForBurn.has(m.sltHash)}
+                                onCheckedChange={() => toggleBurnSelection(m.sltHash)}
+                                aria-label={`Select ${m.moduleCode} for removal`}
+                              />
+                            ) : null}
+                            {/* Status icon */}
+                            {isActive && (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
+                                <VerifiedIcon className="h-4 w-4 text-success" />
                               </div>
                             )}
-                            {/* DB computed hash (show if different from on-chain) */}
-                            {m.hashMismatch && m.dbComputedHash && (
-                              <div className="flex items-center gap-2">
-                                <WarningIcon className="h-3 w-3 text-warning flex-shrink-0" />
-                                <code className="text-[10px] font-mono text-muted-foreground bg-warning/10 px-1.5 py-0.5 rounded break-all">
-                                  {m.dbComputedHash}
-                                </code>
-                                <AndamioText variant="small" className="text-[10px] text-warning">(computed)</AndamioText>
+                            {isPending && (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/20">
+                                <PendingIcon className="h-4 w-4 text-info animate-pulse" />
                               </div>
                             )}
+                            {isDbOnly && (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                <CredentialIcon className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            {/* Module info */}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-sm font-medium">{m.moduleCode}</span>
+                                {isActive && (
+                                  <AndamioBadge className="bg-success/20 text-success border-0 text-[10px]">
+                                    Verified
+                                  </AndamioBadge>
+                                )}
+                                {isPending && (
+                                  <AndamioBadge className="bg-info/20 text-info border-0 text-[10px]">
+                                    Pending
+                                  </AndamioBadge>
+                                )}
+                                {isDbOnly && (
+                                  <AndamioBadge variant="outline" className="text-[10px]">
+                                    Not Minted
+                                  </AndamioBadge>
+                                )}
+                              </div>
+                              {m.title && (
+                                <AndamioText variant="small" className="truncate">{m.title}</AndamioText>
+                              )}
+                            </div>
                           </div>
-                          {m.hashMismatch && (
-                            <AndamioText variant="small" className="text-[10px] text-warning">
-                              SLTs match but hashes differ — possible encoding inconsistency
+                          {/* SLT count */}
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-medium">{sltCount} SLTs</div>
+                            <AndamioText variant="small" className="text-[10px]">
+                              {isActive ? "On-Chain" : "Database"}
                             </AndamioText>
-                          )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* SLTs from on-chain (for active modules) */}
+                        {isActive && (m.onChainSlts?.length ?? 0) > 0 && (
+                          <div className="space-y-1.5 pl-11">
+                            <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                              On-Chain Learning Targets
+                            </AndamioText>
+                            <div className="space-y-1">
+                              {m.onChainSlts?.map((slt, i) => (
+                                <div key={i} className="flex items-start gap-2 text-sm">
+                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-success flex-shrink-0" />
+                                  <span>{slt}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Hash display for on-chain modules */}
+                        {isActive && m.sltHash && (
+                          <div className="space-y-2 pl-11">
+                            <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                              Token Name (Hash)
+                            </AndamioText>
+                            <div className="flex items-center gap-2">
+                              <OnChainIcon className="h-3 w-3 text-success flex-shrink-0" />
+                              <code className="text-[10px] font-mono text-foreground bg-success/10 px-1.5 py-0.5 rounded break-all">
+                                {m.sltHash}
+                              </code>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </StudioFormSection>
 
               {/* Mint Modules - Show when there are modules ready to mint (APPROVED but not yet on-chain) */}
-              {hybridStats.readyToMint > 0 && (
+              {moduleStats.readyToMint > 0 && (
                 <MintModuleTokens
                   courseNftPolicyId={courseNftPolicyId}
                   courseModules={modulesReadyToMint}
@@ -1139,7 +1000,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <div className="space-y-3">
                     {unregisteredModules.map((m) => (
                       <div
-                        key={m.onChainHash}
+                        key={m.sltHash}
                         className="rounded-xl border p-4 bg-info/5 border-info/20 space-y-4"
                       >
                         {/* Header */}
@@ -1158,24 +1019,24 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                                 </AndamioBadge>
                               </div>
                               <AndamioText variant="small" className="font-mono text-[10px] truncate">
-                                {m.onChainHash}
+                                {m.sltHash}
                               </AndamioText>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className="text-sm font-medium">{m.onChainSlts.length} SLTs</div>
+                            <div className="text-sm font-medium">{m.onChainSlts?.length ?? 0} SLTs</div>
                             <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
                           </div>
                         </div>
 
                         {/* SLTs preview */}
-                        {m.onChainSlts.length > 0 && (
+                        {(m.onChainSlts?.length ?? 0) > 0 && (
                           <div className="space-y-1.5 pl-11">
                             <AndamioText variant="small" className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                               Learning Targets (On-Chain)
                             </AndamioText>
                             <div className="space-y-1">
-                              {m.onChainSlts.map((slt, i) => (
+                              {m.onChainSlts?.map((slt, i) => (
                                 <div key={i} className="flex items-start gap-2 text-sm">
                                   <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-info flex-shrink-0" />
                                   <span className="text-muted-foreground">{slt}</span>
@@ -1186,14 +1047,14 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         )}
 
                         {/* Registration form */}
-                        {registeringHash === m.onChainHash ? (
+                        {registeringHash === m.sltHash ? (
                           <div className="space-y-3 pl-11">
                             <div className="space-y-2">
-                              <AndamioLabel htmlFor={`module-code-${m.onChainHash}`}>
+                              <AndamioLabel htmlFor={`module-code-${m.sltHash}`}>
                                 Module Code
                               </AndamioLabel>
                               <AndamioInput
-                                id={`module-code-${m.onChainHash}`}
+                                id={`module-code-${m.sltHash}`}
                                 value={registerModuleCode}
                                 onChange={(e) => setRegisterModuleCode(e.target.value)}
                                 placeholder="e.g., 101 or MODULE-A"
@@ -1206,7 +1067,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                             <div className="flex gap-2">
                               <AndamioButton
                                 size="sm"
-                                onClick={() => handleRegisterModule(m.onChainHash!)}
+                                onClick={() => handleRegisterModule(m.sltHash)}
                                 disabled={registerModuleMutation.isPending || !registerModuleCode.trim()}
                               >
                                 {registerModuleMutation.isPending ? (
@@ -1239,7 +1100,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                             <AndamioButton
                               size="sm"
                               variant="outline"
-                              onClick={() => setRegisteringHash(m.onChainHash)}
+                              onClick={() => setRegisteringHash(m.sltHash)}
                             >
                               <AddIcon className="h-4 w-4 mr-1" />
                               Register This Module
@@ -1253,7 +1114,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               )}
 
               {/* Only show blockchain links after modules are minted */}
-              {onChainModules.length > 0 && (
+              {activeModules.length > 0 && (
                 <StudioFormSection title="Blockchain Links">
                   <div className="flex flex-wrap gap-3">
                     <AndamioButton variant="outline" asChild>

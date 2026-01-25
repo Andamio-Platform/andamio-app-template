@@ -258,7 +258,7 @@ export function transformAssignment(raw: Record<string, unknown>): Assignment {
 
   return {
     id: raw.id as number | undefined,
-    title: raw.title as string | undefined,
+    title: getStringField(raw.title),
     description: getStringField(raw.description),
     // API uses assignment_content or content_json for TipTap JSON
     contentJson: raw.assignment_content ?? raw.content_json,

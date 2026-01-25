@@ -80,7 +80,13 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
 
   // Check if assignment actually exists in the database (has a saved title)
   // The API may return an empty/partial object even when no assignment record exists
-  const assignmentExistsInDb = !!(assignment && typeof assignment.title === "string" && assignment.title.trim().length > 0);
+  const assignmentExistsInDb = !!(
+    assignment &&
+    (
+      typeof assignment.id === "number" ||
+      (typeof assignment.title === "string" && assignment.title.trim().length > 0)
+    )
+  );
 
   const handleSave = async () => {
     if (!isAuthenticated) return;

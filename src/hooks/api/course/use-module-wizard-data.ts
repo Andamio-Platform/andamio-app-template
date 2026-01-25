@@ -121,6 +121,18 @@ export function useModuleWizardData({
       .map((slt) => slt.lesson!);
   }, [slts]);
 
+  // Use assignment from query if it looks complete, otherwise fall back to module content
+  const assignmentFromQuery = assignment ?? null;
+  const assignmentFromModule = courseModule?.assignment ?? null;
+  const resolvedAssignment =
+    assignmentFromQuery &&
+    (
+      typeof assignmentFromQuery.id === "number" ||
+      (typeof assignmentFromQuery.title === "string" && assignmentFromQuery.title.trim().length > 0)
+    )
+      ? assignmentFromQuery
+      : assignmentFromModule ?? assignmentFromQuery;
+
   // Introduction is embedded in the course module
   const introduction = courseModule?.introduction ?? null;
 
@@ -147,13 +159,13 @@ export function useModuleWizardData({
       course: course ?? null,
       courseModule,
       slts,
-      assignment: assignment ?? null,
+      assignment: resolvedAssignment,
       introduction,
       lessons,
       isLoading,
       error,
     }),
-    [course, courseModule, slts, assignment, introduction, lessons, isLoading, error]
+    [course, courseModule, slts, resolvedAssignment, introduction, lessons, isLoading, error]
   );
 
   // ==========================================================================
@@ -181,9 +193,11 @@ export function useModuleWizardData({
     const hasSLTs = slts.length > 0;
     // Assignment must have a saved title to be considered complete
     const hasAssignment = !!(
-      assignment &&
-      typeof assignment.title === "string" &&
-      assignment.title.trim().length > 0
+      resolvedAssignment &&
+      (
+        typeof resolvedAssignment.id === "number" ||
+        (typeof resolvedAssignment.title === "string" && resolvedAssignment.title.trim().length > 0)
+      )
     );
     const hasIntroduction = !!introduction;
 
@@ -195,7 +209,7 @@ export function useModuleWizardData({
       introduction: hasIntroduction,
       review: hasTitle && hasSLTs && hasAssignment && hasIntroduction,
     };
-  }, [courseModule, slts, assignment, introduction]);
+  }, [courseModule, slts, resolvedAssignment, introduction]);
 
   // ==========================================================================
   // Refetch function (supports module code override for creation flow)

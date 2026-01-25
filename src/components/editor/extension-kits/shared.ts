@@ -105,6 +105,8 @@ export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
       orderedList: false,
       listItem: false,
       codeBlock: false,
+      link: false,
+      underline: false,
       // Configure heading to support levels 1-6
       heading: {
         levels: [1, 2, 3, 4, 5, 6],

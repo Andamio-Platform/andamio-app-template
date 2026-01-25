@@ -2,6 +2,20 @@
 
 Track the validation status of each transaction loop.
 
+## Current Phase Summary (2026-01-24)
+
+| Domain | Phase | Status | Next Steps |
+|--------|-------|--------|------------|
+| **Course Owner/Teacher** | Initial Validation | Ready for UX Testing | Loops 1, 3, 6 validated functionally; proceed to UX refinement |
+| **Course Student** | Not Yet Tested | Blocked | Need to implement and test Loops 2, 4, 5 |
+| **Project** | Not Implemented | Blocked | UI components not yet built; need full implementation |
+
+### What This Means
+
+- **Course Owner/Teacher flows**: Transactions work, data flows correctly, ready for detailed UX testing and polish
+- **Course Student flows**: Core enrollment and credential claiming not yet validated; priority for next testing phase
+- **Project flows**: Backend transactions defined but frontend UI not implemented; requires development work before testing
+
 ## Status Key
 
 | Status | Meaning |
@@ -10,6 +24,8 @@ Track the validation status of each transaction loop.
 | **Blocked** | Blocker bug prevents completion |
 | **Issues Found** | Completes but has data/UX/side-effect issues |
 | **Validated** | All transactions work, data is complete, UI updates correctly |
+| **Ready for UX** | Functionally validated, ready for UX testing and refinement |
+| **Not Implemented** | Frontend UI not yet built |
 
 ## Validation Criteria
 
@@ -26,23 +42,23 @@ A loop is **Validated** when:
 
 | Loop | Status | Last Tested | Tester | Open Issues | Notes |
 |------|--------|-------------|--------|-------------|-------|
-| 1: Onboarding | Issues Found | 2026-01-12 | @robertom | #28, #30 | Access Token mints successfully but UI stuck, alert keeps flashing |
-| 3: Create & Publish Course | Issues Found | 2026-01-13 | @james | - | Teacher sync working, need to test full loop |
-| 2: Earn Credential | Blocked | 2026-01-12 | @robertom | #29, #30 | Enrollment blocked by missing transaction data |
-| 4: Assignment Revision | Untested | - | - | - | - |
-| 5: Multi-Module Path | Untested | - | - | - | - |
-| 6: Team Teaching Setup | Untested | - | - | - | - |
+| 1: Onboarding | Ready for UX | 2026-01-24 | @james | - | Access Token minting works, UI issues resolved |
+| 3: Create & Publish Course | Ready for UX | 2026-01-24 | @james | - | Full owner/teacher flow validated |
+| 6: Team Teaching Setup | Ready for UX | 2026-01-24 | @james | - | Teacher management working |
+| 2: Earn Credential | Untested | - | - | - | Student enrollment flow not yet tested |
+| 4: Assignment Revision | Untested | - | - | - | Depends on Loop 2 validation |
+| 5: Multi-Module Path | Untested | - | - | - | Depends on Loop 2 validation |
 
 ### Project Loops
 
 | Loop | Status | Last Tested | Tester | Open Issues | Notes |
 |------|--------|-------------|--------|-------------|-------|
-| P1: Create & Configure Project | Validated | 2026-01-14 | @james | - | Manager sync working, draft tasks working |
-| P2: Publish Tasks | Validated | 2026-01-14 | @james | - | Full loop working with sync |
-| P3: Earn Project Credential | Untested | - | - | - | - |
-| P4: Task Revision Flow | Untested | - | - | - | - |
-| P5: Multi-Task Contribution | Untested | - | - | - | - |
-| P6: Fund Project Treasury | Untested | - | - | - | `PROJECT_USER_TREASURY_ADD_FUNDS` |
+| P1: Create & Configure Project | Not Implemented | - | - | - | UI components need to be built |
+| P2: Publish Tasks | Not Implemented | - | - | - | UI components need to be built |
+| P3: Earn Project Credential | Not Implemented | - | - | - | UI components need to be built |
+| P4: Task Revision Flow | Not Implemented | - | - | - | UI components need to be built |
+| P5: Multi-Task Contribution | Not Implemented | - | - | - | UI components need to be built |
+| P6: Fund Project Treasury | Not Implemented | - | - | - | UI components need to be built |
 
 ## Session Log
 
@@ -185,6 +201,46 @@ This was the first complete Project Manager loop validation. Key findings:
 - `/studio/project/[projectid]/draft-tasks` — Create/edit draft tasks
 - `/studio/project/[projectid]/draft-tasks/[taskindex]` — Individual task editor
 - `/studio/project/[projectid]/manage-treasury` — Publish tasks on-chain
+
+---
+
+### 2026-01-24 — Status Update: Phase Assessment
+
+**Tester:** @james
+**Result:** Phase milestone reached
+
+**Summary:**
+Comprehensive assessment of all transaction loops to determine current development phase.
+
+**Course Owner/Teacher Loops (Loops 1, 3, 6):**
+- [x] Access Token minting (Loop 1) — Functional
+- [x] Course creation (Loop 3) — Functional
+- [x] Module minting (Loop 3) — Functional, fixed SLT display bug today
+- [x] Teacher management (Loop 6) — Functional
+
+These loops are now **Ready for UX Testing**. Core transactions work, data flows correctly between on-chain and database. Next phase is UX refinement and polish.
+
+**Course Student Loops (Loops 2, 4, 5):**
+- [ ] Student enrollment — Not yet tested
+- [ ] Assignment commit/update — Not yet tested
+- [ ] Credential claim — Not yet tested
+
+These are the next priority for validation testing.
+
+**Project Loops (Loops P1-P6):**
+- [ ] All project UI components — Not implemented
+
+Project loops require frontend development before testing can begin. Transaction definitions exist but no UI to trigger them.
+
+**Bug Fixed This Session:**
+- MintModuleTokens component showed "0 SLTs" despite modules having SLTs
+- Root cause: Type mismatch between app-level `CourseModule` (camelCase, flattened) and raw API type (snake_case, nested)
+- Fix: Updated component to use correct field paths (`module.slts` not `module.content?.slts`)
+
+**Next Steps:**
+1. UX testing for Course Owner/Teacher flows
+2. Implement and validate Course Student flows (Loops 2, 4, 5)
+3. Build Project UI components before testing Project loops
 
 ---
 

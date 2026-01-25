@@ -37,7 +37,19 @@ No manual TX registration or polling needed.
 
 ## Goals & Questions
 
-### Current Phase: Foundational Validation
+### Current Phase (2026-01-24)
+
+| Domain | Phase | Priority |
+|--------|-------|----------|
+| Course Owner/Teacher | **UX Testing** | Ready - focus on polish |
+| Course Student | **Initial Validation** | High - not yet tested |
+| Project | **Not Implemented** | Blocked - needs UI development |
+
+**Course Owner/Teacher loops** (1, 3, 6) are functionally validated and ready for UX testing.
+**Course Student loops** (2, 4, 5) need initial validation - this is the current priority.
+**Project loops** (P1-P6) require frontend UI development before testing can begin.
+
+### Validation Questions
 
 We're validating that the core experience works before optimizing it. Each loop session should answer:
 
@@ -99,17 +111,25 @@ Always read [loop-history.md](./loop-history.md) first to see current status. Su
 | 4 | **Validated** | Only re-test if related code changed |
 
 **Dependencies to consider:**
-- Loop 1 (Onboarding) must be validated before others — users need Access Tokens
-- Loop 3 (Create & Publish Course) should be validated before Loop 2 — need a course to enroll in
-- Loops 4, 5, 6 build on Loop 2's foundation
+- Loop 1 (Onboarding) must be validated before others — users need Access Tokens ✅ Done
+- Loop 3 (Create & Publish Course) should be validated before Loop 2 — need a course to enroll in ✅ Done
+- **Loop 2 (Earn Credential) is now the priority** — foundation for student flows
+- Loops 4, 5 build on Loop 2's foundation
+- Loop 6 (Team Teaching) is validated ✅ Done
+- Project loops (P1-P6) need UI implementation before testing
 
 **Step 2: Suggest a loop (or series)**
 
-Present the tester with a recommendation:
-> "Based on loop-history.md, I recommend starting with **Loop 3: Create & Publish Course** — it's currently Untested and is a prerequisite for the credential flows. Want to run that one?"
+Present the tester with a recommendation based on current phase:
 
-Or suggest a series:
-> "Loops 1, 3, and 2 are all Untested. Want to run them in sequence? That would give us a complete onboarding → course creation → credential flow."
+For **Course Student validation** (current priority):
+> "Based on loop-history.md, **Loop 2: Earn a Credential** is the next priority — Course Owner/Teacher flows are validated, so we can now test the student experience. Want to run that one?"
+
+For **UX testing** (owner/teacher flows):
+> "Loops 1, 3, and 6 are functionally validated and ready for UX testing. Want to do a detailed UX review of the course creation flow?"
+
+For **Project flows** (blocked):
+> "Project loops (P1-P6) need UI development before testing. The transaction definitions exist but there's no frontend to trigger them yet."
 
 **Step 3: Confirm role setup**
 

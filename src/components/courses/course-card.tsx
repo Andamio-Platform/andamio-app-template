@@ -38,7 +38,7 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge variant="outline" className="text-success border-success/30 bg-success/10">
+              <AndamioBadge variant="outline" className="text-success-foreground border-success/80 bg-success/80 shadow-sm">
                 <OnChainIcon className="h-3 w-3 mr-1" />
                 Active
               </AndamioBadge>

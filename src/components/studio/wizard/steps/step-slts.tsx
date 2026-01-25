@@ -31,16 +31,14 @@ import {
   useDeleteSLT,
   useReorderSLT,
 } from "~/hooks/api/course/use-slt";
+import type { SLT } from "~/hooks/api";
 import type { WizardStepConfig } from "../types";
-import type { SLTListResponse } from "~/types/generated";
 import { AndamioInput } from "~/components/andamio";
 
 interface StepSLTsProps {
   config: WizardStepConfig;
   direction: number;
 }
-
-type SLT = SLTListResponse[number];
 
 // Local SLT with stable ID for React keys (index changes during reorder/delete)
 type LocalSLT = SLT & { _localId: string };
@@ -79,8 +77,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   const reorderSLT = useReorderSLT();
 
   // Check if SLTs are locked (module is approved or on-chain)
-  const moduleStatus = data.courseModule?.module_status;
-  const isLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
+  const moduleStatus = data.courseModule?.status;
+  const isLocked = moduleStatus === "approved" || moduleStatus === "active" || moduleStatus === "pending_tx";
 
   // Local state for optimistic updates - use LocalSLT with stable IDs
   const [localSlts, setLocalSlts] = useState<LocalSLT[]>(() => toLocalSlts(data.slts));
@@ -108,14 +106,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !newSltText.trim()) return;
 
     const text = newSltText.trim();
-    // API v2.0.0+: slt_index is 1-based (new item gets next sequential index)
+    // API v2.0.0+: moduleIndex is 1-based (new item gets next sequential index)
     const nextSltIndex = localSlts.length + 1;
     const opId = `create-${nextSltIndex}`;
 
     // Optimistic update - compute the list we'll set
     const optimisticSlt: LocalSLT = {
-      slt_index: nextSltIndex,
-      slt_text: text,
+      moduleIndex: nextSltIndex,
+      sltText: text,
       _localId: generateLocalId(),
     };
     const optimisticList = [...localSlts, optimisticSlt];
@@ -127,7 +125,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     try {
       // Use the hook - it handles cache invalidation automatically
       await createSLT.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
         sltText: text,
       });
@@ -150,12 +148,12 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated || !editingText.trim()) return;
 
     const text = editingText.trim();
-    const opId = `update-${slt.slt_index}`;
-    // API v2.0.0+: slt_index is already 1-based, no conversion needed
-    const sltIndex = slt.slt_index ?? 1;
+    const opId = `update-${slt.moduleIndex}`;
+    // API v2.0.0+: moduleIndex is already 1-based, no conversion needed
+    const sltIndex = slt.moduleIndex ?? 1;
 
     // Compute the optimistic list and set it
-    const updatedList = localSlts.map((s) => s.slt_index === slt.slt_index ? { ...s, slt_text: text } : s);
+    const updatedList = localSlts.map((s) => s.moduleIndex === slt.moduleIndex ? { ...s, sltText: text } : s);
     setLocalSlts(updatedList);
     setEditingIndex(null);
     setEditingText("");
@@ -164,9 +162,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Use the hook - it handles cache invalidation automatically
-      // API v2.0.0+: slt_index is 1-based
+      // API v2.0.0+: moduleIndex is 1-based
       await updateSLT.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
         sltIndex,
         sltText: text,
@@ -177,7 +175,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback
       setLocalSlts((prev) =>
-        prev.map((s) => s.slt_index === slt.slt_index ? slt : s)
+        prev.map((s) => s.moduleIndex === slt.moduleIndex ? slt : s)
       );
       setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
@@ -192,14 +190,14 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     if (!isAuthenticated) return;
 
     const opId = `delete-${slt._localId}`;
-    // API v2.0.0+: slt_index is already 1-based, no conversion needed
-    const sltIndex = slt.slt_index ?? 1;
+    // API v2.0.0+: moduleIndex is already 1-based, no conversion needed
+    const sltIndex = slt.moduleIndex ?? 1;
 
     // Remove SLT and re-index remaining ones sequentially (1-based for API v2.0.0+)
     const filteredList = localSlts
       .filter((s) => s._localId !== slt._localId)
-      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
-      .map((s, idx) => ({ ...s, slt_index: idx + 1 }));
+      .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
+      .map((s, idx) => ({ ...s, moduleIndex: idx + 1 }));
 
     setLocalSlts(filteredList);
     setError(null);
@@ -207,9 +205,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
     try {
       // Use the hook - it handles cache invalidation automatically
-      // API v2.0.0+: slt_index is 1-based
+      // API v2.0.0+: moduleIndex is 1-based
       await deleteSLT.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
         sltIndex,
       });
@@ -223,7 +221,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     } catch (err) {
       // Rollback - restore the deleted SLT
       setLocalSlts((prev) => {
-        const newList = [...prev, slt].sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1));
+        const newList = [...prev, slt].sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1));
         return newList;
       });
       setError(err instanceof Error ? err.message : "Failed to delete");
@@ -233,8 +231,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   }, [isAuthenticated, localSlts, courseNftPolicyId, moduleCode, updateSlts, deleteSLT]);
 
   const startEditing = (slt: SLT) => {
-    setEditingIndex(slt.slt_index ?? null);
-    setEditingText(slt.slt_text ?? "");
+    setEditingIndex(slt.moduleIndex ?? null);
+    setEditingText(slt.sltText ?? "");
   };
 
   const cancelEditing = () => {
@@ -278,19 +276,19 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     // Update local state with new 1-based indexes (API v2.0.0+)
     const reorderedSlts = reorderedArray.map((slt, idx) => ({
       ...slt,
-      slt_index: idx + 1,
+      moduleIndex: idx + 1,
     }));
     setLocalSlts(reorderedSlts);
 
     // Build the list of current indices in the new order for the batch API
     // API v2.0.0+: batch reorder endpoint takes array of current indices in desired order
-    const sltIndices = reorderedArray.map((slt) => slt.slt_index ?? 1);
+    const sltIndices = reorderedArray.map((slt) => slt.moduleIndex ?? 1);
 
     try {
       // Use the hook - it handles cache invalidation automatically
       // API v2.0.0+: batch endpoint with slt_indices array
       await reorderSLT.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
         sltIndices,
       });
@@ -386,8 +384,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                     key={slt._localId}
                     slt={slt}
                     moduleCode={moduleCode}
-                    isEditing={editingIndex === slt.slt_index}
-                    isUpdating={pendingOps.has(`update-${slt.slt_index}`)}
+                    isEditing={editingIndex === slt.moduleIndex}
+                    isUpdating={pendingOps.has(`update-${slt.moduleIndex}`)}
                     isLocked={isLocked}
                     editingText={editingText}
                     onEditingTextChange={setEditingText}
@@ -486,9 +484,9 @@ function SortableSltItem({
         </button>
       )}
 
-      {/* SLT Reference: <module-code>.<slt_index> (API v2.0.0+: already 1-based) */}
+      {/* SLT Reference: <module-code>.<moduleIndex> (API v2.0.0+: already 1-based) */}
       <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
-        {moduleCode}.{slt.slt_index ?? 1}
+        {moduleCode}.{slt.moduleIndex ?? 1}
       </span>
 
       {/* Content */}
@@ -528,7 +526,7 @@ function SortableSltItem({
             "flex-1 text-sm",
             isUpdating && "opacity-50"
           )}>
-            {slt.slt_text}
+            {slt.sltText}
           </span>
           {/* Edit/Delete buttons - hidden when locked */}
           {!isLocked && (

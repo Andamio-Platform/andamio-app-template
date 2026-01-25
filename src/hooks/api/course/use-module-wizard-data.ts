@@ -1,39 +1,34 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import type {
-  CourseModuleResponse,
-  CourseModuleListResponse,
-  CourseResponse,
-  SLTListResponse,
-  AssignmentResponse,
-  IntroductionResponse,
-  LessonListResponse,
-} from "~/types/generated";
+import { useCourse, type Course } from "./use-course";
+import { useTeacherCourseModules, type CourseModule, type SLT } from "./use-course-module";
+import { useSLTs } from "./use-slt";
+import { useAssignment } from "./use-assignment";
 import type { WizardData, StepCompletion } from "~/components/studio/wizard/types";
 
 interface UseModuleWizardDataProps {
   courseNftPolicyId: string;
   moduleCode: string;
   isNewModule: boolean;
-  onDataLoaded?: (course: CourseResponse | null, courseModule: CourseModuleResponse | null) => void;
+  onDataLoaded?: (course: Course | null, courseModule: CourseModule | null) => void;
 }
 
 interface UseModuleWizardDataReturn {
   data: WizardData;
   completion: StepCompletion;
   refetchData: (moduleCodeOverride?: string) => Promise<void>;
-  updateSlts: (slts: WizardData["slts"]) => void;
+  updateSlts: (slts: SLT[]) => void;
 }
 
 /**
  * Hook for fetching and managing module wizard data
  *
- * Handles all API calls for the module wizard:
- * - Course details
- * - Module details
- * - SLTs, Assignment, Introduction, Lessons
+ * Composes existing React Query hooks for caching benefits while
+ * handling wizard-specific concerns:
+ * - Module code override for smooth transitions after creation
+ * - Step completion calculation
+ * - Derived data (lessons from SLTs, introduction from module)
  */
 export function useModuleWizardData({
   courseNftPolicyId,
@@ -41,220 +36,153 @@ export function useModuleWizardData({
   isNewModule,
   onDataLoaded,
 }: UseModuleWizardDataProps): UseModuleWizardDataReturn {
-  const { authenticatedFetch } = useAndamioAuth();
+  // Track effective module code (supports override after creation)
+  const [effectiveModuleCode, setEffectiveModuleCode] = useState(moduleCode);
+  const effectiveIsNewModule = isNewModule && effectiveModuleCode === moduleCode;
 
   // Use ref for callback to prevent dependency loop
-  // The callback can change without triggering refetch
   const onDataLoadedRef = useRef(onDataLoaded);
   onDataLoadedRef.current = onDataLoaded;
 
-  const [data, setData] = useState<WizardData>({
-    course: null,
-    courseModule: null,
-    slts: [],
-    assignment: null,
-    introduction: null,
-    lessons: [],
-    isLoading: true,
-    error: null,
-  });
+  // Track if we've notified onDataLoaded to avoid duplicate calls
+  const hasNotifiedRef = useRef(false);
 
-  // Track if initial load has completed to avoid showing loading screen on refetch
-  const hasLoadedRef = useRef(false);
+  // Local SLT state for optimistic updates (synced from React Query)
+  const [optimisticSlts, setOptimisticSlts] = useState<SLT[] | null>(null);
 
-  /**
-   * Fetch all wizard data
-   * @param moduleCodeOverride - Optional module code to use instead of the prop (used after creating a new module)
-   */
-  const fetchWizardData = useCallback(async (moduleCodeOverride?: string) => {
-    const effectiveModuleCode = moduleCodeOverride ?? moduleCode;
-    const isNewModuleFetch = isNewModule && !moduleCodeOverride;
+  // ==========================================================================
+  // Compose existing hooks
+  // ==========================================================================
 
-    if (isNewModuleFetch) {
-      // For new modules, just fetch course info
-      // Go API: GET /course/user/course/get/{policy_id}
-      try {
-        const courseResponse = await fetch(
-          `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
-        );
-        const course = courseResponse.ok
-          ? ((await courseResponse.json()) as CourseResponse)
-          : null;
+  // Course data (always fetch)
+  const {
+    data: course,
+    isLoading: courseLoading,
+    error: courseError,
+  } = useCourse(courseNftPolicyId);
 
-        setData({
-          course,
-          courseModule: null,
-          slts: [],
-          assignment: null,
-          introduction: null,
-          lessons: [],
-          isLoading: false,
-          error: null,
-        });
+  // Teacher modules (to find specific module including drafts)
+  const {
+    data: teacherModules,
+    isLoading: modulesLoading,
+    error: modulesError,
+    refetch: refetchModules,
+  } = useTeacherCourseModules(courseNftPolicyId);
 
-        hasLoadedRef.current = true;
-        onDataLoadedRef.current?.(course, null);
-      } catch (err) {
-        console.error("Error fetching course:", err);
-        setData((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: err instanceof Error ? err.message : "Failed to load",
-        }));
-      }
-      return;
-    }
+  // SLTs for the module (skip if new module with no code yet)
+  const {
+    data: sltsFromQuery,
+    isLoading: sltsLoading,
+    error: sltsError,
+    refetch: refetchSlts,
+  } = useSLTs(
+    effectiveIsNewModule ? undefined : courseNftPolicyId,
+    effectiveIsNewModule ? undefined : effectiveModuleCode
+  );
 
-    // Only show loading state on initial load, not on refetch
-    if (!hasLoadedRef.current) {
-      setData((prev) => ({ ...prev, isLoading: true, error: null }));
-    }
+  // Assignment for the module (skip if new module)
+  const {
+    data: assignment,
+    isLoading: assignmentLoading,
+    error: assignmentError,
+    refetch: refetchAssignment,
+  } = useAssignment(
+    effectiveIsNewModule ? undefined : courseNftPolicyId,
+    effectiveIsNewModule ? undefined : effectiveModuleCode
+  );
 
-    try {
-      // Fetch course - Go API: GET /course/user/course/get/{policy_id}
-      const courseResponse = await fetch(
-        `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
-      );
-      const course = courseResponse.ok
-        ? ((await courseResponse.json()) as CourseResponse)
-        : null;
+  // ==========================================================================
+  // Derived data
+  // ==========================================================================
 
-      // Go API: POST /course/teacher/course-modules/list
-      // Teacher endpoint - returns ALL modules including drafts
-      const modulesResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-modules/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_id: courseNftPolicyId }),
-        }
-      );
-      let modules: CourseModuleListResponse = [];
-      if (modulesResponse.ok) {
-        const result = await modulesResponse.json() as { data?: CourseModuleListResponse } | CourseModuleListResponse;
-        // Handle both wrapped { data: [...] } and raw array formats
-        modules = Array.isArray(result) ? result : (result.data ?? []);
-        // Debug: Log modules to diagnose empty list issue
-        console.log("[useModuleWizardData] Modules from API:", {
-          effectiveModuleCode,
-          modulesCount: modules.length,
-          moduleCodes: modules.map((m) => m.content?.course_module_code),
-          rawResult: result,
-        });
-      } else {
-        console.error("[useModuleWizardData] Failed to fetch modules:", modulesResponse.status, modulesResponse.statusText);
-      }
-      // Find the merged module item and extract its content with slt_hash
-      const mergedModuleItem = modules.find((m) => m.content?.course_module_code === effectiveModuleCode);
-      console.log("[useModuleWizardData] Found module:", {
-        effectiveModuleCode,
-        found: !!mergedModuleItem,
-        mergedModuleItem,
-      });
-      const courseModule = mergedModuleItem?.content
-        ? { ...mergedModuleItem.content, slt_hash: mergedModuleItem.slt_hash }
-        : null;
+  // Find specific module from teacher modules list
+  const courseModule = useMemo(() => {
+    if (effectiveIsNewModule || !teacherModules) return null;
+    return teacherModules.find((m) => m.moduleCode === effectiveModuleCode) ?? null;
+  }, [teacherModules, effectiveModuleCode, effectiveIsNewModule]);
 
-      // Fetch SLTs - Go API: GET /course/user/slts/{course_id}/{course_module_code}
-      const sltsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${effectiveModuleCode}`
-      );
-      const slts = sltsResponse.ok
-        ? ((await sltsResponse.json()) as SLTListResponse)
-        : [];
+  // Use optimistic SLTs if set, otherwise use query data
+  const slts = optimisticSlts ?? sltsFromQuery ?? [];
 
-      // Try embedded assignment from courseModule first, then fall back to dedicated endpoint
-      let assignment: AssignmentResponse | null = (courseModule?.assignment as AssignmentResponse | undefined) ?? null;
-      console.log("[useModuleWizardData] Assignment from courseModule:", {
-        hasAssignment: !!assignment,
-        title: assignment?.title,
-        hasContentJson: !!assignment?.content_json,
-      });
-
-      // If embedded assignment is empty, fetch from dedicated endpoint
-      if (!assignment?.title) {
-        const assignmentResponse = await fetch(
-          `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${effectiveModuleCode}`
-        );
-        if (assignmentResponse.ok) {
-          const assignmentResult = await assignmentResponse.json() as AssignmentResponse | null;
-          if (assignmentResult && typeof assignmentResult === "object" && "title" in assignmentResult) {
-            assignment = assignmentResult;
-            console.log("[useModuleWizardData] Assignment from dedicated endpoint:", {
-              hasAssignment: !!assignment,
-              title: assignment?.title,
-            });
-          }
-        }
-      }
-
-      // Introduction data is embedded in the module response (courseModule.introduction)
-      // Use it from there instead of a separate fetch
-      const introduction: IntroductionResponse | null = (courseModule?.introduction as IntroductionResponse | undefined) ?? null;
-      console.log("[useModuleWizardData] Introduction from module:", {
-        hasIntroduction: !!introduction,
-        title: introduction?.title,
-      });
-
-      // Extract lessons from SLTs - each SLT may have an embedded lesson
-      const lessons: LessonListResponse = slts
-        .filter((slt) => slt.lesson?.title)
-        .map((slt) => ({
-          ...slt.lesson!,
-          slt_index: slt.slt_index,
-        }));
-      console.log("[useModuleWizardData] Lessons extracted from SLTs:", {
-        totalSlts: slts.length,
-        lessonsFound: lessons.length,
-      });
-
-      setData({
-        course,
-        courseModule,
-        slts,
-        assignment,
-        introduction,
-        lessons,
-        isLoading: false,
-        error: null,
-      });
-
-      hasLoadedRef.current = true;
-      onDataLoadedRef.current?.(course, courseModule);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setData((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to load",
-      }));
-    }
-  }, [courseNftPolicyId, moduleCode, isNewModule, authenticatedFetch]);
-
-  // Fetch data on mount
+  // Clear optimistic SLTs when query data updates (sync complete)
   useEffect(() => {
-    void fetchWizardData();
-  }, [fetchWizardData]);
+    if (sltsFromQuery && optimisticSlts) {
+      setOptimisticSlts(null);
+    }
+  }, [sltsFromQuery, optimisticSlts]);
 
-  /**
-   * Update SLTs without triggering loading state
-   * Used for optimistic updates from step-slts
-   */
-  const updateSlts = useCallback((slts: WizardData["slts"]) => {
-    setData((prev) => ({ ...prev, slts }));
-  }, []);
+  // Derive lessons from SLTs (each SLT may have an embedded lesson)
+  const lessons = useMemo(() => {
+    return slts
+      .filter((slt) => slt.lesson?.title)
+      .map((slt) => slt.lesson!);
+  }, [slts]);
 
-  /**
-   * Calculate step completion based on data
-   * Note: We check for actual saved content (title with value) rather than just truthy objects
-   * because the API may return empty/partial objects before content is saved
-   */
+  // Introduction is embedded in the course module
+  const introduction = courseModule?.introduction ?? null;
+
+  // ==========================================================================
+  // Loading and error states
+  // ==========================================================================
+
+  const isLoading = effectiveIsNewModule
+    ? courseLoading
+    : courseLoading || modulesLoading || sltsLoading || assignmentLoading;
+
+  const error = courseError?.message
+    ?? modulesError?.message
+    ?? sltsError?.message
+    ?? assignmentError?.message
+    ?? null;
+
+  // ==========================================================================
+  // Build WizardData
+  // ==========================================================================
+
+  const data: WizardData = useMemo(
+    () => ({
+      course: course ?? null,
+      courseModule,
+      slts,
+      assignment: assignment ?? null,
+      introduction,
+      lessons,
+      isLoading,
+      error,
+    }),
+    [course, courseModule, slts, assignment, introduction, lessons, isLoading, error]
+  );
+
+  // ==========================================================================
+  // Notify onDataLoaded when data is ready
+  // ==========================================================================
+
+  useEffect(() => {
+    if (!isLoading && !hasNotifiedRef.current) {
+      hasNotifiedRef.current = true;
+      onDataLoadedRef.current?.(course ?? null, courseModule);
+    }
+  }, [isLoading, course, courseModule]);
+
+  // Reset notification flag when module code changes
+  useEffect(() => {
+    hasNotifiedRef.current = false;
+  }, [effectiveModuleCode]);
+
+  // ==========================================================================
+  // Calculate step completion
+  // ==========================================================================
+
   const completion = useMemo<StepCompletion>(() => {
-    const hasTitle = !!data.courseModule?.title?.trim();
-    const hasSLTs = data.slts.length > 0;
+    const hasTitle = !!courseModule?.title?.trim();
+    const hasSLTs = slts.length > 0;
     // Assignment must have a saved title to be considered complete
-    const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
-    const hasIntroduction = !!data.introduction;
+    const hasAssignment = !!(
+      assignment &&
+      typeof assignment.title === "string" &&
+      assignment.title.trim().length > 0
+    );
+    const hasIntroduction = !!introduction;
 
     return {
       credential: hasTitle,
@@ -264,12 +192,42 @@ export function useModuleWizardData({
       introduction: hasIntroduction,
       review: hasTitle && hasSLTs && hasAssignment && hasIntroduction,
     };
-  }, [data]);
+  }, [courseModule, slts, assignment, introduction]);
+
+  // ==========================================================================
+  // Refetch function (supports module code override for creation flow)
+  // ==========================================================================
+
+  const refetchData = useCallback(
+    async (moduleCodeOverride?: string) => {
+      if (moduleCodeOverride) {
+        // Update effective module code - hooks will automatically refetch
+        setEffectiveModuleCode(moduleCodeOverride);
+        hasNotifiedRef.current = false;
+      }
+
+      // Trigger refetch of all queries
+      await Promise.all([
+        refetchModules(),
+        refetchSlts(),
+        refetchAssignment(),
+      ]);
+    },
+    [refetchModules, refetchSlts, refetchAssignment]
+  );
+
+  // ==========================================================================
+  // Optimistic SLT update (for immediate UI feedback)
+  // ==========================================================================
+
+  const updateSlts = useCallback((newSlts: SLT[]) => {
+    setOptimisticSlts(newSlts);
+  }, []);
 
   return {
     data,
     completion,
-    refetchData: fetchWizardData,
+    refetchData,
     updateSlts,
   };
 }

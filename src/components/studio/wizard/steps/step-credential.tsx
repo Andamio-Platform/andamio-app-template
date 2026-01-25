@@ -97,8 +97,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   );
 
   // Check if module is locked (approved or on-chain)
-  const moduleStatus = data.courseModule?.module_status;
-  const isModuleLocked = moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN" || moduleStatus === "PENDING_TX";
+  const moduleStatus = data.courseModule?.status;
+  const isModuleLocked = moduleStatus === "approved" || moduleStatus === "active" || moduleStatus === "pending_tx";
 
   const hasChanges =
     title !== (typeof data.courseModule?.title === "string" ? data.courseModule.title : "") ||
@@ -117,7 +117,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
     try {
       await createModule.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode: editableModuleCode.trim(),
         title,
         description,
@@ -141,7 +141,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
     try {
       await updateModule.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode,
         data: { title, description },
       });
@@ -167,7 +167,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
       // 1. Create new module with DRAFT status
       await createModule.mutateAsync({
-        courseNftPolicyId,
+        courseId: courseNftPolicyId,
         moduleCode: newCode,
         title: `${title} (Copy)`,
         description,
@@ -178,9 +178,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       if (data.slts.length > 0) {
         for (const slt of data.slts) {
           await createSLT.mutateAsync({
-            courseNftPolicyId,
+            courseId: courseNftPolicyId,
             moduleCode: newCode,
-            sltText: typeof slt.slt_text === "string" ? slt.slt_text : "",
+            sltText: slt.sltText ?? "",
           });
         }
       }
@@ -196,7 +196,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               course_id: courseNftPolicyId,
               course_module_code: newCode,
               title: data.assignment.title,
-              content_json: data.assignment.content_json,
+              content_json: data.assignment.contentJson,
             }),
           }
         );
@@ -209,11 +209,11 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       if (data.lessons.length > 0) {
         for (const lesson of data.lessons) {
           await createLesson.mutateAsync({
-            courseNftPolicyId,
+            courseId: courseNftPolicyId,
             moduleCode: newCode,
-            moduleIndex: lesson.slt_index ?? 0,
-            title: typeof lesson.title === "string" ? lesson.title : "",
-            contentJson: lesson.content_json as object | undefined,
+            sltIndex: lesson.sltIndex ?? 0,
+            title: lesson.title ?? "",
+            contentJson: lesson.contentJson,
           });
         }
       }
@@ -229,7 +229,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               course_id: courseNftPolicyId,
               course_module_code: newCode,
               title: data.introduction.title,
-              content_json: data.introduction.content_json,
+              content_json: data.introduction.contentJson,
             }),
           }
         );

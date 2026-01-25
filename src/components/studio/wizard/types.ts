@@ -1,6 +1,13 @@
 import { createContext } from "react";
 import type { IconComponent } from "~/types/ui";
-import type { CourseModuleResponse, CourseResponse, SLTListResponse, AssignmentResponse, IntroductionResponse, LessonListResponse } from "~/types/generated";
+import type {
+  Course,
+  CourseModule,
+  SLT,
+  Assignment,
+  Introduction,
+  Lesson,
+} from "~/hooks/api";
 
 /**
  * Wizard step identifiers
@@ -44,14 +51,16 @@ export interface StepCompletion {
 
 /**
  * Data loaded for the wizard
+ *
+ * All types use camelCase fields from the hooks layer.
  */
 export interface WizardData {
-  course: CourseResponse | null;
-  courseModule: CourseModuleResponse | null;
-  slts: SLTListResponse;
-  assignment: AssignmentResponse | null;
-  introduction: IntroductionResponse | null;
-  lessons: LessonListResponse;
+  course: Course | null;
+  courseModule: CourseModule | null;
+  slts: SLT[];
+  assignment: Assignment | null;
+  introduction: Introduction | null;
+  lessons: Lesson[];
   isLoading: boolean;
   error: string | null;
 }

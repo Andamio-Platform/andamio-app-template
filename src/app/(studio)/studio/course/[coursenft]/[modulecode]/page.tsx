@@ -31,7 +31,7 @@ import {
   NextIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import type { CourseModuleResponse, CourseResponse } from "~/types/generated";
+import type { Course, CourseModule } from "~/hooks/api";
 
 // Import wizard step components
 import { StepCredential } from "~/components/studio/wizard/steps/step-credential";
@@ -76,8 +76,8 @@ function ModuleWizardContent({
 
   // Handle header updates when data loads
   const handleDataLoaded = useCallback(
-    (course: CourseResponse | null, courseModule: CourseModuleResponse | null) => {
-      const courseTitle = typeof course?.content?.title === "string" ? course.content.title : "Course";
+    (course: Course | null, courseModule: CourseModule | null) => {
+      const courseTitle = course?.title ?? "Course";
       if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
@@ -92,8 +92,10 @@ function ModuleWizardContent({
           { label: courseModule?.title ?? moduleCode },
         ]);
         setTitle(courseModule?.title ?? "Module");
-        if (courseModule?.module_status) {
-          setStatus(courseModule.module_status, courseModule.module_status === "ON_CHAIN" ? "default" : "secondary");
+        if (courseModule?.status) {
+          // Map CourseModuleStatus to display format
+          const displayStatus = courseModule.status === "active" ? "ON_CHAIN" : courseModule.status.toUpperCase();
+          setStatus(displayStatus, courseModule.status === "active" ? "default" : "secondary");
         }
       }
     },
@@ -230,7 +232,7 @@ function ModuleWizardContent({
         </div>
 
         {/* On-Chain Link */}
-        {data.courseModule?.module_status === "ON_CHAIN" && (
+        {data.courseModule?.status === "active" && (
           <AndamioButton
             variant="outline"
             size="sm"

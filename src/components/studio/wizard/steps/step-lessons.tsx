@@ -16,7 +16,7 @@ import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
-import type { LessonResponse } from "~/types/generated";
+import type { Lesson } from "~/hooks/api";
 
 interface StepLessonsProps {
   config: WizardStepConfig;
@@ -43,9 +43,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
   const slts = data.slts;
   const lessons = data.lessons;
 
-  // Map lessons to their SLT's index
+  // Map lessons to their SLT's sltIndex
   const lessonBySltIndex = lessons.reduce((acc, lesson) => {
-    const sltIndex = lesson.slt_index ?? 0;
+    const sltIndex = lesson.sltIndex ?? 0;
     acc[sltIndex] = lesson;
     return acc;
   }, {} as Record<number, typeof lessons[number]>);
@@ -118,8 +118,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {slts.map((slt, index) => {
-            // API v2.0.0+: slt_index is 1-based
-            const sltIndex = slt.slt_index ?? (index + 1);
+            // API v2.0.0+: moduleIndex is 1-based
+            const sltIndex = slt.moduleIndex ?? (index + 1);
             const lesson = lessonBySltIndex[sltIndex];
             const isCreatingThis = creatingForSlt === sltIndex;
             const isEditingThis = editingLessonIndex === sltIndex;
@@ -152,7 +152,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                       <div className="flex-1 min-w-0">
                         {/* SLT text */}
                         <AndamioText variant="small" className="mb-2">
-                          {typeof slt.slt_text === "string" ? slt.slt_text : ""}
+                          {slt.sltText ?? ""}
                         </AndamioText>
 
                         {/* Lesson info or create */}
@@ -313,7 +313,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 // =============================================================================
 
 interface LessonEditorProps {
-  lesson: LessonResponse;
+  lesson: Lesson;
   courseNftPolicyId: string;
   moduleCode: string;
   onSave: () => Promise<void>;
@@ -322,10 +322,10 @@ interface LessonEditorProps {
 function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonEditorProps) {
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
-  const lessonTitle = typeof lesson.title === "string" ? lesson.title : "";
+  const lessonTitle = lesson.title ?? "";
   const [title, setTitle] = useState(lessonTitle);
   const [content, setContent] = useState<JSONContent | null>(
-    lesson.content_json ? (lesson.content_json as JSONContent) : null
+    lesson.contentJson ? (lesson.contentJson as JSONContent) : null
   );
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -336,16 +336,16 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
     console.log("[LessonEditor] lesson changed:", {
       hasLesson: !!lesson,
       title: lesson?.title,
-      hasContentJson: !!lesson?.content_json,
+      hasContentJson: !!lesson?.contentJson,
       hasInitializedFromLesson,
     });
 
     // Only sync if we have lesson data and haven't initialized yet
     if (lesson?.title && !hasInitializedFromLesson) {
-      const newTitle = typeof lesson.title === "string" ? lesson.title : "";
+      const newTitle = lesson.title ?? "";
       setTitle(newTitle);
-      if (lesson.content_json) {
-        setContent(lesson.content_json as JSONContent);
+      if (lesson.contentJson) {
+        setContent(lesson.contentJson as JSONContent);
       }
       setHasInitializedFromLesson(true);
       console.log("[LessonEditor] Synced state from lesson:", newTitle);
@@ -354,9 +354,9 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
 
   // Track unsaved changes
   useEffect(() => {
-    const originalTitle = typeof lesson.title === "string" ? lesson.title : "";
+    const originalTitle = lesson.title ?? "";
     const titleChanged = title !== originalTitle;
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.content_json ?? null);
+    const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.contentJson ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, lesson]);
 
@@ -367,7 +367,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
 
     try {
       // Go API: POST /course/teacher/lesson/update
-      // Note: DB API expects `content_json` (generated types incorrectly show `content`)
+      // Note: API expects snake_case in request body
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/lesson/update`,
         {
@@ -376,7 +376,7 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           body: JSON.stringify({
             course_id: courseNftPolicyId,
             course_module_code: moduleCode,
-            slt_index: lesson.slt_index,
+            slt_index: lesson.sltIndex,
             content_json: content,
           }),
         }

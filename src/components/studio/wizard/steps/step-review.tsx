@@ -24,7 +24,6 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
-import { getOptionalString } from "~/lib/type-helpers";
 import type { WizardStepConfig } from "../types";
 
 interface StepReviewProps {
@@ -48,8 +47,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isUnapproving, setIsUnapproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const moduleStatus = data.courseModule?.module_status;
-  const [isApproved, setIsApproved] = useState(moduleStatus === "APPROVED" || moduleStatus === "ON_CHAIN");
+  const moduleStatus = data.courseModule?.status;
+  const [isApproved, setIsApproved] = useState(moduleStatus === "approved" || moduleStatus === "active");
 
   const slts = data.slts;
   const lessons = data.lessons;
@@ -110,11 +109,11 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
-      // Compute the SLT hash from SLTs (sorted by slt_index)
-      // API v2.0.0+: slt_index is 1-based
+      // Compute the SLT hash from SLTs (sorted by moduleIndex)
+      // API v2.0.0+: moduleIndex is 1-based
       const sortedSltTexts = [...slts]
-        .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
-        .map((slt) => slt.slt_text)
+        .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
+        .map((slt) => slt.sltText)
         .filter((text): text is string => typeof text === "string");
       const sltHash = computeSltHashDefinite(sortedSltTexts);
 
@@ -215,13 +214,13 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 <AndamioBadge className="bg-success text-success-foreground">
                   APPROVED
                 </AndamioBadge>
-                {getOptionalString(data.courseModule?.slt_hash) && (
+                {data.courseModule?.sltHash && (
                   <div className="flex flex-col items-center gap-1">
                     <AndamioText variant="small" className="text-muted-foreground">
                       SLT Hash
                     </AndamioText>
                     <code className="text-xs font-mono bg-muted px-2 py-1 rounded max-w-[280px] truncate">
-                      {getOptionalString(data.courseModule?.slt_hash)}
+                      {data.courseModule.sltHash}
                     </code>
                   </div>
                 )}

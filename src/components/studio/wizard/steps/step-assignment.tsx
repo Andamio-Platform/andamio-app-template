@@ -38,7 +38,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
 
   const [title, setTitle] = useState(assignment?.title ?? "Module Assignment");
   const [content, setContent] = useState<JSONContent | null>(
-    assignment?.content_json ? (assignment.content_json as JSONContent) : null
+    assignment?.contentJson ? (assignment.contentJson as JSONContent) : null
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     console.log("[StepAssignment] assignment changed:", {
       hasAssignment: !!assignment,
       title: assignment?.title,
-      hasContentJson: !!assignment?.content_json,
+      hasContentJson: !!assignment?.contentJson,
       hasInitializedFromAssignment,
     });
 
@@ -63,8 +63,8 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     // 2. We haven't already initialized OR the user hasn't made changes
     if (assignment?.title && !hasInitializedFromAssignment) {
       setTitle(assignment.title);
-      if (assignment.content_json) {
-        setContent(assignment.content_json as JSONContent);
+      if (assignment.contentJson) {
+        setContent(assignment.contentJson as JSONContent);
       }
       setHasInitializedFromAssignment(true);
       console.log("[StepAssignment] Synced state from assignment:", assignment.title);
@@ -74,7 +74,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
   // Track unsaved changes
   useEffect(() => {
     const titleChanged = title !== (assignment?.title ?? "Module Assignment");
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.content_json ?? null);
+    const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.contentJson ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, assignment]);
 
@@ -186,14 +186,14 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
           <div className="space-y-2">
             {slts.map((slt, index) => (
               <motion.div
-                key={slt.slt_index ?? (index + 1)}
+                key={slt.moduleIndex ?? (index + 1)}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
               >
                 <VerifiedIcon className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                <span className="text-sm">{slt.slt_text}</span>
+                <span className="text-sm">{slt.sltText}</span>
               </motion.div>
             ))}
           </div>

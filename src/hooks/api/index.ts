@@ -85,14 +85,24 @@ export {
   useUpdateCourseModule,
   useUpdateCourseModuleStatus,
   useDeleteCourseModule,
+  useRegisterCourseModule,
   courseModuleKeys,
+  assignmentKeys,
+  introductionKeys,
   transformCourseModule,
+  transformSLT,
+  transformLesson,
+  transformAssignment,
+  transformIntroduction,
   type CourseModule,
-  type ModuleSource,
+  type CourseModuleStatus,
   type SLT,
   type Lesson,
-  // Deprecated alias - use CourseModule instead
-  type MergedCourseModule,
+  type Assignment,
+  type Introduction,
+  type CourseModuleSummary,
+  type RegisterCourseModuleInput,
+  type RegisteredModule,
 } from "./course/use-course-module";
 
 // SLTs
@@ -101,6 +111,7 @@ export {
   useCreateSLT,
   useUpdateSLT,
   useDeleteSLT,
+  useReorderSLT,
   sltKeys,
 } from "./course/use-slt";
 
@@ -109,8 +120,25 @@ export {
   useLessons,
   useLesson,
   useCreateLesson,
+  useUpdateLesson,
+  useDeleteLesson,
   lessonKeys,
 } from "./course/use-lesson";
+
+// Assignments (query + mutations)
+export {
+  useAssignment,
+  useCreateAssignment,
+  useUpdateAssignment,
+  useDeleteAssignment,
+} from "./course/use-assignment";
+
+// Introductions (CRUD mutations)
+export {
+  useCreateIntroduction,
+  useUpdateIntroduction,
+  useDeleteIntroduction,
+} from "./course/use-introduction";
 
 // Course teacher (role-based)
 export {
@@ -120,6 +148,7 @@ export {
   useInvalidateTeacherCourses,
   courseTeacherKeys,
   type TeacherCourse,
+  type TeacherCourseStatus,
   type TeacherCoursesResponse,
   type TeacherAssignmentCommitment,
   type TeacherAssignmentCommitmentsResponse,
@@ -131,6 +160,7 @@ export {
   useStudentCourses,
   useInvalidateStudentCourses,
   courseStudentKeys,
+  transformStudentCourse,
   type StudentCourse,
   type StudentCoursesResponse,
 } from "./course/use-course-student";

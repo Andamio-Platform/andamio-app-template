@@ -14,13 +14,20 @@ import {
   type WizardData,
   type WizardContextValue,
 } from "./types";
-import type {
-  CourseModuleResponse,
-  CourseResponse,
-  SLTListResponse,
-  AssignmentResponse,
-  LessonListResponse,
-} from "~/types/generated";
+import {
+  type Course,
+  type CourseModule,
+  type SLT,
+  type Assignment,
+  type Introduction,
+  type Lesson,
+  transformCourse,
+  transformCourseModule,
+  transformSLT,
+  transformAssignment,
+  transformIntroduction,
+} from "~/hooks/api";
+// Note: Raw generated types no longer needed - using transformed types from hooks
 
 // Step components (will be created next)
 import { StepCredential } from "./steps/step-credential";
@@ -56,8 +63,8 @@ const STEP_ORDER: WizardStepId[] = [
 interface ModuleWizardProps {
   courseNftPolicyId: string;
   moduleCode: string;
-  course: CourseResponse | null;
-  courseModule: CourseModuleResponse | null;
+  course: Course | null;
+  courseModule: CourseModule | null;
   onExitWizard: () => void;
   isNewModule?: boolean;
 }
@@ -101,6 +108,9 @@ export function ModuleWizard({
 
   /**
    * Fetch all wizard data
+   *
+   * @deprecated This legacy wizard should use useModuleWizardData hook instead.
+   * The split-pane wizard at [modulecode]/page.tsx uses hooks for proper caching.
    */
   const fetchWizardData = useCallback(async () => {
     // For new modules, no data to fetch - just set loading to false
@@ -116,24 +126,28 @@ export function ModuleWizard({
       const sltsResponse = await fetch(
         `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
       );
-      const slts = sltsResponse.ok
-        ? ((await sltsResponse.json()) as SLTListResponse)
-        : [];
+      let slts: SLT[] = [];
+      if (sltsResponse.ok) {
+        const rawSlts = (await sltsResponse.json()) as unknown[];
+        slts = Array.isArray(rawSlts)
+          ? rawSlts.map((raw) => transformSLT(raw as Record<string, unknown>))
+          : [];
+      }
 
       // Fetch assignment - Go API: GET /course/user/assignment/{course_id}/{course_module_code}
       const assignmentResponse = await fetch(
         `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
       );
-      let assignment: AssignmentResponse | null = null;
+      let assignment: Assignment | null = null;
       if (assignmentResponse.ok) {
-        const assignmentResult = await assignmentResponse.json() as AssignmentResponse | { data?: AssignmentResponse };
+        const assignmentResult = (await assignmentResponse.json()) as Record<string, unknown> | { data?: Record<string, unknown> };
         // Handle both wrapped { data: {...} } and raw object formats
         if (assignmentResult && typeof assignmentResult === "object") {
           if ("data" in assignmentResult && assignmentResult.data) {
-            assignment = assignmentResult.data;
+            assignment = transformAssignment(assignmentResult.data as Record<string, unknown>);
             console.log("[ModuleWizard] Assignment response was wrapped, unwrapped:", assignment);
           } else if ("title" in assignmentResult || "content_json" in assignmentResult) {
-            assignment = assignmentResult;
+            assignment = transformAssignment(assignmentResult as Record<string, unknown>);
             console.log("[ModuleWizard] Assignment response (raw):", assignment);
           } else {
             console.log("[ModuleWizard] Assignment response has unexpected shape:", assignmentResult);
@@ -145,18 +159,21 @@ export function ModuleWizard({
       // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
       // To get all lessons, iterate SLTs and fetch each individually
       // For now, set to empty array - lessons can be fetched on demand per SLT
-      const lessons: LessonListResponse = [];
+      const lessons: Lesson[] = [];
 
       // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
         `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
-      const updatedModule = moduleResponse.ok
-        ? ((await moduleResponse.json()) as CourseModuleResponse)
-        : courseModule;
+      let updatedModule: CourseModule | null = courseModule;
+      if (moduleResponse.ok) {
+        const rawModule = (await moduleResponse.json()) as Record<string, unknown>;
+        // transformCourseModule expects OrchestrationMergedCourseModuleItem, cast as needed
+        updatedModule = transformCourseModule(rawModule as Parameters<typeof transformCourseModule>[0]);
+      }
 
-      // Introduction data is embedded in the module response (updatedModule.introduction)
-      const introduction = updatedModule?.introduction ?? null;
+      // Introduction data is embedded in the module response
+      const introduction: Introduction | null = updatedModule?.introduction ?? null;
       console.log("[ModuleWizard] Introduction from module:", {
         hasIntroduction: !!introduction,
         title: introduction?.title,

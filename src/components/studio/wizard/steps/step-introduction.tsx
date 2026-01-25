@@ -35,12 +35,12 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
   const introduction = data.introduction;
   const slts = data.slts;
-  const moduleTitle = typeof data.courseModule?.title === "string" ? data.courseModule.title : "";
+  const moduleTitle = data.courseModule?.title ?? "";
 
-  const introTitle = typeof introduction?.title === "string" ? introduction.title : "";
+  const introTitle = introduction?.title ?? "";
   const [title, setTitle] = useState(introTitle || `Welcome to ${moduleTitle}`);
   const [content, setContent] = useState<JSONContent | null>(
-    introduction?.content_json ? (introduction.content_json as JSONContent) : null
+    introduction?.contentJson ? (introduction.contentJson as JSONContent) : null
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,16 +52,16 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
     console.log("[StepIntroduction] introduction changed:", {
       hasIntroduction: !!introduction,
       title: introduction?.title,
-      hasContentJson: !!introduction?.content_json,
+      hasContentJson: !!introduction?.contentJson,
       hasInitializedFromIntro,
     });
 
     // Only sync if we have introduction data with a title and haven't initialized yet
     if (introduction?.title && !hasInitializedFromIntro) {
-      const newTitle = typeof introduction.title === "string" ? introduction.title : "";
+      const newTitle = introduction.title ?? "";
       setTitle(newTitle);
-      if (introduction.content_json) {
-        setContent(introduction.content_json as JSONContent);
+      if (introduction.contentJson) {
+        setContent(introduction.contentJson as JSONContent);
       }
       setHasInitializedFromIntro(true);
       console.log("[StepIntroduction] Synced state from introduction:", newTitle);
@@ -70,9 +70,9 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
 
   // Track unsaved changes
   useEffect(() => {
-    const originalTitle = typeof introduction?.title === "string" ? introduction.title : "";
+    const originalTitle = introduction?.title ?? "";
     const titleChanged = title !== (originalTitle || `Welcome to ${moduleTitle}`);
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(introduction?.content_json ?? null);
+    const contentChanged = JSON.stringify(content) !== JSON.stringify(introduction?.contentJson ?? null);
     setHasUnsavedChanges(titleChanged || contentChanged);
   }, [title, content, introduction, moduleTitle]);
 
@@ -147,7 +147,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
   const generateSuggestion = () => {
     if (slts.length === 0) return null;
 
-    const sltList = slts.map((slt) => `• ${typeof slt.slt_text === "string" ? slt.slt_text : ""}`).join("\n");
+    const sltList = slts.map((slt) => `• ${slt.sltText ?? ""}`).join("\n");
     return `In this module, you'll learn to:\n\n${sltList}\n\nBy the end, you'll have completed an assignment that demonstrates your mastery of these skills.`;
   };
 

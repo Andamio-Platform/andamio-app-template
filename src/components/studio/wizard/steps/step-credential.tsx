@@ -64,7 +64,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
    */
   const generateModuleCode = () => {
     const numericCodes = existingModules
-      .map((m) => parseInt(m.course_module_code ?? "", 10))
+      .map((m) => parseInt(m.moduleCode ?? "", 10))
       .filter((n) => !isNaN(n));
     const nextNumber = numericCodes.length > 0 ? Math.max(...numericCodes) + 1 : 101;
     return String(nextNumber);
@@ -88,12 +88,12 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
   // Check if module code already exists
   const moduleCodeExists = existingModules.some(
-    (m) => m.course_module_code === editableModuleCode && m.course_module_code !== moduleCode
+    (m) => m.moduleCode === editableModuleCode && m.moduleCode !== moduleCode
   );
 
   // Check if duplicate module code already exists
   const duplicateCodeExists = existingModules.some(
-    (m) => m.course_module_code === duplicateModuleCode
+    (m) => m.moduleCode === duplicateModuleCode
   );
 
   // Check if module is locked (approved or on-chain)
@@ -117,8 +117,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
     try {
       await createModule.mutateAsync({
-        course_nft_policy_id: courseNftPolicyId,
-        course_module_code: editableModuleCode.trim(),
+        courseNftPolicyId,
+        moduleCode: editableModuleCode.trim(),
         title,
         description,
       });
@@ -167,8 +167,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
       // 1. Create new module with DRAFT status
       await createModule.mutateAsync({
-        course_nft_policy_id: courseNftPolicyId,
-        course_module_code: newCode,
+        courseNftPolicyId,
+        moduleCode: newCode,
         title: `${title} (Copy)`,
         description,
       });

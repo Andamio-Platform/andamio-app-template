@@ -33,7 +33,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { TokenIcon, TransactionIcon, ModuleIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import type { CourseModuleListResponse } from "~/types/generated";
+import type { CourseModule } from "~/hooks/api/course/use-course-module";
 
 export interface MintModuleTokensProps {
   /**
@@ -42,10 +42,10 @@ export interface MintModuleTokensProps {
   courseNftPolicyId: string;
 
   /**
-   * Array of modules with SLT data from the database API
-   * Should come from the `/courses/{courseNftPolicyId}/course-modules` endpoint
+   * Array of modules with SLT data (app-level type with camelCase fields)
+   * Should come from useTeacherCourseModules() hook
    */
-  courseModules: CourseModuleListResponse;
+  courseModules: CourseModule[];
 
   /**
    * Callback fired when minting is successful
@@ -66,15 +66,20 @@ export interface MintModuleTokensProps {
  *
  * @example
  * ```tsx
- * const courseModules: CourseModuleListResponse = await fetch(
- *   `${API_URL}/courses/${courseNftPolicyId}/course-modules`
- * ).then(r => r.json());
+ * import { useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
  *
- * <MintModuleTokens
- *   courseNftPolicyId="abc123..."
- *   courseModules={courseModules}
- *   onSuccess={() => router.refresh()}
- * />
+ * function MintModulesPage({ courseId }: { courseId: string }) {
+ *   const { data: modules = [] } = useTeacherCourseModules(courseId);
+ *   const readyToMint = modules.filter(m => m.status === "APPROVED");
+ *
+ *   return (
+ *     <MintModuleTokens
+ *       courseNftPolicyId={courseId}
+ *       courseModules={readyToMint}
+ *       onSuccess={() => void queryClient.invalidateQueries()}
+ *     />
+ *   );
+ * }
  * ```
  */
 export function MintModuleTokens({
@@ -110,14 +115,14 @@ export function MintModuleTokens({
     }
   );
 
-  // Helper to get sorted SLT texts (by slt_index for consistent ordering)
-  const getSortedSltTexts = useCallback((slts: NonNullable<typeof courseModules[0]["content"]>["slts"]): string[] => {
+  // Helper to get sorted SLT texts (by moduleIndex for consistent ordering)
+  const getSortedSltTexts = useCallback((slts: CourseModule["slts"]): string[] => {
     if (!slts || slts.length === 0) return [];
-    // Sort by slt_index to ensure consistent hash computation
-    // API v2.0.0+: slt_index is 1-based
+    // Sort by moduleIndex to ensure consistent hash computation
+    // App-level types use camelCase: moduleIndex (1-based)
     return [...slts]
-      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
-      .map((slt) => slt.slt_text)
+      .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
+      .map((slt) => slt.sltText)
       .filter((text): text is string => typeof text === "string");
   }, []);
 
@@ -125,15 +130,16 @@ export function MintModuleTokens({
   const moduleHashes = useMemo(() => {
     return courseModules.map((courseModule) => {
       try {
-        const sltTexts = getSortedSltTexts(courseModule.content?.slts);
+        // App-level CourseModule has flattened slts field (not nested in content)
+        const sltTexts = getSortedSltTexts(courseModule.slts);
         return {
-          moduleCode: courseModule.content?.course_module_code,
+          moduleCode: courseModule.moduleCode,
           hash: computeSltHashDefinite(sltTexts),
           sltCount: sltTexts.length,
         };
       } catch {
         return {
-          moduleCode: courseModule.content?.course_module_code,
+          moduleCode: courseModule.moduleCode,
           hash: null,
           sltCount: 0,
         };
@@ -149,13 +155,14 @@ export function MintModuleTokens({
     }
 
     // Prepare module data for both API request and side effects
+    // App-level CourseModule has flattened slts field (not nested in content)
     const modulesWithData = courseModules
-      .filter((cm) => cm.content?.slts && cm.content.slts.length > 0)
+      .filter((cm) => cm.slts && cm.slts.length > 0)
       .map((courseModule) => {
-        const slts = getSortedSltTexts(courseModule.content?.slts);
+        const slts = getSortedSltTexts(courseModule.slts);
         const hash = computeSltHashDefinite(slts);
         return {
-          moduleCode: courseModule.content?.course_module_code,
+          moduleCode: courseModule.moduleCode,
           slts,
           hash,
         };
@@ -195,8 +202,9 @@ export function MintModuleTokens({
   const canMint = hasAccessToken && hasModules;
 
   // Check if any modules are missing SLTs
+  // App-level CourseModule has flattened slts field (not nested in content)
   const modulesWithoutSlts = courseModules.filter(
-    (courseModule) => !courseModule.content?.slts || courseModule.content?.slts.length === 0
+    (courseModule) => !courseModule.slts || courseModule.slts.length === 0
   );
 
   return (
@@ -257,7 +265,7 @@ export function MintModuleTokens({
             <div className="text-xs">
               <AndamioText variant="small" className="font-medium text-warning-foreground">Some modules have no SLTs</AndamioText>
               <AndamioText variant="small">
-                {modulesWithoutSlts.map((m) => m.content?.course_module_code).join(", ")} need Student Learning Targets before minting.
+                {modulesWithoutSlts.map((m) => m.moduleCode).join(", ")} need Student Learning Targets before minting.
               </AndamioText>
             </div>
           </div>

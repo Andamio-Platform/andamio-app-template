@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardFooter, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { type FlattenedCourseListItem } from "~/hooks/api";
+import { type Course } from "~/hooks/api";
 import {
   CourseStatusBadge,
   CourseStatusIcon,
@@ -12,7 +12,7 @@ import {
 } from "./course-ui";
 
 interface CourseGridViewProps {
-  courses: FlattenedCourseListItem[];
+  courses: Course[];
   moduleCounts: Record<string, number>;
 }
 
@@ -25,7 +25,7 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {courses.map((courseData) => {
-        const courseId = courseData.course_id ?? "";
+        const courseId = courseData.courseId ?? "";
         const title = typeof courseData.title === "string" ? courseData.title : "";
         const description = typeof courseData.description === "string" ? courseData.description : "";
         return (

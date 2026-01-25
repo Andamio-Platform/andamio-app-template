@@ -80,7 +80,7 @@ export function OwnedCoursesList() {
         </AndamioTableHeader>
         <AndamioTableBody>
           {courses.map((course) => {
-            const courseId = course.course_id ?? "";
+            const courseId = course.courseId ?? "";
             const title = typeof course.title === "string" ? course.title : "";
             const description = typeof course.description === "string" ? course.description : "";
             return (

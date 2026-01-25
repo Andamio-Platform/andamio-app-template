@@ -85,8 +85,8 @@ export default function CoursePage() {
           </AndamioTableHeader>
           <AndamioTableBody>
             {courses.map((course, index) => {
-              // Flattened course data from hook - direct access to fields
-              const courseId = course.course_id;
+              // App-level Course type from hook - camelCase fields
+              const courseId = course.courseId;
               const title = course.title;
               const description = course.description;
 
@@ -150,14 +150,12 @@ export default function CoursePage() {
                         <div className="flex items-center justify-center gap-1.5">
                           <PendingIcon className="h-4 w-4 text-warning" />
                           <AndamioBadge variant="outline" className="text-warning border-warning/30">
-                            {course.source === "db_only" ? "Draft" : "Unknown"}
+                            Draft
                           </AndamioBadge>
                         </div>
                       </AndamioTooltipTrigger>
                       <AndamioTooltipContent>
-                        {course.source === "db_only"
-                          ? "Not yet published on-chain"
-                          : `Source: ${course.source ?? "unknown"}`}
+                        Not yet published on-chain
                       </AndamioTooltipContent>
                     </AndamioTooltip>
                   )}

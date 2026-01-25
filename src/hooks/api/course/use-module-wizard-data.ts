@@ -43,6 +43,11 @@ export function useModuleWizardData({
 }: UseModuleWizardDataProps): UseModuleWizardDataReturn {
   const { authenticatedFetch } = useAndamioAuth();
 
+  // Use ref for callback to prevent dependency loop
+  // The callback can change without triggering refetch
+  const onDataLoadedRef = useRef(onDataLoaded);
+  onDataLoadedRef.current = onDataLoaded;
+
   const [data, setData] = useState<WizardData>({
     course: null,
     courseModule: null,
@@ -88,7 +93,7 @@ export function useModuleWizardData({
         });
 
         hasLoadedRef.current = true;
-        onDataLoaded?.(course, null);
+        onDataLoadedRef.current?.(course, null);
       } catch (err) {
         console.error("Error fetching course:", err);
         setData((prev) => ({
@@ -129,9 +134,23 @@ export function useModuleWizardData({
         const result = await modulesResponse.json() as { data?: CourseModuleListResponse } | CourseModuleListResponse;
         // Handle both wrapped { data: [...] } and raw array formats
         modules = Array.isArray(result) ? result : (result.data ?? []);
+        // Debug: Log modules to diagnose empty list issue
+        console.log("[useModuleWizardData] Modules from API:", {
+          effectiveModuleCode,
+          modulesCount: modules.length,
+          moduleCodes: modules.map((m) => m.content?.course_module_code),
+          rawResult: result,
+        });
+      } else {
+        console.error("[useModuleWizardData] Failed to fetch modules:", modulesResponse.status, modulesResponse.statusText);
       }
       // Find the merged module item and extract its content with slt_hash
       const mergedModuleItem = modules.find((m) => m.content?.course_module_code === effectiveModuleCode);
+      console.log("[useModuleWizardData] Found module:", {
+        effectiveModuleCode,
+        found: !!mergedModuleItem,
+        mergedModuleItem,
+      });
       const courseModule = mergedModuleItem?.content
         ? { ...mergedModuleItem.content, slt_hash: mergedModuleItem.slt_hash }
         : null;
@@ -201,7 +220,7 @@ export function useModuleWizardData({
       });
 
       hasLoadedRef.current = true;
-      onDataLoaded?.(course, courseModule);
+      onDataLoadedRef.current?.(course, courseModule);
     } catch (err) {
       console.error("Error fetching data:", err);
       setData((prev) => ({
@@ -210,7 +229,7 @@ export function useModuleWizardData({
         error: err instanceof Error ? err.message : "Failed to load",
       }));
     }
-  }, [courseNftPolicyId, moduleCode, isNewModule, onDataLoaded, authenticatedFetch]);
+  }, [courseNftPolicyId, moduleCode, isNewModule, authenticatedFetch]);
 
   // Fetch data on mount
   useEffect(() => {

@@ -133,14 +133,14 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
 
   // Group by course
   const byCourse = pendingAssessments.reduce((acc, assessment) => {
-    const existing = acc.get(assessment.course_id);
+    const existing = acc.get(assessment.courseId);
     if (existing) {
       existing.count++;
     } else {
-      acc.set(assessment.course_id, { course_id: assessment.course_id, count: 1 });
+      acc.set(assessment.courseId, { courseId: assessment.courseId, count: 1 });
     }
     return acc;
-  }, new Map<string, { course_id: string; count: number }>());
+  }, new Map<string, { courseId: string; count: number }>());
 
   const courseGroups = Array.from(byCourse.values());
 
@@ -175,14 +175,14 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
         <div className="space-y-1.5">
           {courseGroups.slice(0, 3).map((group) => (
             <Link
-              key={group.course_id}
-              href={`/studio/course/${group.course_id}/instructor`}
+              key={group.courseId}
+              href={`/studio/course/${group.courseId}/instructor`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <TeacherIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <code className="text-xs font-mono truncate">
-                  {group.course_id.slice(0, 16)}...
+                  {group.courseId.slice(0, 16)}...
                 </code>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">

@@ -72,8 +72,8 @@ export default function DraftTasksPage() {
         throw new Error("Failed to fetch project");
       }
 
-      const projectData = await projectResponse.json() as { states?: Array<{ project_state_policy_id?: string }> };
-      const statePolicyId = projectData.states?.[0]?.project_state_policy_id;
+      const projectData = await projectResponse.json() as { states?: Array<{ projectNftPolicyId?: string }> };
+      const statePolicyId = projectData.states?.[0]?.projectNftPolicyId;
 
       if (!statePolicyId) {
         // No states yet - empty state
@@ -257,9 +257,9 @@ export default function DraftTasksPage() {
   }
 
   // Separate tasks by status
-  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
-  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN");
-  const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.task_status ?? ""));
+  const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT");
+  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+  const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.taskStatus ?? ""));
 
   return (
     <div className="space-y-6">
@@ -347,7 +347,7 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {draftTasks.map((task, index) => {
-                  const taskHash = typeof task.task_hash === "string" ? task.task_hash : null;
+                  const taskHash = typeof task.taskHash === "string" ? task.taskHash : null;
                   const taskIndex = task.index ?? 0;
                   const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
                   return (
@@ -355,10 +355,10 @@ export default function DraftTasksPage() {
                       <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
                       <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(task.lovelace_amount ?? 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount ?? 0)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant={getStatusVariant(task.task_status ?? "")}>{task.task_status}</AndamioBadge>
+                        <AndamioBadge variant={getStatusVariant(task.taskStatus ?? "")}>{task.taskStatus}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-right">
                         <AndamioRowActions
@@ -397,7 +397,7 @@ export default function DraftTasksPage() {
               <AndamioTableBody>
                 {liveTasks.map((task) => {
                   // NullableString types are generated as `object`, cast to unknown first for type check
-                  const rawHash = task.task_hash as unknown;
+                  const rawHash = task.taskHash as unknown;
                   const rawTitle = task.title as unknown;
                   const taskHash = typeof rawHash === "string" ? rawHash : null;
                   const taskIndex = task.index ?? 0;
@@ -417,7 +417,7 @@ export default function DraftTasksPage() {
                         {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant="default" className="bg-success text-success-foreground">
@@ -450,7 +450,7 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {otherTasks.map((task) => {
-                  const taskHash = typeof task.task_hash === "string" ? task.task_hash : null;
+                  const taskHash = typeof task.taskHash === "string" ? task.taskHash : null;
                   const taskIndex = task.index ?? 0;
                   const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
                   return (
@@ -458,10 +458,10 @@ export default function DraftTasksPage() {
                       <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
                       <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(task.lovelace_amount ?? 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount ?? 0)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant={getStatusVariant(task.task_status ?? "")}>{task.task_status}</AndamioBadge>
+                        <AndamioBadge variant={getStatusVariant(task.taskStatus ?? "")}>{task.taskStatus}</AndamioBadge>
                       </AndamioTableCell>
                     </AndamioTableRow>
                   );

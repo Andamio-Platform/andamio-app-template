@@ -522,7 +522,7 @@ export default function SitemapPage() {
                     category.category === "Contributor Project Pages" &&
                     examplePublishedProject
                   ) {
-                    const projectid = examplePublishedProject.project_id;
+                    const projectid = examplePublishedProject.projectId;
                     if (projectid) {
                       if (route.path === "/project/[projectid]") {
                         exampleUrl = `/project/${projectid}`;
@@ -538,7 +538,7 @@ export default function SitemapPage() {
                     category.category === "Creator Studio Project Pages" &&
                     exampleOwnedProject
                   ) {
-                    const projectid = exampleOwnedProject.project_id;
+                    const projectid = exampleOwnedProject.projectId;
                     if (projectid) {
                       if (route.path === "/studio/project/[projectid]") {
                         exampleUrl = `/studio/project/${projectid}`;

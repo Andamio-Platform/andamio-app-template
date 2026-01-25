@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SuccessIcon, PendingIcon, NeutralIcon, NextIcon, DeleteIcon } from "~/components/icons";
-import { type CourseModuleResponse } from "~/types/generated";
+import { type CourseModule } from "~/hooks/api/course/use-course-module";
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -98,7 +98,8 @@ function ModuleStatusText({ status }: { status: string }) {
 // =============================================================================
 
 export interface StudioModuleCardProps {
-  courseModule: CourseModuleResponse;
+  /** Course module data (app-level type with camelCase fields) */
+  courseModule: CourseModule;
   courseNftPolicyId: string;
   /** Show the module status text */
   showStatus?: boolean;
@@ -121,9 +122,10 @@ export function StudioModuleCard({
   onDelete,
   isDeleting = false,
 }: StudioModuleCardProps) {
+  // Use camelCase fields from CourseModule (app-level type)
   const sltCount = courseModule.slts?.length ?? 0;
-  const status = courseModule.module_status ?? "DRAFT";
-  const moduleCode = courseModule.course_module_code ?? "";
+  const status = courseModule.status ?? "DRAFT";
+  const moduleCode = courseModule.moduleCode ?? "";
   const description = typeof courseModule.description === "string" ? courseModule.description : "";
   // Only allow delete for DRAFT modules (not minted or pending)
   const canDelete = onDelete && status === "DRAFT";

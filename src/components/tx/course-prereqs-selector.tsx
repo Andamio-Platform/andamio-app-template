@@ -64,7 +64,7 @@ export function CoursePrereqsSelector({
   const selectedCourses = useMemo(() => {
     const coursesMap: SelectedCourse[] = [];
     for (const [courseId, moduleHashes] of value) {
-      const course = courses?.find((c) => c.course_id === courseId);
+      const course = courses?.find((c) => c.courseId === courseId);
       coursesMap.push({
         courseId,
         courseName: course ? `Course ${courseId.slice(0, 8)}...` : courseId.slice(0, 8) + "...",
@@ -78,13 +78,13 @@ export function CoursePrereqsSelector({
   const availableCourses = useMemo(() => {
     if (!courses) return [];
     const selectedIds = new Set(value.map(([id]) => id));
-    return courses.filter((c) => !selectedIds.has(c.course_id) && c.modules.length > 0);
+    return courses.filter((c) => !selectedIds.has(c.courseId) && c.modules.length > 0);
   }, [courses, value]);
 
   // Get the currently selected course for adding
   const courseToAdd = useMemo(() => {
     if (!selectedCourseId || !courses) return null;
-    return courses.find((c) => c.course_id === selectedCourseId);
+    return courses.find((c) => c.courseId === selectedCourseId);
   }, [selectedCourseId, courses]);
 
   // Handle adding a course with selected modules
@@ -141,7 +141,7 @@ export function CoursePrereqsSelector({
       {selectedCourses.length > 0 && (
         <div className="space-y-3">
           {selectedCourses.map((selected) => {
-            const course = courses?.find((c) => c.course_id === selected.courseId);
+            const course = courses?.find((c) => c.courseId === selected.courseId);
             return (
               <div
                 key={selected.courseId}
@@ -177,13 +177,13 @@ export function CoursePrereqsSelector({
                     <div className="grid gap-2">
                       {course.modules.map((courseModule, idx) => (
                         <label
-                          key={courseModule.assignment_id}
+                          key={courseModule.assignmentId}
                           className="flex items-center gap-2 cursor-pointer"
                         >
                           <Checkbox
-                            checked={selected.selectedModules.includes(courseModule.assignment_id)}
+                            checked={selected.selectedModules.includes(courseModule.assignmentId)}
                             onCheckedChange={() =>
-                              handleToggleModule(selected.courseId, courseModule.assignment_id)
+                              handleToggleModule(selected.courseId, courseModule.assignmentId)
                             }
                             disabled={disabled}
                           />
@@ -192,7 +192,7 @@ export function CoursePrereqsSelector({
                             Module {idx + 1}
                           </span>
                           <AndamioBadge variant="secondary" className="font-mono text-xs">
-                            {courseModule.assignment_id.slice(0, 8)}...
+                            {courseModule.assignmentId.slice(0, 8)}...
                           </AndamioBadge>
                           <span className="text-xs text-muted-foreground">
                             ({courseModule.slts.length} SLTs)
@@ -229,11 +229,11 @@ export function CoursePrereqsSelector({
               </SelectTrigger>
               <SelectContent>
                 {availableCourses.map((course) => (
-                  <SelectItem key={course.course_id} value={course.course_id}>
+                  <SelectItem key={course.courseId} value={course.courseId}>
                     <div className="flex items-center gap-2">
                       <CourseIcon className="h-4 w-4" />
                       <span className="font-mono text-xs">
-                        {course.course_id.slice(0, 12)}...
+                        {course.courseId.slice(0, 12)}...
                       </span>
                       <span className="text-muted-foreground">
                         ({course.modules.length} modules)
@@ -273,9 +273,9 @@ export function CoursePrereqsSelector({
 // Sub-component for selecting modules from a course
 interface ModuleSelectorProps {
   course: {
-    course_id: string;
+    courseId: string;
     modules: Array<{
-      assignment_id: string;
+      assignmentId: string;
       slts: string[];
     }>;
   };
@@ -295,7 +295,7 @@ function ModuleSelector({ course, onAdd, disabled }: ModuleSelectorProps) {
   };
 
   const handleSelectAll = () => {
-    setSelectedModules(course.modules.map((m) => m.assignment_id));
+    setSelectedModules(course.modules.map((m) => m.assignmentId));
   };
 
   const handleAdd = () => {
@@ -323,18 +323,18 @@ function ModuleSelector({ course, onAdd, disabled }: ModuleSelectorProps) {
       <div className="grid gap-2">
         {course.modules.map((courseModule, idx) => (
           <label
-            key={courseModule.assignment_id}
+            key={courseModule.assignmentId}
             className="flex items-center gap-2 cursor-pointer"
           >
             <Checkbox
-              checked={selectedModules.includes(courseModule.assignment_id)}
-              onCheckedChange={() => handleToggle(courseModule.assignment_id)}
+              checked={selectedModules.includes(courseModule.assignmentId)}
+              onCheckedChange={() => handleToggle(courseModule.assignmentId)}
               disabled={disabled}
             />
             <ModuleIcon className="h-3 w-3 text-muted-foreground" />
             <span className="text-sm">Module {idx + 1}</span>
             <AndamioBadge variant="secondary" className="font-mono text-xs">
-              {courseModule.assignment_id.slice(0, 8)}...
+              {courseModule.assignmentId.slice(0, 8)}...
             </AndamioBadge>
             <span className="text-xs text-muted-foreground">
               ({courseModule.slts.length} SLTs)

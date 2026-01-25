@@ -15,7 +15,7 @@ export type CourseFilter = {
 };
 
 // Sort options (using only available API fields)
-export type CourseSortField = "title" | "course_id" | "moduleCount";
+export type CourseSortField = "title" | "courseId" | "moduleCount";
 export type CourseSortDirection = "asc" | "desc";
 export type CourseSortConfig = {
   field: CourseSortField;
@@ -52,7 +52,7 @@ export function filterCourses(
     if (filter.search) {
       const searchLower = filter.search.toLowerCase();
       const title = getStringValue(courseData.title);
-      const courseId = courseData.course_id ?? "";
+      const courseId = courseData.courseId ?? "";
       const description = getStringValue(courseData.description);
       const matchesSearch =
         title.toLowerCase().includes(searchLower) ||
@@ -99,15 +99,15 @@ export function sortCourses(
         compareValue = aTitle.localeCompare(bTitle);
         break;
       }
-      case "course_id": {
-        const aId = a.course_id ?? "";
-        const bId = b.course_id ?? "";
+      case "courseId": {
+        const aId = a.courseId ?? "";
+        const bId = b.courseId ?? "";
         compareValue = aId.localeCompare(bId);
         break;
       }
       case "moduleCount": {
-        const aCount = moduleCounts[a.course_id ?? ""] ?? 0;
-        const bCount = moduleCounts[b.course_id ?? ""] ?? 0;
+        const aCount = moduleCounts[a.courseId ?? ""] ?? 0;
+        const bCount = moduleCounts[b.courseId ?? ""] ?? 0;
         compareValue = aCount - bCount;
         break;
       }

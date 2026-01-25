@@ -52,8 +52,7 @@ import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
-import type { CourseModuleResponse } from "~/types/generated";
-import type { MergedCourseModule } from "~/hooks/api";
+import type { CourseModule } from "~/hooks/api";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 
 // =============================================================================
@@ -91,9 +90,9 @@ interface HybridModule {
   /** Whether there's a hash mismatch (SLTs match but hashes don't) */
   hashMismatch: boolean;
   /** Database record (if exists) */
-  dbModule: CourseModuleResponse | null;
+  dbModule: CourseModule | null;
   /** On-chain data (if exists) */
-  onChainModule: MergedCourseModule | null;
+  onChainModule: CourseModule | null;
   /** SLTs from database */
   dbSlts: string[];
   /** SLTs from on-chain (source of truth when on-chain) */
@@ -229,12 +228,12 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
 
   // Helper to get sorted SLT texts from a DB module
-  const getDbSlts = (dbModule: CourseModuleResponse): string[] => {
+  const getDbSlts = (dbModule: CourseModule): string[] => {
     if (!dbModule.slts || dbModule.slts.length === 0) return [];
-    // API v2.0.0+: slt_index is 1-based
+    // API v2.0.0+: moduleIndex is 1-based
     return [...dbModule.slts]
-      .sort((a, b) => (a.slt_index ?? 1) - (b.slt_index ?? 1))
-      .map((slt) => slt.slt_text)
+      .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
+      .map((slt) => slt.sltText)
       .filter((text): text is string => typeof text === "string");
   };
 
@@ -255,54 +254,54 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       const dbComputedHash = dbSlts.length > 0 ? computeSltHashDefinite(dbSlts) : null;
 
       // Try to find matching on-chain module
-      let matchedOnChain: MergedCourseModule | null = null;
+      let matchedOnChain: CourseModule | null = null;
       let matchType: MatchType = "none";
       let hashMismatch = false;
 
       // First, try hash match (using stored hash)
-      if (dbModule.slt_hash) {
+      if (dbModule.sltHash) {
         const hashMatch = onChainModules.find(
-          (m) => m.slt_hash === dbModule.slt_hash
+          (m) => m.sltHash === dbModule.sltHash
         );
-        if (hashMatch?.slt_hash) {
+        if (hashMatch?.sltHash) {
           matchedOnChain = hashMatch;
           matchType = "hash";
-          matchedOnChainIds.add(hashMatch.slt_hash);
+          matchedOnChainIds.add(hashMatch.sltHash);
         }
       }
 
       // If no hash match, try computed hash match
       if (!matchedOnChain && dbComputedHash) {
         const computedHashMatch = onChainModules.find(
-          (m) => m.slt_hash === dbComputedHash
+          (m) => m.sltHash === dbComputedHash
         );
-        if (computedHashMatch?.slt_hash && !matchedOnChainIds.has(computedHashMatch.slt_hash)) {
+        if (computedHashMatch?.sltHash && !matchedOnChainIds.has(computedHashMatch.sltHash)) {
           matchedOnChain = computedHashMatch;
           matchType = "hash";
-          matchedOnChainIds.add(computedHashMatch.slt_hash);
+          matchedOnChainIds.add(computedHashMatch.sltHash);
         }
       }
 
       // If still no match, try SLT content matching
       if (!matchedOnChain && dbSlts.length > 0) {
         for (const onChainModule of onChainModules) {
-          if (!onChainModule.slt_hash || matchedOnChainIds.has(onChainModule.slt_hash)) continue;
+          if (!onChainModule.sltHash || matchedOnChainIds.has(onChainModule.sltHash)) continue;
 
-          if (sltsMatch(dbSlts, onChainModule.on_chain_slts ?? [])) {
+          if (sltsMatch(dbSlts, onChainModule.onChainSlts ?? [])) {
             matchedOnChain = onChainModule;
             matchType = "slt-content";
             hashMismatch = true; // SLTs match but hashes don't
-            matchedOnChainIds.add(onChainModule.slt_hash);
+            matchedOnChainIds.add(onChainModule.sltHash);
             break;
           }
         }
       }
 
       result.push({
-        moduleCode: dbModule.course_module_code ?? "",
-        dbStoredHash: typeof dbModule.slt_hash === "string" ? dbModule.slt_hash : null,
+        moduleCode: dbModule.moduleCode ?? "",
+        dbStoredHash: typeof dbModule.sltHash === "string" ? dbModule.sltHash : null,
         dbComputedHash,
-        onChainHash: matchedOnChain?.slt_hash ?? null,
+        onChainHash: matchedOnChain?.sltHash ?? null,
         title: typeof dbModule.title === "string" ? dbModule.title : null,
         syncStatus: matchedOnChain ? "synced" : "db-only",
         matchType,
@@ -310,13 +309,13 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         dbModule,
         onChainModule: matchedOnChain,
         dbSlts,
-        onChainSlts: matchedOnChain?.on_chain_slts ?? [],
+        onChainSlts: matchedOnChain?.onChainSlts ?? [],
       });
     }
 
     // Step 2: Add any unmatched on-chain modules (orphans)
     for (const onChainModule of onChainModules) {
-      const moduleHash = onChainModule.slt_hash;
+      const moduleHash = onChainModule.sltHash;
       if (!moduleHash || matchedOnChainIds.has(moduleHash)) continue;
 
       result.push({
@@ -331,7 +330,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
         dbModule: null,
         onChainModule,
         dbSlts: [],
-        onChainSlts: onChainModule.on_chain_slts ?? [],
+        onChainSlts: onChainModule.onChainSlts ?? [],
       });
     }
 
@@ -347,7 +346,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // Modules that are APPROVED in DB but NOT yet on-chain (truly ready to mint)
   const modulesReadyToMint = useMemo(() =>
     modules.filter((m) =>
-      m.module_status === "APPROVED" && !syncedModuleCodes.has(m.course_module_code ?? "")
+      m.status === "APPROVED" && !syncedModuleCodes.has(m.moduleCode ?? "")
     ),
     [modules, syncedModuleCodes]
   );
@@ -364,10 +363,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     dbOnly: hybridModules.filter((m) => m.syncStatus === "db-only").length,
     // Database status breakdown (for modules that exist in DB)
     // Cast status to string to handle extended statuses like APPROVED
-    dbOnChain: modules.filter((m) => m.module_status === "ON_CHAIN").length,
-    dbPending: modules.filter((m) => m.module_status === "PENDING_TX").length,
-    dbApproved: modules.filter((m) => m.module_status === "APPROVED").length,
-    dbDraft: modules.filter((m) => m.module_status === "DRAFT").length,
+    dbOnChain: modules.filter((m) => m.status === "ON_CHAIN").length,
+    dbPending: modules.filter((m) => m.status === "PENDING_TX").length,
+    dbApproved: modules.filter((m) => m.status === "APPROVED").length,
+    dbDraft: modules.filter((m) => m.status === "DRAFT").length,
     // Truly ready to mint: APPROVED but not yet on-chain
     readyToMint: modulesReadyToMint.length,
   }), [hybridModules, modules, modulesReadyToMint]);
@@ -422,7 +421,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     if (course && !formInitialized) {
       setFormTitle(course.title ?? "");
       setFormDescription(course.description ?? "");
-      setFormImageUrl(course.image_url ?? "");
+      setFormImageUrl(course.imageUrl ?? "");
       // Note: video_url not available in merged OrchestrationCourseContent
       setFormVideoUrl("");
       setFormInitialized(true);
@@ -521,7 +520,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const hasChanges = course && (
     formTitle !== (course.title ?? "") ||
     formDescription !== (course.description ?? "") ||
-    formImageUrl !== (course.image_url ?? "") ||
+    formImageUrl !== (course.imageUrl ?? "") ||
     formVideoUrl !== ""
   );
 
@@ -561,7 +560,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     <span className="text-xs font-mono text-muted-foreground">
                       {courseNftPolicyId.slice(0, 12) + "..."}
                     </span>
-                    {course.course_id && (
+                    {course.courseId && (
                       <AndamioBadge variant="default" className="text-[10px]">
                         <OnChainIcon className="h-2.5 w-2.5 mr-1" />
                         Published
@@ -609,7 +608,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
                     {courseNftPolicyId.slice(0, 12) + "..."}
                   </span>
-                  {course.course_id && (
+                  {course.courseId && (
                     <AndamioBadge variant="default" className="text-[10px]">
                       <OnChainIcon className="h-2.5 w-2.5 mr-1" />
                       Published
@@ -754,12 +753,12 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <div className="space-y-4">
                   {/* Module Cards */}
                   <div className="grid gap-4">
-                    {modules.map((courseModule) => (
+                    {modules.map((courseModule, index) => (
                       <StudioModuleCard
-                        key={courseModule.course_module_code ?? ""}
+                        key={courseModule.sltHash || courseModule.moduleCode || `module-${index}`}
                         courseModule={courseModule}
                         courseNftPolicyId={courseNftPolicyId}
-                        onDelete={() => handleDeleteModule(courseModule.course_module_code ?? "", courseModule.title ?? null)}
+                        onDelete={() => handleDeleteModule(courseModule.moduleCode ?? "", courseModule.title ?? null)}
                         isDeleting={deleteModuleMutation.isPending}
                       />
                     ))}
@@ -1116,7 +1115,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <StudioFormSection title="Course ID">
                 <div className="space-y-2">
                   <AndamioInput
-                    value={course.course_id ?? courseNftPolicyId}
+                    value={course.courseId ?? courseNftPolicyId}
                     disabled
                     className="font-mono"
                   />

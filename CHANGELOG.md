@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Type Transformation Pattern** (January 24, 2026): Created app-level types with snake_case → camelCase transforms
+  - New file: `src/types/project.ts` with `Task`, `Project`, `TaskCommitment` types
+  - Transform functions: `transformApiTask()`, `transformProjectDetail()`, `transformApiCommitment()`, etc.
+  - API taxonomy compliance: `taskHash` (content-addressed), `taskEvidenceHash`, `taskCommitmentStatus`
+  - Documentation: `.claude/dev-notes/TYPE-TRANSFORMATION.md`
+  - 17 files updated to use new app-level types
+
 ### Fixed
 - **Gateway Taxonomy Compliance** (January 21, 2026): Fixed 41 files to handle API field name changes and NullableString typing
   - **Field renames**: `status` → `module_status`/`task_status`/`commitment_status`, `module_code` → `course_module_code`, `module_index` → `index`, `module_hash` → `slt_hash`, `lovelace` → `lovelace_amount`

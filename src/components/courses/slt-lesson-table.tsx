@@ -55,8 +55,8 @@ export function SLTLessonTable({
   onChainModule,
 }: SLTLessonTableProps) {
   // Build set of on-chain SLT texts for quick lookup
-  // Note: on_chain_slts contains SLT hashes/IDs from the chain
-  const onChainSltTexts = new Set(onChainModule?.on_chain_slts ?? []);
+  // Note: onChainSlts contains SLT hashes/IDs from the chain
+  const onChainSltTexts = new Set(onChainModule?.onChainSlts ?? []);
 
   if (data.length === 0) {
     return (

@@ -38,7 +38,7 @@ export default function ProjectCatalogPage() {
 
     // Filter to projects with valid project_id
     const projectsWithId = projects.filter(
-      (p): p is typeof p & { project_id: string } => typeof p.project_id === "string"
+      (p): p is typeof p & { project_id: string } => typeof p.projectId === "string"
     );
 
     if (projectsWithId.length === 0) return;
@@ -49,10 +49,10 @@ export default function ProjectCatalogPage() {
       const results = await Promise.all(
         projectsWithId.map(async (project) => {
           try {
-            const result = await checkProjectEligibility(project.project_id, userAlias);
-            return { projectId: project.project_id, result };
+            const result = await checkProjectEligibility(project.projectId, userAlias);
+            return { projectId: project.projectId, result };
           } catch (err) {
-            console.error(`Error checking eligibility for ${project.project_id}:`, err);
+            console.error(`Error checking eligibility for ${project.projectId}:`, err);
             return null;
           }
         })
@@ -240,30 +240,30 @@ export default function ProjectCatalogPage() {
           </AndamioTableHeader>
           <AndamioTableBody>
             {projects.map((project, index) => {
-              // Handle both merged format (content.title) and legacy format (title at top level)
-              const title = project.content?.title ?? (project as unknown as { title?: string }).title;
+              // App-level Project type has title flattened from content
+              const title = project.title;
 
               return (
-                <AndamioTableRow key={project.project_id ?? title ?? `project-${index}`}>
+                <AndamioTableRow key={project.projectId ?? title ?? `project-${index}`}>
                   <AndamioTableCell>
                     <Link
-                      href={`/project/${project.project_id}`}
+                      href={`/project/${project.projectId}`}
                       className="font-medium hover:underline"
                     >
-                      {title ?? project.project_id?.slice(0, 16) ?? "Untitled"}
+                      {title ?? project.projectId?.slice(0, 16) ?? "Untitled"}
                     </Link>
                   </AndamioTableCell>
                   <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
-                    {project.project_id ? (
-                      <span title={project.project_id}>
-                        {project.project_id.slice(0, 16)}...
+                    {project.projectId ? (
+                      <span title={project.projectId}>
+                        {project.projectId.slice(0, 16)}...
                       </span>
                     ) : (
                       "-"
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
-                    {renderEligibilityBadge(project.project_id)}
+                    {renderEligibilityBadge(project.projectId)}
                   </AndamioTableCell>
                 </AndamioTableRow>
               );

@@ -48,8 +48,8 @@ interface OnChainModuleCardProps {
  * Card displaying a single on-chain module's SLTs
  */
 function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) {
-  const assignmentId = module.slt_hash ?? "";
-  const slts = module.on_chain_slts ?? [];
+  const assignmentId = module.sltHash ?? "";
+  const slts = module.onChainSlts ?? [];
   const truncatedHash = assignmentId
     ? `${assignmentId.slice(0, 8)}...${assignmentId.slice(-8)}`
     : "Unknown";
@@ -127,9 +127,9 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
 
         {/* Module metadata */}
         <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-xs text-muted-foreground">
-          {module.created_by && (
+          {module.createdBy && (
             <div>
-              <span className="font-medium">Created by:</span> {module.created_by}
+              <span className="font-medium">Created by:</span> {module.createdBy}
             </div>
           )}
           {module.prerequisites && module.prerequisites.length > 0 && (
@@ -211,7 +211,7 @@ export function OnChainSltsViewer({
 
   // Filter to specific module if hash provided
   const modulesToShow = moduleHash
-    ? onChainModules.filter((m) => m.slt_hash === moduleHash)
+    ? onChainModules.filter((m) => m.sltHash === moduleHash)
     : onChainModules;
 
   if (moduleHash && modulesToShow.length === 0) {
@@ -229,7 +229,7 @@ export function OnChainSltsViewer({
     <div className="space-y-4">
       {modulesToShow.map((courseModule, index) => (
         <OnChainModuleCard
-          key={courseModule.slt_hash ?? index}
+          key={courseModule.sltHash ?? index}
           module={courseModule}
           compact={compact}
         />
@@ -258,7 +258,7 @@ export function OnChainSltsBadge({
   }
 
   const totalSlts = onChainModules.reduce(
-    (sum: number, m) => sum + (m.on_chain_slts?.length ?? 0),
+    (sum: number, m) => sum + (m.onChainSlts?.length ?? 0),
     0
   );
 

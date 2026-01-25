@@ -322,6 +322,7 @@ src/types/
 ├── generated/
 │   ├── gateway.ts     # Raw auto-generated (never import directly)
 │   └── index.ts       # Clean exports (import from here)
+├── project.ts         # App-level types (Task, Project, TaskCommitment) + transforms
 ├── ui.ts              # Shared UI patterns (NavItem, IconComponent, etc.)
 └── transaction.ts     # Client-side transaction flow
 
@@ -330,14 +331,19 @@ src/config/
 └── transaction-ui.ts        # TX types, endpoints, strings
 
 src/lib/
-├── type-helpers.ts    # getString, getOptionalString
+├── type-helpers.ts    # getString, getOptionalString (deprecated - use app types)
 └── andamioscan-events.ts    # On-chain event types
 ```
+
+**Type transformation docs**: `.claude/dev-notes/TYPE-TRANSFORMATION.md`
 
 ### Common Type Imports
 
 ```typescript
-// API response types
+// App-level types (preferred for projects/tasks/commitments)
+import { type Task, type Project, type TaskCommitment, transformApiTask } from "~/types/project";
+
+// API response types (for raw API access)
 import { type CourseResponse, type ProjectV2Output } from "~/types/generated";
 
 // UI pattern types
@@ -346,7 +352,7 @@ import type { NavItem, IconComponent, StepItem } from "~/types/ui";
 // Zod schemas and inferred types
 import { txSchemas, type TxParams } from "~/config/transaction-schemas";
 
-// Type helpers for NullableString
+// Type helpers (deprecated - use app types instead)
 import { getString, getOptionalString } from "~/lib/type-helpers";
 ```
 

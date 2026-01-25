@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { OrchestrationMergedCourseListItem, MergedHandlersMergedCoursesResponse } from "~/types/generated";
-import { flattenCourseListItem, type FlattenedCourseListItem } from "./use-course";
+import { transformCourse, type Course } from "./use-course";
 
 /**
  * useOwnedCourses - Fetches owned courses with module counts
@@ -25,9 +25,8 @@ import { flattenCourseListItem, type FlattenedCourseListItem } from "./use-cours
 export interface UseOwnedCoursesResult {
   /**
    * List of owned courses (empty array until loaded)
-   * Uses flattened format for backward compatibility with UI components
    */
-  courses: FlattenedCourseListItem[];
+  courses: Course[];
 
   /**
    * Module counts per course code
@@ -52,7 +51,7 @@ export interface UseOwnedCoursesResult {
 
 export function useOwnedCourses(): UseOwnedCoursesResult {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
-  const [courses, setCourses] = useState<FlattenedCourseListItem[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +89,8 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       // Handle both wrapped { data: [...] } and raw array formats
       const items = Array.isArray(result) ? result : (result.data ?? []);
 
-      // Flatten to backward-compatible format for UI components
-      const data = items.map(flattenCourseListItem);
+      // Transform to app-level types with camelCase fields
+      const data = items.map(transformCourse);
       setCourses(data);
 
       // Fetch module counts for all courses using batch endpoint
@@ -99,7 +98,7 @@ export function useOwnedCourses(): UseOwnedCoursesResult {
       if (data && data.length > 0) {
         try {
           const courseIds = data
-            .map((c) => c.course_id)
+            .map((c) => c.courseId)
             .filter((id): id is string => id !== null && id !== undefined);
 
           if (courseIds.length > 0) {

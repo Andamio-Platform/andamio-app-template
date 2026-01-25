@@ -91,7 +91,7 @@ export default function EditTaskPage() {
         }
 
         const project = (await projectResponse.json()) as ProjectV2Output;
-        const rawStatePolicyId = project.states?.[0]?.project_state_policy_id;
+        const rawStatePolicyId = project.states?.[0]?.projectNftPolicyId;
         const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
 
         if (!statePolicyId) {
@@ -122,16 +122,16 @@ export default function EditTaskPage() {
           throw new Error("Task not found");
         }
 
-        if (taskData.task_status !== "DRAFT") {
+        if (taskData.taskStatus !== "DRAFT") {
           throw new Error("Only DRAFT tasks can be edited");
         }
 
         setTask(taskData);
         setTitle(taskData.title ?? "");
-        setContent(typeof taskData.content === "string" ? taskData.content : "");
-        setLovelace(taskData.lovelace_amount ?? "");
-        setExpirationTime(taskData.expiration_time ?? "");
-        setContentJson((taskData.content_json as JSONContent) ?? null);
+        setContent(taskData.description ?? "");
+        setLovelace(taskData.lovelaceAmount ?? "");
+        setExpirationTime(taskData.expirationTime ?? "");
+        setContentJson((taskData.contentJson as JSONContent) ?? null);
       } catch (err) {
         console.error("Error fetching task:", err);
         setLoadError(err instanceof Error ? err.message : "Failed to load task");

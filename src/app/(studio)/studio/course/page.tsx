@@ -79,7 +79,7 @@ export default function StudioCourseListPage() {
     return courses.filter(
       (c) =>
         c.title?.toLowerCase().includes(query) ||
-        c.course_id.toLowerCase().includes(query)
+        c.courseId.toLowerCase().includes(query)
     );
   }, [courses, searchQuery]);
 
@@ -89,7 +89,7 @@ export default function StudioCourseListPage() {
 
   // Get selected course
   const selectedCourse = useMemo(
-    () => courses.find((c) => c.course_id === selectedCourseId) ?? null,
+    () => courses.find((c) => c.courseId === selectedCourseId) ?? null,
     [courses, selectedCourseId]
   );
 
@@ -160,10 +160,10 @@ export default function StudioCourseListPage() {
 
               {filteredCourses.map((course) => (
                 <CourseListItem
-                  key={course.course_id}
+                  key={course.courseId}
                   course={course}
-                  isSelected={course.course_id === selectedCourseId}
-                  onClick={() => setSelectedCourseId(course.course_id)}
+                  isSelected={course.courseId === selectedCourseId}
+                  onClick={() => setSelectedCourseId(course.courseId)}
                 />
               ))}
 
@@ -259,7 +259,7 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] text-muted-foreground font-mono truncate">
-            {course.course_id.slice(0, 8)}…{course.course_id.slice(-6)}
+            {course.courseId.slice(0, 8)}…{course.courseId.slice(-6)}
           </span>
           {isOnChain && (
             <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-background/50">
@@ -298,14 +298,14 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
   // Fetch modules for this course using teacher endpoint (returns drafts too)
   const { data: modules = [], isLoading: isLoadingModules } = useTeacherCourseModules(
-    hasDbContent ? course.course_id : undefined
+    hasDbContent ? course.courseId : undefined
   );
 
   // Module stats
   const moduleStats = useMemo(() => {
     const total = modules.length;
-    const onChain = modules.filter((m) => m.module_status === "ON_CHAIN").length;
-    const draft = modules.filter((m) => m.module_status === "DRAFT").length;
+    const onChain = modules.filter((m) => m.status === "ON_CHAIN").length;
+    const draft = modules.filter((m) => m.status === "DRAFT").length;
     const approved = 0; // APPROVED status no longer exists
     const totalSlts = modules.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
     return { total, onChain, draft, approved, totalSlts };
@@ -323,7 +323,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           </AndamioText>
           <div className="mt-4">
             <RegisterCourseDrawer
-              courseId={course.course_id}
+              courseId={course.courseId}
               onSuccess={onImportSuccess}
             />
           </div>
@@ -403,7 +403,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           <AndamioButton
             size="lg"
             className="px-8 h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
-            onClick={() => router.push(`/studio/course/${course.course_id}`)}
+            onClick={() => router.push(`/studio/course/${course.courseId}`)}
           >
             Open Course
             <NextIcon className="h-5 w-5 ml-2" />
@@ -412,7 +412,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           {/* Secondary Actions */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <Link
-              href={`/course/${course.course_id}`}
+              href={`/course/${course.courseId}`}
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <PreviewIcon className="h-3.5 w-3.5" />
@@ -420,7 +420,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
             </Link>
             {isOnChain && (
               <a
-                href={`https://preprod.cardanoscan.io/token/${course.course_id}`}
+                href={`https://preprod.cardanoscan.io/token/${course.courseId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -438,11 +438,13 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
                 Modules
               </AndamioText>
               <ul className="space-y-1.5 text-left">
-                {modules.map((courseModule) => {
-                  const moduleCode = courseModule.course_module_code ?? "";
+                {modules.map((courseModule, index) => {
+                  const moduleCode = courseModule.moduleCode ?? "";
                   const title = typeof courseModule.title === "string" ? courseModule.title : "";
+                  // Use sltHash (unique on-chain identifier), fall back to moduleCode, then index
+                  const key = courseModule.sltHash || moduleCode || `module-${index}`;
                   return (
-                    <li key={moduleCode} className="text-sm text-foreground/80">
+                    <li key={key} className="text-sm text-foreground/80">
                       <span className="font-mono text-primary/80">{moduleCode}</span>
                       {title && (
                         <span className="text-muted-foreground ml-2">— {title}</span>
@@ -456,7 +458,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
           {/* Course Team Card */}
           <CourseTeachersCard
-            courseNftPolicyId={course.course_id}
+            courseNftPolicyId={course.courseId}
             className="mt-8 max-w-sm mx-auto text-left"
           />
         </div>

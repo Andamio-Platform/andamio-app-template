@@ -1,6 +1,6 @@
 # Andamio Template Transaction Components
 
-> Last Updated: January 18, 2026
+> Last Updated: January 24, 2026
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
@@ -254,10 +254,19 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 
 **Note**: `project-enroll.tsx` is **deprecated** - use `task-commit.tsx` for all commit scenarios.
 
+**Reward Distribution**:
+- **Continue contributing (COMMIT)**: Rewards from previous approved task claimed automatically, contributor stays enrolled
+- **Leave project (CLAIM)**: Rewards claimed, contributor unenrolled, credential minted
+
+**UI States**:
+| State | Available Actions |
+|-------|-------------------|
+| Not enrolled | COMMIT ("Enroll & Commit") |
+| Committed (pending review) | ACTION ("Update Evidence" or "Cancel") |
+| Task approved | COMMIT (next task) or CLAIM (leave with credential) |
+
 **Used In**:
 - `/project/[projectid]/contributor` - Contributor dashboard
-
-**See Also**: `.claude/skills/project-manager/CONTRIBUTOR-TRANSACTION-MODEL.md` for full documentation
 
 ---
 

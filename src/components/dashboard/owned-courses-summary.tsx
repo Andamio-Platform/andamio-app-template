@@ -144,14 +144,14 @@ export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryPro
         <div className="space-y-1.5">
           {ownedCourses.slice(0, 3).map((course) => (
             <Link
-              key={course.course_id}
-              href={`/studio/course/${course.course_id}`}
+              key={course.courseId}
+              href={`/studio/course/${course.courseId}`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <CourseIcon className="h-3.5 w-3.5 text-primary shrink-0" />
                 <code className="text-xs font-mono truncate">
-                  {course.course_id.slice(0, 16)}...
+                  {course.courseId.slice(0, 16)}...
                 </code>
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />

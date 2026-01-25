@@ -34,8 +34,8 @@ function hexToText(hex: string): string {
 function computeTaskHashFromDb(dbTask: ProjectTaskV2Output): string {
   const taskData: TaskData = {
     project_content: dbTask.title ?? "",
-    expiration_time: parseInt(dbTask.expiration_time ?? "0") || 0,
-    lovelace_amount: parseInt(dbTask.lovelace_amount ?? "0") || 0,
+    expiration_time: parseInt(dbTask.expirationTime ?? "0") || 0,
+    lovelace_amount: parseInt(dbTask.lovelaceAmount ?? "0") || 0,
     native_assets: [],
   };
   return computeTaskHash(taskData);
@@ -269,8 +269,8 @@ function matchTasks(
   }
 
   for (const dbTask of dbTasks) {
-    // Skip tasks that are already confirmed (have a task_hash)
-    if (dbTask.task_hash && dbTask.task_status === "ON_CHAIN") {
+    // Skip tasks that are already confirmed (have a taskHash)
+    if (dbTask.taskHash && dbTask.taskStatus === "ON_CHAIN") {
       continue;
     }
 
@@ -297,7 +297,7 @@ function matchTasks(
 
         // Match by title/content
         if (decodedContent === dbTitle) {
-          const dbLovelace = parseInt(dbTask.lovelace_amount ?? "0") || 0;
+          const dbLovelace = parseInt(dbTask.lovelaceAmount ?? "0") || 0;
           if (dbLovelace === onChainTask.lovelace_amount) {
             matchedOnChain = onChainTask;
             matchedBy = "content";
@@ -306,8 +306,8 @@ function matchTasks(
         }
 
         // Last resort: match by lovelace and expiration time
-        const dbLovelace = parseInt(dbTask.lovelace_amount ?? "0") || 0;
-        const dbExpiration = parseInt(dbTask.expiration_time ?? "0") || 0;
+        const dbLovelace = parseInt(dbTask.lovelaceAmount ?? "0") || 0;
+        const dbExpiration = parseInt(dbTask.expirationTime ?? "0") || 0;
         if (
           dbLovelace === onChainTask.lovelace_amount &&
           dbExpiration === onChainTask.expiration_posix
@@ -326,7 +326,7 @@ function matchTasks(
         matchedBy,
       });
       usedOnChainIds.add(matchedOnChain.task_id);
-    } else if (dbTask.task_status === "DRAFT" || dbTask.task_status === "PENDING_TX") {
+    } else if (dbTask.taskStatus === "DRAFT" || dbTask.taskStatus === "PENDING_TX") {
       unmatchedDb.push(dbTask);
     }
   }
@@ -451,10 +451,10 @@ export async function syncProjectTasks(
   }
 
   // Separate tasks by current status for proper transition handling
-  const draftTasks = matched.filter((m) => m.dbTask.task_status === "DRAFT");
-  const pendingTasks = matched.filter((m) => m.dbTask.task_status === "PENDING_TX");
+  const draftTasks = matched.filter((m) => m.dbTask.taskStatus === "DRAFT");
+  const pendingTasks = matched.filter((m) => m.dbTask.taskStatus === "PENDING_TX");
   const onChainTasksMissingHash = matched.filter(
-    (m) => m.dbTask.task_status === "ON_CHAIN" && !m.dbTask.task_hash
+    (m) => m.dbTask.taskStatus === "ON_CHAIN" && !m.dbTask.taskHash
   );
 
   console.log(`[project-task-sync] Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX, ${onChainTasksMissingHash.length} ON_CHAIN (missing hash)`);

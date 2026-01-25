@@ -85,7 +85,7 @@ export default function NewTaskPage() {
         }
 
         const projectData = (await response.json()) as ProjectV2Output;
-        const rawStatePolicyId = projectData.states?.[0]?.project_state_policy_id;
+        const rawStatePolicyId = projectData.states?.[0]?.projectNftPolicyId;
         const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
 
         if (!statePolicyId) {

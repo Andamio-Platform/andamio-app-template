@@ -76,14 +76,14 @@ export default function ModuleLessonsPage() {
   }, [slts]);
 
   // Find matching on-chain module by SLT content overlap
-  // Note: on_chain_slts contains SLT hashes/IDs from the chain
+  // Note: onChainSlts contains SLT hashes/IDs from the chain
   const onChainModule = useMemo(() => {
     if (onChainModules.length === 0 || combinedData.length === 0) return null;
 
     const dbSltTexts = new Set(combinedData.map((s) => s.slt_text));
 
     for (const mod of onChainModules) {
-      const modSlts = mod.on_chain_slts ?? [];
+      const modSlts = mod.onChainSlts ?? [];
       const onChainTexts = new Set(modSlts);
       // Check if there's significant overlap (comparing texts with chain data)
       const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
@@ -120,7 +120,7 @@ export default function ModuleLessonsPage() {
         <CourseBreadcrumb
           mode="public"
           course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
-          courseModule={{ code: courseModule.course_module_code ?? "", title: courseModule.title ?? "Module" }}
+          courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
           currentPage="module"
         />
       )}
@@ -141,9 +141,9 @@ export default function ModuleLessonsPage() {
       />
       <div className="flex gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {courseModule.course_module_code}
+          {courseModule.moduleCode}
         </AndamioBadge>
-        <AndamioBadge variant="outline">{courseModule.module_status}</AndamioBadge>
+        <AndamioBadge variant="outline">{courseModule.status}</AndamioBadge>
       </div>
 
       {/* Student Learning Targets & Lessons Combined */}

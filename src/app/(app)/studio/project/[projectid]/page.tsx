@@ -115,7 +115,7 @@ export default function ProjectDashboardPage() {
       if (projectResponse.ok) {
         projectData = (await projectResponse.json()) as ProjectV2Output;
         // Check if user is owner
-        if (user?.accessTokenAlias && projectData.owner_alias === user.accessTokenAlias) {
+        if (user?.accessTokenAlias && projectData.ownerAlias === user.accessTokenAlias) {
           detectedRole = "owner";
         }
       }
@@ -144,13 +144,13 @@ export default function ProjectDashboardPage() {
       setUserRole(detectedRole);
       setTitle(typeof projectData.title === "string" ? projectData.title : "");
       setDescription(typeof projectData.description === "string" ? projectData.description : "");
-      setImageUrl(typeof projectData.image_url === "string" ? projectData.image_url : "");
+      setImageUrl(typeof projectData.imageUrl === "string" ? projectData.imageUrl : "");
       // Note: video_url not available in V2 API
 
       // V2 API: POST /project/manager/tasks/list with {project_id} in body
       // Manager endpoint returns all tasks including DRAFT status
       if (projectData.states && projectData.states.length > 0) {
-        const projectStatePolicyId = projectData.states[0]?.project_state_policy_id;
+        const projectStatePolicyId = projectData.states[0]?.projectNftPolicyId;
         if (projectStatePolicyId) {
           const tasksResponse = await authenticatedFetch(
             `/api/gateway/api/v2/project/manager/tasks/list`,
@@ -234,7 +234,7 @@ export default function ProjectDashboardPage() {
   };
 
   const handleSync = async () => {
-    const rawPolicyId = project?.states?.[0]?.project_state_policy_id;
+    const rawPolicyId = project?.states?.[0]?.projectNftPolicyId;
     const projectStatePolicyId = typeof rawPolicyId === "string" ? rawPolicyId : null;
     if (!projectStatePolicyId) {
       toast.error("Cannot sync: missing project state policy ID");
@@ -303,10 +303,10 @@ export default function ProjectDashboardPage() {
   }
 
   // Count tasks by status
-  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT").length;
-  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN").length;
-  // Count tasks that are ON_CHAIN but missing task_hash - these need syncing
-  const tasksNeedingHashSync = tasks.filter((t) => t.task_status === "ON_CHAIN" && !t.task_hash).length;
+  const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT").length;
+  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN").length;
+  // Count tasks that are ON_CHAIN but missing taskHash - these need syncing
+  const tasksNeedingHashSync = tasks.filter((t) => t.taskStatus === "ON_CHAIN" && !t.taskHash).length;
   // Check if any tasks need syncing (either status or hash)
   const needsSync = onChainTaskCount > liveTasks || tasksNeedingHashSync > 0;
 

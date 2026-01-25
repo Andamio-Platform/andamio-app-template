@@ -55,7 +55,7 @@ export function PendingReviewsList({
   const pendingAssessments = React.useMemo(() => {
     if (!allPendingAssessments) return [];
     if (!courseId) return allPendingAssessments;
-    return allPendingAssessments.filter((a) => a.course_id === courseId);
+    return allPendingAssessments.filter((a) => a.courseId === courseId);
   }, [allPendingAssessments, courseId]);
 
   // Loading state - skeleton table
@@ -157,15 +157,15 @@ export function PendingReviewsList({
     );
   }
 
-  // Format submission date - prefer submitted_at, fall back to slot
+  // Format submission date - prefer submittedAt, fall back to slot
   const formatSubmissionDate = (assessment: TeacherAssignmentCommitment): string => {
-    if (assessment.submitted_at) {
-      return new Date(assessment.submitted_at).toLocaleDateString();
+    if (assessment.submittedAt) {
+      return new Date(assessment.submittedAt).toLocaleDateString();
     }
-    if (assessment.submission_slot) {
+    if (assessment.submissionSlot) {
       // Preprod genesis time: 2022-04-01T00:00:00Z = 1648771200
       const genesisTime = 1648771200;
-      const timestamp = (genesisTime + assessment.submission_slot) * 1000;
+      const timestamp = (genesisTime + assessment.submissionSlot) * 1000;
       return new Date(timestamp).toLocaleDateString();
     }
     return "Unknown";
@@ -205,22 +205,22 @@ export function PendingReviewsList({
             <AndamioTableBody>
               {pendingAssessments.map((assessment) => (
                 <AndamioTableRow
-                  key={`${assessment.course_id}-${assessment.assignment_id}-${assessment.student_alias}`}
+                  key={`${assessment.courseId}-${assessment.assignmentId}-${assessment.studentAlias}`}
                   className={onSelectAssessment ? "cursor-pointer hover:bg-muted/50" : ""}
                   onClick={() => onSelectAssessment?.(assessment)}
                 >
                   <AndamioTableCell className="font-mono text-xs">
-                    {assessment.student_alias}
+                    {assessment.studentAlias}
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <code className="text-xs font-mono truncate block max-w-[120px]">
-                      {(assessment.assignment_id ?? assessment.slt_hash ?? "").slice(0, 12)}...
+                      {(assessment.assignmentId ?? assessment.sltHash ?? "").slice(0, 12)}...
                     </code>
                   </AndamioTableCell>
                   {!courseId && (
                     <AndamioTableCell className="hidden md:table-cell">
                       <code className="text-xs font-mono truncate block max-w-[100px]">
-                        {assessment.course_id.slice(0, 12)}...
+                        {assessment.courseId.slice(0, 12)}...
                       </code>
                     </AndamioTableCell>
                   )}
@@ -230,7 +230,7 @@ export function PendingReviewsList({
                   <AndamioTableCell>
                     <div className="flex items-center gap-2">
                       <AndamioText variant="small" className="max-w-[150px] truncate">
-                        {assessment.evidence_text ?? assessment.evidence_url ?? <span className="italic text-muted-foreground">No content</span>}
+                        {assessment.evidenceText ?? assessment.evidenceUrl ?? <span className="italic text-muted-foreground">No content</span>}
                       </AndamioText>
                       {onSelectAssessment && (
                         <ExternalLinkIcon className="h-3 w-3 text-muted-foreground shrink-0" />

@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 23, 2026
+> **Last Updated**: January 24, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -15,50 +15,89 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
+| **Colocated Types Pattern** | **Course Side Complete** | Project side pending |
 
 ---
 
-## Current Focus: API v2.0.0 Field Alignment
+## 🎯 TOP PRIORITY: Formalize Hook Architecture Pattern
 
-**Status**: Active - Syncing with Gateway API spec updates
+**Status**: Active - Course side complete, need to document and apply to all hooks
 
-**Latest Work (January 23, 2026)**:
-- **Merged Endpoint Type Migration**: API v2.0.0 changed response shapes significantly
-  - `GET /api/v2/course/user/courses/list` now returns INTERSECTION (courses must be BOTH on-chain AND have DB content)
-  - Response has nested `content` field structure (data lives in `.content`)
-  - Added `source` field indicating data origin (`chain_only`, `db_only`, `merged`)
-  - Created flattening layer (`flattenCourseListItem`, `FlattenedCourseListItem`) to maintain backward compatibility
-  - Updated `use-owned-courses.ts`, `course-filters.ts` to use flattened types
-  - Fixed `MergedCourseModule` vs `OrchestrationCourseModule` type mismatches
-  - Changed `.slts` → `.on_chain_slts` for merged module items
-  - Fixed `unknown` type issues in lesson page with boolean coercion (`!!value`)
-  - **Build passes** - all type errors resolved
+The **Colocated Types Pattern** has been successfully implemented for Course hooks. This pattern MUST be formalized and applied consistently to ALL hooks.
 
-- **Developer Auth V2 Migration**: Implemented two-step wallet-verified registration flow
-  - `createDevRegisterSession()` + `completeDevRegistration()` with CIP-30 signing
-  - Updated `/api-setup` page with new 4-step flow (connect → register → sign → api-key)
-  - Migrated API key endpoints from v1 to v2 paths
-  - Added `getDeveloperProfile()`, `getDeveloperUsage()`, `deleteDeveloperAccount()`
-  - Regenerated types from updated OpenAPI spec
-- Replaced deprecated `andamioscan.ts` (1497 lines) with minimal `andamioscan-events.ts`
-- Display `slt_hash` in module review step when SLTs are approved
-- Added `slt_hash` support to module status update endpoint
-- Synced with API v2.0.0 field names and embedded data patterns
-- Removed `module_hash` from module status update request (field removed from API)
+### The Pattern (Established)
 
-**Completed (L1 Core)**:
-- `@andamio/core` package with hashing utilities and constants
-- TX Watcher confirmation fixes (21 files updated)
-- Gateway taxonomy compliance (41 files fixed)
-- NullableString type helper utilities
+```
+Gateway API (snake_case) → Hook (transform) → Component (camelCase)
+```
 
-**Next Steps**:
-1. [x] ~~API v2.0.0 field alignment~~ - Merged endpoint types updated, build passes
-2. [ ] Reorganize hooks into `course/` and `project/` subdirectories
-3. [x] ~~Remove deprecated `andamioscan.ts` (1497 lines)~~ - Replaced with `andamioscan-events.ts`
-4. [ ] Clean up remaining V1 patterns
-5. [ ] Test all course routes with new merged data structure
-6. [ ] Update remaining components that might have stale type assumptions
+**Key Rules**:
+1. App-level types (camelCase) are defined IN hook files, not separate type files
+2. Transform functions convert API snake_case to app camelCase
+3. Components import types from hooks, NEVER from `~/types/generated`
+4. Clean domain names: `Course`, `CourseModule`, `Task` - never "Merged" or "Flattened" prefixes
+5. The `source` field indicates data origin, not the type name
+
+### Course Hooks (✅ Complete)
+
+| Hook | Types | Transform Functions | Status |
+|------|-------|-------------------|--------|
+| `use-course.ts` | `Course`, `CourseDetail`, `CourseSource` | `transformCourse()`, `transformCourseDetail()` | ✅ Complete |
+| `use-course-module.ts` | `CourseModule`, `SLT`, `Lesson`, `ModuleSource` | `transformCourseModule()`, `transformSLT()`, `transformLesson()` | ✅ Complete |
+| `use-teacher-courses.ts` | `TeacherCourse`, `TeacherAssignmentCommitment`, `TeacherCourseWithModules` | `transformTeacherCourse()`, `transformTeacherCommitment()` | ✅ Complete |
+| `use-owned-courses.ts` | Uses `Course` from use-course | Uses `transformCourse()` | ✅ Complete |
+
+**Deprecated aliases added for backward compatibility**:
+- `FlattenedCourseListItem` → `Course`
+- `FlattenedCourseDetail` → `CourseDetail`
+- `MergedCourseModule` → `CourseModule`
+
+### Project Hooks (⬜ Needs Migration)
+
+| Hook | Current State | Action Needed |
+|------|---------------|---------------|
+| `use-project.ts` | Has transformers in `types/project.ts` | Move types INTO hook |
+| `use-contributor-projects.ts` | Raw API types | Add colocated types + transforms |
+| `use-manager-projects.ts` | Raw API types | Add colocated types + transforms |
+
+### Other Hooks (⬜ Not Started)
+
+| Hook | Current State | Action Needed |
+|------|---------------|---------------|
+| `use-slt.ts` | Raw API types | Add `SLT` type + `transformSLT()` |
+| `use-lesson.ts` | Raw API types | Add `Lesson` type + `transformLesson()` |
+| `use-student-courses.ts` | Raw API types | Add `StudentCourse` type + transform |
+
+### Next Steps (Prioritized)
+
+1. **Document the pattern formally** in HOOK-ARCHITECTURE-GUIDE.md
+2. **Delete `src/types/project.ts`** - migrate types into `use-project.ts`
+3. **Apply pattern to remaining hooks**
+4. **Audit pages for raw fetch() calls** - replace with hooks
+
+---
+
+## Recent Completions
+
+**January 24, 2026 (Session 2)**:
+- ✅ Migrated `use-course.ts` to colocated types pattern (camelCase)
+- ✅ Migrated `use-course-module.ts` to colocated types pattern
+- ✅ Migrated `use-teacher-courses.ts` to colocated types pattern
+- ✅ Updated 10+ component files to use new camelCase field names
+- ✅ Fixed all TypeScript errors (build passes)
+- ✅ Established rule: "App-level types use clean domain names - never 'Merged' or 'Flattened' prefixes"
+
+**January 24, 2026 (Session 1)**:
+- Fixed module wizard infinite API polling (dependency loop in `use-module-wizard-data.ts`)
+- Added `transformMergedTask()` function in `types/project.ts`
+- Added `useProjectTasks()` hook in `use-project.ts`
+- Created `HOOK-ARCHITECTURE-GUIDE.md` tracking document
+
+**January 23, 2026**:
+- **Merged Endpoint Type Migration**: API v2.0.0 response shape changes
+- Created flattening layer (`flattenCourseListItem`, `FlattenedCourseListItem`)
+- **Developer Auth V2 Migration**: Two-step wallet-verified registration
+- Replaced deprecated `andamioscan.ts` with minimal `andamioscan-events.ts`
 
 ---
 
@@ -67,17 +106,8 @@ Current implementation status of the Andamio T3 App Template.
 | Blocker | Status | Notes |
 |---------|--------|-------|
 | **SLT Endpoints Schema Mismatch** | Blocking | SLT create/update/delete expect camelCase. [GitHub Issue #3](https://github.com/Andamio-Platform/andamio-api/issues/3) |
-
-**Resolved Recently**:
-- Developer Registration Signature → Fixed by API team. Now requires End User JWT auth.
 | **Project V2 Task Update/Delete** | Blocking | API returns 404 for existing tasks |
-| **@andamio/transactions NPM** | Waiting | Available locally via workspace link |
 | **Wallet Testing** | Pending | Nami, Flint, Yoroi, Lace need testing (Eternl works) |
-
-**Resolved Recently**:
-- OpenAPI NullableString Typing → Client-side fix with `getString()` utility
-- Course Creation Metadata → Auto-registration works (Gateway v2.0.0-preprod-20260119-e)
-- TX Watcher Confirmation → Added "confirmed" to terminal states
 
 ---
 
@@ -144,34 +174,7 @@ Current implementation status of the Andamio T3 App Template.
 
 ### Transaction Components (16/16 Complete)
 
-**Global**:
-| Component | Definition | Status |
-|-----------|------------|--------|
-| `mint-access-token.tsx` | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | Hybrid (manual JWT) |
-
-**Course System** (6):
-| Component | Definition |
-|-----------|------------|
-| `create-course.tsx` | `INSTANCE_COURSE_CREATE` |
-| `teachers-update.tsx` | `COURSE_OWNER_TEACHERS_MANAGE` |
-| `mint-module-tokens.tsx` | `COURSE_TEACHER_MODULES_MANAGE` |
-| `assess-assignment.tsx` | `COURSE_TEACHER_ASSIGNMENTS_ASSESS` |
-| `enroll-in-course.tsx` | `COURSE_STUDENT_ASSIGNMENT_COMMIT` |
-| `assignment-update.tsx` | `COURSE_STUDENT_ASSIGNMENT_UPDATE` |
-| `credential-claim.tsx` | `COURSE_STUDENT_CREDENTIAL_CLAIM` |
-
-**Project System** (9):
-| Component | Definition |
-|-----------|------------|
-| `create-project.tsx` | `INSTANCE_PROJECT_CREATE` |
-| `managers-manage.tsx` | `PROJECT_OWNER_MANAGERS_MANAGE` |
-| `blacklist-manage.tsx` | `PROJECT_OWNER_BLACKLIST_MANAGE` |
-| `tasks-manage.tsx` | `PROJECT_MANAGER_TASKS_MANAGE` |
-| `tasks-assess.tsx` | `PROJECT_MANAGER_TASKS_ASSESS` |
-| `project-enroll.tsx` | `PROJECT_CONTRIBUTOR_TASK_COMMIT` |
-| `task-commit.tsx` | `PROJECT_CONTRIBUTOR_TASK_COMMIT` |
-| `task-action.tsx` | `PROJECT_CONTRIBUTOR_TASK_ACTION` |
-| `project-credential-claim.tsx` | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` |
+All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for details.
 
 ---
 
@@ -195,6 +198,7 @@ Current implementation status of the Andamio T3 App Template.
 | 2026-01-14 | Andamio Pioneers Launch | Complete |
 | 2026-01-17/18 | V2 Gateway API Migration | Complete |
 | 2026-01-21 | L1 Core Package + TX Fixes | Complete |
+| 2026-01-24 | **Course Side Colocated Types** | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---
@@ -207,4 +211,4 @@ Detailed session notes are archived by week:
 |---------|----------|--------|
 | [2026-01-05-to-2026-01-11.md](./archived-sessions/2026-01-05-to-2026-01-11.md) | 1-4 | Go API migration, type packages, wallet auth |
 | [2026-01-12-to-2026-01-18.md](./archived-sessions/2026-01-12-to-2026-01-18.md) | 5-20 | Pioneers launch, V2 Gateway, TX migration |
-| [2026-01-19-to-2026-01-25.md](./archived-sessions/2026-01-19-to-2026-01-25.md) | 21-28 | TX Watcher fixes, L1 Core, taxonomy compliance |
+| [2026-01-19-to-2026-01-25.md](./archived-sessions/2026-01-19-to-2026-01-25.md) | 21-28 | TX Watcher fixes, L1 Core, taxonomy compliance, colocated types |

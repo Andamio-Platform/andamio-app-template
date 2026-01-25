@@ -3,7 +3,7 @@
 import React from "react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { type FlattenedCourseListItem } from "~/hooks/api";
+import { type Course } from "~/hooks/api";
 import {
   CourseStatusBadge,
   CourseStatusIcon,
@@ -12,7 +12,7 @@ import {
 } from "./course-ui";
 
 interface CourseListViewProps {
-  courses: FlattenedCourseListItem[];
+  courses: Course[];
   moduleCounts: Record<string, number>;
 }
 
@@ -25,7 +25,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
   return (
     <div className="space-y-0">
       {courses.map((courseData, index) => {
-        const courseId = courseData.course_id ?? "";
+        const courseId = courseData.courseId ?? "";
         const title = typeof courseData.title === "string" ? courseData.title : "";
         const description = typeof courseData.description === "string" ? courseData.description : "";
         return (

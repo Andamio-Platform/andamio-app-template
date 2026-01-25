@@ -71,16 +71,6 @@ interface GatewayLoginApiResponse {
   };
 }
 
-interface GatewayRegisterApiResponse {
-  user_id: string;
-  alias: string;
-  tier: string;
-  JWT: {
-    token: string;
-    expires_at: string;
-  };
-}
-
 // =============================================================================
 // DEVELOPER AUTH (for API key management)
 // =============================================================================

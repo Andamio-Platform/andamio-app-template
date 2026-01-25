@@ -94,19 +94,19 @@ export default function CourseDetailPage() {
   }
 
   // Build map of on-chain SLTs per module by matching SLT text content
-  // onChainModules contains on-chain data with on_chain_slts (string hashes/IDs)
-  const getOnChainStatus = (moduleSlts: Array<{ slt_text?: string }>) => {
+  // onChainModules contains on-chain data with onChainSlts (string hashes/IDs)
+  const getOnChainStatus = (moduleSlts: Array<{ sltText?: string }>) => {
     if (onChainModules.length === 0) return { onChainSlts: new Set<string>(), moduleHash: null };
 
-    const dbSltTexts = new Set(moduleSlts.map((s) => s.slt_text).filter((t): t is string => !!t));
+    const dbSltTexts = new Set(moduleSlts.map((s) => s.sltText).filter((t): t is string => !!t));
 
     for (const mod of onChainModules) {
-      // Use on_chain_slts from the flattened module (from chain data)
-      const modSlts = mod.on_chain_slts ?? [];
+      // Use onChainSlts from the flattened module (from chain data)
+      const modSlts = mod.onChainSlts ?? [];
       const onChainTexts = new Set(modSlts);
       const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
       if (intersection.length > 0 && modSlts.length > 0 && intersection.length >= modSlts.length * 0.5) {
-        return { onChainSlts: onChainTexts, moduleHash: mod.slt_hash ?? null };
+        return { onChainSlts: onChainTexts, moduleHash: mod.sltHash ?? null };
       }
     }
 
@@ -164,15 +164,15 @@ export default function CourseDetailPage() {
           {moduleList.map((courseModule, moduleIndex) => {
             const { onChainSlts, moduleHash } = getOnChainStatus(courseModule.slts ?? []);
             const hasOnChain = moduleHash !== null;
-            // Filter and map SLTs to ensure valid slt_text values
+            // Filter and map SLTs to ensure valid sltText values
             const validSlts = (courseModule.slts ?? [])
-              .filter((s) => !!s.slt_text)
-              .map((s) => ({ slt_text: s.slt_text! }));
+              .filter((s) => !!s.sltText)
+              .map((s) => ({ sltText: s.sltText! }));
 
             return (
               <CourseModuleCard
-                key={courseModule.course_module_code}
-                moduleCode={courseModule.course_module_code ?? ""}
+                key={courseModule.moduleCode}
+                moduleCode={courseModule.moduleCode ?? ""}
                 title={courseModule.title ?? "Untitled Module"}
                 index={moduleIndex + 1}
                 slts={validSlts}

@@ -43,8 +43,15 @@ The unified gateway uses two API versions:
 |------|---------|-----------------|
 | [unified-api-endpoints.md](./unified-api-endpoints.md) | All gateway endpoints | Manual (from live docs) |
 | [api-coverage.md](./api-coverage.md) | Implementation status per endpoint | Manual tracking |
+| [tx-state-machine.md](./tx-state-machine.md) | TX registration and polling flow | Manual |
 | [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Coverage summary | **Auto-generated** |
 | [coverage-report.json](./coverage-report.json) | Full coverage data | **Auto-generated** |
+
+### Archived Session Notes
+
+Historical migration docs are in `archived-sessions/`:
+- `V2-MIGRATION-CHECKLIST-2026-01-17.md` - V2 Gateway migration (complete)
+- `API-REFINEMENT-SESSION-2026-01-17.md` - Pre-migration planning
 
 ## Running the Audit
 

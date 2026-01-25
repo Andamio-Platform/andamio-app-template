@@ -144,17 +144,36 @@ export type LessonListResponse = LessonResponse[];
 export type AssignmentListResponse = AssignmentResponse[];
 
 // =============================================================================
-// DB Client Type Aliases - Project System
+// Project System Types (app-level flattened types)
 // =============================================================================
 
-export type {
-  AndamioApiInternalInternalApiAndamioDbClientProject as ProjectV2Output,
-  AndamioApiInternalInternalApiAndamioDbClientProjectTask as ProjectTaskV2Output,
-  AndamioApiInternalInternalApiAndamioDbClientTaskCommitment as CommitmentV2Output,
-  AndamioApiInternalInternalApiAndamioDbClientProjectState as ProjectStateOutput,
-  AndamioApiInternalInternalApiAndamioDbClientProjectPrerequisite as ProjectPrerequisiteOutput,
-  AndamioApiInternalInternalApiAndamioDbClientProjectTaskToken as ProjectTaskTokenOutput,
-} from "./gateway";
+// Import and re-export app-level types with backward-compatible names
+// These types are colocated with the project hooks (single source of truth)
+export {
+  type Task as ProjectTaskV2Output,
+  type Project as ProjectV2Output,
+  type TaskCommitment as CommitmentV2Output,
+  type TaskToken as ProjectTaskTokenOutput,
+  type ProjectState as ProjectStateOutput,
+  // Transform functions for use in hooks/libs
+  transformApiTask,
+  transformApiProject,
+  transformApiCommitment,
+  transformOnChainTask,
+  transformProjectDetail,
+  transformProjectListItem,
+} from "~/hooks/api/project/use-project";
+
+// Re-export the app types with clean names too
+export type { Task, Project, TaskCommitment, TaskToken, ProjectState } from "~/hooks/api/project/use-project";
+
+// Legacy compatibility alias
+export interface ProjectPrerequisiteOutput {
+  id?: number;
+  project_id?: string;
+  prerequisite_type?: string;
+  prerequisite_value?: string;
+}
 
 // =============================================================================
 // Orchestration Types (re-exports, already well-named)
@@ -392,14 +411,14 @@ export interface AndamioDbClientGetAssignmentCommitmentV2Request {
   student_alias: string;
 }
 
-// Project requests (still available from API)
+// Project requests (now using ApiTypes)
 export type {
-  AndamioApiInternalInternalApiAndamioDbClientCreateProjectRequest,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateProjectRequest,
-  AndamioApiInternalInternalApiAndamioDbClientCreateTaskRequest,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateTaskRequest,
-  AndamioApiInternalInternalApiAndamioDbClientCreateTaskCommitmentRequest,
-  AndamioApiInternalInternalApiAndamioDbClientUpdateTaskCommitmentRequest,
+  ApiTypesCreateProjectRequest,
+  ApiTypesUpdateProjectRequest,
+  ApiTypesCreateTaskRequest,
+  ApiTypesUpdateTaskRequest,
+  ApiTypesCreateTaskCommitmentRequest,
+  ApiTypesUpdateTaskCommitmentRequest,
 } from "./gateway";
 
 // =============================================================================

@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 18, 2026
+> **Last Updated**: January 24, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -50,10 +50,17 @@ V2 GATEWAY API MIGRATION ──────────────────�
   │   Branch: update/andamioscan (ready for merge)
   │
   ▼
-POST-MIGRATION TESTING ─────────────────────────────────── 2026-01-18 🔄
+POST-MIGRATION TESTING ─────────────────────────────────── 2026-01-18 ✅
   │
   │   Test all routes with new gateway
   │   Merge to main when verified
+  │
+  ▼
+TYPE TRANSFORMATION (Phase 3.8) ───────────────────────── 2026-01-24 ✅
+  │
+  │   App-level types (Task, Project, TaskCommitment)
+  │   snake_case → camelCase transforms
+  │   74 type errors → 0
   │
   ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
@@ -75,7 +82,8 @@ MAINNET V2 LAUNCH ────────────────────�
 | 2026-01-14 (Wed) | Andamio Pioneers Launch | ✅ Live |
 | 2026-01-15 (Wed) | Contributor Sync Testing + Issue #11 Resolved | ✅ Complete |
 | 2026-01-16 (Fri) | Final Demos | ✅ Complete |
-| **2026-01-17/18** | **V2 Gateway API Migration** | ✅ Complete (on branch) |
+| **2026-01-17/18** | **V2 Gateway API Migration** | ✅ Complete |
+| **2026-01-24** | **Phase 3.8 Type Transformation** | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 
@@ -92,28 +100,27 @@ This template continues as the **reference implementation** and will receive upd
 
 ## Current Focus
 
-### 🔄 Post-Migration Testing (January 18, 2026)
+### ✅ Phase 3.8: Type Transformation (Complete)
 
-**Goal**: Verify all routes work correctly with the new V2 Gateway API.
+**Goal**: Establish consistent snake_case → camelCase transformation pattern.
 
-**Migration Completed**:
-- ✅ All API calls now use unified gateway proxy
-- ✅ Types generated from OpenAPI spec
-- ✅ Legacy code removed (old proxy routes, deprecated hooks)
-- ✅ New role-based hooks created
-- ✅ Auth endpoints migrated to v2
+**Completed**:
+- ✅ App-level types in `src/types/project.ts` (Task, Project, TaskCommitment)
+- ✅ Transform functions: `transformApiTask()`, `transformProjectDetail()`, `transformApiCommitment()`
+- ✅ camelCase fields with flattened structure (content.title → title)
+- ✅ Documentation in `.claude/dev-notes/TYPE-TRANSFORMATION.md`
+- ✅ 74 type errors reduced to 0
+- ✅ typescript-types-expert skill updated with transform documentation
 
-**Testing Needed**:
+### 🔄 Next: L2/L3 Hook Reorganization
+
+**Goal**: Reorganize hooks into `course/` and `project/` subdirectories.
+
+**Testing Remaining**:
 1. Verify all course routes work with gateway
 2. Verify all project routes work with gateway
 3. Test transaction flows (mint, commit, assess, claim)
 4. Wallet compatibility testing (Nami, Flint, Yoroi, Lace, Vespr)
-5. Auth flow testing (login, register, session restore)
-
-**Ready for Merge**:
-- Branch `update/andamioscan` contains all migration changes
-- 5 commits ahead of `main`
-- ~160 files changed
 
 See `STATUS.md` for detailed session notes.
 
@@ -126,6 +133,7 @@ Phase 1: Course & Learning System ━━━━━━━━━━━━━━━�
 Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━━ ✅ Complete (Go API migrated)
 Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (10/13 routes, 9/9 tx)
 Phase 3.5: V2 Gateway Migration   ━━━━━━━━━━━━━━━━ ✅ Complete (all APIs unified)
+Phase 3.8: Type Transformation    ━━━━━━━━━━━━━━━━ ✅ Complete (snake_case → camelCase)
 Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 

@@ -16,7 +16,7 @@ import {
  * SLT data for display in module card
  */
 export interface ModuleSLT {
-  slt_text: string;
+  sltText: string;
 }
 
 export interface CourseModuleCardProps {
@@ -90,7 +90,7 @@ export function CourseModuleCard({
           </AndamioText>
           <ul className="space-y-2">
             {slts.map((slt, sltIndex) => {
-              const isOnChainSlt = onChainSlts.has(slt.slt_text);
+              const isOnChainSlt = onChainSlts.has(slt.sltText);
               return (
                 <li key={sltIndex} className="flex items-start gap-3">
                   <div
@@ -106,7 +106,7 @@ export function CourseModuleCard({
                       sltIndex + 1
                     )}
                   </div>
-                  <span className="text-sm pt-0.5">{slt.slt_text}</span>
+                  <span className="text-sm pt-0.5">{slt.sltText}</span>
                 </li>
               );
             })}

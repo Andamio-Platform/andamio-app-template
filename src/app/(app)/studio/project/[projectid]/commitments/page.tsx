@@ -42,7 +42,7 @@ import {
   TaskIcon,
   DatabaseIcon,
 } from "~/components/icons";
-import { type OrchestrationProjectTaskOnChain } from "~/types/generated";
+import { type Task } from "~/hooks/api/project/use-project";
 import { TasksAssess } from "~/components/tx";
 import { toast } from "sonner";
 
@@ -89,11 +89,11 @@ export default function ProjectCommitmentsPage() {
 
   // Map task_id to task details from merged project data
   const taskMap = useMemo(() => {
-    const map = new Map<string, OrchestrationProjectTaskOnChain>();
+    const map = new Map<string, Task>();
     if (project?.tasks) {
       for (const task of project.tasks) {
-        if (task.task_id) {
-          map.set(task.task_id, task);
+        if (task.taskHash) {
+          map.set(task.taskHash, task);
         }
       }
     }
@@ -103,7 +103,7 @@ export default function ProjectCommitmentsPage() {
   /**
    * Find task by ID
    */
-  const findMatchingTask = useCallback((commitment: ManagerCommitment): OrchestrationProjectTaskOnChain | undefined => {
+  const findMatchingTask = useCallback((commitment: ManagerCommitment): Task | undefined => {
     return taskMap.get(commitment.task_id);
   }, [taskMap]);
 
@@ -166,8 +166,9 @@ export default function ProjectCommitmentsPage() {
   // Get task title from commitment
   const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
     const task = findMatchingTask(commitment);
-    if (task?.task_id && task?.lovelace_amount) {
-      return `Task ${task.task_id.slice(0, 8)}... (${(task.lovelace_amount / 1_000_000).toFixed(0)} ADA)`;
+    if (task?.taskHash && task?.lovelaceAmount) {
+      const lovelace = Number(task.lovelaceAmount) || 0;
+      return `Task ${task.taskHash.slice(0, 8)}... (${(lovelace / 1_000_000).toFixed(0)} ADA)`;
     }
     // Task not found in project
     return `Task ${commitment.task_id.slice(0, 8)}...`;
@@ -253,7 +254,7 @@ export default function ProjectCommitmentsPage() {
 
       <AndamioPageHeader
         title="Task Commitments"
-        description={`Review and assess contributor submissions for ${project.content?.title ?? "this project"}`}
+        description={`Review and assess contributor submissions for ${project.title ?? "this project"}`}
       />
 
       {/* Stats Cards */}
@@ -527,9 +528,9 @@ export default function ProjectCommitmentsPage() {
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
                   {selectedTaskId ? `${selectedTaskId.slice(0, 16)}...` : "Unknown"}
                 </AndamioText>
-                {selectedMatchedTask?.lovelace_amount && (
+                {selectedMatchedTask?.lovelaceAmount && (
                   <AndamioText variant="small" className="text-muted-foreground">
-                    {(selectedMatchedTask.lovelace_amount / 1_000_000).toFixed(0)} ADA reward
+                    {(Number(selectedMatchedTask.lovelaceAmount) / 1_000_000).toFixed(0)} ADA reward
                   </AndamioText>
                 )}
               </div>
@@ -631,7 +632,7 @@ export default function ProjectCommitmentsPage() {
             {/* TasksAssess Transaction Component */}
             <TasksAssess
               projectNftPolicyId={projectId}
-              contributorStateId={project.contributor_state_id ?? ""}
+              contributorStateId={project.contributorStateId ?? ""}
               contributorAlias={selectedAssessment.contributor_alias}
               taskHash={selectedTaskId}
               taskCode={selectedTaskId ? selectedTaskId.slice(0, 8) : "TASK"}

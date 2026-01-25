@@ -148,7 +148,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         console.log("[CreateProject] TX submitted successfully!", txResult);
 
         // Extract project_id from the API response for later use
-        const extractedProjectId = txResult.apiResponse?.project_id as string | undefined;
+        const extractedProjectId = txResult.apiResponse?.projectId as string | undefined;
         if (extractedProjectId) {
           setProjectId(extractedProjectId);
         }

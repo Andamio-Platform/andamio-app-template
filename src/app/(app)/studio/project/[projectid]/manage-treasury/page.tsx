@@ -118,8 +118,8 @@ export default function ManageTreasuryPage() {
         throw new Error("Failed to fetch project");
       }
 
-      const projectData = await projectResponse.json() as { states?: Array<{ project_state_policy_id?: string }> };
-      const projectStatePolicyId = projectData.states?.[0]?.project_state_policy_id;
+      const projectData = await projectResponse.json() as { states?: Array<{ projectNftPolicyId?: string }> };
+      const projectStatePolicyId = projectData.states?.[0]?.projectNftPolicyId;
 
       if (!projectStatePolicyId) {
         setTasks([]);
@@ -152,8 +152,8 @@ export default function ManageTreasuryPage() {
         tasks: tasksData?.map((t) => ({
           index: t.index,
           title: t.title,
-          task_status: t.task_status,
-          task_hash: t.task_hash,
+          task_status: t.taskStatus,
+          task_hash: t.taskHash,
         })),
       });
       setTasks(tasksData ?? []);
@@ -212,7 +212,7 @@ export default function ManageTreasuryPage() {
   };
 
   const handleSelectAll = () => {
-    const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
+    const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT");
     if (selectedTaskIndices.size === draftTasks.length) {
       // Deselect all
       setSelectedTaskIndices(new Set());
@@ -343,8 +343,8 @@ export default function ManageTreasuryPage() {
   }
 
   // Filter draft tasks
-  const draftTasks = tasks.filter((t) => t.task_status === "DRAFT");
-  const liveTasks = tasks.filter((t) => t.task_status === "ON_CHAIN");
+  const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT");
+  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
 
   // Get selected tasks (filter for valid indices)
   const selectedTasks = draftTasks.filter((t) => t.index !== undefined && selectedTaskIndices.has(t.index));
@@ -355,12 +355,12 @@ export default function ManageTreasuryPage() {
   const tasksToAdd: ProjectData[] = selectedTasks.map((task) => {
     // Use task title/description as project_content (truncate to 140 chars)
     const taskTitle = typeof task.title === "string" ? task.title : "";
-    const taskContent = typeof task.content === "string" ? task.content : "";
-    const projectContent = (taskTitle || taskContent || "Task").substring(0, 140);
+    const taskDescription = typeof task.description === "string" ? task.description : "";
+    const projectContent = (taskTitle || taskDescription || "Task").substring(0, 140);
 
     // Ensure expiration_posix is in milliseconds
     // If it's a small number (< year 2000 in ms), it might be in seconds
-    const expirationStr = typeof task.expiration_time === "string" ? task.expiration_time : "0";
+    const expirationStr = typeof task.expirationTime === "string" ? task.expirationTime : "0";
     let expirationMs = parseInt(expirationStr) || 0;
     if (expirationMs < 946684800000) {
       // If less than year 2000 in ms, assume it's in seconds
@@ -370,7 +370,7 @@ export default function ManageTreasuryPage() {
     const projectData: ProjectData = {
       project_content: projectContent,
       expiration_posix: expirationMs,
-      lovelace_amount: parseInt(task.lovelace_amount ?? "5000000") || 5000000,
+      lovelace_amount: parseInt(task.lovelaceAmount ?? "5000000") || 5000000,
       native_assets: [], // Empty for now - could add native tokens later
     };
 
@@ -504,7 +504,7 @@ export default function ManageTreasuryPage() {
                   {draftTasks.map((task) => {
                     // NullableString types are generated as `object`, cast to unknown first for type check
                     const rawTitle = task.title as unknown;
-                    const rawHash = task.task_hash as unknown;
+                    const rawHash = task.taskHash as unknown;
                     const taskIndex = task.index ?? 0;
                     const taskTitle = typeof rawTitle === "string" ? rawTitle : "";
                     const taskHash = typeof rawHash === "string" ? rawHash : null;
@@ -542,7 +542,7 @@ export default function ManageTreasuryPage() {
                           {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
                         </AndamioTableCell>
                       </AndamioTableRow>
                     );
@@ -812,7 +812,7 @@ export default function ManageTreasuryPage() {
                   {liveTasks.map((task) => {
                     // NullableString types are generated as `object`, cast to unknown first for type check
                     const rawTitle = task.title as unknown;
-                    const rawHash = task.task_hash as unknown;
+                    const rawHash = task.taskHash as unknown;
                     const taskIndex = task.index ?? 0;
                     const taskTitle = typeof rawTitle === "string" ? rawTitle : "Untitled Task";
                     const taskHash = typeof rawHash === "string" ? rawHash : null;
@@ -826,7 +826,7 @@ export default function ManageTreasuryPage() {
                           {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelace_amount ?? "0") || 0)}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
                           <AndamioBadge variant="default" className="bg-success text-success-foreground">

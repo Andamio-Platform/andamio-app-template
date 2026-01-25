@@ -28,6 +28,16 @@ Overview of the type system hierarchy and organization in the Andamio T3 App.
 │  - JSDoc documentation                                          │
 └─────────────────────────────────────────────────────────────────┘
                               │
+                              ▼ Transform layer (snake_case → camelCase)
+┌─────────────────────────────────────────────────────────────────┐
+│  src/types/project.ts  (~450 lines)                             │
+│  - App-level types (Task, Project, TaskCommitment)              │
+│  - Flattened structure (content.title → title)                  │
+│  - camelCase fields (taskHash, lovelaceAmount)                  │
+│  - Transform functions (transformApiTask, etc.)                 │
+│  - See: .claude/dev-notes/TYPE-TRANSFORMATION.md                │
+└─────────────────────────────────────────────────────────────────┘
+                              │
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
 ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
@@ -54,6 +64,14 @@ Overview of the type system hierarchy and organization in the Andamio T3 App.
 - JSDoc documentation for each type
 
 ### src/types/
+
+**project.ts** (app-level types with transforms)
+- `Task` - Flattened task type (camelCase)
+- `Project` - Flattened project type (camelCase)
+- `TaskCommitment` - Commitment type (camelCase)
+- `transformApiTask()`, `transformOnChainTask()` - API → App transforms
+- `transformProjectDetail()`, `transformProjectListItem()` - Project transforms
+- `transformApiCommitment()` - Commitment transform
 
 **ui.ts** (shared UI patterns)
 - `IconComponent` - Lucide icon type alias
@@ -96,16 +114,19 @@ Overview of the type system hierarchy and organization in the Andamio T3 App.
 ```typescript
 // ✅ Correct import order and sources
 
-// 1. API types - always from ~/types/generated
-import { type CourseResponse, type ProjectV2Output } from "~/types/generated";
+// 1. App-level types - prefer from ~/types/project (camelCase, flat)
+import { type Task, type Project, type TaskCommitment } from "~/types/project";
 
-// 2. UI types - always from ~/types/ui
+// 2. API types - from ~/types/generated (for raw API access)
+import { type CourseResponse, type ApiTypesTask } from "~/types/generated";
+
+// 3. UI types - always from ~/types/ui
 import type { NavItem, IconComponent } from "~/types/ui";
 
-// 3. Type helpers - always from ~/lib/type-helpers
+// 4. Type helpers - from ~/lib/type-helpers (deprecated, use app types)
 import { getString, getOptionalString } from "~/lib/type-helpers";
 
-// 4. Transaction schemas - from ~/config
+// 5. Transaction schemas - from ~/config
 import { txSchemas, type TxParams } from "~/config/transaction-schemas";
 ```
 

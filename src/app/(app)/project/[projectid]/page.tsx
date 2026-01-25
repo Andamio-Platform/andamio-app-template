@@ -37,7 +37,7 @@ import {
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
-import { type OrchestrationMergedProjectDetail } from "~/types/generated";
+import { type Project } from "~/hooks/api/project/use-project";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
@@ -48,7 +48,7 @@ function ProjectDataCard({
   project,
   isLoading,
 }: {
-  project: OrchestrationMergedProjectDetail | null | undefined;
+  project: Project | null | undefined;
   isLoading: boolean;
 }) {
   // Loading state
@@ -96,8 +96,8 @@ function ProjectDataCard({
   const tasks = project.tasks ?? [];
   const submissions = project.submissions ?? [];
   const assessments = project.assessments ?? [];
-  const credentialClaims = project.credential_claims ?? [];
-  const treasuryFundings = project.treasury_fundings ?? [];
+  const credentialClaims = project.credentialClaims ?? [];
+  const treasuryFundings = project.treasuryFundings ?? [];
   const prerequisites = project.prerequisites ?? [];
 
   const totalFunding = treasuryFundings.reduce(
@@ -265,8 +265,8 @@ export default function ProjectDetailPage() {
   // For on-chain tasks, filter based on availability (not deleted)
   const liveTasks = allTasks;
 
-  // Get project title from content
-  const projectTitle = project.content?.title ?? "Project";
+  // Get project title (flattened from content by transform)
+  const projectTitle = project.title ?? "Project";
 
   // Empty tasks state
   if (liveTasks.length === 0) {
@@ -277,7 +277,7 @@ export default function ProjectDetailPage() {
         <AndamioPageHeader title={projectTitle} />
         <div className="flex flex-wrap items-center gap-2">
           <AndamioBadge variant="outline" className="font-mono text-xs">
-            {project.project_id?.slice(0, 16)}...
+            {project.projectId?.slice(0, 16)}...
           </AndamioBadge>
         </div>
 
@@ -314,7 +314,7 @@ export default function ProjectDetailPage() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <AndamioBadge variant="outline" className="font-mono text-xs">
-          {project.project_id?.slice(0, 16)}...
+          {project.projectId?.slice(0, 16)}...
         </AndamioBadge>
       </div>
 
@@ -338,26 +338,26 @@ export default function ProjectDetailPage() {
             </AndamioTableHeader>
             <AndamioTableBody>
               {liveTasks.map((task, index) => (
-                <AndamioTableRow key={task.task_id ?? index}>
+                <AndamioTableRow key={task.taskHash ?? index}>
                   <AndamioTableCell className="font-mono text-xs">
                     {index + 1}
                   </AndamioTableCell>
                   <AndamioTableCell>
-                    {task.task_id ? (
+                    {task.taskHash ? (
                       <Link
-                        href={`/project/${projectId}/${task.task_id}`}
+                        href={`/project/${projectId}/${task.taskHash}`}
                         className="font-medium font-mono text-sm hover:underline"
                       >
-                        {task.task_id.slice(0, 16)}...
+                        {task.taskHash.slice(0, 16)}...
                       </Link>
                     ) : (
                       <AndamioText className="font-medium text-muted-foreground">No ID</AndamioText>
                     )}
                   </AndamioTableCell>
                   <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
-                    {task.expiration ? (
+                    {task.expirationTime ? (
                       <AndamioText variant="small">
-                        Expires: {new Date(task.expiration).toLocaleDateString()}
+                        Expires: {new Date(task.expirationTime).toLocaleDateString()}
                       </AndamioText>
                     ) : (
                       <AndamioText variant="small" className="text-muted-foreground">
@@ -367,7 +367,7 @@ export default function ProjectDetailPage() {
                   </AndamioTableCell>
                   <AndamioTableCell className="text-center">
                     <AndamioBadge variant="outline">
-                      {formatLovelace(task.lovelace_amount ?? 0)}
+                      {formatLovelace(task.lovelaceAmount ?? "0")}
                     </AndamioBadge>
                   </AndamioTableCell>
                 </AndamioTableRow>

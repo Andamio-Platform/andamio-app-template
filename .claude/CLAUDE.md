@@ -90,30 +90,34 @@ This fetches the latest OpenAPI spec from the gateway and generates TypeScript t
 - `ProjectTaskV2Output` - Task data
 - `AssignmentCommitmentResponse` - Assignment commitments
 
-### NullableString Type Handling
+### Type Transformation Pattern (API → App)
 
-**CRITICAL**: The API generates `NullableString` fields as `object` type (not `string | null`). This requires special handling.
+**PREFERRED**: Use app-level types from `~/types/project.ts` which have proper `string` types (camelCase).
 
-**Why this happens**: The OpenAPI spec defines `NullableString` in a way that causes the type generator to output `object` instead of `string | null`.
+```typescript
+import { type Task, type Project, transformApiTask } from "~/types/project";
 
-**Solution**: Use the type helper utilities:
+// App types use camelCase and are flattened
+const task: Task = {
+  taskHash: "abc123...",       // NOT task_hash
+  title: "My Task",            // Flattened from content.title
+  lovelaceAmount: "5000000",   // NOT lovelace_amount
+};
+```
+
+**Full documentation**: `.claude/dev-notes/TYPE-TRANSFORMATION.md`
+
+### NullableString Type Handling (Legacy)
+
+**Note**: With app-level types, `getString()` is largely deprecated. Use app types instead.
+
+The API generates `NullableString` fields as `object` type (not `string | null`). The `getString()` helper handles edge cases:
 
 ```typescript
 import { getString, getOptionalString } from "~/lib/type-helpers";
 
-// Convert NullableString to string (empty string if null/undefined)
-const title = getString(task.title);
-
-// Convert to optional string (undefined if null/undefined)
-const description = getOptionalString(task.description);
-```
-
-**Alternative Pattern** (for inline use without importing):
-
-```typescript
-// Cast to unknown first, then check type
-const rawTitle = task.title as unknown;
-const title = typeof rawTitle === "string" ? rawTitle : "";
+// Only needed for raw API types, not app types
+const title = getString(rawApiResponse.title);
 ```
 
 **Common NullableString Fields**:

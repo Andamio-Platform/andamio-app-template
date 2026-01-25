@@ -1,6 +1,6 @@
 # Project Manager Skill
 
-> **Last Updated**: January 21, 2026
+> **Last Updated**: January 24, 2026
 
 This skill directory contains project planning, status tracking, and architectural documentation for the Andamio T3 App Template.
 
@@ -15,13 +15,14 @@ This skill directory contains project planning, status tracking, and architectur
 | Transaction Components | **16/16 V2 complete** |
 | Gateway Migration | **Complete** |
 | L1 Core Package | **Complete** |
+| Type Transformation | **Complete** (Phase 3.8) |
 | **Overall API Coverage** | **63%** (68/108 endpoints) |
 
 Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for live metrics.
 
 ### Current Focus
 
-**Layered Architecture L2/L3** - L1 Core complete (`@andamio/core`), ready for hook reorganization and V1 cleanup.
+**L2/L3 Hook Reorganization** - Phase 3.8 Type Transformation complete, ready for hook directory restructure and V1 cleanup.
 
 ---
 
@@ -54,19 +55,15 @@ Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for li
 
 | Document | Purpose |
 |----------|---------|
-| `TRANSACTION-COMPONENTS.md` | Transaction component architecture, flow |
-| `CONTRIBUTOR-TRANSACTION-MODEL.md` | 3-transaction contributor lifecycle (COMMIT, ACTION, CLAIM) |
-| `SIDE-EFFECTS-INTEGRATION.md` | Side effects system (`onSubmit`, `onConfirmation`) |
+| `TRANSACTION-COMPONENTS.md` | Transaction component architecture, flow, 3-TX contributor model |
 | `PENDING-TX-WATCHER.md` | Blockchain transaction monitoring |
 | `TX-MIGRATION-GUIDE.md` | V1 to V2 transaction migration patterns |
 
-### API & Architecture Proposals
+### API & Architecture
 
 | Document | Purpose |
 |----------|---------|
-| `API-UPGRADE-PLAN.md` | API endpoint implementation roadmap |
-| `layered-proposal.md` | Layered architecture proposal |
-| `layered-proposal-review.md` | Proposal review and implementation plan |
+| `layered-proposal-review.md` | L1-L5 layered architecture implementation status |
 | `ANDAMIOSCAN-EVENTS-CONFIRMATION.md` | Event-based TX confirmation spec |
 
 ### Onboarding

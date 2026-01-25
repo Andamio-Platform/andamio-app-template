@@ -56,7 +56,12 @@ export {
   useUpdateCourse,
   useDeleteCourse,
   courseKeys,
+  transformCourse,
+  transformCourseDetail,
+  type Course,
+  type CourseDetail,
   type CourseSource,
+  // Deprecated aliases - use Course/CourseDetail instead
   type FlattenedCourseListItem,
   type FlattenedCourseDetail,
 } from "./course/use-course";
@@ -71,8 +76,13 @@ export {
   useUpdateCourseModuleStatus,
   useDeleteCourseModule,
   courseModuleKeys,
-  type MergedCourseModule,
+  transformCourseModule,
+  type CourseModule,
   type ModuleSource,
+  type SLT,
+  type Lesson,
+  // Deprecated alias - use CourseModule instead
+  type MergedCourseModule,
 } from "./course/use-course-module";
 
 export {

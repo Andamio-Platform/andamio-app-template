@@ -5,14 +5,14 @@ import Link from "next/link";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { SettingsIcon } from "~/components/icons";
-import { type FlattenedCourseListItem } from "~/hooks/api";
+import { type Course } from "~/hooks/api";
 import {
   CourseStatusIcon,
   CourseModuleCount,
 } from "./course-ui";
 
 interface CourseTableViewProps {
-  courses: FlattenedCourseListItem[];
+  courses: Course[];
   moduleCounts: Record<string, number>;
 }
 
@@ -37,7 +37,7 @@ export function CourseTableView({ courses, moduleCounts }: CourseTableViewProps)
         </AndamioTableHeader>
         <AndamioTableBody>
           {courses.map((courseData) => {
-            const courseId = courseData.course_id ?? "";
+            const courseId = courseData.courseId ?? "";
             const title = typeof courseData.title === "string" ? courseData.title : "";
             const description = typeof courseData.description === "string" ? courseData.description : "";
             return (

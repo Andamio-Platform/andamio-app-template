@@ -4,29 +4,36 @@
  * Provides cached, deduplicated access to course data across the app.
  * Uses React Query for automatic caching, background refetching, and request deduplication.
  *
+ * Architecture: Colocated Types Pattern
+ * - App-level types (Course, CourseDetail) defined here with camelCase fields
+ * - Transform functions convert API snake_case to app camelCase
+ * - Components import types from this hook, never from generated types
+ *
  * @example
  * ```tsx
- * // Get a course by NFT policy ID - cached across all components
- * const { data: course, isLoading } = useCourse(courseNftPolicyId);
+ * import { useCourse, type Course } from "~/hooks/api/course/use-course";
  *
- * // When user navigates from /course/[id] to /course/[id]/[module],
- * // the course data is already cached - no duplicate request!
+ * function CourseHeader({ courseId }: { courseId: string }) {
+ *   const { data: course, isLoading } = useCourse(courseId);
+ *   if (!course) return null;
+ *   return <h1>{course.title}</h1>; // camelCase, flattened
+ * }
  * ```
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+// Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
-  CourseResponse,
   OrchestrationMergedCourseDetail,
   MergedHandlersMergedCourseDetailResponse,
   OrchestrationMergedCourseListItem,
   MergedHandlersMergedCoursesResponse,
-} from "~/types/generated";
-import type { MergedCourseModule } from "./use-course-module";
+} from "~/types/generated/gateway";
+import type { CourseModule } from "./use-course-module";
 
 // =============================================================================
-// Flattened Course Types
+// App-Level Types (exported for components)
 // =============================================================================
 
 /**
@@ -38,92 +45,122 @@ import type { MergedCourseModule } from "./use-course-module";
 export type CourseSource = "merged" | "chain_only" | "db_only";
 
 /**
- * Flattened course list item for UI components
- * Combines on-chain fields with off-chain content for backward compatibility.
+ * App-level Course type with camelCase fields
+ * Used for course lists and basic course info
  */
-export interface FlattenedCourseListItem {
+export interface Course {
   // On-chain fields
-  course_id?: string;
-  course_address?: string;
+  courseId: string;
+  courseAddress?: string;
   owner?: string;
   teachers?: string[];
-  student_state_id?: string;
-  created_tx?: string;
-  created_slot?: number;
+  studentStateId?: string;
+  createdTx?: string;
+  createdSlot?: number;
 
   // Data source
-  source?: CourseSource;
+  source: CourseSource;
 
-  // Flattened content fields (from content.*)
-  title?: string;
+  // Content fields (flattened from content.*)
+  title: string;
   description?: string;
-  image_url?: string;
-  is_public?: boolean;
+  imageUrl?: string;
+  isPublic?: boolean;
 }
 
 /**
- * Flattened course detail for UI components
- * Extends list item with modules and additional detail fields.
+ * App-level CourseDetail type with modules
+ * Extends Course with additional detail fields
  */
-export interface FlattenedCourseDetail extends FlattenedCourseListItem {
-  // Modules (flattened from nested format)
-  modules?: MergedCourseModule[];
+export interface CourseDetail extends Course {
+  // Modules (will be CourseModule[] when use-course-module is updated)
+  modules?: CourseModule[];
 }
 
+// =============================================================================
+// Transform Functions
+// =============================================================================
+
 /**
- * Transform API response to flattened course list item format
- * Exported for reuse in other hooks (e.g., useOwnedCourses)
+ * Transform API response to app-level Course type
+ * Handles snake_case → camelCase conversion and field flattening
  */
-export function flattenCourseListItem(item: OrchestrationMergedCourseListItem): FlattenedCourseListItem {
+export function transformCourse(item: OrchestrationMergedCourseListItem): Course {
   return {
     // On-chain fields
-    course_id: item.course_id,
-    course_address: item.course_address,
+    courseId: item.course_id ?? "",
+    courseAddress: item.course_address,
     owner: item.owner,
     teachers: item.teachers,
-    student_state_id: item.student_state_id,
-    created_tx: item.created_tx,
-    created_slot: item.created_slot,
-    source: item.source as CourseSource,
+    studentStateId: item.student_state_id,
+    createdTx: item.created_tx,
+    createdSlot: item.created_slot,
+    source: (item.source as CourseSource) ?? "db_only",
 
     // Flattened content fields
-    title: item.content?.title,
+    title: item.content?.title ?? "",
     description: item.content?.description,
-    image_url: item.content?.image_url,
-    is_public: item.content?.is_public,
+    imageUrl: item.content?.image_url,
+    isPublic: item.content?.is_public,
   };
 }
 
 /**
- * Transform API response to flattened course detail format
+ * Transform API response to app-level CourseDetail type
+ * Includes modules mapping
  */
-function flattenCourseDetail(detail: OrchestrationMergedCourseDetail): FlattenedCourseDetail {
+export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): CourseDetail {
   return {
     // On-chain fields (note: owner, created_tx, created_slot not available in detail endpoint)
-    course_id: detail.course_id,
-    course_address: detail.course_address,
+    courseId: detail.course_id ?? "",
+    courseAddress: detail.course_address,
     teachers: detail.teachers,
-    student_state_id: detail.student_state_id,
-    source: detail.source as CourseSource,
+    studentStateId: detail.student_state_id,
+    source: (detail.source as CourseSource) ?? "db_only",
 
     // Flattened content fields
-    title: detail.content?.title,
+    title: detail.content?.title ?? "",
     description: detail.content?.description,
-    image_url: detail.content?.image_url,
-    is_public: detail.content?.is_public,
+    imageUrl: detail.content?.image_url,
+    isPublic: detail.content?.is_public,
 
-    // Modules - map to flattened format
+    // Modules - map to CourseModule format
+    // Note: This uses the old format temporarily until use-course-module is updated
     modules: detail.modules?.map((m) => ({
-      slt_hash: m.slt_hash,
-      course_id: detail.course_id,
-      created_by: m.created_by,
+      sltHash: m.slt_hash ?? "",
+      courseId: detail.course_id ?? "",
+      createdBy: m.created_by,
       prerequisites: m.prerequisites,
-      on_chain_slts: m.slts,
-      source: "merged" as const, // Detail modules are always merged
+      onChainSlts: m.slts,
+      source: "merged" as const,
       // Note: module content is not included in course detail response
     })),
   };
 }
+
+// =============================================================================
+// Backward Compatibility Exports (DEPRECATED)
+// =============================================================================
+
+/**
+ * @deprecated Use Course instead. Will be removed after component migration.
+ */
+export type FlattenedCourseListItem = Course;
+
+/**
+ * @deprecated Use CourseDetail instead. Will be removed after component migration.
+ */
+export type FlattenedCourseDetail = CourseDetail;
+
+/**
+ * @deprecated Use transformCourse instead. Will be removed after component migration.
+ */
+export const flattenCourseListItem = transformCourse;
+
+/**
+ * @deprecated Use transformCourseDetail instead. Will be removed after component migration.
+ */
+export const flattenCourseDetail = transformCourseDetail;
 
 // =============================================================================
 // Query Keys
@@ -162,14 +199,14 @@ export const courseKeys = {
  *   if (error) return <ErrorAlert message={error.message} />;
  *   if (!course) return <NotFound />;
  *
- *   return <h1>{course.content?.title}</h1>;
+ *   return <h1>{course.title}</h1>;
  * }
  * ```
  */
 export function useCourse(courseId: string | undefined) {
   return useQuery({
     queryKey: courseKeys.detail(courseId ?? ""),
-    queryFn: async (): Promise<FlattenedCourseDetail | null> => {
+    queryFn: async (): Promise<CourseDetail | null> => {
       // Merged endpoint: GET /api/v2/course/user/course/get/{course_id}
       // Returns both on-chain and off-chain data
       const response = await fetch(
@@ -192,8 +229,8 @@ export function useCourse(courseId: string | undefined) {
 
       if (!result.data) return null;
 
-      // Transform to flattened format for backward compatibility
-      return flattenCourseDetail(result.data);
+      // Transform to app-level type with camelCase fields
+      return transformCourseDetail(result.data);
     },
     enabled: !!courseId,
     staleTime: 30 * 1000,
@@ -221,9 +258,9 @@ export function useCourse(courseId: string | undefined) {
  *     <div className="grid grid-cols-3 gap-4">
  *       {courses?.map(course => (
  *         <CourseCard
- *           key={course.course_id}
- *           title={course.content?.title}
- *           description={course.content?.description}
+ *           key={course.courseId}
+ *           title={course.title}
+ *           description={course.description}
  *           source={course.source}
  *         />
  *       ))}
@@ -235,7 +272,7 @@ export function useCourse(courseId: string | undefined) {
 export function usePublishedCourses() {
   return useQuery({
     queryKey: courseKeys.published(),
-    queryFn: async (): Promise<FlattenedCourseListItem[]> => {
+    queryFn: async (): Promise<Course[]> => {
       const response = await fetch(
         `/api/gateway/api/v2/course/user/courses/list`
       );
@@ -264,8 +301,8 @@ export function usePublishedCourses() {
         items = result.data ?? [];
       }
 
-      // Transform to flattened format for backward compatibility
-      return items.map(flattenCourseListItem);
+      // Transform to app-level types with camelCase fields
+      return items.map(transformCourse);
     },
   });
 }
@@ -293,7 +330,7 @@ export function useOwnedCoursesQuery() {
 
   return useQuery({
     queryKey: courseKeys.owned(),
-    queryFn: async (): Promise<FlattenedCourseListItem[]> => {
+    queryFn: async (): Promise<Course[]> => {
       // Go API: POST /course/owner/courses/list - returns courses owned by authenticated user
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/owner/courses/list`,
@@ -315,8 +352,8 @@ export function useOwnedCoursesQuery() {
       // Handle both wrapped { data: [...] } and raw array formats
       const items = Array.isArray(result) ? result : (result.data ?? []);
 
-      // Transform to flattened format for backward compatibility
-      return items.map(flattenCourseListItem);
+      // Transform to app-level types with camelCase fields
+      return items.map(transformCourse);
     },
     enabled: isAuthenticated,
   });
@@ -333,12 +370,12 @@ export function useOwnedCoursesQuery() {
  *
  * @example
  * ```tsx
- * function EditCourseForm({ course }: { course: CourseResponse }) {
+ * function EditCourseForm({ course }: { course: Course }) {
  *   const updateCourse = useUpdateCourse();
  *
  *   const handleSubmit = async (data: UpdateCourseInput) => {
  *     await updateCourse.mutateAsync({
- *       courseNftPolicyId: course.course_nft_policy_id,
+ *       courseNftPolicyId: course.courseId,
  *       data,
  *     });
  *     toast.success("Course updated!");
@@ -384,7 +421,8 @@ export function useUpdateCourse() {
         throw new Error(`Failed to update course: ${response.statusText}`);
       }
 
-      return response.json() as Promise<CourseResponse>;
+      // Response consumed but not returned - cache invalidation triggers refetch
+      await response.json();
     },
     onSuccess: (_, variables) => {
       // Invalidate the specific course

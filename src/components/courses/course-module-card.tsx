@@ -24,8 +24,10 @@ export interface CourseModuleCardProps {
   moduleCode: string;
   /** Module title */
   title: string;
-  /** Module index (1-based for display) */
+  /** Module index (1-based for display, fallback when no moduleCode) */
   index: number;
+  /** SLT hash (used as fallback identifier for chain_only modules) */
+  sltHash?: string;
   /** List of SLTs in this module */
   slts: ModuleSLT[];
   /** Set of on-chain verified SLT texts */
@@ -46,19 +48,28 @@ export function CourseModuleCard({
   moduleCode,
   title,
   index,
+  sltHash,
   slts,
   onChainSlts = new Set(),
   isOnChain = false,
   courseNftPolicyId,
 }: CourseModuleCardProps) {
+  // Display: moduleCode > shortened sltHash > index
+  const displayCode = moduleCode || (sltHash ? `#${sltHash.slice(0, 4)}` : String(index));
+
+  // Link destination: use moduleCode if available, otherwise sltHash for chain_only modules
+  const linkPath = moduleCode
+    ? `/course/${courseNftPolicyId}/${moduleCode}`
+    : `/course/${courseNftPolicyId}/${sltHash}`;
+
   return (
     <AndamioCard className="overflow-hidden">
-      <Link href={`/course/${courseNftPolicyId}/${moduleCode}`}>
+      <Link href={linkPath}>
         <AndamioCardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm sm:text-base">
-                {index}
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
+                {displayCode}
               </div>
               <div className="min-w-0 flex-1">
                 <AndamioCardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -69,9 +80,6 @@ export function CourseModuleCard({
                     </span>
                   )}
                 </AndamioCardTitle>
-                <AndamioText variant="small" className="text-xs sm:text-sm font-mono truncate">
-                  {moduleCode}
-                </AndamioText>
               </div>
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">

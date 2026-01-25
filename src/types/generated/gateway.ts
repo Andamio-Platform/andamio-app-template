@@ -1281,6 +1281,11 @@ export interface MergedHandlersMergedCourseDetailResponse {
   warning?: string;
 }
 
+export interface MergedHandlersMergedCourseModulesPublicResponse {
+  data?: OrchestrationPublicCourseModuleItem[];
+  warning?: string;
+}
+
 export interface MergedHandlersMergedCourseModulesResponse {
   data?: OrchestrationMergedCourseModuleItem[];
   warning?: string;
@@ -1632,6 +1637,31 @@ export interface OrchestrationProjectTreasuryFundingOnChain {
   lovelace_amount?: number;
   slot?: number;
   tx_hash?: string;
+}
+
+export interface OrchestrationPublicCourseModuleItem {
+  /** Off-chain content (from DB API) */
+  content?: OrchestrationPublicModuleContent;
+  /** Course context */
+  course_id?: string;
+  /** On-chain fields (from Andamioscan) */
+  created_by?: string;
+  /** SLT text from chain */
+  on_chain_slts?: string[];
+  /** On-chain prerequisite module hashes */
+  prerequisites?: string[];
+  /** Primary identifier - on-chain slts_hash */
+  slt_hash?: string;
+  /** Data source indicator */
+  source?: string;
+}
+
+export interface OrchestrationPublicModuleContent {
+  course_module_code?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
 }
 
 export interface OrchestrationRegisterModuleResponse {

@@ -108,12 +108,26 @@ export function AndamioPageLoading({
       )}
 
       {variant === "cards" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: itemCount }).map((_, i) => (
-            <div key={i} className="border rounded-lg p-4 space-y-3">
-              <AndamioSkeleton className="h-5 w-3/4" />
-              <AndamioSkeleton className="h-4 w-full" />
-              <AndamioSkeleton className="h-4 w-1/2" />
+            <div key={i} className="border rounded-xl overflow-hidden">
+              {/* Image placeholder */}
+              <AndamioSkeleton className="h-32 sm:h-40 w-full rounded-none" />
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <AndamioSkeleton className="h-5 w-3/4" />
+                  <AndamioSkeleton className="h-3 w-1/2" />
+                </div>
+                <div className="space-y-2">
+                  <AndamioSkeleton className="h-4 w-full" />
+                  <AndamioSkeleton className="h-4 w-4/5" />
+                </div>
+                <div className="flex justify-between pt-2 border-t">
+                  <AndamioSkeleton className="h-4 w-20" />
+                  <AndamioSkeleton className="h-4 w-16" />
+                </div>
+              </div>
             </div>
           ))}
         </div>

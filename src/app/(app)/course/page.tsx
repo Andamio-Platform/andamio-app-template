@@ -1,28 +1,28 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import {
   AndamioPageHeader,
-  AndamioTableContainer,
   AndamioPageLoading,
   AndamioNotFoundCard,
   AndamioEmptyState,
-  AndamioText,
 } from "~/components/andamio";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
-import { CourseIcon, OnChainIcon, SuccessIcon, PendingIcon } from "~/components/icons";
+import { CourseIcon, SuccessIcon, PendingIcon, InfoIcon } from "~/components/icons";
 import { useActiveCourses } from "~/hooks/api";
+import { CourseCard } from "~/components/courses/course-card";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 
 /**
- * Public page displaying all published courses
+ * Public page displaying all active courses
  *
  * Uses the merged V2 API endpoint that returns both on-chain and off-chain data.
  * API Endpoint: GET /api/v2/course/user/courses/list
  *
- * Benefits: Automatic caching, background refetching, request deduplication
+ * Features:
+ * - Responsive grid layout (1-3 columns based on screen size)
+ * - Beautiful course cards with images/gradients
+ * - Status badges (Active/Draft/Unregistered)
+ * - Automatic caching via React Query
  */
 export default function CoursePage() {
   const {
@@ -33,16 +33,21 @@ export default function CoursePage() {
 
   const error = coursesError?.message ?? null;
 
+  // Stats for header
+  const activeCourses = courses.filter((c) => c.status === "active").length;
+  const draftCourses = courses.filter((c) => c.status === "draft").length;
+  const unregisteredCourses = courses.filter((c) => c.status === "unregistered").length;
+
   // Loading state
   if (isLoading) {
-    return <AndamioPageLoading variant="list" />;
+    return <AndamioPageLoading variant="cards" />;
   }
 
   // Error state
   if (error) {
     return (
       <AndamioNotFoundCard
-        title="Courses"
+        title="Unable to Load Courses"
         message={error}
       />
     );
@@ -54,7 +59,7 @@ export default function CoursePage() {
       <div className="space-y-6">
         <AndamioPageHeader
           title="Courses"
-          description="Browse all published courses"
+          description="Explore published courses on the Andamio platform"
         />
         <AndamioEmptyState
           icon={CourseIcon}
@@ -65,107 +70,47 @@ export default function CoursePage() {
     );
   }
 
-  // Courses list
+  // Courses list with cards
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header with stats */}
       <AndamioPageHeader
         title="Courses"
-        description="Browse all published courses"
+        description="Explore published courses on the Andamio platform"
       />
 
-      <AndamioTableContainer>
-        <AndamioTable>
-          <AndamioTableHeader>
-            <AndamioTableRow>
-              <AndamioTableHead>Title</AndamioTableHead>
-              <AndamioTableHead className="hidden md:table-cell">Course ID</AndamioTableHead>
-              <AndamioTableHead className="hidden lg:table-cell">Description</AndamioTableHead>
-              <AndamioTableHead className="text-center">Status</AndamioTableHead>
-            </AndamioTableRow>
-          </AndamioTableHeader>
-          <AndamioTableBody>
-            {courses.map((course, index) => {
-              // App-level Course type from hook - camelCase fields
-              const courseId = course.courseId;
-              const title = course.title;
-              const description = course.description;
+      {/* Stats bar */}
+      <div className="flex flex-wrap gap-3">
+        <AndamioBadge variant="secondary" className="text-sm px-3 py-1.5">
+          <CourseIcon className="h-4 w-4 mr-1.5" />
+          {courses.length} {courses.length === 1 ? "course" : "courses"}
+        </AndamioBadge>
+        {activeCourses > 0 && (
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-success border-success/30">
+            <SuccessIcon className="h-4 w-4 mr-1.5" />
+            {activeCourses} active
+          </AndamioBadge>
+        )}
+        {draftCourses > 0 && (
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-warning border-warning/30">
+            <PendingIcon className="h-4 w-4 mr-1.5" />
+            {draftCourses} draft
+          </AndamioBadge>
+        )}
+        {unregisteredCourses > 0 && (
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-info border-info/30">
+            <InfoIcon className="h-4 w-4 mr-1.5" />
+            {unregisteredCourses} unregistered
+          </AndamioBadge>
+        )}
+      </div>
 
-              return (
-                <AndamioTableRow key={courseId ?? `course-${index}`}>
-                  <AndamioTableCell>
-                    <Link
-                      href={`/course/${courseId}`}
-                      className="font-medium hover:underline"
-                    >
-                      {title ?? courseId?.slice(0, 16) ?? "Untitled"}
-                    </Link>
-                  </AndamioTableCell>
-                  <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
-                    {courseId ? (
-                      <span title={courseId}>
-                        {courseId.slice(0, 16)}...
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </AndamioTableCell>
-                  <AndamioTableCell className="hidden lg:table-cell max-w-md">
-                    <AndamioText variant="small" className="text-muted-foreground line-clamp-2">
-                      {description ?? "-"}
-                    </AndamioText>
-                  </AndamioTableCell>
-                <AndamioTableCell className="text-center">
-                  {course.status === "active" ? (
-                    <AndamioTooltip>
-                      <AndamioTooltipTrigger asChild>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <SuccessIcon className="h-4 w-4 text-success" />
-                          <AndamioBadge variant="outline" className="text-success border-success/30">
-                            <OnChainIcon className="h-3 w-3 mr-1" />
-                            Active
-                          </AndamioBadge>
-                        </div>
-                      </AndamioTooltipTrigger>
-                      <AndamioTooltipContent>
-                        Published on-chain with verified off-chain content
-                      </AndamioTooltipContent>
-                    </AndamioTooltip>
-                  ) : course.status === "unregistered" ? (
-                    <AndamioTooltip>
-                      <AndamioTooltipTrigger asChild>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <OnChainIcon className="h-4 w-4 text-info" />
-                          <AndamioBadge variant="outline" className="text-info border-info/30">
-                            Unregistered
-                          </AndamioBadge>
-                        </div>
-                      </AndamioTooltipTrigger>
-                      <AndamioTooltipContent>
-                        On-chain but needs DB registration
-                      </AndamioTooltipContent>
-                    </AndamioTooltip>
-                  ) : (
-                    <AndamioTooltip>
-                      <AndamioTooltipTrigger asChild>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <PendingIcon className="h-4 w-4 text-warning" />
-                          <AndamioBadge variant="outline" className="text-warning border-warning/30">
-                            Draft
-                          </AndamioBadge>
-                        </div>
-                      </AndamioTooltipTrigger>
-                      <AndamioTooltipContent>
-                        Not yet published on-chain
-                      </AndamioTooltipContent>
-                    </AndamioTooltip>
-                  )}
-                </AndamioTableCell>
-              </AndamioTableRow>
-              );
-            })}
-          </AndamioTableBody>
-        </AndamioTable>
-      </AndamioTableContainer>
+      {/* Course cards grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course) => (
+          <CourseCard key={course.courseId} course={course} />
+        ))}
+      </div>
     </div>
   );
 }

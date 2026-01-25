@@ -51,9 +51,6 @@ export default function CourseDetailPage() {
   const isLoading = courseLoading || modulesLoading;
   const error = courseError ?? modulesError;
 
-  // Get on-chain modules from the merged course data
-  const onChainModules = course?.modules ?? [];
-
   // Loading state
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
@@ -93,28 +90,17 @@ export default function CourseDetailPage() {
     );
   }
 
-  // Build map of on-chain SLTs per module by matching SLT text content
-  // onChainModules contains on-chain data with onChainSlts (string hashes/IDs)
-  const getOnChainStatus = (moduleSlts: Array<{ sltText?: string }>) => {
-    if (onChainModules.length === 0) return { onChainSlts: new Set<string>(), moduleHash: null };
+  // Calculate total SLT count (prefer DB SLTs, fall back to on-chain)
+  const totalSlts = moduleList.reduce((sum, m) => {
+    const dbCount = m.slts?.length ?? 0;
+    const chainCount = m.onChainSlts?.length ?? 0;
+    return sum + (dbCount > 0 ? dbCount : chainCount);
+  }, 0);
 
-    const dbSltTexts = new Set(moduleSlts.map((s) => s.sltText).filter((t): t is string => !!t));
-
-    for (const mod of onChainModules) {
-      // Use onChainSlts from the flattened module (from chain data)
-      const modSlts = mod.onChainSlts ?? [];
-      const onChainTexts = new Set(modSlts);
-      const intersection = [...dbSltTexts].filter((t) => onChainTexts.has(t));
-      if (intersection.length > 0 && modSlts.length > 0 && intersection.length >= modSlts.length * 0.5) {
-        return { onChainSlts: onChainTexts, moduleHash: mod.sltHash ?? null };
-      }
-    }
-
-    return { onChainSlts: new Set<string>(), moduleHash: null };
-  };
-
-  // Calculate total SLT count
-  const totalSlts = moduleList.reduce((sum, m) => sum + (m.slts?.length ?? 0), 0);
+  // Count modules with on-chain verification
+  const verifiedModuleCount = moduleList.filter(
+    (m) => (m.onChainSlts?.length ?? 0) > 0
+  ).length;
 
   // Course and modules display
   return (
@@ -162,21 +148,32 @@ export default function CourseDetailPage() {
         {/* Module Cards with SLTs */}
         <div className="space-y-4">
           {moduleList.map((courseModule, moduleIndex) => {
-            const { onChainSlts, moduleHash } = getOnChainStatus(courseModule.slts ?? []);
-            const hasOnChain = moduleHash !== null;
-            // Filter and map SLTs to ensure valid sltText values
-            const validSlts = (courseModule.slts ?? [])
+            // DB SLTs (if populated from content.slts)
+            const dbSlts = (courseModule.slts ?? [])
               .filter((s) => !!s.sltText)
               .map((s) => ({ sltText: s.sltText! }));
 
+            // On-chain SLTs (from merged endpoint - array of SLT text strings)
+            // Use as fallback if DB SLTs aren't populated
+            const chainSlts = (courseModule.onChainSlts ?? [])
+              .map((text) => ({ sltText: text }));
+
+            // Prefer DB SLTs, fall back to on-chain SLTs
+            const displaySlts = dbSlts.length > 0 ? dbSlts : chainSlts;
+
+            // Module is on-chain if it has onChainSlts data
+            const hasOnChain = (courseModule.onChainSlts ?? []).length > 0;
+            const onChainSltsSet = new Set(courseModule.onChainSlts ?? []);
+
             return (
               <CourseModuleCard
-                key={courseModule.moduleCode}
+                key={courseModule.moduleCode ?? courseModule.sltHash}
                 moduleCode={courseModule.moduleCode ?? ""}
                 title={courseModule.title ?? "Untitled Module"}
                 index={moduleIndex + 1}
-                slts={validSlts}
-                onChainSlts={onChainSlts}
+                sltHash={courseModule.sltHash}
+                slts={displaySlts}
+                onChainSlts={onChainSltsSet}
                 isOnChain={hasOnChain}
                 courseNftPolicyId={courseNftPolicyId}
               />
@@ -186,14 +183,14 @@ export default function CourseDetailPage() {
       </div>
 
       {/* On-Chain Verified SLTs - Additional Detail Section */}
-      {onChainModules.length > 0 && (
+      {verifiedModuleCount > 0 && (
         <div className="space-y-4 border-t pt-8">
           <div className="flex items-center gap-2">
             <OnChainIcon className="h-5 w-5 text-success" />
             <h2 className="text-xl font-semibold">Blockchain Verification</h2>
           </div>
           <AndamioText variant="small">
-            This course has {onChainModules.length} {onChainModules.length === 1 ? "module" : "modules"} with learning targets verified on the Cardano blockchain.
+            This course has {verifiedModuleCount} {verifiedModuleCount === 1 ? "module" : "modules"} with learning targets verified on the Cardano blockchain.
           </AndamioText>
         </div>
       )}

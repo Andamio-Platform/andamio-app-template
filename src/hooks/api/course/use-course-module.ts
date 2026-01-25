@@ -291,17 +291,37 @@ export function transformIntroduction(raw: Record<string, unknown>): Introductio
 /**
  * Transform API response to app-level CourseModule type
  * Handles snake_case → camelCase conversion and field flattening
+ *
+ * For chain_only modules (no DB content), uses on_chain_slts for display:
+ * - title: First SLT text or "Untitled Module"
+ * - slts: Converted from on_chain_slts array
  */
 export function transformCourseModule(item: OrchestrationMergedCourseModuleItem): CourseModule {
-  // Transform nested entities if present
+  const isChainOnly = item.source === "chain_only" || !item.content;
+
+  // Transform nested entities if present (merged modules only)
   const rawSlts = item.content?.slts as Record<string, unknown>[] | undefined;
-  const slts = rawSlts?.map(transformSLT);
+  const dbSlts = rawSlts?.map(transformSLT);
+
+  // For chain_only modules, convert on_chain_slts strings to SLT objects
+  const chainSlts: SLT[] | undefined = item.on_chain_slts?.map((text, index) => ({
+    sltText: text,
+    moduleIndex: index + 1,
+  }));
+
+  // Use DB SLTs if available, otherwise chain SLTs
+  const slts = dbSlts && dbSlts.length > 0 ? dbSlts : chainSlts;
 
   const rawAssignment = item.content?.assignment as Record<string, unknown> | undefined;
   const assignment = rawAssignment ? transformAssignment(rawAssignment) : null;
 
   const rawIntroduction = item.content?.introduction as Record<string, unknown> | undefined;
   const introduction = rawIntroduction ? transformIntroduction(rawIntroduction) : null;
+
+  // For chain_only modules, derive title from first SLT
+  const chainTitle = item.on_chain_slts?.[0]
+    ? `Module: ${item.on_chain_slts[0].slice(0, 50)}${item.on_chain_slts[0].length > 50 ? "..." : ""}`
+    : undefined;
 
   return {
     // On-chain fields
@@ -314,17 +334,43 @@ export function transformCourseModule(item: OrchestrationMergedCourseModuleItem)
     // Lifecycle status (derived from API source + module_status fields)
     status: getModuleStatus(item.source, item.content?.module_status),
 
-    // Flattened content fields
+    // Flattened content fields (with chain_only fallbacks)
     moduleCode: item.content?.course_module_code,
-    title: item.content?.title,
+    title: item.content?.title ?? chainTitle,
     description: item.content?.description,
     imageUrl: item.content?.image_url,
     videoUrl: item.content?.video_url,
-    isLive: item.content?.is_live,
+    isLive: isChainOnly ? true : item.content?.is_live, // chain_only = published = live
     slts,
     assignment,
     introduction,
   };
+}
+
+// =============================================================================
+// Sort Helper
+// =============================================================================
+
+/**
+ * Sort course modules alphabetically by moduleCode (ascending).
+ * Modules without moduleCode (chain_only) are sorted to the end by sltHash.
+ */
+function sortModulesByCode<T extends { moduleCode?: string; sltHash?: string }>(
+  modules: T[]
+): T[] {
+  return [...modules].sort((a, b) => {
+    // Modules with moduleCode come first
+    if (a.moduleCode && !b.moduleCode) return -1;
+    if (!a.moduleCode && b.moduleCode) return 1;
+
+    // Both have moduleCode - sort alphabetically
+    if (a.moduleCode && b.moduleCode) {
+      return a.moduleCode.localeCompare(b.moduleCode);
+    }
+
+    // Neither has moduleCode - sort by sltHash as fallback
+    return (a.sltHash ?? "").localeCompare(b.sltHash ?? "");
+  });
 }
 
 // =============================================================================
@@ -405,8 +451,9 @@ export function useCourseModules(courseId: string | undefined) {
         console.warn("[useCourseModules] API warning:", result.warning);
       }
 
-      // Transform to app-level types with camelCase fields
-      return (result.data ?? []).map(transformCourseModule);
+      // Transform to app-level types and sort by moduleCode alphabetically
+      const modules = (result.data ?? []).map(transformCourseModule);
+      return sortModulesByCode(modules);
     },
     enabled: !!courseId,
   });
@@ -472,8 +519,9 @@ export function useTeacherCourseModules(courseId: string | undefined) {
         console.warn("[useTeacherCourseModules] API warning:", result.warning);
       }
 
-      // Transform to app-level types with camelCase fields
-      return (result.data ?? []).map(transformCourseModule);
+      // Transform to app-level types and sort by moduleCode alphabetically
+      const modules = (result.data ?? []).map(transformCourseModule);
+      return sortModulesByCode(modules);
     },
     enabled: !!courseId && isAuthenticated,
   });
@@ -584,13 +632,17 @@ export function useCourseModuleMap(courseIds: string[]) {
         Array<{ course_module_code: string; title: string }>
       >;
 
-      // Transform to camelCase
+      // Transform to camelCase and sort by moduleCode alphabetically
       const result: Record<string, CourseModuleSummary[]> = {};
       for (const [courseId, modules] of Object.entries(raw)) {
-        result[courseId] = modules.map((m) => ({
+        const transformed = modules.map((m) => ({
           moduleCode: m.course_module_code,
           title: m.title,
         }));
+        // Sort by moduleCode alphabetically
+        result[courseId] = transformed.sort((a, b) =>
+          a.moduleCode.localeCompare(b.moduleCode)
+        );
       }
       return result;
     },

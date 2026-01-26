@@ -573,7 +573,7 @@ export default function ProjectDashboardPage() {
             </AndamioCardContent>
           </AndamioCard>
 
-          {/* On-Chain Managers Sync */}
+          {/* Project Team Display */}
           <ProjectManagersCard projectId={projectId} />
 
           {/* Managers Management (On-Chain Transaction) */}

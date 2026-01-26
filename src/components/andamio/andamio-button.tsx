@@ -67,6 +67,8 @@ export const AndamioButton = React.forwardRef<
     // Base Button already has gap-2 for icon spacing, so we don't need
     // manual margins. Just render icons and content directly.
     if (asChild && React.isValidElement(children)) {
+      // Type-assert props to access nested children for asChild pattern
+      const childProps = children.props as { children?: React.ReactNode };
       const content = isLoading ? (
         <>
           <LoadingIcon className="h-4 w-4 animate-spin" />
@@ -75,7 +77,7 @@ export const AndamioButton = React.forwardRef<
       ) : (
         <>
           {leftIcon}
-          {children.props.children}
+          {childProps.children}
           {rightIcon}
         </>
       );

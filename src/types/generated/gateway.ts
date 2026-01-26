@@ -1451,6 +1451,8 @@ export interface OrchestrationMergedCourseDetail {
   /** On-chain fields (top level) */
   course_id?: string;
   modules?: OrchestrationCourseModule[];
+  /** WORKAROUND: fetched via extra API call until Andamioscan#15 is resolved */
+  owner?: string;
   past_students?: string[];
   /** Data source indicator */
   source?: string;

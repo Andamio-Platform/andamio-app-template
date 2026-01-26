@@ -46,6 +46,9 @@ export { Users as TeacherIcon } from "lucide-react";
 /** Instructors/Course Owners - users who own and manage courses */
 export { Crown as InstructorIcon } from "lucide-react";
 
+/** Owner - entity owner (courses, projects) */
+export { Crown as OwnerIcon } from "lucide-react";
+
 /** Access Token - user's on-chain identity */
 export { Key as AccessTokenIcon } from "lucide-react";
 

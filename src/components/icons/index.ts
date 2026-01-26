@@ -41,6 +41,7 @@ export {
   LearnerIcon,
   TeacherIcon,
   InstructorIcon,
+  OwnerIcon,
   AccessTokenIcon,
   KeyIcon,
   WalletIcon,

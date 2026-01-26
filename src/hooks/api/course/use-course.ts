@@ -98,6 +98,10 @@ export interface Course {
 export interface CourseDetail extends Course {
   // Modules (will be CourseModule[] when use-course-module is updated)
   modules?: CourseModule[];
+
+  // Additional detail fields (available on detail endpoint)
+  students?: string[];
+  pastStudents?: string[];
 }
 
 // =============================================================================
@@ -151,9 +155,10 @@ export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): 
   }));
 
   return {
-    // On-chain fields (note: owner, created_tx, created_slot not available in detail endpoint)
+    // On-chain fields
     courseId: detail.course_id ?? "",
     courseAddress: detail.course_address,
+    owner: detail.owner,
     teachers: detail.teachers,
     studentStateId: detail.student_state_id,
 
@@ -165,6 +170,10 @@ export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): 
     description: detail.content?.description,
     imageUrl: detail.content?.image_url,
     isPublic: detail.content?.is_public,
+
+    // Detail-specific fields
+    students: detail.students,
+    pastStudents: detail.past_students,
 
     // Modules
     modules,

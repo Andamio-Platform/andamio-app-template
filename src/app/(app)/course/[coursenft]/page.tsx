@@ -15,6 +15,7 @@ import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { CourseModuleCard } from "~/components/courses/course-module-card";
 import { useCourse, useCourseModules, useTeacherCourseModules } from "~/hooks/api";
+import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 
 /**
  * Public page displaying course details and module list with SLT counts
@@ -152,6 +153,9 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Course Team */}
+      <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
 
       {/* User Course Status */}
       <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />

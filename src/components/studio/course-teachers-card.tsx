@@ -11,7 +11,7 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { TeacherIcon, OnChainIcon } from "~/components/icons";
+import { TeacherIcon, OwnerIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 
 interface CourseTeachersCardProps {
@@ -35,7 +35,8 @@ export function CourseTeachersCard({
     error: courseError,
   } = useCourse(courseNftPolicyId);
 
-  // Get teachers from merged course data
+  // Get owner and teachers from merged course data
+  const owner = course?.owner;
   const teachers = course?.teachers ?? [];
 
   return (
@@ -46,38 +47,68 @@ export function CourseTeachersCard({
           Course Team
         </AndamioCardTitle>
       </AndamioCardHeader>
-      <AndamioCardContent className="space-y-2">
-        <div className="flex items-center gap-2">
-          <OnChainIcon className="h-3.5 w-3.5 text-primary" />
-          <AndamioText variant="small" className="font-medium">
-            Teachers
-          </AndamioText>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {isLoadingCourse ? (
-            <>
-              <AndamioSkeleton className="h-6 w-20" />
-              <AndamioSkeleton className="h-6 w-16" />
-            </>
-          ) : courseError ? (
-            <AndamioText variant="small" className="text-destructive">
-              Failed to load course data
+      <AndamioCardContent className="space-y-4">
+        {/* Owner Section */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+            <AndamioText variant="small" className="font-medium">
+              Owner
             </AndamioText>
-          ) : teachers.length === 0 ? (
-            <AndamioText variant="small" className="text-muted-foreground">
-              No teachers assigned
-            </AndamioText>
-          ) : (
-            teachers.map((teacher: string) => (
-              <AndamioBadge
-                key={teacher}
-                variant="secondary"
-                className="font-mono text-xs"
-              >
-                {teacher}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {isLoadingCourse ? (
+              <AndamioSkeleton className="h-6 w-24" />
+            ) : courseError ? (
+              <AndamioText variant="small" className="text-destructive">
+                Failed to load
+              </AndamioText>
+            ) : owner ? (
+              <AndamioBadge variant="default" className="font-mono text-xs">
+                {owner}
               </AndamioBadge>
-            ))
-          )}
+            ) : (
+              <AndamioText variant="small" className="text-muted-foreground">
+                Not set
+              </AndamioText>
+            )}
+          </div>
+        </div>
+
+        {/* Teachers Section */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <TeacherIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <AndamioText variant="small" className="font-medium">
+              Teachers
+            </AndamioText>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {isLoadingCourse ? (
+              <>
+                <AndamioSkeleton className="h-6 w-20" />
+                <AndamioSkeleton className="h-6 w-16" />
+              </>
+            ) : courseError ? (
+              <AndamioText variant="small" className="text-destructive">
+                Failed to load
+              </AndamioText>
+            ) : teachers.length === 0 ? (
+              <AndamioText variant="small" className="text-muted-foreground">
+                No teachers assigned
+              </AndamioText>
+            ) : (
+              teachers.map((teacher: string) => (
+                <AndamioBadge
+                  key={teacher}
+                  variant="secondary"
+                  className="font-mono text-xs"
+                >
+                  {teacher}
+                </AndamioBadge>
+              ))
+            )}
+          </div>
         </div>
       </AndamioCardContent>
     </AndamioCard>

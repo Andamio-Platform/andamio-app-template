@@ -8,6 +8,7 @@ import { useStudioHeader } from "~/components/layout/studio-header";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import { StudioFormSection } from "~/components/studio/studio-editor-pane";
 import { StudioModuleCard } from "~/components/studio/studio-module-card";
+import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 import {
   AndamioButton,
   AndamioBadge,
@@ -773,6 +774,9 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   </div>
                 </div>
               </StudioFormSection>
+
+              {/* Course Team */}
+              <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
             </AndamioTabsContent>
 
             {/* On-Chain Tab */}

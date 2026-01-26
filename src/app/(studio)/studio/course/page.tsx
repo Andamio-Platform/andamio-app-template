@@ -334,10 +334,11 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
   }
 
   return (
-    <div className="flex h-full flex-col bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="h-full overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
       {/* Hero Section - Prominent Course Title */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-xl w-full text-center">
+      <AndamioScrollArea className="h-full">
+        <div className="p-8 pb-16">
+          <div className="max-w-xl w-full mx-auto text-center">
           {/* Status Badge */}
           <div className="mb-6">
             <CourseStatusBadge isOnChain={isOnChain} hasDbContent={hasDbContent} />
@@ -464,6 +465,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
           />
         </div>
       </div>
+      </AndamioScrollArea>
     </div>
   );
 }

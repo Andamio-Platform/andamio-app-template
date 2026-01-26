@@ -120,9 +120,9 @@ export function useUpdateCourse() {
 ```
 use-course.ts (owns Course, CourseDetail)
     ↑ imports CourseModule
-use-course-module.ts (owns CourseModule, SLT, Lesson)
+use-course-module.ts (owns CourseModule, SLT, Lesson, Assignment, Introduction)
     ↑ can be imported by
-use-slt.ts, use-lesson.ts (use imported types, don't redefine)
+use-slt.ts, use-lesson.ts, use-assignment.ts, use-introduction.ts (use imported types)
 ```
 
 ### Rules
@@ -131,20 +131,6 @@ use-slt.ts, use-lesson.ts (use imported types, don't redefine)
 2. **Import, don't duplicate** - If another hook needs a type, import it from the owner
 3. **No circular imports** - Imports must flow in one direction (up the hierarchy)
 4. **Lower-level hooks can be imported by higher-level hooks** - `use-course.ts` can import from `use-course-module.ts`, but not vice versa
-
-### Example
-
-```typescript
-// use-slt.ts - imports SLT from the owner hook
-import { type SLT, transformSLT } from "./use-course-module";
-
-export function useSLTs(courseId: string, moduleCode: string) {
-  return useQuery<SLT[]>({ ... });
-}
-
-// Re-export for convenience (optional)
-export type { SLT } from "./use-course-module";
-```
 
 ## Audit Checklist
 
@@ -179,27 +165,27 @@ export type { SLT } from "./use-course-module";
 
 ## Current Hook Status
 
-> **Active cleanup plan**: [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md)
-
 ### Course Hooks (`src/hooks/api/course/`)
 
 | File | Types | Transformer | Keys | Status |
 |------|-------|-------------|------|--------|
-| `use-course.ts` | Course, CourseDetail | transformCourse, transformCourseDetail | courseKeys | ✅ Exemplary |
-| `use-course-module.ts` | CourseModule, SLT, Lesson | transformCourseModule, transformSLT, transformLesson | courseModuleKeys | ✅ Exemplary |
-| `use-slt.ts` | ❌ None (uses raw API types) | ❌ None | sltKeys | 🔶 Needs types |
-| `use-lesson.ts` | ❌ None (uses raw API types) | ❌ None | lessonKeys | 🔶 Needs types |
-| `use-teacher-courses.ts` | TeacherCourse, TeacherAssignmentCommitment | transformTeacherCourse, transformTeacherCommitment | teacherCourseKeys | ✅ Complete |
-| `use-student-courses.ts` | ⚠️ Type alias to API type | ❌ None | studentCourseKeys | 🔶 Needs transformer |
-| `use-owned-courses.ts` | Uses Course from use-course | Uses transformCourse | ❌ No keys | ⚠️ Uses useState (consider removal) |
+| `use-course.ts` | Course, CourseDetail, CourseStatus | transformCourse, transformCourseDetail | courseKeys | EXEMPLARY |
+| `use-course-owner.ts` | (imports from use-course) | (imports from use-course) | courseOwnerKeys | COMPLETE |
+| `use-course-teacher.ts` | TeacherCourse, TeacherCourseStatus | transformTeacherCourse, transformTeacherCommitment | courseTeacherKeys | COMPLETE |
+| `use-course-student.ts` | StudentCourse | transformStudentCourse | courseStudentKeys | COMPLETE |
+| `use-course-module.ts` | CourseModule, CourseModuleStatus, SLT, Lesson, Assignment, Introduction | All transforms | courseModuleKeys | COMPLETE |
+| `use-slt.ts` | (imports from use-course-module) | (imports from use-course-module) | sltKeys | COMPLETE |
+| `use-lesson.ts` | (imports from use-course-module) | (imports from use-course-module) | lessonKeys | COMPLETE |
+| `use-assignment.ts` | (imports from use-course-module) | (imports from use-course-module) | assignmentKeys | COMPLETE |
+| `use-introduction.ts` | (imports from use-course-module) | (imports from use-course-module) | introductionKeys | COMPLETE |
 
 ### Project Hooks (`src/hooks/api/project/`)
 
 | File | Types | Transformer | Keys | Status |
 |------|-------|-------------|------|--------|
-| `use-project.ts` | Project, Task, TaskCommitment | transformProjectDetail, transformMergedTask, etc. | projectKeys | ✅ Exemplary |
-| `use-manager-projects.ts` | ⚠️ snake_case fields | ⚠️ Inline flattening only | managerProjectKeys | 🔶 Needs camelCase types |
-| `use-contributor-projects.ts` | ⚠️ snake_case fields | ❌ None | contributorProjectKeys | 🔶 Needs camelCase types |
+| `use-project.ts` | Project, Task, TaskCommitment | transformProjectDetail, transformMergedTask, etc. | projectKeys | EXEMPLARY |
+| `use-project-manager.ts` | ManagerProject (snake_case) | Inline flattening only | projectManagerKeys | NEEDS WORK |
+| `use-project-contributor.ts` | ContributorProject (snake_case) | None | projectContributorKeys | NEEDS WORK |
 
 ## Missing Hooks
 
@@ -209,11 +195,11 @@ export type { SLT } from "./use-course-module";
 |----------|----------|-------|
 | `/v2/course/student/commitment/create` | High | Enrollment flow |
 | `/v2/course/student/commitment/submit` | High | Assignment submission |
-| `/v2/course/student/commitment/update` | Medium | Evidence update |
 | `/v2/course/student/commitment/claim` | High | Credential claim |
+| `/v2/course/teacher/assignment-commitment/review` | High | Assessment flow |
+| `/v2/course/student/commitment/update` | Medium | Evidence update |
 | `/v2/course/student/commitment/leave` | Low | Leave course |
 | `/v2/course/shared/commitment/get` | Medium | View commitment |
-| `/v2/course/teacher/assignment-commitment/review` | High | Assessment flow |
 | `/v2/course/owner/teachers/update` | Medium | Teacher management |
 
 ### Project Endpoints Without Hooks
@@ -223,7 +209,6 @@ export type { SLT } from "./use-course-module";
 | `/v2/project/contributor/commitment/create` | High | Task commitment |
 | `/v2/project/contributor/commitment/update` | Medium | Update submission |
 | `/v2/project/contributor/commitment/delete` | Low | Withdraw |
-| `/v2/project/contributor/commitments/list` | High | View own commitments |
 | `/v2/project/owner/project/create` | Medium | Project creation (pre-TX) |
 
 ## Interactive Audit Process
@@ -284,4 +269,4 @@ See `use-course.ts` as template. Required sections:
 
 ---
 
-**Last Updated**: January 25, 2026 (added Type Ownership Rule, Status Pattern)
+**Last Updated**: January 26, 2026

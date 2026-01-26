@@ -7,48 +7,13 @@ description: Audit the usage of Andamio API endpoints across all three sub-syste
 
 Ensure consistent, well-designed hooks connect the Andamio API to the app. This skill audits API hooks, TX hooks, and the patterns that make them work together.
 
-## 🔄 Session Resume
+## Current Status
 
-**Before starting new work**, check [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md) for in-progress work.
+**Course Hooks**: COMPLETE - All 10 course-related hooks follow the exemplary pattern.
 
-**Current state** (as of January 25, 2026):
-- ✅ `use-course.ts` - APPROVED
-- ✅ `use-course-owner.ts` - APPROVED
-- ✅ `use-course-module.ts` - COMPLETE (+ `useRegisterCourseModule` hook)
-- ✅ `use-slt.ts` - COMPLETE
-- ✅ `use-lesson.ts` - COMPLETE (+ `useUpdateLesson`, `useDeleteLesson`)
-- ✅ `use-assignment.ts` - COMPLETE (full CRUD: query + create/update/delete)
-- ✅ `use-introduction.ts` - COMPLETE (create/update/delete mutations)
-- ✅ `use-course-student.ts` - COMPLETE
-- ✅ `use-course-teacher.ts` - COMPLETE (source → status migration done)
-- 🔶 2 hooks need work (use-project-manager.ts, use-project-contributor.ts)
+**Project Hooks**: IN PROGRESS - 2 hooks need camelCase type conversion.
 
-**File Organization** (established pattern):
-- Types colocated in owner file (`use-course-module.ts` owns SLT, Lesson, Assignment, Introduction types)
-- Each entity has its own file with queries AND mutations (use-slt.ts, use-lesson.ts, use-assignment.ts, use-introduction.ts)
-
-**Consumer Migration Progress**:
-- ✅ `assignment/page.tsx` - Migrated to hooks
-- ✅ `require-course-access.tsx` - Migrated to `useOwnerCourses`
-- ✅ `studio/course/[coursenft]/page.tsx` - Unregistered modules UX added
-- ✅ `studio/course/page.tsx` - Fixed source → status usage
-- 🔶 `instructor/page.tsx` - Needs migration (complex TX handling)
-- 🔶 `sitemap/page.tsx` - Needs migration (low priority dev tool)
-
-**Ask the user**: "Would you like to continue with project hooks cleanup? `use-project-manager.ts` and `use-project-contributor.ts` need camelCase type conversion."
-
----
-
-## 🚧 Current Priority: API Hooks Cleanup
-
-**Active work tracked in**: [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md)
-
-We're standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. This involves:
-- Adding app-level types with camelCase fields
-- Adding transform functions for API → App conversion
-- Ensuring consistent exports
-
-**When this work is complete**, archive or delete `API-HOOKS-CLEANUP-PLAN.md` and remove this priority notice.
+See [HOOKS-STATUS.md](./HOOKS-STATUS.md) for the full status summary.
 
 ---
 
@@ -126,17 +91,16 @@ Runs both subskills and produces a consolidated report.
 
 | File | Purpose |
 |------|---------|
-| [API-HOOKS-CLEANUP-PLAN.md](./API-HOOKS-CLEANUP-PLAN.md) | **🚧 Active** - Current cleanup tasks |
+| [HOOKS-STATUS.md](./HOOKS-STATUS.md) | Current implementation status summary |
 | [unified-api-endpoints.md](./unified-api-endpoints.md) | All gateway endpoints |
 | [api-coverage.md](./api-coverage.md) | Implementation status per endpoint |
 | [tx-state-machine.md](./tx-state-machine.md) | TX registration and polling flow |
-| [COVERAGE-REPORT.md](./COVERAGE-REPORT.md) | Coverage summary |
+| [archive/](./archive/) | Completed work plans for team reference |
 
 ## Key Directories
 
 | Directory | Contents |
 |-----------|----------|
-| `src/hooks/api/` | API hooks (course, project, etc.) |
 | `src/hooks/api/course/` | Course-related hooks |
 | `src/hooks/api/project/` | Project-related hooks |
 | `src/hooks/tx/` | Transaction hooks |
@@ -192,18 +156,27 @@ use-tx-watcher.ts      → TX_TYPE_MAP, registration, polling
 
 Every TransactionType must have entries in all three files.
 
-## Current Stats
+## Hook File Organization
 
-| Category | Endpoints | Notes |
-|----------|-----------|-------|
-| Admin | 4 | Not hooked (admin panel not built) |
-| User | 4 | Partial (auth flow only) |
-| Auth | 6 | Complete |
-| API Key | 6 | Complete |
-| Courses | 41 | ~60% hooked |
-| Projects | 17 | ~80% hooked |
-| TX | 21 | Complete |
+```
+src/hooks/api/course/
+├── use-course.ts              # Core types + PUBLIC queries only
+├── use-course-owner.ts        # Owner mutations
+├── use-course-teacher.ts      # Teacher queries + mutations
+├── use-course-student.ts      # Student queries + mutations
+├── use-course-module.ts       # Module types + CRUD (owns SLT, Lesson, Assignment, Introduction types)
+├── use-slt.ts                 # SLT queries + CRUD mutations
+├── use-lesson.ts              # Lesson queries + CRUD mutations
+├── use-assignment.ts          # Assignment query + CRUD mutations
+├── use-introduction.ts        # Introduction CRUD mutations
+└── use-module-wizard-data.ts  # Composite UI hook
+
+src/hooks/api/project/
+├── use-project.ts              # Core types + PUBLIC queries
+├── use-project-manager.ts      # Manager queries + mutations
+└── use-project-contributor.ts  # Contributor queries + mutations
+```
 
 ---
 
-**Last Updated**: January 25, 2026 (Source→Status migration complete in use-course-teacher.ts; file organization consolidated - useAssignment moved to use-assignment.ts; all 9 content CRUD hooks complete)
+**Last Updated**: January 26, 2026

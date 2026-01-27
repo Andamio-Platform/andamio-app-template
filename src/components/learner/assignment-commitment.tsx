@@ -11,10 +11,10 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { TransactionButton } from "~/components/tx/transaction-button";
+import { TransactionStatus } from "~/components/tx/transaction-status";
 import { ContentDisplay } from "~/components/content-display";
 import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
@@ -23,11 +23,8 @@ import {
   AlertIcon,
   SuccessIcon,
   PendingIcon,
-  LessonIcon,
   LoadingIcon,
-  DeleteIcon,
-  AddIcon,
-  SendIcon,
+  ExternalLinkIcon,
 } from "~/components/icons";
 import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 
@@ -164,10 +161,7 @@ export function AssignmentCommitment({
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSubmitTx, setShowSubmitTx] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -282,11 +276,6 @@ export function AssignmentCommitment({
     void fetchCommitment();
   }, [fetchCommitment]);
 
-  const handleStartAssignment = () => {
-    setHasStarted(true);
-    setError(null);
-  };
-
   const handleLockEvidence = () => {
     if (!localEvidenceContent) return;
 
@@ -301,83 +290,6 @@ export function AssignmentCommitment({
   const handleUnlockEvidence = () => {
     setIsLocked(false);
     setEvidenceHash(null);
-    setShowSubmitTx(false);
-  };
-
-  const handleUpdateEvidence = async () => {
-    if (!commitment || !user?.accessTokenAlias || !localEvidenceContent) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      // API: POST /course/student/assignment-commitment/update-evidence
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/student/assignment-commitment/update-evidence`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            module_code: moduleCode,
-            access_token_alias: user.accessTokenAlias,
-            evidence: localEvidenceContent,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to update evidence");
-      }
-
-      // Refetch commitment to get updated data
-      void fetchCommitment();
-      triggerSuccess("Draft saved successfully!");
-    } catch (err) {
-      console.error("Error updating evidence:", err);
-      setError(err instanceof Error ? err.message : "Failed to update evidence");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteCommitment = async () => {
-    if (!commitment || !user?.accessTokenAlias) return;
-
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      // API: POST /course/student/assignment-commitment/delete
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/student/assignment-commitment/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            module_code: moduleCode,
-            access_token_alias: user.accessTokenAlias,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to delete commitment");
-      }
-
-      setCommitment(null);
-      setPrivateStatus("NOT_STARTED");
-      setLocalEvidenceContent(null);
-      triggerSuccess("Commitment deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting commitment:", err);
-      setError(err instanceof Error ? err.message : "Failed to delete commitment");
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   if (!isAuthenticated) {
@@ -612,37 +524,15 @@ export function AssignmentCommitment({
               />
             </div>
           </div>
-        ) : !commitment && !hasStarted ? (
-          // No commitment yet - show start option
-          <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed rounded-lg">
-            <LessonIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <AndamioText variant="small" className="mb-4">
-              You haven&apos;t started this assignment yet
-            </AndamioText>
-            <AndamioButton variant="default" onClick={handleStartAssignment}>
-              <AddIcon className="h-4 w-4 mr-2" />
-              Start Assignment
-            </AndamioButton>
-          </div>
-        ) : !commitment && hasStarted ? (
-          // Started locally but not committed to blockchain yet
+        ) : !commitment ? (
+          // No commitment yet - show editor immediately
           <div className="space-y-4">
-            {/* Warning banner */}
-            <AndamioAlert>
-              <AlertIcon className="h-4 w-4" />
-              <AndamioAlertDescription>
-                {isLocked
-                  ? "Your evidence is locked. Review it below and submit to the blockchain."
-                  : "Your work is not saved until you submit to the blockchain. Lock your evidence when ready."}
-              </AndamioAlertDescription>
-            </AndamioAlert>
-
             {/* Network Evidence Editor or Locked View */}
             {!isLocked ? (
               <div className="space-y-2">
                 <AndamioLabel>Your Evidence</AndamioLabel>
                 <AndamioText variant="small" className="text-xs mb-2">
-                  Write your evidence below. When finished, lock it to generate a hash for submission.
+                  Write your evidence below. When finished, lock it to generate a hash for blockchain submission.
                 </AndamioText>
                 <div className="border border-foreground/30 dark:border-muted-foreground rounded-md overflow-hidden">
                   <ContentEditor
@@ -652,188 +542,170 @@ export function AssignmentCommitment({
                     placeholder="Write your assignment evidence..."
                   />
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <AndamioLabel>Locked Evidence</AndamioLabel>
-                {evidenceContent && (
-                  <ContentDisplay content={evidenceContent} variant="muted" />
-                )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                  <span>Hash:</span>
-                  <span className="font-mono bg-muted px-2 py-1 rounded">{evidenceHash}</span>
+                {/* Lock Evidence Button */}
+                <div className="flex justify-end pt-2">
+                  <AndamioButton
+                    onClick={handleLockEvidence}
+                    disabled={!localEvidenceContent}
+                  >
+                    <SuccessIcon className="h-4 w-4 mr-2" />
+                    Lock Evidence
+                  </AndamioButton>
                 </div>
               </div>
-            )}
+            ) : (
+              // Evidence is locked - show hash and TX submission together
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <AndamioLabel>Locked Evidence</AndamioLabel>
+                  {evidenceContent && (
+                    <ContentDisplay content={evidenceContent} variant="muted" />
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                    <span>Evidence Hash:</span>
+                    <span className="font-mono bg-muted px-2 py-1 rounded">{evidenceHash}</span>
+                  </div>
+                </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-2">
-              <AndamioButton
-                variant="outline"
-                onClick={() => {
-                  setHasStarted(false);
-                  setHasUnsavedChanges(false);
-                  setIsLocked(false);
-                  setEvidenceHash(null);
-                  setLocalEvidenceContent(null);
-                }}
-              >
-                Cancel
-              </AndamioButton>
-              {!isLocked ? (
-                <AndamioButton
-                  onClick={handleLockEvidence}
-                  disabled={!localEvidenceContent}
-                >
-                  <SuccessIcon className="h-4 w-4 mr-2" />
-                  Lock Evidence
-                </AndamioButton>
-              ) : (
-                <>
-                  <AndamioButton variant="outline" onClick={handleUnlockEvidence}>
-                    Edit Evidence
-                  </AndamioButton>
-                  <AndamioButton onClick={() => setShowSubmitTx(true)}>
-                    <SendIcon className="h-4 w-4 mr-2" />
-                    Submit to Blockchain
-                  </AndamioButton>
-                </>
-              )}
-            </div>
-
-            {/* Submit to Blockchain Transaction (V2) */}
-            {showSubmitTx && user?.accessTokenAlias && evidenceHash && sltHash && (
-              <>
                 <AndamioSeparator />
+
+                {/* Submit to Blockchain Transaction (V2) - shown immediately when locked */}
                 <div className="space-y-3">
-                  {/* Transaction Status */}
-                  {commitTx.state !== "idle" && !commitTxConfirmed && (
-                    <div className="rounded-lg border bg-muted/30 p-4">
+                  {/* Transaction Status - Only show during initial processing */}
+                  {commitTx.state !== "idle" && commitTx.state !== "success" && (
+                    <TransactionStatus
+                      state={commitTx.state}
+                      result={commitTx.result}
+                      error={commitTx.error?.message ?? null}
+                      onRetry={() => commitTx.reset()}
+                      messages={{
+                        success: "Transaction submitted! Waiting for confirmation...",
+                      }}
+                    />
+                  )}
+
+                  {/* Gateway Confirmation Status - Show after TX submitted */}
+                  {commitTx.state === "success" && commitTx.result?.requiresDBUpdate && !commitTxConfirmed && (
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
                       <div className="flex items-center gap-3">
                         <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                         <div className="flex-1">
-                          <AndamioText className="font-medium">
-                            {commitTx.state === "fetching" && "Preparing transaction..."}
-                            {commitTx.state === "signing" && "Please sign in your wallet..."}
-                            {commitTx.state === "submitting" && "Submitting to blockchain..."}
-                            {commitTx.state === "success" && "Waiting for confirmation..."}
+                          <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                          <AndamioText variant="small" className="text-xs">
+                            {commitTxStatus?.state === "pending" && "Waiting for block confirmation"}
+                            {commitTxStatus?.state === "confirmed" && "Processing database updates"}
+                            {!commitTxStatus && "Registering transaction..."}
                           </AndamioText>
-                          {commitTx.state === "success" && commitTxStatus && (
-                            <AndamioText variant="small" className="text-xs">
-                              {commitTxStatus.state === "pending" && "Waiting for block confirmation"}
-                              {commitTxStatus.state === "confirmed" && "Processing database updates"}
-                            </AndamioText>
+                        </div>
+                      </div>
+                      {/* Show TX hash and explorer link */}
+                      {commitTx.result?.txHash && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <code className="font-mono bg-muted px-2 py-1 rounded">
+                            {commitTx.result.txHash.slice(0, 16)}...{commitTx.result.txHash.slice(-8)}
+                          </code>
+                          {commitTx.result.blockchainExplorerUrl && (
+                            <a
+                              href={commitTx.result.blockchainExplorerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              View <ExternalLinkIcon className="h-3 w-3" />
+                            </a>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Success State - Gateway confirmed */}
+                  {commitTxConfirmed && (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                      <div className="flex items-center gap-3">
+                        <SuccessIcon className="h-5 w-5 text-primary" />
+                        <div className="flex-1">
+                          <AndamioText className="font-medium text-primary">
+                            Assignment submitted successfully!
+                          </AndamioText>
+                          <AndamioText variant="small" className="text-xs">
+                            Your assignment is now pending teacher review.
+                          </AndamioText>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Success State */}
-                  {commitTxConfirmed && (
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                      <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-primary" />
-                        <AndamioText className="font-medium text-primary">
-                          Assignment submitted successfully!
-                        </AndamioText>
-                      </div>
+                  {/* Action Buttons - Hide during TX processing */}
+                  {commitTx.state === "idle" && !commitTxConfirmed && (
+                    <div className="flex justify-end gap-2">
+                      <AndamioButton variant="outline" onClick={handleUnlockEvidence}>
+                        Edit Evidence
+                      </AndamioButton>
+                      {user?.accessTokenAlias && sltHash && evidenceHash && (
+                        <TransactionButton
+                          txState={commitTx.state}
+                          onClick={async () => {
+                            await commitTx.execute({
+                              txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
+                              params: {
+                                alias: user.accessTokenAlias!,
+                                course_id: courseNftPolicyId,
+                                slt_hash: sltHash,
+                                assignment_info: evidenceHash,
+                              },
+                              onSuccess: () => {
+                                setHasUnsavedChanges(false);
+                              },
+                              onError: (err) => {
+                                setError(err.message);
+                              },
+                            });
+                          }}
+                          stateText={{
+                            idle: "Submit Assignment",
+                            fetching: "Preparing...",
+                            signing: "Sign in Wallet",
+                            submitting: "Submitting...",
+                          }}
+                        />
+                      )}
                     </div>
-                  )}
-
-                  {/* Error State */}
-                  {commitTx.state === "error" && (
-                    <AndamioAlert variant="destructive">
-                      <AlertIcon className="h-4 w-4" />
-                      <AndamioAlertDescription>
-                        {commitTx.error?.message ?? "Transaction failed"}
-                      </AndamioAlertDescription>
-                    </AndamioAlert>
-                  )}
-
-                  {/* Submit Button */}
-                  {!commitTxConfirmed && (
-                    <TransactionButton
-                      txState={commitTx.state}
-                      onClick={async () => {
-                        await commitTx.execute({
-                          txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
-                          params: {
-                            alias: user.accessTokenAlias!,
-                            course_id: courseNftPolicyId,
-                            slt_hash: sltHash,
-                            assignment_info: evidenceHash,
-                          },
-                          onSuccess: () => {
-                            setShowSubmitTx(false);
-                            setHasUnsavedChanges(false);
-                          },
-                          onError: (err) => {
-                            setError(err.message);
-                          },
-                        });
-                      }}
-                      stateText={{
-                        idle: "Commit Assignment",
-                        fetching: "Preparing...",
-                        signing: "Sign in Wallet",
-                        submitting: "Submitting...",
-                      }}
-                      className="w-full"
-                    />
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          // Commitment exists - show edit/update options
-          <div className="space-y-4">
-            {/* Status Display */}
-            <div className="flex items-center justify-between">
-              <div>
-                <AndamioText variant="small" className="font-medium text-foreground">Status</AndamioText>
-                <div className="flex items-center gap-2 mt-1">
-                  <PendingIcon className="h-4 w-4 text-muted-foreground" />
-                  <AndamioBadge variant="outline">{privateStatus}</AndamioBadge>
-                  {commitment?.networkStatus && (
-                    <AndamioBadge>{commitment.networkStatus}</AndamioBadge>
                   )}
                 </div>
               </div>
-              <AndamioConfirmDialog
-                trigger={
-                  <AndamioButton variant="destructive" size="sm" disabled={isDeleting}>
-                    <DeleteIcon className="h-4 w-4 mr-2" />
-                    Delete
-                  </AndamioButton>
-                }
-                title="Delete Commitment"
-                description="Are you sure you want to delete this assignment commitment? This action cannot be undone."
-                confirmText="Delete Commitment"
-                variant="destructive"
-                onConfirm={handleDeleteCommitment}
-                isLoading={isDeleting}
-              />
-            </div>
-
-            <AndamioSeparator />
+            )}
+          </div>
+        ) : (
+          // Commitment exists - show read-only evidence and status
+          <div className="space-y-4">
+            {/* Status Banner */}
+            {commitment?.networkStatus === "PENDING_APPROVAL" && (
+              <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
+                <div className="flex items-center gap-3">
+                  <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
+                  <div>
+                    <AndamioText className="font-medium">Pending Teacher Review</AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      Your assignment has been submitted and is awaiting review by your teacher.
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Submitted Evidence (Read-Only Display) */}
             <div className="space-y-2">
               <AndamioLabel>Your Submitted Evidence</AndamioLabel>
               {commitment?.networkEvidence ? (
                 <>
-                  <AndamioText variant="small" className="text-xs mb-2">
-                    This is the evidence you submitted for review.
-                  </AndamioText>
                   <ContentDisplay
                     content={commitment.networkEvidence as JSONContent}
                     variant="muted"
                   />
                   {commitment.networkEvidenceHash && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                      <span>Hash:</span>
+                      <span>Evidence Hash:</span>
                       <span className="font-mono bg-muted px-2 py-1 rounded">{commitment.networkEvidenceHash.slice(0, 16)}...</span>
                     </div>
                   )}
@@ -842,222 +714,11 @@ export function AssignmentCommitment({
                 <AndamioAlert>
                   <AlertIcon className="h-4 w-4" />
                   <AndamioAlertDescription>
-                    No evidence submitted yet. Add your evidence below and submit to the blockchain.
+                    No evidence content available.
                   </AndamioAlertDescription>
                 </AndamioAlert>
               )}
             </div>
-
-            <AndamioSeparator />
-
-            {/* Update Evidence Section */}
-            <div className="space-y-2">
-              <AndamioLabel>Update Your Evidence</AndamioLabel>
-              <AndamioText variant="small" className="text-xs mb-2">
-                Edit your evidence below and save as a draft, or submit updates to the blockchain.
-              </AndamioText>
-              <ContentEditor
-                content={localEvidenceContent}
-                onContentChange={handleEvidenceContentChange}
-                minHeight="200px"
-                placeholder="Update your assignment evidence..."
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-2">
-              <AndamioSaveButton
-                variant="outline"
-                onClick={handleUpdateEvidence}
-                isSaving={isSaving}
-                disabled={!localEvidenceContent}
-                label="Save Draft"
-                savingLabel="Saving..."
-              />
-              <AndamioButton
-                onClick={() => setShowSubmitTx(true)}
-                disabled={!localEvidenceContent}
-              >
-                <SendIcon className="h-4 w-4 mr-2" />
-                Update on Blockchain
-              </AndamioButton>
-            </div>
-
-            {/* Submit to Blockchain Transaction (V2) */}
-            {showSubmitTx && user?.accessTokenAlias && sltHash && localEvidenceContent && (
-              <>
-                <AndamioSeparator />
-                <div className="space-y-3">
-                  {/* Transaction Status */}
-                  {commitTx.state !== "idle" && !commitTxConfirmed && (
-                    <div className="rounded-lg border bg-muted/30 p-4">
-                      <div className="flex items-center gap-3">
-                        <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
-                        <div className="flex-1">
-                          <AndamioText className="font-medium">
-                            {commitTx.state === "fetching" && "Preparing transaction..."}
-                            {commitTx.state === "signing" && "Please sign in your wallet..."}
-                            {commitTx.state === "submitting" && "Submitting to blockchain..."}
-                            {commitTx.state === "success" && "Waiting for confirmation..."}
-                          </AndamioText>
-                          {commitTx.state === "success" && commitTxStatus && (
-                            <AndamioText variant="small" className="text-xs">
-                              {commitTxStatus.state === "pending" && "Waiting for block confirmation"}
-                              {commitTxStatus.state === "confirmed" && "Processing database updates"}
-                            </AndamioText>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Success State */}
-                  {commitTxConfirmed && (
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                      <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-primary" />
-                        <AndamioText className="font-medium text-primary">
-                          Assignment submitted successfully!
-                        </AndamioText>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error State */}
-                  {commitTx.state === "error" && (
-                    <AndamioAlert variant="destructive">
-                      <AlertIcon className="h-4 w-4" />
-                      <AndamioAlertDescription>
-                        {commitTx.error?.message ?? "Transaction failed"}
-                      </AndamioAlertDescription>
-                    </AndamioAlert>
-                  )}
-
-                  {/* Submit Button */}
-                  {!commitTxConfirmed && (
-                    <TransactionButton
-                      txState={commitTx.state}
-                      onClick={async () => {
-                        const contentHash = hashNormalizedContent(localEvidenceContent);
-                        await commitTx.execute({
-                          txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
-                          params: {
-                            alias: user.accessTokenAlias!,
-                            course_id: courseNftPolicyId,
-                            slt_hash: sltHash,
-                            assignment_info: contentHash,
-                          },
-                          onSuccess: () => {
-                            setShowSubmitTx(false);
-                          },
-                          onError: (err) => {
-                            setError(err.message);
-                          },
-                        });
-                      }}
-                      stateText={{
-                        idle: "Submit Assignment",
-                        fetching: "Preparing...",
-                        signing: "Sign in Wallet",
-                        submitting: "Submitting...",
-                      }}
-                      className="w-full"
-                    />
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* COURSE_STUDENT_ASSIGNMENT_UPDATE Transaction (V2) - Show when commitment is on-chain (PENDING_APPROVAL) */}
-            {commitment && user?.accessTokenAlias && localEvidenceContent &&
-             commitment.networkStatus === "PENDING_APPROVAL" && (
-              <>
-                <AndamioSeparator />
-                <div className="space-y-3">
-                  <AndamioLabel className="text-sm font-medium">Update Your Submission</AndamioLabel>
-                  <AndamioText variant="small" className="text-xs">
-                    Your assignment is on-chain. You can update your evidence if needed.
-                  </AndamioText>
-
-                  {/* Transaction Status */}
-                  {updateTx.state !== "idle" && !updateTxConfirmed && (
-                    <div className="rounded-lg border bg-muted/30 p-4">
-                      <div className="flex items-center gap-3">
-                        <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
-                        <div className="flex-1">
-                          <AndamioText className="font-medium">
-                            {updateTx.state === "fetching" && "Preparing update..."}
-                            {updateTx.state === "signing" && "Please sign in your wallet..."}
-                            {updateTx.state === "submitting" && "Submitting update..."}
-                            {updateTx.state === "success" && "Waiting for confirmation..."}
-                          </AndamioText>
-                          {updateTx.state === "success" && updateTxStatus && (
-                            <AndamioText variant="small" className="text-xs">
-                              {updateTxStatus.state === "pending" && "Waiting for block confirmation"}
-                              {updateTxStatus.state === "confirmed" && "Processing database updates"}
-                            </AndamioText>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Success State */}
-                  {updateTxConfirmed && (
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                      <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-primary" />
-                        <AndamioText className="font-medium text-primary">
-                          Assignment updated successfully!
-                        </AndamioText>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error State */}
-                  {updateTx.state === "error" && (
-                    <AndamioAlert variant="destructive">
-                      <AlertIcon className="h-4 w-4" />
-                      <AndamioAlertDescription>
-                        {updateTx.error?.message ?? "Update failed"}
-                      </AndamioAlertDescription>
-                    </AndamioAlert>
-                  )}
-
-                  {/* Update Button */}
-                  {!updateTxConfirmed && (
-                    <TransactionButton
-                      txState={updateTx.state}
-                      onClick={async () => {
-                        const contentHash = hashNormalizedContent(localEvidenceContent);
-                        await updateTx.execute({
-                          txType: "COURSE_STUDENT_ASSIGNMENT_UPDATE",
-                          params: {
-                            alias: user.accessTokenAlias!,
-                            course_id: courseNftPolicyId,
-                            assignment_info: contentHash,
-                          },
-                          onError: (err) => {
-                            setError(err.message);
-                          },
-                        });
-                      }}
-                      stateText={{
-                        idle: "Update Assignment",
-                        fetching: "Preparing...",
-                        signing: "Sign in Wallet",
-                        submitting: "Updating...",
-                      }}
-                      className="w-full"
-                    />
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* TODO: Withdrawal is not supported via COURSE_STUDENT_ASSIGNMENT_UPDATE in V2.
-                Students can only update evidence or claim credentials. If withdrawal is needed,
-                a separate mechanism would be required. */}
           </div>
         )}
       </AndamioCardContent>

@@ -322,7 +322,8 @@ const combinedData: CombinedSLTLesson[] = [
     lesson: {
       title: "Introduction to Blockchain",
       description: "Learn the fundamentals",
-      live: true,
+      image_url: null,
+      video_url: null,
     },
   },
 ];

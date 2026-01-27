@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 25, 2026
+> **Last Updated**: January 27, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -10,12 +10,28 @@ Current implementation status of the Andamio T3 App Template.
 
 | Area | Status | Progress |
 |------|--------|----------|
-| Course System | Stable | 15/15 routes |
-| Project System | In Progress | 10/13 routes |
+| Course System | Stable | 13/13 routes |
+| Project System | In Progress | 10/11 routes |
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
 | **API Hooks Cleanup** | **🔄 In Progress** | 6/11 hooks approved |
+
+---
+
+## 📌 NEXT SESSION PROMPT
+
+> **Project Route Implementation Ready**
+>
+> The Project route plan has been finalized. Ready to implement:
+>
+> 1. **Consolidate routes** - Remove `/commitments`, `/manage-treasury`, `/manage-contributors` pages
+> 2. **Add dashboard tabs** - Treasury tab + Contributor Blacklist tab to `/studio/project/[projectid]`
+> 3. **Verify `/manager` route** - Ensure it handles task commitment reviews (parallel to Course `/teacher`)
+>
+> See `ROLES-AND-ROUTES.md` for the finalized route structure.
+>
+> **Ask user**: "Ready to implement the Project route consolidation?"
 
 ---
 
@@ -148,14 +164,14 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 - `/studio` - Studio home dashboard
 - `/studio/course` - Course management dashboard
 - `/studio/course/[coursenft]` - Course editor
-- `/studio/course/[coursenft]/instructor` - Instructor dashboard
+- `/studio/course/[coursenft]/teacher` - Instructor dashboard
 - `/studio/course/[coursenft]/[modulecode]` - Module editor
 - `/studio/course/[coursenft]/[modulecode]/slts` - SLT management
 - `/studio/course/[coursenft]/[modulecode]/assignment` - Assignment editor
 - `/studio/course/[coursenft]/[modulecode]/[moduleindex]` - Lesson editor
 - `/studio/course/[coursenft]/[modulecode]/introduction` - Introduction editor
 
-### Project System (10/13 Routes)
+### Project System (10/11 Routes)
 
 **Public (Contributor)** - 4/4 routes:
 - `/project` - Project catalog
@@ -163,16 +179,14 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 - `/project/[projectid]/contributor` - Contributor dashboard
 - `/project/[projectid]/[taskhash]` - Task detail with commitment
 
-**Studio (Manager)** - 6/9 routes:
+**Studio (Manager/Owner)** - 6/7 routes:
 - `/studio/project` - Project management
-- `/studio/project/[projectid]` - Project dashboard
-- `/studio/project/[projectid]/manager` - Manager dashboard
+- `/studio/project/[projectid]` - Project dashboard (with Treasury + Blacklist tabs)
+- `/studio/project/[projectid]/manager` - Manager dashboard - reviews task commitments
 - `/studio/project/[projectid]/draft-tasks` - Task list management
 - `/studio/project/[projectid]/draft-tasks/new` - Create new task
 - `/studio/project/[projectid]/draft-tasks/[taskindex]` - Edit existing task
-- `/studio/project/[projectid]/manage-treasury` - **Planned**
-- `/studio/project/[projectid]/manage-contributors` - **Planned**
-- `/studio/project/[projectid]/commitments` - **Planned**
+- `/studio/project/[projectid]/transaction-history` - **Planned**
 
 ### Transaction Components (16/16 Complete)
 

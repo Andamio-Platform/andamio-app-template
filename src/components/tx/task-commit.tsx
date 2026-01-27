@@ -141,7 +141,7 @@ export function TaskCommit({
   willClaimRewards = false,
   onSuccess,
 }: TaskCommitProps) {
-  const { user, isAuthenticated } = useAndamioAuth();
+  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
 
   // Watch for gateway confirmation after TX submission
@@ -265,6 +265,36 @@ export function TaskCommit({
       params: txParams,
       onSuccess: async (txResult) => {
         console.log("[TaskCommit] TX submitted successfully!", txResult);
+
+        // Save task evidence content to database
+        // The hash is on-chain, but the actual JSON content needs to be stored for manager review
+        if (taskEvidence) {
+          try {
+            const submitResponse = await authenticatedFetch(
+              `/api/gateway/api/v2/project/contributor/commitment/submit`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  task_hash: taskHash,
+                  evidence: taskEvidence,
+                  evidence_hash: hash,
+                  pending_tx_hash: txResult.txHash,
+                }),
+              }
+            );
+
+            if (!submitResponse.ok) {
+              console.error("[TaskCommit] Failed to save evidence to DB:", await submitResponse.text());
+              // Don't throw - TX succeeded, evidence save is secondary
+            } else {
+              console.log("[TaskCommit] Evidence saved to database");
+            }
+          } catch (err) {
+            console.error("[TaskCommit] Error saving evidence to DB:", err);
+            // Don't throw - TX succeeded, evidence save is secondary
+          }
+        }
       },
       onError: (txError) => {
         console.error("[TaskCommit] Error:", txError);

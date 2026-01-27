@@ -52,8 +52,8 @@ export function StudioSidebar() {
             description: "Course details & modules",
           },
           {
-            name: "Instructor Dashboard",
-            href: `/studio/course/${entityId}/instructor`,
+            name: "Teacher Dashboard",
+            href: `/studio/course/${entityId}/teacher`,
             icon: TeacherIcon,
             description: "Manage learners",
           },

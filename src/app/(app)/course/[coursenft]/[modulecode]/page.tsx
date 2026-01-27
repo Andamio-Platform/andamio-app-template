@@ -11,8 +11,10 @@ import {
   AndamioSectionHeader,
   AndamioPageLoading,
   AndamioNotFoundCard,
+  AndamioCard,
+  AndamioCardContent,
 } from "~/components/andamio";
-import { SettingsIcon, LessonIcon, OnChainIcon } from "~/components/icons";
+import { SettingsIcon, OnChainIcon, AssignmentIcon, NextIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
@@ -67,7 +69,6 @@ export default function ModuleLessonsPage() {
               description: typeof lesson.description === "string" ? lesson.description : null,
               image_url: typeof lesson.imageUrl === "string" ? lesson.imageUrl : null,
               video_url: typeof lesson.videoUrl === "string" ? lesson.videoUrl : null,
-              live: lesson.isLive ?? null,
             }
           : undefined,
       };
@@ -164,21 +165,32 @@ export default function ModuleLessonsPage() {
         />
       </div>
 
-      {/* Module Assignment */}
-      <div className="space-y-4">
-        <AndamioSectionHeader title="Module Assignment" />
-        <AndamioText variant="small">
-          Complete the assignment to demonstrate your understanding of this module&apos;s learning targets.
-        </AndamioText>
-        <div className="flex justify-center pt-4">
-          <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-            <AndamioButton size="lg">
-              <LessonIcon className="h-4 w-4 mr-2" />
-              View Assignment
-            </AndamioButton>
-          </Link>
-        </div>
-      </div>
+      {/* Assignment CTA */}
+      <AndamioCard className="border-primary/50 bg-primary/5">
+        <AndamioCardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="flex-shrink-0">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <AssignmentIcon className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <h3 className="text-xl font-semibold">Ready to demonstrate your learning?</h3>
+              <AndamioText variant="muted">
+                Complete the assignment to show your understanding of this module&apos;s learning targets and earn your credential.
+              </AndamioText>
+            </div>
+            <div className="flex-shrink-0">
+              <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+                <AndamioButton size="lg">
+                  Start Assignment
+                  <NextIcon className="h-4 w-4 ml-2" />
+                </AndamioButton>
+              </Link>
+            </div>
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }

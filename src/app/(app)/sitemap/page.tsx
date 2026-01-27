@@ -181,9 +181,9 @@ const dynamicRouteTemplates: RouteCategory[] = [
         params: ["courseNftPolicyId"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/instructor",
-        label: "Instructor Management",
-        description: "Manage course instructors",
+        path: "/studio/course/[courseNftPolicyId]/teacher",
+        label: "Teacher Dashboard",
+        description: "Manage learners and review submissions",
         requiresAuth: true,
         dynamic: true,
         params: ["courseNftPolicyId"],

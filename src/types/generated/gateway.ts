@@ -46,37 +46,30 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
-  description?: string;
-  image_url?: string;
-  project_id?: string;
-  title?: string;
-}
-
-export interface AndamioDbClientAddTeachersV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientAddTeachersV2Request {
   aliases?: string[];
   course_id?: string;
 }
 
-export interface AndamioDbClientBatchReorderSltsV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientBatchReorderSltsV2Request {
   course_id?: string;
   course_module_code?: string;
   /** SltIndices Array of current 1-based SLT indices in desired order. Example: [3, 1, 2] moves SLT at index 3 to first position. */
   slt_indices?: number[];
 }
 
-export interface AndamioDbClientClaimCredentialV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientClaimCredentialV2Request {
   course_id?: string;
   course_module_code?: string;
   pending_tx_hash?: string;
 }
 
-export interface AndamioDbClientCreateAssignmentCommitmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
 }
 
-export interface AndamioDbClientCreateIntroductionV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionV2Request {
   /** ContentJson Tiptap JSON content */
   content_json?: Record<string, any>;
   course_id?: string;
@@ -84,64 +77,47 @@ export interface AndamioDbClientCreateIntroductionV2Request {
   title?: string;
 }
 
-export interface AndamioDbClientDeleteAssignmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientDeleteAssignmentV2Request {
   course_id?: string;
   course_module_code?: string;
 }
 
-export interface AndamioDbClientDeleteIntroductionV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientDeleteIntroductionV2Request {
   course_id?: string;
   course_module_code?: string;
 }
 
-export interface AndamioDbClientDeleteLessonV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  /** SltIndex SLT index (1-based) */
-  slt_index?: number;
-}
-
-export interface AndamioDbClientDeleteModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioDbClientDeleteSltV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientDeleteLessonV2Request {
   course_id?: string;
   course_module_code?: string;
   /** SltIndex SLT index (1-based) */
   slt_index?: number;
 }
 
-export interface AndamioDbClientGetAssignmentCommitmentV2Request {
-  /** CourseId Course NFT policy ID */
+export interface AndamioApiInternalInternalApiAndamioDbClientDeleteModuleV2Request {
   course_id?: string;
-  /** CourseModuleCode Module code within course */
   course_module_code?: string;
 }
 
-export interface AndamioDbClientLeaveAssignmentCommitmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientDeleteSltV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  /** SltIndex SLT index (1-based) */
+  slt_index?: number;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
   pending_tx_hash?: string;
 }
 
-export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
-  task_hash?: string;
-}
-
-export interface AndamioDbClientProjectManagerTasksListPostRequest {
-  project_id?: string;
-  /** Optional: filter by task status */
-  status?: string;
-}
-
-export interface AndamioDbClientPublishModuleV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientPublishModuleV2Request {
   course_id?: string;
   course_module_code?: string;
 }
 
-export interface AndamioDbClientRegisterCourseV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientRegisterCourseV2Request {
   category?: string;
   course_id?: string;
   description?: string;
@@ -152,12 +128,19 @@ export interface AndamioDbClientRegisterCourseV2Request {
   video_url?: string;
 }
 
-export interface AndamioDbClientRemoveTeachersV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
+  description?: string;
+  image_url?: string;
+  project_id?: string;
+  title?: string;
+}
+
+export interface AndamioApiInternalInternalApiAndamioDbClientRemoveTeachersV2Request {
   aliases?: string[];
   course_id?: string;
 }
 
-export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
   decision?: AndamioDbClientReviewAssignmentCommitmentV2RequestDecision;
@@ -165,7 +148,7 @@ export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
   pending_tx_hash?: string;
 }
 
-export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
   evidence?: Record<string, any>;
@@ -173,14 +156,14 @@ export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
   pending_tx_hash?: string;
 }
 
-export interface AndamioDbClientUpdateAssignmentCommitmentV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
   evidence?: Record<string, any>;
   evidence_hash?: string;
 }
 
-export interface AndamioDbClientUpdateIntroductionV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateIntroductionV2Request {
   /** ContentJson Tiptap JSON content */
   content_json?: Record<string, any>;
   course_id?: string;
@@ -188,7 +171,7 @@ export interface AndamioDbClientUpdateIntroductionV2Request {
   title?: string;
 }
 
-export interface AndamioDbClientUpdateModuleStatusV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleStatusV2Request {
   /** CourseId Course identifier */
   course_id?: string;
   /** CourseModuleCode Module code within the course */
@@ -199,7 +182,7 @@ export interface AndamioDbClientUpdateModuleStatusV2Request {
   status?: AndamioDbClientUpdateModuleStatusV2RequestStatus;
 }
 
-export interface AndamioDbClientUpdateTeachersV2Request {
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Request {
   /** Add Aliases to add as teachers */
   add?: string[];
   course_id?: string;
@@ -207,13 +190,23 @@ export interface AndamioDbClientUpdateTeachersV2Request {
   remove?: string[];
 }
 
-export interface AndamioDbClientUpdateTeachersV2Response {
+export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Response {
   course_id?: string;
   success?: boolean;
   teachers_added?: string[];
   /** TeachersCurrent Final list of teachers after updates */
   teachers_current?: string[];
   teachers_removed?: string[];
+}
+
+export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
+  task_hash?: string;
+}
+
+export interface AndamioDbClientProjectManagerTasksListPostRequest {
+  project_id?: string;
+  /** Optional: filter by task status */
+  status?: string;
 }
 
 export interface AndamioDbClientUserAccessTokenAliasPostRequest {
@@ -1251,7 +1244,10 @@ export interface MergedHandlersGetContributorCommitmentRequest {
 
 export interface MergedHandlersGetStudentAssignmentCommitmentRequest {
   course_id?: string;
-  module_code?: string;
+  /** Human-readable code (e.g., "101") - used for DB lookup */
+  course_module_code?: string;
+  /** On-chain hash - required for on-chain lookup */
+  slt_hash?: string;
 }
 
 export interface MergedHandlersListManagerTasksRequest {
@@ -1276,6 +1272,11 @@ export interface MergedHandlersManagerProjectsResponse {
   warning?: string;
 }
 
+export interface MergedHandlersMergedAssignmentResponseWrapper {
+  data?: OrchestrationMergedAssignmentResponse;
+  warning?: string;
+}
+
 export interface MergedHandlersMergedCourseDetailResponse {
   data?: OrchestrationMergedCourseDetail;
   warning?: string;
@@ -1296,6 +1297,16 @@ export interface MergedHandlersMergedCoursesResponse {
   warning?: string;
 }
 
+export interface MergedHandlersMergedIntroductionResponseWrapper {
+  data?: OrchestrationMergedIntroductionResponse;
+  warning?: string;
+}
+
+export interface MergedHandlersMergedLessonResponseWrapper {
+  data?: OrchestrationMergedLessonResponse;
+  warning?: string;
+}
+
 export interface MergedHandlersMergedProjectDetailResponse {
   data?: OrchestrationMergedProjectDetail;
   warning?: string;
@@ -1303,6 +1314,11 @@ export interface MergedHandlersMergedProjectDetailResponse {
 
 export interface MergedHandlersMergedProjectsResponse {
   data?: OrchestrationMergedProjectListItem[];
+  warning?: string;
+}
+
+export interface MergedHandlersMergedSltsResponseWrapper {
+  data?: OrchestrationMergedSltsResponse;
   warning?: string;
 }
 
@@ -1444,6 +1460,28 @@ export interface OrchestrationManagerProjectListItem {
   treasury_address?: string;
 }
 
+export interface OrchestrationMergedAssignmentContent {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  description?: string;
+  image_url?: string;
+  title?: string;
+  video_url?: string;
+}
+
+export interface OrchestrationMergedAssignmentResponse {
+  /** Off-chain content (from DB API) */
+  content?: OrchestrationMergedAssignmentContent;
+  /** Course and module context */
+  course_id?: string;
+  course_module_code?: string;
+  /** On-chain fields */
+  created_by?: string;
+  slt_hash?: string;
+  /** Data source indicator */
+  source?: string;
+}
+
 export interface OrchestrationMergedCourseDetail {
   /** Off-chain content (nested) */
   content?: OrchestrationCourseContent;
@@ -1496,6 +1534,46 @@ export interface OrchestrationMergedCourseModuleItem {
   source?: string;
 }
 
+export interface OrchestrationMergedIntroductionContent {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  description?: string;
+  image_url?: string;
+  title?: string;
+  video_url?: string;
+}
+
+export interface OrchestrationMergedIntroductionResponse {
+  content?: OrchestrationMergedIntroductionContent;
+  course_id?: string;
+  course_module_code?: string;
+  created_by?: string;
+  slt_hash?: string;
+  /** "merged", "chain_only" */
+  source?: string;
+}
+
+export interface OrchestrationMergedLessonContent {
+  /** Tiptap JSON content */
+  content_json?: Record<string, any>;
+  description?: string;
+  image_url?: string;
+  title?: string;
+  video_url?: string;
+}
+
+export interface OrchestrationMergedLessonResponse {
+  content?: OrchestrationMergedLessonContent;
+  course_id?: string;
+  course_module_code?: string;
+  created_by?: string;
+  slt_hash?: string;
+  slt_index?: number;
+  slt_text?: string;
+  /** "merged", "chain_only" */
+  source?: string;
+}
+
 export interface OrchestrationMergedProjectDetail {
   assessments?: OrchestrationProjectAssessmentOnChain[];
   /** Off-chain content (nested) */
@@ -1532,6 +1610,24 @@ export interface OrchestrationMergedProjectListItem {
   /** Data source indicator */
   source?: string;
   treasury_address?: string;
+}
+
+export interface OrchestrationMergedSltItem {
+  created_by?: string;
+  has_lesson?: boolean;
+  lesson?: OrchestrationMergedLessonContent;
+  slt_index?: number;
+  slt_text?: string;
+}
+
+export interface OrchestrationMergedSltsResponse {
+  course_id?: string;
+  course_module_code?: string;
+  created_by?: string;
+  slt_hash?: string;
+  slts?: OrchestrationMergedSltItem[];
+  /** "merged", "chain_only" */
+  source?: string;
 }
 
 export interface OrchestrationMergedTaskListItem {

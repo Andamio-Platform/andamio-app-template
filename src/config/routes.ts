@@ -61,8 +61,8 @@ export const STUDIO_ROUTES = {
   courseEditor: (courseId: string) => `/studio/course/${courseId}`,
   moduleWizard: (courseId: string, moduleCode: string) =>
     `/studio/course/${courseId}/${moduleCode}`,
-  instructorManagement: (courseId: string) =>
-    `/studio/course/${courseId}/instructor`,
+  teacherDashboard: (courseId: string) =>
+    `/studio/course/${courseId}/teacher`,
 
   /** Project studio */
   projects: "/studio/project",

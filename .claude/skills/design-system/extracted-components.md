@@ -322,7 +322,8 @@ const combinedData: CombinedSLTLesson[] = [
     lesson: {
       title: "Introduction to Blockchain",
       description: "Learn the fundamentals",
-      live: true,
+      image_url: null,
+      video_url: null,
     },
   },
 ];
@@ -693,7 +694,7 @@ Shows completion status for 6 wizard steps:
 | 2025-12 | `/studio/course/[coursenft]` | Credential-focused empty state, conditional tabs |
 | 2026-01 | `/project/[treasurynft]/contributor` | `AndamioDashboardStat` - Replaced inline KPI cards |
 | 2026-01 | `/studio/project/[treasurynft]/manager` | `AndamioSearchInput`, `AndamioDashboardStat` - Replaced inline patterns |
-| 2026-01 | `/studio/course/[coursenft]/instructor` | `AndamioDashboardStat`, `AndamioSearchInput`, `AndamioPageLoading`, `AndamioEmptyState`, `AndamioErrorAlert` |
+| 2026-01 | `/studio/course/[coursenft]/teacher` | `AndamioDashboardStat`, `AndamioSearchInput`, `AndamioPageLoading`, `AndamioEmptyState`, `AndamioErrorAlert` |
 | 2026-01 | `/project/[treasurynft]/[taskhash]` | `AndamioBackButton`, `AndamioErrorAlert`, `AndamioDashboardStat`, `AndamioText` - Task commitment flow with evidence editor |
 | 2026-01 | `/dashboard` | 6 Andamioscan summary components: `EnrolledCoursesSummary`, `PendingReviewsSummary`, `CredentialsSummary`, `ContributingProjectsSummary`, `ManagingProjectsSummary`, `OwnedCoursesSummary` |
 | 2026-01 | `/credentials` | New page using `useCompletedCourses` hook |

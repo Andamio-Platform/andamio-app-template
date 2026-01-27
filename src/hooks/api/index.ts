@@ -185,12 +185,14 @@ export {
 export {
   useManagerProjects,
   useManagerCommitments,
+  useTaskBatchStatus,
   useInvalidateManagerProjects,
   projectManagerKeys,
   type ManagerProject,
   type ManagerProjectsResponse,
   type ManagerCommitment,
   type ManagerCommitmentsResponse,
+  type TaskBatchStatusInput,
 } from "./project/use-project-manager";
 
 // Project contributor (role-based)

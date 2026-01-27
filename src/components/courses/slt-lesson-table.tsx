@@ -27,7 +27,6 @@ export type CombinedSLTLesson = {
     description: string | null;
     image_url: string | null;
     video_url: string | null;
-    live: boolean | null;
   };
 };
 
@@ -78,7 +77,6 @@ export function SLTLessonTable({
             <AndamioTableHead>Lesson Title</AndamioTableHead>
             <AndamioTableHead>Description</AndamioTableHead>
             <AndamioTableHead className="w-32">Media</AndamioTableHead>
-            <AndamioTableHead className="w-24">Status</AndamioTableHead>
           </AndamioTableRow>
         </AndamioTableHeader>
         <AndamioTableBody>
@@ -128,17 +126,6 @@ export function SLTLessonTable({
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson ? (
-                    item.lesson.live ? (
-                      <AndamioBadge variant="default">Live</AndamioBadge>
-                    ) : (
-                      <AndamioBadge variant="secondary">Draft</AndamioBadge>
-                    )
-                  ) : (
-                    <AndamioBadge variant="outline">No Lesson</AndamioBadge>
                   )}
                 </AndamioTableCell>
               </AndamioTableRow>

@@ -51,7 +51,7 @@ import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AlertIcon } from "~/components/icons";
-import { PendingReviewsList } from "~/components/instructor/pending-reviews-list";
+import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
 
 /**
  * Instructor Dashboard Page
@@ -238,16 +238,18 @@ export default function InstructorDashboardPage() {
     setDetailedCommitment(null);
 
     try {
-      // DB API: POST /course/shared/assignment-commitment/get
+      // V2 Merged API: POST /course/student/assignment-commitment/get
+      // Returns merged on-chain + DB data (source: "merged", "chain_only", or "db_only")
+      // Note: slt_hash is required for on-chain lookup
       const requestBody = {
         course_id: courseNftPolicyId,
-        course_module_code: commitment.moduleCode,
-        participant_alias: commitment.studentAlias,
+        slt_hash: commitment.sltHash,  // Required for on-chain lookup
+        course_module_code: commitment.moduleCode,  // Optional for DB enrichment
       };
       console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
 
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/shared/assignment-commitment/get`,
+        `/api/gateway/api/v2/course/student/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -329,7 +331,7 @@ export default function InstructorDashboardPage() {
       <div className="space-y-6">
         <CourseBreadcrumb
           mode="studio"
-          currentPage="instructor"
+          currentPage="teacher"
         />
 
         <AndamioPageHeader title="Instructor Dashboard" />
@@ -345,7 +347,7 @@ export default function InstructorDashboardPage() {
       <CourseBreadcrumb
         mode="studio"
         course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
-        currentPage="instructor"
+        currentPage="teacher"
       />
 
       <AndamioPageHeader

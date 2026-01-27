@@ -59,7 +59,7 @@ export interface CourseBreadcrumbProps {
   };
 
   /** Current page type (determines which item is the current page) */
-  currentPage?: "courses" | "course" | "module" | "lesson" | "assignment" | "introduction" | "slts" | "instructor";
+  currentPage?: "courses" | "course" | "module" | "lesson" | "assignment" | "introduction" | "slts" | "teacher";
 }
 
 /**
@@ -183,12 +183,12 @@ export function CourseBreadcrumb({
           </>
         )}
 
-        {/* Instructor Dashboard (current page indicator - studio only) */}
-        {course && currentPage === "instructor" && (
+        {/* Teacher Dashboard (current page indicator - studio only) */}
+        {course && currentPage === "teacher" && (
           <>
             <AndamioBreadcrumbSeparator />
             <AndamioBreadcrumbItem>
-              <AndamioBreadcrumbPage>Instructor</AndamioBreadcrumbPage>
+              <AndamioBreadcrumbPage>Teacher</AndamioBreadcrumbPage>
             </AndamioBreadcrumbItem>
           </>
         )}

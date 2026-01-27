@@ -138,12 +138,9 @@ export default function ModuleLessonsPage() {
           ) : undefined
         }
       />
-      <div className="flex gap-2">
-        <AndamioBadge variant="outline" className="font-mono text-xs">
-          {courseModule.moduleCode}
-        </AndamioBadge>
-        <AndamioBadge variant="outline">{courseModule.status}</AndamioBadge>
-      </div>
+      <AndamioBadge variant="outline" className="font-mono text-xs">
+        {courseModule.moduleCode}
+      </AndamioBadge>
 
       {/* Student Learning Targets & Lessons Combined */}
       <div className="space-y-4">

@@ -15,7 +15,7 @@ This document maps all implemented Course-related routes in the Andamio T3 App T
 | 7 | `/studio` | Studio home dashboard | Required | Creator |
 | 8 | `/studio/course` | Course management dashboard | Required | Creator |
 | 9 | `/studio/course/[coursenft]` | Course CRUD management | Required | Creator |
-| 10 | `/studio/course/[coursenft]/instructor` | Instructor dashboard (student commitments) | Required | Creator |
+| 10 | `/studio/course/[coursenft]/teacher` | Instructor dashboard (student commitments) | Required | Creator |
 | 11 | `/studio/course/[coursenft]/[modulecode]` | Course Module CRUD management | Required | Creator |
 | 12 | `/studio/course/[coursenft]/[modulecode]/slts` | SLT List CRUD management | Required | Creator |
 | 13 | `/studio/course/[coursenft]/[modulecode]/assignment` | Assignment CRUD management | Required | Creator |
@@ -208,7 +208,7 @@ These routes are for course creators to manage their courses and require authent
   - `CourseOutput`
   - `ListCourseModulesOutput`
 
-#### `/studio/course/[coursenft]/instructor`
+#### `/studio/course/[coursenft]/teacher`
 - **Purpose**: Instructor dashboard - view student assignment commitments
 - **Authentication**: Required (JWT)
 - **URL Parameters**:
@@ -233,7 +233,7 @@ These routes are for course creators to manage their courses and require authent
     - Evidence preview
   - Empty states with filter clear option
   - Loading/error states
-- **Component**: `src/app/(app)/studio/course/[coursenft]/instructor/page.tsx`
+- **Component**: `src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`
 - **API Endpoints**:
   - `POST /course/get` - Get course details
   - `POST /assignment-commitment/list-by-course` - Get all commitments for course (authenticated)
@@ -391,7 +391,7 @@ These routes are for course creators to manage their courses and require authent
 /studio (studio home)
   └── /studio/course (course management dashboard - owned courses)
       └── /studio/course/[coursenft] (course CRUD)
-          ├── /studio/course/[coursenft]/instructor (instructor dashboard)
+          ├── /studio/course/[coursenft]/teacher (instructor dashboard)
           └── /studio/course/[coursenft]/[modulecode] (module CRUD)
               ├── /studio/course/[coursenft]/[modulecode]/slts (SLT list management)
               ├── /studio/course/[coursenft]/[modulecode]/assignment (assignment CRUD)
@@ -424,7 +424,7 @@ These routes are for course creators to manage their courses and require authent
 | `/studio` | Yes | JWT | Creator |
 | `/studio/course` | Yes | JWT | Creator |
 | `/studio/course/[coursenft]` | Yes | JWT | Creator/Owner |
-| `/studio/course/[coursenft]/instructor` | Yes | JWT | Creator/Owner |
+| `/studio/course/[coursenft]/teacher` | Yes | JWT | Creator/Owner |
 | `/studio/course/[coursenft]/[modulecode]` | Yes | JWT | Creator/Owner |
 | `/studio/course/[coursenft]/[modulecode]/slts` | Yes | JWT | Creator/Owner |
 | `/studio/course/[coursenft]/[modulecode]/assignment` | Yes | JWT | Creator/Owner |

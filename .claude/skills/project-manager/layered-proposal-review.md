@@ -636,7 +636,7 @@ src/config/
 | `/studio/course` | Course list | `course/owner/courses/list` |
 | `/studio/course/[courseId]` | Course editor | `course/owner/*` |
 | `/studio/course/[courseId]/[moduleCode]` | Module wizard | `course/teacher/*` |
-| `/studio/course/[courseId]/instructor` | Teacher management | `course/owner/*` (teachers) |
+| `/studio/course/[courseId]/teacher` | Teacher dashboard | `course/owner/*` (teachers) |
 
 **Authenticated - Studio (Project)** → API: `project/owner/*`, `project/manager/*`
 

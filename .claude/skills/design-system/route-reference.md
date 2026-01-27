@@ -76,7 +76,7 @@ Sidebar navigation with scrollable content area.
 | Route | Purpose | Page Pattern |
 |-------|---------|--------------|
 | `/studio` | Studio hub | Card grid |
-| `/studio/course/[coursenft]/instructor` | Instructor management | Standard |
+| `/studio/course/[coursenft]/teacher` | Instructor management | Standard |
 | `/studio/project` | Project studio list | Standard |
 | `/studio/project/[projectid]` | Project studio detail | Standard |
 | `/studio/project/[projectid]/draft-tasks` | Draft tasks list | Standard |
@@ -131,7 +131,7 @@ Sidebar + StudioHeader with dense workspace for content creation.
 | `/studio/course` | **Studio Shell** | Master-Detail |
 | `/studio/course/[coursenft]` | **Studio Shell** | Editor |
 | `/studio/course/[coursenft]/[modulecode]` | **Studio Shell** | Wizard |
-| `/studio/course/[coursenft]/instructor` | App Shell | Standard |
+| `/studio/course/[coursenft]/teacher` | App Shell | Standard |
 | `/studio/project` | App Shell | Standard |
 | `/studio/project/[projectid]` | App Shell | Standard |
 | `/studio/project/[projectid]/draft-tasks` | App Shell | Standard |
@@ -196,7 +196,7 @@ src/components/layout/studio-header.tsx   # Studio header with breadcrumbs
 
 **Legacy Routes**: Some `/studio/*` routes are still under the `(app)` group:
 - `/studio` (hub page)
-- `/studio/course/[coursenft]/instructor`
+- `/studio/course/[coursenft]/teacher`
 - `/studio/project/*`
 
 These use App Shell layout with `AndamioPageHeader`. Consider migrating to Studio Shell if they need the dense creation-focused layout.

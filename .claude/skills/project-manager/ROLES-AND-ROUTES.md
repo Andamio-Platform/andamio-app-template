@@ -88,7 +88,7 @@ Instructors who manage course content and review student submissions.
 |-------|---------|
 | `/studio/course` | Course studio - list courses where user is teacher |
 | `/studio/course/[coursenft]` | Course editor - edit course metadata, view modules |
-| `/studio/course/[coursenft]/instructor` | Instructor dashboard - review student submissions |
+| `/studio/course/[coursenft]/teacher` | Instructor dashboard - review student submissions |
 | `/studio/course/[coursenft]/new` | New module wizard |
 | `/studio/course/[coursenft]/[modulecode]` | Module wizard - edit module |
 | `/studio/course/[coursenft]/[modulecode]/introduction` | Introduction editor |
@@ -202,12 +202,10 @@ Project managers who create tasks and review contributor submissions.
 |-------|---------|
 | `/studio/project` | Project studio - list managed projects |
 | `/studio/project/[projectid]` | Project dashboard |
-| `/studio/project/[projectid]/manager` | Manager dashboard - review submissions |
+| `/studio/project/[projectid]/manager` | Manager dashboard - review task commitments |
 | `/studio/project/[projectid]/draft-tasks` | Task list management |
 | `/studio/project/[projectid]/draft-tasks/new` | Create new task |
 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | Edit task |
-| `/studio/project/[projectid]/commitments` | View all commitments |
-| `/studio/project/[projectid]/manage-contributors` | Manage enrolled contributors |
 
 **API Endpoints**:
 - `POST /api/v2/project/manager/projects/list` - List managed projects
@@ -231,8 +229,7 @@ Project creators who own projects and manage treasury/managers.
 | Route | Purpose |
 |-------|---------|
 | `/studio/project` | Project studio - list owned projects |
-| `/studio/project/[projectid]` | Project dashboard - full access |
-| `/studio/project/[projectid]/manage-treasury` | Treasury management |
+| `/studio/project/[projectid]` | Project dashboard - full access (includes Treasury + Blacklist tabs) |
 | `/studio/project/[projectid]/transaction-history` | View transaction history |
 | All Manager routes | Owners have full manager access |
 
@@ -309,7 +306,7 @@ Course System                    Project System
 | Assignment commitment UI | ❌ | ✅ | ✅ | ✅ |
 | `/studio/course` | ❌ | ❌ | ✅ | ✅ |
 | `/studio/course/[id]` | ❌ | ❌ | ✅ | ✅ |
-| `/studio/course/[id]/instructor` | ❌ | ❌ | ✅ | ✅ |
+| `/studio/course/[id]/teacher` | ❌ | ❌ | ✅ | ✅ |
 | `/studio/course/[id]/[mod]/*` | ❌ | ❌ | ✅ | ✅ |
 | Teacher management | ❌ | ❌ | ❌ | ✅ |
 
@@ -326,8 +323,8 @@ Course System                    Project System
 | `/studio/project/[id]` | ❌ | ❌ | ✅ | ✅ |
 | `/studio/project/[id]/manager` | ❌ | ❌ | ✅ | ✅ |
 | `/studio/project/[id]/draft-tasks/*` | ❌ | ❌ | ✅ | ✅ |
-| `/studio/project/[id]/commitments` | ❌ | ❌ | ✅ | ✅ |
-| `/studio/project/[id]/manage-treasury` | ❌ | ❌ | ❌ | ✅ |
+| Treasury tab (in dashboard) | ❌ | ❌ | ❌ | ✅ |
+| Blacklist tab (in dashboard) | ❌ | ❌ | ❌ | ✅ |
 | Manager management | ❌ | ❌ | ❌ | ✅ |
 
 ---
@@ -345,7 +342,7 @@ Course System                    Project System
 | `/course/[coursenft]/[modulecode]/assignment` | ✅ Implemented | Assignment + commitment |
 | `/studio/course` | ✅ Implemented | Course studio |
 | `/studio/course/[coursenft]` | ✅ Implemented | Course editor |
-| `/studio/course/[coursenft]/instructor` | ✅ Implemented | Instructor dashboard |
+| `/studio/course/[coursenft]/teacher` | ✅ Implemented | Instructor dashboard |
 | `/studio/course/[coursenft]/[modulecode]` | ✅ Implemented | Module wizard |
 | `/studio/course/[coursenft]/[modulecode]/slts` | ✅ Implemented | SLT management |
 | `/studio/course/[coursenft]/[modulecode]/assignment` | ✅ Implemented | Assignment editor |
@@ -361,14 +358,11 @@ Course System                    Project System
 | `/project/[projectid]/[taskhash]` | ✅ Implemented | Task detail |
 | `/project/[projectid]/contributor` | ✅ Implemented | Contributor dashboard |
 | `/studio/project` | ✅ Implemented | Project studio |
-| `/studio/project/[projectid]` | ✅ Implemented | Project dashboard |
-| `/studio/project/[projectid]/manager` | ✅ Implemented | Manager dashboard |
+| `/studio/project/[projectid]` | ✅ Implemented | Project dashboard (Treasury + Blacklist tabs) |
+| `/studio/project/[projectid]/manager` | ✅ Implemented | Manager dashboard - reviews task commitments |
 | `/studio/project/[projectid]/draft-tasks` | ✅ Implemented | Task list |
 | `/studio/project/[projectid]/draft-tasks/new` | ✅ Implemented | Create task |
 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | ✅ Implemented | Edit task |
-| `/studio/project/[projectid]/commitments` | ✅ Implemented | View commitments |
-| `/studio/project/[projectid]/manage-treasury` | 🚧 Planned | Treasury management |
-| `/studio/project/[projectid]/manage-contributors` | 🚧 Planned | Contributor management |
 | `/studio/project/[projectid]/transaction-history` | 🚧 Planned | TX history |
 
 ---

@@ -1,26 +1,30 @@
 # Project Routes Sitemap
 
-This document maps all planned Project-related routes in the Andamio T3 App Template.
+This document maps all Project-related routes in the Andamio T3 App Template.
+
+> **Last Updated**: January 27, 2026
 
 ## Summary
 
-| # | Route | Purpose | Auth | Type |
-|---|-------|---------|------|------|
-| 1 | `/project` | Public project catalog | Not required | Contributor |
-| 2 | `/project/[treasurynft]` | Project detail with tasks | Not required | Contributor |
-| 3 | `/project/[treasurynft]/[taskhash]` | Task detail with commitment UI | Not required | Contributor |
-| 4 | `/studio/project` | My managed projects list | Required | Manager |
-| 5 | `/studio/project/[treasurynft]` | Project dashboard | Required | Manager/Owner |
-| 6 | `/studio/project/[treasurynft]/manage-treasury` | Treasury management & publishing | Required | Owner |
-| 7 | `/studio/project/[treasurynft]/manage-contributors` | Enrolled contributors list | Required | Manager |
-| 8 | `/studio/project/[treasurynft]/commitments` | All task commitments | Required | Manager |
-| 9 | `/studio/project/[treasurynft]/commitments/[alias]` | Contributor-specific commitments | Required | Manager |
-| 10 | `/studio/project/[treasurynft]/draft-tasks` | Draft tasks list | Required | Manager |
-| 11 | `/studio/project/[treasurynft]/draft-tasks/new` | Create new task | Required | Manager |
-| 12 | `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | Edit draft task | Required | Manager |
-| 13 | `/studio/project/[treasurynft]/transaction-history` | Transaction history display | Required | Manager/Owner |
+| # | Route | Purpose | Auth | Type | Status |
+|---|-------|---------|------|------|--------|
+| 1 | `/project` | Public project catalog | Not required | Contributor | ✅ |
+| 2 | `/project/[projectid]` | Project detail with tasks | Not required | Contributor | ✅ |
+| 3 | `/project/[projectid]/[taskhash]` | Task detail with commitment UI | Not required | Contributor | ✅ |
+| 4 | `/project/[projectid]/contributor` | Contributor dashboard - enroll, commit, claim | Required | Contributor | ✅ |
+| 5 | `/studio/project` | My managed projects list | Required | Manager | ✅ |
+| 6 | `/studio/project/[projectid]` | Project dashboard (includes Treasury + Blacklist tabs) | Required | Manager/Owner | ✅ |
+| 7 | `/studio/project/[projectid]/manager` | Manager dashboard - review task commitments | Required | Manager | ✅ |
+| 8 | `/studio/project/[projectid]/draft-tasks` | Draft tasks list | Required | Manager | ✅ |
+| 9 | `/studio/project/[projectid]/draft-tasks/new` | Create new task | Required | Manager | ✅ |
+| 10 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | Edit draft task | Required | Manager | ✅ |
+| 11 | `/studio/project/[projectid]/transaction-history` | Transaction history display | Required | Manager/Owner | 🚧 |
 
-**Total: 13 Project Routes Planned**
+**Total: 11 Project Routes (10 implemented, 1 planned)**
+
+### Consolidated Features (in Project Dashboard tabs)
+- **Treasury Tab**: Task publishing to on-chain (`/v2/tx/project/manager/tasks/manage`)
+- **Blacklist Tab**: Manage contributor blacklist (`/v2/tx/project/owner/contributor-blacklist/manage`)
 
 ---
 
@@ -32,20 +36,20 @@ This document maps all planned Project-related routes in the Andamio T3 App Temp
 |--------|----------|---------|------|---------------|
 | POST | `/projects/list` | Get published projects | No | `/project` |
 | POST | `/projects/list-owned` | List owned/managed projects | Yes (Treasury Owner) | `/studio/project` |
-| POST | `/projects/update` | Update project metadata | Yes (Treasury Owner) | `/studio/project/[treasurynft]` |
-| POST | `/tasks/list` | List tasks for a project | No | `/project/[treasurynft]`, `/studio/project/[treasurynft]/draft-tasks` |
-| POST | `/tasks/create` | Create draft task | Yes (Project Manager) | `/studio/project/[treasurynft]/draft-tasks/new` |
-| POST | `/tasks/update` | Update draft task | Yes (Project Manager) | `/studio/project/[treasurynft]/draft-tasks/[taskindex]` |
-| POST | `/tasks/delete` | Delete draft task | Yes (Project Manager) | `/studio/project/[treasurynft]/draft-tasks/[taskindex]` |
+| POST | `/projects/update` | Update project metadata | Yes (Treasury Owner) | `/studio/project/[projectid]` |
+| POST | `/tasks/list` | List tasks for a project | No | `/project/[projectid]`, `/studio/project/[projectid]/draft-tasks` |
+| POST | `/tasks/create` | Create draft task | Yes (Project Manager) | `/studio/project/[projectid]/draft-tasks/new` |
+| POST | `/tasks/update` | Update draft task | Yes (Project Manager) | `/studio/project/[projectid]/draft-tasks/[taskindex]` |
+| POST | `/tasks/delete` | Delete draft task | Yes (Project Manager) | `/studio/project/[projectid]/draft-tasks/[taskindex]` |
 | POST | `/task-commitments/list` | List my commitments | Yes (Contributor) | Contributor dashboard (future) |
-| POST | `/task-commitments/get` | Get commitment for task | Yes (Contributor) | `/project/[treasurynft]/[taskhash]` |
-| POST | `/task-commitments/create` | Create task commitment | Yes (Contributor) | `/project/[treasurynft]/[taskhash]` |
-| POST | `/task-commitments/update-evidence` | Update commitment evidence | Yes (Contributor) | `/project/[treasurynft]/[taskhash]` |
-| POST | `/task-commitments/update-status` | Update commitment status | Yes | `/project/[treasurynft]/[taskhash]`, `/studio/project/[treasurynft]/commitments` |
-| POST | `/task-commitments/delete` | Delete commitment | Yes | `/project/[treasurynft]/[taskhash]` |
-| POST | `/task-commitments/confirm-transaction` | Confirm blockchain tx | Yes | `/project/[treasurynft]/[taskhash]` |
-| POST | `/contributors/create` | Create contributor role | Yes | `/project/[treasurynft]/[taskhash]` |
-| POST | `/prerequisites/list-on-chain` | Get on-chain prerequisites | No | `/project/[treasurynft]` |
+| POST | `/task-commitments/get` | Get commitment for task | Yes (Contributor) | `/project/[projectid]/[taskhash]` |
+| POST | `/task-commitments/create` | Create task commitment | Yes (Contributor) | `/project/[projectid]/[taskhash]` |
+| POST | `/task-commitments/update-evidence` | Update commitment evidence | Yes (Contributor) | `/project/[projectid]/[taskhash]` |
+| POST | `/task-commitments/update-status` | Update commitment status | Yes | `/project/[projectid]/[taskhash]`, `/studio/project/[projectid]/commitments` |
+| POST | `/task-commitments/delete` | Delete commitment | Yes | `/project/[projectid]/[taskhash]` |
+| POST | `/task-commitments/confirm-transaction` | Confirm blockchain tx | Yes | `/project/[projectid]/[taskhash]` |
+| POST | `/contributors/create` | Create contributor role | Yes | `/project/[projectid]/[taskhash]` |
+| POST | `/prerequisites/list-on-chain` | Get on-chain prerequisites | No | `/project/[projectid]` |
 
 **Total: 16 API Endpoints**
 
@@ -70,7 +74,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
 - **API Endpoint**: `POST /projects/list`
 - **Type**: `ListPublishedTreasuriesOutput`
 
-#### `/project/[treasurynft]`
+#### `/project/[projectid]`
 - **Purpose**: Individual project detail page with tasks
 - **Authentication**: Not required (public)
 - **URL Parameters**:
@@ -87,7 +91,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - Shows contributor prerequisites (from `/prerequisites/list-on-chain`)
   - Escrow information display
   - Loading/error/empty states
-- **Component**: `src/app/(app)/project/[treasurynft]/page.tsx`
+- **Component**: `src/app/(app)/project/[projectid]/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list` (with `treasury_nft_policy_id` filter) - Project details
   - `POST /tasks/list` - Task list
@@ -97,7 +101,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
   - `TaskInfoOutput[]`
   - Contributor prerequisite objects (on-chain data)
 
-#### `/project/[treasurynft]/[taskhash]`
+#### `/project/[projectid]/[taskhash]`
 - **Purpose**: Task detail page with commitment workflow
 - **Authentication**: Optional (shows commitment UI if authenticated as Contributor)
 - **URL Parameters**:
@@ -122,7 +126,7 @@ These routes are accessible to all users (authenticated or not) and provide the 
     - Create contributor role via `/contributors/create` (if not yet a contributor)
   - Commitment status tracking with PENDING_TX states
   - Loading/error states
-- **Component**: `src/app/(app)/project/[treasurynft]/[taskhash]/page.tsx`
+- **Component**: `src/app/(app)/project/[projectid]/[taskhash]/page.tsx`
 - **API Endpoints**:
   - `POST /tasks/list` (filtered by treasury_nft_policy_id, then find by task_hash) - Task details
   - `POST /task-commitments/get` - Get existing commitment (authenticated)
@@ -155,7 +159,7 @@ These routes are for project managers and treasury owners to manage their projec
 - **API Endpoint**: `POST /projects/list-owned`
 - **Type**: `ListOwnedTreasuriesOutput`
 
-#### `/studio/project/[treasurynft]`
+#### `/studio/project/[projectid]`
 - **Purpose**: Project dashboard and metadata CRUD
 - **Authentication**: Required (JWT - Treasury Owner role)
 - **URL Parameters**:
@@ -172,7 +176,7 @@ These routes are for project managers and treasury owners to manage their projec
     - Transaction History
   - Save/Cancel actions
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with `treasury_nft_policy_id` filter) - Get project
   - `POST /projects/update` - Update project metadata
@@ -180,7 +184,7 @@ These routes are for project managers and treasury owners to manage their projec
 - **Types**:
   - `TreasuryWithEscrowsOutput`
 
-#### `/studio/project/[treasurynft]/manage-treasury`
+#### `/studio/project/[projectid]/manage-treasury`
 - **Purpose**: Treasury management - approve drafts, run on-chain transactions
 - **Authentication**: Required (JWT - Treasury Owner role)
 - **URL Parameters**:
@@ -197,7 +201,7 @@ These routes are for project managers and treasury owners to manage their projec
     - Track pending transaction status
   - Funding controls (deposit/withdraw from treasury)
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/manage-treasury/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/manage-treasury/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project with treasury info
   - `POST /tasks/list` - Get draft tasks for approval
@@ -206,7 +210,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `TaskInfoOutput[]`
 - **Note**: This route primarily handles on-chain transactions via Mesh SDK; the API provides read-only data for display
 
-#### `/studio/project/[treasurynft]/manage-contributors`
+#### `/studio/project/[projectid]/manage-contributors`
 - **Purpose**: View enrolled contributors for the project
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -218,7 +222,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Contributor status
   - Link to view contributor's commitments
   - Loading/error/empty states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/manage-contributors/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/manage-contributors/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project with contributor data
   - `POST /prerequisites/list-on-chain` - Get prerequisites
@@ -227,7 +231,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Contributor prerequisite objects (on-chain data)
 - **Note**: Contributor enrollment data comes from on-chain/Andamioscan API; this route displays it
 
-#### `/studio/project/[treasurynft]/commitments`
+#### `/studio/project/[projectid]/commitments`
 - **Purpose**: View all task commitments for the project
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -255,7 +259,7 @@ These routes are for project managers and treasury owners to manage their projec
     - Update status (approve/deny)
   - Empty states with filter clear option
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/commitments/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/commitments/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project details
   - `POST /tasks/list` - Get tasks for filter dropdown
@@ -266,7 +270,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `TaskCommitmentOutput[]`
 - **Note**: Task commitments are retrieved as part of project/task data; manager actions use update-status endpoint
 
-#### `/studio/project/[treasurynft]/commitments/[alias]`
+#### `/studio/project/[projectid]/commitments/[alias]`
 - **Purpose**: View task commitments for a specific contributor
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -284,7 +288,7 @@ These routes are for project managers and treasury owners to manage their projec
     - Pending TX hash (if applicable)
   - Status update actions (approve/deny)
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/commitments/[alias]/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/commitments/[alias]/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project details
   - `POST /task-commitments/update-status` - Update commitment status
@@ -292,7 +296,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `TreasuryWithEscrowsOutput`
   - `TaskCommitmentOutput[]`
 
-#### `/studio/project/[treasurynft]/draft-tasks`
+#### `/studio/project/[projectid]/draft-tasks`
 - **Purpose**: List and manage draft tasks
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -311,7 +315,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Status filter (DRAFT, LIVE, ARCHIVED)
   - Empty state with "Create First Task" button
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/draft-tasks/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project details
   - `POST /tasks/list` - Get all tasks
@@ -320,7 +324,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `TreasuryWithEscrowsOutput`
   - `TaskInfoOutput[]`
 
-#### `/studio/project/[treasurynft]/draft-tasks/new`
+#### `/studio/project/[projectid]/draft-tasks/new`
 - **Purpose**: Create a new task
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -340,14 +344,14 @@ These routes are for project managers and treasury owners to manage their projec
   - Edit/Preview tabs for content
   - Create button with validation
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/draft-tasks/new/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/draft-tasks/new/page.tsx`
 - **API Endpoints**:
   - `POST /tasks/create` - Create task
 - **Types**:
   - `CreateTaskInput`
   - `CreateTaskOutput`
 
-#### `/studio/project/[treasurynft]/draft-tasks/[taskindex]`
+#### `/studio/project/[projectid]/draft-tasks/[taskindex]`
 - **Purpose**: Edit and manage existing draft task
 - **Authentication**: Required (JWT - Project Manager role)
 - **URL Parameters**:
@@ -371,7 +375,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Update/Delete buttons (only for DRAFT status)
   - Read-only view for LIVE/ARCHIVED tasks
   - Loading/error states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/draft-tasks/[taskindex]/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx`
 - **API Endpoints**:
   - `POST /tasks/list` (filter by task_index) - Get task details
   - `POST /tasks/update` - Update task (DRAFT only)
@@ -380,7 +384,7 @@ These routes are for project managers and treasury owners to manage their projec
   - `TaskInfoOutput`
   - `CreateTaskInput` (used for updates as well)
 
-#### `/studio/project/[treasurynft]/transaction-history`
+#### `/studio/project/[projectid]/transaction-history`
 - **Purpose**: Display transaction history for the project
 - **Authentication**: Required (JWT - Treasury Owner/Manager role)
 - **URL Parameters**:
@@ -396,7 +400,7 @@ These routes are for project managers and treasury owners to manage their projec
   - Filter by transaction type
   - Filter by date range
   - Loading/error/empty states
-- **Component**: `src/app/(app)/studio/project/[treasurynft]/transaction-history/page.tsx`
+- **Component**: `src/app/(app)/studio/project/[projectid]/transaction-history/page.tsx`
 - **API Endpoints**:
   - `POST /projects/list-owned` (with filter) - Get project with transaction history
 - **Types**:
@@ -410,20 +414,18 @@ These routes are for project managers and treasury owners to manage their projec
 
 ```
 /project (public - all published projects)
-  └── /project/[treasurynft] (project detail with tasks)
-      └── /project/[treasurynft]/[taskhash] (task detail with commitment workflow)
+  └── /project/[projectid] (project detail with tasks)
+      ├── /project/[projectid]/[taskhash] (task detail with commitment workflow)
+      └── /project/[projectid]/contributor (contributor dashboard)
 
 /studio (studio home)
   └── /studio/project (project management dashboard - owned projects)
-      └── /studio/project/[treasurynft] (project CRUD)
-          ├── /studio/project/[treasurynft]/manage-treasury (treasury management)
-          ├── /studio/project/[treasurynft]/manage-contributors (contributors list)
-          ├── /studio/project/[treasurynft]/commitments (all commitments)
-          │   └── /studio/project/[treasurynft]/commitments/[alias] (contributor commitments)
-          ├── /studio/project/[treasurynft]/draft-tasks (tasks list)
-          │   ├── /studio/project/[treasurynft]/draft-tasks/new (create task)
-          │   └── /studio/project/[treasurynft]/draft-tasks/[taskindex] (edit task)
-          └── /studio/project/[treasurynft]/transaction-history (transaction history)
+      └── /studio/project/[projectid] (project dashboard with Treasury + Blacklist tabs)
+          ├── /studio/project/[projectid]/manager (review task commitments)
+          ├── /studio/project/[projectid]/draft-tasks (tasks list)
+          │   ├── /studio/project/[projectid]/draft-tasks/new (create task)
+          │   └── /studio/project/[projectid]/draft-tasks/[taskindex] (edit task)
+          └── /studio/project/[projectid]/transaction-history (transaction history) 🚧
 ```
 
 ---
@@ -432,10 +434,9 @@ These routes are for project managers and treasury owners to manage their projec
 
 | Parameter | Description | Example | Constraints |
 |-----------|-------------|---------|-------------|
-| `treasurynft` | Treasury NFT Policy ID | `e1b2c3d4...` | 56-character hex string |
+| `projectid` | Project ID (treasury NFT policy ID) | `e1b2c3d4...` | 56-character hex string |
 | `taskhash` | Task hash (on-chain identifier) | `a1b2c3d4...` | 64-character hex string |
 | `taskindex` | Task index | `0`, `1`, `24` | Integer (0-based) |
-| `alias` | Contributor alias/ID | `contributor123` | String identifier |
 
 ---
 
@@ -444,18 +445,18 @@ These routes are for project managers and treasury owners to manage their projec
 | Route | Auth Required | Auth Type | Role Required |
 |-------|---------------|-----------|---------------|
 | `/project` | No | - | Public |
-| `/project/[treasurynft]` | No | - | Public |
-| `/project/[treasurynft]/[taskhash]` | Optional | JWT | Contributor (for commitment UI) |
-| `/studio/project` | Yes | JWT | Treasury Owner |
-| `/studio/project/[treasurynft]` | Yes | JWT | Treasury Owner |
-| `/studio/project/[treasurynft]/manage-treasury` | Yes | JWT | Treasury Owner |
-| `/studio/project/[treasurynft]/manage-contributors` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/commitments` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/commitments/[alias]` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/draft-tasks` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/draft-tasks/new` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/draft-tasks/[taskindex]` | Yes | JWT | Project Manager |
-| `/studio/project/[treasurynft]/transaction-history` | Yes | JWT | Treasury Owner/Manager |
+| `/project/[projectid]` | No | - | Public |
+| `/project/[projectid]/[taskhash]` | Optional | JWT | Contributor (for commitment UI) |
+| `/project/[projectid]/contributor` | Yes | JWT | Contributor |
+| `/studio/project` | Yes | JWT | Manager/Owner |
+| `/studio/project/[projectid]` | Yes | JWT | Manager/Owner |
+| `/studio/project/[projectid]/manager` | Yes | JWT | Project Manager |
+| `/studio/project/[projectid]/draft-tasks` | Yes | JWT | Project Manager |
+| `/studio/project/[projectid]/draft-tasks/new` | Yes | JWT | Project Manager |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | Yes | JWT | Project Manager |
+| `/studio/project/[projectid]/transaction-history` | Yes | JWT | Treasury Owner/Manager |
+| Treasury tab (in dashboard) | Yes | JWT | Treasury Owner |
+| Blacklist tab (in dashboard) | Yes | JWT | Treasury Owner |
 
 ---
 
@@ -589,10 +590,10 @@ These are potential project-related routes that could be added:
 
 - `/studio/project/create` - Create new project wizard
 - `/my-contributions` - Contributor dashboard with all commitments across projects
-- `/my-contributions/[treasurynft]` - Contributor progress for specific project
-- `/project/[treasurynft]/contributors` - Public list of project contributors
-- `/studio/project/[treasurynft]/analytics` - Project analytics and insights
-- `/studio/project/[treasurynft]/settings` - Project settings and configuration
+- `/my-contributions/[projectid]` - Contributor progress for specific project
+- `/project/[projectid]/contributors` - Public list of project contributors
+- `/studio/project/[projectid]/analytics` - Project analytics and insights
+- `/studio/project/[projectid]/settings` - Project settings and configuration
 
 ---
 

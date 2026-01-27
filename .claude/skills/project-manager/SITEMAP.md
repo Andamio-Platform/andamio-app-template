@@ -72,7 +72,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | `/studio/course` | `app/(studio)/studio/course/page.tsx` | Yes | Course studio landing with split-pane layout |
 | `/studio/course/[coursenft]` | `app/(studio)/studio/course/[coursenft]/page.tsx` | Yes | Course editor with credential tabs |
 | `/studio/course/[coursenft]/new` | `app/(studio)/studio/course/[coursenft]/new/page.tsx` | Yes | New module wizard |
-| `/studio/course/[coursenft]/instructor` | `app/(studio)/studio/course/[coursenft]/instructor/page.tsx` | Yes | Instructor view - student submissions |
+| `/studio/course/[coursenft]/teacher` | `app/(studio)/studio/course/[coursenft]/teacher/page.tsx` | Yes | Instructor view - student submissions |
 | `/studio/course/[coursenft]/[modulecode]` | `app/(studio)/studio/course/[coursenft]/[modulecode]/page.tsx` | Yes | Module wizard editor |
 | `/studio/course/[coursenft]/[modulecode]/introduction` | `app/(studio)/studio/course/.../introduction/page.tsx` | Yes | Introduction content editor |
 | `/studio/course/[coursenft]/[modulecode]/slts` | `app/(studio)/studio/course/.../slts/page.tsx` | Yes | SLT management |
@@ -179,7 +179,7 @@ PATCH /course/update             Save course changes
 DELETE /course/delete            Delete course
 ```
 
-#### `/studio/course/[coursenft]/instructor` - Instructor View
+#### `/studio/course/[coursenft]/teacher` - Instructor View
 ```
 POST /course/get                 Get course details
 POST /assignment-commitment/by-course  Get all student submissions

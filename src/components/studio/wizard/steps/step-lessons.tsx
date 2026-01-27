@@ -14,6 +14,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { toast } from "sonner";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 import type { Lesson } from "~/hooks/api";
@@ -75,23 +76,40 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         // Handle 409 Conflict: lesson already exists, just refetch and open for editing
         if (response.status === 409) {
           console.log("[StepLessons] 409 Conflict: lesson exists, refetching and opening for editing");
+          toast.info("Lesson already exists", {
+            description: "Opening the existing lesson for editing.",
+          });
           setNewLessonTitle("");
           setCreatingForSlt(null);
+          // Refetch data and wait for state to settle before opening editor
           await refetchData();
-          setEditingLessonIndex(sltIndex);
+          // Use setTimeout to ensure React has processed the state update from refetchData
+          // before we try to open the editor (which depends on lessons being in state)
+          setTimeout(() => {
+            setEditingLessonIndex(sltIndex);
+          }, 100);
           return;
         }
         const errorData = await response.json() as { message?: string };
         throw new Error(errorData.message ?? "Failed to create lesson");
       }
 
+      toast.success("Lesson created", {
+        description: "You can now add content to your lesson.",
+      });
       setNewLessonTitle("");
       setCreatingForSlt(null);
       await refetchData();
       // Auto-expand the newly created lesson for editing
-      setEditingLessonIndex(sltIndex);
+      // Use setTimeout to ensure React has processed the state update from refetchData
+      setTimeout(() => {
+        setEditingLessonIndex(sltIndex);
+      }, 100);
     } catch (err) {
       console.error("Error creating lesson:", err);
+      toast.error("Failed to create lesson", {
+        description: err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
     } finally {
       setIsCreating(false);
     }

@@ -23,6 +23,7 @@ import {
   type Lesson,
   transformCourseModule,
   transformSLT,
+  transformLesson,
   transformAssignment,
 } from "~/hooks/api";
 // Note: Raw generated types no longer needed - using transformed types from hooks
@@ -153,11 +154,58 @@ export function ModuleWizard({
         }
       }
 
-      // NOTE: No lessons list endpoint exists in API
-      // Individual lessons are fetched via: GET /course/user/lesson/{id}/{code}/{slt_index}
-      // To get all lessons, iterate SLTs and fetch each individually
-      // For now, set to empty array - lessons can be fetched on demand per SLT
-      const lessons: Lesson[] = [];
+      // Fetch lessons per SLT (no batch endpoint exists)
+      const lessons = await Promise.all(
+        slts.map(async (slt, index) => {
+          const sltIndex = slt.moduleIndex ?? index + 1;
+          try {
+            const lessonResponse = await fetch(
+              `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}`
+            );
+
+            if (lessonResponse.status === 404) {
+              return null;
+            }
+
+            if (!lessonResponse.ok) {
+              console.warn(
+                "[ModuleWizard] Failed to fetch lesson:",
+                lessonResponse.statusText
+              );
+              return null;
+            }
+
+            const lessonResult = (await lessonResponse.json()) as unknown;
+            let rawLesson: Record<string, unknown> | null = null;
+            if (lessonResult && typeof lessonResult === "object") {
+              if ("data" in lessonResult && (lessonResult as { data?: unknown }).data) {
+                rawLesson = (lessonResult as { data: Record<string, unknown> }).data;
+              } else if (
+                "title" in lessonResult ||
+                "content_json" in lessonResult ||
+                "slt_index" in lessonResult
+              ) {
+                rawLesson = lessonResult as Record<string, unknown>;
+              }
+            }
+
+            if (rawLesson) {
+              const lesson = transformLesson(rawLesson);
+              // Inject sltIndex from URL since API doesn't return it
+              if (lesson.sltIndex === undefined) {
+                lesson.sltIndex = sltIndex;
+              }
+              return lesson;
+            }
+            return null;
+          } catch (error) {
+            console.warn("[ModuleWizard] Lesson fetch error:", error);
+            return null;
+          }
+        })
+      );
+
+      const resolvedLessons = lessons.filter((lesson): lesson is Lesson => lesson !== null);
 
       // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
@@ -183,7 +231,7 @@ export function ModuleWizard({
         slts,
         assignment,
         introduction,
-        lessons,
+        lessons: resolvedLessons,
         isLoading: false,
         error: null,
       });

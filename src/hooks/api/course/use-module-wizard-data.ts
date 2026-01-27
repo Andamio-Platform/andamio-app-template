@@ -2,7 +2,13 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useCourse, type Course } from "./use-course";
-import { useTeacherCourseModules, type CourseModule, type SLT } from "./use-course-module";
+import {
+  useTeacherCourseModules,
+  type CourseModule,
+  type SLT,
+  type Lesson,
+  transformLesson,
+} from "./use-course-module";
 import { useSLTs } from "./use-slt";
 import { useAssignment } from "./use-assignment";
 import type { WizardData, StepCompletion } from "~/components/studio/wizard/types";
@@ -49,6 +55,8 @@ export function useModuleWizardData({
 
   // Local SLT state for optimistic updates (synced from React Query)
   const [optimisticSlts, setOptimisticSlts] = useState<SLT[] | null>(null);
+  const [lessonsFromApi, setLessonsFromApi] = useState<Lesson[]>([]);
+  const lessonsRequestId = useRef(0);
 
   // ==========================================================================
   // Compose existing hooks
@@ -114,12 +122,116 @@ export function useModuleWizardData({
     }
   }, [sltsFromQuery, optimisticSlts]);
 
-  // Derive lessons from SLTs (each SLT may have an embedded lesson)
+  const fetchLessonsForSlts = useCallback(
+    async (sltsInput: SLT[], moduleCodeOverride?: string) => {
+      if (effectiveIsNewModule) {
+        setLessonsFromApi([]);
+        return;
+      }
+
+      const moduleCodeToUse = moduleCodeOverride ?? effectiveModuleCode;
+      if (!moduleCodeToUse || sltsInput.length === 0) {
+        setLessonsFromApi([]);
+        return;
+      }
+
+      const requestId = ++lessonsRequestId.current;
+
+      const sltIndices = Array.from(
+        new Set(
+          sltsInput
+            .map((slt, index) => slt.moduleIndex ?? index + 1)
+            .filter((index): index is number => typeof index === "number")
+        )
+      );
+
+      const lessons = await Promise.all(
+        sltIndices.map(async (sltIndex) => {
+          try {
+            const response = await fetch(
+              `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCodeToUse}/${sltIndex}`
+            );
+
+            if (response.status === 404) {
+              return null;
+            }
+
+            if (!response.ok) {
+              console.warn(
+                "[useModuleWizardData] Failed to fetch lesson:",
+                response.statusText
+              );
+              return null;
+            }
+
+            const result = (await response.json()) as unknown;
+            let raw: Record<string, unknown> | null = null;
+
+            if (result && typeof result === "object") {
+              if ("data" in result && (result as { data?: unknown }).data) {
+                raw = (result as { data: Record<string, unknown> }).data;
+              } else if (
+                "title" in result ||
+                "content_json" in result ||
+                "slt_index" in result
+              ) {
+                raw = result as Record<string, unknown>;
+              }
+            }
+
+            if (raw) {
+              const lesson = transformLesson(raw);
+              // Inject sltIndex from URL since API doesn't return it
+              if (lesson.sltIndex === undefined) {
+                lesson.sltIndex = sltIndex;
+              }
+              return lesson;
+            }
+            return null;
+          } catch (error) {
+            console.warn("[useModuleWizardData] Lesson fetch error:", error);
+            return null;
+          }
+        })
+      );
+
+      if (requestId !== lessonsRequestId.current) {
+        return;
+      }
+
+      setLessonsFromApi(
+        lessons.filter((lesson): lesson is Lesson => lesson !== null)
+      );
+    },
+    [courseNftPolicyId, effectiveIsNewModule, effectiveModuleCode]
+  );
+
+  useEffect(() => {
+    void fetchLessonsForSlts(slts);
+  }, [fetchLessonsForSlts, slts]);
+
+  // Derive lessons from SLTs (each SLT may have an embedded lesson) + API fetches
   const lessons = useMemo(() => {
-    return slts
-      .filter((slt) => slt.lesson?.title)
-      .map((slt) => slt.lesson!);
-  }, [slts]);
+    const lessonMap = new Map<number, Lesson>();
+
+    slts.forEach((slt) => {
+      if (slt.lesson) {
+        const sltIndex = slt.lesson.sltIndex ?? slt.moduleIndex;
+        if (typeof sltIndex === "number") {
+          lessonMap.set(sltIndex, slt.lesson);
+        }
+      }
+    });
+
+    lessonsFromApi.forEach((lesson) => {
+      const sltIndex = lesson.sltIndex;
+      if (typeof sltIndex === "number") {
+        lessonMap.set(sltIndex, lesson);
+      }
+    });
+
+    return Array.from(lessonMap.values());
+  }, [slts, lessonsFromApi]);
 
   // Use assignment from query if it looks complete, otherwise fall back to module content
   const assignmentFromQuery = assignment ?? null;
@@ -224,13 +336,24 @@ export function useModuleWizardData({
       }
 
       // Trigger refetch of all queries
-      await Promise.all([
+      const [, sltsResult] = await Promise.all([
         refetchModules(),
         refetchSlts(),
         refetchAssignment(),
       ]);
+
+      if (!moduleCodeOverride) {
+        await fetchLessonsForSlts(sltsResult.data ?? slts, effectiveModuleCode);
+      }
     },
-    [refetchModules, refetchSlts, refetchAssignment]
+    [
+      refetchModules,
+      refetchSlts,
+      refetchAssignment,
+      fetchLessonsForSlts,
+      slts,
+      effectiveModuleCode,
+    ]
   );
 
   // ==========================================================================

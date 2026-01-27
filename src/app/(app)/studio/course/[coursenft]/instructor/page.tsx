@@ -186,17 +186,32 @@ export default function InstructorDashboardPage() {
         }
       );
 
+      // 404 means no commitments - use empty array
+      if (commitmentsResponse.status === 404) {
+        setCommitments([]);
+        setFilteredCommitments([]);
+        return;
+      }
+
       if (!commitmentsResponse.ok) {
         const errorData = (await commitmentsResponse.json()) as ApiError;
         throw new Error(errorData.message ?? "Failed to fetch assignment commitments");
       }
 
-      const commitmentsData =
-        (await commitmentsResponse.json()) as TeacherAssignmentCommitment[];
+      // API returns { data?: [...], warning?: string } wrapper
+      const result = (await commitmentsResponse.json()) as {
+        data?: TeacherAssignmentCommitment[];
+        warning?: string;
+      };
 
       // Debug: log the actual API response to see field names
-      console.log("[InstructorDashboard] Assignment commitments response:", commitmentsData);
+      console.log("[InstructorDashboard] Assignment commitments response:", result);
 
+      if (result.warning) {
+        console.warn("[InstructorDashboard] API warning:", result.warning);
+      }
+
+      const commitmentsData = result.data ?? [];
       setCommitments(commitmentsData);
       setFilteredCommitments(commitmentsData);
     } catch (err) {

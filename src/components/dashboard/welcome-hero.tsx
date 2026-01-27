@@ -7,6 +7,7 @@ import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-ca
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseIcon, ForwardIcon, AccessTokenIcon, VerifiedIcon, SparkleIcon, LoadingIcon } from "~/components/icons";
+import { BRANDING } from "~/config";
 
 interface WelcomeHeroProps {
   accessTokenAlias?: string | null;
@@ -34,7 +35,7 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="space-y-1">
                   <AndamioText variant="small" className="font-medium">
-                    {isPendingMint ? "Welcome to Andamio" : "Welcome back"}
+                    {isPendingMint ? `Welcome to ${BRANDING.name}` : "Welcome back"}
                   </AndamioText>
                   {isPendingMint && displayAlias ? (
                     <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
@@ -102,10 +103,10 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
               {/* Description based on state */}
               <AndamioText variant="muted" className="max-w-2xl">
                 {isPendingMint
-                  ? "Your access token is being minted on the Cardano blockchain. This usually takes about 30 seconds to confirm. Once confirmed, you'll have full access to all Andamio features."
+                  ? `Your access token is being minted on the Cardano blockchain. This usually takes about 30 seconds to confirm. Once confirmed, you'll have full access to all ${BRANDING.name} features.`
                   : hasAccessToken
                     ? "Your on-chain identity is active. Track your learning progress, manage your courses, and explore new opportunities."
-                    : "Complete your setup by minting an Access Token to unlock the full Andamio experience."
+                    : `Complete your setup by minting an Access Token to unlock the full ${BRANDING.name} experience.`
                 }
               </AndamioText>
 

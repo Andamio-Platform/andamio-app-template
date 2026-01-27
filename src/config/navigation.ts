@@ -16,6 +16,7 @@ import {
   KeyIcon,
 } from "~/components/icons";
 import type { NavSection } from "~/types/ui";
+import { BRANDING } from "./branding";
 
 /**
  * Main sidebar navigation structure.
@@ -87,7 +88,7 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
         name: "Component Library",
         href: "/components",
         icon: ThemeIcon,
-        description: "Andamio UI reference",
+        description: `${BRANDING.name} UI reference`,
       },
       {
         name: "Sitemap",

@@ -14,6 +14,7 @@ import {
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
 import { env } from "~/env";
+import { BRANDING } from "~/config";
 
 /**
  * Detect and sync access token from wallet to database
@@ -269,7 +270,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         authLogger.info("User data loaded from stored JWT:", userData);
 
         // Log JWT to console for debugging/testing (restored session)
-        console.group("🔐 Andamio Session Restored");
+        console.group(`🔐 ${BRANDING.name} Session Restored`);
         console.log("JWT Token:", storedJWT);
         console.log("User:", userData);
         console.log("\nTo use in API requests:");
@@ -400,7 +401,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
 
       // Log JWT to console for debugging/testing
-      console.group("🔐 Andamio Authentication Successful");
+      console.group(`🔐 ${BRANDING.name} Authentication Successful`);
       console.log("JWT Token:", authResponse.jwt);
 
       // Decode and display JWT payload

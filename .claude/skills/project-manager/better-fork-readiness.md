@@ -4,6 +4,7 @@
 > **Estimated Effort:** 4-6 hours total
 > **Priority:** Medium (improves developer experience for forks)
 > **Created:** 2026-01-25
+> **Status:** ✅ COMPLETE (2026-01-27) - OG image is optional/manual
 
 ---
 
@@ -13,7 +14,7 @@ This plan addresses 9 identified gaps that make forking harder than necessary. T
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  CURRENT STATE (80% Ready)                                      │
+│  PREVIOUS STATE (80% Ready)                                     │
 ├─────────────────────────────────────────────────────────────────┤
 │  ✅ Centralized BRANDING config                                 │
 │  ✅ Semantic color system in CSS variables                      │
@@ -27,14 +28,14 @@ This plan addresses 9 identified gaps that make forking harder than necessary. T
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  TARGET STATE (95%+ Ready)                                      │
+│  CURRENT STATE (95%+ Ready) ✅ IMPLEMENTED 2026-01-27           │
 ├─────────────────────────────────────────────────────────────────┤
 │  ✅ All branding flows from BRANDING config                     │
 │  ✅ Marketing copy in separate MARKETING config                 │
 │  ✅ Docs URLs parameterized with helper                         │
 │  ✅ getPageMetadata() helper for consistent SEO                 │
 │  ✅ WHITE_LABEL_GUIDE.md for forkers                            │
-│  ✅ OG image placeholder created                                │
+│  ⏳ OG image placeholder (manual - use design tool)             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,17 +43,17 @@ This plan addresses 9 identified gaps that make forking harder than necessary. T
 
 ## Gap Summary
 
-| # | Gap | Severity | Phase | Effort |
+| # | Gap | Severity | Phase | Status |
 |---|-----|----------|-------|--------|
-| 1 | Root layout metadata hardcoded | 🔴 Critical | 1 | 15 min |
-| 2 | Landing page marketing copy hardcoded | 🔴 Critical | 1 | 1.5 hr |
-| 3 | Welcome hero greeting hardcoded | 🟡 Medium | 1 | 5 min |
-| 4 | Transaction docs URLs hardcoded (17) | 🟡 Medium | 2 | 1 hr |
-| 5 | Missing getPageMetadata() helper | 🟡 Medium | 2 | 20 min |
-| 6 | Missing OG image file | 🟢 Low | 3 | 30 min |
-| 7 | No white-label documentation | 🟢 Low | 3 | 45 min |
-| 8 | Navigation description hardcoded | 🟢 Low | 3 | 5 min |
-| 9 | Console log messages hardcoded | 🟢 Low | 3 | 10 min |
+| 1 | Root layout metadata hardcoded | 🔴 Critical | 1 | ✅ Done |
+| 2 | Landing page marketing copy hardcoded | 🔴 Critical | 1 | ✅ Done |
+| 3 | Welcome hero greeting hardcoded | 🟡 Medium | 1 | ✅ Done |
+| 4 | Transaction docs URLs hardcoded (17) | 🟡 Medium | 2 | ✅ Done |
+| 5 | Missing getPageMetadata() helper | 🟡 Medium | 2 | ✅ Done |
+| 6 | Missing OG image file | 🟢 Low | 3 | ⏳ Manual |
+| 7 | No white-label documentation | 🟢 Low | 3 | ✅ Done |
+| 8 | Navigation description hardcoded | 🟢 Low | 3 | ✅ Done |
+| 9 | Console log messages hardcoded | 🟢 Low | 3 | ✅ Done |
 
 ---
 

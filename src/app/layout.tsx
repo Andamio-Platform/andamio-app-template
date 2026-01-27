@@ -9,6 +9,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
 import { AuthProvider } from "~/components/providers/auth-provider";
 import { Toaster } from "~/components/ui/sonner";
+import { BRANDING } from "~/config";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -18,9 +19,23 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Andamio T3 App Template",
-  description: "Reference template for building Andamio apps using the T3 stack.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  title: BRANDING.fullTitle,
+  description: BRANDING.description,
+  icons: [{ rel: "icon", url: BRANDING.logo.favicon }],
+  openGraph: {
+    title: BRANDING.fullTitle,
+    description: BRANDING.description,
+    images: [BRANDING.logo.ogImage],
+    siteName: BRANDING.name,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: BRANDING.fullTitle,
+    description: BRANDING.description,
+    images: [BRANDING.logo.ogImage],
+  },
+  metadataBase: new URL(BRANDING.links.website),
 };
 
 const spaceGrotesk = Space_Grotesk({

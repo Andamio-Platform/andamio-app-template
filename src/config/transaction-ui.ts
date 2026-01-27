@@ -27,6 +27,8 @@
  * @see https://docs.andamio.io/docs/protocol/v2/transactions
  */
 
+import { getDocsUrl } from "./branding";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -101,8 +103,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Mint your access token to participate in the Andamio protocol. This is required before you can enroll in courses or perform any other actions.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/global/general/access-token/mint",
+    footerLink: getDocsUrl("accessTokenMint"),
     footerLinkText: "Tx Documentation",
     successInfo: "Access token minted successfully!",
     requiresDBUpdate: false, // Pure on-chain, token exists only in wallet
@@ -118,8 +119,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Create a new course on the Andamio platform. This will mint a Course NFT that represents ownership and enables on-chain course management.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/instance/owner/course/create",
+    footerLink: getDocsUrl("courseCreate"),
     footerLinkText: "Tx Documentation",
     successInfo: "Course created successfully!",
     requiresDBUpdate: true,
@@ -131,8 +131,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Create a new project on the Andamio platform. This will mint a Project NFT that represents ownership and enables on-chain project management.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/instance/owner/project/create",
+    footerLink: getDocsUrl("projectCreate"),
     footerLinkText: "Tx Documentation",
     successInfo: "Project created successfully!",
     requiresDBUpdate: true,
@@ -148,8 +147,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Add or remove teachers from a course. Teachers have the ability to manage course modules and assess student assignments.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/owner/teachers/manage",
+    footerLink: getDocsUrl("teachersManage"),
     footerLinkText: "Tx Documentation",
     successInfo: "Course teachers updated successfully!",
     requiresDBUpdate: true,
@@ -166,8 +164,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
       "Add, update, or manage course modules. This transaction allows teachers to mint module tokens and update module content on-chain.",
       "Module token names are computed as Blake2b-256 hashes of the SLT content.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/teacher/modules/manage",
+    footerLink: getDocsUrl("modulesManage"),
     footerLinkText: "Tx Documentation",
     successInfo: "Course modules managed successfully!",
     requiresDBUpdate: true,
@@ -179,8 +176,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Review and assess a student's assignment submission. Accept to grant the student a credential for completing this module, or refuse with feedback for improvement.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/teacher/assignments/assess",
+    footerLink: getDocsUrl("assignmentsAssess"),
     footerLinkText: "Tx Documentation",
     successInfo: "Assignment assessment submitted successfully!",
     requiresDBUpdate: true,
@@ -197,8 +193,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
       "Commit to an assignment in this course. This creates an on-chain record of your commitment.",
       "You must select a module and provide assignment evidence.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/student/assignment/commit",
+    footerLink: getDocsUrl("assignmentCommit"),
     footerLinkText: "Tx Documentation",
     successInfo: "Successfully committed to assignment!",
     requiresDBUpdate: true,
@@ -211,8 +206,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
       "Update your assignment evidence while keeping the same module commitment.",
       "To commit to a different module, use the commit transaction instead.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/student/assignment/update",
+    footerLink: getDocsUrl("assignmentUpdate"),
     footerLinkText: "Tx Documentation",
     successInfo: "Assignment updated successfully!",
     requiresDBUpdate: true,
@@ -224,8 +218,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Claim your credential for completing this course. Once claimed, you will receive an on-chain credential token that proves your achievement.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/course/student/credential/claim",
+    footerLink: getDocsUrl("credentialClaim"),
     footerLinkText: "Tx Documentation",
     successInfo: "Credential claimed successfully!",
     requiresDBUpdate: true,
@@ -241,8 +234,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Add or remove managers from a project. Managers have the ability to manage project tasks and assess contributor submissions.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/owner/managers-manage",
+    footerLink: getDocsUrl("managersManage"),
     footerLinkText: "Tx Documentation",
     successInfo: "Project managers updated successfully!",
     requiresDBUpdate: true,
@@ -254,8 +246,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Add or remove contributors from the project blacklist. Blacklisted contributors cannot participate in this project.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/owner/blacklist-manage",
+    footerLink: getDocsUrl("blacklistManage"),
     footerLinkText: "Tx Documentation",
     successInfo: "Contributor blacklist updated successfully!",
     requiresDBUpdate: true,
@@ -271,8 +262,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Add or remove tasks from a project. Each task specifies its reward, expiration time, and content hash.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/manager/tasks-manage",
+    footerLink: getDocsUrl("tasksManage"),
     footerLinkText: "Tx Documentation",
     successInfo: "Project tasks managed successfully!",
     requiresDBUpdate: true,
@@ -284,8 +274,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Review and assess a contributor's task submission. Accept to approve and reward, refuse to allow resubmission, or deny to permanently reject.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/manager/tasks-assess",
+    footerLink: getDocsUrl("tasksAssess"),
     footerLinkText: "Tx Documentation",
     successInfo: "Task assessment submitted successfully!",
     requiresDBUpdate: true,
@@ -301,8 +290,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Commit to a new task in this project. This creates an on-chain commitment to the task.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/task-commit",
+    footerLink: getDocsUrl("taskCommit"),
     footerLinkText: "Tx Documentation",
     successInfo: "Successfully committed to task!",
     requiresDBUpdate: true,
@@ -314,8 +302,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Perform an action on your current task, such as updating your submission or transitioning task state.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/task-action",
+    footerLink: getDocsUrl("taskAction"),
     footerLinkText: "Tx Documentation",
     successInfo: "Task action completed successfully!",
     requiresDBUpdate: true,
@@ -327,8 +314,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Claim your credentials for completed project tasks. Once claimed, you will receive on-chain credential tokens that prove your achievements.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/contributor/credential-claim",
+    footerLink: getDocsUrl("contributorCredentialClaim"),
     footerLinkText: "Tx Documentation",
     successInfo: "Credentials claimed successfully!",
     requiresDBUpdate: true,
@@ -344,8 +330,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     description: [
       "Add funds to the project treasury. These funds will be available for task rewards and project operations.",
     ],
-    footerLink:
-      "https://docs.andamio.io/docs/protocol/v2/transactions/project/user/treasury/add-funds",
+    footerLink: getDocsUrl("treasuryAddFunds"),
     footerLinkText: "Tx Documentation",
     successInfo: "Funds added to treasury successfully!",
     requiresDBUpdate: true,

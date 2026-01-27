@@ -14,7 +14,10 @@
  */
 
 // Branding configuration
-export { BRANDING, getPageTitle, type Branding } from "./branding";
+export { BRANDING, getPageTitle, getDocsUrl, getPageMetadata, type Branding } from "./branding";
+
+// Marketing configuration
+export { MARKETING, type Marketing } from "./marketing";
 
 // Feature flags
 export {

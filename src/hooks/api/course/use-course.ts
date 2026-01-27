@@ -318,8 +318,8 @@ export function useActiveCourses() {
         items = result.data ?? [];
       }
 
-      // Transform to app-level types with camelCase fields
-      return items.map(transformCourse);
+      // Transform to app-level types with camelCase fields, then keep public only
+      return items.map(transformCourse).filter((course) => course.isPublic);
     },
     staleTime: 30 * 1000,
   });

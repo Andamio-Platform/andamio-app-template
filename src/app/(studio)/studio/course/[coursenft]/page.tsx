@@ -16,6 +16,7 @@ import {
   AndamioLabel,
   AndamioTextarea,
   AndamioAlert,
+  AndamioAlertTitle,
   AndamioAlertDescription,
   AndamioScrollArea,
   AndamioStudioLoading,
@@ -630,6 +631,26 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
           ) : (
             /* Has Modules - Show Tabs Interface */
             <AndamioTabs value={activeTab} onValueChange={handleTabChange}>
+              {course.isPublic === false && (
+                <AndamioAlert className="mb-4">
+                  <AlertIcon className="h-4 w-4" />
+                  <AndamioAlertTitle>Course is private</AndamioAlertTitle>
+                  <AndamioAlertDescription>
+                    <p>
+                      Private courses are hidden from Browse Courses. Set this course to Public to
+                      make it visible to learners.
+                    </p>
+                    <AndamioButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTabChange("settings")}
+                      className="mt-2"
+                    >
+                      Open Settings
+                    </AndamioButton>
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              )}
               <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
                 <AndamioTabsTrigger value="modules" className="text-sm gap-1.5 px-4">
                   <CredentialIcon className="h-4 w-4" />

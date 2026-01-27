@@ -239,29 +239,36 @@ Use for subtle, secondary information:
 
 ## Color Values (Reference)
 
-All colors are defined using OKLCH color space for better perceptual uniformity.
+All colors are defined using OKLCH color space for better perceptual uniformity. Values are sourced from the [Andamio Brand Hub](https://www.andamio.io/brand/developers).
 
-### Light Mode (`:root`)
-```css
---success: oklch(0.6 0.15 145);           /* Green */
---success-foreground: oklch(0.985 0 0);   /* Light text */
---warning: oklch(0.75 0.15 85);           /* Amber */
---warning-foreground: oklch(0.145 0 0);   /* Dark text */
---info: oklch(0.6 0.15 240);              /* Blue */
---info-foreground: oklch(0.985 0 0);      /* Light text */
---destructive: oklch(0.577 0.245 27.325); /* Red */
-```
+### Brand Colors (From Brand Hub)
 
-### Dark Mode (`.dark`)
-```css
---success: oklch(0.7 0.15 145);           /* Lighter green */
---success-foreground: oklch(0.145 0 0);   /* Dark text */
---warning: oklch(0.8 0.15 85);            /* Lighter amber */
---warning-foreground: oklch(0.145 0 0);   /* Dark text */
---info: oklch(0.7 0.15 240);              /* Lighter blue */
---info-foreground: oklch(0.145 0 0);      /* Dark text */
---destructive: oklch(0.704 0.191 22.216); /* Lighter red */
-```
+| Token | Light Mode | Dark Mode |
+|-------|------------|-----------|
+| Background | `oklch(1 0 0)` | `oklch(0.188 0.013 257.128)` |
+| Foreground | `oklch(0.145 0 0)` | `oklch(0.922 0.003 106.423)` |
+| Primary | `oklch(0.669 0.199 38.581)` | `oklch(0.719 0.174 38.581)` |
+| Secondary | `oklch(0.387 0.134 250.505)` | `oklch(0.605 0.155 250.505)` |
+| Accent | `oklch(0.988 0.008 79.439)` | `oklch(0.338 0.024 257.128)` |
+| Destructive | `oklch(0.608 0.227 27.325)` | `oklch(0.704 0.191 22.216)` |
+| Border | `oklch(0.922 0.003 106.423)` | `oklch(0.338 0.024 257.128)` |
+| Muted | `oklch(0.985 0.002 106.423)` | `oklch(0.241 0.018 257.128)` |
+
+### Status Colors
+
+| Token | Light Mode | Dark Mode |
+|-------|------------|-----------|
+| Success | `oklch(0.52 0.15 160)` | `oklch(0.62 0.16 160)` |
+| Warning | `oklch(0.75 0.16 70)` | `oklch(0.80 0.15 70)` |
+| Info | `oklch(0.55 0.15 250)` | `oklch(0.65 0.14 250)` |
+| Destructive | `oklch(0.608 0.227 27.325)` | `oklch(0.704 0.191 22.216)` |
+
+### Key Brand Color Notes
+
+- **Primary (Orange/Coral, hue ~38)**: Used for CTAs, buttons, and primary actions
+- **Secondary (Deep Blue, hue ~250)**: Used for headings and links
+- **Accent (Warm Cream, hue ~79)**: Used for highlights and accent elements
+- **Border Radius**: `0.625rem` (consistent across all components)
 
 ## Adding New Semantic Colors
 

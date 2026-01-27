@@ -52,6 +52,7 @@ import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
+import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 // Note: computeSltHashDefinite removed - no longer needed with hook-based data
@@ -365,6 +366,21 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
       router.push("/studio/course");
     } catch (err) {
       toast.error("Failed to delete", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  };
+
+  const handleToggleVisibility = async (isPublic: boolean) => {
+    if (!course) return;
+    try {
+      await updateCourseMutation.mutateAsync({
+        courseId: courseNftPolicyId,
+        data: { isPublic },
+      });
+      toast.success(isPublic ? "Course is now public" : "Course is now private");
+    } catch (err) {
+      toast.error("Failed to update visibility", {
         description: err instanceof Error ? err.message : "Unknown error",
       });
     }
@@ -1181,6 +1197,39 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <AndamioText variant="small">
                     Course ID cannot be changed after creation
                   </AndamioText>
+                </div>
+              </StudioFormSection>
+
+              <StudioFormSection title="Visibility">
+                <div className="rounded-xl border p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <AndamioLabel htmlFor="visibility-toggle" className="text-base font-medium">
+                        Public Course
+                      </AndamioLabel>
+                      <AndamioText variant="small">
+                        Public courses appear in the course catalog and can be discovered by learners.
+                        Private courses are only visible to owners and teachers.
+                      </AndamioText>
+                    </div>
+                    <AndamioSwitch
+                      id="visibility-toggle"
+                      checked={course.isPublic ?? false}
+                      onCheckedChange={handleToggleVisibility}
+                      disabled={updateCourseMutation.isPending}
+                    />
+                  </div>
+                  {course.isPublic ? (
+                    <div className="flex items-center gap-2 text-sm text-primary">
+                      <CompletedIcon className="h-4 w-4" />
+                      This course is visible in Browse Courses
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <AlertIcon className="h-4 w-4" />
+                      This course is hidden from Browse Courses
+                    </div>
+                  )}
                 </div>
               </StudioFormSection>
 

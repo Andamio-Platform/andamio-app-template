@@ -215,6 +215,7 @@ export function useUpdateCourse() {
         imageUrl?: string;
         videoUrl?: string;
         live?: boolean;
+        isPublic?: boolean;
       }>;
     }) => {
       // Endpoint: POST /course/owner/course/update
@@ -231,6 +232,7 @@ export function useUpdateCourse() {
               image_url: data.imageUrl,
               video_url: data.videoUrl,
               live: data.live,
+              is_public: data.isPublic,
             },
           }),
         }
@@ -251,6 +253,10 @@ export function useUpdateCourse() {
       // Also invalidate lists that might contain this course
       void queryClient.invalidateQueries({
         queryKey: courseKeys.lists(),
+      });
+      // Invalidate active courses (public course catalog)
+      void queryClient.invalidateQueries({
+        queryKey: courseKeys.active(),
       });
       // Invalidate owner courses
       void queryClient.invalidateQueries({

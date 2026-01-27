@@ -133,8 +133,9 @@ export {
   useDeleteAssignment,
 } from "./course/use-assignment";
 
-// Introductions (CRUD mutations)
+// Introductions (query + CRUD mutations)
 export {
+  useIntroduction,
   useCreateIntroduction,
   useUpdateIntroduction,
   useDeleteIntroduction,

@@ -101,6 +101,9 @@ export interface SLT {
   moduleCode?: string;
   createdAt?: string;
   updatedAt?: string;
+  createdBy?: string;
+  /** Whether this SLT has an associated lesson (V2 API) */
+  hasLesson?: boolean;
   // Nested lesson data (populated by some endpoints)
   lesson?: Lesson | null;
 }
@@ -152,8 +155,13 @@ export interface Assignment {
 export interface Introduction {
   id?: number;
   title?: string;
+  description?: string;
   contentJson?: unknown;
   moduleCode?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  isLive?: boolean;
+  createdByAlias?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -207,44 +215,69 @@ export interface CreateCourseModuleInput {
 /**
  * Transform raw API SLT to app-level SLT type
  * Exported for use in use-slt.ts
+ *
+ * Handles both V1 format (module_index) and V2 format (slt_index, has_lesson).
  */
 export function transformSLT(raw: Record<string, unknown>): SLT {
+  // V2 API uses slt_index, V1 used module_index
+  const moduleIndex = (raw.slt_index ?? raw.module_index) as number | undefined;
+
+  // V2 API includes has_lesson and nested lesson object
+  const hasLesson = raw.has_lesson as boolean | undefined;
+  const lessonData = raw.lesson as Record<string, unknown> | null | undefined;
+
   return {
     id: raw.id as number | undefined,
     sltId: raw.slt_id as string | undefined,
     sltText: raw.slt_text as string | undefined,
-    moduleIndex: raw.module_index as number | undefined,
+    moduleIndex,
     moduleCode: raw.course_module_code as string | undefined,
     createdAt: raw.created_at as string | undefined,
     updatedAt: raw.updated_at as string | undefined,
-    lesson: raw.lesson ? transformLesson(raw.lesson as Record<string, unknown>) : null,
+    createdBy: raw.created_by as string | undefined,
+    hasLesson,
+    lesson: lessonData ? transformLesson(lessonData) : null,
   };
 }
 
 /**
  * Transform raw API Lesson to app-level Lesson type
  * Exported for use in use-lesson.ts
+ *
+ * Handles both V1 format (flat) and V2 format (nested under `content`).
  */
 export function transformLesson(raw: Record<string, unknown>): Lesson {
+  // V2 API nests content fields under `content` object
+  const content = raw.content as Record<string, unknown> | undefined;
+
+  // Support both flat (V1) and nested (V2) formats
+  const title = (content?.title ?? raw.title) as string | undefined;
+  const description = (content?.description ?? raw.description) as string | undefined;
+  const imageUrl = (content?.image_url ?? raw.image_url) as string | undefined;
+  const videoUrl = (content?.video_url ?? raw.video_url) as string | undefined;
+  const contentJson = content?.content_json ?? raw.lesson_content ?? raw.content_json;
+
   return {
     id: raw.id as number | undefined,
-    contentJson: raw.lesson_content ?? raw.content_json,
+    contentJson,
     sltId: raw.slt_id as string | undefined,
     sltIndex: raw.slt_index as number | undefined,
     moduleCode: raw.course_module_code as string | undefined,
     createdAt: raw.created_at as string | undefined,
     updatedAt: raw.updated_at as string | undefined,
-    title: raw.title as string | undefined,
-    description: raw.description as string | undefined,
+    title,
+    description,
     isLive: raw.is_live as boolean | undefined,
-    imageUrl: raw.image_url as string | undefined,
-    videoUrl: raw.video_url as string | undefined,
+    imageUrl,
+    videoUrl,
   };
 }
 
 /**
  * Transform raw API Assignment to app-level Assignment type
  * Exported for potential use in dedicated assignment hooks
+ *
+ * Handles both V1 format (flat) and V2 format (nested under `content`).
  */
 export function transformAssignment(raw: Record<string, unknown>): Assignment {
   // Handle NullableString fields (object type in API)
@@ -256,17 +289,29 @@ export function transformAssignment(raw: Record<string, unknown>): Assignment {
     return undefined;
   };
 
+  // V2 API nests content fields under `content` object
+  const content = raw.content as Record<string, unknown> | undefined;
+
+  // Support both flat (V1) and nested (V2) formats
+  const title = getStringField(content?.title ?? raw.title);
+  const description = getStringField(content?.description ?? raw.description);
+  const imageUrl = getStringField(content?.image_url ?? raw.image_url);
+  const videoUrl = getStringField(content?.video_url ?? raw.video_url);
+  const contentJson = content?.content_json ?? raw.assignment_content ?? raw.content_json;
+
+  // V2 API has created_by at top level (on-chain creator alias)
+  const createdByAlias = (raw.created_by ?? raw.created_by_alias) as string | undefined;
+
   return {
     id: raw.id as number | undefined,
-    title: getStringField(raw.title),
-    description: getStringField(raw.description),
-    // API uses assignment_content or content_json for TipTap JSON
-    contentJson: raw.assignment_content ?? raw.content_json,
+    title,
+    description,
+    contentJson,
     moduleCode: raw.course_module_code as string | undefined,
-    imageUrl: getStringField(raw.image_url),
-    videoUrl: getStringField(raw.video_url),
+    imageUrl,
+    videoUrl,
     isLive: raw.is_live as boolean | undefined,
-    createdByAlias: raw.created_by_alias as string | undefined,
+    createdByAlias,
     createdAt: raw.created_at as string | undefined,
     updatedAt: raw.updated_at as string | undefined,
   };
@@ -275,14 +320,33 @@ export function transformAssignment(raw: Record<string, unknown>): Assignment {
 /**
  * Transform raw API Introduction to app-level Introduction type
  * Exported for potential use in dedicated introduction hooks
+ *
+ * Handles both V1 format (flat) and V2 format (nested under `content`).
  */
 export function transformIntroduction(raw: Record<string, unknown>): Introduction {
+  // V2 API nests content fields under `content` object
+  const content = raw.content as Record<string, unknown> | undefined;
+
+  // Support both flat (V1) and nested (V2) formats
+  const title = (content?.title ?? raw.title) as string | undefined;
+  const description = (content?.description ?? raw.description) as string | undefined;
+  const imageUrl = (content?.image_url ?? raw.image_url) as string | undefined;
+  const videoUrl = (content?.video_url ?? raw.video_url) as string | undefined;
+  const contentJson = content?.content_json ?? raw.introduction_content ?? raw.content_json;
+
+  // V2 API has created_by at top level (on-chain creator alias)
+  const createdByAlias = (raw.created_by ?? raw.created_by_alias) as string | undefined;
+
   return {
     id: raw.id as number | undefined,
-    title: raw.title as string | undefined,
-    // API uses introduction_content or content_json for TipTap JSON
-    contentJson: raw.introduction_content ?? raw.content_json,
+    title,
+    description,
+    contentJson,
     moduleCode: raw.course_module_code as string | undefined,
+    imageUrl,
+    videoUrl,
+    isLive: raw.is_live as boolean | undefined,
+    createdByAlias,
     createdAt: raw.created_at as string | undefined,
     updatedAt: raw.updated_at as string | undefined,
   };

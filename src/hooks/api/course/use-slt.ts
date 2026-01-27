@@ -32,6 +32,10 @@ export const sltKeys = {
  *
  * @returns SLT[] with camelCase fields (sltText, moduleIndex, etc.)
  *
+ * Handles both V1 and V2 API response formats:
+ * - V1: Array or { data: [...] }
+ * - V2: { data: { slts: [...], slt_hash, created_by, source } }
+ *
  * @example
  * ```tsx
  * function SLTList({ courseId, moduleCode }: Props) {
@@ -55,25 +59,38 @@ export function useSLTs(
         `/api/gateway/api/v2/course/user/slts/${courseId}/${moduleCode}`
       );
 
+      // 404 means module not on-chain (V2) or doesn't exist
+      if (response.status === 404) {
+        return [];
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to fetch SLTs: ${response.statusText}`);
       }
 
       const result = (await response.json()) as unknown;
 
-      // Handle both wrapped { data: [...] } and raw array formats
+      // Handle multiple response formats
       let rawSlts: unknown[];
+
       if (Array.isArray(result)) {
+        // Raw array format
         rawSlts = result;
-      } else if (
-        result &&
-        typeof result === "object" &&
-        "data" in result &&
-        Array.isArray((result as { data?: unknown[] }).data)
-      ) {
-        rawSlts = (result as { data: unknown[] }).data;
+      } else if (result && typeof result === "object" && "data" in result) {
+        const dataValue = (result as { data?: unknown }).data;
+
+        if (Array.isArray(dataValue)) {
+          // V1 format: { data: [...] }
+          rawSlts = dataValue;
+        } else if (dataValue && typeof dataValue === "object" && "slts" in dataValue) {
+          // V2 format: { data: { slts: [...], slt_hash, created_by, source } }
+          const sltsValue = (dataValue as { slts?: unknown }).slts;
+          rawSlts = Array.isArray(sltsValue) ? sltsValue : [];
+        } else {
+          rawSlts = [];
+        }
       } else {
-        return [];
+        rawSlts = [];
       }
 
       return rawSlts.map((raw) => transformSLT(raw as Record<string, unknown>));

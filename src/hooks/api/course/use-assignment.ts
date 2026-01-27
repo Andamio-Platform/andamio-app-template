@@ -18,6 +18,10 @@ import { type Assignment, transformAssignment, courseModuleKeys, assignmentKeys 
  *
  * @returns Assignment with camelCase fields, or null if no assignment exists
  *
+ * Handles both V1 and V2 API response formats:
+ * - V1: Various nested formats with assignment content at different levels
+ * - V2: { data: { course_id, slt_hash, created_by, content: {...}, source } }
+ *
  * @example
  * ```tsx
  * function AssignmentViewer({ courseId, moduleCode }: Props) {
@@ -42,7 +46,7 @@ export function useAssignment(
         `/api/gateway/api/v2/course/user/assignment/${courseId}/${moduleCode}`
       );
 
-      // 404 means no assignment exists for this module
+      // 404 means no assignment exists for this module (or module not on-chain in V2)
       if (response.status === 404) {
         return null;
       }
@@ -63,7 +67,12 @@ export function useAssignment(
         if ("data" in resultRecord && resultRecord.data) {
           const dataRecord = asRecord(resultRecord.data);
           if (dataRecord) {
-            if ("assignment" in dataRecord && dataRecord.assignment) {
+            // V2 format: data has top-level fields (slt_hash, created_by, content, source)
+            // Check if this is V2 format by looking for `content` with nested fields
+            if ("content" in dataRecord && dataRecord.content && typeof dataRecord.content === "object") {
+              // V2 format - pass the whole data object to transform (it handles nested content)
+              raw = dataRecord;
+            } else if ("assignment" in dataRecord && dataRecord.assignment) {
               raw = asRecord(dataRecord.assignment);
             } else if ("data" in dataRecord && dataRecord.data) {
               const innerRecord = asRecord(dataRecord.data);
@@ -81,7 +90,8 @@ export function useAssignment(
         } else if (
           "title" in resultRecord ||
           "content_json" in resultRecord ||
-          "assignment_content" in resultRecord
+          "assignment_content" in resultRecord ||
+          "content" in resultRecord
         ) {
           raw = resultRecord;
         }

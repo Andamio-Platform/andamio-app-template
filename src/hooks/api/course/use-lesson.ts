@@ -63,6 +63,10 @@ export function useLessons(
  *
  * @returns Lesson with camelCase fields (contentJson, sltIndex, isLive, etc.)
  *
+ * Handles both V1 and V2 API response formats:
+ * - V1: Various nested formats with lesson content
+ * - V2: { data: { course_id, slt_hash, slt_index, slt_text, created_by, content: {...}, source } }
+ *
  * @example
  * ```tsx
  * function LessonViewer({ courseId, moduleCode, sltIndex }: Props) {
@@ -88,6 +92,11 @@ export function useLesson(
         `/api/gateway/api/v2/course/user/lesson/${courseId}/${moduleCode}/${sltIndex}`
       );
 
+      // 404 means module not on-chain (V2) or lesson doesn't exist
+      if (response.status === 404) {
+        return null;
+      }
+
       if (!response.ok) {
         throw new Error(`Failed to fetch lesson: ${response.statusText}`);
       }
@@ -98,11 +107,15 @@ export function useLesson(
       let raw: Record<string, unknown> | null = null;
       if (result && typeof result === "object") {
         if ("data" in result && (result as { data?: unknown }).data) {
-          raw = (result as { data: Record<string, unknown> }).data;
+          const dataRecord = (result as { data: Record<string, unknown> }).data;
+          // V2 format has top-level fields (slt_hash, created_by, content, source)
+          // The transform function handles the nested `content` object
+          raw = dataRecord;
         } else if (
           "title" in result ||
           "content_json" in result ||
-          "slt_index" in result
+          "slt_index" in result ||
+          "content" in result
         ) {
           raw = result as Record<string, unknown>;
         }

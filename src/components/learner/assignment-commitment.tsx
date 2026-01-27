@@ -18,6 +18,7 @@ import { TransactionStatus } from "~/components/tx/transaction-status";
 import { ContentDisplay } from "~/components/content-display";
 import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
+import { getCourseStudent, type AndamioscanStudent } from "~/lib/andamioscan-events";
 import type { JSONContent } from "@tiptap/core";
 import {
   AlertIcon,
@@ -142,21 +143,49 @@ export function AssignmentCommitment({
     }
   );
 
-  // TODO: Implement proper on-chain student state hook using V2 merged API
-  // For now, these features are disabled until we have the equivalent endpoint
-  // The original useCourseStudent returned { current: string, completed: string[], currentContent: string }
-  const onChainLoading = false;
+  // On-chain student state (from Andamioscan)
+  const [onChainStudent, setOnChainStudent] = useState<AndamioscanStudent | null>(null);
+  const [onChainLoading, setOnChainLoading] = useState(true);
+
+  // Fetch on-chain student state
+  const refetchOnChain = useCallback(async () => {
+    if (!user?.accessTokenAlias || !courseNftPolicyId) {
+      setOnChainLoading(false);
+      return;
+    }
+
+    setOnChainLoading(true);
+    try {
+      const studentState = await getCourseStudent(courseNftPolicyId, user.accessTokenAlias);
+      console.log("[AssignmentCommitment] On-chain student state:", studentState);
+      setOnChainStudent(studentState);
+    } catch (err) {
+      console.warn("[AssignmentCommitment] Failed to fetch on-chain state:", err);
+      setOnChainStudent(null);
+    } finally {
+      setOnChainLoading(false);
+    }
+  }, [courseNftPolicyId, user?.accessTokenAlias]);
+
+  // Fetch on-chain state on mount
+  useEffect(() => {
+    void refetchOnChain();
+  }, [refetchOnChain]);
 
   // Check if user has a current commitment for THIS module on-chain
-  // TODO: Re-enable when V2 student state endpoint is available
-  const hasOnChainCommitment = false;
+  // The on-chain "current" field is the assignment_id (slt_hash) of the active assignment
+  const hasOnChainCommitment = !!(
+    onChainStudent?.current &&
+    sltHash &&
+    onChainStudent.current === sltHash
+  );
 
   // Check if user has already completed THIS module on-chain
-  // TODO: Re-enable when V2 student state endpoint is available
-  const hasCompletedOnChain = false;
-
-  // Stub refetch function
-  const refetchOnChain = async () => { /* No-op until V2 endpoint is available */ };
+  const hasCompletedOnChain = !!(
+    onChainStudent?.completed &&
+    sltHash &&
+    onChainStudent.completed.includes(sltHash)
+  );
 
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -419,8 +448,18 @@ export function AssignmentCommitment({
               </div>
             </div>
 
-            {/* Display on-chain evidence hash - disabled until V2 student state endpoint is available */}
-            {/* TODO: Re-enable when V2 endpoint provides currentContent */}
+            {/* Display on-chain evidence hash for verification */}
+            {onChainStudent?.currentContent && (
+              <div className="p-3 border rounded-lg bg-muted/30">
+                <AndamioLabel className="text-xs">On-Chain Evidence Hash</AndamioLabel>
+                <code className="block mt-1 text-xs font-mono break-all text-muted-foreground">
+                  {onChainStudent.currentContent}
+                </code>
+                <AndamioText variant="small" className="mt-2 text-xs">
+                  Your evidence below must produce a matching hash to verify authenticity.
+                </AndamioText>
+              </div>
+            )}
 
             <AndamioSeparator />
 

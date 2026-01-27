@@ -69,6 +69,44 @@ const hasOnChainCommitment = false;
 
 ## Next Steps
 
-1. Test new assignment submission with fixed code
-2. Consider re-enabling on-chain state detection for sync flow
+1. ~~Test new assignment submission with fixed code~~
+2. ~~Consider re-enabling on-chain state detection for sync flow~~ ✅ Fixed Jan 27, 2026
 3. Investigate missing endpoints (`course-module/get`, `unconfirmed-tx`)
+
+---
+
+## Update: January 27, 2026 - On-Chain Sync Flow Enabled
+
+**Problem**: Student "james" had an on-chain commitment but 404 from `/assignment-commitment/get` because the DB record was never created (original side effect failed due to `policy_id` bug).
+
+**Root Cause**: The sync flow UI was disabled because `hasOnChainCommitment` was hardcoded to `false`.
+
+**Fix**: Enabled on-chain state detection using existing `getCourseStudent()` function:
+
+```typescript
+// Before (disabled)
+const hasOnChainCommitment = false;
+const hasCompletedOnChain = false;
+const refetchOnChain = async () => { /* No-op */ };
+
+// After (enabled)
+const [onChainStudent, setOnChainStudent] = useState<AndamioscanStudent | null>(null);
+const refetchOnChain = useCallback(async () => {
+  const studentState = await getCourseStudent(courseNftPolicyId, user.accessTokenAlias);
+  setOnChainStudent(studentState);
+}, [courseNftPolicyId, user?.accessTokenAlias]);
+
+const hasOnChainCommitment = onChainStudent?.current === sltHash;
+const hasCompletedOnChain = onChainStudent?.completed.includes(sltHash);
+```
+
+**Changes**:
+- `src/components/learner/assignment-commitment.tsx`:
+  - Import `getCourseStudent` and `AndamioscanStudent` from `~/lib/andamioscan-events`
+  - Add `onChainStudent` state and `onChainLoading` state
+  - Implement `refetchOnChain` callback using `getCourseStudent()`
+  - Compute `hasOnChainCommitment` by comparing `onChainStudent.current` with `sltHash`
+  - Compute `hasCompletedOnChain` by checking if `sltHash` is in `completed` array
+  - Display on-chain evidence hash in sync flow UI for verification
+
+**Result**: Users with orphaned on-chain commitments now see the "Sync Required" UI and can re-create their DB record.

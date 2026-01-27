@@ -190,7 +190,7 @@ function ProjectListContent() {
           <AndamioTableBody>
             {projects.map((project) => (
               <ProjectRow
-                key={project.project_id}
+                key={project.projectId}
                 project={project}
                 onImportSuccess={handleImportSuccess}
               />
@@ -212,9 +212,9 @@ function ProjectRow({
   project: ManagerProject;
   onImportSuccess: () => void;
 }) {
-  const truncatedId = `${project.project_id.slice(0, 8)}...${project.project_id.slice(-8)}`;
+  const truncatedId = `${project.projectId.slice(0, 8)}...${project.projectId.slice(-8)}`;
   const hasDbContent = project.title !== undefined && project.title !== null;
-  const isOnChain = project.source === "merged" || project.source === "chain_only";
+  const isOnChain = project.status === "active" || project.status === "unregistered";
 
   // Determine status icon
   const getStatusIcon = () => {
@@ -269,11 +269,11 @@ function ProjectRow({
         )}
       </AndamioTableCell>
       <AndamioTableCell className="font-mono text-xs">
-        <span title={project.project_id}>{truncatedId}</span>
+        <span title={project.projectId}>{truncatedId}</span>
       </AndamioTableCell>
       <AndamioTableCell className="text-right">
         {hasDbContent ? (
-          <Link href={`/studio/project/${project.project_id}`}>
+          <Link href={`/studio/project/${project.projectId}`}>
             <AndamioButton variant="ghost" size="sm">
               <SettingsIcon className="h-4 w-4 mr-1" />
               Manage
@@ -281,7 +281,7 @@ function ProjectRow({
           </Link>
         ) : (
           <RegisterProjectDrawer
-            projectId={project.project_id}
+            projectId={project.projectId}
             onSuccess={onImportSuccess}
           />
         )}

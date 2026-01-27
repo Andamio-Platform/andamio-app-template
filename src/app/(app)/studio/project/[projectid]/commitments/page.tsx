@@ -104,7 +104,7 @@ export default function ProjectCommitmentsPage() {
    * Find task by ID
    */
   const findMatchingTask = useCallback((commitment: ManagerCommitment): Task | undefined => {
-    return taskMap.get(commitment.task_id);
+    return taskMap.get(commitment.taskId);
   }, [taskMap]);
 
   // Selected assessment for management
@@ -119,8 +119,8 @@ export default function ProjectCommitmentsPage() {
     if (!searchQuery) return pendingAssessments;
     return pendingAssessments.filter(
       (a) =>
-        a.contributor_alias.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.task_id.toLowerCase().includes(searchQuery.toLowerCase())
+        a.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.taskId.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [pendingAssessments, searchQuery]);
 
@@ -130,7 +130,7 @@ export default function ProjectCommitmentsPage() {
 
     const checkAllDbStatus = async () => {
       for (const assessment of pendingAssessments) {
-        const taskId = assessment.task_id;
+        const taskId = assessment.taskId;
 
         // Skip if already checked or checking
         if (dbStatus.has(taskId)) continue;
@@ -139,7 +139,7 @@ export default function ProjectCommitmentsPage() {
         setDbStatus((prev) => new Map(prev).set(taskId, { exists: false, checking: true }));
 
         try {
-          const result = await checkCommitmentExists(taskId, assessment.contributor_alias, authenticatedFetch);
+          const result = await checkCommitmentExists(taskId, assessment.submittedBy, authenticatedFetch);
           setDbStatus((prev) => new Map(prev).set(taskId, {
             exists: result.exists,
             status: result.status,
@@ -155,14 +155,6 @@ export default function ProjectCommitmentsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAssessments, isAuthenticated]);
 
-  // Format slot number to approximate date
-  const formatSlot = (slot: number): string => {
-    // Preprod genesis time: 2022-04-01T00:00:00Z = 1648771200
-    const genesisTime = 1648771200;
-    const timestamp = (genesisTime + slot) * 1000;
-    return new Date(timestamp).toLocaleDateString();
-  };
-
   // Get task title from commitment
   const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
     const task = findMatchingTask(commitment);
@@ -171,28 +163,28 @@ export default function ProjectCommitmentsPage() {
       return `Task ${task.taskHash.slice(0, 8)}... (${(lovelace / 1_000_000).toFixed(0)} ADA)`;
     }
     // Task not found in project
-    return `Task ${commitment.task_id.slice(0, 8)}...`;
+    return `Task ${commitment.taskId.slice(0, 8)}...`;
   }, [findMatchingTask]);
 
   // Sync a single submission to DB
   const handleSyncSubmission = useCallback(async (commitment: ManagerCommitment) => {
-    const taskId = commitment.task_id;
-    const syncKey = `${taskId}-${commitment.contributor_alias}`;
+    const taskId = commitment.taskId;
+    const syncKey = `${taskId}-${commitment.submittedBy}`;
     setSyncingSubmissions((prev) => new Set(prev).add(syncKey));
 
     try {
       // Sync directly from pending commitment data
-      // Use on_chain_content or content.evidence_text
-      const contentText = commitment.on_chain_content ?? commitment.content?.evidence_text ?? "";
+      // Use onChainContent or evidence
+      const contentText = commitment.onChainContent ?? (typeof commitment.evidence === "string" ? commitment.evidence : "") ?? "";
       const result = await syncPendingAssessment(
         taskId,
         contentText,
-        commitment.submission_tx_hash ?? "",
+        commitment.submissionTx ?? "",
         authenticatedFetch
       );
       if (result.success) {
         toast.success("Commitment synced to database", {
-          description: `${commitment.contributor_alias}'s submission is now ready for assessment`,
+          description: `${commitment.submittedBy}'s submission is now ready for assessment`,
         });
         // Update DB status to show it now exists
         setDbStatus((prev) => new Map(prev).set(taskId, {
@@ -391,15 +383,15 @@ export default function ProjectCommitmentsPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {filteredAssessments.map((assessment) => {
-                    const taskId = assessment.task_id;
+                    const taskId = assessment.taskId;
                     return (
                     <AndamioTableRow
-                      key={`${taskId}-${assessment.contributor_alias}`}
+                      key={`${taskId}-${assessment.submittedBy}`}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedAssessment(assessment)}
                     >
                       <AndamioTableCell className="font-mono text-xs">
-                        {assessment.contributor_alias}
+                        {assessment.submittedBy}
                       </AndamioTableCell>
                       <AndamioTableCell>
                         <code className="text-xs font-mono truncate block max-w-[150px]">
@@ -407,15 +399,11 @@ export default function ProjectCommitmentsPage() {
                         </code>
                       </AndamioTableCell>
                       <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                        {assessment.submission_slot && assessment.submission_slot > 0
-                          ? formatSlot(assessment.submission_slot)
-                          : assessment.content?.submitted_at
-                            ? new Date(assessment.content.submitted_at).toLocaleDateString()
-                            : "—"}
+                        —
                       </AndamioTableCell>
                       <AndamioTableCell>
                         <AndamioText variant="small" className="max-w-[200px] truncate">
-                          {assessment.on_chain_content ?? assessment.content?.evidence_text ?? (
+                          {assessment.onChainContent ?? (typeof assessment.evidence === "string" ? assessment.evidence : null) ?? (
                             <span className="italic text-muted-foreground">No content</span>
                           )}
                         </AndamioText>
@@ -457,9 +445,9 @@ export default function ProjectCommitmentsPage() {
                                 e.stopPropagation();
                                 void handleSyncSubmission(assessment);
                               }}
-                              disabled={syncingSubmissions.has(`${taskId}-${assessment.contributor_alias}`) || status?.checking}
+                              disabled={syncingSubmissions.has(`${taskId}-${assessment.submittedBy}`) || status?.checking}
                             >
-                              {syncingSubmissions.has(`${taskId}-${assessment.contributor_alias}`) ? (
+                              {syncingSubmissions.has(`${taskId}-${assessment.submittedBy}`) ? (
                                 <RefreshIcon className="h-3 w-3 animate-spin" />
                               ) : (
                                 <DatabaseIcon className="h-3 w-3" />
@@ -493,7 +481,7 @@ export default function ProjectCommitmentsPage() {
 
       {/* Selected Assessment Detail View */}
       {selectedAssessment && (() => {
-        const selectedTaskId = selectedAssessment.task_id;
+        const selectedTaskId = selectedAssessment.taskId;
         const selectedMatchedTask = findMatchingTask(selectedAssessment);
         return (
         <AndamioCard>
@@ -520,7 +508,7 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Contributor</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.contributor_alias}
+                  {selectedAssessment.submittedBy}
                 </AndamioText>
               </div>
               <div>
@@ -537,18 +525,14 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Submitted</AndamioLabel>
                 <AndamioText variant="small" className="mt-1 text-foreground">
-                  {selectedAssessment.submission_slot && selectedAssessment.submission_slot > 0
-                    ? formatSlot(selectedAssessment.submission_slot)
-                    : selectedAssessment.content?.submitted_at
-                      ? new Date(selectedAssessment.content.submitted_at).toLocaleDateString()
-                      : "—"}
+                  —
                 </AndamioText>
               </div>
               <div>
                 <AndamioLabel>Submission TX</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.submission_tx_hash
-                    ? `${selectedAssessment.submission_tx_hash.slice(0, 16)}...`
+                  {selectedAssessment.submissionTx
+                    ? `${selectedAssessment.submissionTx.slice(0, 16)}...`
                     : "—"}
                 </AndamioText>
               </div>
@@ -559,7 +543,7 @@ export default function ProjectCommitmentsPage() {
               <AndamioLabel>Submitted Evidence</AndamioLabel>
               <div className="mt-2 rounded-md border bg-muted/30 p-4">
                 <AndamioText variant="small" className="whitespace-pre-wrap">
-                  {selectedAssessment.on_chain_content ?? selectedAssessment.content?.evidence_text ?? (
+                  {selectedAssessment.onChainContent ?? (typeof selectedAssessment.evidence === "string" ? selectedAssessment.evidence : null) ?? (
                     <span className="italic text-muted-foreground">
                       No evidence content submitted
                     </span>
@@ -584,9 +568,9 @@ export default function ProjectCommitmentsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => void handleSyncSubmission(selectedAssessment)}
-                    disabled={syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.contributor_alias}`)}
+                    disabled={syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.submittedBy}`)}
                   >
-                    {syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.contributor_alias}`) ? (
+                    {syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.submittedBy}`) ? (
                       <>
                         <RefreshIcon className="h-4 w-4 mr-2 animate-spin" />
                         Syncing...
@@ -633,7 +617,7 @@ export default function ProjectCommitmentsPage() {
             <TasksAssess
               projectNftPolicyId={projectId}
               contributorStateId={project.contributorStateId ?? ""}
-              contributorAlias={selectedAssessment.contributor_alias}
+              contributorAlias={selectedAssessment.submittedBy}
               taskHash={selectedTaskId}
               taskCode={selectedTaskId ? selectedTaskId.slice(0, 8) : "TASK"}
               onSuccess={async () => {

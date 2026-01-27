@@ -37,7 +37,7 @@ import {
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
-import { type Project } from "~/hooks/api/project/use-project";
+import { type ProjectDetail } from "~/hooks/api/project/use-project";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
@@ -48,7 +48,7 @@ function ProjectDataCard({
   project,
   isLoading,
 }: {
-  project: Project | null | undefined;
+  project: ProjectDetail | null | undefined;
   isLoading: boolean;
 }) {
   // Loading state
@@ -101,7 +101,7 @@ function ProjectDataCard({
   const prerequisites = project.prerequisites ?? [];
 
   const totalFunding = treasuryFundings.reduce(
-    (sum, f) => sum + (f.lovelace_amount ?? 0),
+    (sum, f) => sum + (f.lovelaceAmount ?? 0),
     0
   );
   const pendingSubmissions = submissions.length;
@@ -116,7 +116,7 @@ function ProjectDataCard({
             title="Project Data"
             description="Live blockchain data"
           />
-          {project.source === "merged" && (
+          {project.status === "active" && (
             <AndamioBadge status="success">
               Verified
             </AndamioBadge>
@@ -195,7 +195,7 @@ function ProjectDataCard({
                 {prerequisites.map((prereq, i) => (
                   <AndamioBadge key={i} variant="outline" className="font-mono text-xs">
                     <CourseIcon className="h-3 w-3 mr-1" />
-                    {prereq.course_id?.slice(0, 12)}... ({prereq.slt_hashes?.length ?? 0} modules)
+                    {prereq.courseId?.slice(0, 12)}... ({prereq.sltHashes?.length ?? 0} modules)
                   </AndamioBadge>
                 ))}
               </div>

@@ -1,83 +1,231 @@
 /**
  * React Query hooks for Contributor Project API endpoints
  *
- * Provides cached access to projects the authenticated user is contributing to.
- * Uses the merged endpoint that returns both on-chain and DB data.
+ * Contributor hooks handle project participation operations:
+ * - Listing projects the user contributes to
+ * - Managing task commitments (create, update, delete)
+ * - Viewing commitment status
+ *
+ * Architecture: Role-based hook file
+ * - Imports types and transforms from use-project.ts (entity file)
+ * - Exports contributor-specific query keys and hooks
  *
  * @example
  * ```tsx
- * function MyContributions() {
- *   const { data, isLoading } = useContributorProjects();
+ * import { useContributorProjects, type ContributorProject } from "~/hooks/api/project/use-project-contributor";
  *
- *   return data?.map(project => (
- *     <ProjectCard key={project.project_id} project={project} />
+ * function ContributorDashboard() {
+ *   const { data: projects, isLoading } = useContributorProjects();
+ *
+ *   return projects?.map(project => (
+ *     <ProjectCard key={project.projectId} project={project} />
  *   ));
  * }
  * ```
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import type {
+  MergedHandlersContributorProjectsResponse,
+  MergedHandlersContributorCommitmentsResponse,
+  OrchestrationContributorProjectListItem,
+  OrchestrationContributorCommitmentItem,
+  OrchestrationMyCommitmentSummary,
+} from "~/types/generated/gateway";
+import {
+  getProjectStatusFromSource,
+  type ProjectStatus,
+  type ProjectPrerequisite,
+} from "./use-project";
 
 // =============================================================================
 // Query Keys
 // =============================================================================
 
+/**
+ * Query keys for contributor project operations
+ * Extends the base projectKeys for cache invalidation
+ */
 export const projectContributorKeys = {
   all: ["contributor-projects"] as const,
   list: () => [...projectContributorKeys.all, "list"] as const,
-  commitments: () => [...projectContributorKeys.all, "commitments"] as const,
+  commitments: (projectId?: string) =>
+    [...projectContributorKeys.all, "commitments", projectId] as const,
+  commitment: (projectId: string, taskId: string) =>
+    [...projectContributorKeys.all, "commitment", projectId, taskId] as const,
 };
 
 // =============================================================================
-// Types
+// App-Level Types (exported for components)
 // =============================================================================
 
 /**
- * Contributor project item from merged API endpoint
- * Contains both on-chain contribution status and off-chain content
+ * Commitment summary from contributor's perspective
  */
-export interface ContributorProject {
-  // On-chain fields
-  project_id: string;
-  project_address?: string;
-  admin?: string;
-  managers?: string[];
-
-  // Contribution status
-  is_contributor?: boolean;
-  tasks_completed?: number;
-  tasks_pending?: number;
-  total_tasks?: number;
-  credentials_earned?: number;
-
-  // Off-chain content
-  title?: string;
-  description?: string;
-  image_url?: string;
-
-  // Metadata
-  source?: string; // "merged" | "chain_only" | "db-only"
+export interface MyCommitmentSummary {
+  taskId: string;
+  commitmentStatus: string;
+  taskEvidenceHash?: string;
+  evidence?: unknown;
+  evidenceUrl?: string;
+  notes?: string;
 }
 
-export type ContributorProjectsResponse = ContributorProject[];
+/**
+ * Contributor project item with camelCase fields
+ * Contains both on-chain and off-chain data
+ */
+export interface ContributorProject {
+  // Identity
+  projectId: string;
+  status: ProjectStatus;
+
+  // Content (flattened from content.*)
+  title: string;
+  description?: string;
+  imageUrl?: string;
+
+  // On-chain fields
+  projectAddress?: string;
+  treasuryAddress?: string;
+  contributorStateId?: string;
+  owner?: string;
+  managers?: string[];
+  createdTx?: string;
+  createdSlot?: number;
+  createdAt?: string;
+
+  // Prerequisites
+  prerequisites?: ProjectPrerequisite[];
+
+  // Contributor-specific: user's own commitments
+  myCommitments?: MyCommitmentSummary[];
+}
+
+/**
+ * Contributor commitment item with camelCase fields
+ * Contains the contributor's task commitment details
+ */
+export interface ContributorCommitment {
+  // Identifiers
+  projectId: string;
+  taskId: string;
+
+  // On-chain info
+  submissionTx?: string;
+  onChainContent?: string;
+  onChainStatus?: string;
+
+  // Off-chain content (contributor's evidence)
+  commitmentStatus?: string;
+  taskEvidenceHash?: string;
+  evidence?: unknown;
+  evidenceUrl?: string;
+  notes?: string;
+  assessedBy?: string;
+  taskOutcome?: string;
+
+  // Metadata
+  status: ProjectStatus;
+}
 
 // =============================================================================
-// Hooks
+// Transform Functions
 // =============================================================================
 
 /**
- * Fetch projects the authenticated user is contributing to
+ * Transform OrchestrationMyCommitmentSummary → MyCommitmentSummary
+ */
+function transformMyCommitmentSummary(
+  api: OrchestrationMyCommitmentSummary
+): MyCommitmentSummary {
+  return {
+    taskId: api.task_id ?? "",
+    commitmentStatus: api.commitment_status ?? "unknown",
+    taskEvidenceHash: api.content?.task_evidence_hash,
+    evidence: api.content?.evidence,
+  };
+}
+
+/**
+ * Transform OrchestrationContributorProjectListItem → ContributorProject
+ */
+function transformContributorProject(
+  api: OrchestrationContributorProjectListItem
+): ContributorProject {
+  return {
+    // Identity
+    projectId: api.project_id ?? "",
+    status: getProjectStatusFromSource(api.source),
+
+    // Flattened content fields
+    title: api.content?.title ?? "",
+    description: api.content?.description,
+    imageUrl: api.content?.image_url,
+
+    // On-chain fields
+    projectAddress: api.project_address,
+    treasuryAddress: api.treasury_address,
+    contributorStateId: api.contributor_state_id,
+    owner: api.owner,
+    managers: api.managers,
+    createdTx: api.created_tx,
+    createdSlot: api.created_slot,
+    createdAt: api.created_at,
+
+    // Prerequisites
+    prerequisites: api.prerequisites?.map((p) => ({
+      courseId: p.course_id ?? "",
+      sltHashes: p.slt_hashes,
+    })),
+
+    // Contributor-specific
+    myCommitments: api.my_commitments?.map(transformMyCommitmentSummary),
+  };
+}
+
+/**
+ * Transform OrchestrationContributorCommitmentItem → ContributorCommitment
+ */
+function transformContributorCommitment(
+  api: OrchestrationContributorCommitmentItem
+): ContributorCommitment {
+  return {
+    // Identifiers
+    projectId: api.project_id ?? "",
+    taskId: api.task_id ?? "",
+
+    // On-chain info
+    submissionTx: api.submission_tx,
+    onChainContent: api.on_chain_content,
+    onChainStatus: api.on_chain_status,
+
+    // Off-chain content
+    commitmentStatus: api.content?.commitment_status,
+    taskEvidenceHash: api.content?.task_evidence_hash,
+    evidence: api.content?.evidence,
+    assessedBy: api.content?.assessed_by,
+    taskOutcome: api.content?.task_outcome,
+
+    // Metadata
+    status: getProjectStatusFromSource(api.source),
+  };
+}
+
+// =============================================================================
+// Query Hooks
+// =============================================================================
+
+/**
+ * Fetch projects the authenticated user contributes to
  *
  * Uses merged endpoint: POST /api/v2/project/contributor/projects/list
- * Returns projects with both on-chain contribution status and DB content.
- *
- * NOTE: This endpoint may not be implemented yet. The hook will return
- * an empty array if the endpoint returns 404.
+ * Returns projects with both on-chain state and DB content.
  *
  * @example
  * ```tsx
- * function ContributingProjects() {
+ * function ContributorDashboard() {
  *   const { data: projects, isLoading, error, refetch } = useContributorProjects();
  *
  *   if (isLoading) return <Skeleton />;
@@ -93,7 +241,7 @@ export function useContributorProjects() {
 
   return useQuery({
     queryKey: projectContributorKeys.list(),
-    queryFn: async (): Promise<ContributorProjectsResponse> => {
+    queryFn: async (): Promise<ContributorProject[]> => {
       // Merged endpoint: POST /api/v2/project/contributor/projects/list
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/project/contributor/projects/list`,
@@ -104,7 +252,7 @@ export function useContributorProjects() {
         }
       );
 
-      // 404 means no contributing projects or endpoint not implemented - return empty array
+      // 404 means no projects - return empty array
       if (response.status === 404) {
         return [];
       }
@@ -113,17 +261,369 @@ export function useContributorProjects() {
         throw new Error(`Failed to fetch contributor projects: ${response.statusText}`);
       }
 
-      const result = await response.json() as { data?: ContributorProject[]; warning?: string };
+      const result = (await response.json()) as MergedHandlersContributorProjectsResponse;
 
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useContributorProjects] API warning:", result.warning);
       }
 
-      return result.data ?? [];
+      // Transform to app-level types with camelCase fields
+      return (result.data ?? []).map(transformContributorProject);
     },
     enabled: isAuthenticated,
     staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+/**
+ * Fetch contributor's task commitments
+ *
+ * Uses merged endpoint: POST /api/v2/project/contributor/commitments/list
+ * Returns the contributor's task commitments with status.
+ *
+ * @param projectId - Optional project ID to filter commitments
+ *
+ * @example
+ * ```tsx
+ * function MyCommitments() {
+ *   const { data: commitments, isLoading, error, refetch } = useContributorCommitments();
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (error) return <ErrorAlert message={error.message} />;
+ *   if (!commitments?.length) return <NoCommitments />;
+ *
+ *   return <CommitmentList commitments={commitments} />;
+ * }
+ * ```
+ */
+export function useContributorCommitments(projectId?: string) {
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  return useQuery({
+    queryKey: projectContributorKeys.commitments(projectId),
+    queryFn: async (): Promise<ContributorCommitment[]> => {
+      // Merged endpoint: POST /api/v2/project/contributor/commitments/list
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/contributor/commitments/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(projectId ? { project_id: projectId } : {}),
+        }
+      );
+
+      // 404 means no commitments - return empty array
+      if (response.status === 404) {
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch contributor commitments: ${response.statusText}`);
+      }
+
+      const result = (await response.json()) as MergedHandlersContributorCommitmentsResponse;
+
+      // Log warning if partial data returned
+      if (result.warning) {
+        console.warn("[useContributorCommitments] API warning:", result.warning);
+      }
+
+      // Transform to app-level types with camelCase fields
+      return (result.data ?? []).map(transformContributorCommitment);
+    },
+    enabled: isAuthenticated,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+/**
+ * Fetch a specific contributor commitment
+ *
+ * Uses: POST /api/v2/project/contributor/commitment/get
+ * Returns a single commitment with full details.
+ *
+ * @param projectId - Project ID
+ * @param taskId - Task ID (task hash)
+ *
+ * @example
+ * ```tsx
+ * function CommitmentDetail({ projectId, taskId }: { projectId: string; taskId: string }) {
+ *   const { data: commitment, isLoading } = useContributorCommitment(projectId, taskId);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (!commitment) return <NotFound />;
+ *
+ *   return <CommitmentDetails commitment={commitment} />;
+ * }
+ * ```
+ */
+export function useContributorCommitment(
+  projectId: string | undefined,
+  taskId: string | undefined
+) {
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  return useQuery({
+    queryKey: projectContributorKeys.commitment(projectId ?? "", taskId ?? ""),
+    queryFn: async (): Promise<ContributorCommitment | null> => {
+      // Endpoint: POST /api/v2/project/contributor/commitment/get
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/contributor/commitment/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            task_id: taskId,
+          }),
+        }
+      );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch commitment: ${response.statusText}`);
+      }
+
+      const result = (await response.json()) as {
+        data?: OrchestrationContributorCommitmentItem;
+        warning?: string;
+      };
+
+      if (result.warning) {
+        console.warn("[useContributorCommitment] API warning:", result.warning);
+      }
+
+      if (!result.data) return null;
+
+      return transformContributorCommitment(result.data);
+    },
+    enabled: !!projectId && !!taskId && isAuthenticated,
+    staleTime: 30 * 1000,
+  });
+}
+
+// =============================================================================
+// Mutation Hooks
+// =============================================================================
+
+/**
+ * Create a new task commitment
+ *
+ * @example
+ * ```tsx
+ * function CommitToTask({ projectId, taskId }: { projectId: string; taskId: string }) {
+ *   const createCommitment = useCreateCommitment();
+ *
+ *   const handleCommit = async () => {
+ *     await createCommitment.mutateAsync({
+ *       projectId,
+ *       taskId,
+ *     });
+ *     toast.success("Committed to task!");
+ *   };
+ *
+ *   return <Button onClick={handleCommit} disabled={createCommitment.isPending}>Commit</Button>;
+ * }
+ * ```
+ */
+export function useCreateCommitment() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async (input: {
+      projectId: string;
+      taskId: string;
+    }) => {
+      // Endpoint: POST /project/contributor/commitment/create
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/contributor/commitment/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: input.projectId,
+            task_id: input.taskId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create commitment: ${response.statusText} - ${errorText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate contributor commitments
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitments(variables.projectId),
+      });
+      // Invalidate specific commitment
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+      });
+      // Invalidate contributor projects (myCommitments changed)
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.all,
+      });
+    },
+  });
+}
+
+/**
+ * Update an existing commitment (submit evidence)
+ *
+ * @example
+ * ```tsx
+ * function SubmitEvidence({ commitment }: { commitment: ContributorCommitment }) {
+ *   const updateCommitment = useUpdateCommitment();
+ *
+ *   const handleSubmit = async (evidence: EvidenceData) => {
+ *     await updateCommitment.mutateAsync({
+ *       projectId: commitment.projectId,
+ *       taskId: commitment.taskId,
+ *       data: {
+ *         evidenceUrl: evidence.url,
+ *         notes: evidence.notes,
+ *       },
+ *     });
+ *     toast.success("Evidence submitted!");
+ *   };
+ *
+ *   return <EvidenceForm onSubmit={handleSubmit} isLoading={updateCommitment.isPending} />;
+ * }
+ * ```
+ */
+export function useUpdateCommitment() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      taskId,
+      data,
+    }: {
+      projectId: string;
+      taskId: string;
+      data: Partial<{
+        evidence: unknown;
+        evidenceUrl: string;
+        notes: string;
+      }>;
+    }) => {
+      // Endpoint: POST /project/contributor/commitment/update
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/contributor/commitment/update`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            task_id: taskId,
+            evidence: data.evidence,
+            evidence_url: data.evidenceUrl,
+            notes: data.notes,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update commitment: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate specific commitment
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+      });
+      // Invalidate contributor commitments list
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitments(variables.projectId),
+      });
+      // Invalidate contributor projects (myCommitments changed)
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.all,
+      });
+    },
+  });
+}
+
+/**
+ * Delete a commitment
+ *
+ * @example
+ * ```tsx
+ * function DeleteCommitment({ commitment }: { commitment: ContributorCommitment }) {
+ *   const deleteCommitment = useDeleteCommitment();
+ *
+ *   const handleDelete = async () => {
+ *     if (confirm("Are you sure you want to abandon this task?")) {
+ *       await deleteCommitment.mutateAsync({
+ *         projectId: commitment.projectId,
+ *         taskId: commitment.taskId,
+ *       });
+ *       toast.success("Commitment deleted");
+ *     }
+ *   };
+ *
+ *   return <Button onClick={handleDelete} variant="destructive">Abandon Task</Button>;
+ * }
+ * ```
+ */
+export function useDeleteCommitment() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      taskId,
+    }: {
+      projectId: string;
+      taskId: string;
+    }) => {
+      // Endpoint: POST /project/contributor/commitment/delete
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/contributor/commitment/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            task_id: taskId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete commitment: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Remove specific commitment from cache
+      queryClient.removeQueries({
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+      });
+      // Invalidate contributor commitments list
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitments(variables.projectId),
+      });
+      // Invalidate contributor projects (myCommitments changed)
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.all,
+      });
+    },
   });
 }
 
@@ -134,7 +634,7 @@ export function useContributorProjects() {
  * ```tsx
  * const invalidate = useInvalidateContributorProjects();
  *
- * // After joining a new project
+ * // After joining a project
  * await invalidate();
  * ```
  */
@@ -147,3 +647,13 @@ export function useInvalidateContributorProjects() {
     });
   };
 }
+
+// =============================================================================
+// Response Type Aliases (for backward compatibility)
+// =============================================================================
+
+/**
+ * Response wrapper for contributor projects list
+ * @deprecated Import ContributorProject[] directly
+ */
+export type ContributorProjectsResponse = ContributorProject[];

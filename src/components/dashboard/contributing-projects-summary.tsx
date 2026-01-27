@@ -140,14 +140,14 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
         <div className="space-y-1.5">
           {contributingProjects.slice(0, 3).map((project) => (
             <Link
-              key={project.project_id}
-              href={`/project/${project.project_id}`}
+              key={project.projectId}
+              href={`/project/${project.projectId}`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <ProjectIcon className="h-3.5 w-3.5 text-primary shrink-0" />
                 <code className="text-xs font-mono truncate">
-                  {project.project_id.slice(0, 16)}...
+                  {project.projectId.slice(0, 16)}...
                 </code>
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />

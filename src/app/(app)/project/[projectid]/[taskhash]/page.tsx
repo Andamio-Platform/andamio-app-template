@@ -263,8 +263,8 @@ export default function TaskDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
-                <AndamioBadge variant={getCommitmentStatusVariant(commitment.taskCommitmentStatus ?? "")}>
-                  {(commitment.taskCommitmentStatus ?? "").replace(/_/g, " ")}
+                <AndamioBadge variant={getCommitmentStatusVariant(commitment.commitmentStatus ?? "")}>
+                  {(commitment.commitmentStatus ?? "").replace(/_/g, " ")}
                 </AndamioBadge>
               </div>
 
@@ -278,13 +278,13 @@ export default function TaskDetailPage() {
                 </>
               )}
 
-              {commitment.evidence && (
+              {commitment.evidence !== undefined && commitment.evidence !== null && (
                 <>
                   <AndamioSeparator />
                   <div>
                     <AndamioText variant="small" className="font-medium mb-2">Your Evidence</AndamioText>
                     <ContentDisplay
-                      content={commitment.evidence as unknown as JSONContent}
+                      content={commitment.evidence as JSONContent}
                       variant="muted"
                     />
                   </div>

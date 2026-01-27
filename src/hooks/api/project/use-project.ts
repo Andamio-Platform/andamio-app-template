@@ -4,8 +4,10 @@
  * Provides cached, deduplicated access to project data across the app.
  * Returns app-level types (Project, Task) - not raw API types.
  *
- * All app-level types and transform functions are colocated here.
- * Components should import types from this file, not from ~/types/generated.
+ * Architecture: Colocated Types Pattern
+ * - App-level types (Project, Task, TaskCommitment) defined here with camelCase fields
+ * - Transform functions convert API snake_case to app camelCase
+ * - Components import types from this hook, never from generated types
  *
  * @example
  * ```tsx
@@ -20,9 +22,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated/index.ts
 import type {
-  ApiTypesTask,
-  ApiTypesProject,
-  ApiTypesTaskCommitment,
   MergedHandlersMergedProjectDetailResponse,
   MergedHandlersMergedProjectsResponse,
   MergedHandlersMergedTasksResponse,
@@ -39,9 +38,57 @@ import type {
 } from "~/types/generated/gateway";
 
 // =============================================================================
-// App-Level Types (what components use)
-// Uses camelCase following TypeScript conventions and API taxonomy
+// App-Level Types (exported for components)
 // =============================================================================
+
+/**
+ * Lifecycle status for a project
+ * - "draft": In DB only, not yet published on-chain
+ * - "active": On-chain and registered in DB (fully operational)
+ * - "unregistered": On-chain but missing DB registration (needs /register endpoint)
+ */
+export type ProjectStatus = "draft" | "active" | "unregistered";
+
+/**
+ * Derive semantic status from API source field
+ *
+ * API source values: "merged", "chain_only", "db_only"
+ *
+ * Status derivation logic:
+ * | source     | → status      |
+ * |------------|---------------|
+ * | merged     | active        |
+ * | chain_only | unregistered  |
+ * | db_only    | draft         |
+ */
+export function getProjectStatusFromSource(source: string | undefined): ProjectStatus {
+  switch (source) {
+    case "merged":
+      return "active";
+    case "chain_only":
+      return "unregistered";
+    case "db_only":
+    default:
+      return "draft";
+  }
+}
+
+/**
+ * Task token (native asset)
+ */
+export interface TaskToken {
+  policyId: string;
+  assetName: string;
+  quantity: number;
+}
+
+/**
+ * Task status values from the API
+ * - "DRAFT": Task exists in DB but not on-chain
+ * - "PENDING_TX": Task transaction submitted, awaiting confirmation
+ * - "ON_CHAIN": Task has been published on-chain
+ */
+export type TaskStatusValue = "DRAFT" | "PENDING_TX" | "ON_CHAIN";
 
 /**
  * Task - flattened task type for components
@@ -59,9 +106,10 @@ export interface Task {
   imageUrl?: string;
   contentJson?: unknown;
 
-  // Status & metadata (prefixed per taxonomy)
-  taskStatus?: string;
-  source?: string;
+  // Status & metadata
+  status: ProjectStatus;
+  /** Task publication status: "DRAFT" or "ON_CHAIN" */
+  taskStatus?: TaskStatusValue;
   createdByAlias?: string;
 
   // Rewards
@@ -78,10 +126,58 @@ export interface Task {
   contributorStateId?: string;
 }
 
-export interface TaskToken {
-  policyId: string;
-  assetName: string;
-  quantity: number;
+/**
+ * Project prerequisite
+ */
+export interface ProjectPrerequisite {
+  courseId: string;
+  sltHashes?: string[];
+}
+
+/**
+ * Project contributor (on-chain)
+ */
+export interface ProjectContributor {
+  alias: string;
+}
+
+/**
+ * Project submission (on-chain)
+ */
+export interface ProjectSubmission {
+  taskId: string;
+  submittedBy: string;
+  submissionTx?: string;
+  onChainContent?: string;
+}
+
+/**
+ * Project assessment (on-chain)
+ */
+export interface ProjectAssessment {
+  taskId: string;
+  assessedBy: string;
+  decision: string;
+  tx?: string;
+}
+
+/**
+ * Treasury funding (on-chain)
+ */
+export interface TreasuryFunding {
+  alias: string;
+  lovelaceAmount: number;
+  slot?: number;
+  txHash?: string;
+  assets?: unknown;
+}
+
+/**
+ * Credential claim (on-chain)
+ */
+export interface CredentialClaim {
+  alias: string;
+  tx?: string;
 }
 
 /**
@@ -91,7 +187,7 @@ export interface TaskToken {
 export interface Project {
   // Identity - projectId is Cardano policy ID
   projectId: string;
-  source?: string;
+  status: ProjectStatus;
 
   // Content (flattened from nested content object)
   title: string;
@@ -116,22 +212,36 @@ export interface Project {
   createdSlot?: number;
   createdTx?: string;
 
-  // Related data (from merged endpoints)
-  tasks?: Task[];
-  contributors?: OrchestrationProjectContributorOnChain[];
-  submissions?: OrchestrationProjectSubmissionOnChain[];
-  assessments?: OrchestrationProjectAssessmentOnChain[];
-  treasuryFundings?: OrchestrationProjectTreasuryFundingOnChain[];
-  credentialClaims?: OrchestrationProjectCredentialClaimOnChain[];
-  prerequisites?: OrchestrationProjectPrerequisite[];
-
-  // Legacy compatibility - states array for project state indicators
-  states?: ProjectState[];
+  // Prerequisites
+  prerequisites?: ProjectPrerequisite[];
 }
 
+/**
+ * Project state info (for accessing project_state_policy_id)
+ * @deprecated Use contributorStateId directly on Project/ProjectDetail
+ */
 export interface ProjectState {
-  projectStateUtxo?: string;
   projectNftPolicyId?: string;
+}
+
+/**
+ * ProjectDetail - extends Project with related data
+ * Available from the detail endpoint
+ */
+export interface ProjectDetail extends Project {
+  // Related data (from merged endpoints)
+  tasks?: Task[];
+  contributors?: ProjectContributor[];
+  submissions?: ProjectSubmission[];
+  assessments?: ProjectAssessment[];
+  treasuryFundings?: TreasuryFunding[];
+  credentialClaims?: CredentialClaim[];
+
+  /**
+   * Legacy states array for backward compatibility
+   * @deprecated Use contributorStateId directly
+   */
+  states?: ProjectState[];
 }
 
 /**
@@ -147,15 +257,14 @@ export interface TaskCommitment {
   contributorAddress: string;
   contributorAlias?: string;
 
-  // Status (prefixed per taxonomy)
-  taskCommitmentStatus: string;
+  // Status
+  commitmentStatus: string;
   pendingTxHash?: string;
 
   // Evidence
   taskEvidenceHash?: string;
-  evidence?: string;
+  evidence?: unknown;
   evidenceUrl?: string;
-  evidenceText?: string;
   notes?: string;
 
   // Timestamps
@@ -200,6 +309,7 @@ function transformAssets(assets: unknown): TaskToken[] {
 
 /**
  * Transform OrchestrationProjectTaskOnChain → Task
+ * Exported for use in other project hooks
  */
 export function transformOnChainTask(
   api: OrchestrationProjectTaskOnChain,
@@ -231,38 +341,32 @@ export function transformOnChainTask(
     onChainContent: api.on_chain_content,
     contributorStateId: api.contributor_state_id,
     tokens: api.assets ? transformAssets(api.assets) : undefined,
-    taskStatus: "ON_CHAIN",
-    source: "on_chain",
+    status: "active", // On-chain tasks are always active
+    taskStatus: "ON_CHAIN", // On-chain tasks have ON_CHAIN status
   };
 }
 
 /**
- * Transform ApiTypesTask → Task
+ * @deprecated Use transformOnChainTask instead
  */
-export function transformApiTask(api: ApiTypesTask): Task {
-  const title = api.content?.title ?? "";
-  const description = api.content?.description ?? "";
-  const imageUrl = api.content?.image_url;
-  return {
-    taskHash: api.task_hash,
-    projectId: api.project_id,
-    title,
-    description,
-    imageUrl,
-    lovelaceAmount: String(api.lovelace_amount ?? 0),
-    expirationTime: api.expiration,
-    expirationPosix: api.expiration_posix,
-    createdByAlias: api.created_by,
-    onChainContent: api.on_chain_content,
-    contributorStateId: api.contributor_state_id,
-    source: api.source,
-  };
+export const transformApiTask = transformOnChainTask;
+
+/**
+ * Derive taskStatus from API source field
+ */
+function getTaskStatusFromSource(source: string | undefined): TaskStatusValue {
+  // "merged" or "chain_only" means task is on-chain
+  if (source === "merged" || source === "chain_only") {
+    return "ON_CHAIN";
+  }
+  // "db_only" means draft
+  return "DRAFT";
 }
 
 /**
  * Transform OrchestrationMergedTaskListItem → Task
+ * Exported for use in other project hooks
  *
- * Used for merged endpoint responses that combine on-chain and off-chain data.
  * Note: `task_id` in merged response IS the task_hash (content-addressed).
  */
 export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task {
@@ -280,48 +384,24 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
     createdByAlias: api.created_by,
     onChainContent: api.on_chain_content,
     contributorStateId: api.contributor_state_id,
-    source: api.source,
+    status: getProjectStatusFromSource(api.source),
+    taskStatus: getTaskStatusFromSource(api.source),
   };
 }
 
 /**
- * Transform OrchestrationMergedProjectDetail → Project
+ * Transform OrchestrationProjectPrerequisite → ProjectPrerequisite
  */
-export function transformProjectDetail(api: OrchestrationMergedProjectDetail): Project {
-  // Cast content to access potential extra fields from api_types if present
-  const apiContent = api.content as Record<string, unknown> | undefined;
-  const title = api.content?.title ?? "";
-  const description = api.content?.description ?? "";
-  const imageUrl = api.content?.image_url;
-  const videoUrl = apiContent?.video_url as string | undefined;
-  const category = apiContent?.category as string | undefined;
-  const isPublic = apiContent?.is_public as boolean | undefined;
+function transformPrerequisite(api: OrchestrationProjectPrerequisite): ProjectPrerequisite {
   return {
-    projectId: api.project_id ?? "",
-    source: api.source,
-    title,
-    description,
-    imageUrl,
-    videoUrl,
-    category,
-    isPublic,
-    owner: api.owner,
-    ownerAlias: api.owner,
-    managers: api.managers,
-    treasuryAddress: api.treasury_address,
-    contributorStateId: api.contributor_state_id,
-    tasks: api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? "")),
-    contributors: api.contributors,
-    submissions: api.submissions,
-    assessments: api.assessments,
-    treasuryFundings: api.treasury_fundings,
-    credentialClaims: api.credential_claims,
-    prerequisites: api.prerequisites,
+    courseId: api.course_id ?? "",
+    sltHashes: api.slt_hashes,
   };
 }
 
 /**
  * Transform OrchestrationMergedProjectListItem → Project
+ * Exported for use in other project hooks
  */
 export function transformProjectListItem(api: OrchestrationMergedProjectListItem): Project {
   // Cast content to access potential extra fields from api_types if present
@@ -332,9 +412,10 @@ export function transformProjectListItem(api: OrchestrationMergedProjectListItem
   const videoUrl = apiContent?.video_url as string | undefined;
   const category = apiContent?.category as string | undefined;
   const isPublic = apiContent?.is_public as boolean | undefined;
+
   return {
     projectId: api.project_id ?? "",
-    source: api.source,
+    status: getProjectStatusFromSource(api.source),
     title,
     description,
     imageUrl,
@@ -350,23 +431,77 @@ export function transformProjectListItem(api: OrchestrationMergedProjectListItem
     createdAt: api.created_at,
     createdSlot: api.created_slot,
     createdTx: api.created_tx,
-    prerequisites: api.prerequisites,
+    prerequisites: api.prerequisites?.map(transformPrerequisite),
   };
 }
 
 /**
- * Transform ApiTypesProject → Project
+ * Transform OrchestrationMergedProjectDetail → ProjectDetail
+ * Exported for use in other project hooks
  */
-export function transformApiProject(api: ApiTypesProject): Project {
+export function transformProjectDetail(api: OrchestrationMergedProjectDetail): ProjectDetail {
+  // Cast content to access potential extra fields from api_types if present
+  const apiContent = api.content as Record<string, unknown> | undefined;
   const title = api.content?.title ?? "";
   const description = api.content?.description ?? "";
   const imageUrl = api.content?.image_url;
-  const videoUrl = api.content?.video_url;
-  const category = api.content?.category;
-  const isPublic = api.content?.is_public;
+  const videoUrl = apiContent?.video_url as string | undefined;
+  const category = apiContent?.category as string | undefined;
+  const isPublic = apiContent?.is_public as boolean | undefined;
+
+  // Transform related data
+  const tasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
+
+  const contributors: ProjectContributor[] | undefined = api.contributors?.map(
+    (c: OrchestrationProjectContributorOnChain) => ({
+      alias: c.alias ?? "",
+    })
+  );
+
+  const submissions: ProjectSubmission[] | undefined = api.submissions?.map(
+    (s: OrchestrationProjectSubmissionOnChain) => ({
+      taskId: s.task_id ?? "",
+      submittedBy: s.submitted_by ?? "",
+      submissionTx: s.submission_tx,
+      onChainContent: s.on_chain_content,
+    })
+  );
+
+  const assessments: ProjectAssessment[] | undefined = api.assessments?.map(
+    (a: OrchestrationProjectAssessmentOnChain) => ({
+      taskId: a.task_id ?? "",
+      assessedBy: a.assessed_by ?? "",
+      decision: a.decision ?? "",
+      tx: a.tx,
+    })
+  );
+
+  const treasuryFundings: TreasuryFunding[] | undefined = api.treasury_fundings?.map(
+    (f: OrchestrationProjectTreasuryFundingOnChain) => ({
+      alias: f.alias ?? "",
+      lovelaceAmount: f.lovelace_amount ?? 0,
+      slot: f.slot,
+      txHash: f.tx_hash,
+      assets: f.assets,
+    })
+  );
+
+  const credentialClaims: CredentialClaim[] | undefined = api.credential_claims?.map(
+    (c: OrchestrationProjectCredentialClaimOnChain) => ({
+      alias: c.alias ?? "",
+      tx: c.tx,
+    })
+  );
+
+  // Build legacy states array for backward compatibility
+  const contributorStateId = api.contributor_state_id;
+  const states: ProjectState[] | undefined = contributorStateId
+    ? [{ projectNftPolicyId: contributorStateId }]
+    : undefined;
+
   return {
-    projectId: api.project_id,
-    source: api.source,
+    projectId: api.project_id ?? "",
+    status: getProjectStatusFromSource(api.source),
     title,
     description,
     imageUrl,
@@ -376,30 +511,39 @@ export function transformApiProject(api: ApiTypesProject): Project {
     owner: api.owner,
     ownerAlias: api.owner,
     managers: api.managers,
-    projectAddress: api.project_address,
     treasuryAddress: api.treasury_address,
-    contributorStateId: api.contributor_state_id,
-    createdAt: api.created_at,
-    createdSlot: api.created_slot,
-    createdTx: api.created_tx,
+    contributorStateId,
+    prerequisites: api.prerequisites?.map(transformPrerequisite),
+    tasks,
+    contributors,
+    submissions,
+    assessments,
+    treasuryFundings,
+    credentialClaims,
+    states,
   };
 }
 
 /**
- * Transform ApiTypesTaskCommitment → TaskCommitment
+ * @deprecated Use transformProjectListItem instead
  */
-export function transformApiCommitment(api: ApiTypesTaskCommitment): TaskCommitment {
+export const transformApiProject = transformProjectListItem;
+
+/**
+ * @deprecated Use TaskCommitment type directly
+ */
+export function transformApiCommitment(api: unknown): TaskCommitment {
+  // This is a stub for backward compatibility
+  // The actual commitment transformation happens in use-project-contributor.ts
+  const data = api as Record<string, unknown>;
+  const getString = (value: unknown): string =>
+    typeof value === "string" ? value : "";
   return {
-    taskHash: api.task_hash,
-    projectId: api.project_id,
-    contributorAddress: api.contributor_address,
-    taskCommitmentStatus: api.task_commitment_status ?? "unknown",
-    taskEvidenceHash: api.task_evidence_hash,
-    evidence: api.content?.evidence_url,
-    evidenceUrl: api.content?.evidence_url,
-    notes: api.content?.notes,
-    createdAt: api.created_at,
-    updatedAt: api.updated_at,
+    taskHash: getString(data.task_hash) || getString(data.taskHash),
+    projectId: getString(data.project_id) || getString(data.projectId),
+    contributorAddress: getString(data.contributor_address) || getString(data.contributorAddress),
+    contributorAlias: getString(data.contributor_alias) || getString(data.contributorAlias),
+    commitmentStatus: getString(data.commitment_status) || getString(data.commitmentStatus),
   };
 }
 
@@ -407,12 +551,16 @@ export function transformApiCommitment(api: ApiTypesTaskCommitment): TaskCommitm
 // Query Keys
 // =============================================================================
 
+/**
+ * Centralized query keys for cache management
+ */
 export const projectKeys = {
   all: ["projects"] as const,
   lists: () => [...projectKeys.all, "list"] as const,
   published: () => [...projectKeys.all, "published"] as const,
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (projectId: string) => [...projectKeys.details(), projectId] as const,
+  tasks: (projectId: string) => [...projectKeys.detail(projectId), "tasks"] as const,
 };
 
 // =============================================================================
@@ -426,12 +574,25 @@ export const projectKeys = {
  * Uses: GET /api/v2/project/user/project/{project_id}
  *
  * @param projectId - Project NFT Policy ID
- * @returns Project with flat fields (title, description, etc.)
+ * @returns ProjectDetail with flat fields (title, description, etc.)
+ *
+ * @example
+ * ```tsx
+ * function ProjectHeader({ projectId }: { projectId: string }) {
+ *   const { data: project, isLoading, error } = useProject(projectId);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (error) return <ErrorAlert message={error.message} />;
+ *   if (!project) return <NotFound />;
+ *
+ *   return <h1>{project.title}</h1>;
+ * }
+ * ```
  */
 export function useProject(projectId: string | undefined) {
   return useQuery({
     queryKey: projectKeys.detail(projectId ?? ""),
-    queryFn: async (): Promise<Project | null> => {
+    queryFn: async (): Promise<ProjectDetail | null> => {
       const response = await fetch(
         `/api/gateway/api/v2/project/user/project/${projectId}`
       );
@@ -496,7 +657,28 @@ export function useProjectRaw(projectId: string | undefined) {
  * Fetch all published projects (merged endpoint)
  *
  * Uses: GET /api/v2/project/user/projects/list
+ *
  * @returns Project[] with flat fields
+ *
+ * @example
+ * ```tsx
+ * function ProjectCatalog() {
+ *   const { data: projects, isLoading } = useProjects();
+ *
+ *   return (
+ *     <div className="grid grid-cols-3 gap-4">
+ *       {projects?.map(project => (
+ *         <ProjectCard
+ *           key={project.projectId}
+ *           title={project.title}
+ *           description={project.description}
+ *           status={project.status}
+ *         />
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useProjects() {
   return useQuery({
@@ -545,10 +727,23 @@ export function useProjects() {
  * Returns Task[] with flat camelCase fields
  *
  * @param projectId - Project NFT Policy ID (the project_state_policy_id)
+ *
+ * @example
+ * ```tsx
+ * function TaskList({ projectId }: { projectId: string }) {
+ *   const { data: tasks, isLoading } = useProjectTasks(projectId);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *
+ *   return tasks?.map(task => (
+ *     <TaskCard key={task.taskHash} task={task} />
+ *   ));
+ * }
+ * ```
  */
 export function useProjectTasks(projectId: string | undefined) {
   return useQuery({
-    queryKey: [...projectKeys.detail(projectId ?? ""), "tasks"] as const,
+    queryKey: projectKeys.tasks(projectId ?? ""),
     queryFn: async (): Promise<Task[]> => {
       const response = await fetch(
         `/api/gateway/api/v2/project/user/tasks/list`,

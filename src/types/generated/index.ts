@@ -151,10 +151,12 @@ export type AssignmentListResponse = AssignmentResponse[];
 // These types are colocated with the project hooks (single source of truth)
 export {
   type Task as ProjectTaskV2Output,
-  type Project as ProjectV2Output,
+  // Use ProjectDetail for pages that need full data (states, contributors, tasks, etc.)
+  type ProjectDetail as ProjectV2Output,
   type TaskCommitment as CommitmentV2Output,
   type TaskToken as ProjectTaskTokenOutput,
   type ProjectState as ProjectStateOutput,
+  type TaskStatusValue,
   // Transform functions for use in hooks/libs
   transformApiTask,
   transformApiProject,
@@ -162,10 +164,11 @@ export {
   transformOnChainTask,
   transformProjectDetail,
   transformProjectListItem,
+  transformMergedTask,
 } from "~/hooks/api/project/use-project";
 
 // Re-export the app types with clean names too
-export type { Task, Project, TaskCommitment, TaskToken, ProjectState } from "~/hooks/api/project/use-project";
+export type { Task, Project, ProjectDetail, TaskCommitment, TaskToken, ProjectState } from "~/hooks/api/project/use-project";
 
 // Legacy compatibility alias
 export interface ProjectPrerequisiteOutput {

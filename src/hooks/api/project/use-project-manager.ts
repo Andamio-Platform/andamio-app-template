@@ -671,6 +671,84 @@ export function useInvalidateManagerProjects() {
   };
 }
 
+/**
+ * Input for batch task status update
+ */
+export interface TaskBatchStatusInput {
+  projectStatePolicyId: string;
+  tasks: Array<{
+    index: number;
+    status: "PENDING_TX" | "ON_CHAIN";
+  }>;
+}
+
+/**
+ * Batch update task status
+ *
+ * Used to mark tasks as PENDING_TX before on-chain submission.
+ * This allows the UI to show proper loading states while transactions are pending.
+ *
+ * @example
+ * ```tsx
+ * function TreasuryManager({ projectId, tasks }: Props) {
+ *   const batchStatus = useTaskBatchStatus();
+ *
+ *   const handleSubmitToChain = async () => {
+ *     // Mark tasks as pending before submitting transaction
+ *     await batchStatus.mutateAsync({
+ *       projectStatePolicyId: projectId,
+ *       tasks: tasks.map((t, i) => ({ index: i, status: "PENDING_TX" })),
+ *     });
+ *
+ *     // Submit transaction...
+ *   };
+ *
+ *   return <Button onClick={handleSubmitToChain} disabled={batchStatus.isPending}>Submit</Button>;
+ * }
+ * ```
+ */
+export function useTaskBatchStatus() {
+  const queryClient = useQueryClient();
+  const { authenticatedFetch } = useAndamioAuth();
+
+  return useMutation({
+    mutationFn: async (input: TaskBatchStatusInput) => {
+      // Endpoint: POST /project/manager/task/batch-status
+      const response = await authenticatedFetch(
+        `/api/gateway/api/v2/project/manager/task/batch-status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_state_policy_id: input.projectStatePolicyId,
+            tasks: input.tasks.map((t) => ({
+              index: t.index,
+              status: t.status,
+            })),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update task status: ${response.statusText} - ${errorText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate manager tasks for this project
+      void queryClient.invalidateQueries({
+        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
+      });
+      // Invalidate public tasks
+      void queryClient.invalidateQueries({
+        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
+      });
+    },
+  });
+}
+
 // =============================================================================
 // Response Type Aliases (for backward compatibility)
 // =============================================================================

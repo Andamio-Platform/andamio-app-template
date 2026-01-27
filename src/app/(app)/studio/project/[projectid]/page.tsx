@@ -31,7 +31,7 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, ManagerIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
@@ -488,12 +488,11 @@ export default function ProjectDashboardPage() {
                   </AndamioButton>
                 </Link>
               </div>
-              <Link href={`/studio/project/${projectId}/transaction-history`}>
-                <AndamioButton variant="outline" className="w-full justify-start">
-                  <HistoryIcon className="h-4 w-4 mr-2" />
-                  View Transaction History
-                </AndamioButton>
-              </Link>
+              <AndamioButton variant="outline" className="w-full justify-start" disabled>
+                <HistoryIcon className="h-4 w-4 mr-2" />
+                View Transaction History
+                <AndamioBadge variant="outline" className="ml-auto">Coming Soon</AndamioBadge>
+              </AndamioButton>
             </AndamioCardContent>
           </AndamioCard>
         </AndamioTabsContent>
@@ -527,19 +526,7 @@ export default function ProjectDashboardPage() {
                   <div className="text-left">
                     <div className="font-medium">Task Commitments</div>
                     <div className="text-sm text-muted-foreground">
-                      View and manage submissions
-                    </div>
-                  </div>
-                </AndamioButton>
-              </Link>
-
-              <Link href={`/studio/project/${projectId}/manager`}>
-                <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <ManagerIcon className="h-5 w-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-medium">Manager Dashboard</div>
-                    <div className="text-sm text-muted-foreground">
-                      Assess contributor submissions
+                      View and assess contributor submissions
                     </div>
                   </div>
                 </AndamioButton>

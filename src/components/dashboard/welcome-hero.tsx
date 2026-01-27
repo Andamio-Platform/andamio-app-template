@@ -42,9 +42,9 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                       <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight">
                         {displayAlias}
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-info/10 px-3 py-1 w-fit shrink-0">
-                        <LoadingIcon className="h-4 w-4 text-info animate-spin" />
-                        <span className="text-sm font-medium text-info">Confirming on-chain</span>
+                      <div className="flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1 w-fit shrink-0">
+                        <LoadingIcon className="h-4 w-4 text-secondary animate-spin" />
+                        <span className="text-sm font-medium text-secondary">Confirming on-chain</span>
                       </div>
                     </div>
                   ) : hasAccessToken ? (
@@ -52,9 +52,9 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                       <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight break-all xs:break-normal">
                         {accessTokenAlias}
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 w-fit shrink-0">
-                        <VerifiedIcon className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium text-success">Verified</span>
+                      <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 w-fit shrink-0">
+                        <VerifiedIcon className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-primary">Verified</span>
                       </div>
                     </div>
                   ) : (
@@ -62,9 +62,9 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                       <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight text-muted-foreground">
                         New Member
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-warning/10 px-3 py-1 w-fit shrink-0">
-                        <SparkleIcon className="h-4 w-4 text-warning" />
-                        <span className="text-sm font-medium text-warning">Setup Required</span>
+                      <div className="flex items-center gap-1.5 rounded-full bg-muted/10 px-3 py-1 w-fit shrink-0">
+                        <SparkleIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">Setup Required</span>
                       </div>
                     </div>
                   )}
@@ -74,14 +74,14 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                 {(hasAccessToken || isPendingMint) && displayAlias && (
                   <div className={`hidden sm:flex items-center gap-3 rounded-xl border px-4 py-3 shrink-0 ${
                     isPendingMint
-                      ? "border-info/20 bg-info/5"
+                      ? "border-secondary/20 bg-secondary/5"
                       : "border-primary/20 bg-primary/5"
                   }`}>
                     <div className={`flex h-10 w-10 items-center justify-center rounded-full shrink-0 ${
-                      isPendingMint ? "bg-info/10" : "bg-primary/10"
+                      isPendingMint ? "bg-secondary/10" : "bg-primary/10"
                     }`}>
                       {isPendingMint ? (
-                        <LoadingIcon className="h-5 w-5 text-info animate-spin" />
+                        <LoadingIcon className="h-5 w-5 text-secondary animate-spin" />
                       ) : (
                         <AccessTokenIcon className="h-5 w-5 text-primary" />
                       )}
@@ -91,7 +91,7 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                         {isPendingMint ? "Minting..." : "Access Token"}
                       </AndamioText>
                       <AndamioText className={`text-lg font-bold truncate max-w-[150px] ${
-                        isPendingMint ? "text-info" : "text-primary"
+                        isPendingMint ? "text-secondary" : "text-primary"
                       }`}>
                         {displayAlias}
                       </AndamioText>

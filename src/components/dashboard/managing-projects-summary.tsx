@@ -95,8 +95,8 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
         {/* Summary stat */}
-        <div className="flex items-center gap-2 bg-info/10 rounded-lg px-3 py-2">
-          <ManagerIcon className="h-4 w-4 text-info" />
+        <div className="flex items-center gap-2 bg-secondary/10 rounded-lg px-3 py-2">
+          <ManagerIcon className="h-4 w-4 text-secondary" />
           <div>
             <AndamioText className="text-lg font-semibold">{managingProjects.length}</AndamioText>
             <AndamioText variant="small" className="text-xs">
@@ -114,7 +114,7 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <ProjectIcon className="h-3.5 w-3.5 text-info shrink-0" />
+                <ProjectIcon className="h-3.5 w-3.5 text-secondary shrink-0" />
                 <code className="text-xs font-mono truncate">
                   {project.project_id.slice(0, 16)}...
                 </code>

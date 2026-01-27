@@ -198,7 +198,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
               >
-                <VerifiedIcon className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                <VerifiedIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <span className="text-sm">{slt.sltText}</span>
               </motion.div>
             ))}

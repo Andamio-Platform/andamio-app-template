@@ -622,7 +622,7 @@ export default function InstructorDashboardPage() {
               {assessTx.state !== "idle" && !assessTxConfirmed && (
                 <div className="rounded-lg border bg-muted/30 p-4">
                   <div className="flex items-center gap-3">
-                    <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                    <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                     <div className="flex-1">
                       <AndamioText className="font-medium">
                         {assessTx.state === "fetching" && "Preparing assessment..."}
@@ -643,10 +643,10 @@ export default function InstructorDashboardPage() {
 
               {/* Success State */}
               {assessTxConfirmed && (
-                <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                   <div className="flex items-center gap-3">
-                    <SuccessIcon className="h-5 w-5 text-success" />
-                    <AndamioText className="font-medium text-success">
+                    <SuccessIcon className="h-5 w-5 text-primary" />
+                    <AndamioText className="font-medium text-primary">
                       Assessment submitted successfully!
                     </AndamioText>
                   </div>

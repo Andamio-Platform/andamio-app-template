@@ -142,7 +142,7 @@ function ProjectListContent() {
                   {totalCount} project{totalCount !== 1 ? "s" : ""}
                 </AndamioBadge>
                 {unregisteredCount > 0 && (
-                  <AndamioBadge variant="outline" className="text-warning border-warning">
+                  <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground">
                     <AlertIcon className="h-3 w-3 mr-1" />
                     {unregisteredCount} unregistered
                   </AndamioBadge>
@@ -221,15 +221,15 @@ function ProjectRow({
     if (hasDbContent && isOnChain) {
       // Registered and on-chain
       return (
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
-          <SuccessIcon className="h-4 w-4 text-success" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+          <SuccessIcon className="h-4 w-4 text-primary" />
         </div>
       );
     } else if (hasDbContent) {
       // Draft (in DB but not on-chain)
       return (
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
-          <AlertIcon className="h-4 w-4 text-warning" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/10">
+          <AlertIcon className="h-4 w-4 text-muted-foreground" />
         </div>
       );
     } else {
@@ -245,9 +245,9 @@ function ProjectRow({
   // Determine status text
   const getStatusText = () => {
     if (hasDbContent && isOnChain) {
-      return <span className="text-xs text-success">Live</span>;
+      return <span className="text-xs text-primary">Live</span>;
     } else if (hasDbContent) {
-      return <span className="text-xs text-warning">Draft</span>;
+      return <span className="text-xs text-muted-foreground">Draft</span>;
     } else {
       return <span className="text-xs text-muted-foreground">Unregistered</span>;
     }

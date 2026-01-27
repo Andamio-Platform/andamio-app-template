@@ -45,13 +45,13 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
   }
 
   return (
-    <AndamioCard className="border-warning/30 bg-gradient-to-r from-warning/5 to-transparent">
+    <AndamioCard className="border-muted-foreground/30 bg-gradient-to-r from-warning/5 to-transparent">
       <AndamioCardContent className="py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           {/* Progress indicator */}
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10">
-              <LearnerIcon className="h-5 w-5 text-warning" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/10">
+              <LearnerIcon className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <AndamioText variant="small" className="font-semibold text-foreground">Getting Started</AndamioText>
@@ -75,7 +75,7 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
                       className={cn(
                         "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors",
                         step.completed
-                          ? "bg-success/10 text-success"
+                          ? "bg-primary/10 text-primary"
                           : "bg-muted hover:bg-accent"
                       )}
                     >
@@ -92,7 +92,7 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
                       className={cn(
                         "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm",
                         step.completed
-                          ? "bg-success/10 text-success"
+                          ? "bg-primary/10 text-primary"
                           : "bg-muted text-muted-foreground"
                       )}
                     >

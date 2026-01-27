@@ -86,19 +86,19 @@ export default function CoursePage() {
           {courses.length} {courses.length === 1 ? "course" : "courses"}
         </AndamioBadge>
         {activeCourses > 0 && (
-          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-success border-success/30">
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-primary border-primary/30">
             <SuccessIcon className="h-4 w-4 mr-1.5" />
             {activeCourses} active
           </AndamioBadge>
         )}
         {draftCourses > 0 && (
-          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-warning border-warning/30">
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-muted-foreground border-muted-foreground/30">
             <PendingIcon className="h-4 w-4 mr-1.5" />
             {draftCourses} draft
           </AndamioBadge>
         )}
         {unregisteredCourses > 0 && (
-          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-info border-info/30">
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-secondary border-secondary/30">
             <InfoIcon className="h-4 w-4 mr-1.5" />
             {unregisteredCourses} unregistered
           </AndamioBadge>

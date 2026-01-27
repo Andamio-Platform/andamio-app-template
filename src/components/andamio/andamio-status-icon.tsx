@@ -53,9 +53,9 @@ const presetConfig: Record<StatusPreset, StatusConfig> = {
 };
 
 const variantStyles: Record<StatusVariant, { bg: string; text: string }> = {
-  success: { bg: "bg-success/10", text: "text-success" },
-  warning: { bg: "bg-warning/10", text: "text-warning" },
-  info: { bg: "bg-info/10", text: "text-info" },
+  success: { bg: "bg-primary/10", text: "text-primary" },
+  warning: { bg: "bg-muted", text: "text-muted-foreground" },
+  info: { bg: "bg-secondary/10", text: "text-secondary" },
   muted: { bg: "bg-muted", text: "text-muted-foreground" },
   destructive: { bg: "bg-destructive/10", text: "text-destructive" },
 };

@@ -427,7 +427,7 @@ export default function ManageTreasuryPage() {
         <AndamioBadge variant="secondary">
           {draftTasks.length} Draft Task{draftTasks.length !== 1 ? "s" : ""}
         </AndamioBadge>
-        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+        <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
           <OnChainIcon className="h-3 w-3 mr-1" />
           {liveTasks.length} Live Task{liveTasks.length !== 1 ? "s" : ""}
         </AndamioBadge>
@@ -444,9 +444,9 @@ export default function ManageTreasuryPage() {
 
       {/* Sync Warning - show when on-chain count doesn't match DB live count */}
       {onChainTaskCount > liveTasks.length && (
-        <div className="flex items-center justify-between rounded-lg border border-warning bg-warning/10 p-4">
+        <div className="flex items-center justify-between rounded-lg border border-muted-foreground bg-muted/10 p-4">
           <div className="flex items-center gap-3">
-            <OnChainIcon className="h-5 w-5 text-warning" />
+            <OnChainIcon className="h-5 w-5 text-muted-foreground" />
             <div>
               <AndamioText className="font-medium">Database out of sync</AndamioText>
               <AndamioText variant="small">
@@ -532,7 +532,7 @@ export default function ManageTreasuryPage() {
                           <div>
                             <AndamioText as="div" className="font-medium">{taskTitle || "Untitled Task"}</AndamioText>
                             {!isValid && (
-                              <AndamioText variant="small" className="text-warning">
+                              <AndamioText variant="small" className="text-muted-foreground">
                                 Title required (max 140 chars) for on-chain content
                               </AndamioText>
                             )}
@@ -558,12 +558,12 @@ export default function ManageTreasuryPage() {
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
                   <div><strong>Transaction Preview:</strong></div>
                   {tasksToAdd.length > 0 && (
-                    <div className="text-success">+ Adding: {tasksToAdd.length} task(s) ({addLovelace / 1_000_000} ADA)</div>
+                    <div className="text-primary">+ Adding: {tasksToAdd.length} task(s) ({addLovelace / 1_000_000} ADA)</div>
                   )}
                   {tasksToRemove.length > 0 && (
                     <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
                   )}
-                  <div className={netDeposit >= 0 ? "" : "text-success"}>
+                  <div className={netDeposit >= 0 ? "" : "text-primary"}>
                     Net deposit: {netDeposit >= 0 ? `${netDeposit / 1_000_000} ADA` : `${Math.abs(netDeposit) / 1_000_000} ADA returned`}
                   </div>
                   <div>Contributor State ID: {contributorStateId}</div>
@@ -829,7 +829,7 @@ export default function ManageTreasuryPage() {
                           <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                          <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
                             <OnChainIcon className="h-3 w-3 mr-1" />
                             On-Chain
                           </AndamioBadge>

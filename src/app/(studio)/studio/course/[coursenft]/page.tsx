@@ -91,7 +91,7 @@ function CopyableAddress({ address, label }: { address: string; label?: string }
         onClick={handleCopy}
       >
         {copied ? (
-          <CompletedIcon className="h-3 w-3 text-success" />
+          <CompletedIcon className="h-3 w-3 text-primary" />
         ) : (
           <CopyIcon className="h-3 w-3" />
         )}
@@ -477,17 +477,17 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 {/* Right: Stats - Module Status */}
                 <div className="flex items-center gap-4 text-center flex-shrink-0">
                   <div>
-                    <div className="text-2xl font-bold text-success">{moduleStats.active}</div>
+                    <div className="text-2xl font-bold text-primary">{moduleStats.active}</div>
                     <AndamioText variant="small" className="text-[10px]">Active</AndamioText>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div>
-                    <div className="text-2xl font-bold text-warning">{moduleStats.unregistered}</div>
+                    <div className="text-2xl font-bold text-muted-foreground">{moduleStats.unregistered}</div>
                     <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div>
-                    <div className="text-2xl font-bold text-info">{moduleStats.draft + moduleStats.approved}</div>
+                    <div className="text-2xl font-bold text-secondary">{moduleStats.draft + moduleStats.approved}</div>
                     <AndamioText variant="small" className="text-[10px]">Draft</AndamioText>
                   </div>
                 </div>
@@ -598,27 +598,27 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   </p>
                 </div>
                 <div className="grid sm:grid-cols-3 gap-4">
-                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-info/10 via-info/5 to-transparent border border-info/20">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-info/20 mb-3">
-                      <SLTIcon className="h-5 w-5 text-info" />
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-info/10 via-info/5 to-transparent border border-secondary/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/20 mb-3">
+                      <SLTIcon className="h-5 w-5 text-secondary" />
                     </div>
                     <div className="font-bold mb-1">Learning Targets</div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Clear, measurable outcomes that define what &quot;mastery&quot; means
                     </p>
                   </div>
-                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-success/10 via-success/5 to-transparent border border-success/20">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/20 mb-3">
-                      <CourseIcon className="h-5 w-5 text-success" />
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-success/10 via-success/5 to-transparent border border-primary/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/20 mb-3">
+                      <CourseIcon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="font-bold mb-1">Lessons</div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Rich content that guides learners toward each target
                     </p>
                   </div>
-                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border border-warning/20">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/20 mb-3">
-                      <CredentialIcon className="h-5 w-5 text-warning" />
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border border-muted-foreground/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted/20 mb-3">
+                      <CredentialIcon className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="font-bold mb-1">Assignment</div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -700,7 +700,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   {/* Footer Stats */}
                   {moduleStats.pending > 0 && (
                     <AndamioAlert className="mt-6">
-                      <PendingIcon className="h-4 w-4 text-info animate-pulse" />
+                      <PendingIcon className="h-4 w-4 text-secondary animate-pulse" />
                       <AndamioAlertDescription>
                         {moduleStats.pending} credential{moduleStats.pending !== 1 ? "s" : ""} pending blockchain confirmation
                       </AndamioAlertDescription>
@@ -709,8 +709,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
                   {/* Unregistered Modules CTA */}
                   {moduleStats.unregistered > 0 && (
-                    <AndamioAlert className="mt-6 border-info/30 bg-info/5">
-                      <OnChainIcon className="h-4 w-4 text-info" />
+                    <AndamioAlert className="mt-6 border-secondary/30 bg-secondary/5">
+                      <OnChainIcon className="h-4 w-4 text-secondary" />
                       <AndamioAlertDescription className="flex items-center justify-between gap-4">
                         <span>
                           {moduleStats.unregistered} on-chain module{moduleStats.unregistered !== 1 ? "s need" : " needs"} to be registered before you can add content.
@@ -718,7 +718,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         <AndamioButton
                           size="sm"
                           variant="outline"
-                          className="flex-shrink-0 border-info/30 text-info hover:bg-info/10"
+                          className="flex-shrink-0 border-secondary/30 text-secondary hover:bg-secondary/10"
                           onClick={() => handleTabChange("on-chain")}
                         >
                           Go to On-Chain Tab
@@ -837,33 +837,33 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     <div className="text-2xl font-bold">{moduleStats.total}</div>
                     <AndamioText variant="small" className="text-[10px]">Total Modules</AndamioText>
                   </div>
-                  <div className="rounded-xl border p-3 text-center bg-success/5 border-success/20">
+                  <div className="rounded-xl border p-3 text-center bg-primary/5 border-primary/20">
                     <div className="flex items-center justify-center gap-1.5">
-                      <VerifiedIcon className="h-4 w-4 text-success" />
-                      <span className="text-2xl font-bold text-success">{moduleStats.active}</span>
+                      <VerifiedIcon className="h-4 w-4 text-primary" />
+                      <span className="text-2xl font-bold text-primary">{moduleStats.active}</span>
                     </div>
                     <AndamioText variant="small" className="text-[10px]">Verified</AndamioText>
                   </div>
                   {moduleStats.pending > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-info/5 border-info/20">
+                    <div className="rounded-xl border p-3 text-center bg-secondary/5 border-secondary/20">
                       <div className="flex items-center justify-center gap-1.5">
-                        <PendingIcon className="h-4 w-4 text-info animate-pulse" />
-                        <span className="text-2xl font-bold text-info">{moduleStats.pending}</span>
+                        <PendingIcon className="h-4 w-4 text-secondary animate-pulse" />
+                        <span className="text-2xl font-bold text-secondary">{moduleStats.pending}</span>
                       </div>
                       <AndamioText variant="small" className="text-[10px]">Pending</AndamioText>
                     </div>
                   )}
                   {moduleStats.readyToMint > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-warning/5 border-warning/20">
-                      <span className="text-2xl font-bold text-warning">{moduleStats.readyToMint}</span>
+                    <div className="rounded-xl border p-3 text-center bg-muted/5 border-muted-foreground/20">
+                      <span className="text-2xl font-bold text-muted-foreground">{moduleStats.readyToMint}</span>
                       <AndamioText variant="small" className="text-[10px]">Ready to Mint</AndamioText>
                     </div>
                   )}
                   {moduleStats.unregistered > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-info/5 border-info/20">
+                    <div className="rounded-xl border p-3 text-center bg-secondary/5 border-secondary/20">
                       <div className="flex items-center justify-center gap-1.5">
-                        <OnChainIcon className="h-4 w-4 text-info" />
-                        <span className="text-2xl font-bold text-info">{moduleStats.unregistered}</span>
+                        <OnChainIcon className="h-4 w-4 text-secondary" />
+                        <span className="text-2xl font-bold text-secondary">{moduleStats.unregistered}</span>
                       </div>
                       <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
                     </div>
@@ -883,8 +883,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                         key={m.sltHash || m.moduleCode || m.title}
                         className={cn(
                           "rounded-xl border p-4 space-y-3",
-                          isActive && "bg-success/5 border-success/20",
-                          isPending && "bg-info/5 border-info/20",
+                          isActive && "bg-primary/5 border-primary/20",
+                          isPending && "bg-secondary/5 border-secondary/20",
                           isDbOnly && "bg-muted/30"
                         )}
                       >
@@ -901,13 +901,13 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                             ) : null}
                             {/* Status icon */}
                             {isActive && (
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20">
-                                <VerifiedIcon className="h-4 w-4 text-success" />
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
+                                <VerifiedIcon className="h-4 w-4 text-primary" />
                               </div>
                             )}
                             {isPending && (
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/20">
-                                <PendingIcon className="h-4 w-4 text-info animate-pulse" />
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
+                                <PendingIcon className="h-4 w-4 text-secondary animate-pulse" />
                               </div>
                             )}
                             {isDbOnly && (
@@ -920,12 +920,12 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-mono text-sm font-medium">{m.moduleCode}</span>
                                 {isActive && (
-                                  <AndamioBadge className="bg-success/20 text-success border-0 text-[10px]">
+                                  <AndamioBadge className="bg-primary/20 text-primary border-0 text-[10px]">
                                     Verified
                                   </AndamioBadge>
                                 )}
                                 {isPending && (
-                                  <AndamioBadge className="bg-info/20 text-info border-0 text-[10px]">
+                                  <AndamioBadge className="bg-secondary/20 text-secondary border-0 text-[10px]">
                                     Pending
                                   </AndamioBadge>
                                 )}
@@ -958,7 +958,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                             <div className="space-y-1">
                               {m.onChainSlts?.map((slt, i) => (
                                 <div key={i} className="flex items-start gap-2 text-sm">
-                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-success flex-shrink-0" />
+                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-primary flex-shrink-0" />
                                   <span>{slt}</span>
                                 </div>
                               ))}
@@ -973,8 +973,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                               Token Name (Hash)
                             </AndamioText>
                             <div className="flex items-center gap-2">
-                              <OnChainIcon className="h-3 w-3 text-success flex-shrink-0" />
-                              <code className="text-[10px] font-mono text-foreground bg-success/10 px-1.5 py-0.5 rounded break-all">
+                              <OnChainIcon className="h-3 w-3 text-primary flex-shrink-0" />
+                              <code className="text-[10px] font-mono text-foreground bg-primary/10 px-1.5 py-0.5 rounded break-all">
                                 {m.sltHash}
                               </code>
                             </div>
@@ -1015,7 +1015,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               {unregisteredModules.length > 0 && (
                 <StudioFormSection title="Unregistered Modules">
                   <AndamioAlert className="mb-4">
-                    <OnChainIcon className="h-4 w-4 text-info" />
+                    <OnChainIcon className="h-4 w-4 text-secondary" />
                     <AndamioAlertDescription>
                       These modules exist on-chain but aren&apos;t registered in the database yet.
                       Register them to add lessons, assignments, and other content.
@@ -1026,20 +1026,20 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     {unregisteredModules.map((m) => (
                       <div
                         key={m.sltHash}
-                        className="rounded-xl border p-4 bg-info/5 border-info/20 space-y-4"
+                        className="rounded-xl border p-4 bg-secondary/5 border-secondary/20 space-y-4"
                       >
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/20">
-                              <OnChainIcon className="h-4 w-4 text-info" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
+                              <OnChainIcon className="h-4 w-4 text-secondary" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-mono text-sm font-medium text-info">
+                                <span className="font-mono text-sm font-medium text-secondary">
                                   On-Chain Only
                                 </span>
-                                <AndamioBadge className="bg-info/20 text-info border-0 text-[10px]">
+                                <AndamioBadge className="bg-secondary/20 text-secondary border-0 text-[10px]">
                                   Needs Registration
                                 </AndamioBadge>
                               </div>
@@ -1063,7 +1063,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                             <div className="space-y-1">
                               {m.onChainSlts?.map((slt, i) => (
                                 <div key={i} className="flex items-start gap-2 text-sm">
-                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-info flex-shrink-0" />
+                                  <SLTIcon className="h-3.5 w-3.5 mt-0.5 text-secondary flex-shrink-0" />
                                   <span className="text-muted-foreground">{slt}</span>
                                 </div>
                               ))}

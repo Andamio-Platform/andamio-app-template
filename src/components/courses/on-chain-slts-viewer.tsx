@@ -59,8 +59,8 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
       <div className="rounded-lg border bg-muted/30 p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success/10">
-              <OnChainIcon className="h-3.5 w-3.5 text-success" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+              <OnChainIcon className="h-3.5 w-3.5 text-primary" />
             </div>
             <span className="text-xs text-muted-foreground">On-chain</span>
           </div>
@@ -85,8 +85,8 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
       <AndamioCardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-              <OnChainIcon className="h-5 w-5 text-success" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <OnChainIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <AndamioCardTitle className="text-base">On-Chain Learning Targets</AndamioCardTitle>
@@ -114,13 +114,13 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
               key={index}
               className="flex items-start gap-3 p-3 rounded-lg border bg-background"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-sm font-medium text-success">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                 {index + 1}
               </div>
               <div className="flex-1 pt-1">
                 <AndamioText className="text-sm">{slt}</AndamioText>
               </div>
-              <SuccessIcon className="h-4 w-4 shrink-0 text-success mt-1" />
+              <SuccessIcon className="h-4 w-4 shrink-0 text-primary mt-1" />
             </div>
           ))}
         </div>
@@ -265,7 +265,7 @@ export function OnChainSltsBadge({
   return (
     <AndamioTooltip>
       <AndamioTooltipTrigger asChild>
-        <AndamioBadge variant="outline" className="text-success border-success">
+        <AndamioBadge variant="outline" className="text-primary border-primary">
           <OnChainIcon className="h-3 w-3 mr-1" />
           {totalSlts} on-chain
         </AndamioBadge>

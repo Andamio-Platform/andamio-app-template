@@ -126,8 +126,8 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
         {/* Summary stat */}
-        <div className="flex items-center gap-2 bg-info/10 rounded-lg px-3 py-2">
-          <LearnerIcon className="h-4 w-4 text-info" />
+        <div className="flex items-center gap-2 bg-secondary/10 rounded-lg px-3 py-2">
+          <LearnerIcon className="h-4 w-4 text-secondary" />
           <div>
             <AndamioText className="text-lg font-semibold">{enrolledCourses.length}</AndamioText>
             <AndamioText variant="small" className="text-xs">

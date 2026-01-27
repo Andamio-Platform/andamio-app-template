@@ -393,13 +393,13 @@ export default function ProjectDashboardPage() {
         <AndamioTabsContent value="overview" className="mt-6 space-y-4">
           {/* Sync Warning - show when on-chain data doesn't match DB */}
           {needsSync && (
-            <AndamioCard className="border-warning bg-warning/5">
+            <AndamioCard className="border-muted-foreground bg-muted/5">
               <AndamioCardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <AlertIcon className="h-6 w-6 text-warning shrink-0 mt-0.5" />
+                    <AlertIcon className="h-6 w-6 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
-                      <AndamioText className="font-semibold text-warning">Action Required: Sync Task Hashes</AndamioText>
+                      <AndamioText className="font-semibold text-muted-foreground">Action Required: Sync Task Hashes</AndamioText>
                       <AndamioText variant="small" className="mt-1">
                         {onChainTaskCount > liveTasks && (
                           <span>{onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks} marked as live in database. </span>
@@ -444,7 +444,7 @@ export default function ProjectDashboardPage() {
                   <div className="text-sm text-muted-foreground">Draft Tasks</div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-success">{liveTasks}</div>
+                  <div className="text-2xl font-bold text-primary">{liveTasks}</div>
                   <div className="text-sm text-muted-foreground">Live Tasks (DB)</div>
                 </div>
                 <div className="text-center p-4 border rounded-lg">

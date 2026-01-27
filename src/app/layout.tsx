@@ -2,7 +2,7 @@ import "~/styles/globals.css";
 import "@meshsdk/react/styles.css";
 
 import { type Metadata, type Viewport } from "next";
-import { Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { TRPCReactProvider } from "~/trpc/react";
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(BRANDING.links.website),
 };
 
-const spaceGrotesk = Space_Grotesk({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-inter",
   weight: ["300", "400", "500", "600", "700"],
 });
 
@@ -48,7 +48,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} overflow-hidden overscroll-none`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} overflow-hidden overscroll-none`} suppressHydrationWarning>
       <body className="font-sans overflow-hidden overscroll-none">
         <ThemeProvider
           attribute="class"

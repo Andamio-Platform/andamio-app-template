@@ -36,7 +36,7 @@ function EnrolledCourseCard({ course }: { course: StudentCourse }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <OnChainIcon className="h-4 w-4 text-success shrink-0" />
+            <OnChainIcon className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold truncate">{title}</h3>
           </div>
           {description && (

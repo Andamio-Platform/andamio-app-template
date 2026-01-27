@@ -279,7 +279,7 @@ export function BurnModuleTokens({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -294,11 +294,11 @@ export function BurnModuleTokens({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Modules Burned Successfully!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

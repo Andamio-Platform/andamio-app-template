@@ -210,7 +210,7 @@ export default function CourseDetailPage() {
       {verifiedModuleCount > 0 && (
         <div className="space-y-4 border-t pt-8">
           <div className="flex items-center gap-2">
-            <OnChainIcon className="h-5 w-5 text-success" />
+            <OnChainIcon className="h-5 w-5 text-primary" />
             <h2 className="text-xl font-semibold">Blockchain Verification</h2>
           </div>
           <AndamioText variant="small">

@@ -260,10 +260,10 @@ export function MintModuleTokens({
 
         {/* Warning for modules without SLTs */}
         {modulesWithoutSlts.length > 0 && (
-          <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+          <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
             <div className="text-xs">
-              <AndamioText variant="small" className="font-medium text-warning-foreground">Some modules have no SLTs</AndamioText>
+              <AndamioText variant="small" className="font-medium text-muted-foreground">Some modules have no SLTs</AndamioText>
               <AndamioText variant="small">
                 {modulesWithoutSlts.map((m) => m.moduleCode).join(", ")} need Student Learning Targets before minting.
               </AndamioText>
@@ -299,7 +299,7 @@ export function MintModuleTokens({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -314,11 +314,11 @@ export function MintModuleTokens({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Module Tokens Minted!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

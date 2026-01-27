@@ -50,7 +50,7 @@ export function AccountDetailsCard({
               onClick={() => cardanoBech32Addr && copyAddress(cardanoBech32Addr)}
             >
               {addressCopied ? (
-                <CompletedIcon className="h-3.5 w-3.5 text-success" />
+                <CompletedIcon className="h-3.5 w-3.5 text-primary" />
               ) : (
                 <CopyIcon className="h-3.5 w-3.5" />
               )}
@@ -65,9 +65,9 @@ export function AccountDetailsCard({
           </label>
           {hasAccessToken ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-success/10 rounded px-2 py-1.5">
-                <AccessTokenIcon className="h-3.5 w-3.5 text-success" />
-                <code className="text-xs font-mono font-semibold text-success">
+              <div className="flex items-center gap-2 bg-primary/10 rounded px-2 py-1.5">
+                <AccessTokenIcon className="h-3.5 w-3.5 text-primary" />
+                <code className="text-xs font-mono font-semibold text-primary">
                   {accessTokenAlias}
                 </code>
               </div>
@@ -87,7 +87,7 @@ export function AccountDetailsCard({
           </label>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ShieldIcon className="h-3.5 w-3.5 text-success" />
+              <ShieldIcon className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs">Active</span>
             </div>
             {jwtExpiration && (

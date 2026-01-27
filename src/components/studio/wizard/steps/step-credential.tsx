@@ -279,9 +279,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring" }}
-                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-success flex items-center justify-center"
+                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center"
               >
-                <SparkleIcon className="h-4 w-4 text-success-foreground" />
+                <SparkleIcon className="h-4 w-4 text-primary-foreground" />
               </motion.div>
             </div>
           </motion.div>

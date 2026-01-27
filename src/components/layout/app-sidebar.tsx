@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { NextIcon, ModuleIcon, LogOutIcon } from "~/components/icons";
+import { NextIcon, LogOutIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import {
   getNavigationSections,
@@ -16,25 +18,36 @@ import {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { resolvedTheme } = useTheme();
   const { isAuthenticated, user, logout } = useAndamioAuth();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch - theme is undefined on server
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get navigation sections filtered by auth state
   const navigationSections = getNavigationSections(isAuthenticated);
 
+  // Select logo based on theme (default to light for SSR)
+  const logoSrc = mounted && resolvedTheme === "dark"
+    ? BRANDING.logo.horizontalDark
+    : BRANDING.logo.horizontal;
+
   return (
     <div className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand Header */}
-      <div className="flex h-12 items-center gap-2.5 border-b border-sidebar-border px-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground flex-shrink-0">
-          <ModuleIcon className="h-3.5 w-3.5" />
-        </div>
-        <Link href="/" className="flex flex-col min-w-0">
-          <span className="text-sm font-semibold text-sidebar-foreground truncate">
-            {BRANDING.name}
-          </span>
-          <span className="text-[9px] text-muted-foreground truncate leading-tight">
-            {BRANDING.tagline}
-          </span>
+      <div className="flex h-14 items-center border-b border-sidebar-border px-3">
+        <Link href="/">
+          <Image
+            src={logoSrc}
+            alt={BRANDING.name}
+            width={120}
+            height={28}
+            priority
+            className="h-7 w-auto"
+          />
         </Link>
       </div>
 
@@ -114,7 +127,7 @@ export function AppSidebar() {
               )}
               {/* Wallet Address */}
               <div className="flex items-center gap-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
                 <span className="text-[10px] font-mono text-muted-foreground truncate">
                   {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
                 </span>

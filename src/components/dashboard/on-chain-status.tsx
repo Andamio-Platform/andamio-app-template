@@ -120,7 +120,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
           <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
           <div className="flex items-center gap-2">
             <AndamioBadge variant="outline" className="text-xs">
-              <VerifiedIcon className="mr-1 h-3 w-3 text-success" />
+              <VerifiedIcon className="mr-1 h-3 w-3 text-primary" />
               Live
             </AndamioBadge>
             <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
@@ -132,7 +132,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
       <AndamioCardContent className="space-y-4">
         {/* Summary Stats */}
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <CourseIcon className="h-4 w-4 text-info" />
+          <CourseIcon className="h-4 w-4 text-secondary" />
           <div>
             <AndamioText className="text-lg font-semibold">{courseCount}</AndamioText>
             <AndamioText variant="small" className="text-xs">

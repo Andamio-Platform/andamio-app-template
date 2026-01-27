@@ -154,8 +154,8 @@ export default function CredentialsPage() {
         <AndamioCardContent className="py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/20">
-                <CredentialIcon className="h-6 w-6 text-success" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
+                <CredentialIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <AndamioText className="text-2xl font-bold">
@@ -183,7 +183,7 @@ export default function CredentialsPage() {
                 <AndamioCardIconHeader
                   icon={CredentialIcon}
                   title="Course Credential"
-                  iconColor="text-success"
+                  iconColor="text-primary"
                 />
                 <AndamioBadge status="success">Earned</AndamioBadge>
               </div>

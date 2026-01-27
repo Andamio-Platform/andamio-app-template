@@ -236,12 +236,12 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
       {/* Status indicator */}
       <div className={cn(
         "h-8 w-8 rounded-md flex items-center justify-center",
-        isOnChain && hasDbContent ? "bg-success/10" : hasDbContent ? "bg-warning/10" : "bg-muted"
+        isOnChain && hasDbContent ? "bg-primary/10" : hasDbContent ? "bg-muted/10" : "bg-muted"
       )}>
         {isOnChain && hasDbContent ? (
-          <SuccessIcon className="h-4 w-4 text-success" />
+          <SuccessIcon className="h-4 w-4 text-primary" />
         ) : hasDbContent ? (
-          <PendingIcon className="h-4 w-4 text-warning" />
+          <PendingIcon className="h-4 w-4 text-muted-foreground" />
         ) : (
           <AlertIcon className="h-4 w-4 text-muted-foreground" />
         )}
@@ -364,9 +364,9 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
                 {isLoadingModules ? (
                   <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
-                  <div className="text-3xl font-bold text-success">{moduleStats.active}</div>
+                  <div className="text-3xl font-bold text-primary">{moduleStats.active}</div>
                 )}
-                <AndamioText variant="small" className="text-[11px] text-success/70 font-medium">
+                <AndamioText variant="small" className="text-[11px] text-primary/70 font-medium">
                   Active
                 </AndamioText>
               </div>
@@ -378,9 +378,9 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
                 {isLoadingModules ? (
                   <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
-                  <div className="text-3xl font-bold text-warning">{moduleStats.unregistered}</div>
+                  <div className="text-3xl font-bold text-muted-foreground">{moduleStats.unregistered}</div>
                 )}
-                <AndamioText variant="small" className="text-[11px] text-warning/70 font-medium">
+                <AndamioText variant="small" className="text-[11px] text-muted-foreground/70 font-medium">
                   Unregistered
                 </AndamioText>
               </div>
@@ -392,9 +392,9 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
                 {isLoadingModules ? (
                   <AndamioSkeleton className="h-8 w-8 mx-auto mb-1" />
                 ) : (
-                  <div className="text-3xl font-bold text-info">{moduleStats.draft}</div>
+                  <div className="text-3xl font-bold text-secondary">{moduleStats.draft}</div>
                 )}
-                <AndamioText variant="small" className="text-[11px] text-info/70 font-medium">
+                <AndamioText variant="small" className="text-[11px] text-secondary/70 font-medium">
                   Draft
                 </AndamioText>
               </div>
@@ -504,8 +504,8 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
           {/* Feature Cards */}
           <div className="grid grid-cols-3 gap-3 text-left">
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 mb-2">
-                <SuccessIcon className="h-4 w-4 text-success" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 mb-2">
+                <SuccessIcon className="h-4 w-4 text-primary" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">On-Chain</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">
@@ -513,8 +513,8 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
               </AndamioText>
             </div>
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 mb-2">
-                <OnChainIcon className="h-4 w-4 text-info" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10 mb-2">
+                <OnChainIcon className="h-4 w-4 text-secondary" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">Modular</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">
@@ -522,8 +522,8 @@ function WelcomePanel({ courseCount }: { courseCount: number }) {
               </AndamioText>
             </div>
             <div className="rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 p-4 ring-1 ring-border/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 mb-2">
-                <PreviewIcon className="h-4 w-4 text-warning" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/10 mb-2">
+                <PreviewIcon className="h-4 w-4 text-muted-foreground" />
               </div>
               <AndamioText className="text-xs font-medium mb-1">Preview</AndamioText>
               <AndamioText variant="small" className="text-[10px] text-muted-foreground leading-relaxed">

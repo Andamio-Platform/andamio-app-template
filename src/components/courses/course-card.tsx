@@ -38,7 +38,7 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge variant="outline" className="text-success-foreground border-success/80 bg-success/80 shadow-sm">
+              <AndamioBadge variant="outline" className="text-primary-foreground border-primary/80 bg-primary/80 shadow-sm">
                 <OnChainIcon className="h-3 w-3 mr-1" />
                 Active
               </AndamioBadge>
@@ -54,7 +54,7 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge variant="outline" className="text-info border-info/30 bg-info/10">
+              <AndamioBadge variant="outline" className="text-secondary border-secondary/30 bg-secondary/10">
                 <OnChainIcon className="h-3 w-3 mr-1" />
                 Unregistered
               </AndamioBadge>
@@ -70,7 +70,7 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge variant="outline" className="text-warning border-warning/30 bg-warning/10">
+              <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground/30 bg-muted/10">
                 <PendingIcon className="h-3 w-3 mr-1" />
                 Draft
               </AndamioBadge>
@@ -175,8 +175,8 @@ export function CourseCard({ course }: CourseCardProps) {
             {/* Active indicator */}
             {status === "active" && (
               <div className="flex items-center gap-1">
-                <SuccessIcon className="h-3.5 w-3.5 text-success" />
-                <span className="text-success text-xs">Live</span>
+                <SuccessIcon className="h-3.5 w-3.5 text-primary" />
+                <span className="text-primary text-xs">Live</span>
               </div>
             )}
           </div>

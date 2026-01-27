@@ -169,7 +169,7 @@ export function MobileNav() {
                   Connected Wallet
                 </AndamioText>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-success animate-pulse flex-shrink-0" />
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
                   <code className="text-xs text-sidebar-foreground truncate">
                     {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-6)}
                   </code>

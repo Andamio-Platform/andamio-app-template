@@ -95,7 +95,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
       <AndamioCard>
         <AndamioCardHeader>
           <div className="flex items-center gap-2">
-            <SuccessIcon className="h-5 w-5 text-success" />
+            <SuccessIcon className="h-5 w-5 text-primary" />
             <div>
               <AndamioCardTitle>Course Complete!</AndamioCardTitle>
               <AndamioCardDescription>
@@ -105,9 +105,9 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
           </div>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 border rounded-md bg-success/10 border-success/20">
+          <div className="flex items-center justify-between p-3 border rounded-md bg-primary/10 border-primary/20">
             <div className="flex items-center gap-2">
-              <OnChainIcon className="h-4 w-4 text-success" />
+              <OnChainIcon className="h-4 w-4 text-primary" />
               <AndamioText className="text-sm font-medium">Credential Earned</AndamioText>
             </div>
             <AndamioBadge status="success">Verified</AndamioBadge>

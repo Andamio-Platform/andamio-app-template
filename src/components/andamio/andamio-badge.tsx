@@ -26,11 +26,11 @@ export interface AndamioBadgeProps
 }
 
 const statusStyles = {
-  live: "bg-success text-success-foreground",
-  draft: "bg-warning text-warning-foreground",
+  live: "bg-primary text-primary-foreground",
+  draft: "bg-muted text-muted-foreground",
   archived: "bg-muted text-muted-foreground",
-  pending: "bg-info text-info-foreground",
-  success: "bg-success text-success-foreground",
+  pending: "bg-secondary text-secondary-foreground",
+  success: "bg-primary text-primary-foreground",
   error: "bg-destructive text-destructive-foreground",
 };
 

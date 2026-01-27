@@ -150,7 +150,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <AndamioCard className={lesson ? "border-success/30 bg-success/5" : ""}>
+                <AndamioCard className={lesson ? "border-primary/30 bg-primary/5" : ""}>
                   <AndamioCardContent className="py-4">
                     <div className="flex items-start gap-4">
                       {/* SLT indicator */}
@@ -158,7 +158,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                             lesson
-                              ? "bg-success text-success-foreground"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -178,7 +178,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <LessonIcon className="h-4 w-4 text-success" />
+                                <LessonIcon className="h-4 w-4 text-primary" />
                                 <span className="font-medium">{typeof lesson.title === "string" ? lesson.title : "Untitled Lesson"}</span>
                               </div>
                               <AndamioButton
@@ -303,7 +303,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-warning bg-warning/10 p-3 rounded-lg border border-warning/20"
+          className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/10 p-3 rounded-lg border border-muted-foreground/20"
         >
           <span>
             Complete the <strong>Assignment</strong> step before writing the introduction.

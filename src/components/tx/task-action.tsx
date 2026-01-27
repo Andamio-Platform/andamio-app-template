@@ -215,9 +215,9 @@ export function TaskAction({
         </div>
 
         {/* Warning */}
-        <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-          <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-          <AndamioText variant="small" className="text-xs text-warning-foreground">
+        <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
+          <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+          <AndamioText variant="small" className="text-xs text-muted-foreground">
             Task actions are recorded on-chain. Ensure your submission is ready before continuing.
           </AndamioText>
         </div>
@@ -239,7 +239,7 @@ export function TaskAction({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -254,11 +254,11 @@ export function TaskAction({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Task Action Completed!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

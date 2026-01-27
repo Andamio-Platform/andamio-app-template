@@ -227,7 +227,7 @@ export default function LearnerAssignmentPage() {
 
       {onChainModuleHash && !hashMismatch && (
         <AndamioAlert>
-          <SuccessIcon className="h-4 w-4 text-success" />
+          <SuccessIcon className="h-4 w-4 text-primary" />
           <AndamioAlertDescription>
             <span className="font-medium">Module verified on-chain</span>
             <span className="ml-2 text-xs font-mono text-muted-foreground">

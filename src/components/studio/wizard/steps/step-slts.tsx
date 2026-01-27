@@ -309,8 +309,8 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       <div className="space-y-6">
         {/* Input Section or Locked Notice */}
         {isLocked ? (
-          <div className="rounded-lg border-2 border-warning/30 bg-warning/5 p-4">
-            <div className="flex items-center gap-3 text-warning">
+          <div className="rounded-lg border-2 border-muted-foreground/30 bg-muted/5 p-4">
+            <div className="flex items-center gap-3 text-muted-foreground">
               <LockedIcon className="h-5 w-5 flex-shrink-0" />
               <div>
                 <p className="font-medium">Learning Targets are locked</p>

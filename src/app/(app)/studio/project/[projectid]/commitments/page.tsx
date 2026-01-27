@@ -365,8 +365,8 @@ export default function ProjectCommitmentsPage() {
           {/* Empty state */}
           {!isLoadingAssessments && !assessmentsError && pendingAssessments.length === 0 && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mb-3">
-                <SuccessIcon className="h-6 w-6 text-success" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
+                <SuccessIcon className="h-6 w-6 text-primary" />
               </div>
               <AndamioText className="font-medium">All caught up!</AndamioText>
               <AndamioText variant="muted" className="mt-1 max-w-[250px]">
@@ -429,15 +429,15 @@ export default function ProjectCommitmentsPage() {
                           if (status?.exists) {
                             return (
                               <div className="flex items-center gap-1">
-                                <SuccessIcon className="h-4 w-4 text-success" />
-                                <span className="text-xs text-success">{status.status ?? "OK"}</span>
+                                <SuccessIcon className="h-4 w-4 text-primary" />
+                                <span className="text-xs text-primary">{status.status ?? "OK"}</span>
                               </div>
                             );
                           }
                           return (
                             <div className="flex items-center gap-1">
-                              <ErrorIcon className="h-4 w-4 text-warning" />
-                              <span className="text-xs text-warning">Missing</span>
+                              <ErrorIcon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">Missing</span>
                             </div>
                           );
                         })()}
@@ -569,9 +569,9 @@ export default function ProjectCommitmentsPage() {
             </div>
 
             {/* DB Sync Section */}
-            <div className="space-y-3 rounded-lg border border-info/30 bg-info/5 p-4">
+            <div className="space-y-3 rounded-lg border border-secondary/30 bg-secondary/5 p-4">
               <div className="flex items-start gap-3">
-                <DatabaseIcon className="h-5 w-5 text-info shrink-0 mt-0.5" />
+                <DatabaseIcon className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <AndamioText variant="small" className="font-medium">
                     Database Sync
@@ -609,13 +609,13 @@ export default function ProjectCommitmentsPage() {
               </AndamioText>
               <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
-                  <SuccessIcon className="h-3 w-3 text-success" />
+                  <SuccessIcon className="h-3 w-3 text-primary" />
                   <span>
                     <strong>Accept</strong>: Approve and release reward to contributor
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ErrorIcon className="h-3 w-3 text-warning" />
+                  <ErrorIcon className="h-3 w-3 text-muted-foreground" />
                   <span>
                     <strong>Refuse</strong>: Reject but allow contributor to resubmit
                   </span>

@@ -162,8 +162,8 @@ export default function ProjectCatalogPage() {
           <AndamioTooltip>
             <AndamioTooltipTrigger asChild>
               <div className="flex items-center gap-1.5">
-                <SuccessIcon className="h-4 w-4 text-success" />
-                <AndamioBadge variant="outline" className="text-success border-success/30">
+                <SuccessIcon className="h-4 w-4 text-primary" />
+                <AndamioBadge variant="outline" className="text-primary border-primary/30">
                   Open
                 </AndamioBadge>
               </div>
@@ -178,8 +178,8 @@ export default function ProjectCatalogPage() {
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <CredentialIcon className="h-4 w-4 text-success" />
-              <AndamioBadge variant="outline" className="text-success border-success/30">
+              <CredentialIcon className="h-4 w-4 text-primary" />
+              <AndamioBadge variant="outline" className="text-primary border-primary/30">
                 Qualified
               </AndamioBadge>
             </div>
@@ -199,8 +199,8 @@ export default function ProjectCatalogPage() {
       <AndamioTooltip>
         <AndamioTooltipTrigger asChild>
           <div className="flex items-center gap-1.5">
-            <PendingIcon className="h-4 w-4 text-warning" />
-            <AndamioBadge variant="outline" className="text-warning border-warning/30">
+            <PendingIcon className="h-4 w-4 text-muted-foreground" />
+            <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground/30">
               {eligibility.totalCompleted}/{eligibility.totalRequired}
             </AndamioBadge>
           </div>

@@ -113,10 +113,10 @@ export function StudioOutlinePanel({
                 {/* Status icon */}
                 <div className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-md flex-shrink-0",
-                  step.isComplete ? "bg-success/10" : isActive ? "bg-primary/10" : "bg-muted"
+                  step.isComplete ? "bg-primary/10" : isActive ? "bg-primary/10" : "bg-muted"
                 )}>
                   {step.isComplete ? (
-                    <SuccessIcon className="h-4 w-4 text-success" />
+                    <SuccessIcon className="h-4 w-4 text-primary" />
                   ) : (
                     <Icon className={cn(
                       "h-4 w-4",
@@ -145,7 +145,7 @@ export function StudioOutlinePanel({
                 {/* Completion indicator on right */}
                 {step.isComplete && (
                   <SuccessIcon className={cn(
-                    "h-4 w-4 flex-shrink-0 text-success"
+                    "h-4 w-4 flex-shrink-0 text-primary"
                   )} />
                 )}
               </button>
@@ -164,7 +164,7 @@ export function StudioOutlinePanel({
         </div>
         <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full bg-success transition-all duration-300"
+            className="h-full bg-primary transition-all duration-300"
             style={{
               width: `${(steps.filter((s) => s.isComplete).length / steps.length) * 100}%`,
             }}

@@ -116,8 +116,8 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-4 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10 mb-2">
-              <SuccessIcon className="h-5 w-5 text-success" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 mb-2">
+              <SuccessIcon className="h-5 w-5 text-primary" />
             </div>
             <AndamioText variant="small" className="font-medium">
               All caught up!
@@ -161,8 +161,8 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
         {/* Summary stat */}
-        <div className="flex items-center gap-2 bg-warning/10 rounded-lg px-3 py-2">
-          <TeacherIcon className="h-4 w-4 text-warning" />
+        <div className="flex items-center gap-2 bg-muted/10 rounded-lg px-3 py-2">
+          <TeacherIcon className="h-4 w-4 text-muted-foreground" />
           <div>
             <AndamioText className="text-lg font-semibold">{pendingAssessments.length}</AndamioText>
             <AndamioText variant="small" className="text-xs">

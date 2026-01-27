@@ -30,21 +30,21 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<CourseModuleStatus, StatusConfig> = {
   active: {
     icon: SuccessIcon,
-    iconColor: "text-success",
+    iconColor: "text-primary",
     label: "On-Chain",
-    textColor: "text-success",
+    textColor: "text-primary",
   },
   pending_tx: {
     icon: PendingIcon,
-    iconColor: "text-info animate-pulse",
+    iconColor: "text-secondary animate-pulse",
     label: "Pending...",
-    textColor: "text-info",
+    textColor: "text-secondary",
   },
   approved: {
     icon: NeutralIcon,
-    iconColor: "text-warning fill-warning",
+    iconColor: "text-muted-foreground fill-warning",
     label: "Ready to Mint",
-    textColor: "text-warning",
+    textColor: "text-muted-foreground",
   },
   draft: {
     icon: NeutralIcon,
@@ -54,9 +54,9 @@ const STATUS_CONFIG: Record<CourseModuleStatus, StatusConfig> = {
   },
   unregistered: {
     icon: OnChainIcon,
-    iconColor: "text-info",
+    iconColor: "text-secondary",
     label: "Unregistered",
-    textColor: "text-info",
+    textColor: "text-secondary",
   },
 };
 
@@ -138,14 +138,14 @@ export function StudioModuleCard({
   // For unregistered modules, show a non-clickable card with registration guidance
   if (isUnregistered) {
     return (
-      <AndamioCard className="p-5 border-info/30 bg-info/5">
+      <AndamioCard className="p-5 border-secondary/30 bg-secondary/5">
         <div className="flex items-start justify-between gap-4">
           {/* Left: Module Info */}
           <div className="flex-1 min-w-0">
             {/* Hash & Status Icon */}
             <div className="flex items-center gap-2 mb-1">
               <ModuleStatusIcon status={status} />
-              <span className="text-xs font-mono text-info/70 bg-info/10 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-secondary/70 bg-secondary/10 px-2 py-0.5 rounded">
                 {sltHash.slice(0, 12)}...
               </span>
             </div>
@@ -156,7 +156,7 @@ export function StudioModuleCard({
             </div>
 
             {/* Registration guidance */}
-            <AndamioText variant="small" className="text-info mt-1">
+            <AndamioText variant="small" className="text-secondary mt-1">
               This module exists on-chain but needs to be registered. Go to the On-Chain tab to register it.
             </AndamioText>
           </div>

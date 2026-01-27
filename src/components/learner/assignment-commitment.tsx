@@ -449,8 +449,8 @@ export function AssignmentCommitment({
 
         {/* Check if already completed on-chain */}
         {hasCompletedOnChain ? (
-          <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-success/10 border-success/20">
-            <SuccessIcon className="h-12 w-12 text-success mb-4" />
+          <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-primary/10 border-primary/20">
+            <SuccessIcon className="h-12 w-12 text-primary mb-4" />
             <AndamioText className="font-medium mb-2">Module Completed</AndamioText>
             <AndamioText variant="small" className="text-muted-foreground">
               You have successfully completed this module on-chain.
@@ -459,8 +459,8 @@ export function AssignmentCommitment({
         ) : commitment?.networkStatus === "ASSIGNMENT_ACCEPTED" ? (
           // Assignment accepted - show credential claim
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-success/10 border-success/20">
-              <SuccessIcon className="h-8 w-8 text-success shrink-0" />
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-primary/10 border-primary/20">
+              <SuccessIcon className="h-8 w-8 text-primary shrink-0" />
               <div>
                 <AndamioText className="font-medium">Assignment Accepted!</AndamioText>
                 <AndamioText variant="small" className="text-muted-foreground">
@@ -497,8 +497,8 @@ export function AssignmentCommitment({
         ) : hasOnChainCommitment && !commitment ? (
           // On-chain commitment exists but no database record - allow sync
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-warning/10 border-warning/20">
-              <AlertIcon className="h-8 w-8 text-warning shrink-0" />
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/10 border-muted-foreground/20">
+              <AlertIcon className="h-8 w-8 text-muted-foreground shrink-0" />
               <div>
                 <AndamioText className="font-medium">Sync Required</AndamioText>
                 <AndamioText variant="small" className="text-muted-foreground">
@@ -710,7 +710,7 @@ export function AssignmentCommitment({
                   {commitTx.state !== "idle" && !commitTxConfirmed && (
                     <div className="rounded-lg border bg-muted/30 p-4">
                       <div className="flex items-center gap-3">
-                        <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                        <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                         <div className="flex-1">
                           <AndamioText className="font-medium">
                             {commitTx.state === "fetching" && "Preparing transaction..."}
@@ -731,10 +731,10 @@ export function AssignmentCommitment({
 
                   {/* Success State */}
                   {commitTxConfirmed && (
-                    <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                       <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-success" />
-                        <AndamioText className="font-medium text-success">
+                        <SuccessIcon className="h-5 w-5 text-primary" />
+                        <AndamioText className="font-medium text-primary">
                           Assignment submitted successfully!
                         </AndamioText>
                       </div>
@@ -892,7 +892,7 @@ export function AssignmentCommitment({
                   {commitTx.state !== "idle" && !commitTxConfirmed && (
                     <div className="rounded-lg border bg-muted/30 p-4">
                       <div className="flex items-center gap-3">
-                        <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                        <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                         <div className="flex-1">
                           <AndamioText className="font-medium">
                             {commitTx.state === "fetching" && "Preparing transaction..."}
@@ -913,10 +913,10 @@ export function AssignmentCommitment({
 
                   {/* Success State */}
                   {commitTxConfirmed && (
-                    <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                       <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-success" />
-                        <AndamioText className="font-medium text-success">
+                        <SuccessIcon className="h-5 w-5 text-primary" />
+                        <AndamioText className="font-medium text-primary">
                           Assignment submitted successfully!
                         </AndamioText>
                       </div>
@@ -983,7 +983,7 @@ export function AssignmentCommitment({
                   {updateTx.state !== "idle" && !updateTxConfirmed && (
                     <div className="rounded-lg border bg-muted/30 p-4">
                       <div className="flex items-center gap-3">
-                        <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+                        <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                         <div className="flex-1">
                           <AndamioText className="font-medium">
                             {updateTx.state === "fetching" && "Preparing update..."}
@@ -1004,10 +1004,10 @@ export function AssignmentCommitment({
 
                   {/* Success State */}
                   {updateTxConfirmed && (
-                    <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                       <div className="flex items-center gap-3">
-                        <SuccessIcon className="h-5 w-5 text-success" />
-                        <AndamioText className="font-medium text-success">
+                        <SuccessIcon className="h-5 w-5 text-primary" />
+                        <AndamioText className="font-medium text-primary">
                           Assignment updated successfully!
                         </AndamioText>
                       </div>

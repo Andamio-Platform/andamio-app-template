@@ -198,8 +198,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
               >
-                <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center">
-                  <CelebrateIcon className="h-10 w-10 text-success" />
+                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+                  <CelebrateIcon className="h-10 w-10 text-primary" />
                 </div>
               </motion.div>
 
@@ -211,7 +211,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
               </div>
 
               <div className="flex flex-col items-center gap-2 text-sm">
-                <AndamioBadge className="bg-success text-success-foreground">
+                <AndamioBadge className="bg-primary text-primary-foreground">
                   APPROVED
                 </AndamioBadge>
                 {data.courseModule?.sltHash && (
@@ -298,7 +298,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                       <div className="flex items-center gap-3">
                         <StatusIcon
                           className={`h-5 w-5 ${
-                            item.completed ? "text-success" : "text-muted-foreground"
+                            item.completed ? "text-primary" : "text-muted-foreground"
                           }`}
                         />
                         <div className="flex items-center gap-2">

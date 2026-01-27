@@ -201,11 +201,11 @@ export function TasksAssess({
           <AndamioText variant="small" className="font-medium">Assessment Options:</AndamioText>
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
-              <SuccessIcon className="h-3 w-3 text-success" />
+              <SuccessIcon className="h-3 w-3 text-primary" />
               <span><strong>Accept</strong>: Approve and release reward</span>
             </div>
             <div className="flex items-center gap-2">
-              <ErrorIcon className="h-3 w-3 text-warning" />
+              <ErrorIcon className="h-3 w-3 text-muted-foreground" />
               <span><strong>Refuse</strong>: Reject, allow resubmission</span>
             </div>
             <div className="flex items-center gap-2">
@@ -216,9 +216,9 @@ export function TasksAssess({
         </div>
 
         {/* Warning about irreversibility */}
-        <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-          <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-          <AndamioText variant="small" className="text-xs text-warning-foreground">
+        <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
+          <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+          <AndamioText variant="small" className="text-xs text-muted-foreground">
             Assessment decisions are recorded on-chain and cannot be undone.
           </AndamioText>
         </div>
@@ -243,7 +243,7 @@ export function TasksAssess({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -258,11 +258,11 @@ export function TasksAssess({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Assessment Recorded!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

@@ -88,18 +88,18 @@ export interface AndamioDashboardStatProps {
 }
 
 const valueColorClasses = {
-  success: "text-success",
-  warning: "text-warning",
+  success: "text-primary",
+  warning: "text-muted-foreground",
   destructive: "text-destructive",
-  info: "text-info",
+  info: "text-secondary",
   muted: "text-muted-foreground",
 };
 
 const iconColorClasses = {
-  success: "text-success",
-  warning: "text-warning",
+  success: "text-primary",
+  warning: "text-muted-foreground",
   destructive: "text-destructive",
-  info: "text-info",
+  info: "text-secondary",
   muted: "text-muted-foreground",
 };
 

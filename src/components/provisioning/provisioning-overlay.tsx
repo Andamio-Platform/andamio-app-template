@@ -57,8 +57,8 @@ export function ProvisioningOverlay({
       {/* Header with icon */}
       <div className="mb-8">
         {isReady ? (
-          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-            <CelebrateIcon className="h-8 w-8 text-success" />
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <CelebrateIcon className="h-8 w-8 text-primary" />
           </div>
         ) : (
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">

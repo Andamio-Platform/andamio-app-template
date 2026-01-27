@@ -537,7 +537,7 @@ export default function ApiSetupPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               Setup Complete
             </CardTitle>
             <CardDescription>
@@ -567,7 +567,7 @@ export default function ApiSetupPage() {
                   onClick={() => copy(apiKey.apiKey)}
                 >
                   {isCopied ? (
-                    <SuccessIcon className="h-4 w-4 text-success" />
+                    <SuccessIcon className="h-4 w-4 text-primary" />
                   ) : (
                     <CopyIcon className="h-4 w-4" />
                   )}
@@ -641,7 +641,7 @@ function StepIndicator({
       <div
         className={`
           w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-          ${complete ? "bg-success text-success-foreground" : ""}
+          ${complete ? "bg-primary text-primary-foreground" : ""}
           ${active ? "bg-primary text-primary-foreground" : ""}
           ${!active && !complete ? "bg-muted text-muted-foreground" : ""}
         `}

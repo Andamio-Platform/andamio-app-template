@@ -23,6 +23,8 @@ Current implementation status of the Andamio T3 App Template.
 
 **Status**: Active - 6 hooks approved, 5 remaining + wizard refactored
 
+> **⚠️ Post-Merge Follow-up (PR #90)**: Verify `--color-input` works in Tailwind v4. CLAUDE.md warns that `input` conflicts with HTML element names and may be silently ignored. Test outline buttons in dark mode (`dark:bg-input/30`, `dark:border-input`) to confirm they render correctly. If broken, rename to `--color-input-bg`.
+
 Standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. Tracking in: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
 
 ### The Pattern (Established)

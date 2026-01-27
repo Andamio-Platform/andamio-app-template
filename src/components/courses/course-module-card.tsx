@@ -76,7 +76,7 @@ export function CourseModuleCard({
                   <span className="truncate">{title}</span>
                   {isOnChain && (
                     <span title="Module on-chain" className="shrink-0">
-                      <OnChainIcon className="h-4 w-4 text-success" />
+                      <OnChainIcon className="h-4 w-4 text-primary" />
                     </span>
                   )}
                 </AndamioCardTitle>
@@ -104,7 +104,7 @@ export function CourseModuleCard({
                   <div
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
                       isOnChainSlt
-                        ? "bg-success/10 text-success"
+                        ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >

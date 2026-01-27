@@ -82,9 +82,9 @@ export function TransactionStatus({
   // Success state
   if (state === "success" && result?.success) {
     return (
-      <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
         <div className="flex items-start gap-3">
-          <VerifiedIcon className="h-5 w-5 text-success shrink-0" />
+          <VerifiedIcon className="h-5 w-5 text-primary shrink-0" />
           <div className="flex-1 space-y-2">
             <AndamioText variant="small" className="font-medium text-foreground">{text.success}</AndamioText>
             {result.txHash && (

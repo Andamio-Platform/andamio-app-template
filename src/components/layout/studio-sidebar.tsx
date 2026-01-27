@@ -212,7 +212,7 @@ export function StudioSidebar() {
             )}
             {/* Wallet Address */}
             <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse flex-shrink-0" />
+              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
               <span className="text-[10px] font-mono text-muted-foreground truncate">
                 {user.cardanoBech32Addr?.slice(0, 8)}...{user.cardanoBech32Addr?.slice(-4)}
               </span>

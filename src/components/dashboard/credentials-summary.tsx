@@ -141,8 +141,8 @@ export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
         {/* Summary stat */}
-        <div className="flex items-center gap-2 bg-success/10 rounded-lg px-3 py-2">
-          <CredentialIcon className="h-4 w-4 text-success" />
+        <div className="flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-2">
+          <CredentialIcon className="h-4 w-4 text-primary" />
           <div>
             <AndamioText className="text-lg font-semibold">{completedCourses.length}</AndamioText>
             <AndamioText variant="small" className="text-xs">
@@ -160,7 +160,7 @@ export function CredentialsSummary({ accessTokenAlias }: CredentialsSummaryProps
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <CredentialIcon className="h-3.5 w-3.5 text-success shrink-0" />
+                <CredentialIcon className="h-3.5 w-3.5 text-primary shrink-0" />
                 {course.title ? (
                   <span className="text-xs truncate">{course.title}</span>
                 ) : (

@@ -244,7 +244,7 @@ export function AssignmentUpdate({
         {/* Tamper-Evidence Explanation */}
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <ShieldIcon className="h-4 w-4 text-success" />
+            <ShieldIcon className="h-4 w-4 text-primary" />
             <AndamioText className="font-medium">Tamper-Evident Record</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">
@@ -275,7 +275,7 @@ export function AssignmentUpdate({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -290,11 +290,11 @@ export function AssignmentUpdate({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Submission Recorded!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

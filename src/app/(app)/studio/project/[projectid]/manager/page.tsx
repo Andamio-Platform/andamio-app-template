@@ -421,11 +421,11 @@ export default function ManagerDashboardPage() {
               <AndamioText variant="small" className="font-medium">Assessment Options:</AndamioText>
               <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
-                  <SuccessIcon className="h-3 w-3 text-success" />
+                  <SuccessIcon className="h-3 w-3 text-primary" />
                   <span><strong>Accept</strong>: Approve and release reward to contributor</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ErrorIcon className="h-3 w-3 text-warning" />
+                  <ErrorIcon className="h-3 w-3 text-muted-foreground" />
                   <span><strong>Refuse</strong>: Reject but allow contributor to resubmit</span>
                 </div>
                 <div className="flex items-center gap-2">

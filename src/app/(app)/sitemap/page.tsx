@@ -405,15 +405,15 @@ export default function SitemapPage() {
         <AndamioCardContent className="pt-4">
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <GlobalIcon className="h-4 w-4 text-success" />
+              <GlobalIcon className="h-4 w-4 text-primary" />
               <span>Public route</span>
             </div>
             <div className="flex items-center gap-2">
-              <LockedIcon className="h-4 w-4 text-warning" />
+              <LockedIcon className="h-4 w-4 text-muted-foreground" />
               <span>Requires authentication</span>
             </div>
             <div className="flex items-center gap-2">
-              <ExternalLinkIcon className="h-4 w-4 text-info" />
+              <ExternalLinkIcon className="h-4 w-4 text-secondary" />
               <span>Dynamic route (requires params)</span>
             </div>
           </div>
@@ -445,9 +445,9 @@ export default function SitemapPage() {
                           {route.label}
                         </Link>
                         {route.requiresAuth ? (
-                          <LockedIcon className="h-3 w-3 text-warning" />
+                          <LockedIcon className="h-3 w-3 text-muted-foreground" />
                         ) : (
-                          <GlobalIcon className="h-3 w-3 text-success" />
+                          <GlobalIcon className="h-3 w-3 text-primary" />
                         )}
                       </div>
                       <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
@@ -567,11 +567,11 @@ export default function SitemapPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{route.label}</span>
                           {route.requiresAuth ? (
-                            <LockedIcon className="h-3 w-3 text-warning" />
+                            <LockedIcon className="h-3 w-3 text-muted-foreground" />
                           ) : (
-                            <GlobalIcon className="h-3 w-3 text-success" />
+                            <GlobalIcon className="h-3 w-3 text-primary" />
                           )}
-                          <ExternalLinkIcon className="h-3 w-3 text-info" />
+                          <ExternalLinkIcon className="h-3 w-3 text-secondary" />
                         </div>
                         <AndamioText variant="small" className="text-xs">{route.description}</AndamioText>
                         <code className="text-xs font-mono text-muted-foreground">
@@ -733,11 +733,11 @@ export default function SitemapPage() {
           {/* Legend */}
           <div className="flex flex-wrap gap-4 text-sm mb-4">
             <div className="flex items-center gap-2">
-              <SuccessIcon className="h-4 w-4 text-success" />
+              <SuccessIcon className="h-4 w-4 text-primary" />
               <span>Complete (90%+)</span>
             </div>
             <div className="flex items-center gap-2">
-              <WarningIcon className="h-4 w-4 text-warning" />
+              <WarningIcon className="h-4 w-4 text-muted-foreground" />
               <span>Partial (50-89%)</span>
             </div>
             <div className="flex items-center gap-2">
@@ -757,10 +757,10 @@ export default function SitemapPage() {
                 >
                   <div className="flex items-center gap-2">
                     {cat.status === "complete" && (
-                      <SuccessIcon className="h-4 w-4 text-success" />
+                      <SuccessIcon className="h-4 w-4 text-primary" />
                     )}
                     {cat.status === "partial" && (
-                      <WarningIcon className="h-4 w-4 text-warning" />
+                      <WarningIcon className="h-4 w-4 text-muted-foreground" />
                     )}
                     {(cat.status === "minimal" || cat.status === "not-started") && (
                       <ErrorIcon className="h-4 w-4 text-destructive" />

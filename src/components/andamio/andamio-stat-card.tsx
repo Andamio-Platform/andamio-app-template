@@ -64,9 +64,9 @@ export interface AndamioStatCardProps {
 const iconColorClasses = {
   muted: "text-muted-foreground",
   primary: "text-primary",
-  success: "text-success",
-  warning: "text-warning",
-  info: "text-info",
+  success: "text-primary",
+  warning: "text-muted-foreground",
+  info: "text-secondary",
   destructive: "text-destructive",
 };
 

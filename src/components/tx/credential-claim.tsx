@@ -143,8 +143,8 @@ export function CredentialClaim({
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-            <CredentialIcon className="h-5 w-5 text-success" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <CredentialIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <AndamioCardTitle>{ui.title}</AndamioCardTitle>
@@ -197,7 +197,7 @@ export function CredentialClaim({
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-info" />
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
                 <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
                 <AndamioText variant="small" className="text-xs">
@@ -212,11 +212,11 @@ export function CredentialClaim({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-success/30 bg-success/5 p-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-success" />
+              <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-success">
+                <AndamioText className="font-medium text-primary">
                   Credential Claimed!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

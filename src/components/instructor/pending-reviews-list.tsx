@@ -142,8 +142,8 @@ export function PendingReviewsList({
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mb-3">
-              <SuccessIcon className="h-6 w-6 text-success" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
+              <SuccessIcon className="h-6 w-6 text-primary" />
             </div>
             <AndamioText className="font-medium">
               All caught up!

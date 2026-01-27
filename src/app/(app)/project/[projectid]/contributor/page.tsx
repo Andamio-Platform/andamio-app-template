@@ -787,9 +787,9 @@ function ContributorDashboardContent() {
 
       {/* Prerequisites Check - Show if user doesn't meet requirements */}
       {eligibility && !eligibility.eligible && (
-        <AndamioCard className="border-warning">
+        <AndamioCard className="border-muted-foreground">
           <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-warning">
+            <AndamioCardTitle className="flex items-center gap-2 text-muted-foreground">
               <AlertIcon className="h-5 w-5" />
               Prerequisites Required
             </AndamioCardTitle>
@@ -802,7 +802,7 @@ function ContributorDashboardContent() {
             <div className="flex items-center gap-4">
               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-warning transition-all"
+                  className="h-full bg-muted transition-all"
                   style={{
                     width: `${eligibility.totalRequired > 0 ? (eligibility.totalCompleted / eligibility.totalRequired) * 100 : 0}%`,
                   }}
@@ -838,7 +838,7 @@ function ContributorDashboardContent() {
                       </AndamioBadge>
                     ))}
                     {prereq.completedModules.map((moduleHash) => (
-                      <AndamioBadge key={moduleHash} variant="default" className="text-xs font-mono bg-success text-success-foreground">
+                      <AndamioBadge key={moduleHash} variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
                         <SuccessIcon className="h-3 w-3 mr-1" />
                         {moduleHash.slice(0, 12)}...
                       </AndamioBadge>
@@ -861,9 +861,9 @@ function ContributorDashboardContent() {
 
       {/* Eligibility Met - Show success message if user just became eligible */}
       {eligibility?.eligible && contributorStatus === "not_enrolled" && (
-        <AndamioCard className="border-success">
+        <AndamioCard className="border-primary">
           <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-success">
+            <AndamioCardTitle className="flex items-center gap-2 text-primary">
               <SuccessIcon className="h-5 w-5" />
               Prerequisites Met
             </AndamioCardTitle>
@@ -890,11 +890,11 @@ function ContributorDashboardContent() {
                 <AndamioText variant="small">Tasks Completed</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-warning">{onChainContributor.pending_tasks.length}</AndamioText>
+                <AndamioText className="text-2xl font-bold text-muted-foreground">{onChainContributor.pending_tasks.length}</AndamioText>
                 <AndamioText variant="small">Pending Review</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-success">{onChainContributor.credentials.length}</AndamioText>
+                <AndamioText className="text-2xl font-bold text-primary">{onChainContributor.credentials.length}</AndamioText>
                 <AndamioText variant="small">Credentials Earned</AndamioText>
               </div>
             </div>
@@ -917,9 +917,9 @@ function ContributorDashboardContent() {
         );
 
         return (
-        <AndamioCard className="border-warning">
+        <AndamioCard className="border-muted-foreground">
           <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-warning">
+            <AndamioCardTitle className="flex items-center gap-2 text-muted-foreground">
               <AlertIcon className="h-5 w-5" />
               On-Chain Submission Found
             </AndamioCardTitle>
@@ -949,7 +949,7 @@ function ContributorDashboardContent() {
             {/* Submission Details */}
             <div className="space-y-3 p-4 rounded-lg bg-muted/30">
               <div className="flex items-center gap-2">
-                <OnChainIcon className="h-4 w-4 text-success" />
+                <OnChainIcon className="h-4 w-4 text-primary" />
                 <AndamioText variant="small" className="font-medium">On-Chain Data</AndamioText>
               </div>
 
@@ -994,8 +994,8 @@ function ContributorDashboardContent() {
 
             {/* Warning if no tx_hash - we can't fully sync without it */}
             {!txHash && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-                <AlertIcon className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/10 border border-muted-foreground/20">
+                <AlertIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <AndamioText variant="small">
                   Transaction hash not found. The sync may not complete fully.
                   Check <a href={`https://preprod.andamioscan.io/view/project/${projectId}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Andamioscan</a> for your submission details.
@@ -1004,8 +1004,8 @@ function ContributorDashboardContent() {
             )}
 
             {/* Verification Note */}
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-info/10 border border-info/20">
-              <AlertIcon className="h-4 w-4 text-info mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/10 border border-secondary/20">
+              <AlertIcon className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
               <AndamioText variant="small">
                 This submission was found on-chain for your alias: <strong className="font-mono">{user?.accessTokenAlias}</strong>
               </AndamioText>
@@ -1048,9 +1048,9 @@ function ContributorDashboardContent() {
         );
 
         return (
-        <AndamioCard className="border-info">
+        <AndamioCard className="border-secondary">
           <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-info">
+            <AndamioCardTitle className="flex items-center gap-2 text-secondary">
               <PendingIcon className="h-5 w-5" />
               Task Pending Review
             </AndamioCardTitle>
@@ -1104,7 +1104,7 @@ function ContributorDashboardContent() {
               // Read-only view when waiting for transaction confirmation
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <PendingIcon className="h-4 w-4 text-warning" />
+                  <PendingIcon className="h-4 w-4 text-muted-foreground" />
                   <AndamioText className="font-medium">Submitted Evidence</AndamioText>
                   <AndamioBadge variant="outline" className="text-xs">Awaiting Confirmation</AndamioBadge>
                 </div>
@@ -1146,12 +1146,12 @@ function ContributorDashboardContent() {
                   </div>
                   {/* Validation feedback */}
                   {!hasValidEvidence && (
-                    <AndamioText variant="small" className="text-warning">
+                    <AndamioText variant="small" className="text-muted-foreground">
                       Please provide evidence describing your work on this task.
                     </AndamioText>
                   )}
                   {hasValidEvidence && (
-                    <AndamioText variant="small" className="text-success flex items-center gap-1">
+                    <AndamioText variant="small" className="text-primary flex items-center gap-1">
                       <SuccessIcon className="h-4 w-4" />
                       Evidence ready for submission
                     </AndamioText>
@@ -1195,7 +1195,7 @@ function ContributorDashboardContent() {
                 </div>
 
                 {confirmStatus === "confirmed" && confirmEvent && (
-                  <div className="flex items-center gap-2 text-success">
+                  <div className="flex items-center gap-2 text-primary">
                     <SuccessIcon className="h-4 w-4" />
                     <AndamioText variant="small">
                       Confirmed at slot {confirmEvent.slot}
@@ -1310,7 +1310,7 @@ function ContributorDashboardContent() {
                   key={taskHashStr || task.index}
                   className={`p-4 border rounded-lg transition-colors ${
                     isAcceptedTask
-                      ? "border-success bg-success/5 cursor-default"
+                      ? "border-primary bg-primary/5 cursor-default"
                       : getString(selectedTask?.taskHash) === taskHashStr
                         ? "border-primary bg-primary/5 cursor-pointer"
                         : "hover:border-muted-foreground/50 cursor-pointer"
@@ -1333,26 +1333,26 @@ function ContributorDashboardContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <AndamioText as="span" className={`font-medium ${isAcceptedTask ? "text-success" : ""}`}>
+                        <AndamioText as="span" className={`font-medium ${isAcceptedTask ? "text-primary" : ""}`}>
                           {task.title}
                         </AndamioText>
                         {isAcceptedTask && (
-                          <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                          <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
                             <SuccessIcon className="h-3 w-3 mr-1" />
                             Accepted
                           </AndamioBadge>
                         )}
                       </div>
-                      <AndamioText variant="small" className={isAcceptedTask ? "text-success/70" : ""}>
+                      <AndamioText variant="small" className={isAcceptedTask ? "text-primary/70" : ""}>
                         {getString(task.description)}
                       </AndamioText>
                       {isAcceptedTask && (
-                        <AndamioText variant="small" className="text-success/70">
+                        <AndamioText variant="small" className="text-primary/70">
                           Your reward of {formatLovelace(task.lovelaceAmount ?? "0")} will be claimed with your next commitment
                         </AndamioText>
                       )}
                     </div>
-                    <AndamioBadge variant={isAcceptedTask ? "outline" : "outline"} className={isAcceptedTask ? "border-success text-success" : ""}>
+                    <AndamioBadge variant={isAcceptedTask ? "outline" : "outline"} className={isAcceptedTask ? "border-primary text-primary" : ""}>
                       {formatLovelace(task.lovelaceAmount ?? "0")}
                     </AndamioBadge>
                   </div>
@@ -1391,12 +1391,12 @@ function ContributorDashboardContent() {
             </div>
             {/* Validation feedback */}
             {!hasValidEvidence && (
-              <AndamioText variant="small" className="text-warning">
+              <AndamioText variant="small" className="text-muted-foreground">
                 Please provide evidence describing your approach to this task.
               </AndamioText>
             )}
             {hasValidEvidence && (
-              <AndamioText variant="small" className="text-success flex items-center gap-1">
+              <AndamioText variant="small" className="text-primary flex items-center gap-1">
                 <SuccessIcon className="h-4 w-4" />
                 Evidence ready for submission
               </AndamioText>
@@ -1542,7 +1542,7 @@ function ContributorDashboardContent() {
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success font-bold">4</div>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
             <div>
               <AndamioText className="font-medium">Earn Rewards & Keep Going</AndamioText>
               <AndamioText variant="small">When approved, your rewards become available. Commit to another task to claim them and continue, or claim your project credential to leave with your rewards.</AndamioText>

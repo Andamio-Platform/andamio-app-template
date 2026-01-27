@@ -77,7 +77,7 @@ export function ProvisioningStepIndicator({
               <div
                 className={cn(
                   "absolute left-4 top-9 w-0.5 h-5 transition-colors duration-200",
-                  status === "completed" ? "bg-success" : "bg-border"
+                  status === "completed" ? "bg-primary" : "bg-border"
                 )}
               />
             )}
@@ -90,7 +90,7 @@ export function ProvisioningStepIndicator({
               <span
                 className={cn(
                   "text-sm font-medium transition-colors duration-150",
-                  status === "completed" && "text-success",
+                  status === "completed" && "text-primary",
                   status === "current" && "text-foreground",
                   status === "pending" && "text-muted-foreground",
                   status === "error" && "text-destructive"
@@ -119,7 +119,7 @@ function StepIcon({
 
   if (status === "completed") {
     return (
-      <div className={cn(baseClasses, "bg-success text-success-foreground")}>
+      <div className={cn(baseClasses, "bg-primary text-primary-foreground")}>
         <CompletedIcon className="h-4 w-4" />
       </div>
     );

@@ -359,18 +359,18 @@ export default function ComponentsPage() {
               <h3>Status Colors</h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <div className="h-16 rounded-md bg-success flex items-center justify-center">
-                    <VerifiedIcon className="h-6 w-6 text-success-foreground" />
+                  <div className="h-16 rounded-md bg-primary flex items-center justify-center">
+                    <VerifiedIcon className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Success</AndamioText>
-                  <code className="text-xs text-muted-foreground">text-success</code>
+                  <code className="text-xs text-muted-foreground">text-primary</code>
                 </div>
                 <div className="space-y-2">
-                  <div className="h-16 rounded-md bg-warning flex items-center justify-center">
-                    <WarningIcon className="h-6 w-6 text-warning-foreground" />
+                  <div className="h-16 rounded-md bg-muted flex items-center justify-center">
+                    <WarningIcon className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Warning</AndamioText>
-                  <code className="text-xs text-muted-foreground">text-warning</code>
+                  <code className="text-xs text-muted-foreground">text-muted-foreground</code>
                 </div>
                 <div className="space-y-2">
                   <div className="h-16 rounded-md bg-destructive flex items-center justify-center">
@@ -380,11 +380,11 @@ export default function ComponentsPage() {
                   <code className="text-xs text-muted-foreground">text-destructive</code>
                 </div>
                 <div className="space-y-2">
-                  <div className="h-16 rounded-md bg-info flex items-center justify-center">
-                    <InfoIcon className="h-6 w-6 text-info-foreground" />
+                  <div className="h-16 rounded-md bg-secondary flex items-center justify-center">
+                    <InfoIcon className="h-6 w-6 text-secondary-foreground" />
                   </div>
                   <AndamioText variant="small" className="font-medium text-foreground">Info</AndamioText>
-                  <code className="text-xs text-muted-foreground">text-info</code>
+                  <code className="text-xs text-muted-foreground">text-secondary</code>
                 </div>
               </div>
             </div>

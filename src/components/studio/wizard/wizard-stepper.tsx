@@ -151,7 +151,7 @@ function MobileStepIndicator({
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all",
                   status === "current" && "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2",
-                  status === "completed" && "bg-success text-success-foreground",
+                  status === "completed" && "bg-primary text-primary-foreground",
                   status === "available" && "bg-muted text-muted-foreground hover:bg-accent",
                   status === "locked" && "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                 )}
@@ -214,7 +214,7 @@ function DesktopStepper({
               <div
                 className={cn(
                   "absolute left-5 top-12 w-0.5 h-8",
-                  status === "completed" ? "bg-success" : "bg-border"
+                  status === "completed" ? "bg-primary" : "bg-border"
                 )}
               />
             )}
@@ -235,7 +235,7 @@ function DesktopStepper({
                 className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all",
                   status === "current" && "bg-primary text-primary-foreground shadow-lg shadow-primary/25",
-                  status === "completed" && "bg-success text-success-foreground",
+                  status === "completed" && "bg-primary text-primary-foreground",
                   status === "available" && "bg-muted text-muted-foreground",
                   status === "locked" && "bg-muted/50 text-muted-foreground/50"
                 )}

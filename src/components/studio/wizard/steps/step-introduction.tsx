@@ -163,7 +163,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             animate={{ rotate: 0, scale: 1 }}
             transition={{ type: "spring", damping: 10 }}
           >
-            <TipIcon className="h-8 w-8 text-warning" />
+            <TipIcon className="h-8 w-8 text-muted-foreground" />
           </motion.div>
           <div>
             <h3 className="font-semibold mb-1">The Backwards Design Payoff</h3>

@@ -285,7 +285,7 @@ export default function DraftTasksPage() {
         <AndamioBadge variant="secondary">
           {draftTasks.length} Draft
         </AndamioBadge>
-        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+        <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
           <OnChainIcon className="h-3 w-3 mr-1" />
           {liveTasks.length} Live (DB)
         </AndamioBadge>
@@ -299,9 +299,9 @@ export default function DraftTasksPage() {
 
       {/* Sync Warning - show when on-chain count doesn't match DB live count */}
       {onChainTaskCount > liveTasks.length && (
-        <div className="flex items-center justify-between rounded-lg border border-warning bg-warning/10 p-4">
+        <div className="flex items-center justify-between rounded-lg border border-muted-foreground bg-muted/10 p-4">
           <div className="flex items-center gap-3">
-            <OnChainIcon className="h-5 w-5 text-warning" />
+            <OnChainIcon className="h-5 w-5 text-muted-foreground" />
             <div>
               <AndamioText className="font-medium">Database out of sync</AndamioText>
               <AndamioText variant="small">
@@ -420,7 +420,7 @@ export default function DraftTasksPage() {
                         <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="default" className="bg-success text-success-foreground">
+                        <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
                           <OnChainIcon className="h-3 w-3 mr-1" />
                           On-Chain
                         </AndamioBadge>

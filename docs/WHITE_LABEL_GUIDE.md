@@ -16,7 +16,13 @@ export const BRANDING = {
   description: "Your app description for SEO",
 
   logo: {
-    icon: "ModuleIcon", // Icon component name
+    // Theme-aware SVG logos (recommended)
+    horizontal: "/logos/logo-with-typography.svg",
+    horizontalDark: "/logos/logo-with-typography-dark.svg",
+    stacked: "/logos/logo-with-typography-stacked.svg",
+    stackedDark: "/logos/logo-with-typography-stacked-dark.svg",
+    // Legacy icon reference (for components that still use icons)
+    icon: "ModuleIcon",
     favicon: "/favicon.ico",
     ogImage: "/og-image.png",
   },
@@ -51,25 +57,48 @@ Edit `src/config/marketing.ts`:
 
 ### Step 3: Replace Assets
 
+**Logo files** (in `public/logos/`):
+- `logo-with-typography.svg` - Horizontal logo for light backgrounds
+- `logo-with-typography-dark.svg` - Horizontal logo for dark backgrounds
+- `logo-with-typography-stacked.svg` - Stacked logo for light backgrounds
+- `logo-with-typography-stacked-dark.svg` - Stacked logo for dark backgrounds
+
+**Other assets**:
 - Replace `public/favicon.ico` with your favicon
 - Replace `public/og-image.png` with your social share image (1200x630 recommended)
 
+> **Tip:** Export your logo in SVG format for crisp rendering at all sizes. The sidebar uses the horizontal logo variants.
+
 ### Step 4: Update Colors
 
-Edit `src/styles/globals.css`:
+Edit `src/styles/globals.css`. The template uses the official Andamio brand colors:
 
 ```css
 :root {
-  /* Primary brand color */
-  --primary: oklch(0.55 0.18 YOUR_HUE);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Primary - Scaffold Orange (#FF6B35) */
+  --primary: oklch(0.669 0.199 38.581);
+  --primary-foreground: oklch(1 0 0);
 
-  /* Status colors (optional - sensible defaults provided) */
-  --success: oklch(0.52 0.15 145);
-  --warning: oklch(0.75 0.15 85);
-  --destructive: oklch(0.55 0.2 25);
+  /* Secondary - Foundation Blue (#004E89) */
+  --secondary: oklch(0.387 0.134 250.505);
+  --secondary-foreground: oklch(1 0 0);
+}
+
+.dark {
+  /* Primary - Brighter orange for dark mode */
+  --primary: oklch(0.719 0.174 38.581);
+  --primary-foreground: oklch(0.188 0.013 257.128);
+
+  /* Secondary - Brighter blue for dark mode */
+  --secondary: oklch(0.605 0.155 250.505);
+  --secondary-foreground: oklch(1 0 0);
 }
 ```
+
+**To use your own brand colors:**
+1. Convert your hex color to OKLCH using a tool like [oklch.com](https://oklch.com)
+2. Replace the hue value (38.581 for orange, 250.505 for blue) with your brand hue
+3. Adjust lightness (first value) for light/dark mode contrast
 
 ### Step 5: Update Environment
 
@@ -99,14 +128,15 @@ NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="your-policy-id"
 
 ### Should Change
 
-- [ ] `src/styles/globals.css` - Color palette (at minimum `--primary`)
+- [ ] `public/logos/*.svg` - Logo files (4 variants for light/dark themes)
+- [ ] `src/styles/globals.css` - Color palette (`--primary`, `--secondary`)
 - [ ] `public/og-image.png` - Social sharing image
 - [ ] `src/config/navigation.ts` - Sidebar structure (if needed)
 
 ### Consider Changing
 
 - [ ] `src/config/features.ts` - Enable/disable features
-- [ ] Font in `globals.css` - Typography
+- [ ] Font in `layout.tsx` + `globals.css` - Typography (default: Inter)
 - [ ] Component names (`Andamio*` → `YourBrand*`) - for complete rebrand only
 
 ---
@@ -121,6 +151,10 @@ NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="your-policy-id"
 | `tagline` | Sidebar subtitle | "Learning Platform" |
 | `fullTitle` | Page title | "MyApp - Learning Platform" |
 | `description` | SEO description | "Build skills with..." |
+| `logo.horizontal` | Logo for light mode (sidebar) | "/logos/logo-light.svg" |
+| `logo.horizontalDark` | Logo for dark mode (sidebar) | "/logos/logo-dark.svg" |
+| `logo.stacked` | Stacked logo for light mode | "/logos/logo-stacked-light.svg" |
+| `logo.stackedDark` | Stacked logo for dark mode | "/logos/logo-stacked-dark.svg" |
 | `links.website` | Main website | "https://myapp.io" |
 | `links.docs` | Documentation site | "https://docs.myapp.io" |
 | `support.email` | Support contact | "help@myapp.io" |
@@ -140,13 +174,22 @@ NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="your-policy-id"
 
 ### Color Variables
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `--primary` | Buttons, links, active states | Sky blue |
-| `--success` | Success messages, completed | Green |
-| `--warning` | Warnings, pending states | Yellow |
+| Variable | Purpose | Default (Andamio Brand) |
+|----------|---------|-------------------------|
+| `--primary` | Buttons, links, success/completed states | Scaffold Orange (#FF6B35) |
+| `--secondary` | Info states, supporting UI elements | Foundation Blue (#004E89) |
 | `--destructive` | Errors, delete actions | Red |
-| `--muted` | Disabled, secondary text | Gray |
+| `--muted` | Disabled, secondary text, pending states | Gray |
+| `--accent` | Subtle highlights | Warm orange tint |
+
+> **Note:** The Andamio brand uses a simplified two-color palette (Orange + Blue). Status indicators use `primary` for success/completed and `secondary` for info states, rather than separate green/blue semantic colors.
+
+### Font
+
+| Setting | Default | File |
+|---------|---------|------|
+| Font family | Inter | `src/app/layout.tsx` |
+| CSS variable | `--font-inter` | `src/styles/globals.css` |
 
 ---
 
@@ -203,7 +246,9 @@ export const metadata = getPageMetadata("Courses", "Browse available courses");
 
 ### Q: How do I change the font?
 
-**A:** Edit `src/app/layout.tsx`:
+**A:** The template uses **Inter** by default. To change it:
+
+1. Edit `src/app/layout.tsx`:
 
 ```typescript
 import { Your_Font } from "next/font/google";
@@ -211,10 +256,20 @@ import { Your_Font } from "next/font/google";
 const yourFont = Your_Font({
   subsets: ["latin"],
   variable: "--font-your-font",
+  weight: ["300", "400", "500", "600", "700"],
 });
+
+// Update the html className to use your font variable
+<html className={`${yourFont.variable} ...`}>
 ```
 
-Then update `globals.css` to use your font variable.
+2. Update `src/styles/globals.css`:
+
+```css
+@theme {
+  --font-sans: var(--font-your-font), ui-sans-serif, system-ui, sans-serif, ...;
+}
+```
 
 ### Q: Can I remove features?
 
@@ -238,7 +293,7 @@ Then check `isFeatureEnabled("projects")` in your components.
 
 - Browser tab title
 - SEO metadata (title, description, OG image)
-- Sidebar header
+- **Sidebar logo** (theme-aware, switches between light/dark variants)
 - Footer brand text
 - Transaction documentation links
 - Support email references

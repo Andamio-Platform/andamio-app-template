@@ -165,7 +165,7 @@ export default function Home() {
           ============================================= */}
       <section className="border-t bg-muted/50 px-6 py-12">
         <div className="mx-auto flex max-w-3xl items-start gap-4">
-          <TestIcon className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+          <TestIcon className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
           <div>
             <AndamioText className="font-medium">{MARKETING.preprodWarning.title}</AndamioText>
             <AndamioText variant="small" className="mt-1">

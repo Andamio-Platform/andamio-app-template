@@ -50,19 +50,19 @@ const STATE_CONFIG: Record<
   pending: {
     label: "Pending",
     variant: "outline",
-    className: "border-warning text-warning",
+    className: "border-muted-foreground text-muted-foreground",
     Icon: PendingIcon,
   },
   confirmed: {
     label: "Confirmed",
     variant: "outline",
-    className: "border-info text-info",
+    className: "border-secondary text-secondary",
     Icon: VerifiedIcon,
   },
   updated: {
     label: "Complete",
     variant: "outline",
-    className: "border-success text-success",
+    className: "border-primary text-primary",
     Icon: SuccessIcon,
   },
   failed: {

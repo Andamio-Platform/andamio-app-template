@@ -34,7 +34,7 @@ export function CourseStatusBadge({
 }: CourseStatusBadgeProps) {
   if (isPublished) {
     return (
-      <AndamioBadge variant="outline" className={`text-success border-success ${className ?? ""}`}>
+      <AndamioBadge variant="outline" className={`text-primary border-primary ${className ?? ""}`}>
         {showIcon && <SuccessIcon className="h-3 w-3 mr-1" />}
         Published
       </AndamioBadge>
@@ -77,7 +77,7 @@ export function CourseStatusIcon({
   const sizeClass = iconSizes[size];
 
   if (isPublished) {
-    return <SuccessIcon className={`${sizeClass} text-success ${className ?? ""}`} />;
+    return <SuccessIcon className={`${sizeClass} text-primary ${className ?? ""}`} />;
   }
 
   return <LessonIcon className={`${sizeClass} text-muted-foreground ${className ?? ""}`} />;

@@ -28,7 +28,15 @@ export const BRANDING = {
 
   /** URL paths for logos/icons */
   logo: {
-    /** Icon used in sidebar header (reference to icon component) */
+    /** Horizontal logo for light backgrounds */
+    horizontal: "/logos/logo-with-typography.svg",
+    /** Horizontal logo for dark backgrounds */
+    horizontalDark: "/logos/logo-with-typography-dark.svg",
+    /** Stacked logo for light backgrounds */
+    stacked: "/logos/logo-with-typography-stacked.svg",
+    /** Stacked logo for dark backgrounds */
+    stackedDark: "/logos/logo-with-typography-stacked-dark.svg",
+    /** Legacy icon reference (for components that still use icons) */
     icon: "ModuleIcon",
     /** Favicon path */
     favicon: "/favicon.ico",

@@ -150,7 +150,7 @@ export default function ModuleLessonsPage() {
         <div className="flex items-center gap-2">
           <AndamioSectionHeader title="Student Learning Targets & Lessons" />
           {onChainModule && (
-            <AndamioBadge variant="outline" className="text-success border-success">
+            <AndamioBadge variant="outline" className="text-primary border-primary">
               <OnChainIcon className="h-3 w-3 mr-1" />
               On-chain
             </AndamioBadge>

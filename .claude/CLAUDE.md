@@ -264,7 +264,7 @@ import { CredentialIcon, SLTIcon, CourseIcon, SuccessIcon } from "~/components/i
 
 <CredentialIcon className="h-4 w-4" />
 <SLTIcon className="h-4 w-4" />
-<SuccessIcon className="h-4 w-4 text-success" />
+<SuccessIcon className="h-4 w-4 text-primary" />
 ```
 
 ```typescript
@@ -462,11 +462,11 @@ All colors are defined in `src/styles/globals.css` with full light/dark mode sup
 - `muted` / `muted-foreground` - Muted/subtle elements
 - `accent` / `accent-foreground` - Accent/highlight elements
 
-**Status Colors**:
+**Status Colors** (Andamio brand uses primary/secondary for status):
+- `primary` - Success states, completed items (Scaffold Orange)
+- `secondary` - Info/pending states (Foundation Blue)
+- `muted` - Draft/pending states, secondary info
 - `destructive` / `destructive-foreground` - Errors, destructive actions (red)
-- `success` / `success-foreground` - Success states, completed items (green)
-- `warning` / `warning-foreground` - Warnings, pending states (yellow/amber)
-- `info` / `info-foreground` - Informational states, neutral actions (blue)
 
 **Utility Colors**:
 - `border` - Borders and dividers (use for ALL borders including inputs)
@@ -483,18 +483,19 @@ All colors are defined in `src/styles/globals.css` with full light/dark mode sup
 
 ### Color Usage Examples
 
-**✅ CORRECT - Using semantic colors**:
+**✅ CORRECT - Using brand colors**:
 ```typescript
-// Success state
-<CheckCircle className="h-4 w-4 text-success" />
-<span className="text-success">Success!</span>
+// Success/completed state (primary = Scaffold Orange)
+<CheckCircle className="h-4 w-4 text-primary" />
+<span className="text-primary">Success!</span>
 
-// Warning state
-<AlertTriangle className="h-4 w-4 text-warning" />
-<Badge variant="outline">Warning</Badge>
+// Info/in-progress state (secondary = Foundation Blue)
+<Clock className="h-4 w-4 text-secondary" />
+<Badge variant="secondary">In Progress</Badge>
 
-// Info/pending state
-<Clock className="h-4 w-4 text-info" />
+// Pending/draft state (muted)
+<AlertTriangle className="h-4 w-4 text-muted-foreground" />
+<Badge variant="outline">Pending</Badge>
 
 // Error/destructive state
 <XCircle className="h-4 w-4 text-destructive" />
@@ -518,41 +519,32 @@ All colors are defined in `src/styles/globals.css` with full light/dark mode sup
 
 ### When to Use Which Color
 
-**Success (green)**:
+**Primary (Scaffold Orange)** - The Andamio "action" color:
 - Completed tasks/assignments
 - Successful operations
 - Active/connected states
-- Checkmarks and confirmations
+- Links and hyperlinks
+- Primary call-to-action buttons
+- Active navigation items
 
-**Warning (yellow/amber)**:
-- Pending approvals
-- Cautionary information
-- Non-critical alerts
-- In-progress states
-
-**Info (blue)**:
+**Secondary (Foundation Blue)** - The Andamio "supporting" color:
 - Informational messages
+- In-progress/syncing states
 - Neutral status indicators
 - Help text
-- Pending/awaiting states
+
+**Muted** - Neutral/inactive states:
+- Placeholder text
+- Helper text
+- Draft/pending states
+- Disabled states
+- Secondary information
 
 **Destructive (red)**:
 - Errors and failures
 - Destructive actions (delete, remove)
 - Critical alerts
 - Denied/rejected states
-
-**Primary (theme-dependent)**:
-- Links and hyperlinks
-- Primary call-to-action buttons
-- Active navigation items
-- Brand-related elements
-
-**Muted**:
-- Placeholder text
-- Helper text
-- Disabled states
-- Secondary information
 
 ### Adding New Semantic Colors
 

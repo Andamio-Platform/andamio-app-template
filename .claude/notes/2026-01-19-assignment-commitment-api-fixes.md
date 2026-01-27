@@ -110,3 +110,111 @@ const hasCompletedOnChain = onChainStudent?.completed.includes(sltHash);
   - Display on-chain evidence hash in sync flow UI for verification
 
 **Result**: Users with orphaned on-chain commitments now see the "Sync Required" UI and can re-create their DB record.
+
+---
+
+## Update: January 27, 2026 - V2 Merged API Integration
+
+**API Update**: Gateway team deployed merged commitment endpoints that use on-chain data as source of truth.
+
+### Breaking Change
+- Removed: `POST /api/v2/course/shared/commitment/get` (was DB-only)
+- Use instead: `POST /api/v2/course/student/assignment-commitment/get` (merged)
+
+### New Response Shape
+
+The commitment endpoints now return a `source` field:
+
+| Value | Meaning |
+|-------|---------|
+| `"merged"` | Both on-chain AND DB data present |
+| `"chain_only"` | On-chain commitment exists, no DB content yet |
+| `"db_only"` | DB record exists but not confirmed on-chain (pending) |
+
+**Response structure**:
+```typescript
+interface CommitmentApiResponse {
+  data?: {
+    course_id?: string;
+    module_code?: string;
+    slt_hash?: string;
+    on_chain_status?: string;
+    on_chain_content?: string;  // Evidence hash from chain
+    content?: {
+      commitment_status?: string;
+      evidence?: Record<string, unknown>;  // Rich evidence from DB
+      assignment_evidence_hash?: string;
+    };
+    source?: "merged" | "chain_only" | "db_only";
+  };
+  warning?: string;
+}
+```
+
+### Frontend Changes
+
+**Files updated**:
+- `src/components/learner/assignment-commitment.tsx`:
+  - Updated `CommitmentApiResponse` interface to match V2 merged response
+  - Updated `Commitment` internal type to include `source` and on-chain fields
+  - Changed sync flow condition from `hasOnChainCommitment && !commitment` to `commitment?.source === "chain_only"`
+  - Removed unused `hasOnChainCommitment` variable (now handled by API)
+  - Display `commitment.onChainContent` instead of `onChainStudent.currentContent`
+
+- `src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`:
+  - Updated endpoint from `/shared/assignment-commitment/get` to `/student/assignment-commitment/get`
+  - Updated request body field names to match V2 API
+
+**Simplified logic**:
+- Before: Frontend fetched on-chain state separately, then checked `hasOnChainCommitment && !commitment` to show sync UI
+- After: API returns `source: "chain_only"` when on-chain exists but no DB, frontend just checks `commitment?.source === "chain_only"`
+
+### Result
+
+Users with on-chain commitments but missing DB records now:
+1. See "Evidence Sync Required" banner (secondary color)
+2. See on-chain evidence hash for verification
+3. Can enter evidence and sync to database
+4. After sync, API returns `source: "merged"` and normal UI appears
+
+---
+
+## Update: January 27, 2026 - Breaking Change: slt_hash Required
+
+**API Breaking Change**: The commitment endpoint now requires `slt_hash` instead of `module_code`.
+
+### Why?
+The previous implementation compared `module_code` (human-readable like "101") with on-chain `slts_hash` (cryptographic hash). These are completely different values and would never match.
+
+### Old Request (no longer works)
+```json
+{
+  "course_id": "...",
+  "module_code": "101"
+}
+```
+
+### New Request (required)
+```json
+{
+  "course_id": "...",
+  "slt_hash": "ede8491c9295506bcd7a6462e4e5b4d681cf4e13bce5fdd0f6b2fd95621971ee",
+  "course_module_code": "101"
+}
+```
+
+### Frontend Changes
+
+**`src/components/learner/assignment-commitment.tsx`**:
+- Changed request body: `module_code` → `slt_hash` (required), added `course_module_code` (optional)
+- Added guard: skip API call if `sltHash` prop is null
+- Added `sltHash` to useCallback dependencies
+
+**`src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`**:
+- Changed request body: `module_code` → `slt_hash`, `access_token_alias` removed
+- Uses `commitment.sltHash` from the TeacherAssignmentCommitment type
+
+### Note
+The `sltHash` is already available:
+- In `AssignmentCommitment` component: passed as prop from parent (computed from SLTs or fetched from module)
+- In teacher page: available on `TeacherAssignmentCommitment.sltHash` from the list endpoint

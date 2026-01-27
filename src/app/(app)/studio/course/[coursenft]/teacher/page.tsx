@@ -238,16 +238,18 @@ export default function InstructorDashboardPage() {
     setDetailedCommitment(null);
 
     try {
-      // DB API: POST /course/shared/assignment-commitment/get
+      // V2 Merged API: POST /course/student/assignment-commitment/get
+      // Returns merged on-chain + DB data (source: "merged", "chain_only", or "db_only")
+      // Note: slt_hash is required for on-chain lookup
       const requestBody = {
         course_id: courseNftPolicyId,
-        course_module_code: commitment.moduleCode,
-        participant_alias: commitment.studentAlias,
+        slt_hash: commitment.sltHash,  // Required for on-chain lookup
+        course_module_code: commitment.moduleCode,  // Optional for DB enrichment
       };
       console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
 
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/shared/assignment-commitment/get`,
+        `/api/gateway/api/v2/course/student/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

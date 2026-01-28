@@ -122,6 +122,8 @@ export interface ModuleDraft {
 
   /** Student Learning Targets */
   slts: SLTDraft[];
+  /** Whether SLTs are locked (module is approved/on-chain) - don't send in save requests */
+  _sltsLocked?: boolean;
 
   /** Module assignment (null means no assignment) */
   assignment: AssignmentDraft | null;

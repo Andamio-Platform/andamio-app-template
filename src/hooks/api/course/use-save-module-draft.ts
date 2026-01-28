@@ -13,14 +13,19 @@ import { courseModuleKeys } from "./use-course-module";
 import type { ModuleDraft, SaveModuleDraftResult, SLTDraft } from "~/stores/module-draft-store";
 
 // =============================================================================
-// Request/Response Types (until generated types are available)
+// Request/Response Types
 // =============================================================================
 
 /**
- * SLT input for aggregate update
+ * SLT input for aggregate update.
+ * SLTs are keyed by (course_id, module_code, slt_index).
+ *
+ * API behavior:
+ * - If slt_index included: UPDATE existing SLT with that index
+ * - If slt_index omitted: CREATE new SLT (server assigns index)
  */
 interface SltInput {
-  /** If provided: update existing. If omitted: create new */
+  /** 1-based index. Include for updates, omit for creates. */
   slt_index?: number;
   /** SLT text content */
   slt_text: string;
@@ -70,7 +75,7 @@ interface IntroductionInput {
  * - Omitted fields = unchanged (allows partial updates)
  * - Use `delete_assignment: true` to remove assignment
  * - Use `delete_introduction: true` to remove introduction
- * - SLTs: send full array in desired order, server diffs/reorders
+ * - SLTs: send full array with slt_index, server diffs/reorders
  * - Lessons: send full array keyed by slt_index, server diffs
  */
 interface SaveModuleDraftRequest {
@@ -83,7 +88,7 @@ interface SaveModuleDraftRequest {
   image_url?: string;
   video_url?: string;
 
-  // SLTs - full ordered list (server diffs against current state)
+  // SLTs - full ordered list with explicit indices (server diffs against current state)
   // If omitted, SLTs unchanged. If empty array, all SLTs deleted.
   // IMPORTANT: Can ONLY be modified when module status is DRAFT
   slts?: SltInput[];
@@ -178,11 +183,17 @@ interface SaveModuleDraftResponse {
 // =============================================================================
 
 /**
- * Transform draft SLTs to API format
+ * Transform draft SLTs to API format.
  *
- * For existing SLTs: include slt_index
- * For new SLTs: omit slt_index (server will assign)
- * For deleted SLTs: don't include in array (server will delete missing)
+ * API behavior for slt_index:
+ * - If slt_index included: UPDATE existing SLT with that index
+ * - If slt_index omitted: CREATE new SLT (server assigns index)
+ *
+ * We use the _isNew flag to determine whether to include slt_index:
+ * - New SLTs (_isNew: true): omit slt_index → server creates
+ * - Existing SLTs: include slt_index → server updates
+ *
+ * Deleted SLTs are filtered out.
  */
 function transformSltsForApi(slts: SLTDraft[]): SltInput[] {
   return slts
@@ -191,26 +202,27 @@ function transformSltsForApi(slts: SLTDraft[]): SltInput[] {
       const input: SltInput = {
         slt_text: slt.sltText,
       };
-
-      // Include index for existing SLTs (helps server identify them)
-      // For new SLTs, server will assign index based on position in array
-      if (!slt._isNew && slt.id !== undefined) {
+      // Only include slt_index for existing SLTs (updates)
+      // Omit for new SLTs so server creates them
+      if (!slt._isNew) {
         input.slt_index = slt.moduleIndex;
       }
-
       return input;
     });
 }
 
 /**
- * Transform draft to API request body
+ * Transform draft to API request body.
  *
  * Handles the aggregate-update endpoint semantics:
  * - Omitted fields = unchanged
  * - delete_assignment: true = delete existing assignment
  * - delete_introduction: true = delete existing introduction
- * - slts array = full ordered list (server diffs)
- * - lessons array = full list (server diffs)
+ * - slts array = full ordered list with indices (server diffs)
+ * - lessons array = full list keyed by slt_index (server diffs)
+ *
+ * When _sltsLocked is true (module is approved/active), SLTs are excluded
+ * from the request to prevent SLT_LOCKED errors.
  */
 function transformDraftToRequest(draft: ModuleDraft): SaveModuleDraftRequest {
   const request: SaveModuleDraftRequest = {
@@ -224,15 +236,16 @@ function transformDraftToRequest(draft: ModuleDraft): SaveModuleDraftRequest {
   request.image_url = draft.imageUrl;
   request.video_url = draft.videoUrl;
 
-  // Include SLTs (even if unchanged - server will diff)
-  request.slts = transformSltsForApi(draft.slts);
+  // Only include SLTs if not locked (module is in DRAFT status)
+  // After approval, SLTs cannot be modified
+  if (!draft._sltsLocked) {
+    request.slts = transformSltsForApi(draft.slts);
+  }
 
   // Handle assignment: create/update or delete
   if (draft._deleteAssignment) {
-    // Explicitly delete assignment
     request.delete_assignment = true;
   } else if (draft.assignment !== null && (draft.assignment._isNew || draft.assignment._isModified)) {
-    // Create or update assignment (only if it has changes)
     request.assignment = {
       title: draft.assignment.title,
       description: draft.assignment.description,
@@ -241,14 +254,11 @@ function transformDraftToRequest(draft: ModuleDraft): SaveModuleDraftRequest {
       video_url: draft.assignment.videoUrl,
     };
   }
-  // If assignment exists but no changes, omit from request (API will keep it unchanged)
 
   // Handle introduction: create/update or delete
   if (draft._deleteIntroduction) {
-    // Explicitly delete introduction
     request.delete_introduction = true;
   } else if (draft.introduction !== null && (draft.introduction._isNew || draft.introduction._isModified)) {
-    // Create or update introduction (only if it has changes)
     request.introduction = {
       title: draft.introduction.title,
       description: draft.introduction.description,
@@ -257,14 +267,9 @@ function transformDraftToRequest(draft: ModuleDraft): SaveModuleDraftRequest {
       video_url: draft.introduction.videoUrl,
     };
   }
-  // If introduction exists but no changes, omit from request (API will keep it unchanged)
 
-  // Include lessons (only if there are changes)
-  const changedLessons = Array.from(draft.lessons.entries()).filter(
-    ([, lesson]) => lesson._isNew || lesson._isModified
-  );
-  if (changedLessons.length > 0 || draft.lessons.size > 0) {
-    // Send all lessons for proper diffing
+  // Include lessons if any exist
+  if (draft.lessons.size > 0) {
     request.lessons = Array.from(draft.lessons.entries()).map(
       ([sltIndex, lesson]) => ({
         slt_index: sltIndex,
@@ -313,7 +318,9 @@ function transformResponse(response: SaveModuleDraftResponse): SaveModuleDraftRe
 // =============================================================================
 
 /**
- * Hook for saving module draft via aggregate-update endpoint
+ * Hook for saving module draft via aggregate-update endpoint.
+ *
+ * On success, invalidates React Query cache to trigger refetch of fresh data.
  *
  * @example
  * ```tsx
@@ -337,7 +344,19 @@ export function useSaveModuleDraft() {
     mutationFn: async (draft: ModuleDraft): Promise<SaveModuleDraftResult> => {
       const request = transformDraftToRequest(draft);
 
-      // POST /api/v2/course/teacher/course-module/update (aggregate-update)
+      // Debug: log what we're sending
+      console.log("[useSaveModuleDraft] Saving draft:", {
+        courseId: draft.courseId,
+        moduleCode: draft.moduleCode,
+        sltsLocked: draft._sltsLocked,
+        sltCount: draft.slts.length,
+        slts: draft._sltsLocked ? "(locked - not sending)" : draft.slts.map(s => ({ index: s.moduleIndex, text: s.sltText?.slice(0, 30), isNew: s._isNew, isDeleted: s._isDeleted })),
+        hasAssignment: !!draft.assignment,
+        assignmentIsNew: draft.assignment?._isNew,
+        assignmentIsModified: draft.assignment?._isModified,
+      });
+      console.log("[useSaveModuleDraft] Request body:", JSON.stringify(request, null, 2));
+
       const response = await authenticatedFetch(
         `/api/gateway/api/v2/course/teacher/course-module/update`,
         {
@@ -365,11 +384,13 @@ export function useSaveModuleDraft() {
       }
 
       const responseData = (await response.json()) as SaveModuleDraftResponse;
+      console.log("[useSaveModuleDraft] Response:", responseData);
       return transformResponse(responseData);
     },
+
     onSuccess: (result, draft) => {
       if (result.success) {
-        // Invalidate module queries to refetch fresh data
+        // Invalidate cache to trigger refetch with fresh server data
         void queryClient.invalidateQueries({
           queryKey: courseModuleKeys.list(draft.courseId),
         });
@@ -382,26 +403,4 @@ export function useSaveModuleDraft() {
       }
     },
   });
-}
-
-/**
- * Create a save function for the Zustand store
- *
- * This wraps useSaveModuleDraft in a function signature compatible
- * with the store's _saveFn interface.
- *
- * @example
- * ```tsx
- * const saveModuleDraft = useSaveModuleDraft();
- * const saveFn = createSaveFn(saveModuleDraft.mutateAsync);
- *
- * useEffect(() => {
- *   store.setSaveFn(saveFn);
- * }, [saveFn]);
- * ```
- */
-export function createSaveFn(
-  mutateAsync: (draft: ModuleDraft) => Promise<SaveModuleDraftResult>
-): (draft: ModuleDraft) => Promise<SaveModuleDraftResult> {
-  return mutateAsync;
 }

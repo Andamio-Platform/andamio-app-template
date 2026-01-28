@@ -1,10 +1,13 @@
 /**
- * Integration hook connecting Zustand draft store with React Query
+ * Module Draft Hook (Refactored)
  *
- * This hook:
- * 1. Initializes the store from React Query data
- * 2. Injects the save function from useSaveModuleDraft
- * 3. Provides refetch capability after successful saves
+ * Clean integration between module-scoped Zustand store and React Query.
+ *
+ * Key improvements over previous version:
+ * - No _saveFn injection - save function passed as argument
+ * - No useMemo hacks for stable action references
+ * - No stale closure workarounds
+ * - Store is module-scoped (supports multiple modules)
  *
  * @example
  * ```tsx
@@ -14,23 +17,20 @@
  *     isDirty,
  *     isSaving,
  *     addSlt,
- *     setAssignment,
  *     saveAndSync,
  *   } = useModuleDraft(courseId, moduleCode, false);
  *
- *   const handleStepChange = async () => {
- *     if (isDirty) {
- *       await saveAndSync();
- *     }
+ *   const handleSave = async () => {
+ *     await saveAndSync();
  *   };
  * }
  * ```
  */
 
 import { useEffect, useCallback, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useModuleDraftStore,
+  useStore,
   selectDraft,
   selectIsDirty,
   selectIsSaving,
@@ -39,8 +39,22 @@ import {
   selectAssignment,
   selectIntroduction,
   selectLessons,
+  selectInitialize,
+  selectSetMetadata,
+  selectAddSlt,
+  selectUpdateSlt,
+  selectDeleteSlt,
+  selectReorderSlts,
+  selectSetAssignment,
+  selectSetIntroduction,
+  selectSetLesson,
+  selectSave,
+  selectMarkClean,
+  selectDiscard,
+  selectUpdateLockState,
+  clearModuleDraftStore,
 } from "~/stores/module-draft-store";
-import { useTeacherCourseModules, courseModuleKeys } from "~/hooks/api/course/use-course-module";
+import { useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
 import { useSaveModuleDraft } from "~/hooks/api/course/use-save-module-draft";
 import type { SaveModuleDraftResult } from "~/stores/module-draft-store";
 
@@ -57,129 +71,141 @@ export function useModuleDraft(
   isNewModule: boolean,
   options: UseModuleDraftOptions = {}
 ) {
-  const queryClient = useQueryClient();
+  // Get module-scoped store (creates if doesn't exist)
+  const store = useModuleDraftStore(courseId, moduleCode);
 
-  // Store state and actions
-  const store = useModuleDraftStore();
-  const draft = useModuleDraftStore(selectDraft);
-  const isDirty = useModuleDraftStore(selectIsDirty);
-  const isSaving = useModuleDraftStore(selectIsSaving);
-  const lastError = useModuleDraftStore(selectLastError);
-  const slts = useModuleDraftStore(selectSlts);
-  const assignment = useModuleDraftStore(selectAssignment);
-  const introduction = useModuleDraftStore(selectIntroduction);
-  const lessons = useModuleDraftStore(selectLessons);
+  // Subscribe to store state with selectors
+  const draft = useStore(store, selectDraft);
+  const isDirty = useStore(store, selectIsDirty);
+  const isSaving = useStore(store, selectIsSaving);
+  const lastError = useStore(store, selectLastError);
+  const slts = useStore(store, selectSlts);
+  const assignment = useStore(store, selectAssignment);
+  const introduction = useStore(store, selectIntroduction);
+  const lessons = useStore(store, selectLessons);
 
-  // React Query data
-  const { data: modules, refetch: refetchModules } = useTeacherCourseModules(courseId);
+  // Get actions (these are stable - no memoization needed)
+  const initialize = useStore(store, selectInitialize);
+  const setMetadata = useStore(store, selectSetMetadata);
+  const addSlt = useStore(store, selectAddSlt);
+  const updateSlt = useStore(store, selectUpdateSlt);
+  const deleteSlt = useStore(store, selectDeleteSlt);
+  const reorderSlts = useStore(store, selectReorderSlts);
+  const setAssignment = useStore(store, selectSetAssignment);
+  const setIntroduction = useStore(store, selectSetIntroduction);
+  const setLesson = useStore(store, selectSetLesson);
+  const save = useStore(store, selectSave);
+  const markClean = useStore(store, selectMarkClean);
+  const discard = useStore(store, selectDiscard);
+  const updateLockState = useStore(store, selectUpdateLockState);
 
-  // Save mutation
+  // React Query data (for initial load only - saves don't refetch)
+  const { data: modules } = useTeacherCourseModules(courseId);
+
+  // Save mutation (provides the actual API call)
   const saveModuleDraft = useSaveModuleDraft();
 
-  // Track initialization to avoid re-initializing on every render
+  // Track initialization
   const isInitializedRef = useRef(false);
-  const lastModuleCodeRef = useRef<string | null>(null);
 
   // Find the specific module from the list
-  const courseModule = modules?.find((m) => m.moduleCode === moduleCode) ?? null;
+  const courseModule =
+    modules?.find((m) => m.moduleCode === moduleCode) ?? null;
 
   // Initialize store when data is available
   useEffect(() => {
     // Skip if already initialized for this module
-    if (isInitializedRef.current && lastModuleCodeRef.current === moduleCode) {
+    if (isInitializedRef.current) {
       return;
     }
 
     // For new modules, initialize immediately with empty state
     if (isNewModule) {
-      store.init(courseId, moduleCode, null, true);
+      initialize(null, true);
       isInitializedRef.current = true;
-      lastModuleCodeRef.current = moduleCode;
       return;
     }
 
     // For existing modules, wait for data to load
     if (modules && courseModule) {
-      store.init(courseId, moduleCode, courseModule, false);
+      initialize(courseModule, false);
       isInitializedRef.current = true;
-      lastModuleCodeRef.current = moduleCode;
     }
-  }, [courseId, moduleCode, isNewModule, modules, courseModule, store]);
+  }, [isNewModule, modules, courseModule, initialize]);
 
-  // Inject save function into store
-  useEffect(() => {
-    store.setSaveFn(saveModuleDraft.mutateAsync);
-  }, [store, saveModuleDraft.mutateAsync]);
-
-  // Reset initialization tracking when module changes
-  useEffect(() => {
-    if (lastModuleCodeRef.current !== moduleCode) {
-      isInitializedRef.current = false;
-    }
-  }, [moduleCode]);
-
-  // Cleanup on unmount
+  // Reset initialization when module changes
   useEffect(() => {
     return () => {
-      // Optionally reset store on unmount
-      // store.reset();
+      isInitializedRef.current = false;
     };
-  }, []);
+  }, [courseId, moduleCode]);
+
+  // Update lock state when server status changes (e.g., after approval or return to draft)
+  // This ensures _sltsLocked is updated without re-initializing the entire draft
+  useEffect(() => {
+    if (courseModule?.status) {
+      console.log("[useModuleDraft] Server status changed:", courseModule.status);
+      updateLockState(courseModule.status);
+    }
+  }, [courseModule?.status, updateLockState]);
+
+  // Store options in ref to avoid stale closures in saveAndSync
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   /**
    * Save and sync with React Query
    *
    * This is the primary save function for components. It:
-   * 1. Calls the store's save function
-   * 2. Invalidates React Query cache
-   * 3. Refetches fresh data
-   * 4. Re-initializes the store with new server state
+   * 1. Calls the store's save action with the mutation function
+   * 2. On success, marks the draft as clean (no refetch needed - local state is correct)
+   * 3. The mutation's onSuccess will invalidate React Query cache for background refresh
    */
   const saveAndSync = useCallback(async (): Promise<boolean> => {
-    if (!isDirty) {
+    // Check current state directly from store (avoids stale closures)
+    const currentState = store.getState();
+    if (!currentState.isDirty) {
       return true; // Nothing to save
     }
 
-    const success = await store.save();
+    // Pass the mutation function to save - store doesn't hold it
+    const success = await save(saveModuleDraft.mutateAsync);
 
     if (success) {
-      // Invalidate and refetch
-      await queryClient.invalidateQueries({
-        queryKey: courseModuleKeys.teacherList(courseId),
-      });
+      // Mark the draft as clean - no need to refetch since local state is correct
+      markClean();
 
-      // Refetch to get updated server state
-      const { data: freshModules } = await refetchModules();
-      const freshModule = freshModules?.find((m) => m.moduleCode === moduleCode) ?? null;
-
-      // Re-initialize store with fresh server state
-      if (freshModule) {
-        store.init(courseId, moduleCode, freshModule, isNewModule);
+      // Get result from store for callback
+      const result = store.getState().lastSaveResult;
+      if (result) {
+        optionsRef.current.onSaveSuccess?.(result);
       }
-
-      options.onSaveSuccess?.(store.lastSaveResult!);
     } else {
-      options.onSaveError?.(store.lastError ?? "Save failed");
+      const error = store.getState().lastError ?? "Save failed";
+      optionsRef.current.onSaveError?.(error);
     }
 
     return success;
   }, [
-    isDirty,
     store,
-    queryClient,
-    courseId,
-    refetchModules,
-    moduleCode,
-    isNewModule,
-    options,
+    save,
+    saveModuleDraft.mutateAsync,
+    markClean,
   ]);
 
   /**
    * Discard changes and reset to server state
    */
   const discardChanges = useCallback(() => {
-    store.discard();
-  }, [store]);
+    discard();
+  }, [discard]);
+
+  /**
+   * Clean up store when done (call on unmount if desired)
+   */
+  const cleanup = useCallback(() => {
+    clearModuleDraftStore(courseId, moduleCode);
+  }, [courseId, moduleCode]);
 
   return {
     // State
@@ -200,25 +226,22 @@ export function useModuleDraft(
     isNewModule,
     courseModule,
 
-    // Metadata actions
-    setMetadata: store.setMetadata,
-
-    // SLT actions
-    addSlt: store.addSlt,
-    updateSlt: store.updateSlt,
-    deleteSlt: store.deleteSlt,
-    reorderSlts: store.reorderSlts,
-
-    // Content actions
-    setAssignment: store.setAssignment,
-    setIntroduction: store.setIntroduction,
-    setLesson: store.setLesson,
+    // Actions (stable references from store)
+    setMetadata,
+    addSlt,
+    updateSlt,
+    deleteSlt,
+    reorderSlts,
+    setAssignment,
+    setIntroduction,
+    setLesson,
 
     // Persistence
     saveAndSync,
     discardChanges,
+    cleanup,
 
-    // Raw store access (for advanced use cases)
+    // Direct store access (for advanced use cases)
     store,
   };
 }

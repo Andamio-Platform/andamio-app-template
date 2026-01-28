@@ -19,7 +19,7 @@
  * ```
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
@@ -588,6 +588,8 @@ export function useTeacherCourseModules(courseId: string | undefined) {
       return sortModulesByCode(modules);
     },
     enabled: !!courseId && isAuthenticated,
+    // Keep previous data visible during refetch to prevent UI flicker
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -884,11 +886,12 @@ export function useUpdateCourseModuleStatus() {
     }: {
       courseId: string;
       moduleCode: string;
-      status: string;
+      status: "DRAFT" | "APPROVED";
       /** Required when status is "APPROVED" */
       sltHash?: string;
     }) => {
-      // Endpoint: POST /course/teacher/course-module/update-status
+      // Use dedicated update-status endpoint for bidirectional status changes
+      // This endpoint supports both DRAFT → APPROVED and APPROVED → DRAFT
       const body: Record<string, string> = {
         course_id: courseId,
         course_module_code: moduleCode,
@@ -910,7 +913,8 @@ export function useUpdateCourseModuleStatus() {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to update module status: ${response.statusText}`);
+        const errorData = await response.json() as { message?: string; error?: string };
+        throw new Error(errorData.message ?? errorData.error ?? `Failed to update module status: ${response.statusText}`);
       }
 
       // Response consumed but not returned - cache invalidation triggers refetch

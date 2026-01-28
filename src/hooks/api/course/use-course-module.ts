@@ -470,19 +470,7 @@ export const courseModuleKeys = {
     [...courseModuleKeys.all, "map", courseIds.sort().join(",")] as const,
 };
 
-export const assignmentKeys = {
-  all: ["assignments"] as const,
-  details: () => [...assignmentKeys.all, "detail"] as const,
-  detail: (courseId: string, moduleCode: string) =>
-    [...assignmentKeys.details(), courseId, moduleCode] as const,
-};
-
-export const introductionKeys = {
-  all: ["introductions"] as const,
-  details: () => [...introductionKeys.all, "detail"] as const,
-  detail: (courseId: string, moduleCode: string) =>
-    [...introductionKeys.details(), courseId, moduleCode] as const,
-};
+// Note: assignmentKeys, introductionKeys, sltKeys, lessonKeys are defined in use-course-content.ts
 
 // =============================================================================
 // Query Hooks

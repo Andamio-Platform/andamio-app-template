@@ -15,26 +15,28 @@
 | `use-course.ts` | Yes | Yes | APPROVED |
 | `use-course-owner.ts` | (imports) | (imports) | APPROVED |
 | `use-course-module.ts` | Yes | Yes | APPROVED |
-| `use-slt.ts` | (imports) | (imports) | APPROVED |
-| `use-lesson.ts` | (imports) | (imports) | APPROVED |
-| `use-assignment.ts` | (imports) | (imports) | APPROVED |
-| `use-introduction.ts` | (imports) | (imports) | APPROVED |
+| `use-course-content.ts` | (imports) | (imports) | APPROVED |
 | `use-course-student.ts` | Yes | Yes | APPROVED |
-| `use-course-teacher.ts` | Yes | Yes | NEEDS REVIEW |
+| `use-course-teacher.ts` | Yes | Yes | APPROVED |
+| `use-module-wizard-data.ts` | (composition) | N/A | APPROVED |
+| `use-save-module-draft.ts` | (mutation) | Yes | APPROVED |
 | `use-project.ts` | Yes (in types/project.ts) | Yes | NEEDS WORK |
 | `use-project-manager.ts` | No (snake_case) | Inline only | NEEDS WORK |
 | `use-project-contributor.ts` | No (snake_case) | None | NEEDS WORK |
 
+### Course System Audit Complete (8 hook files)
+
+All course system hooks follow the colocated types pattern correctly:
+- Type ownership is clean with no duplicate definitions
+- Proper import chains from owner files
+- camelCase fields throughout
+- Transform functions for API → app type conversion
+
+**Consolidation (2026-01-28):** Combined `use-slt.ts`, `use-lesson.ts`, `use-assignment.ts`, `use-introduction.ts` into single `use-course-content.ts` for public read-only content queries.
+
 ### Remaining Work
 
-#### 1. Review `use-course-teacher.ts`
-
-- [ ] Verify TeacherCourse type is complete
-- [ ] Verify TeacherAssignmentCommitment type is complete
-- [ ] Check transformer handles all fields
-- [ ] Test teacher dashboard displays correctly
-
-#### 2. Migrate `use-project.ts`
+#### 1. Migrate `use-project.ts`
 
 **Current state**: Types defined in separate `src/types/project.ts` file.
 
@@ -44,7 +46,7 @@
 - [ ] Delete `src/types/project.ts`
 - [ ] Update imports in consumer files
 
-#### 3. Migrate `use-project-manager.ts`
+#### 2. Migrate `use-project-manager.ts`
 
 **Current state**: Returns snake_case types directly from API.
 
@@ -61,7 +63,7 @@
 - `src/app/(app)/studio/project/[projectid]/manager/page.tsx`
 - `src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx`
 
-#### 4. Migrate `use-project-contributor.ts`
+#### 3. Migrate `use-project-contributor.ts`
 
 **Current state**: Returns snake_case types directly from API.
 
@@ -216,8 +218,21 @@
 
 ### January 28, 2026
 
-- [ ] Phase 3.9 in progress (6/11 hooks approved)
+- [x] Phase 3.9 Course System audit complete (8 hook files)
+  - `use-course.ts` - Core course type owner
+  - `use-course-module.ts` - Module type owner (SLT, Lesson, Assignment, Introduction)
+  - `use-course-owner.ts` - Owner role hooks
+  - `use-course-teacher.ts` - Teacher role hooks (updated for API evidence field)
+  - `use-course-student.ts` - Student role hooks
+  - `use-course-content.ts` - Consolidated public content queries (SLTs, Lessons, Assignments, Introductions)
+  - `use-module-wizard-data.ts` - Composition hook
+  - `use-save-module-draft.ts` - Aggregate mutation hook
+- [ ] Phase 3.9 Project System migration pending (0/3 hooks)
 - [ ] Phase 3.10 audit complete, implementation not started
+
+**Notes**:
+- Debug console.log statements in `use-course-module.ts` and `use-save-module-draft.ts` intentionally kept for merge/status debugging
+- Plan: Use similar `use-project-content.ts` pattern for public project content when implementing project hooks
 
 ---
 

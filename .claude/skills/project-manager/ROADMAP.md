@@ -129,6 +129,31 @@ This template continues as the **reference implementation** and will receive upd
 
 **Tracking**: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
 
+### 🔜 Phase 3.10: Extract Direct API Calls to Hooks (Upcoming)
+
+**Goal**: Move all direct `fetch()` and `authenticatedFetch()` calls from components/pages into hooks.
+
+**Audit Complete**: 2026-01-28
+
+**Scope**:
+- **50+ direct API calls** found in 23 files
+- **17 page files** with direct API calls
+- **6 component files** with direct API calls
+
+**Priority Order**:
+1. **High**: Project user/task data (5+ pages), Manager tasks list (4+ pages), Contributor commitment (3+ locations)
+2. **Medium**: Teacher assignment commitments, Module update, Project registration/update
+3. **Lower**: Pending TX list, Access token alias, Sitemap data
+
+**New Hooks Needed**:
+- `use-project-tasks.ts` - Task CRUD operations
+- `use-contributor.ts` - Contributor commitment operations
+- `use-manager.ts` - Manager-specific operations
+- `use-pending-tx.ts` - Pending transaction queries
+- `use-user.ts` - User profile operations
+
+**Full Audit**: `.claude/skills/project-manager/API-CALLS-AUDIT.md`
+
 See `STATUS.md` for detailed session notes.
 
 ---

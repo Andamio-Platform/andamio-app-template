@@ -37,6 +37,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
     // Draft store state and actions
     draftLessons,
     draftSlts,
+    draftAssignment,
     setLesson,
     isDirty,
     isSaving,
@@ -86,8 +87,12 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
     ? lessons.size
     : serverLessons.length;
   const totalSLTs = slts.length;
-  // Assignment must have a saved title to be considered complete
-  const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
+
+  // Check for assignment in draft first, then server data
+  const hasAssignment = !!(
+    (draftAssignment?.title?.trim()) ||
+    (data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0)
+  );
 
   return (
     <WizardStep config={config} direction={direction}>

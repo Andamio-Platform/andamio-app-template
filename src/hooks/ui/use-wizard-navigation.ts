@@ -53,28 +53,17 @@ export function useWizardNavigation({
   const [direction, setDirection] = useState(0);
 
   /**
-   * Check if a step is unlocked based on completion state
+   * Check if a step is unlocked
+   *
+   * All steps are always unlocked - wizard navigation is free-form.
+   * The completion state is used for visual indicators only, not for locking.
    */
   const isStepUnlocked = useCallback(
-    (step: WizardStepId): boolean => {
-      switch (step) {
-        case "credential":
-          return true;
-        case "slts":
-          return completion.credential;
-        case "assignment":
-          return completion.slts;
-        case "lessons":
-          return completion.slts;
-        case "introduction":
-          return completion.assignment;
-        case "review":
-          return completion.introduction;
-        default:
-          return false;
-      }
+    (_step: WizardStepId): boolean => {
+      // All steps are always unlocked - free navigation
+      return true;
     },
-    [completion]
+    []
   );
 
   /**

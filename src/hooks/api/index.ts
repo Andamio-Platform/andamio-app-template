@@ -129,7 +129,7 @@ export {
 } from "./course/use-introduction";
 
 // Module draft save (aggregate-update endpoint)
-export { useSaveModuleDraft, createSaveFn } from "./course/use-save-module-draft";
+export { useSaveModuleDraft } from "./course/use-save-module-draft";
 
 // Course teacher (role-based)
 export {

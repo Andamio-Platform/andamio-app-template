@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { useStudioHeader } from "~/components/layout/studio-header";
 import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
 import { useModuleDraft } from "~/hooks/use-module-draft";
 import { useWizardNavigation, STEP_ORDER } from "~/hooks/ui/use-wizard-navigation";
+import { useWizardUIStore } from "~/stores/wizard-ui-store";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
   StudioOutlinePanel,
@@ -32,7 +33,6 @@ import {
   PreviousIcon,
   NextIcon,
   ExternalLinkIcon,
-  SaveIcon,
 } from "~/components/icons";
 import type { Course, CourseModule } from "~/hooks/api";
 
@@ -67,10 +67,12 @@ function ModuleWizardContent({
   isNewModule: boolean;
 }) {
   const { setBreadcrumbs, setTitle, setStatus, setActions } = useStudioHeader();
-  const [isOutlineCollapsed, setIsOutlineCollapsed] = useState(false);
+
+  // UI state from Zustand (UI-only store)
+  const isOutlineCollapsed = useWizardUIStore((s) => s.isOutlineCollapsed);
+  const setOutlineCollapsed = useWizardUIStore((s) => s.setOutlineCollapsed);
 
   // Track the created module code for smooth transitions after creation
-  // This allows us to update the URL silently without triggering a full page refresh
   const [createdModuleCode, setCreatedModuleCode] = useState<string | null>(null);
 
   // The effective module code is the created one (if exists) or the URL param
@@ -96,7 +98,6 @@ function ModuleWizardContent({
         ]);
         setTitle(courseModule?.title ?? "Module");
         if (courseModule?.status) {
-          // Map CourseModuleStatus to display format
           const displayStatus = courseModule.status === "active" ? "ON_CHAIN" : courseModule.status.toUpperCase();
           setStatus(displayStatus, courseModule.status === "active" ? "default" : "secondary");
         }
@@ -105,7 +106,7 @@ function ModuleWizardContent({
     [courseNftPolicyId, isNewModule, moduleCode, setBreadcrumbs, setTitle, setStatus]
   );
 
-  // Data fetching hook - uses effective values to support smooth transitions after module creation
+  // Data fetching hook
   const { data, completion, refetchData, updateSlts } = useModuleWizardData({
     courseNftPolicyId,
     moduleCode: effectiveModuleCode,
@@ -113,22 +114,73 @@ function ModuleWizardContent({
     onDataLoaded: handleDataLoaded,
   });
 
-  // Draft store hook - provides local state management with optimistic updates
+  // Stable callbacks for draft hook
+  const draftCallbacks = useMemo(
+    () => ({
+      onSaveSuccess: () => {
+        toast.success("Module saved");
+      },
+      onSaveError: (error: string) => {
+        toast.error("Failed to save module", { description: error });
+      },
+    }),
+    []
+  );
+
+  // Module-scoped draft store (clean architecture)
   const moduleDraft = useModuleDraft(
     courseNftPolicyId,
     effectiveModuleCode,
     effectiveIsNewModule,
-    {
-      onSaveSuccess: () => {
-        toast.success("Module saved");
-      },
-      onSaveError: (error) => {
-        toast.error("Failed to save module", { description: error });
-      },
-    }
+    draftCallbacks
   );
 
-  // Navigation hook
+  // Destructure for stable references in dependency arrays
+  // The store API is stable, actions from useStore are stable
+  const {
+    store: draftStore,
+    draft,
+    isDirty,
+    isSaving,
+    lastError,
+    slts: draftSlts,
+    assignment: draftAssignment,
+    introduction: draftIntroduction,
+    lessons: draftLessons,
+    setMetadata,
+    addSlt,
+    updateSlt,
+    deleteSlt,
+    reorderSlts,
+    setAssignment,
+    setIntroduction,
+    setLesson,
+    saveAndSync,
+    discardChanges,
+  } = moduleDraft;
+
+  // Compute draft-aware completion (merges server state with local draft)
+  // This allows navigation to work even before saving
+  const draftAwareCompletion = useMemo(() => {
+    const hasTitle = !!(draft?.title?.trim());
+    const hasSLTs = (draftSlts?.filter(s => !s._isDeleted)?.length ?? 0) > 0;
+    const hasAssignment = !!(draftAssignment?.title?.trim());
+    const hasIntroduction = !!(draftIntroduction?.title?.trim());
+
+    return {
+      credential: hasTitle || completion.credential,
+      slts: hasSLTs || completion.slts,
+      assignment: hasAssignment || completion.assignment,
+      lessons: true, // Optional step
+      introduction: hasIntroduction || completion.introduction,
+      review: (hasTitle || completion.credential) &&
+              (hasSLTs || completion.slts) &&
+              (hasAssignment || completion.assignment) &&
+              (hasIntroduction || completion.introduction),
+    };
+  }, [draft, draftSlts, draftAssignment, draftIntroduction, completion]);
+
+  // Navigation hook - uses draft-aware completion for unlocking steps
   const {
     currentStep,
     direction,
@@ -140,85 +192,64 @@ function ModuleWizardContent({
     goPrevious: goPreviousRaw,
     getStepStatus,
     isStepUnlocked,
-  } = useWizardNavigation({ completion });
+  } = useWizardNavigation({ completion: draftAwareCompletion });
+
+  // Refs to always have latest navigation functions (avoids stale closures in async callbacks)
+  const goToStepRawRef = useRef(goToStepRaw);
+  const goNextRawRef = useRef(goNextRaw);
+  const goPreviousRawRef = useRef(goPreviousRaw);
+  goToStepRawRef.current = goToStepRaw;
+  goNextRawRef.current = goNextRaw;
+  goPreviousRawRef.current = goPreviousRaw;
 
   /**
-   * Save-on-step-change wrapper for goToStep
-   * Saves draft if dirty before navigating to new step
+   * Navigation functions - these just navigate, no auto-save.
+   * Save is handled by a separate explicit "Save" button.
    */
   const goToStep = useCallback(
-    async (step: WizardStepId) => {
-      if (moduleDraft.isDirty && !moduleDraft.isSaving) {
-        const saved = await moduleDraft.saveAndSync();
-        if (!saved) {
-          // Save failed - don't navigate, error toast shown by onSaveError
-          return;
-        }
-      }
-      goToStepRaw(step);
+    (step: WizardStepId) => {
+      goToStepRawRef.current(step);
     },
-    [moduleDraft, goToStepRaw]
+    []
   );
 
-  /**
-   * Save-on-step-change wrapper for goNext
-   */
-  const goNext = useCallback(async () => {
-    if (moduleDraft.isDirty && !moduleDraft.isSaving) {
-      const saved = await moduleDraft.saveAndSync();
-      if (!saved) {
-        return;
-      }
-    }
-    goNextRaw();
-  }, [moduleDraft, goNextRaw]);
+  const goNext = useCallback(() => {
+    goNextRawRef.current();
+  }, []);
 
-  /**
-   * Save-on-step-change wrapper for goPrevious
-   */
-  const goPrevious = useCallback(async () => {
-    if (moduleDraft.isDirty && !moduleDraft.isSaving) {
-      const saved = await moduleDraft.saveAndSync();
-      if (!saved) {
-        return;
-      }
-    }
-    goPreviousRaw();
-  }, [moduleDraft, goPreviousRaw]);
+  const goPrevious = useCallback(() => {
+    goPreviousRawRef.current();
+  }, []);
 
   /**
    * Handle module creation - updates URL silently and refetches data
-   * This prevents a full page refresh when transitioning from /new to the actual module code
    */
   const onModuleCreated = useCallback(
     async (newModuleCode: string) => {
-      // Update state to track the created module
       setCreatedModuleCode(newModuleCode);
-
-      // Update URL silently without triggering Next.js route change
       const newUrl = `/studio/course/${courseNftPolicyId}/${newModuleCode}?step=slts`;
       window.history.replaceState(null, "", newUrl);
-
-      // Refetch data for the newly created module
       await refetchData(newModuleCode);
-
-      // Navigate to SLTs step
       void goToStep("slts");
     },
     [courseNftPolicyId, refetchData, goToStep]
   );
 
   // Build outline steps for the panel
+  // Use draft counts for SLTs/lessons since they reflect current local state
+  const draftSltCount = draftSlts?.filter(s => !s._isDeleted)?.length ?? data.slts.length;
+  const draftLessonCount = draftLessons?.size ?? data.lessons.length;
+
   const outlineSteps: OutlineStep[] = useMemo(
     () =>
       MODULE_WIZARD_STEPS.map((step) => ({
         ...step,
-        isComplete: completion[step.id as WizardStepId],
+        isComplete: draftAwareCompletion[step.id as WizardStepId],
         isActive: currentStep === step.id,
-        isLocked: !isStepUnlocked(step.id as WizardStepId),
-        count: step.id === "slts" ? data.slts.length : step.id === "lessons" ? data.lessons.length : undefined,
+        isLocked: false, // All steps are unlocked - free navigation
+        count: step.id === "slts" ? draftSltCount : step.id === "lessons" ? draftLessonCount : undefined,
       })),
-    [completion, currentStep, isStepUnlocked, data.slts.length, data.lessons.length]
+    [draftAwareCompletion, currentStep, draftSltCount, draftLessonCount]
   );
 
   // Build wizard context
@@ -233,9 +264,9 @@ function ModuleWizardContent({
       canGoPrevious,
       getStepStatus,
       isStepUnlocked,
-      completion,
+      completion: draftAwareCompletion,
 
-      // Data (legacy)
+      // Data (legacy - from React Query)
       data,
       refetchData,
       updateSlts,
@@ -247,35 +278,31 @@ function ModuleWizardContent({
       createdModuleCode,
       onModuleCreated,
 
-      // Draft store state
-      draft: moduleDraft.draft,
-      isDirty: moduleDraft.isDirty,
-      isSaving: moduleDraft.isSaving,
-      lastError: moduleDraft.lastError,
+      // Draft store state (from destructured moduleDraft)
+      draft,
+      isDirty,
+      isSaving,
+      lastError,
 
       // Draft selectors
-      draftSlts: moduleDraft.slts,
-      draftAssignment: moduleDraft.assignment,
-      draftIntroduction: moduleDraft.introduction,
-      draftLessons: moduleDraft.lessons,
+      draftSlts,
+      draftAssignment,
+      draftIntroduction,
+      draftLessons,
 
-      // Metadata actions
-      setMetadata: moduleDraft.setMetadata,
-
-      // SLT actions
-      addSlt: moduleDraft.addSlt,
-      updateSlt: moduleDraft.updateSlt,
-      deleteSlt: moduleDraft.deleteSlt,
-      reorderSlts: moduleDraft.reorderSlts,
-
-      // Content actions
-      setAssignment: moduleDraft.setAssignment,
-      setIntroduction: moduleDraft.setIntroduction,
-      setLesson: moduleDraft.setLesson,
+      // Actions (stable references from store)
+      setMetadata,
+      addSlt,
+      updateSlt,
+      deleteSlt,
+      reorderSlts,
+      setAssignment,
+      setIntroduction,
+      setLesson,
 
       // Persistence
-      saveAndSync: moduleDraft.saveAndSync,
-      discardChanges: moduleDraft.discardChanges,
+      saveAndSync,
+      discardChanges,
     }),
     [
       currentStep,
@@ -286,7 +313,7 @@ function ModuleWizardContent({
       canGoPrevious,
       getStepStatus,
       isStepUnlocked,
-      completion,
+      draftAwareCompletion,
       data,
       refetchData,
       updateSlts,
@@ -295,66 +322,69 @@ function ModuleWizardContent({
       effectiveIsNewModule,
       createdModuleCode,
       onModuleCreated,
-      moduleDraft,
+      draft,
+      isDirty,
+      isSaving,
+      lastError,
+      draftSlts,
+      draftAssignment,
+      draftIntroduction,
+      draftLessons,
+      setMetadata,
+      addSlt,
+      updateSlt,
+      deleteSlt,
+      reorderSlts,
+      setAssignment,
+      setIntroduction,
+      setLesson,
+      saveAndSync,
+      discardChanges,
     ]
   );
 
-  // Update header with contextual navigation actions
+  // Update header with navigation actions (no Save button - saves on exit or approve)
   useEffect(() => {
-    const currentConfig = WIZARD_STEPS.find((s) => s.id === currentStep);
     setActions(
-      <div className="flex items-center gap-2">
-        {/* Unsaved Changes Indicator */}
-        {moduleDraft.isDirty && (
-          <div className="flex items-center gap-2 mr-2">
-            <span className="text-xs text-muted-foreground">
-              {moduleDraft.isSaving ? "Saving..." : "Unsaved changes"}
-            </span>
-            {!moduleDraft.isSaving && (
-              <AndamioButton
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => void moduleDraft.saveAndSync()}
-              >
-                <SaveIcon className="h-3.5 w-3.5 mr-1" />
-                Save
-              </AndamioButton>
-            )}
-          </div>
+      <div className="flex items-center gap-3">
+        {/* Unsaved indicator */}
+        {isDirty && (
+          <span className="text-xs text-muted-foreground">Unsaved changes</span>
         )}
 
         {/* Step Navigation */}
-        <div className="flex items-center gap-1 mr-2">
+        <div className="flex items-center gap-1">
           <AndamioButton
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => void goPrevious()}
-            disabled={!canGoPrevious || moduleDraft.isSaving}
+            className="h-8 px-2"
+            onClick={goPrevious}
+            disabled={!canGoPrevious}
           >
-            <PreviousIcon className="h-4 w-4" />
+            <PreviousIcon className="h-4 w-4 mr-1" />
+            Back
           </AndamioButton>
-          <span className="text-xs text-muted-foreground min-w-[60px] text-center">
-            {currentConfig?.title ?? "Step"} ({currentIndex + 1}/{STEP_ORDER.length})
+          <span className="text-xs text-muted-foreground px-2">
+            {currentIndex + 1}/{STEP_ORDER.length}
           </span>
           <AndamioButton
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => void goNext()}
-            disabled={!canGoNext || moduleDraft.isSaving}
+            className="h-8 px-3"
+            onClick={goNext}
+            disabled={!canGoNext}
           >
-            <NextIcon className="h-4 w-4" />
+            Continue
+            <NextIcon className="h-4 w-4 ml-1" />
           </AndamioButton>
         </div>
 
         {/* On-Chain Link */}
         {data.courseModule?.status === "active" && (
           <AndamioButton
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-7 text-xs"
+            className="h-8"
             asChild
           >
             <a
@@ -362,14 +392,35 @@ function ModuleWizardContent({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <ExternalLinkIcon className="h-3.5 w-3.5 mr-1" />
-              View On-Chain
+              <ExternalLinkIcon className="h-4 w-4 mr-1" />
+              On-Chain
             </a>
           </AndamioButton>
         )}
       </div>
     );
-  }, [setActions, data.courseModule, courseNftPolicyId, currentStep, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext, moduleDraft]);
+  }, [setActions, data.courseModule, courseNftPolicyId, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext, isDirty]);
+
+  // Auto-save on unmount (navigate away from wizard)
+  // Use refs to avoid stale closures - always have latest values
+  const draftStoreRef = useRef(draftStore);
+  draftStoreRef.current = draftStore;
+  const saveAndSyncRef = useRef(saveAndSync);
+  saveAndSyncRef.current = saveAndSync;
+
+  useEffect(() => {
+    return () => {
+      // Check if dirty directly from store (avoids stale closure)
+      const state = draftStoreRef.current.getState();
+      if (state.isDirty && state.draft) {
+        console.log("[ModuleWizard] Auto-saving on unmount, draft has", state.draft.slts.length, "SLTs");
+        // Fire and forget - we're unmounting so can't await
+        void saveAndSyncRef.current();
+      }
+    };
+    // Empty deps - only run cleanup on unmount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Loading state
   if (data.isLoading) {
@@ -400,14 +451,14 @@ function ModuleWizardContent({
           maxSize={30}
           collapsible
           collapsedSize={0}
-          onCollapse={() => setIsOutlineCollapsed(true)}
-          onExpand={() => setIsOutlineCollapsed(false)}
+          onCollapse={() => setOutlineCollapsed(true)}
+          onExpand={() => setOutlineCollapsed(false)}
         >
           <StudioOutlinePanel
             steps={outlineSteps}
             onStepClick={(stepId) => goToStep(stepId as WizardStepId)}
             isCollapsed={isOutlineCollapsed}
-            onCollapsedChange={setIsOutlineCollapsed}
+            onCollapsedChange={setOutlineCollapsed}
             title="Module Steps"
           />
         </ResizablePanel>

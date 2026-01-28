@@ -123,7 +123,7 @@ export function BurnModuleTokens({
     const results = await Promise.allSettled(
       modules.map(async (m) => {
         const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/course-module/update-status`,
+          `/api/gateway/api/v2/course/teacher/course-module/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

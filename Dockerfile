@@ -23,9 +23,9 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files and local packages (for file: dependencies) 
+# Copy package files and local packages (for file: dependencies)
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-COPY packages/ ./packages/  
+COPY packages/andamio-transactions ./packages/andamio-transactions  
 
 # Install dependencies based on lockfile present
 RUN \
@@ -62,9 +62,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Skip T3 env validation at build time - server-side secrets are injected at runtime
 ENV SKIP_ENV_VALIDATION=1
-
-# Build local packages first (they export from dist/ which requires compilation)
-RUN cd packages/core && npm install && npm run build
 
 # Build the application
 RUN \

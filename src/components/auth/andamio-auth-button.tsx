@@ -10,6 +10,12 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { LoadingIcon } from "~/components/icons";
 
+// Memoize web3Services config to prevent creating new object on every render
+const WEB3_SERVICES_CONFIG = {
+  networkId: 0,
+  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
+} as const;
+
 /**
  * Complete authentication interface for Andamio
  *
@@ -133,12 +139,7 @@ export function AndamioAuthButton() {
         </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <CardanoWallet isDark={isDark}
-        web3Services={{
-          networkId: 0,
-          projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-        }}
-         />
+        <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
       </AndamioCardContent>
     </AndamioCard>
   );

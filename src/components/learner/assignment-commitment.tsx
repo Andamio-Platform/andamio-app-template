@@ -26,7 +26,6 @@ import {
   LoadingIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 
 /**
  * Assignment Commitment Component
@@ -81,7 +80,7 @@ interface AssignmentCommitmentProps {
 interface CommitmentApiResponse {
   data?: {
     course_id?: string;
-    module_code?: string;
+    course_module_code?: string;
     slt_hash?: string;
     // On-chain fields (flat)
     on_chain_status?: string;
@@ -132,7 +131,8 @@ export function AssignmentCommitment({
     commitTx.result?.requiresDBUpdate ? commitTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           triggerSuccess("Assignment committed to blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
@@ -147,7 +147,8 @@ export function AssignmentCommitment({
     updateTx.result?.requiresDBUpdate ? updateTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           triggerSuccess("Assignment updated on blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
@@ -196,15 +197,14 @@ export function AssignmentCommitment({
 
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
 
-  // Form state
-  // Note: privateStatus tracks local UI state, setPrivateStatus is called but value not yet used in UI
+  // Form state - privateStatus value tracked for future UI use, currently only setPrivateStatus is called
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
 
   // Evidence content state
@@ -296,7 +296,7 @@ export function AssignmentCommitment({
 
       const existingCommitment: Commitment = {
         courseId: data.course_id ?? courseNftPolicyId,
-        moduleCode: data.module_code ?? moduleCode,
+        moduleCode: data.course_module_code ?? moduleCode,
         sltHash: data.slt_hash ?? null,
         onChainStatus: data.on_chain_status ?? null,
         onChainContent: data.on_chain_content ?? null,

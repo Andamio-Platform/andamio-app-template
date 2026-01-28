@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 27, 2026
+> **Last Updated**: January 28, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -15,33 +15,42 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
-| **API Hooks Cleanup** | **🔄 In Progress** | 6/11 hooks approved |
+| **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
-> **Project Route Implementation Ready**
+> **Course UX Testing → Project Hooks Migration**
 >
-> The Project route plan has been finalized. Ready to implement:
+> **Immediate**: Test course system UX after hooks refactoring
+> - Module wizard flow (create/edit modules, SLTs, lessons)
+> - Teacher dashboard (assignment commitments)
+> - Student course viewer
 >
-> 1. **Consolidate routes** - Remove `/commitments`, `/manage-treasury`, `/manage-contributors` pages
-> 2. **Add dashboard tabs** - Treasury tab + Contributor Blacklist tab to `/studio/project/[projectid]`
-> 3. **Verify `/manager` route** - Ensure it handles task commitment reviews (parallel to Course `/teacher`)
+> **After UX Verified**: Continue Phase 3.9/3.10 with Project hooks
 >
-> See `ROLES-AND-ROUTES.md` for the finalized route structure.
+> 1. **Phase 3.9** - Migrate project hooks to colocated types pattern:
+>    - `use-project.ts` - Move types from `src/types/project.ts` INTO hook
+>    - `use-project-manager.ts` - Create camelCase types + transformers
+>    - `use-project-contributor.ts` - Create camelCase types + transformers
+>    - Create `use-project-content.ts` for public task queries (similar to `use-course-content.ts`)
 >
-> **Ask user**: "Ready to implement the Project route consolidation?"
+> 2. **Phase 3.10** - Extract direct API calls to hooks (50+ violations in 23 files)
+>
+> **Tracking**:
+> - Phase 3.9 progress: `.claude/skills/hooks-architect/PROGRESS.md`
+> - Phase 3.10 audit: `.claude/skills/project-manager/API-CALLS-AUDIT.md`
+>
+> **Ask user**: "Ready to test course UX, or shall we continue with project hooks?"
 
 ---
 
 ## 🎯 TOP PRIORITY: API Hooks Cleanup
 
-**Status**: Active - 6 hooks approved, 5 remaining + wizard refactored
+**Status**: Course hooks ✅ COMPLETE (8 files) | Project hooks ⬜ PENDING (3 files)
 
-> **⚠️ Post-Merge Follow-up (PR #90)**: Verify `--color-input` works in Tailwind v4. CLAUDE.md warns that `input` conflicts with HTML element names and may be silently ignored. Test outline buttons in dark mode (`dark:bg-input/30`, `dark:border-input`) to confirm they render correctly. If broken, rename to `--color-input-bg`.
-
-Standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. Tracking in: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
+Standardizing all API hooks to follow the exemplary pattern from `use-course.ts`. Tracking in: `.claude/skills/hooks-architect/PROGRESS.md`
 
 ### The Pattern (Established)
 
@@ -56,37 +65,35 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 4. Clean domain names: `Course`, `CourseModule`, `SLT` - never "Merged" prefixes
 5. Semantic `status` field replaces raw `source` field
 
-### Hook Approval Status
+### Course Hooks (✅ Complete)
 
 | Hook | Types | Status |
 |------|-------|--------|
 | `use-course.ts` | `Course`, `CourseDetail` | ✅ APPROVED |
 | `use-course-owner.ts` | Uses Course types | ✅ APPROVED |
 | `use-course-module.ts` | `CourseModule`, `SLT`, `Lesson`, `Assignment`, `Introduction` | ✅ APPROVED |
-| `use-slt.ts` | Imports from use-course-module | ✅ APPROVED |
-| `use-lesson.ts` | Imports from use-course-module | ✅ APPROVED |
+| `use-course-content.ts` | Public queries (useSLTs, useLesson, useAssignment, useIntroduction) | ✅ APPROVED |
 | `use-course-student.ts` | `StudentCourse` | ✅ APPROVED |
-| `use-course-teacher.ts` | `TeacherCourse`, `TeacherAssignmentCommitment` | 🔶 Needs review |
+| `use-course-teacher.ts` | `TeacherCourse`, `TeacherAssignmentCommitment` | ✅ APPROVED |
+| `use-module-wizard-data.ts` | Composition hook | ✅ APPROVED |
+| `use-save-module-draft.ts` | Aggregate mutation | ✅ APPROVED |
+
+### Project Hooks (⬜ Pending)
+
+| Hook | Types | Status |
+|------|-------|--------|
 | `use-project.ts` | Has transformers in `types/project.ts` | 🔶 Move types INTO hook |
 | `use-project-manager.ts` | Raw API types | ⬜ Needs migration |
 | `use-project-contributor.ts` | Raw API types | ⬜ Needs migration |
+| `use-project-content.ts` | (planned) | ⬜ Create for public task queries |
 
-### New Files Created
-
-| File | Purpose |
-|------|---------|
-| `use-course-owner.ts` | Owner mutations (create, update, delete, register) |
-| `use-assignment.ts` | Assignment CRUD (query + mutations) |
-| `use-introduction.ts` | Introduction CRUD (mutations only) |
-
-### Module Wizard Refactored (Pending UX Testing)
+### Module Wizard (Pending UX Testing)
 
 **Commit**: `74ef3f4` - wip: Refactor wizard to use hook types
 
 - `wizard/types.ts` now imports from `~/hooks/api`
 - `use-module-wizard-data.ts` composes React Query hooks (no direct fetch)
 - All step components use camelCase fields
-- Legacy `module-wizard.tsx` updated with transform functions
 
 **Next**: Manual UX testing of wizard flow
 
@@ -94,23 +101,16 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Recent Completions
 
-**January 25, 2026 (Session 3)**:
+**January 28, 2026**:
+- ✅ Completed full audit of all 11 course system hooks
+- ✅ Consolidated 4 content hooks → `use-course-content.ts` (useSLTs, useLesson, useAssignment, useIntroduction)
+- ✅ Approved `use-course-teacher.ts` (updated for API evidence field)
+- ✅ All course hooks now follow colocated types pattern
+
+**January 25, 2026**:
 - ✅ Refactored module wizard to use hook types (camelCase)
-- ✅ `use-module-wizard-data.ts` now composes React Query hooks
-- ✅ All 6 wizard step components updated to camelCase fields
-- ✅ Added `useReorderSLT` to index.ts exports
-- ✅ Created `use-assignment.ts` and `use-introduction.ts`
-
-**January 25, 2026 (Session 2)**:
-- ✅ Approved `use-course-module.ts` with CourseModuleStatus refactor
-- ✅ Approved `use-slt.ts`, `use-lesson.ts`, `use-course-student.ts`
-- ✅ Added `useRegisterCourseModule` hook
-- ✅ Updated 15+ consumer files to camelCase
-
-**January 25, 2026 (Session 1)**:
-- ✅ Approved `use-course.ts` and `use-course-owner.ts`
+- ✅ Approved 6 hooks (use-course, use-course-owner, use-course-module, use-slt, use-lesson, use-course-student)
 - ✅ Created hook reorganization with subdirectories
-- ✅ Updated skill docs for audit-api-coverage
 
 **January 24, 2026**:
 - Fixed module wizard infinite API polling
@@ -123,9 +123,9 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Status | Notes |
 |---------|--------|-------|
-| **Module Wizard UX Testing** | Pending | Hook refactor complete (74ef3f4), needs manual testing |
-| **Project Hooks Migration** | Pending | 3 project hooks need colocated types pattern |
-| **Wallet Testing** | Pending | Nami, Flint, Yoroi, Lace need testing (Eternl works) |
+| **Course UX Testing** | Pending | All course hooks refactored, needs manual testing before project migration |
+| **Project Hooks Migration** | Pending | 3 hooks need colocated types + create `use-project-content.ts` |
+| **Phase 3.10 Direct API Calls** | Pending | 50+ direct fetch calls in 23 files need extraction to hooks |
 
 ---
 

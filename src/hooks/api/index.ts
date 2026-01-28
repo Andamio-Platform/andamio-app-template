@@ -87,8 +87,6 @@ export {
   useDeleteCourseModule,
   useRegisterCourseModule,
   courseModuleKeys,
-  assignmentKeys,
-  introductionKeys,
   transformCourseModule,
   transformSLT,
   transformLesson,
@@ -105,41 +103,21 @@ export {
   type RegisteredModule,
 } from "./course/use-course-module";
 
-// SLTs
+// Course content (public read-only queries for SLTs, Lessons, Assignments, Introductions)
 export {
   useSLTs,
-  useCreateSLT,
-  useUpdateSLT,
-  useDeleteSLT,
-  useReorderSLT,
-  sltKeys,
-} from "./course/use-slt";
-
-// Lessons
-export {
   useLessons,
   useLesson,
-  useCreateLesson,
-  useUpdateLesson,
-  useDeleteLesson,
-  lessonKeys,
-} from "./course/use-lesson";
-
-// Assignments (query + mutations)
-export {
   useAssignment,
-  useCreateAssignment,
-  useUpdateAssignment,
-  useDeleteAssignment,
-} from "./course/use-assignment";
-
-// Introductions (query + CRUD mutations)
-export {
   useIntroduction,
-  useCreateIntroduction,
-  useUpdateIntroduction,
-  useDeleteIntroduction,
-} from "./course/use-introduction";
+  sltKeys,
+  lessonKeys,
+  assignmentKeys,
+  introductionKeys,
+} from "./course/use-course-content";
+
+// Module draft save (aggregate-update endpoint)
+export { useSaveModuleDraft } from "./course/use-save-module-draft";
 
 // Course teacher (role-based)
 export {

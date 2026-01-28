@@ -21,6 +21,7 @@ import {
   AndamioErrorAlert,
   AndamioEmptyState,
   AndamioSearchInput,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import {
   AndamioCard,
@@ -45,7 +46,6 @@ import {
   type TeacherAssignmentCommitment,
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 import { TransactionButton } from "~/components/tx/transaction-button";
@@ -54,7 +54,7 @@ import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
 
 /**
- * Instructor Dashboard Page
+ * Teacher Dashboard Page
  *
  * View all student assignment commitments for a course
  *
@@ -93,7 +93,7 @@ const formatNetworkStatus = (status: string | undefined | null): string => {
     .join(" ");
 };
 
-export default function InstructorDashboardPage() {
+export default function TeacherDashboardPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
   const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
@@ -145,12 +145,13 @@ export default function InstructorDashboardPage() {
   );
 
   // Stats - use optional chaining since commitmentStatus might be undefined
-  // Status values: DRAFT, PENDING_TX, ON_CHAIN
+  // Status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN
   const stats = {
     total: commitments.length,
     draft: commitments.filter((c) => c.commitmentStatus === "DRAFT").length,
-    pending: commitments.filter((c) => c.commitmentStatus === "PENDING_TX").length,
-    onChain: commitments.filter((c) => c.commitmentStatus === "ON_CHAIN").length,
+    pendingTx: commitments.filter((c) => c.commitmentStatus === "PENDING_TX").length,
+    pendingReview: commitments.filter((c) => c.commitmentStatus === "PENDING_APPROVAL").length,
+    completed: commitments.filter((c) => c.commitmentStatus === "ON_CHAIN" || c.commitmentStatus === "ACCEPTED").length,
   };
 
   // Fetch data function - extracted so it can be called from transaction success handlers
@@ -199,19 +200,117 @@ export default function InstructorDashboardPage() {
       }
 
       // API returns { data?: [...], warning?: string } wrapper
+      // Updated 2026-01-28: content object now populated with evidence
+      // See: andamio-api/docs/REPL_NOTES/2026-01-28-teacher-commitments-fix.md
+      interface RawCommitmentContent {
+        evidence?: Record<string, unknown>;  // Tiptap JSON document
+        assignment_evidence_hash?: string;
+        commitment_status?: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+      }
+
+      interface RawCommitment {
+        course_id: string;
+        slt_hash: string;
+        course_module_code?: string;  // Human-readable module code (e.g., "101")
+        student_alias: string;
+        submission_tx?: string;
+        submission_slot?: number;
+        on_chain_content?: string;  // Hex-encoded on-chain content
+        content?: RawCommitmentContent;  // Off-chain content from DB
+        source: "merged" | "chain_only" | "db_only";
+      }
+
       const result = (await commitmentsResponse.json()) as {
-        data?: TeacherAssignmentCommitment[];
+        data?: RawCommitment[];
         warning?: string;
       };
 
-      // Debug: log the actual API response to see field names
-      console.log("[InstructorDashboard] Assignment commitments response:", result);
+      // Debug: log the actual API response to see all available fields
+      console.log("[TeacherDashboard] Assignment commitments response:", {
+        count: result.data?.length ?? 0,
+        warning: result.warning,
+        items: result.data?.map((c) => ({
+          student_alias: c.student_alias,
+          slt_hash: c.slt_hash?.slice(0, 16),
+          source: c.source,
+          course_module_code: c.course_module_code,
+          // Content object (from DB)
+          has_content: !!c.content,
+          content_status: c.content?.commitment_status,
+          has_evidence: !!c.content?.evidence,
+          evidence_hash: c.content?.assignment_evidence_hash?.slice(0, 16),
+          // On-chain content (hex)
+          on_chain_content: c.on_chain_content?.slice(0, 32),
+        })),
+      });
 
       if (result.warning) {
-        console.warn("[InstructorDashboard] API warning:", result.warning);
+        console.warn("[TeacherDashboard] API warning:", result.warning);
       }
 
-      const commitmentsData = result.data ?? [];
+      // Helper to decode hex string to UTF-8 text
+      const hexToText = (hex: string): string => {
+        try {
+          const bytes = new Uint8Array(
+            hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
+          );
+          return new TextDecoder().decode(bytes);
+        } catch {
+          return hex; // Return original if decode fails
+        }
+      };
+
+      // Map source + content.commitment_status to a display-friendly status
+      // API statuses: DRAFT, SUBMITTED, APPROVED, REJECTED
+      // Display statuses: DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN, ACCEPTED
+      const mapToDisplayStatus = (
+        source: string | undefined,
+        contentStatus: string | undefined
+      ): string => {
+        // If we have content status, use it
+        if (contentStatus) {
+          switch (contentStatus) {
+            case "SUBMITTED":
+              return "PENDING_APPROVAL";  // Submitted = awaiting teacher review
+            case "APPROVED":
+              return "ACCEPTED";
+            case "REJECTED":
+              return "DENIED";
+            case "DRAFT":
+              return "DRAFT";
+            default:
+              return contentStatus;
+          }
+        }
+        // Fall back to source-based status
+        switch (source) {
+          case "chain_only":
+            return "PENDING_APPROVAL";  // On-chain but not in DB = pending review
+          case "merged":
+            return "PENDING_APPROVAL";  // Merged data = needs status from content
+          case "db_only":
+            return "DRAFT";
+          default:
+            return "UNKNOWN";
+        }
+      };
+
+      // Transform API response to app types
+      // Evidence is now under content.evidence (Tiptap JSON)
+      const commitmentsData: TeacherAssignmentCommitment[] = (result.data ?? []).map((raw) => ({
+        courseId: raw.course_id,
+        studentAlias: raw.student_alias,
+        sltHash: raw.slt_hash,
+        submissionTx: raw.submission_tx,
+        submissionSlot: raw.submission_slot,
+        onChainContent: raw.on_chain_content ? hexToText(raw.on_chain_content) : undefined,
+        moduleCode: raw.course_module_code,
+        // Evidence is now under content.evidence (Tiptap JSON document)
+        evidence: raw.content?.evidence,
+        // Status from content.commitment_status, mapped to display status
+        commitmentStatus: mapToDisplayStatus(raw.source, raw.content?.commitment_status),
+      }));
+
       setCommitments(commitmentsData);
       setFilteredCommitments(commitmentsData);
     } catch (err) {
@@ -227,7 +326,11 @@ export default function InstructorDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseNftPolicyId, isAuthenticated]);
 
-  // Fetch detailed commitment data when a commitment is selected
+  // Process commitment data when a commitment is selected
+  // NOTE: Teacher view uses data from the list response - no separate detail fetch needed
+  // The student endpoint was incorrectly used here before. For teacher view, all data
+  // comes from POST /course/teacher/assignment-commitments/list
+  // Updated 2026-01-28: Evidence is now under content.evidence (Tiptap JSON)
   const fetchCommitmentDetail = async (commitment: TeacherAssignmentCommitment) => {
     if (!commitment.studentAlias) {
       setDetailedCommitment(null);
@@ -235,59 +338,29 @@ export default function InstructorDashboardPage() {
     }
 
     setIsLoadingDetail(true);
-    setDetailedCommitment(null);
 
-    try {
-      // V2 Merged API: POST /course/student/assignment-commitment/get
-      // Returns merged on-chain + DB data (source: "merged", "chain_only", or "db_only")
-      // Note: slt_hash is required for on-chain lookup
-      const requestBody = {
-        course_id: courseNftPolicyId,
-        slt_hash: commitment.sltHash,  // Required for on-chain lookup
-        course_module_code: commitment.moduleCode,  // Optional for DB enrichment
-      };
-      console.log("[InstructorDashboard] Fetching commitment detail with:", requestBody);
+    // Log what data we have from the list response
+    console.log("[TeacherDashboard] Selected commitment data:", {
+      studentAlias: commitment.studentAlias,
+      sltHash: commitment.sltHash?.slice(0, 16),
+      moduleCode: commitment.moduleCode,
+      commitmentStatus: commitment.commitmentStatus,
+      hasEvidence: !!commitment.evidence,
+      evidenceType: commitment.evidence ? typeof commitment.evidence : "none",
+      onChainContent: commitment.onChainContent?.slice(0, 32),
+    });
 
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/student/assignment-commitment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        }
-      );
+    // Evidence is now a Tiptap JSON document from content.evidence
+    // It's already parsed as an object, no need to JSON.parse
+    const evidenceJson = commitment.evidence as JSONContent | null;
 
-      console.log("[InstructorDashboard] Response status:", response.status);
+    setDetailedCommitment({
+      evidence: evidenceJson ?? null,
+      status: commitment.commitmentStatus ?? "UNKNOWN",
+      txHash: commitment.submissionTx ?? null,
+    });
 
-      if (response.status === 404) {
-        // No detailed record found
-        console.log("[InstructorDashboard] No detailed commitment found (404)");
-        setDetailedCommitment(null);
-        return;
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[InstructorDashboard] Failed to fetch commitment detail:", response.status, errorText);
-        setDetailedCommitment(null);
-        return;
-      }
-
-      const data = (await response.json()) as Record<string, unknown>;
-      console.log("[InstructorDashboard] Detailed commitment response:", data);
-
-      // API uses network_evidence, network_status, pending_tx_hash
-      setDetailedCommitment({
-        evidence: (data.network_evidence as JSONContent | null) ?? null,
-        status: (data.network_status as string) ?? "UNKNOWN",
-        txHash: (data.pending_tx_hash as string | null) ?? null,
-      });
-    } catch (err) {
-      console.error("[InstructorDashboard] Error fetching commitment detail:", err);
-      setDetailedCommitment(null);
-    } finally {
-      setIsLoadingDetail(false);
-    }
+    setIsLoadingDetail(false);
   };
 
   // Handle commitment selection - fetch detailed data
@@ -328,39 +401,28 @@ export default function InstructorDashboardPage() {
   // Error state
   if (error || !course) {
     return (
-      <div className="space-y-6">
-        <CourseBreadcrumb
-          mode="studio"
-          currentPage="teacher"
-        />
-
-        <AndamioPageHeader title="Instructor Dashboard" />
-
+      <div className="space-y-6 p-6">
+        <AndamioPageHeader title="Teacher Dashboard" />
         <AndamioErrorAlert error={error ?? "Course not found"} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <CourseBreadcrumb
-        mode="studio"
-        course={{ nftPolicyId: courseNftPolicyId, title: typeof course.title === "string" ? course.title : "Course" }}
-        currentPage="teacher"
-      />
-
-      <AndamioPageHeader
-        title="Instructor Dashboard"
-        description={typeof course.title === "string" ? course.title : undefined}
-      />
+    <AndamioScrollArea className="h-full">
+      <div className="space-y-6 p-6">
+        <AndamioPageHeader
+          title="Teacher Dashboard"
+          description={typeof course.title === "string" ? course.title : undefined}
+        />
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <AndamioDashboardStat icon={TeacherIcon} label="Total Commitments" value={stats.total} />
+      <div className="grid gap-4 md:grid-cols-5">
+        <AndamioDashboardStat icon={TeacherIcon} label="Total" value={stats.total} />
         <AndamioDashboardStat icon={PendingIcon} label="Draft" value={stats.draft} />
-        <AndamioDashboardStat icon={PendingIcon} label="Pending TX" value={stats.pending} valueColor="warning" iconColor="warning" />
-        <AndamioDashboardStat icon={SuccessIcon} label="On Chain" value={stats.onChain} valueColor="success" iconColor="success" />
+        <AndamioDashboardStat icon={PendingIcon} label="Pending TX" value={stats.pendingTx} valueColor="warning" iconColor="warning" />
+        <AndamioDashboardStat icon={TeacherIcon} label="Pending Review" value={stats.pendingReview} valueColor="info" iconColor="info" />
+        <AndamioDashboardStat icon={SuccessIcon} label="Completed" value={stats.completed} valueColor="success" iconColor="success" />
       </div>
 
       {/* On-Chain Pending Assessments - Live data from merged API */}
@@ -485,10 +547,14 @@ export default function InstructorDashboardPage() {
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <div>
-                      <div className="font-medium">{commitment.assignment?.title ?? commitment.moduleCode}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {commitment.moduleCode}
+                      <div className="font-medium">
+                        {commitment.moduleCode ?? (commitment.sltHash ? `SLT: ${commitment.sltHash.slice(0, 8)}...` : "Unknown")}
                       </div>
+                      {(commitment.moduleCode ?? commitment.sltHash) && (
+                        <div className="text-sm text-muted-foreground font-mono">
+                          {commitment.moduleCode ?? commitment.sltHash?.slice(0, 16)}
+                        </div>
+                      )}
                     </div>
                   </AndamioTableCell>
                   <AndamioTableCell>
@@ -498,13 +564,15 @@ export default function InstructorDashboardPage() {
                   </AndamioTableCell>
                   <AndamioTableCell>
                     {commitment.evidence ? (
-                      <AndamioText variant="small" className="max-w-xs truncate">
-                        {typeof commitment.evidence === "string"
-                          ? commitment.evidence
-                          : JSON.stringify(commitment.evidence)}
+                      <AndamioText variant="small" className="max-w-xs truncate text-primary">
+                        Tiptap content
+                      </AndamioText>
+                    ) : commitment.onChainContent ? (
+                      <AndamioText variant="small" className="max-w-xs truncate font-mono text-muted-foreground">
+                        {commitment.onChainContent.slice(0, 32)}...
                       </AndamioText>
                     ) : (
-                      <AndamioText variant="small" className="italic">No evidence</AndamioText>
+                      <AndamioText variant="small" className="italic text-muted-foreground">No evidence</AndamioText>
                     )}
                   </AndamioTableCell>
                 </AndamioTableRow>
@@ -548,8 +616,14 @@ export default function InstructorDashboardPage() {
               </div>
               <div>
                 <AndamioLabel>Assignment</AndamioLabel>
-                <AndamioText variant="small" className="font-medium mt-1 text-foreground">{selectedCommitment.assignment?.title ?? selectedCommitment.moduleCode}</AndamioText>
-                <AndamioText variant="small" className="text-xs">{selectedCommitment.moduleCode}</AndamioText>
+                <AndamioText variant="small" className="font-medium mt-1 text-foreground">
+                  {selectedCommitment.moduleCode ?? (selectedCommitment.sltHash ? `SLT: ${selectedCommitment.sltHash.slice(0, 8)}...` : "Unknown")}
+                </AndamioText>
+                {(selectedCommitment.moduleCode ?? selectedCommitment.sltHash) && (
+                  <AndamioText variant="small" className="text-xs font-mono">
+                    {selectedCommitment.moduleCode ?? selectedCommitment.sltHash?.slice(0, 16)}
+                  </AndamioText>
+                )}
               </div>
               <div>
                 <AndamioLabel>Current Status</AndamioLabel>
@@ -569,7 +643,8 @@ export default function InstructorDashboardPage() {
               )}
             </div>
 
-            {/* Student Evidence - Full Tiptap Content */}
+            {/* Student Evidence - Tiptap Content or On-Chain Hash */}
+            {/* Updated 2026-01-28: Evidence is now Tiptap JSON from content.evidence */}
             <div className="space-y-2">
               <AndamioLabel>Student Evidence</AndamioLabel>
               {isLoadingDetail ? (
@@ -578,8 +653,19 @@ export default function InstructorDashboardPage() {
                   <AndamioText variant="small" className="ml-2">Loading evidence...</AndamioText>
                 </div>
               ) : detailedCommitment?.evidence ? (
+                /* Rich evidence from database (Tiptap JSON document) */
                 <div className="border rounded-md">
                   <ContentDisplay content={detailedCommitment.evidence} variant="muted" />
+                </div>
+              ) : selectedCommitment.onChainContent ? (
+                /* On-chain evidence hash (chain-only commitments - DB record not found) */
+                <div className="py-4 px-3 border rounded-md bg-muted/20">
+                  <AndamioText variant="small" className="font-mono break-all">
+                    {selectedCommitment.onChainContent}
+                  </AndamioText>
+                  <AndamioText variant="small" className="text-muted-foreground italic mt-2">
+                    On-chain evidence hash. The database record for this submission was not found.
+                  </AndamioText>
                 </div>
               ) : (
                 <div className="py-4 px-3 border rounded-md bg-muted/20">
@@ -711,7 +797,7 @@ export default function InstructorDashboardPage() {
                     (detailedCommitment?.status ?? selectedCommitment.commitmentStatus) !== "PENDING_APPROVAL"
                   }
                   stateText={{
-                    idle: assessmentDecision === "accept" ? "Accept Assignment" : "Refuse Assignment",
+                    idle: "Submit Assessment",
                     fetching: "Preparing...",
                     signing: "Sign in Wallet",
                     submitting: "Submitting...",
@@ -723,6 +809,7 @@ export default function InstructorDashboardPage() {
           </AndamioCardContent>
         </AndamioCard>
       )}
-    </div>
+      </div>
+    </AndamioScrollArea>
   );
 }

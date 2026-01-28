@@ -1,16 +1,17 @@
 # Skill Quick Reference
 
-> Complete reference for all 11 Claude skills in the Andamio T3 App Template.
+> Complete reference for all 12 Claude skills in the Andamio T3 App Template.
 
 ## At a Glance
 
 | Skill | Command | Purpose | Modes |
 |-------|---------|---------|-------|
 | Getting Started | `/getting-started` | Onboarding and skill discovery | Interactive |
+| **Hooks Architect** | `/hooks-architect` | **Hook patterns, creation, auditing** | `learn`, `implement`, `audit`, `extract`, `reference` |
 | Design System | `/design-system` | UI patterns, styling, components | `review`, `diagnose`, `reference` |
-| Audit API Coverage | `/audit-api-coverage` | API endpoint coverage tracking | Single + interview |
+| Audit API Coverage | `/audit-api-coverage` | API endpoint coverage tracking | Single |
 | TypeScript Types Expert | `/typescript-types-expert` | Type safety and architecture | `audit`, `fix`, `design` |
-| Project Manager | `/project-manager` | Project status and roadmap | Single |
+| Project Manager | `/project-manager` | Project status and roadmap | Interactive |
 | Review PR | `/review-pr` | Comprehensive PR review | Single (delegates) |
 | Documentarian | `/documentarian` | Documentation maintenance | Single |
 | Transaction Auditor | `/transaction-auditor` | TX schema sync with API | Single |
@@ -32,6 +33,32 @@
 - Want a guided introduction
 
 **Output**: Conversation-based guidance to appropriate skills
+
+---
+
+### `/hooks-architect`
+
+**Purpose**: Guide developers through creating, using, and auditing API hooks
+
+**Modes**:
+| Mode | Command | Use Case |
+|------|---------|----------|
+| Learn | `/hooks-architect learn` | Understand the hook pattern |
+| Implement | `/hooks-architect implement` | Create a new hook |
+| Audit | `/hooks-architect audit` | Check existing hooks for compliance |
+| Extract | `/hooks-architect extract` | Move direct API calls into hooks |
+| Reference | `/hooks-architect reference` | Find existing hooks |
+
+**When to use**:
+- Learning how hooks work in this codebase
+- Creating new hooks for API endpoints
+- Auditing hook quality and patterns
+- Extracting direct API calls from components
+
+**Key files** (4):
+- `HOOK-RULES.md` - Precise rules for hook structure
+- `HOOK-REFERENCE.md` - All existing hooks with exports
+- `PROGRESS.md` - Phase 3.9/3.10 tracking
 
 ---
 
@@ -59,17 +86,18 @@
 
 **Purpose**: Track API endpoint implementation status
 
-**Coverage**: 108 Gateway endpoints, currently 63% covered
+**Coverage**: 99 Gateway endpoints, currently ~71% covered
 
 **When to use**:
-- Adding a new feature that needs API calls
 - Checking if an endpoint is implemented
 - Planning API integration work
+- Tracking overall coverage
 
 **Key files**:
 - `unified-api-endpoints.md` - Full endpoint reference
 - `api-coverage.md` - Implementation status
-- `COVERAGE-REPORT.md` - Auto-generated report
+
+**Note**: For hook patterns and quality, use `/hooks-architect` instead.
 
 ---
 
@@ -116,7 +144,7 @@
 
 **Delegates to**:
 - `/design-system review` - For styling changes
-- `/audit-api-coverage` - For API changes
+- `/hooks-architect audit` - For hook changes
 - `/typescript-types-expert audit` - For type changes
 - `/documentarian` - For doc updates
 
@@ -137,7 +165,7 @@
 
 **Delegates to**:
 - `/transaction-auditor` - For TX schema changes
-- `/audit-api-coverage` - For API changes
+- `/hooks-architect` - For hook changes
 - `/design-system reference` - For styling changes
 - `/project-manager` - For status updates
 
@@ -180,17 +208,22 @@
 
 ### `/react-query-auditor`
 
-**Purpose**: Audit React Query hooks for patterns
+**Purpose**: Diagnose and fix React Query runtime issues
 
-**Checks**:
-1. Type safety (generated types used correctly)
-2. Proper patterns (queryKey, staleTime, etc.)
-3. Cache management (invalidation, optimistic updates)
+**Focus areas**:
+1. Cache invalidation (mutations not updating UI)
+2. Stale data debugging (data flickers or reverts)
+3. UX update issues (UI doesn't reflect changes)
+4. Query key matching (invalidation not triggering refetch)
 
 **When to use**:
-- Reviewing hook implementations
-- Debugging stale data issues
-- Ensuring type safety in queries
+- UI doesn't update after mutation or TX
+- Data appears stale after navigation
+- Debugging cache-related bugs
+
+**Relationship with `/hooks-architect`**:
+- Structure problems → `/hooks-architect`
+- Runtime/cache problems → `/react-query-auditor`
 
 ---
 
@@ -207,3 +240,7 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 - Encountering errors during development
 - Need to determine which repo to file an issue
 - Analyzing error logs
+
+---
+
+**Last Updated**: January 28, 2026

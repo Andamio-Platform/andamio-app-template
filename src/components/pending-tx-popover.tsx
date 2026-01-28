@@ -66,10 +66,12 @@ function getEntityTypeLabel(entityType: string): string {
 
 /**
  * Get blockchain explorer URL for transaction
+ * Note: This deprecated component uses preprod explorer since that's
+ * the primary development network. New code should use getTransactionExplorerUrl
+ * from ~/lib/constants.ts which respects NEXT_PUBLIC_CARDANO_NETWORK.
  */
 function getExplorerUrl(txHash: string): string {
-  // TODO: Make this configurable (mainnet/preprod/preview)
-  return `https://cardanoscan.io/transaction/${txHash}`;
+  return `https://preprod.cardanoscan.io/transaction/${txHash}`;
 }
 
 /**

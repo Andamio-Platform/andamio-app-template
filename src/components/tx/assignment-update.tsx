@@ -109,7 +109,8 @@ export function AssignmentUpdate({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           console.log("[AssignmentUpdate] TX confirmed and DB updated by gateway");
 
           const actionText = isNewCommitment ? "committed" : "updated";
@@ -178,7 +179,7 @@ export function AssignmentUpdate({
 
     // Side effect params are the same for both
     const sideEffectParams = {
-      module_code: moduleCode,
+      course_module_code: moduleCode,
       network_evidence: evidence,
       network_evidence_hash: hash,
     };

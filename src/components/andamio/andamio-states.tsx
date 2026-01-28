@@ -24,24 +24,12 @@ import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "./anda
 import { AndamioButton } from "./andamio-button";
 import { AndamioText } from "./andamio-text";
 import type { IconComponent } from "~/types/ui";
+// Note: Loading components are exported from ./andamio-loading via index.ts
+// Do NOT re-export them here to avoid duplicate export warnings
 import {
   AndamioPageLoading,
-  AndamioStudioLoading,
-  AndamioCardLoading,
-  AndamioListLoading,
-  AndamioSectionLoading,
   AndamioInlineLoading,
 } from "./andamio-loading";
-
-// Re-export loading components from unified loading system
-export {
-  AndamioPageLoading,
-  AndamioStudioLoading,
-  AndamioCardLoading,
-  AndamioListLoading,
-  AndamioSectionLoading,
-  AndamioInlineLoading,
-};
 
 /**
  * @deprecated Use AndamioPageLoading or AndamioInlineLoading from andamio-loading.tsx instead

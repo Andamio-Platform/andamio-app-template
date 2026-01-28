@@ -19,7 +19,7 @@
  * ```
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
@@ -68,26 +68,40 @@ function getModuleStatus(
   source: string | undefined,
   moduleStatus: string | undefined
 ): CourseModuleStatus {
+  // Log status derivation for debugging
+  console.log("[getModuleStatus] Deriving status:", {
+    source,
+    moduleStatus,
+  });
+
   // Chain-only modules need DB registration
   if (source === "chain_only") {
+    console.log("[getModuleStatus] Result: unregistered (chain_only)");
     return "unregistered";
   }
 
   // Merged modules are fully active
   if (source === "merged") {
+    console.log("[getModuleStatus] Result: active (merged)");
     return "active";
   }
 
   // DB-only modules: derive from module_status
+  let result: CourseModuleStatus;
   switch (moduleStatus?.toUpperCase()) {
     case "APPROVED":
-      return "approved";
+      result = "approved";
+      break;
     case "PENDING_TX":
-      return "pending_tx";
+      result = "pending_tx";
+      break;
     case "DRAFT":
     default:
-      return "draft";
+      result = "draft";
+      break;
   }
+  console.log("[getModuleStatus] Result:", result, "(db_only)");
+  return result;
 }
 
 /**
@@ -456,19 +470,7 @@ export const courseModuleKeys = {
     [...courseModuleKeys.all, "map", courseIds.sort().join(",")] as const,
 };
 
-export const assignmentKeys = {
-  all: ["assignments"] as const,
-  details: () => [...assignmentKeys.all, "detail"] as const,
-  detail: (courseId: string, moduleCode: string) =>
-    [...assignmentKeys.details(), courseId, moduleCode] as const,
-};
-
-export const introductionKeys = {
-  all: ["introductions"] as const,
-  details: () => [...introductionKeys.all, "detail"] as const,
-  detail: (courseId: string, moduleCode: string) =>
-    [...introductionKeys.details(), courseId, moduleCode] as const,
-};
+// Note: assignmentKeys, introductionKeys, sltKeys, lessonKeys are defined in use-course-content.ts
 
 // =============================================================================
 // Query Hooks
@@ -578,6 +580,21 @@ export function useTeacherCourseModules(courseId: string | undefined) {
 
       const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
 
+      // Log raw API response for debugging merge issues
+      console.log("[useTeacherCourseModules] Raw API response:", {
+        courseId,
+        dataCount: result.data?.length ?? 0,
+        warning: result.warning,
+        modules: result.data?.map((m) => ({
+          slt_hash: m.slt_hash,
+          source: m.source,
+          module_status: m.content?.module_status,
+          course_module_code: m.content?.course_module_code,
+          has_content: !!m.content,
+          on_chain_slts_count: m.on_chain_slts?.length ?? 0,
+        })),
+      });
+
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useTeacherCourseModules] API warning:", result.warning);
@@ -585,9 +602,24 @@ export function useTeacherCourseModules(courseId: string | undefined) {
 
       // Transform to app-level types and sort by moduleCode alphabetically
       const modules = (result.data ?? []).map(transformCourseModule);
+
+      // Log transformed modules for debugging
+      console.log("[useTeacherCourseModules] Transformed modules:", {
+        count: modules.length,
+        modules: modules.map((m) => ({
+          sltHash: m.sltHash,
+          moduleCode: m.moduleCode,
+          status: m.status,
+          hasSlts: (m.slts?.length ?? 0) > 0,
+          onChainSltsCount: m.onChainSlts?.length ?? 0,
+        })),
+      });
+
       return sortModulesByCode(modules);
     },
     enabled: !!courseId && isAuthenticated,
+    // Keep previous data visible during refetch to prevent UI flicker
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -884,11 +916,12 @@ export function useUpdateCourseModuleStatus() {
     }: {
       courseId: string;
       moduleCode: string;
-      status: string;
+      status: "DRAFT" | "APPROVED";
       /** Required when status is "APPROVED" */
       sltHash?: string;
     }) => {
-      // Endpoint: POST /course/teacher/course-module/update-status
+      // Use dedicated update-status endpoint for bidirectional status changes
+      // This endpoint supports both DRAFT → APPROVED and APPROVED → DRAFT
       const body: Record<string, string> = {
         course_id: courseId,
         course_module_code: moduleCode,
@@ -910,7 +943,8 @@ export function useUpdateCourseModuleStatus() {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to update module status: ${response.statusText}`);
+        const errorData = await response.json() as { message?: string; error?: string };
+        throw new Error(errorData.message ?? errorData.error ?? `Failed to update module status: ${response.statusText}`);
       }
 
       // Response consumed but not returned - cache invalidation triggers refetch

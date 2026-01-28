@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { VerifiedIcon, AlertIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
-import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { ContentEditor } from "~/components/editor";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 
@@ -20,6 +18,12 @@ interface StepAssignmentProps {
   direction: number;
 }
 
+/**
+ * StepAssignment - Design the module assignment
+ *
+ * Uses the draft store for optimistic updates.
+ * Changes are saved automatically when navigating to the next step.
+ */
 export function StepAssignment({ config, direction }: StepAssignmentProps) {
   const {
     data,
@@ -27,59 +31,71 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     goPrevious,
     goToStep,
     canGoPrevious,
-    refetchData,
-    courseNftPolicyId,
-    moduleCode,
+    // Draft store state and actions
+    draftAssignment,
+    setAssignment,
+    isDirty,
+    isSaving,
+    lastError,
   } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
-  const assignment = data.assignment;
   const slts = data.slts;
 
+  // Use draft assignment if available, otherwise fall back to data.assignment
+  const assignment = draftAssignment ?? data.assignment;
+
+  // Local UI state for editing
   const [title, setTitle] = useState(assignment?.title ?? "Module Assignment");
   const [content, setContent] = useState<JSONContent | null>(
     assignment?.contentJson ? (assignment.contentJson as JSONContent) : null
   );
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Track if we've done initial sync to avoid overwriting user edits
+  // Track if we've synced from assignment data
   const [hasInitializedFromAssignment, setHasInitializedFromAssignment] = useState(false);
 
   // Sync local state when assignment data loads from API (after refetch or initial load)
-  // This handles the case where assignment is null initially, then data arrives from refetch
   useEffect(() => {
-    // Debug logging to trace assignment data
-    console.log("[StepAssignment] assignment changed:", {
-      hasAssignment: !!assignment,
-      title: assignment?.title,
-      hasContentJson: !!assignment?.contentJson,
-      hasInitializedFromAssignment,
-    });
-
-    // Only sync if:
-    // 1. We have assignment data with a title (from DB)
-    // 2. We haven't already initialized OR the user hasn't made changes
     if (assignment?.title && !hasInitializedFromAssignment) {
       setTitle(assignment.title);
       if (assignment.contentJson) {
         setContent(assignment.contentJson as JSONContent);
       }
       setHasInitializedFromAssignment(true);
-      console.log("[StepAssignment] Synced state from assignment:", assignment.title);
     }
   }, [assignment, hasInitializedFromAssignment]);
 
-  // Track unsaved changes
-  useEffect(() => {
-    const titleChanged = title !== (assignment?.title ?? "Module Assignment");
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.contentJson ?? null);
-    setHasUnsavedChanges(titleChanged || contentChanged);
-  }, [title, content, assignment]);
+  /**
+   * Update draft store when local state changes
+   */
+  const updateDraft = useCallback(() => {
+    if (!setAssignment) return;
 
-  // Check if assignment actually exists in the database (has a saved title)
-  // The API may return an empty/partial object even when no assignment record exists
+    setAssignment({
+      id: assignment?.id,
+      title: title.trim() || "Module Assignment",
+      description: assignment?.description,
+      contentJson: content,
+      imageUrl: assignment?.imageUrl,
+      videoUrl: assignment?.videoUrl,
+    });
+  }, [setAssignment, assignment, title, content]);
+
+  // Debounce draft updates - update after 500ms of no changes
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      // Only update if there are actual changes
+      const titleChanged = title !== (assignment?.title ?? "Module Assignment");
+      const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.contentJson ?? null);
+
+      if (titleChanged || contentChanged) {
+        updateDraft();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [title, content, assignment, updateDraft]);
+
+  // Check if assignment actually exists in the database
   const assignmentExistsInDb = !!(
     assignment &&
     (
@@ -87,94 +103,6 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
       (typeof assignment.title === "string" && assignment.title.trim().length > 0)
     )
   );
-
-  const handleSave = async () => {
-    if (!isAuthenticated) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      if (assignmentExistsInDb) {
-        // Go API: POST /course/teacher/assignment/update
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/assignment/update`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: moduleCode,
-              title,
-              content_json: content,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to update assignment");
-        }
-      } else {
-        // Go API: POST /course/teacher/assignment/create
-        // CreateAssignmentV2Request: content_json, course_id, course_module_code, title, etc.
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/assignment/create`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: moduleCode,
-              title,
-              content_json: content,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          // Handle 409 Conflict: assignment already exists, refetch and retry with update
-          if (response.status === 409) {
-            console.log("[StepAssignment] 409 Conflict: assignment exists, refetching and retrying with update");
-            await refetchData();
-            // After refetch, the assignment should now be available - retry as update
-            const updateResponse = await authenticatedFetch(
-              `/api/gateway/api/v2/course/teacher/assignment/update`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  course_id: courseNftPolicyId,
-                  course_module_code: moduleCode,
-                  title,
-                  content_json: content,
-                }),
-              }
-            );
-            if (!updateResponse.ok) {
-              throw new Error("Failed to update assignment");
-            }
-          } else {
-            const errorData = await response.json() as { message?: string };
-            throw new Error(errorData.message ?? "Failed to create assignment");
-          }
-        }
-      }
-
-      await refetchData();
-      setHasUnsavedChanges(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save assignment");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleContinue = async () => {
-    if (hasUnsavedChanges) {
-      await handleSave();
-    }
-    goNext();
-  };
 
   const canProceed = assignmentExistsInDb || (title.trim().length > 0);
 
@@ -216,13 +144,10 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
                 What will learners do to demonstrate mastery?
               </AndamioCardDescription>
             </div>
-            {hasUnsavedChanges && (
-              <AndamioSaveButton
-                variant="outline"
-                onClick={handleSave}
-                isSaving={isSaving}
-                compact
-              />
+            {isDirty && (
+              <span className="text-xs text-muted-foreground">
+                {isSaving ? "Saving..." : "Unsaved changes"}
+              </span>
             )}
           </div>
         </AndamioCardHeader>
@@ -233,6 +158,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Assignment title"
               className="font-medium"
+              disabled={isSaving}
             />
           </div>
 
@@ -253,17 +179,24 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         your code.&quot;
       </WizardStepTip>
 
-      {error && (
+      {/* Dirty indicator */}
+      {isDirty && !isSaving && (
+        <div className="text-xs text-muted-foreground">
+          Changes will be saved when you continue to the next step.
+        </div>
+      )}
+
+      {lastError && (
         <AndamioAlert variant="destructive">
           <AlertIcon className="h-4 w-4" />
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
         </AndamioAlert>
       )}
 
       {/* Navigation */}
       <WizardNavigation
         onPrevious={goPrevious}
-        onNext={handleContinue}
+        onNext={goNext}
         canGoPrevious={canGoPrevious}
         canGoNext={canProceed}
         nextLabel="Add Lessons"

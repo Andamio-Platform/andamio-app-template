@@ -119,13 +119,21 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
         breadcrumbs.push({ label: "Course Studio", href: "/studio/course" });
         breadcrumbs.push({ label: "Course" });
       } else if (segments.length >= 4) {
-        // /studio/course/[coursenft]/[modulecode] or deeper
+        // /studio/course/[coursenft]/[something] or deeper
         breadcrumbs.push({ label: "Course Studio", href: "/studio/course" });
         breadcrumbs.push({
           label: "Course",
           href: `/studio/course/${segments[2]}`,
         });
-        breadcrumbs.push({ label: "Module" });
+        // Determine label based on the route segment
+        const subRoute = segments[3];
+        if (subRoute === "teacher") {
+          breadcrumbs.push({ label: "Teacher" });
+        } else if (subRoute === "new") {
+          breadcrumbs.push({ label: "New Module" });
+        } else {
+          breadcrumbs.push({ label: "Module" });
+        }
       }
     } else if (segments[1] === "project") {
       if (segments.length === 2) {

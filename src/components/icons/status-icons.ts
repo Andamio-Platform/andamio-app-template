@@ -15,6 +15,9 @@ export { CheckCircle as SuccessIcon } from "lucide-react";
 /** Completed - task/step is done (minimal checkmark) */
 export { Check as CompletedIcon } from "lucide-react";
 
+/** Check - generic checkmark (alias for CompletedIcon) */
+export { Check as CheckIcon } from "lucide-react";
+
 /** Verified - verified/validated state */
 export { CheckCircle2 as VerifiedIcon } from "lucide-react";
 

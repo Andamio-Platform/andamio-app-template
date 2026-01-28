@@ -9,6 +9,8 @@
  * @see .claude/skills/project-manager/ANDAMIOSCAN-EVENTS-CONFIRMATION.md
  */
 
+import { indexerLogger } from "./debug-logger";
+
 // =============================================================================
 // API Client
 // =============================================================================
@@ -606,7 +608,7 @@ export async function getEventByTxType(
 ): Promise<unknown> {
   const eventPath = TX_TO_EVENT_MAP[txType];
   if (!eventPath) {
-    console.warn(`[andamioscan] No event endpoint mapped for tx type: ${txType}`);
+    indexerLogger.warn(`No event endpoint mapped for tx type: ${txType}`);
     return null;
   }
 
@@ -647,7 +649,7 @@ export async function waitForEventConfirmation(
 
     const event = await getEventByTxType(txType, txHash);
     if (event) {
-      console.log(`[andamioscan] Transaction confirmed after ${attempt} attempts`);
+      indexerLogger.info(`Transaction confirmed after ${attempt} attempts`);
       return event;
     }
 
@@ -656,8 +658,8 @@ export async function waitForEventConfirmation(
     }
   }
 
-  console.warn(
-    `[andamioscan] Transaction confirmation timeout after ${maxAttempts} attempts`
+  indexerLogger.warn(
+    `Transaction confirmation timeout after ${maxAttempts} attempts`
   );
   return null;
 }

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   CourseIcon,
   OnChainIcon,
@@ -110,10 +111,13 @@ export function CourseCard({ course }: CourseCardProps) {
         {/* Image or Gradient Header */}
         <div className="relative h-32 sm:h-40 overflow-hidden rounded-t-xl -mt-6 -mx-0">
           {imageUrl ? (
-            <img
+            <Image
               src={imageUrl}
               alt={displayTitle}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              unoptimized
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 flex items-center justify-center">

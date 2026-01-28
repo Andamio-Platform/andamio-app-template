@@ -42,6 +42,7 @@ import {
   SLTIcon,
   CredentialIcon,
   VerifiedIcon,
+  TeacherIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -49,6 +50,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
+import { useTeacherAssignmentCommitments } from "~/hooks/api/course/use-course-teacher";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
@@ -189,6 +191,13 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   // React Query hooks - Database
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
+
+  // Fetch pending assignment commitments for this course
+  const { data: allPendingCommitments = [] } = useTeacherAssignmentCommitments();
+  const pendingCommitmentsForCourse = useMemo(() =>
+    allPendingCommitments.filter((c) => c.courseId === courseNftPolicyId),
+    [allPendingCommitments, courseNftPolicyId]
+  );
 
   // =============================================================================
   // Module Stats - All derived from hook data (useTeacherCourseModules)
@@ -551,10 +560,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
                   Create Your First Credential
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <AndamioText variant="muted" className="text-lg leading-relaxed">
                   Every module is a <strong className="text-foreground">verifiable credential</strong> that learners earn on-chain.
                   Design what mastery looks like, and Andamio handles the rest.
-                </p>
+                </AndamioText>
               </div>
 
               {/* Two Path Options */}
@@ -652,10 +661,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <AlertIcon className="h-4 w-4" />
                   <AndamioAlertTitle>Course is private</AndamioAlertTitle>
                   <AndamioAlertDescription>
-                    <p>
+                    <AndamioText>
                       Private courses are hidden from Browse Courses. Set this course to Public to
                       make it visible to learners.
-                    </p>
+                    </AndamioText>
                     <AndamioButton
                       variant="outline"
                       size="sm"
@@ -685,6 +694,31 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   Settings
                 </AndamioTabsTrigger>
               </AndamioTabsList>
+
+              {/* Pending Reviews CTA - Show when there are commitments awaiting teacher review */}
+              {pendingCommitmentsForCourse.length > 0 && (
+                <AndamioAlert className="mb-6 border-secondary/30 bg-secondary/5">
+                  <TeacherIcon className="h-4 w-4 text-secondary" />
+                  <AndamioAlertTitle className="text-secondary">
+                    {pendingCommitmentsForCourse.length} Assignment{pendingCommitmentsForCourse.length !== 1 ? "s" : ""} Pending Review
+                  </AndamioAlertTitle>
+                  <AndamioAlertDescription className="flex items-center justify-between gap-4">
+                    <span>
+                      Student{pendingCommitmentsForCourse.length !== 1 ? "s have" : " has"} submitted work that needs your assessment.
+                    </span>
+                    <AndamioButton
+                      size="sm"
+                      variant="secondary"
+                      className="flex-shrink-0"
+                      asChild
+                    >
+                      <Link href={`/studio/course/${courseNftPolicyId}/teacher`}>
+                        Review Submissions
+                      </Link>
+                    </AndamioButton>
+                  </AndamioAlertDescription>
+                </AndamioAlert>
+              )}
 
               {/* Credentials Tab */}
               <AndamioTabsContent value="modules" className="mt-0">

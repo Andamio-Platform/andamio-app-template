@@ -122,7 +122,7 @@ export function AuthStatusBar() {
               <NeutralIcon
                 className={cn(
                   "h-1.5 w-1.5 fill-current flex-shrink-0",
-                  isWalletConnected ? "text-green-300" : "text-primary-foreground/50"
+                  isWalletConnected ? "text-success-foreground" : "text-primary-foreground/50"
                 )}
               />
               <span className="text-xs text-primary-foreground/80 truncate">
@@ -137,9 +137,9 @@ export function AuthStatusBar() {
           {/* Auth Status - Hidden on very small screens */}
           <div className="hidden xs:flex items-center gap-2">
             {isAuthenticated ? (
-              <VerifiedIcon className="h-3.5 w-3.5 text-green-300 flex-shrink-0" />
+              <VerifiedIcon className="h-3.5 w-3.5 text-success-foreground flex-shrink-0" />
             ) : authError ? (
-              <SecurityAlertIcon className="h-3.5 w-3.5 text-red-300 flex-shrink-0" />
+              <SecurityAlertIcon className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
             ) : (
               <ShieldIcon className="h-3.5 w-3.5 text-primary-foreground/50 flex-shrink-0" />
             )}
@@ -147,9 +147,9 @@ export function AuthStatusBar() {
               className={cn(
                 "text-xs whitespace-nowrap",
                 isAuthenticated
-                  ? "text-green-300"
+                  ? "text-success-foreground"
                   : authError
-                  ? "text-red-300"
+                  ? "text-destructive"
                   : "text-primary-foreground/50"
               )}
             >
@@ -172,16 +172,16 @@ export function AuthStatusBar() {
                 <PendingIcon
                   className={cn(
                     "h-3.5 w-3.5 flex-shrink-0",
-                    isExpiringSoon ? "text-amber-300" : "text-primary-foreground/70"
+                    isExpiringSoon ? "text-warning" : "text-primary-foreground/70"
                   )}
                 />
                 <span
                   className={cn(
                     "text-xs font-mono",
                     timeUntilExpiry === "Expired"
-                      ? "text-red-300"
+                      ? "text-destructive"
                       : isExpiringSoon
-                      ? "text-amber-300"
+                      ? "text-warning"
                       : "text-primary-foreground/70"
                   )}
                 >

@@ -52,8 +52,8 @@ export const projectContributorKeys = {
   list: () => [...projectContributorKeys.all, "list"] as const,
   commitments: (projectId?: string) =>
     [...projectContributorKeys.all, "commitments", projectId] as const,
-  commitment: (projectId: string, taskId: string) =>
-    [...projectContributorKeys.all, "commitment", projectId, taskId] as const,
+  commitment: (projectId: string, taskHash: string) =>
+    [...projectContributorKeys.all, "commitment", projectId, taskHash] as const,
 };
 
 // =============================================================================
@@ -64,7 +64,7 @@ export const projectContributorKeys = {
  * Commitment summary from contributor's perspective
  */
 export interface MyCommitmentSummary {
-  taskId: string;
+  taskHash: string;
   commitmentStatus: string;
   taskEvidenceHash?: string;
   evidence?: unknown;
@@ -110,7 +110,7 @@ export interface ContributorProject {
 export interface ContributorCommitment {
   // Identifiers
   projectId: string;
-  taskId: string;
+  taskHash: string;
 
   // On-chain info
   submissionTx?: string;
@@ -141,7 +141,7 @@ function transformMyCommitmentSummary(
   api: OrchestrationMyCommitmentSummary
 ): MyCommitmentSummary {
   return {
-    taskId: api.task_id ?? "",
+    taskHash: api.task_hash ?? "",
     commitmentStatus: api.commitment_status ?? "unknown",
     taskEvidenceHash: api.content?.task_evidence_hash,
     evidence: api.content?.evidence,
@@ -194,7 +194,7 @@ function transformContributorCommitment(
   return {
     // Identifiers
     projectId: api.project_id ?? "",
-    taskId: api.task_id ?? "",
+    taskHash: api.task_hash ?? "",
 
     // On-chain info
     submissionTx: api.submission_tx,
@@ -344,12 +344,12 @@ export function useContributorCommitments(projectId?: string) {
  * Returns a single commitment with full details.
  *
  * @param projectId - Project ID
- * @param taskId - Task ID (task hash)
+ * @param taskHash - Task hash (content-addressed task identifier)
  *
  * @example
  * ```tsx
- * function CommitmentDetail({ projectId, taskId }: { projectId: string; taskId: string }) {
- *   const { data: commitment, isLoading } = useContributorCommitment(projectId, taskId);
+ * function CommitmentDetail({ projectId, taskHash }: { projectId: string; taskHash: string }) {
+ *   const { data: commitment, isLoading } = useContributorCommitment(projectId, taskHash);
  *
  *   if (isLoading) return <Skeleton />;
  *   if (!commitment) return <NotFound />;
@@ -360,12 +360,12 @@ export function useContributorCommitments(projectId?: string) {
  */
 export function useContributorCommitment(
   projectId: string | undefined,
-  taskId: string | undefined
+  taskHash: string | undefined
 ) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: projectContributorKeys.commitment(projectId ?? "", taskId ?? ""),
+    queryKey: projectContributorKeys.commitment(projectId ?? "", taskHash ?? ""),
     queryFn: async (): Promise<ContributorCommitment | null> => {
       // Endpoint: POST /api/v2/project/contributor/commitment/get
       const response = await authenticatedFetch(
@@ -375,7 +375,7 @@ export function useContributorCommitment(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             project_id: projectId,
-            task_id: taskId,
+            task_hash: taskHash,
           }),
         }
       );
@@ -401,7 +401,7 @@ export function useContributorCommitment(
 
       return transformContributorCommitment(result.data);
     },
-    enabled: !!projectId && !!taskId && isAuthenticated,
+    enabled: !!projectId && !!taskHash && isAuthenticated,
     staleTime: 30 * 1000,
   });
 }
@@ -415,13 +415,13 @@ export function useContributorCommitment(
  *
  * @example
  * ```tsx
- * function CommitToTask({ projectId, taskId }: { projectId: string; taskId: string }) {
+ * function CommitToTask({ projectId, taskHash }: { projectId: string; taskHash: string }) {
  *   const createCommitment = useCreateCommitment();
  *
  *   const handleCommit = async () => {
  *     await createCommitment.mutateAsync({
  *       projectId,
- *       taskId,
+ *       taskHash,
  *     });
  *     toast.success("Committed to task!");
  *   };
@@ -437,7 +437,7 @@ export function useCreateCommitment() {
   return useMutation({
     mutationFn: async (input: {
       projectId: string;
-      taskId: string;
+      taskHash: string;
     }) => {
       // Endpoint: POST /project/contributor/commitment/create
       const response = await authenticatedFetch(
@@ -447,7 +447,7 @@ export function useCreateCommitment() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             project_id: input.projectId,
-            task_id: input.taskId,
+            task_hash: input.taskHash,
           }),
         }
       );
@@ -466,7 +466,7 @@ export function useCreateCommitment() {
       });
       // Invalidate specific commitment
       void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
       });
       // Invalidate contributor projects (myCommitments changed)
       void queryClient.invalidateQueries({
@@ -487,7 +487,7 @@ export function useCreateCommitment() {
  *   const handleSubmit = async (evidence: EvidenceData) => {
  *     await updateCommitment.mutateAsync({
  *       projectId: commitment.projectId,
- *       taskId: commitment.taskId,
+ *       taskHash: commitment.taskHash,
  *       data: {
  *         evidenceUrl: evidence.url,
  *         notes: evidence.notes,
@@ -507,11 +507,11 @@ export function useUpdateCommitment() {
   return useMutation({
     mutationFn: async ({
       projectId,
-      taskId,
+      taskHash,
       data,
     }: {
       projectId: string;
-      taskId: string;
+      taskHash: string;
       data: Partial<{
         evidence: unknown;
         evidenceUrl: string;
@@ -526,7 +526,7 @@ export function useUpdateCommitment() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             project_id: projectId,
-            task_id: taskId,
+            task_hash: taskHash,
             evidence: data.evidence,
             evidence_url: data.evidenceUrl,
             notes: data.notes,
@@ -543,7 +543,7 @@ export function useUpdateCommitment() {
     onSuccess: (_, variables) => {
       // Invalidate specific commitment
       void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
       });
       // Invalidate contributor commitments list
       void queryClient.invalidateQueries({
@@ -569,7 +569,7 @@ export function useUpdateCommitment() {
  *     if (confirm("Are you sure you want to abandon this task?")) {
  *       await deleteCommitment.mutateAsync({
  *         projectId: commitment.projectId,
- *         taskId: commitment.taskId,
+ *         taskHash: commitment.taskHash,
  *       });
  *       toast.success("Commitment deleted");
  *     }
@@ -586,10 +586,10 @@ export function useDeleteCommitment() {
   return useMutation({
     mutationFn: async ({
       projectId,
-      taskId,
+      taskHash,
     }: {
       projectId: string;
-      taskId: string;
+      taskHash: string;
     }) => {
       // Endpoint: POST /project/contributor/commitment/delete
       const response = await authenticatedFetch(
@@ -599,7 +599,7 @@ export function useDeleteCommitment() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             project_id: projectId,
-            task_id: taskId,
+            task_hash: taskHash,
           }),
         }
       );
@@ -613,7 +613,7 @@ export function useDeleteCommitment() {
     onSuccess: (_, variables) => {
       // Remove specific commitment from cache
       queryClient.removeQueries({
-        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskId),
+        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
       });
       // Invalidate contributor commitments list
       void queryClient.invalidateQueries({

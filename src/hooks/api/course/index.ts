@@ -9,16 +9,15 @@
  * - use-course-owner.ts    - Owner mutations (create, update, delete, register)
  * - use-course-teacher.ts  - Teacher queries + mutations
  * - use-course-student.ts  - Student queries + mutations
- * - use-course-module.ts   - Module entity CRUD
- * - use-slt.ts             - SLT entity CRUD
- * - use-lesson.ts          - Lesson entity CRUD
+ * - use-course-module.ts   - Module entity types + CRUD
+ * - use-course-content.ts  - Public content queries (SLTs, Lessons, Assignments, Introductions)
  */
 
 export * from "./use-course";
 export * from "./use-course-owner";
 export * from "./use-course-module";
-export * from "./use-lesson";
-export * from "./use-slt";
+export * from "./use-course-content";
 export * from "./use-course-student";
 export * from "./use-course-teacher";
 export * from "./use-module-wizard-data";
+export * from "./use-save-module-draft";

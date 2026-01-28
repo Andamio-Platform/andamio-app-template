@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { AlertIcon, TipIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
-import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentEditor } from "~/components/editor";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
 
@@ -21,127 +19,95 @@ interface StepIntroductionProps {
   direction: number;
 }
 
+/**
+ * StepIntroduction - Write the module introduction
+ *
+ * Uses the draft store for optimistic updates.
+ * Changes are saved automatically when navigating to the next step.
+ */
 export function StepIntroduction({ config, direction }: StepIntroductionProps) {
   const {
     data,
     goNext,
     goPrevious,
     canGoPrevious,
-    refetchData,
-    courseNftPolicyId,
-    moduleCode,
+    // Draft store state and actions
+    draftIntroduction,
+    setIntroduction,
+    isDirty,
+    isSaving,
+    lastError,
   } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
-  const introduction = data.introduction;
   const slts = data.slts;
   const moduleTitle = data.courseModule?.title ?? "";
 
-  const introTitle = introduction?.title ?? "";
-  const [title, setTitle] = useState(introTitle || `Welcome to ${moduleTitle}`);
+  // Use draft introduction if available, otherwise fall back to data.introduction
+  const introduction = draftIntroduction ?? data.introduction;
+
+  // Local UI state for editing
+  const defaultTitle = `Welcome to ${moduleTitle}`;
+  const [title, setTitle] = useState(introduction?.title ?? defaultTitle);
   const [content, setContent] = useState<JSONContent | null>(
     introduction?.contentJson ? (introduction.contentJson as JSONContent) : null
   );
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Track if we've synced from introduction data
   const [hasInitializedFromIntro, setHasInitializedFromIntro] = useState(false);
 
-  // Sync local state when introduction data loads from API (after refetch)
+  // Sync local state when introduction data loads from API (after refetch or initial load)
   useEffect(() => {
-    console.log("[StepIntroduction] introduction changed:", {
-      hasIntroduction: !!introduction,
-      title: introduction?.title,
-      hasContentJson: !!introduction?.contentJson,
-      hasInitializedFromIntro,
-    });
-
-    // Only sync if we have introduction data with a title and haven't initialized yet
     if (introduction?.title && !hasInitializedFromIntro) {
-      const newTitle = introduction.title ?? "";
-      setTitle(newTitle);
+      setTitle(introduction.title);
       if (introduction.contentJson) {
         setContent(introduction.contentJson as JSONContent);
       }
       setHasInitializedFromIntro(true);
-      console.log("[StepIntroduction] Synced state from introduction:", newTitle);
     }
   }, [introduction, hasInitializedFromIntro]);
 
-  // Track unsaved changes
+  /**
+   * Update draft store when local state changes
+   */
+  const updateDraft = useCallback(() => {
+    if (!setIntroduction) return;
+
+    setIntroduction({
+      id: introduction?.id,
+      title: title.trim() || defaultTitle,
+      description: introduction?.description,
+      contentJson: content,
+      imageUrl: introduction?.imageUrl,
+      videoUrl: introduction?.videoUrl,
+    });
+  }, [setIntroduction, introduction, title, content, defaultTitle]);
+
+  // Debounce draft updates - update after 500ms of no changes
   useEffect(() => {
-    const originalTitle = introduction?.title ?? "";
-    const titleChanged = title !== (originalTitle || `Welcome to ${moduleTitle}`);
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(introduction?.contentJson ?? null);
-    setHasUnsavedChanges(titleChanged || contentChanged);
-  }, [title, content, introduction, moduleTitle]);
+    const timeout = setTimeout(() => {
+      // Only update if there are actual changes
+      const originalTitle = introduction?.title ?? defaultTitle;
+      const titleChanged = title !== originalTitle;
+      const contentChanged = JSON.stringify(content) !== JSON.stringify(introduction?.contentJson ?? null);
 
-  const handleSave = async () => {
-    if (!isAuthenticated) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      if (introduction) {
-        // Go API: POST /course/teacher/introduction/update
-        // Note: DB API expects `content_json` (generated types incorrectly show `content`)
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/introduction/update`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: moduleCode,
-              title,
-              content_json: content,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to update introduction");
-        }
-      } else {
-        // Go API: POST /course/teacher/introduction/create
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/introduction/create`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: moduleCode,
-              title,
-              content_json: content,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json() as { message?: string };
-          throw new Error(errorData.message ?? "Failed to create introduction");
-        }
+      if (titleChanged || contentChanged) {
+        updateDraft();
       }
+    }, 500);
 
-      await refetchData();
-      setHasUnsavedChanges(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save introduction");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    return () => clearTimeout(timeout);
+  }, [title, content, introduction, defaultTitle, updateDraft]);
 
-  const handleContinue = async () => {
-    if (hasUnsavedChanges) {
-      await handleSave();
-    }
-    goNext();
-  };
+  // Check if introduction exists in the database or draft
+  const introductionExistsInDb = !!(
+    introduction &&
+    (
+      typeof introduction.id === "number" ||
+      (typeof introduction.title === "string" && introduction.title.trim().length > 0)
+    )
+  );
 
-  const canProceed = !!data.introduction || title.trim().length > 0;
+  const canProceed = introductionExistsInDb || (title.trim().length > 0);
 
   // Generate introduction suggestions based on SLTs
   const generateSuggestion = () => {
@@ -186,13 +152,10 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
                 Set the stage for learners
               </AndamioCardDescription>
             </div>
-            {hasUnsavedChanges && (
-              <AndamioSaveButton
-                variant="outline"
-                onClick={handleSave}
-                isSaving={isSaving}
-                compact
-              />
+            {isDirty && (
+              <span className="text-xs text-muted-foreground">
+                {isSaving ? "Saving..." : "Unsaved changes"}
+              </span>
             )}
           </div>
         </AndamioCardHeader>
@@ -203,6 +166,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Introduction title"
               className="font-medium"
+              disabled={isSaving}
             />
           </div>
 
@@ -238,17 +202,24 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
         defined the &quot;what&quot; — now add the &quot;why&quot; and &quot;how.&quot;
       </WizardStepTip>
 
-      {error && (
+      {/* Dirty indicator */}
+      {isDirty && !isSaving && (
+        <div className="text-xs text-muted-foreground">
+          Changes will be saved when you continue to the next step.
+        </div>
+      )}
+
+      {lastError && (
         <AndamioAlert variant="destructive">
           <AlertIcon className="h-4 w-4" />
-          <AndamioAlertDescription>{error}</AndamioAlertDescription>
+          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
         </AndamioAlert>
       )}
 
       {/* Navigation */}
       <WizardNavigation
         onPrevious={goPrevious}
-        onNext={handleContinue}
+        onNext={goNext}
         canGoPrevious={canGoPrevious}
         canGoNext={canProceed}
         nextLabel="Review & Approve"

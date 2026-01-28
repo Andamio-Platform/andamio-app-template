@@ -5,174 +5,41 @@ description: Audit React Query hooks for type safety, proper patterns, and cache
 
 # React Query Auditor
 
-Audit React Query (TanStack Query) hooks to ensure type safety, proper patterns, and correct cache management.
+Diagnose and fix React Query runtime issues: stale data, missing updates, cache problems.
+
+## When to Use This Skill
+
+| Symptom | Use This Skill |
+|---------|---------------|
+| UI doesn't update after mutation | Yes - check cache invalidation |
+| Data flickers or reverts | Yes - check race conditions |
+| Stale data after navigation | Yes - check query keys |
+| UI doesn't update after TX | Yes - check TX confirmation handler |
+
+**For hook structure issues** (types, transformers, file organization), use `/hooks-architect` instead.
 
 ## Primary Goal: No Manual Refresh
 
 > **Users should NEVER need to tap refresh to see the latest data.**
 
-After any user action (mutation, transaction, navigation), the UI must automatically reflect the current state. This skill audits hooks to ensure:
+After any user action (mutation, transaction, navigation), the UI must automatically reflect the current state.
 
-1. **Mutations invalidate the right queries** - After updating data, related queries refetch automatically
-2. **Blockchain transactions trigger updates** - After TX confirmation, affected data refreshes
-3. **Cross-role updates work** - Teacher sees student progress; student sees teacher feedback
-4. **Navigation shows fresh data** - Moving between pages doesn't show stale cache
+## Relationship with /hooks-architect
 
-See [react-query-best-practices.md](./react-query-best-practices.md) for patterns and solutions.
+These skills are complementary:
 
-## Why This Matters
+| Concern | Skill |
+|---------|-------|
+| Hook file structure | `/hooks-architect` |
+| Colocated types | `/hooks-architect` |
+| Transform functions | `/hooks-architect` |
+| Creating new hooks | `/hooks-architect` |
+| **Cache invalidation** | **This skill** |
+| **Stale data debugging** | **This skill** |
+| **UX update issues** | **This skill** |
+| **Query key matching** | **This skill** |
 
-The issue that prompted this skill: `RequireCourseAccess` was checking `course_nft_policy_id` but the API returned `course_id`. This type mismatch caused "Access Denied" errors even when the API call succeeded.
-
-React Query hooks are the bridge between API responses and UI components. Type mismatches here cause silent runtime bugs.
-
-## Hook Locations
-
-Hooks are organized by domain under `src/hooks/api/`:
-
-### Course Hooks (`src/hooks/api/course/`)
-
-| File | Purpose | Exports |
-|------|---------|---------|
-| `use-course.ts` | Course queries | `useCourse`, `useActiveCourses`, `courseKeys`; Types: `Course`, `CourseDetail`, `CourseStatus` |
-| `use-course-owner.ts` | Owner mutations | `useOwnerCourses`, `useCreateCourse`, `useUpdateCourse`, `useDeleteCourse`, `useRegisterCourse`, `ownerCourseKeys` |
-| `use-course-module.ts` | Module queries & mutations | `useCourseModules`, `useTeacherCourseModules`, `useCourseModule`, `useCourseModuleMap`, `useCreateCourseModule`, `useUpdateCourseModule`, `useUpdateCourseModuleStatus`, `useDeleteCourseModule`, `useRegisterCourseModule`, `courseModuleKeys`; Types: `CourseModule`, `CourseModuleStatus`, `SLT`, `Lesson`, `Assignment`, `Introduction` |
-| `use-slt.ts` | SLT queries & mutations | `useSLTs`, `useCreateSLT`, `useUpdateSLT`, `useDeleteSLT`, `useReorderSLT`, `sltKeys` |
-| `use-lesson.ts` | Lesson queries & mutations | `useLessons`, `useLesson`, `useCreateLesson`, `useUpdateLesson`, `useDeleteLesson`, `lessonKeys` |
-| `use-assignment.ts` | Assignment queries & mutations | `useAssignment`, `useCreateAssignment`, `useUpdateAssignment`, `useDeleteAssignment` |
-| `use-introduction.ts` | Introduction mutations | `useCreateIntroduction`, `useUpdateIntroduction`, `useDeleteIntroduction` |
-| `use-course-teacher.ts` | Teacher queries | `useTeacherCourses`, `useTeacherAssignmentCommitments`, `useTeacherCoursesWithModules`, `useInvalidateTeacherCourses`, `courseTeacherKeys`; Types: `TeacherCourse`, `TeacherCourseStatus`, `TeacherAssignmentCommitment` |
-| `use-course-student.ts` | Student queries | `useStudentCourses`, `useInvalidateStudentCourses`, `courseStudentKeys`; Types: `StudentCourse` |
-| `use-module-wizard-data.ts` | Module wizard composite | `useModuleWizardData` - Composes course hooks for wizard UI |
-
-### Project Hooks (`src/hooks/api/project/`)
-
-| File | Purpose | Exports |
-|------|---------|---------|
-| `use-project.ts` | Project queries | `useProject`, `useProjects`, `useInvalidateProjects`, `projectKeys` |
-| `use-contributor-projects.ts` | Contributor queries | `useContributorProjects`, `useInvalidateContributorProjects`, `contributorProjectKeys`; Types: `ContributorProject`, `ContributorProjectsResponse` |
-| `use-manager-projects.ts` | Manager queries | `useManagerProjects`, `useManagerCommitments`, `useInvalidateManagerProjects`, `managerProjectKeys`; Types: `ManagerProject`, `ManagerProjectsResponse`, `ManagerCommitment`, `ManagerCommitmentsResponse` |
-
-### Centralized Exports
-
-All hooks are re-exported from `src/hooks/api/index.ts` for convenient imports:
-
-```typescript
-import { useCourse, useCourseModules, useUpdateCourse, courseKeys } from "~/hooks/api";
-```
-
-## Audit Checklist
-
-### 1. Type Safety
-
-**Check that return types match generated API types:**
-
-```typescript
-// ✅ Correct - explicit return type from generated types
-queryFn: async (): Promise<OrchestrationMergedCourseListItem[]> => {
-  const result = await response.json() as MergedHandlersMergedCoursesResponse;
-  return result.data ?? [];
-}
-
-// ❌ Wrong - inline interface that may drift from API
-interface OwnedCourse {
-  course_nft_policy_id: string | null;  // API now returns course_id!
-}
-```
-
-**Audit command:**
-```bash
-# Find hooks with inline type definitions (potential drift)
-grep -rn "interface.*{" src/hooks/api/course/ src/hooks/api/project/ | grep -v "import"
-```
-
-### 2. API Response Handling
-
-**Check for both wrapped and raw response formats:**
-
-```typescript
-// ✅ Correct - handles both formats
-const result = await response.json() as
-  | OrchestrationMergedCourseListItem[]
-  | MergedHandlersMergedCoursesResponse;
-
-return Array.isArray(result) ? result : (result.data ?? []);
-```
-
-### 3. Query Keys
-
-**Ensure consistent query key patterns:**
-
-```typescript
-// ✅ Correct - centralized key factory
-export const courseKeys = {
-  all: ["courses"] as const,
-  lists: () => [...courseKeys.all, "list"] as const,
-  detail: (id: string) => [...courseKeys.all, "detail", id] as const,
-};
-```
-
-**Audit command:**
-```bash
-# Find all query key patterns
-grep -rn "queryKey:" src/hooks/api/course/ src/hooks/api/project/
-```
-
-### 4. Cache Invalidation
-
-**Check mutation onSuccess handlers invalidate correct keys:**
-
-```typescript
-// ✅ Correct - invalidates related queries
-onSuccess: (_, variables) => {
-  void queryClient.invalidateQueries({
-    queryKey: courseKeys.detail(variables.courseNftPolicyId),
-  });
-  void queryClient.invalidateQueries({
-    queryKey: courseKeys.lists(),
-  });
-},
-```
-
-### 5. Error Handling
-
-**Check for proper error handling in queryFn:**
-
-```typescript
-// ✅ Correct - throws meaningful errors
-if (!response.ok) {
-  throw new Error(`Failed to fetch course: ${response.statusText}`);
-}
-
-// Also handle 404 as empty state when appropriate
-if (response.status === 404) {
-  return null;  // or return [] for lists
-}
-```
-
-### 6. Enabled Conditions
-
-**Check that queries are conditionally enabled:**
-
-```typescript
-// ✅ Correct - only runs when authenticated
-return useQuery({
-  queryKey: courseKeys.owned(),
-  queryFn: async () => { ... },
-  enabled: isAuthenticated,  // Don't run if not authenticated
-});
-
-// ✅ Correct - only runs when ID is provided
-return useQuery({
-  queryKey: courseKeys.detail(courseId ?? ""),
-  queryFn: async () => { ... },
-  enabled: !!courseId,  // Don't run if no ID
-});
-```
-
-## UX Update Audit
-
-When the UI doesn't update after an action, diagnose with this checklist:
+## Quick Diagnosis
 
 ### Symptom: UI doesn't update after mutation
 
@@ -242,81 +109,136 @@ onMutate: async () => {
 };
 ```
 
-## Running the Audit
+## Audit Checklist
 
-### Quick Scan
+### 1. Cache Invalidation
+
+For each mutation, verify:
+- [ ] `onSuccess` invalidates the specific entity
+- [ ] `onSuccess` invalidates related lists
+- [ ] Cross-role queries are invalidated if applicable
+- [ ] Uses `void` prefix for fire-and-forget invalidation
+
+### 2. Query Keys
+
+For each hook file, verify:
+- [ ] Keys factory is exported (`courseKeys`, `taskKeys`, etc.)
+- [ ] Keys use `as const` for type safety
+- [ ] Keys follow hierarchy: `all` → `lists()` → `detail(id)`
+- [ ] Mutation invalidation uses the same key factory
+
+### 3. Enabled Conditions
+
+For each query, verify:
+- [ ] Auth queries have `enabled: isAuthenticated`
+- [ ] Detail queries have `enabled: !!id`
+- [ ] Dependent queries wait for parent data
+
+### 4. Error Handling
+
+For each queryFn, verify:
+- [ ] Non-OK responses throw meaningful errors
+- [ ] 404 returns `null` or `[]` (doesn't throw)
+- [ ] Network errors are distinguishable from API errors
+
+## Quick Scan Commands
 
 ```bash
-# 1. Check for inline interfaces (potential type drift)
-grep -rn "interface.*{" src/hooks/api/course/ src/hooks/api/project/ --include="*.ts"
+# Find all query key patterns
+grep -rn "queryKey:" src/hooks/api/
 
-# 2. Check for direct type assertions without generated types
-grep -rn "as {" src/hooks/api/course/ src/hooks/api/project/ --include="*.ts"
+# Find mutations without onSuccess
+grep -rn "useMutation" src/hooks/api/ -A 10 | grep -B 5 "mutationFn" | grep -v "onSuccess"
 
-# 3. Verify all hooks import from generated types
-grep -rn "from \"~/types/generated\"" src/hooks/api/course/ src/hooks/api/project/
+# Find invalidateQueries calls
+grep -rn "invalidateQueries" src/hooks/api/
 
-# 4. Check for missing error handling
-grep -rn "response.json()" src/hooks/api/course/ src/hooks/api/project/ | grep -v "if.*response.ok"
+# Check for missing enabled conditions
+grep -rn "useQuery" src/hooks/api/ -A 5 | grep -v "enabled"
 ```
-
-### Deep Audit
-
-For each hook file:
-
-1. **List all return types** - verify they use generated types
-2. **Check field access** - ensure field names match API response
-3. **Verify cache invalidation** - mutations should invalidate related queries
-4. **Check error boundaries** - errors should be meaningful
 
 ## Common Issues
 
-### Issue 1: Field Name Mismatch
+### Issue 1: Missing List Invalidation
 
-**Symptom:** API call succeeds (200) but data appears missing or access denied.
+**Symptom:** Detail page updates, but list page shows old data.
 
-**Cause:** Code checks for field that doesn't exist in response.
+**Cause:** Mutation only invalidates detail key, not list keys.
 
-**Fix:** Update to use correct field name from generated types.
+**Fix:**
+```typescript
+onSuccess: (_, variables) => {
+  void queryClient.invalidateQueries({ queryKey: entityKeys.detail(variables.id) });
+  void queryClient.invalidateQueries({ queryKey: entityKeys.lists() }); // Add this!
+};
+```
 
-### Issue 2: Missing Null Handling
+### Issue 2: Query Key Mismatch
 
-**Symptom:** "Cannot read property X of undefined" errors.
+**Symptom:** Invalidation doesn't trigger refetch.
 
-**Cause:** API returns `null` but code doesn't handle it.
+**Cause:** Hardcoded key doesn't match key factory.
 
-**Fix:** Add null checks and optional chaining.
+**Fix:** Always use the exported key factory:
+```typescript
+// ❌ Wrong
+queryClient.invalidateQueries({ queryKey: ["courses", "detail", id] });
 
-### Issue 3: Stale Cache
+// ✅ Correct
+queryClient.invalidateQueries({ queryKey: courseKeys.detail(id) });
+```
 
-**Symptom:** Data doesn't update after mutation.
+### Issue 3: Missing TX Invalidation
 
-**Cause:** Mutation doesn't invalidate the right query keys.
+**Symptom:** Blockchain TX succeeds but UI doesn't update.
 
-**Fix:** Add proper `invalidateQueries` calls in `onSuccess`.
+**Cause:** TX confirmation handler doesn't invalidate queries.
 
-### Issue 4: Race Conditions
+**Fix:** Add invalidation in TX component's `onTxConfirmed`:
+```typescript
+const { invalidateAll } = useInvalidateCourses();
 
-**Symptom:** Inconsistent data display, especially on navigation.
+// After TX confirms
+invalidateAll();
+```
 
-**Cause:** Query runs before required data is available.
+### Issue 4: Stale Closure in Callback
 
-**Fix:** Add proper `enabled` conditions.
+**Symptom:** Callback uses old state values.
 
-## Integration with Type Generation
+**Cause:** Callback captures stale closure.
 
-When the API changes:
+**Fix:** Use refs for values needed in callbacks:
+```typescript
+const dataRef = useRef(data);
+useEffect(() => { dataRef.current = data; }, [data]);
 
-1. Run `npm run generate:types` to update generated types
-2. Run this audit to catch mismatches
-3. TypeScript will catch most issues, but field renames need manual review
+const callback = useCallback(() => {
+  // Use dataRef.current instead of data
+}, []); // Empty deps, uses ref
+```
+
+## Hook Reference
+
+For the complete list of hooks and their exports, see `/hooks-architect reference`.
+
+Current hooks:
+- **Course**: 10 hook files (COMPLETE)
+- **Project**: 3 hook files (IN PROGRESS)
+
+## Related Skills
+
+| Skill | When to Use |
+|-------|-------------|
+| `/hooks-architect` | Hook structure, types, creating hooks |
+| `/transaction-auditor` | TX schema sync with gateway |
+| `/issue-handler` | Route errors to correct repo |
+| `/tx-loop-guide` | Test transaction flows end-to-end |
 
 ## Supporting Documentation
 
 - **[react-query-best-practices.md](./react-query-best-practices.md)** - Detailed patterns for cache invalidation, optimistic updates, and blockchain TX flows
 
-## Related Skills
+---
 
-- **transaction-auditor**: Syncs TX schemas when API changes
-- **audit-api-coverage**: Tracks which endpoints are implemented
-- **tx-loop-guide**: Test transaction flows end-to-end
+**Last Updated**: January 28, 2026

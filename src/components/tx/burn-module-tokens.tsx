@@ -91,7 +91,8 @@ export function BurnModuleTokens({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           console.log("[BurnModuleTokens] TX confirmed and DB updated by gateway");
 
           const moduleCount = modulesToBurn.length;
@@ -123,7 +124,7 @@ export function BurnModuleTokens({
     const results = await Promise.allSettled(
       modules.map(async (m) => {
         const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/course-module/update-status`,
+          `/api/gateway/api/v2/course/teacher/course-module/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

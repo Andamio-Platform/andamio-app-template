@@ -34,7 +34,7 @@ export function RequireAuth({ title, description, children }: RequireAuthProps) 
     return (
       <div className="space-y-6">
         <div>
-          <h1>{title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{title}</h1>
           <AndamioText variant="muted">{description}</AndamioText>
         </div>
 

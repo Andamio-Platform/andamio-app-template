@@ -55,8 +55,6 @@ export default function ApiSetupPage() {
   const [gatewayJwt, setGatewayJwt] = useState<string | null>(null);
   const [registerSession, setRegisterSession] = useState<DevRegisterSession | null>(null);
 
-  // Debug: log current step on each render
-  console.log("[API Setup] Current step:", currentStep, "JWT:", gatewayJwt ? "set" : "null");
   const [apiKey, setApiKey] = useState<ApiKeyResponse | null>(null);
   const [apiKeyName, setApiKeyName] = useState("andamio-app");
 
@@ -117,14 +115,10 @@ export default function ApiSetupPage() {
       });
 
       // Already registered - skip to API key step
-      console.log("[API Setup] Login successful, setting JWT and moving to api-key step");
       setGatewayJwt(response.jwt);
       setCurrentStep("api-key");
-      console.log("[API Setup] State updates called");
-    } catch (err) {
+    } catch {
       // Not registered yet - stay on register step
-      console.log("[API Setup] Login failed, staying on register step");
-      console.log("[API Setup] Error details:", err instanceof Error ? err.message : err);
       setCurrentStep("register");
     } finally {
       setIsLoading(false);

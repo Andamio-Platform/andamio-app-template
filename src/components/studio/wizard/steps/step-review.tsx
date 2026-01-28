@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   VerifiedIcon,
   NeutralIcon,
@@ -24,6 +25,7 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
+import { courseModuleKeys, useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import type { WizardStepConfig } from "../types";
 
 interface StepReviewProps {
@@ -41,11 +43,16 @@ export function StepReview({ config, direction }: StepReviewProps) {
     refetchData,
     courseNftPolicyId,
     moduleCode,
+    saveAndSync,
+    isDirty,
+    isSaving,
+    draftSlts,
   } = useWizard();
   const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
+  const queryClient = useQueryClient();
+  const updateModuleStatus = useUpdateCourseModuleStatus();
 
   const [isApproving, setIsApproving] = useState(false);
-  const [isUnapproving, setIsUnapproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const moduleStatus = data.courseModule?.status;
   const [isApproved, setIsApproved] = useState(moduleStatus === "approved" || moduleStatus === "active");
@@ -109,18 +116,28 @@ export function StepReview({ config, direction }: StepReviewProps) {
     setError(null);
 
     try {
-      // Compute the SLT hash from SLTs (sorted by moduleIndex)
+      // Step 1: Save any unsaved draft changes first
+      if (isDirty && saveAndSync) {
+        const saveSuccess = await saveAndSync();
+        if (!saveSuccess) {
+          throw new Error("Failed to save draft before approving");
+        }
+      }
+
+      // Step 2: Compute the SLT hash from draft SLTs (sorted by moduleIndex)
+      // Use draftSlts if available (local draft), otherwise fall back to data.slts
       // API v2.0.0+: moduleIndex is 1-based
-      const sortedSltTexts = [...slts]
+      const sltsToHash = draftSlts ?? slts;
+      const sortedSltTexts = [...sltsToHash]
+        .filter((slt) => !("_isDeleted" in slt && slt._isDeleted))
         .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
         .map((slt) => slt.sltText)
-        .filter((text): text is string => typeof text === "string");
+        .filter((text): text is string => typeof text === "string" && text.length > 0);
       const sltHash = computeSltHashDefinite(sortedSltTexts);
 
-      // Go API: POST /course/teacher/course-module/update-status
-      // slt_hash is required when status = "APPROVED"
+      // Step 3: Use aggregate-update endpoint with status field to approve
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
+        `/api/gateway/api/v2/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -138,6 +155,19 @@ export function StepReview({ config, direction }: StepReviewProps) {
         throw new Error(errorData.message ?? "Failed to approve module");
       }
 
+      // Refetch all relevant queries to ensure fresh data is loaded
+      await Promise.all([
+        queryClient.refetchQueries({
+          queryKey: courseModuleKeys.list(courseNftPolicyId),
+        }),
+        queryClient.refetchQueries({
+          queryKey: courseModuleKeys.teacherList(courseNftPolicyId),
+        }),
+        queryClient.refetchQueries({
+          queryKey: courseModuleKeys.detail(courseNftPolicyId, moduleCode),
+        }),
+      ]);
+
       setIsApproved(true);
       await refetchData();
     } catch (err) {
@@ -147,38 +177,28 @@ export function StepReview({ config, direction }: StepReviewProps) {
     }
   };
 
+  /**
+   * Revert module from APPROVED back to DRAFT status.
+   * Uses the dedicated update-status endpoint (v2.0.0-dev-20260128-a+).
+   * This unlocks SLTs for editing again.
+   */
   const handleUnapprove = async () => {
     if (!isAuthenticated) return;
 
-    setIsUnapproving(true);
     setError(null);
 
     try {
-      // Go API: POST /course/teacher/course-module/update-status
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            status: "DRAFT",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message ?? "Failed to unapprove module");
-      }
+      await updateModuleStatus.mutateAsync({
+        courseId: courseNftPolicyId,
+        moduleCode,
+        status: "DRAFT",
+        // slt_hash not required for APPROVED → DRAFT
+      });
 
       setIsApproved(false);
       await refetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to unapprove module");
-    } finally {
-      setIsUnapproving(false);
+      setError(err instanceof Error ? err.message : "Failed to return to draft");
     }
   };
 
@@ -245,13 +265,17 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 to mint your module tokens on Cardano.
               </AndamioText>
 
+              <AndamioText variant="small" className="text-center text-muted-foreground/60 max-w-sm">
+                Once approved, SLTs are locked. You can still edit lessons, assignment, and introduction.
+              </AndamioText>
+
               <AndamioButton
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={handleUnapprove}
-                disabled={isUnapproving}
-                isLoading={isUnapproving}
-                className="text-muted-foreground"
+                disabled={updateModuleStatus.isPending}
+                isLoading={updateModuleStatus.isPending}
+                className="mt-2"
               >
                 Return to Draft
               </AndamioButton>
@@ -268,11 +292,11 @@ export function StepReview({ config, direction }: StepReviewProps) {
               </div>
               <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold">Ready to Publish?</h3>
-                <p className="text-sm text-muted-foreground mt-1 text-center max-w-md">
+                <AndamioText variant="small" className="mt-1 text-center max-w-md">
                   Review your module content below. When everything looks good,
                   click <strong>Approve Module</strong> to mark it as ready for
                   on-chain minting.
-                </p>
+                </AndamioText>
               </div>
             </div>
           </WizardStepHighlight>
@@ -354,13 +378,13 @@ export function StepReview({ config, direction }: StepReviewProps) {
           <div className="flex flex-col items-center gap-3">
             <AndamioButton
               onClick={handleApprove}
-              disabled={!allRequiredComplete || isApproving}
-              isLoading={isApproving}
+              disabled={!allRequiredComplete || isApproving || isSaving}
+              isLoading={isApproving || isSaving}
               size="lg"
               className="w-full sm:w-auto px-8"
             >
               <CredentialIcon className="h-5 w-5 mr-2" />
-              Approve Module
+              {isSaving ? "Saving..." : isApproving ? "Approving..." : "Save & Approve Module"}
             </AndamioButton>
             <AndamioText variant="small" className="text-center">
               This marks your module as ready to mint on Cardano

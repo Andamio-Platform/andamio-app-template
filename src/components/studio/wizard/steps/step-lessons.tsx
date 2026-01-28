@@ -1,133 +1,112 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AddIcon, CompletedIcon, LessonIcon, SparkleIcon, CollapseIcon, EditIcon } from "~/components/icons";
+import { AddIcon, CompletedIcon, LessonIcon, SparkleIcon, CollapseIcon, EditIcon, AlertIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { ContentEditor } from "~/components/editor";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { toast } from "sonner";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
-import type { Lesson } from "~/hooks/api";
+import type { LessonDraft } from "~/stores/module-draft-store";
 
 interface StepLessonsProps {
   config: WizardStepConfig;
   direction: number;
 }
 
+/**
+ * StepLessons - Create lessons for each SLT
+ *
+ * Uses the draft store for optimistic updates.
+ * Changes are saved automatically when navigating to the next step.
+ */
 export function StepLessons({ config, direction }: StepLessonsProps) {
   const {
     data,
     goNext,
     goPrevious,
     canGoPrevious,
-    refetchData,
-    courseNftPolicyId,
-    moduleCode,
+    // Draft store state and actions
+    draftLessons,
+    draftSlts,
+    draftAssignment,
+    setLesson,
+    isDirty,
+    isSaving,
+    lastError,
   } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
 
   const [creatingForSlt, setCreatingForSlt] = useState<number | null>(null);
   const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
 
-  const slts = data.slts;
-  const lessons = data.lessons;
+  // Use draft SLTs if available, otherwise fall back to data.slts
+  const slts = draftSlts ?? data.slts;
 
-  // Map lessons to their SLT's sltIndex
-  const lessonBySltIndex = lessons.reduce((acc, lesson) => {
+  // Use draft lessons if available, otherwise fall back to data.lessons
+  const lessons = draftLessons ?? new Map();
+  const serverLessons = data.lessons;
+
+  // Map server lessons to their SLT's sltIndex for fallback
+  const serverLessonBySltIndex = serverLessons.reduce((acc, lesson) => {
     const sltIndex = lesson.sltIndex ?? 0;
     acc[sltIndex] = lesson;
     return acc;
-  }, {} as Record<number, typeof lessons[number]>);
+  }, {} as Record<number, typeof serverLessons[number]>);
 
-  const handleCreateLesson = async (sltIndex: number) => {
-    if (!isAuthenticated || !newLessonTitle.trim()) return;
+  /**
+   * Create a new lesson in the draft store
+   * No API call - saved when navigating to next step
+   */
+  const handleCreateLesson = (sltIndex: number) => {
+    if (!newLessonTitle.trim() || !setLesson) return;
 
-    setIsCreating(true);
+    // Add to draft store
+    setLesson(sltIndex, {
+      title: newLessonTitle.trim(),
+      description: undefined,
+      contentJson: null,
+    });
 
-    try {
-      // Go API: POST /course/teacher/lesson/create
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/lesson/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            slt_index: sltIndex,
-            title: newLessonTitle.trim(),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        // Handle 409 Conflict: lesson already exists, just refetch and open for editing
-        if (response.status === 409) {
-          console.log("[StepLessons] 409 Conflict: lesson exists, refetching and opening for editing");
-          toast.info("Lesson already exists", {
-            description: "Opening the existing lesson for editing.",
-          });
-          setNewLessonTitle("");
-          setCreatingForSlt(null);
-          // Refetch data and wait for state to settle before opening editor
-          await refetchData();
-          // Use setTimeout to ensure React has processed the state update from refetchData
-          // before we try to open the editor (which depends on lessons being in state)
-          setTimeout(() => {
-            setEditingLessonIndex(sltIndex);
-          }, 100);
-          return;
-        }
-        const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message ?? "Failed to create lesson");
-      }
-
-      toast.success("Lesson created", {
-        description: "You can now add content to your lesson.",
-      });
-      setNewLessonTitle("");
-      setCreatingForSlt(null);
-      await refetchData();
-      // Auto-expand the newly created lesson for editing
-      // Use setTimeout to ensure React has processed the state update from refetchData
-      setTimeout(() => {
-        setEditingLessonIndex(sltIndex);
-      }, 100);
-    } catch (err) {
-      console.error("Error creating lesson:", err);
-      toast.error("Failed to create lesson", {
-        description: err instanceof Error ? err.message : "An unexpected error occurred.",
-      });
-    } finally {
-      setIsCreating(false);
-    }
+    setNewLessonTitle("");
+    setCreatingForSlt(null);
+    // Auto-expand for editing
+    setEditingLessonIndex(sltIndex);
   };
 
-  const lessonsCreated = lessons.length;
+  // Count lessons (from draft or server)
+  const lessonsCreated = lessons.size > 0
+    ? lessons.size
+    : serverLessons.length;
   const totalSLTs = slts.length;
-  // Assignment must have a saved title to be considered complete
-  const hasAssignment = !!(data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0);
+
+  // Check for assignment in draft first, then server data
+  const hasAssignment = !!(
+    (draftAssignment?.title?.trim()) ||
+    (data.assignment && typeof data.assignment.title === "string" && data.assignment.title.trim().length > 0)
+  );
 
   return (
     <WizardStep config={config} direction={direction}>
       {/* Progress indicator */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-2">
           <AndamioText variant="small">
             {lessonsCreated} of {totalSLTs} lessons created
           </AndamioText>
+          {isDirty && (
+            <span className="text-xs text-muted-foreground">
+              {isSaving ? "Saving..." : "Unsaved changes"}
+            </span>
+          )}
         </div>
         <AndamioBadge variant="outline">Optional Step</AndamioBadge>
       </div>
@@ -138,7 +117,10 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
           {slts.map((slt, index) => {
             // API v2.0.0+: moduleIndex is 1-based
             const sltIndex = slt.moduleIndex ?? (index + 1);
-            const lesson = lessonBySltIndex[sltIndex];
+            // Get lesson from draft store first, then fall back to server data
+            const draftLesson = lessons.get(sltIndex);
+            const serverLesson = serverLessonBySltIndex[sltIndex];
+            const lesson = draftLesson ?? serverLesson;
             const isCreatingThis = creatingForSlt === sltIndex;
             const isEditingThis = editingLessonIndex === sltIndex;
 
@@ -180,11 +162,15 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                               <div className="flex items-center gap-2">
                                 <LessonIcon className="h-4 w-4 text-primary" />
                                 <span className="font-medium">{typeof lesson.title === "string" ? lesson.title : "Untitled Lesson"}</span>
+                                {draftLesson && (draftLesson._isNew || draftLesson._isModified) && (
+                                  <span className="text-xs text-muted-foreground">(unsaved)</span>
+                                )}
                               </div>
                               <AndamioButton
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setEditingLessonIndex(isEditingThis ? null : sltIndex)}
+                                disabled={isSaving}
                               >
                                 {isEditingThis ? (
                                   <>
@@ -211,9 +197,9 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                                 >
                                   <LessonEditor
                                     lesson={lesson}
-                                    courseNftPolicyId={courseNftPolicyId}
-                                    moduleCode={moduleCode}
-                                    onSave={refetchData}
+                                    sltIndex={sltIndex}
+                                    setLesson={setLesson}
+                                    isSaving={isSaving}
                                   />
                                 </motion.div>
                               )}
@@ -240,8 +226,8 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
                             <AndamioButton
                               size="sm"
                               onClick={() => handleCreateLesson(sltIndex)}
-                              disabled={!newLessonTitle.trim() || isCreating}
-                              isLoading={isCreating}
+                              disabled={!newLessonTitle.trim() || isSaving}
+                              isLoading={isSaving}
                             >
                               Create
                             </AndamioButton>
@@ -311,6 +297,20 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         </motion.div>
       )}
 
+      {/* Dirty indicator */}
+      {isDirty && !isSaving && (
+        <div className="text-xs text-muted-foreground">
+          Changes will be saved when you continue to the next step.
+        </div>
+      )}
+
+      {lastError && (
+        <AndamioAlert variant="destructive">
+          <AlertIcon className="h-4 w-4" />
+          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
+        </AndamioAlert>
+      )}
+
       {/* Navigation */}
       <WizardNavigation
         onPrevious={goPrevious}
@@ -321,6 +321,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         canSkip={hasAssignment}
         skipLabel="Skip to Introduction"
         onSkip={goNext}
+        isLoading={isSaving}
       />
     </WizardStep>
   );
@@ -330,89 +331,80 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
 // Lesson Editor Component
 // =============================================================================
 
+type LessonLike = {
+  id?: number;
+  title?: string;
+  description?: string;
+  contentJson?: JSONContent | null;
+  sltIndex?: number;
+  imageUrl?: string;
+  videoUrl?: string;
+};
+
 interface LessonEditorProps {
-  lesson: Lesson;
-  courseNftPolicyId: string;
-  moduleCode: string;
-  onSave: () => Promise<void>;
+  lesson: LessonLike;
+  sltIndex: number;
+  setLesson?: (sltIndex: number, data: Omit<LessonDraft, "_isModified" | "_isNew" | "sltIndex"> | null) => void;
+  isSaving?: boolean;
 }
 
-function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonEditorProps) {
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
-
-  const lessonTitle = lesson.title ?? "";
-  const [title, setTitle] = useState(lessonTitle);
+/**
+ * LessonEditor - Inline editor for lesson content
+ *
+ * Uses the draft store for optimistic updates.
+ * Changes are debounced and saved to draft state automatically.
+ */
+function LessonEditor({ lesson, sltIndex, setLesson, isSaving = false }: LessonEditorProps) {
+  // Local UI state for editing
+  const [title, setTitle] = useState(lesson.title ?? "");
   const [content, setContent] = useState<JSONContent | null>(
-    lesson.contentJson ? (lesson.contentJson as JSONContent) : null
+    lesson.contentJson ?? null
   );
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Track if we've synced from lesson data
   const [hasInitializedFromLesson, setHasInitializedFromLesson] = useState(false);
 
-  // Sync local state when lesson data loads from API (after refetch)
+  // Sync local state when lesson data loads from API (after refetch or initial load)
   useEffect(() => {
-    console.log("[LessonEditor] lesson changed:", {
-      hasLesson: !!lesson,
-      title: lesson?.title,
-      hasContentJson: !!lesson?.contentJson,
-      hasInitializedFromLesson,
-    });
-
-    // Only sync if we have lesson data and haven't initialized yet
     if (lesson?.title && !hasInitializedFromLesson) {
-      const newTitle = lesson.title ?? "";
-      setTitle(newTitle);
+      setTitle(lesson.title);
       if (lesson.contentJson) {
-        setContent(lesson.contentJson as JSONContent);
+        setContent(lesson.contentJson);
       }
       setHasInitializedFromLesson(true);
-      console.log("[LessonEditor] Synced state from lesson:", newTitle);
     }
   }, [lesson, hasInitializedFromLesson]);
 
-  // Track unsaved changes
+  /**
+   * Update draft store when local state changes
+   */
+  const updateDraft = useCallback(() => {
+    if (!setLesson) return;
+
+    setLesson(sltIndex, {
+      id: lesson.id,
+      title: title.trim() || "Untitled Lesson",
+      description: lesson.description,
+      contentJson: content,
+      imageUrl: lesson.imageUrl,
+      videoUrl: lesson.videoUrl,
+    });
+  }, [setLesson, sltIndex, lesson, title, content]);
+
+  // Debounce draft updates - update after 500ms of no changes
   useEffect(() => {
-    const originalTitle = lesson.title ?? "";
-    const titleChanged = title !== originalTitle;
-    const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.contentJson ?? null);
-    setHasUnsavedChanges(titleChanged || contentChanged);
-  }, [title, content, lesson]);
+    const timeout = setTimeout(() => {
+      // Only update if there are actual changes
+      const titleChanged = title !== (lesson.title ?? "");
+      const contentChanged = JSON.stringify(content) !== JSON.stringify(lesson.contentJson ?? null);
 
-  const handleSave = async () => {
-    if (!isAuthenticated) return;
-
-    setIsSaving(true);
-
-    try {
-      // Go API: POST /course/teacher/lesson/update
-      // Note: API expects snake_case in request body
-      const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/lesson/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            slt_index: lesson.sltIndex,
-            content_json: content,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message ?? "Failed to update lesson");
+      if (titleChanged || contentChanged) {
+        updateDraft();
       }
+    }, 500);
 
-      await onSave();
-      setHasUnsavedChanges(false);
-    } catch (err) {
-      console.error("Error saving lesson:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    return () => clearTimeout(timeout);
+  }, [title, content, lesson, updateDraft]);
 
   return (
     <div className="space-y-4 pt-3 border-t border-border/50">
@@ -422,14 +414,8 @@ function LessonEditor({ lesson, courseNftPolicyId, moduleCode, onSave }: LessonE
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Lesson title"
           className="font-medium flex-1 mr-3"
+          disabled={isSaving}
         />
-        {hasUnsavedChanges && (
-          <AndamioSaveButton
-            onClick={handleSave}
-            isSaving={isSaving}
-            compact
-          />
-        )}
       </div>
 
       <div className="min-h-[200px] border rounded-lg overflow-hidden bg-background">

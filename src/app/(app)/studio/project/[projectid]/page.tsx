@@ -31,12 +31,11 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
 import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
-import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 
 interface ApiError {
@@ -80,7 +79,6 @@ export default function ProjectDashboardPage() {
   // On-chain status tracking
   const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
   const [onChainContributorCount, setOnChainContributorCount] = useState<number>(0);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -233,47 +231,6 @@ export default function ProjectDashboardPage() {
     }
   };
 
-  const handleSync = async () => {
-    const rawPolicyId = project?.states?.[0]?.projectNftPolicyId;
-    const projectStatePolicyId = typeof rawPolicyId === "string" ? rawPolicyId : null;
-    if (!projectStatePolicyId) {
-      toast.error("Cannot sync: missing project state policy ID");
-      return;
-    }
-
-    setIsSyncing(true);
-    toast.info("Syncing with blockchain...");
-
-    try {
-      const syncResult = await syncProjectTasks(
-        projectId,
-        projectStatePolicyId,
-        "", // Empty txHash - will be fetched from treasury_fundings
-        authenticatedFetch,
-        false // Not a dry run
-      );
-
-      if (syncResult.confirmed > 0) {
-        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
-      } else if (syncResult.errors.length > 0) {
-        toast.error("Sync failed", {
-          description: syncResult.errors[0],
-        });
-      } else {
-        toast.success("Database is in sync with blockchain");
-      }
-
-      // Refresh data
-      await fetchProjectAndTasks();
-    } catch (err) {
-      toast.error("Sync failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   // Not authenticated state
   if (!isAuthenticated) {
     return (
@@ -305,10 +262,6 @@ export default function ProjectDashboardPage() {
   // Count tasks by status
   const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT").length;
   const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN").length;
-  // Count tasks that are ON_CHAIN but missing taskHash - these need syncing
-  const tasksNeedingHashSync = tasks.filter((t) => t.taskStatus === "ON_CHAIN" && !t.taskHash).length;
-  // Check if any tasks need syncing (either status or hash)
-  const needsSync = onChainTaskCount > liveTasks || tasksNeedingHashSync > 0;
 
   const hasChanges = title !== (project.title ?? "");
 
@@ -391,39 +344,6 @@ export default function ProjectDashboardPage() {
 
         {/* Overview Tab */}
         <AndamioTabsContent value="overview" className="mt-6 space-y-4">
-          {/* Sync Warning - show when on-chain data doesn't match DB */}
-          {needsSync && (
-            <AndamioCard className="border-muted-foreground bg-muted/5">
-              <AndamioCardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <AlertIcon className="h-6 w-6 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <AndamioText className="font-semibold text-muted-foreground">Action Required: Sync Task Hashes</AndamioText>
-                      <AndamioText variant="small" className="mt-1">
-                        {onChainTaskCount > liveTasks && (
-                          <span>{onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks} marked as live in database. </span>
-                        )}
-                        {tasksNeedingHashSync > 0 && (
-                          <span>{tasksNeedingHashSync} task{tasksNeedingHashSync !== 1 ? "s" : ""} missing task hash. </span>
-                        )}
-                        <strong>Contributors cannot sync their commitments until tasks are synced.</strong>
-                      </AndamioText>
-                    </div>
-                  </div>
-                  <AndamioButton
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                    className="shrink-0"
-                  >
-                    <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                    {isSyncing ? "Syncing..." : "Sync Tasks Now"}
-                  </AndamioButton>
-                </div>
-              </AndamioCardContent>
-            </AndamioCard>
-          )}
-
           {/* Project Stats */}
           <AndamioCard>
             <AndamioCardHeader>

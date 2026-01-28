@@ -25,13 +25,12 @@ import {
   AndamioText,
   AndamioCheckbox,
 } from "~/components/andamio";
-import { TaskIcon, TreasuryIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan-events";
-import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 
 /**
@@ -99,7 +98,6 @@ export default function ManageTreasuryPage() {
   // On-chain tasks from Andamioscan (for removal)
   const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
   const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Derived: on-chain task count
   const onChainTaskCount = onChainTasks.length;
@@ -244,76 +242,6 @@ export default function ManageTreasuryPage() {
     }
   };
 
-  const handleManualSync = async () => {
-    if (!contributorStateId) {
-      toast.error("Cannot sync: missing contributor state ID");
-      return;
-    }
-
-    console.log("[manage-treasury] Starting manual sync...");
-    console.log("[manage-treasury] projectId:", projectId);
-    console.log("[manage-treasury] contributorStateId:", contributorStateId);
-    console.log("[manage-treasury] Current state - tasks:", tasks.length, "onChainTaskCount:", onChainTaskCount);
-
-    setIsSyncing(true);
-    toast.info("Syncing with blockchain...");
-
-    try {
-      // Sync tasks - the function will automatically get tx_hash from treasury_fundings
-      const syncResult = await syncProjectTasks(
-        projectId,
-        contributorStateId,
-        "", // Empty txHash - will be fetched from treasury_fundings automatically
-        authenticatedFetch,
-        false // Not a dry run - actually sync
-      );
-
-      console.log("[manage-treasury] Sync result:", {
-        confirmed: syncResult.confirmed,
-        matchedCount: syncResult.matched.length,
-        unmatchedDbCount: syncResult.unmatchedDb.length,
-        unmatchedOnChainCount: syncResult.unmatchedOnChain.length,
-        errors: syncResult.errors,
-      });
-
-      if (syncResult.confirmed > 0) {
-        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`, {
-          description: `${syncResult.confirmed} task(s) updated to ON_CHAIN status`,
-        });
-      } else if (syncResult.matched.length > 0 && syncResult.errors.length > 0) {
-        // Matched but couldn't confirm
-        toast.warning(`Found ${syncResult.matched.length} matching task(s)`, {
-          description: syncResult.errors[0],
-          duration: 8000,
-        });
-      } else if (syncResult.unmatchedOnChain.length > 0 && syncResult.unmatchedDb.length === 0) {
-        // On-chain tasks exist but no matching DB tasks
-        toast.warning("On-chain tasks don't match database", {
-          description: `Found ${syncResult.unmatchedOnChain.length} on-chain task(s) with no matching database entries. This may happen if tasks were created directly on-chain.`,
-          duration: 8000,
-        });
-      } else if (syncResult.errors.length > 0) {
-        toast.error("Sync failed", {
-          description: syncResult.errors[0],
-        });
-      } else {
-        toast.success("Database is in sync with blockchain");
-      }
-
-      // Refresh data to get latest state
-      console.log("[manage-treasury] Refreshing data after sync...");
-      await fetchData();
-      console.log("[manage-treasury] Data refreshed - tasks:", tasks.length);
-    } catch (err) {
-      console.error("[manage-treasury] Sync error:", err);
-      toast.error("Sync failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   // Not authenticated
   if (!isAuthenticated) {
     return (
@@ -442,31 +370,6 @@ export default function ManageTreasuryPage() {
         )}
       </div>
 
-      {/* Sync Warning - show when on-chain count doesn't match DB live count */}
-      {onChainTaskCount > liveTasks.length && (
-        <div className="flex items-center justify-between rounded-lg border border-muted-foreground bg-muted/10 p-4">
-          <div className="flex items-center gap-3">
-            <OnChainIcon className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <AndamioText className="font-medium">Database out of sync</AndamioText>
-              <AndamioText variant="small">
-                {onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks.length} marked as live in database.
-                {" "}Click Sync Now to update the database.
-              </AndamioText>
-            </div>
-          </div>
-          <AndamioButton
-            variant="outline"
-            size="sm"
-            onClick={handleManualSync}
-            disabled={isSyncing}
-          >
-            <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Syncing..." : "Sync Now"}
-          </AndamioButton>
-        </div>
-      )}
-
       {/* Draft Tasks for Publishing */}
       {draftTasks.length > 0 ? (
         <AndamioCard>
@@ -578,92 +481,9 @@ export default function ManageTreasuryPage() {
                   depositValue={depositValue}
                   taskCodes={taskCodes}
                   taskIndices={taskIndices}
-                  onSuccess={async (txHash, computedHashes) => {
-                    // Update DB with computed task hashes immediately
-                    if (computedHashes && computedHashes.length > 0 && contributorStateId) {
-                      console.log("[manage-treasury] Updating DB with computed hashes:", computedHashes);
-                      toast.info("Saving task hashes to database...");
-
-                      let successCount = 0;
-                      let errorCount = 0;
-
-                      for (const computed of computedHashes) {
-                        try {
-                          // First, set task to PENDING_TX status
-                          const pendingResponse = await authenticatedFetch(
-                            `/api/gateway/api/v2/project/manager/task/batch-status`,
-                            {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                project_state_policy_id: contributorStateId,
-                                tasks: [{
-                                  index: computed.taskIndex,
-                                  status: "PENDING_TX",
-                                }],
-                              }),
-                            }
-                          );
-
-                          if (!pendingResponse.ok) {
-                            console.warn(`[manage-treasury] Failed to set PENDING_TX for task ${computed.taskIndex}`);
-                          }
-
-                          // Then, call confirm-tx with the computed hash
-                          const confirmResponse = await authenticatedFetch(
-                            `/api/gateway/api/v2/project/manager/task/confirm-tx`,
-                            {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                project_state_policy_id: contributorStateId,
-                                index: computed.taskIndex,
-                                tx_hash: txHash,
-                                task_hash: computed.taskHash,
-                              }),
-                            }
-                          );
-
-                          if (confirmResponse.ok) {
-                            console.log(`[manage-treasury] Successfully saved task_hash for task ${computed.taskIndex}: ${computed.taskHash.slice(0, 16)}...`);
-                            successCount++;
-                          } else {
-                            const errorData = await confirmResponse.json().catch(() => ({}));
-                            console.error(`[manage-treasury] Failed to save task_hash for task ${computed.taskIndex}:`, errorData);
-                            errorCount++;
-                          }
-                        } catch (err) {
-                          console.error(`[manage-treasury] Error saving task_hash for task ${computed.taskIndex}:`, err);
-                          errorCount++;
-                        }
-                      }
-
-                      if (successCount > 0) {
-                        toast.success(`Saved ${successCount} task hash(es) to database`);
-                      }
-                      if (errorCount > 0) {
-                        toast.warning(`Failed to save ${errorCount} task hash(es)`);
-                      }
-                    } else {
-                      // Fall back to old sync behavior for tasks_to_remove or if no computed hashes
-                      toast.info("Syncing tasks with blockchain...");
-                      const syncResult = await syncProjectTasks(
-                        projectId,
-                        contributorStateId,
-                        txHash,
-                        authenticatedFetch
-                      );
-
-                      if (syncResult.confirmed > 0) {
-                        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
-                      } else if (syncResult.errors.length > 0) {
-                        toast.warning("Sync completed with errors", {
-                          description: syncResult.errors[0],
-                        });
-                      }
-                    }
-
-                    // Clear selections and refresh
+                  onSuccess={async () => {
+                    // Gateway TX State Machine handles DB updates automatically
+                    // Just clear selections and refresh data
                     setSelectedTaskIndices(new Set());
                     setSelectedOnChainTaskIds(new Set());
                     await fetchData();

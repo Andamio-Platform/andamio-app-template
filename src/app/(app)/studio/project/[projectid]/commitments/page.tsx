@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerCommitments, useProject, type ManagerCommitment } from "~/hooks/api";
-import { syncPendingAssessment, checkCommitmentExists } from "~/lib/project-commitment-sync";
 import {
   AndamioBadge,
   AndamioButton,
@@ -40,7 +39,6 @@ import {
   RefreshIcon,
   AlertIcon,
   TaskIcon,
-  DatabaseIcon,
 } from "~/components/icons";
 import { type Task } from "~/hooks/api/project/use-project";
 import { TasksAssess } from "~/components/tx";
@@ -69,12 +67,6 @@ export default function ProjectCommitmentsPage() {
     isLoading,
     error: projectError,
   } = useProject(projectId);
-
-  // Sync state - track which submissions are being synced
-  const [syncingSubmissions, setSyncingSubmissions] = useState<Set<string>>(new Set());
-
-  // DB status for each commitment (task_hash -> { exists, status })
-  const [dbStatus, setDbStatus] = useState<Map<string, { exists: boolean; status?: string; checking?: boolean }>>(new Map());
 
   // Pending assessments from merged API
   const {
@@ -124,37 +116,6 @@ export default function ProjectCommitmentsPage() {
     );
   }, [pendingAssessments, searchQuery]);
 
-  // Check DB status for each pending assessment
-  useEffect(() => {
-    if (!pendingAssessments.length || !isAuthenticated) return;
-
-    const checkAllDbStatus = async () => {
-      for (const assessment of pendingAssessments) {
-        const taskHash = assessment.taskHash;
-
-        // Skip if already checked or checking
-        if (dbStatus.has(taskHash)) continue;
-
-        // Mark as checking
-        setDbStatus((prev) => new Map(prev).set(taskHash, { exists: false, checking: true }));
-
-        try {
-          const result = await checkCommitmentExists(taskHash, assessment.submittedBy, authenticatedFetch);
-          setDbStatus((prev) => new Map(prev).set(taskHash, {
-            exists: result.exists,
-            status: result.status,
-            checking: false
-          }));
-        } catch {
-          setDbStatus((prev) => new Map(prev).set(taskHash, { exists: false, checking: false }));
-        }
-      }
-    };
-
-    void checkAllDbStatus();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAssessments, isAuthenticated]);
-
   // Get task title from commitment
   const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
     const task = findMatchingTask(commitment);
@@ -165,50 +126,6 @@ export default function ProjectCommitmentsPage() {
     // Task not found in project
     return `Task ${commitment.taskHash.slice(0, 8)}...`;
   }, [findMatchingTask]);
-
-  // Sync a single submission to DB
-  const handleSyncSubmission = useCallback(async (commitment: ManagerCommitment) => {
-    const taskHash = commitment.taskHash;
-    const syncKey = `${taskHash}-${commitment.submittedBy}`;
-    setSyncingSubmissions((prev) => new Set(prev).add(syncKey));
-
-    try {
-      // Sync directly from pending commitment data
-      // Use onChainContent or evidence
-      const contentText = commitment.onChainContent ?? (typeof commitment.evidence === "string" ? commitment.evidence : "") ?? "";
-      const result = await syncPendingAssessment(
-        taskHash,
-        contentText,
-        commitment.submissionTx ?? "",
-        authenticatedFetch
-      );
-      if (result.success) {
-        toast.success("Commitment synced to database", {
-          description: `${commitment.submittedBy}'s submission is now ready for assessment`,
-        });
-        // Update DB status to show it now exists
-        setDbStatus((prev) => new Map(prev).set(taskHash, {
-          exists: true,
-          status: "SUBMITTED",
-          checking: false
-        }));
-      } else {
-        toast.error("Failed to sync commitment", {
-          description: result.error,
-        });
-      }
-    } catch (err) {
-      toast.error("Sync failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setSyncingSubmissions((prev) => {
-        const next = new Set(prev);
-        next.delete(syncKey);
-        return next;
-      });
-    }
-  }, [authenticatedFetch]);
 
   // Not authenticated
   if (!isAuthenticated || !managerAlias) {
@@ -377,8 +294,6 @@ export default function ProjectCommitmentsPage() {
                     <AndamioTableHead>Task</AndamioTableHead>
                     <AndamioTableHead className="hidden sm:table-cell">Submitted</AndamioTableHead>
                     <AndamioTableHead>Evidence</AndamioTableHead>
-                    <AndamioTableHead className="w-[80px]">DB Status</AndamioTableHead>
-                    <AndamioTableHead className="w-[100px]">Actions</AndamioTableHead>
                   </AndamioTableRow>
                 </AndamioTableHeader>
                 <AndamioTableBody>
@@ -407,55 +322,6 @@ export default function ProjectCommitmentsPage() {
                             <span className="italic text-muted-foreground">No content</span>
                           )}
                         </AndamioText>
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        {(() => {
-                          const status = dbStatus.get(taskHash);
-                          if (status?.checking) {
-                            return <RefreshIcon className="h-4 w-4 animate-spin text-muted-foreground" />;
-                          }
-                          if (status?.exists) {
-                            return (
-                              <div className="flex items-center gap-1">
-                                <SuccessIcon className="h-4 w-4 text-primary" />
-                                <span className="text-xs text-primary">{status.status ?? "OK"}</span>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div className="flex items-center gap-1">
-                              <ErrorIcon className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">Missing</span>
-                            </div>
-                          );
-                        })()}
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        {(() => {
-                          const status = dbStatus.get(taskHash);
-                          // Only show sync button if DB record is missing
-                          if (status?.exists) {
-                            return <span className="text-xs text-muted-foreground">—</span>;
-                          }
-                          return (
-                            <AndamioButton
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleSyncSubmission(assessment);
-                              }}
-                              disabled={syncingSubmissions.has(`${taskHash}-${assessment.submittedBy}`) || status?.checking}
-                            >
-                              {syncingSubmissions.has(`${taskHash}-${assessment.submittedBy}`) ? (
-                                <RefreshIcon className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <DatabaseIcon className="h-3 w-3" />
-                              )}
-                              <span className="ml-1.5 hidden sm:inline">Sync</span>
-                            </AndamioButton>
-                          );
-                        })()}
                       </AndamioTableCell>
                     </AndamioTableRow>
                     );
@@ -549,40 +415,6 @@ export default function ProjectCommitmentsPage() {
                     </span>
                   )}
                 </AndamioText>
-              </div>
-            </div>
-
-            {/* DB Sync Section */}
-            <div className="space-y-3 rounded-lg border border-secondary/30 bg-secondary/5 p-4">
-              <div className="flex items-start gap-3">
-                <DatabaseIcon className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-2">
-                  <AndamioText variant="small" className="font-medium">
-                    Database Sync
-                  </AndamioText>
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    If the assessment fails because the commitment record doesn&apos;t exist in the database,
-                    use this button to sync the on-chain submission data.
-                  </AndamioText>
-                  <AndamioButton
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void handleSyncSubmission(selectedAssessment)}
-                    disabled={syncingSubmissions.has(`${selectedTaskHash}-${selectedAssessment.submittedBy}`)}
-                  >
-                    {syncingSubmissions.has(`${selectedTaskHash}-${selectedAssessment.submittedBy}`) ? (
-                      <>
-                        <RefreshIcon className="h-4 w-4 mr-2 animate-spin" />
-                        Syncing...
-                      </>
-                    ) : (
-                      <>
-                        <DatabaseIcon className="h-4 w-4 mr-2" />
-                        Sync to Database
-                      </>
-                    )}
-                  </AndamioButton>
-                </div>
               </div>
             </div>
 

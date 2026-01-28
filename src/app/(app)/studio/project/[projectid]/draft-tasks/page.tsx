@@ -25,11 +25,10 @@ import {
   AndamioRowActions,
   AndamioErrorAlert,
 } from "~/components/andamio";
-import { TaskIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject } from "~/lib/andamioscan-events";
-import { syncProjectTasks } from "~/lib/project-task-sync";
 import { toast } from "sonner";
 
 interface ApiError {
@@ -56,7 +55,6 @@ export default function DraftTasksPage() {
 
   // On-chain status tracking
   const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -162,45 +160,6 @@ export default function DraftTasksPage() {
     }
   };
 
-  const handleSync = async () => {
-    if (!projectStatePolicyId) {
-      toast.error("Cannot sync: missing project state policy ID");
-      return;
-    }
-
-    setIsSyncing(true);
-    toast.info("Syncing with blockchain...");
-
-    try {
-      const syncResult = await syncProjectTasks(
-        projectId,
-        projectStatePolicyId,
-        "", // Empty txHash - will be fetched from treasury_fundings
-        authenticatedFetch,
-        false // Not a dry run
-      );
-
-      if (syncResult.confirmed > 0) {
-        toast.success(`Synced ${syncResult.confirmed} task(s) with blockchain`);
-      } else if (syncResult.errors.length > 0) {
-        toast.error("Sync failed", {
-          description: syncResult.errors[0],
-        });
-      } else {
-        toast.success("Database is in sync with blockchain");
-      }
-
-      // Refresh data
-      await fetchTasks();
-    } catch (err) {
-      toast.error("Sync failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   // Helper to get status badge variant
   const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
@@ -296,30 +255,6 @@ export default function DraftTasksPage() {
           </AndamioBadge>
         )}
       </div>
-
-      {/* Sync Warning - show when on-chain count doesn't match DB live count */}
-      {onChainTaskCount > liveTasks.length && (
-        <div className="flex items-center justify-between rounded-lg border border-muted-foreground bg-muted/10 p-4">
-          <div className="flex items-center gap-3">
-            <OnChainIcon className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <AndamioText className="font-medium">Database out of sync</AndamioText>
-              <AndamioText variant="small">
-                {onChainTaskCount} task{onChainTaskCount !== 1 ? "s" : ""} on-chain, but only {liveTasks.length} marked as live in database.
-              </AndamioText>
-            </div>
-          </div>
-          <AndamioButton
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={isSyncing}
-          >
-            <RefreshIcon className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Syncing..." : "Sync Now"}
-          </AndamioButton>
-        </div>
-      )}
 
       {/* Draft Tasks Section */}
       {draftTasks.length > 0 && (

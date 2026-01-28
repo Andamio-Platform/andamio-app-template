@@ -1,22 +1,22 @@
 # =============================================================================
 # Andamio Frontend - Deploy to Staging
 # =============================================================================
+# Triggered on release candidate tags: v*.*.*-rc*
+# Example: v1.2.3-rc1, v2.0.0-rc2
+# =============================================================================
 name: Deploy to Staging
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+    tags:
+      - "v*.*.*-rc*"
   workflow_dispatch:
 
 env:
   # Build-time environment variables for staging (NEXT_PUBLIC_* are embedded at build)
   NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: https://preprod.api.andamio.io
   NEXT_PUBLIC_CARDANO_NETWORK: preprod
-  # TODO: Set this to the staging Access Token Policy ID
+  # TODO: Set STAGING_ACCESS_TOKEN_POLICY_ID as a repo variable
   NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: ${{ vars.STAGING_ACCESS_TOKEN_POLICY_ID }}
 
 jobs:
@@ -52,15 +52,18 @@ jobs:
       - name: Generate image tags
         id: tags
         run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          DATE=$(date +'%Y%m%d')
-          TAG="main-${DATE}-${SHORT_SHA}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            DATE=$(date +'%Y%m%d')
+            TAG="manual-${DATE}-${SHORT_SHA}"
+          fi
           REGISTRY="${{ vars.STAGING_ARTIFACT_REGISTRY }}"
           
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "full_tag=${REGISTRY}/app:${TAG}" >> $GITHUB_OUTPUT
           echo "latest_tag=${REGISTRY}/app:latest" >> $GITHUB_OUTPUT
-          echo "sha_tag=${REGISTRY}/app:${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -70,7 +73,6 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.full_tag }}
             ${{ steps.tags.outputs.latest_tag }}
-            ${{ steps.tags.outputs.sha_tag }}
           build-args: |
             NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL }}
             NEXT_PUBLIC_CARDANO_NETWORK=${{ env.NEXT_PUBLIC_CARDANO_NETWORK }}
@@ -83,11 +85,11 @@ jobs:
         with:
           service: ${{ vars.STAGING_CLOUD_RUN_SERVICE }}
           region: ${{ vars.STAGING_GCP_REGION }}
-          image: ${{ steps.tags.outputs.sha_tag }}
+          image: ${{ steps.tags.outputs.full_tag }}
 
       - name: Output deployment details
         run: |
           echo "## Staging Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.tags.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ steps.tags.outputs.full_tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Service:** ${{ vars.STAGING_CLOUD_RUN_SERVICE }}" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** https://preprod.app.andamio.io" >> $GITHUB_STEP_SUMMARY

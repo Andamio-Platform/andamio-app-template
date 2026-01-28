@@ -23,8 +23,9 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Copy package files and local packages (for file: dependencies) 
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+COPY packages/ ./packages/  
 
 # Install dependencies based on lockfile present
 RUN \

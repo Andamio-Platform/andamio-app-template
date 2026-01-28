@@ -230,7 +230,7 @@ export function PendingReviewsList({
                   <AndamioTableCell>
                     <div className="flex items-center gap-2">
                       <AndamioText variant="small" className="max-w-[150px] truncate">
-                        {assessment.evidenceText ?? assessment.evidenceUrl ?? <span className="italic text-muted-foreground">No content</span>}
+                        {assessment.evidenceText ?? assessment.evidenceUrl ?? assessment.onChainContent ?? <span className="italic text-muted-foreground">No content</span>}
                       </AndamioText>
                       {onSelectAssessment && (
                         <ExternalLinkIcon className="h-3 w-3 text-muted-foreground shrink-0" />

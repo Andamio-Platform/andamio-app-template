@@ -24,7 +24,7 @@
  * ```
  */
 
-import { createStore, useStore } from "zustand";
+import { createStore } from "zustand";
 import type { StoreApi } from "zustand";
 import type { JSONContent } from "@tiptap/core";
 import type {

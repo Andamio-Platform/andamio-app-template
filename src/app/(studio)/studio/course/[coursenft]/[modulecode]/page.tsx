@@ -419,7 +419,6 @@ function ModuleWizardContent({
       }
     };
     // Empty deps - only run cleanup on unmount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Loading state

@@ -65,7 +65,7 @@ ENV NODE_ENV=production
 ENV SKIP_ENV_VALIDATION=1
 
 # Build local packages first (they export from dist/ which requires compilation)
-RUN npm run --prefix packages/core build
+RUN cd packages/core && npm install && npm run build
 
 # Build the application
 RUN \

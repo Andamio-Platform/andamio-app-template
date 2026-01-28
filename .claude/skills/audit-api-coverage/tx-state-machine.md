@@ -1,6 +1,35 @@
 # Transaction State Machine
 
-The gateway provides dedicated endpoints for tracking pending transactions with automatic confirmation handling.
+The Andamio Gateway provides a TX State Machine that handles transaction lifecycle from submission through confirmation and database updates.
+
+> **Last Updated**: 2026-01-28
+> **Source**: Gateway API team REPL note on race condition fix
+
+## Critical Understanding
+
+### "confirmed" is NOT Terminal
+
+**IMPORTANT**: The `confirmed` state only means the TX is on-chain. The Gateway's DB update happens **asynchronously ~30 seconds later**.
+
+```
+WRONG (causes race condition):
+  Frontend sees "confirmed" → fires success callback → fetches data → gets stale data
+
+CORRECT:
+  Frontend sees "confirmed" → keeps polling → Gateway updates DB → state="updated" → success callback
+```
+
+### Terminal States
+
+Only these states are terminal (stop polling):
+
+| State | Terminal? | Meaning |
+|-------|-----------|---------|
+| `pending` | No | TX submitted, awaiting on-chain confirmation |
+| `confirmed` | **No** | TX on-chain, Gateway processing DB update |
+| `updated` | **Yes** | DB update complete - SUCCESS |
+| `failed` | **Yes** | TX failed after max retries - ERROR |
+| `expired` | **Yes** | TX exceeded TTL (2 hours) - ERROR |
 
 ## TX State Machine Endpoints
 
@@ -11,23 +40,108 @@ The gateway provides dedicated endpoints for tracking pending transactions with 
 | `/api/v2/tx/pending` | GET | Get all user's pending TXs |
 | `/api/v2/tx/types` | GET | List valid TX types |
 
-## TX States
+## Full Transaction Flow
 
 ```
-pending → confirmed → updated   (success path)
-pending → failed                (error after retries)
-pending → expired               (exceeded TTL without confirmation)
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
+│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  POLL   │
+└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
+     │              │              │              │              │
+     │              │              │              │              ▼
+  POST to       wallet.        wallet.       POST to       GET status
+  /tx/*         signTx()      submitTx()    /tx/register   until "updated"
 ```
 
-### State Definitions
+### Step-by-Step
 
-| State | Description |
-|-------|-------------|
-| `pending` | TX submitted to blockchain, awaiting confirmation |
-| `confirmed` | TX confirmed on-chain, gateway processing DB updates |
-| `updated` | DB updates complete, TX fully processed (terminal) |
-| `failed` | TX failed after max retries (terminal) |
-| `expired` | TX exceeded TTL without confirmation (terminal) |
+1. **BUILD**: POST to `/api/v2/tx/*` endpoint → get unsigned CBOR
+2. **SIGN**: User signs with wallet (`wallet.signTx(cbor, true)`)
+3. **SUBMIT**: Submit to blockchain (`wallet.submitTx(signed)`) → get txHash
+4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType
+5. **POLL**: GET `/api/v2/tx/status/:txHash` every 15 seconds until `updated`, `failed`, or `expired`
+
+## Gateway Backend Processing
+
+Understanding what happens on the Gateway side helps explain why `confirmed` is not terminal:
+
+### Timeline (successful TX)
+
+```
+├─ t=0     User submits TX, frontend calls /tx/register
+├─ t=0     Gateway stores TX with state="pending"
+│
+├─ t=30s   Gateway polls Andamioscan, sees TX on-chain
+├─ t=30s   Gateway state → "confirmed"
+├─ t=30s   Gateway adds TX to confirmation queue
+│
+├─ t=60s   Background job processes confirmation queue
+├─ t=60s   Gateway calls DB API (e.g., /course-v2/gateway/assignment-commitment/confirm)
+├─ t=60s   DB status transitions (e.g., PENDING_TX_SUBMIT → SUBMITTED)
+├─ t=60s   Gateway state → "updated"
+│
+└─ t=60s   Frontend sees "updated", fires onComplete, fetches fresh data
+```
+
+### TX Type Handlers
+
+Each TX type has a registered handler that knows how to update the DB:
+
+| tx_type | Handler Updates |
+|---------|-----------------|
+| `assignment_submit` | Calls `/course-v2/gateway/assignment-commitment/confirm` |
+| `task_submit` | Calls `/project/contributor/commitment/confirm-tx` |
+| `course_create` | Registers course in DB |
+| `modules_manage` | Updates module status |
+| `assessment_assess` | Updates assessment results |
+
+## Frontend Implementation
+
+### useTxWatcher Hook
+
+The `useTxWatcher` hook in `src/hooks/tx/use-tx-watcher.ts` handles polling:
+
+```typescript
+// Terminal states - only these stop polling
+export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
+
+// isSuccess only true when DB is updated
+isSuccess: status?.state === "updated",
+```
+
+### onComplete Callback
+
+The `onComplete` callback should only trigger on `updated`:
+
+```typescript
+const { status, isSuccess } = useTxWatcher(txHash, {
+  onComplete: (status) => {
+    // "updated" means Gateway has confirmed TX AND updated DB
+    if (status.state === "updated") {
+      toast.success("Transaction complete!");
+      void refetchData();
+    } else if (status.state === "failed" || status.state === "expired") {
+      toast.error(status.last_error ?? "Transaction failed");
+    }
+  },
+});
+```
+
+## Deprecated Patterns
+
+### DO NOT Call confirm-tx Endpoints
+
+The pattern of calling `confirm-tx` endpoints directly from the frontend is **deprecated**:
+
+| Pattern | Status | Description |
+|---------|--------|-------------|
+| Frontend calls `confirm-tx` | **Deprecated** | Frontend calls DB directly |
+| TX State Machine | **Current** | Gateway handles DB updates automatically |
+
+The Gateway's TX State Machine already handles all DB updates. The frontend just needs to wait for `"updated"` status.
+
+### Legacy Code Reference
+
+Some older components (like project contributor pages) still have `confirmCommitmentTransaction()` calls. These are legacy and should not be replicated in new code.
 
 ## API Response Types
 
@@ -53,31 +167,6 @@ interface TxRegisterRequest {
   metadata?: Record<string, string>; // Off-chain data (e.g., course title)
 }
 ```
-
-## Full Transaction Flow
-
-```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
-│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  POLL   │
-└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
-     │              │              │              │              │
-     │              │              │              │              ▼
-  POST to       wallet.        wallet.       POST to       GET status
-  /tx/*         signTx()      submitTx()    /tx/register   until terminal
-```
-
-1. **BUILD**: POST to `/api/v2/tx/*` endpoint → get unsigned CBOR
-2. **SIGN**: User signs with wallet (`wallet.signTx(cbor, true)`)
-3. **SUBMIT**: Submit to blockchain (`wallet.submitTx(signed)`) → get txHash
-4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType
-5. **POLL**: GET `/api/v2/tx/status/:txHash` every 10 seconds until terminal state
-
-## Key Implementation Notes
-
-1. **Register immediately after submit** - Call `/tx/register` right after `wallet.submitTx()` returns
-2. **Poll interval** - Check status every ~10 seconds
-3. **Terminal states** - Stop polling when state is `updated`, `failed`, or `expired`
-4. **Metadata required** - Instance creation TXs (course/project) need metadata for DB fields
 
 ## TX Type Mapping
 
@@ -109,8 +198,34 @@ project_create, project_join, tasks_manage, task_submit, task_assess,
 project_credential_claim, blacklist_update, treasury_fund, access_token_mint
 ```
 
+## Common Issues
+
+### Issue: Data shows stale status after TX success
+
+**Symptom**: Assignment shows `PENDING_TX_SUBMIT` instead of `SUBMITTED` after TX confirms.
+
+**Cause**: Frontend was checking for `confirmed` state, which fires before DB update.
+
+**Fix**: Only trigger success on `updated` state:
+```typescript
+// WRONG
+if (status.state === "confirmed" || status.state === "updated") { ... }
+
+// CORRECT
+if (status.state === "updated") { ... }
+```
+
+### Issue: Polling never stops
+
+**Symptom**: Frontend keeps polling forever.
+
+**Cause**: TX type not in `TX_TYPE_MAP`, or Gateway handler not implemented.
+
+**Fix**: Check that the TX type is properly mapped and the Gateway has a handler.
+
 ## See Also
 
-- `~/hooks/use-simple-transaction.ts` - Transaction execution hook
-- `~/hooks/use-tx-watcher.ts` - TX status polling hook
+- `~/hooks/tx/use-tx-watcher.ts` - TX status polling hook
+- `~/hooks/tx/use-transaction.ts` - Transaction execution hook
 - `~/config/transaction-ui.ts` - TX types and endpoints
+- `~/config/transaction-schemas.ts` - Zod validation schemas

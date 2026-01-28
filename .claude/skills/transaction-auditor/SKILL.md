@@ -5,7 +5,9 @@ description: Sync transaction schemas with the Andamio Gateway API spec when bre
 
 # Transaction Auditor Skill
 
-**Purpose**: Keep the T3 App Template's transaction schemas in sync with the authoritative Andamio Gateway API specification.
+**Purpose**: Keep the T3 App Template's transaction schemas in sync with the authoritative Andamio Gateway API specification, and ensure proper TX State Machine integration.
+
+> **Last Updated**: 2026-01-28
 
 ## When to Use
 
@@ -14,6 +16,63 @@ description: Sync transaction schemas with the Andamio Gateway API spec when bre
 - When debugging transaction failures (schema mismatches)
 - Before releases to ensure schema alignment
 - When prompted with `/transaction-auditor`
+- When TX watcher behavior seems incorrect
+
+## Critical: TX State Machine Understanding
+
+### "confirmed" is NOT a Terminal State
+
+**IMPORTANT**: This is the most common source of TX-related bugs.
+
+The `confirmed` state only means the TX is on-chain. The Gateway's DB update happens **asynchronously ~30 seconds later**. Frontend code must wait for `updated` state.
+
+```
+WRONG (causes race condition - stale data):
+  Frontend sees "confirmed" → fires success callback → fetches data → gets PENDING_TX_SUBMIT
+
+CORRECT:
+  Frontend sees "confirmed" → keeps polling → Gateway updates DB → state="updated" → success callback
+```
+
+### Terminal States (Stop Polling)
+
+| State | Terminal? | Meaning | Frontend Action |
+|-------|-----------|---------|-----------------|
+| `pending` | No | TX submitted, awaiting on-chain | Keep polling |
+| `confirmed` | **No** | TX on-chain, Gateway processing | Keep polling |
+| `updated` | **Yes** | DB update complete | Fire success callback |
+| `failed` | **Yes** | TX failed after retries | Fire error callback |
+| `expired` | **Yes** | TX exceeded 2hr TTL | Fire error callback |
+
+### Correct useTxWatcher Pattern
+
+```typescript
+// src/hooks/tx/use-tx-watcher.ts
+export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
+// NOTE: "confirmed" is NOT terminal!
+
+// In components:
+const { status, isSuccess } = useTxWatcher(txHash, {
+  onComplete: (status) => {
+    // "updated" means Gateway has confirmed TX AND updated DB
+    if (status.state === "updated") {
+      toast.success("Transaction complete!");
+      void refetchData();
+    } else if (status.state === "failed" || status.state === "expired") {
+      toast.error(status.last_error ?? "Transaction failed");
+    }
+  },
+});
+```
+
+### Deprecated Patterns
+
+**DO NOT** call `confirm-tx` endpoints from the frontend. The Gateway's TX State Machine handles all DB updates automatically.
+
+| Pattern | Status | Description |
+|---------|--------|-------------|
+| Frontend calls `confirm-tx` | **Deprecated** | Legacy pattern |
+| Wait for `"updated"` state | **Current** | Gateway handles DB updates |
 
 ## Data Sources
 
@@ -30,14 +89,14 @@ https://dev.api.andamio.io/api/v1/docs/doc.json
 |------|---------|
 | `src/config/transaction-schemas.ts` | Zod validation schemas for TX params |
 | `src/config/transaction-ui.ts` | TX types, endpoints, UI strings |
-| `src/hooks/use-tx-watcher.ts` | `TX_TYPE_MAP` for gateway registration |
+| `src/hooks/tx/use-tx-watcher.ts` | `TX_TYPE_MAP` and `TERMINAL_STATES` |
 | `src/types/generated/index.ts` | Type exports (after regeneration) |
 
 ### Supporting Documentation
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/audit-api-coverage/tx-state-machine.md` | TX State Machine docs |
+| `.claude/skills/audit-api-coverage/tx-state-machine.md` | Complete TX State Machine docs |
 | `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md` | Migration patterns |
 
 ## Audit Workflow
@@ -68,7 +127,7 @@ For each transaction type, compare the API spec against `src/config/transaction-
 
 ### Step 3: Check TX Type Mapping
 
-Compare `TX_TYPE_MAP` in `src/hooks/use-tx-watcher.ts` against the API's `tx_type` enum:
+Compare `TX_TYPE_MAP` in `src/hooks/tx/use-tx-watcher.ts` against the API's `tx_type` enum:
 
 ```bash
 # Get valid tx_type values from API
@@ -76,7 +135,19 @@ curl -s "https://dev.api.andamio.io/api/v1/docs/doc.json" \
   | jq '.definitions["tx_state_handlers.RegisterPendingTxRequest"].properties.tx_type.enum'
 ```
 
-### Step 4: Regenerate Types
+### Step 4: Verify Terminal States
+
+Ensure `TERMINAL_STATES` in `use-tx-watcher.ts` does NOT include `"confirmed"`:
+
+```typescript
+// CORRECT
+export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
+
+// WRONG - will cause race conditions
+export const TERMINAL_STATES: TxState[] = ["confirmed", "updated", "failed", "expired"];
+```
+
+### Step 5: Regenerate Types
 
 After confirming API changes, regenerate TypeScript types:
 
@@ -86,24 +157,36 @@ npm run generate:types
 
 This fetches the latest OpenAPI spec and generates `src/types/generated/gateway.ts`.
 
-### Step 5: Update Local Schemas
+### Step 6: Update Local Schemas
 
 Update these files in order:
 
 1. **`src/types/generated/index.ts`** - Add/update type exports
 2. **`src/config/transaction-schemas.ts`** - Update Zod schemas
-3. **`src/hooks/use-tx-watcher.ts`** - Update `TX_TYPE_MAP`
+3. **`src/hooks/tx/use-tx-watcher.ts`** - Update `TX_TYPE_MAP`
 4. **Components** - Fix any type errors from schema changes
 
-### Step 6: Verify Changes
+### Step 7: Audit onComplete Callbacks
+
+Search for incorrect `confirmed` checks in components:
+
+```bash
+# Find all useTxWatcher usages checking for "confirmed"
+grep -r 'status\.state === "confirmed"' src/components/
+```
+
+All matches should be updated to only check for `"updated"`.
+
+### Step 8: Verify Changes
 
 ```bash
 npm run typecheck
+npm run build
 ```
 
 Fix any type errors in components that use the updated schemas.
 
-### Step 7: Update Documentation
+### Step 9: Update Documentation
 
 Update these docs to reflect changes:
 - `.claude/skills/audit-api-coverage/tx-state-machine.md`
@@ -136,9 +219,29 @@ Update these docs to reflect changes:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v2/tx/register` | POST | Register TX after wallet submit |
-| `/api/v2/tx/status/{tx_hash}` | GET | Poll TX status |
+| `/api/v2/tx/status/{tx_hash}` | GET | Poll TX status (every 15s) |
 | `/api/v2/tx/pending` | GET | List user's pending TXs |
 | `/api/v2/tx/types` | GET | Get valid tx_type values |
+
+## Gateway Backend Processing
+
+Understanding the Gateway's TX State Machine helps debug issues:
+
+```
+├─ t=0     User submits TX, frontend calls /tx/register
+├─ t=0     Gateway stores TX with state="pending"
+│
+├─ t=30s   Gateway polls Andamioscan, sees TX on-chain
+├─ t=30s   Gateway state → "confirmed"
+├─ t=30s   Gateway adds TX to confirmation queue
+│
+├─ t=60s   Background job processes confirmation queue
+├─ t=60s   Gateway calls DB API (UpdateDB handler for tx_type)
+├─ t=60s   DB status transitions (e.g., PENDING_TX_SUBMIT → SUBMITTED)
+├─ t=60s   Gateway state → "updated"
+│
+└─ t=60s   Frontend sees "updated", fires onComplete, fetches fresh data
+```
 
 ## Common Schema Patterns
 
@@ -173,6 +276,31 @@ deposit_value: z.array(z.tuple([z.string(), z.number()]))
 outcome: z.string()
 ```
 
+## Common Issues
+
+### Issue: Data shows stale status after TX success
+
+**Symptom**: Assignment shows `PENDING_TX_SUBMIT` instead of `SUBMITTED`.
+
+**Cause**: Frontend checking for `confirmed` state, which fires before DB update.
+
+**Fix**: Only trigger success on `updated`:
+```typescript
+// WRONG
+if (status.state === "confirmed" || status.state === "updated") { ... }
+
+// CORRECT
+if (status.state === "updated") { ... }
+```
+
+### Issue: Polling never stops
+
+**Symptom**: Frontend keeps polling forever.
+
+**Cause**: TX type not in `TX_TYPE_MAP`, or Gateway handler not implemented.
+
+**Fix**: Verify TX type mapping and Gateway handler exists.
+
 ## Changelog Integration
 
 When Andamio Gateway publishes a new version:
@@ -180,7 +308,8 @@ When Andamio Gateway publishes a new version:
 1. **Read the changelog/release notes** for breaking changes
 2. **Identify affected schemas** by matching endpoint paths
 3. **Run this skill** to sync schemas
-4. **Test transactions** to verify compatibility
+4. **Verify TERMINAL_STATES** doesn't include `confirmed`
+5. **Test transactions** to verify compatibility
 
 ## Integration with Other Skills
 
@@ -199,6 +328,9 @@ npm run generate:types
 
 # Type check after changes
 npm run typecheck
+
+# Find incorrect "confirmed" checks
+grep -r 'status\.state === "confirmed"' src/components/
 
 # Get all TX request schemas from API
 curl -s "https://dev.api.andamio.io/api/v1/docs/doc.json" \

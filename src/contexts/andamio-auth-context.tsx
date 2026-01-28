@@ -159,6 +159,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   // Use BOTH ref (for immediate sync check) and state (for re-renders)
   const isValidatingJWTRef = useRef(false);
   const [isValidatingJWT, setIsValidatingJWT] = useState(false);
+  // Ref to hold authenticate function for use in effects without causing re-runs
+  const authenticateRef = useRef<(() => Promise<void>) | null>(null);
 
   // Helper to update both ref and state
   const setValidatingJWT = useCallback((value: boolean) => {
@@ -168,7 +170,11 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
   // Validate stored JWT against connected wallet
   // Only authenticate if wallet is connected AND JWT matches the wallet
+  // NOTE: We intentionally exclude `wallet` from deps - it changes reference on every render
+  // We only react to `connected` changing, and access wallet via closure
   useEffect(() => {
+    authLogger.debug("[Effect: validateJWT] Running - connected:", connected);
+
     // Check synchronously if there's a stored JWT to validate
     // This prevents auto-auth race condition by setting flag before async work
     const storedJWT = getStoredJWT();
@@ -296,11 +302,13 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     };
 
     void validateStoredJWT();
-  }, [connected, wallet, setValidatingJWT]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, setValidatingJWT]);
 
   // Clear authenticated state when wallet disconnects
   // Keep JWT in storage for potential reconnection with same wallet
   useEffect(() => {
+    authLogger.debug("[Effect: walletDisconnect] Running - connected:", connected, "isAuthenticated:", isAuthenticated);
     if (!connected) {
       setHasAttemptedAutoAuth(false);
       setPopupBlocked(false);
@@ -439,8 +447,19 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     }
   }, [connected, wallet, walletName]);
 
-  // Auto-authenticate when wallet connects (combines connect + sign into one step)
+  // Keep authenticateRef in sync with authenticate callback
   useEffect(() => {
+    authLogger.debug("[Effect: syncAuthenticateRef] Running");
+    authenticateRef.current = authenticate;
+  }, [authenticate]);
+
+  // Auto-authenticate when wallet connects (combines connect + sign into one step)
+  // NOTE: We intentionally exclude `authenticate` and `wallet` from deps:
+  // - `authenticate` changes reference when wallet changes
+  // - `wallet` changes reference on every render from useWallet()
+  // We use refs and access these via closure instead
+  useEffect(() => {
+    authLogger.debug("[Effect: autoAuth] Running");
     // Debug: log all conditions
     authLogger.info("Auto-auth check:", {
       connected,
@@ -452,18 +471,22 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     });
 
     // Only auto-auth if:
-    // 1. Wallet is connected
+    // 1. Wallet is connected (use `connected` boolean, not `wallet` object)
     // 2. Not already authenticated
     // 3. Not currently authenticating
     // 4. Haven't already attempted auto-auth for this connection
     // 5. JWT validation is not in progress (check REF for immediate sync value, not state)
     //    The ref is critical - state updates are batched and may not be visible in same render
-    if (connected && wallet && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth && !isValidatingJWTRef.current) {
+    if (connected && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth && !isValidatingJWTRef.current) {
       authLogger.info("Auto-authenticating after wallet connection...");
       setHasAttemptedAutoAuth(true);
-      void authenticate();
+      // Use ref to avoid dependency on authenticate callback
+      if (authenticateRef.current) {
+        void authenticateRef.current();
+      }
     }
-  }, [connected, wallet, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, isValidatingJWT, authenticate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, isValidatingJWT]);
 
   /**
    * Logout and clear auth state

@@ -64,6 +64,9 @@ ENV NODE_ENV=production
 # Skip T3 env validation at build time - server-side secrets are injected at runtime
 ENV SKIP_ENV_VALIDATION=1
 
+# Build local packages first (they export from dist/ which requires compilation)
+RUN npm run --prefix packages/core build
+
 # Build the application
 RUN \
   if [ -f pnpm-lock.yaml ]; then \

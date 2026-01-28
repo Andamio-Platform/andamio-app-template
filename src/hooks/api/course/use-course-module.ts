@@ -68,26 +68,40 @@ function getModuleStatus(
   source: string | undefined,
   moduleStatus: string | undefined
 ): CourseModuleStatus {
+  // Log status derivation for debugging
+  console.log("[getModuleStatus] Deriving status:", {
+    source,
+    moduleStatus,
+  });
+
   // Chain-only modules need DB registration
   if (source === "chain_only") {
+    console.log("[getModuleStatus] Result: unregistered (chain_only)");
     return "unregistered";
   }
 
   // Merged modules are fully active
   if (source === "merged") {
+    console.log("[getModuleStatus] Result: active (merged)");
     return "active";
   }
 
   // DB-only modules: derive from module_status
+  let result: CourseModuleStatus;
   switch (moduleStatus?.toUpperCase()) {
     case "APPROVED":
-      return "approved";
+      result = "approved";
+      break;
     case "PENDING_TX":
-      return "pending_tx";
+      result = "pending_tx";
+      break;
     case "DRAFT":
     default:
-      return "draft";
+      result = "draft";
+      break;
   }
+  console.log("[getModuleStatus] Result:", result, "(db_only)");
+  return result;
 }
 
 /**
@@ -578,6 +592,21 @@ export function useTeacherCourseModules(courseId: string | undefined) {
 
       const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
 
+      // Log raw API response for debugging merge issues
+      console.log("[useTeacherCourseModules] Raw API response:", {
+        courseId,
+        dataCount: result.data?.length ?? 0,
+        warning: result.warning,
+        modules: result.data?.map((m) => ({
+          slt_hash: m.slt_hash,
+          source: m.source,
+          module_status: m.content?.module_status,
+          course_module_code: m.content?.course_module_code,
+          has_content: !!m.content,
+          on_chain_slts_count: m.on_chain_slts?.length ?? 0,
+        })),
+      });
+
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useTeacherCourseModules] API warning:", result.warning);
@@ -585,6 +614,19 @@ export function useTeacherCourseModules(courseId: string | undefined) {
 
       // Transform to app-level types and sort by moduleCode alphabetically
       const modules = (result.data ?? []).map(transformCourseModule);
+
+      // Log transformed modules for debugging
+      console.log("[useTeacherCourseModules] Transformed modules:", {
+        count: modules.length,
+        modules: modules.map((m) => ({
+          sltHash: m.sltHash,
+          moduleCode: m.moduleCode,
+          status: m.status,
+          hasSlts: (m.slts?.length ?? 0) > 0,
+          onChainSltsCount: m.onChainSlts?.length ?? 0,
+        })),
+      });
+
       return sortModulesByCode(modules);
     },
     enabled: !!courseId && isAuthenticated,

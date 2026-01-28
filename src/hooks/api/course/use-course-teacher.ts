@@ -78,35 +78,26 @@ export type TeacherCoursesResponse = TeacherCourse[];
 /**
  * Teacher assignment commitment with camelCase fields
  * Contains pending assessment data with both on-chain and DB info
+ *
+ * Updated 2026-01-28: Evidence is now Tiptap JSON from content.evidence
+ * See: andamio-api/docs/REPL_NOTES/2026-01-28-teacher-commitments-fix.md
  */
 export interface TeacherAssignmentCommitment {
   // On-chain fields
   courseId: string;
-  assignmentId?: string;
   studentAlias: string;
   sltHash?: string;
-  submissionTxHash?: string;
   submissionTx?: string;
   submissionSlot?: number;
-  onChainContent?: string;
+  onChainContent?: string;  // Hex-encoded on-chain content
 
-  // Off-chain content
-  moduleCode?: string;
-  moduleTitle?: string;
-  evidenceUrl?: string;
-  evidenceText?: string;
-  evidence?: unknown;
-  submittedAt?: string;
-  commitmentStatus?: string; // DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN
-
-  // Nested assignment data
-  assignment?: {
-    title?: string;
-    content?: unknown;
-  };
+  // Off-chain content (from content object)
+  moduleCode?: string;  // Human-readable module code (e.g., "101")
+  evidence?: unknown;  // Tiptap JSON document from content.evidence
+  commitmentStatus?: string;  // DRAFT, SUBMITTED, APPROVED, REJECTED (from content.commitment_status)
 
   // Metadata
-  status?: TeacherCourseStatus;
+  status?: TeacherCourseStatus;  // synced, onchain_only, db_only
 }
 
 export type TeacherAssignmentCommitmentsResponse = TeacherAssignmentCommitment[];
@@ -138,27 +129,26 @@ interface RawTeacherCourse {
   source?: string;
 }
 
+/**
+ * Raw API response for teacher commitment
+ * Updated 2026-01-28: content object now populated with evidence
+ */
+interface RawTeacherCommitmentContent {
+  evidence?: Record<string, unknown>;  // Tiptap JSON document
+  assignment_evidence_hash?: string;
+  commitment_status?: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+}
+
 interface RawTeacherCommitment {
   course_id: string;
-  assignment_id?: string;
+  slt_hash: string;
+  course_module_code?: string;  // Human-readable module code
   student_alias: string;
-  slt_hash?: string;
-  submission_tx_hash?: string;
   submission_tx?: string;
   submission_slot?: number;
-  on_chain_content?: string;
-  course_module_code?: string;
-  module_title?: string;
-  evidence_url?: string;
-  evidence_text?: string;
-  evidence?: unknown;
-  submitted_at?: string;
-  commitment_status?: string;
-  assignment?: {
-    title?: string;
-    content?: unknown;
-  };
-  source?: string;
+  on_chain_content?: string;  // Hex-encoded on-chain content
+  content?: RawTeacherCommitmentContent;  // Off-chain content from DB
+  source: "merged" | "chain_only" | "db_only";
 }
 
 // =============================================================================
@@ -206,25 +196,21 @@ function transformTeacherCourse(raw: RawTeacherCourse): TeacherCourse {
 
 /**
  * Transform raw API commitment to app-level TeacherAssignmentCommitment type
+ * Updated 2026-01-28: Evidence is now under content.evidence
  */
 function transformTeacherCommitment(raw: RawTeacherCommitment): TeacherAssignmentCommitment {
   return {
     courseId: raw.course_id,
-    assignmentId: raw.assignment_id,
     studentAlias: raw.student_alias,
     sltHash: raw.slt_hash,
-    submissionTxHash: raw.submission_tx_hash,
     submissionTx: raw.submission_tx,
     submissionSlot: raw.submission_slot,
     onChainContent: raw.on_chain_content,
     moduleCode: raw.course_module_code,
-    moduleTitle: raw.module_title,
-    evidenceUrl: raw.evidence_url,
-    evidenceText: raw.evidence_text,
-    evidence: raw.evidence,
-    submittedAt: raw.submitted_at,
-    commitmentStatus: raw.commitment_status,
-    assignment: raw.assignment,
+    // Evidence is now under content.evidence (Tiptap JSON document)
+    evidence: raw.content?.evidence,
+    // Commitment status is now under content.commitment_status
+    commitmentStatus: raw.content?.commitment_status,
     status: mapSourceToStatus(raw.source),
   };
 }

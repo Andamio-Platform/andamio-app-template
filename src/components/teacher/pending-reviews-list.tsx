@@ -157,11 +157,9 @@ export function PendingReviewsList({
     );
   }
 
-  // Format submission date - prefer submittedAt, fall back to slot
+  // Format submission date from slot
+  // Updated 2026-01-28: submittedAt removed, use submissionSlot only
   const formatSubmissionDate = (assessment: TeacherAssignmentCommitment): string => {
-    if (assessment.submittedAt) {
-      return new Date(assessment.submittedAt).toLocaleDateString();
-    }
     if (assessment.submissionSlot) {
       // Preprod genesis time: 2022-04-01T00:00:00Z = 1648771200
       const genesisTime = 1648771200;
@@ -205,7 +203,7 @@ export function PendingReviewsList({
             <AndamioTableBody>
               {pendingAssessments.map((assessment) => (
                 <AndamioTableRow
-                  key={`${assessment.courseId}-${assessment.assignmentId}-${assessment.studentAlias}`}
+                  key={`${assessment.courseId}-${assessment.sltHash}-${assessment.studentAlias}`}
                   className={onSelectAssessment ? "cursor-pointer hover:bg-muted/50" : ""}
                   onClick={() => onSelectAssessment?.(assessment)}
                 >
@@ -214,7 +212,7 @@ export function PendingReviewsList({
                   </AndamioTableCell>
                   <AndamioTableCell>
                     <code className="text-xs font-mono truncate block max-w-[120px]">
-                      {(assessment.assignmentId ?? assessment.sltHash ?? "").slice(0, 12)}...
+                      {assessment.moduleCode ?? (assessment.sltHash ?? "").slice(0, 12) + "..."}
                     </code>
                   </AndamioTableCell>
                   {!courseId && (
@@ -230,7 +228,13 @@ export function PendingReviewsList({
                   <AndamioTableCell>
                     <div className="flex items-center gap-2">
                       <AndamioText variant="small" className="max-w-[150px] truncate">
-                        {assessment.evidenceText ?? assessment.evidenceUrl ?? assessment.onChainContent ?? <span className="italic text-muted-foreground">No content</span>}
+                        {assessment.evidence ? (
+                          <span className="text-primary">Tiptap content</span>
+                        ) : assessment.onChainContent ? (
+                          <span className="font-mono text-muted-foreground">{assessment.onChainContent.slice(0, 20)}...</span>
+                        ) : (
+                          <span className="italic text-muted-foreground">No content</span>
+                        )}
                       </AndamioText>
                       {onSelectAssessment && (
                         <ExternalLinkIcon className="h-3 w-3 text-muted-foreground shrink-0" />

@@ -60,6 +60,9 @@ ENV NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Skip T3 env validation at build time - server-side secrets are injected at runtime
+ENV SKIP_ENV_VALIDATION=1
+
 # Build the application
 RUN \
   if [ -f pnpm-lock.yaml ]; then \

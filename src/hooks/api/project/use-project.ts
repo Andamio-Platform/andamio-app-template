@@ -145,7 +145,7 @@ export interface ProjectContributor {
  * Project submission (on-chain)
  */
 export interface ProjectSubmission {
-  taskId: string;
+  taskHash: string;
   submittedBy: string;
   submissionTx?: string;
   onChainContent?: string;
@@ -155,7 +155,7 @@ export interface ProjectSubmission {
  * Project assessment (on-chain)
  */
 export interface ProjectAssessment {
-  taskId: string;
+  taskHash: string;
   assessedBy: string;
   decision: string;
   tx?: string;
@@ -328,7 +328,7 @@ export function transformOnChainTask(
     }
   }
 
-  const taskHash = api.task_id ?? "";
+  const taskHash = api.task_hash ?? "";
   return {
     taskHash,
     projectId,
@@ -373,7 +373,7 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
   const title = api.content?.title ?? "";
   const description = api.content?.description ?? "";
   return {
-    taskHash: api.task_id ?? "",
+    taskHash: api.task_hash ?? "",
     projectId: api.project_id ?? "",
     index: api.content?.task_index,
     title,
@@ -460,7 +460,7 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
 
   const submissions: ProjectSubmission[] | undefined = api.submissions?.map(
     (s: OrchestrationProjectSubmissionOnChain) => ({
-      taskId: s.task_id ?? "",
+      taskHash: s.task_hash ?? "",
       submittedBy: s.submitted_by ?? "",
       submissionTx: s.submission_tx,
       onChainContent: s.on_chain_content,
@@ -469,7 +469,7 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
 
   const assessments: ProjectAssessment[] | undefined = api.assessments?.map(
     (a: OrchestrationProjectAssessmentOnChain) => ({
-      taskId: a.task_id ?? "",
+      taskHash: a.task_hash ?? "",
       assessedBy: a.assessed_by ?? "",
       decision: a.decision ?? "",
       tx: a.tx,

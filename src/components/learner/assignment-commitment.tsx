@@ -80,7 +80,7 @@ interface AssignmentCommitmentProps {
 interface CommitmentApiResponse {
   data?: {
     course_id?: string;
-    module_code?: string;
+    course_module_code?: string;
     slt_hash?: string;
     // On-chain fields (flat)
     on_chain_status?: string;
@@ -294,7 +294,7 @@ export function AssignmentCommitment({
 
       const existingCommitment: Commitment = {
         courseId: data.course_id ?? courseNftPolicyId,
-        moduleCode: data.module_code ?? moduleCode,
+        moduleCode: data.course_module_code ?? moduleCode,
         sltHash: data.slt_hash ?? null,
         onChainStatus: data.on_chain_status ?? null,
         onChainContent: data.on_chain_content ?? null,

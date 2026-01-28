@@ -178,7 +178,7 @@ export function AssignmentUpdate({
 
     // Side effect params are the same for both
     const sideEffectParams = {
-      module_code: moduleCode,
+      course_module_code: moduleCode,
       network_evidence: evidence,
       network_evidence_hash: hash,
     };

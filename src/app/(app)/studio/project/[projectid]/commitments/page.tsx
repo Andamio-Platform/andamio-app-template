@@ -73,7 +73,7 @@ export default function ProjectCommitmentsPage() {
   // Sync state - track which submissions are being synced
   const [syncingSubmissions, setSyncingSubmissions] = useState<Set<string>>(new Set());
 
-  // DB status for each commitment (task_id -> { exists, status })
+  // DB status for each commitment (task_hash -> { exists, status })
   const [dbStatus, setDbStatus] = useState<Map<string, { exists: boolean; status?: string; checking?: boolean }>>(new Map());
 
   // Pending assessments from merged API
@@ -101,10 +101,10 @@ export default function ProjectCommitmentsPage() {
   }, [project?.tasks]);
 
   /**
-   * Find task by ID
+   * Find task by hash
    */
   const findMatchingTask = useCallback((commitment: ManagerCommitment): Task | undefined => {
-    return taskMap.get(commitment.taskId);
+    return taskMap.get(commitment.taskHash);
   }, [taskMap]);
 
   // Selected assessment for management
@@ -120,7 +120,7 @@ export default function ProjectCommitmentsPage() {
     return pendingAssessments.filter(
       (a) =>
         a.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.taskId.toLowerCase().includes(searchQuery.toLowerCase())
+        a.taskHash.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [pendingAssessments, searchQuery]);
 
@@ -130,23 +130,23 @@ export default function ProjectCommitmentsPage() {
 
     const checkAllDbStatus = async () => {
       for (const assessment of pendingAssessments) {
-        const taskId = assessment.taskId;
+        const taskHash = assessment.taskHash;
 
         // Skip if already checked or checking
-        if (dbStatus.has(taskId)) continue;
+        if (dbStatus.has(taskHash)) continue;
 
         // Mark as checking
-        setDbStatus((prev) => new Map(prev).set(taskId, { exists: false, checking: true }));
+        setDbStatus((prev) => new Map(prev).set(taskHash, { exists: false, checking: true }));
 
         try {
-          const result = await checkCommitmentExists(taskId, assessment.submittedBy, authenticatedFetch);
-          setDbStatus((prev) => new Map(prev).set(taskId, {
+          const result = await checkCommitmentExists(taskHash, assessment.submittedBy, authenticatedFetch);
+          setDbStatus((prev) => new Map(prev).set(taskHash, {
             exists: result.exists,
             status: result.status,
             checking: false
           }));
         } catch {
-          setDbStatus((prev) => new Map(prev).set(taskId, { exists: false, checking: false }));
+          setDbStatus((prev) => new Map(prev).set(taskHash, { exists: false, checking: false }));
         }
       }
     };
@@ -163,13 +163,13 @@ export default function ProjectCommitmentsPage() {
       return `Task ${task.taskHash.slice(0, 8)}... (${(lovelace / 1_000_000).toFixed(0)} ADA)`;
     }
     // Task not found in project
-    return `Task ${commitment.taskId.slice(0, 8)}...`;
+    return `Task ${commitment.taskHash.slice(0, 8)}...`;
   }, [findMatchingTask]);
 
   // Sync a single submission to DB
   const handleSyncSubmission = useCallback(async (commitment: ManagerCommitment) => {
-    const taskId = commitment.taskId;
-    const syncKey = `${taskId}-${commitment.submittedBy}`;
+    const taskHash = commitment.taskHash;
+    const syncKey = `${taskHash}-${commitment.submittedBy}`;
     setSyncingSubmissions((prev) => new Set(prev).add(syncKey));
 
     try {
@@ -177,7 +177,7 @@ export default function ProjectCommitmentsPage() {
       // Use onChainContent or evidence
       const contentText = commitment.onChainContent ?? (typeof commitment.evidence === "string" ? commitment.evidence : "") ?? "";
       const result = await syncPendingAssessment(
-        taskId,
+        taskHash,
         contentText,
         commitment.submissionTx ?? "",
         authenticatedFetch
@@ -187,7 +187,7 @@ export default function ProjectCommitmentsPage() {
           description: `${commitment.submittedBy}'s submission is now ready for assessment`,
         });
         // Update DB status to show it now exists
-        setDbStatus((prev) => new Map(prev).set(taskId, {
+        setDbStatus((prev) => new Map(prev).set(taskHash, {
           exists: true,
           status: "SUBMITTED",
           checking: false
@@ -383,10 +383,10 @@ export default function ProjectCommitmentsPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {filteredAssessments.map((assessment) => {
-                    const taskId = assessment.taskId;
+                    const taskHash = assessment.taskHash;
                     return (
                     <AndamioTableRow
-                      key={`${taskId}-${assessment.submittedBy}`}
+                      key={`${taskHash}-${assessment.submittedBy}`}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedAssessment(assessment)}
                     >
@@ -410,7 +410,7 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(taskId);
+                          const status = dbStatus.get(taskHash);
                           if (status?.checking) {
                             return <RefreshIcon className="h-4 w-4 animate-spin text-muted-foreground" />;
                           }
@@ -432,7 +432,7 @@ export default function ProjectCommitmentsPage() {
                       </AndamioTableCell>
                       <AndamioTableCell>
                         {(() => {
-                          const status = dbStatus.get(taskId);
+                          const status = dbStatus.get(taskHash);
                           // Only show sync button if DB record is missing
                           if (status?.exists) {
                             return <span className="text-xs text-muted-foreground">—</span>;
@@ -445,9 +445,9 @@ export default function ProjectCommitmentsPage() {
                                 e.stopPropagation();
                                 void handleSyncSubmission(assessment);
                               }}
-                              disabled={syncingSubmissions.has(`${taskId}-${assessment.submittedBy}`) || status?.checking}
+                              disabled={syncingSubmissions.has(`${taskHash}-${assessment.submittedBy}`) || status?.checking}
                             >
-                              {syncingSubmissions.has(`${taskId}-${assessment.submittedBy}`) ? (
+                              {syncingSubmissions.has(`${taskHash}-${assessment.submittedBy}`) ? (
                                 <RefreshIcon className="h-3 w-3 animate-spin" />
                               ) : (
                                 <DatabaseIcon className="h-3 w-3" />
@@ -481,7 +481,7 @@ export default function ProjectCommitmentsPage() {
 
       {/* Selected Assessment Detail View */}
       {selectedAssessment && (() => {
-        const selectedTaskId = selectedAssessment.taskId;
+        const selectedTaskHash = selectedAssessment.taskHash;
         const selectedMatchedTask = findMatchingTask(selectedAssessment);
         return (
         <AndamioCard>
@@ -514,7 +514,7 @@ export default function ProjectCommitmentsPage() {
               <div>
                 <AndamioLabel>Task</AndamioLabel>
                 <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedTaskId ? `${selectedTaskId.slice(0, 16)}...` : "Unknown"}
+                  {selectedTaskHash ? `${selectedTaskHash.slice(0, 16)}...` : "Unknown"}
                 </AndamioText>
                 {selectedMatchedTask?.lovelaceAmount && (
                   <AndamioText variant="small" className="text-muted-foreground">
@@ -568,9 +568,9 @@ export default function ProjectCommitmentsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => void handleSyncSubmission(selectedAssessment)}
-                    disabled={syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.submittedBy}`)}
+                    disabled={syncingSubmissions.has(`${selectedTaskHash}-${selectedAssessment.submittedBy}`)}
                   >
-                    {syncingSubmissions.has(`${selectedTaskId}-${selectedAssessment.submittedBy}`) ? (
+                    {syncingSubmissions.has(`${selectedTaskHash}-${selectedAssessment.submittedBy}`) ? (
                       <>
                         <RefreshIcon className="h-4 w-4 mr-2 animate-spin" />
                         Syncing...
@@ -618,8 +618,8 @@ export default function ProjectCommitmentsPage() {
               projectNftPolicyId={projectId}
               contributorStateId={project.contributorStateId ?? ""}
               contributorAlias={selectedAssessment.submittedBy}
-              taskHash={selectedTaskId}
-              taskCode={selectedTaskId ? selectedTaskId.slice(0, 8) : "TASK"}
+              taskHash={selectedTaskHash}
+              taskCode={selectedTaskHash ? selectedTaskHash.slice(0, 8) : "TASK"}
               onSuccess={async () => {
                 await refetch();
                 setSelectedAssessment(null);

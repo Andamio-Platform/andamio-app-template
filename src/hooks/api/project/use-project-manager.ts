@@ -69,7 +69,7 @@ export const projectManagerKeys = {
  * Pending assessment summary with camelCase fields
  */
 export interface PendingAssessment {
-  taskId: string;
+  taskHash: string;
   submittedBy: string;
   submissionTx?: string;
   onChainContent?: string;
@@ -124,7 +124,7 @@ export interface ManagerCommitmentTaskInfo {
 export interface ManagerCommitment {
   // Identifiers
   projectId: string;
-  taskId: string;
+  taskHash: string;
   submittedBy: string;
 
   // On-chain submission info
@@ -156,7 +156,7 @@ function transformPendingAssessment(
   api: OrchestrationPendingAssessmentSummary
 ): PendingAssessment {
   return {
-    taskId: api.task_id ?? "",
+    taskHash: api.task_hash ?? "",
     submittedBy: api.submitted_by ?? "",
     submissionTx: api.submission_tx,
     onChainContent: api.on_chain_content,
@@ -205,7 +205,7 @@ function transformManagerCommitment(api: OrchestrationManagerCommitmentItem): Ma
   return {
     // Identifiers
     projectId: api.project_id ?? "",
-    taskId: api.task_id ?? "",
+    taskHash: api.task_hash ?? "",
     submittedBy: api.submitted_by ?? "",
 
     // On-chain submission info

@@ -1327,7 +1327,7 @@ export interface MergedHandlersErrorResponse {
 
 export interface MergedHandlersGetContributorCommitmentRequest {
   project_id?: string;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface MergedHandlersGetStudentAssignmentCommitmentRequest {
@@ -1466,7 +1466,7 @@ export interface OrchestrationContributorCommitmentItem {
   source?: string;
   submission_tx?: string;
   /** Identifiers */
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationContributorProjectListItem {
@@ -1517,7 +1517,7 @@ export interface OrchestrationManagerCommitmentItem {
   submitted_by?: string;
   /** Task context */
   task?: OrchestrationManagerCommitmentTaskInfo;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationManagerCommitmentTaskInfo {
@@ -1735,7 +1735,7 @@ export interface OrchestrationMergedTaskListItem {
   /** Data source indicator */
   source?: string;
   /** On-chain fields (top level) */
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationModuleContent {
@@ -1758,21 +1758,21 @@ export interface OrchestrationMyCommitmentSummary {
   /** committed, submitted, approved, rejected */
   commitment_status?: string;
   content?: OrchestrationTaskCommitmentContent;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationPendingAssessmentSummary {
   on_chain_content?: string;
   submission_tx?: string;
   submitted_by?: string;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationProjectAssessmentOnChain {
   assessed_by?: string;
   /** ACCEPTED, REFUSED, DENIED */
   decision?: string;
-  task_id?: string;
+  task_hash?: string;
   tx?: string;
 }
 
@@ -1800,7 +1800,7 @@ export interface OrchestrationProjectSubmissionOnChain {
   on_chain_content?: string;
   submission_tx?: string;
   submitted_by?: string;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationProjectTaskOnChain {
@@ -1814,7 +1814,7 @@ export interface OrchestrationProjectTaskOnChain {
   lovelace_amount?: number;
   /** Hex-encoded */
   on_chain_content?: string;
-  task_id?: string;
+  task_hash?: string;
 }
 
 export interface OrchestrationProjectTreasuryFundingOnChain {
@@ -1874,7 +1874,7 @@ export interface OrchestrationStudentAssignmentCommitmentItem {
   /** Off-chain content (nested) */
   content?: OrchestrationAssignmentCommitmentContent;
   course_id?: string;
-  module_code?: string;
+  course_module_code?: string;
   /** Hex-encoded on-chain content */
   on_chain_content?: string;
   /** On-chain status */

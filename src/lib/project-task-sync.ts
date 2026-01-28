@@ -5,6 +5,7 @@
  * Matches tasks by content and updates DB with on-chain task_id.
  */
 
+import { syncLogger } from "./debug-logger";
 import {
   getProject,
   type AndamioscanTask,
@@ -111,7 +112,7 @@ async function confirmTaskWithHash(
     task_hash: taskHash,
   };
 
-  console.log(`[project-task-sync] confirm-tx for task ${taskIndex}:`, {
+  syncLogger.info(` confirm-tx for task ${taskIndex}:`, {
     taskHash: taskHash.slice(0, 16) + "...",
     txHash: txHash.slice(0, 16) + "...",
   });
@@ -184,12 +185,12 @@ async function batchUpdateTaskStatus(
     let errorDetail = `HTTP ${response.status}`;
     try {
       const errorBody = await response.json() as { message?: string; error?: string };
-      console.error("[project-task-sync] batch-status error body:", errorBody);
+      syncLogger.error(" batch-status error body:", errorBody);
       errorDetail = errorBody.message ?? errorBody.error ?? errorDetail;
     } catch {
       // Ignore JSON parse errors
     }
-    console.error("[project-task-sync] batch-status failed:", errorDetail);
+    syncLogger.error(" batch-status failed:", errorDetail);
     return { updated: 0, errors: [errorDetail] };
   }
 
@@ -214,14 +215,14 @@ async function batchUpdateTaskStatus(
 
   // Check if API returned success: false in the body (even with HTTP 200)
   if (responseBody?.success === false) {
-    console.warn("[project-task-sync] Batch update failed");
+    syncLogger.warn(" Batch update failed");
 
     // Check individual results for errors
     const failedResults = responseBody?.results?.filter(r => !r.success) ?? [];
     const errorMessages = failedResults.map(r => `Task ${r.index}: ${r.error ?? "failed"}`);
     const successfulCount = responseBody.results?.filter(r => r.success).length ?? 0;
 
-    console.warn("[project-task-sync] Errors:", errorMessages.join(" | "));
+    syncLogger.warn(" Errors:", errorMessages.join(" | "));
 
     return {
       updated: successfulCount,
@@ -376,9 +377,9 @@ export async function syncProjectTasks(
   try {
     projectDetails = await getProject(projectId);
     onChainTasks = projectDetails?.tasks ?? [];
-    console.log(`[project-task-sync] Found ${onChainTasks.length} on-chain tasks`);
+    syncLogger.info(` Found ${onChainTasks.length} on-chain tasks`);
   } catch (err) {
-    console.error("[project-task-sync] Andamioscan fetch failed:", err);
+    syncLogger.error(" Andamioscan fetch failed:", err);
     errors.push(`Failed to fetch from Andamioscan: ${err instanceof Error ? err.message : String(err)}`);
     return {
       matched: [],
@@ -404,9 +405,9 @@ export async function syncProjectTasks(
   let dbTasks: ProjectTaskV2Output[] = [];
   try {
     dbTasks = await fetchDbTasks(projectStatePolicyId, authenticatedFetch);
-    console.log(`[project-task-sync] Found ${dbTasks.length} DB tasks`);
+    syncLogger.info(` Found ${dbTasks.length} DB tasks`);
   } catch (err) {
-    console.error("[project-task-sync] DB fetch failed:", err);
+    syncLogger.error(" DB fetch failed:", err);
     errors.push(`Failed to fetch DB tasks: ${err instanceof Error ? err.message : String(err)}`);
     return {
       matched: [],
@@ -423,7 +424,7 @@ export async function syncProjectTasks(
     onChainTasks
   );
 
-  console.log(`[project-task-sync] Matched ${matched.length} tasks, ${unmatchedDb.length} unmatched DB, ${unmatchedOnChain.length} unmatched on-chain`);
+  syncLogger.info(` Matched ${matched.length} tasks, ${unmatchedDb.length} unmatched DB, ${unmatchedOnChain.length} unmatched on-chain`);
 
   // 4. If dry run, just report matches without updating DB
   if (dryRun) {
@@ -457,7 +458,7 @@ export async function syncProjectTasks(
     (m) => m.dbTask.taskStatus === "ON_CHAIN" && !m.dbTask.taskHash
   );
 
-  console.log(`[project-task-sync] Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX, ${onChainTasksMissingHash.length} ON_CHAIN (missing hash)`);
+  syncLogger.info(` Tasks to sync: ${draftTasks.length} DRAFT, ${pendingTasks.length} PENDING_TX, ${onChainTasksMissingHash.length} ON_CHAIN (missing hash)`);
 
   let confirmed = 0;
 
@@ -469,7 +470,7 @@ export async function syncProjectTasks(
       (a, b) => b.slot - a.slot
     );
     effectiveTxHash = sortedFundings[0]?.tx_hash ?? "";
-    console.log(`[project-task-sync] Using tx_hash from treasury_fundings: ${effectiveTxHash.slice(0, 16)}...`);
+    syncLogger.info(` Using tx_hash from treasury_fundings: ${effectiveTxHash.slice(0, 16)}...`);
   }
 
   // Step 1: Update DRAFT tasks to PENDING_TX first (required transition)
@@ -487,13 +488,13 @@ export async function syncProjectTasks(
         draftToUpdate,
         authenticatedFetch
       );
-      console.log(`[project-task-sync] DRAFT → PENDING_TX: ${result.updated} updated`);
+      syncLogger.info(` DRAFT → PENDING_TX: ${result.updated} updated`);
 
       if (result.errors.length > 0) {
         errors.push(...result.errors);
       }
     } catch (err) {
-      console.error("[project-task-sync] Step 1 error:", err);
+      syncLogger.error(" Step 1 error:", err);
       errors.push(
         `Error updating DRAFT tasks: ${err instanceof Error ? err.message : String(err)}`
       );
@@ -507,7 +508,7 @@ export async function syncProjectTasks(
   const tasksToConfirm = [...draftTasks, ...pendingTasks];
 
   if (effectiveTxHash && tasksToConfirm.length > 0) {
-    console.log(`[project-task-sync] Step 2: Confirming ${tasksToConfirm.length} tasks with task_hash via confirm-tx`);
+    syncLogger.info(` Step 2: Confirming ${tasksToConfirm.length} tasks with task_hash via confirm-tx`);
 
     for (const match of tasksToConfirm) {
       if (match.dbTask.index === undefined) continue;
@@ -525,7 +526,7 @@ export async function syncProjectTasks(
       } else {
         // If confirm-tx fails, try batch-status as fallback (won't set task_hash)
         console.warn(`[project-task-sync] confirm-tx failed for task ${taskIndex}: ${result.error}`);
-        console.log(`[project-task-sync] Falling back to batch-status for task ${taskIndex}`);
+        syncLogger.info(` Falling back to batch-status for task ${taskIndex}`);
 
         try {
           const batchResult = await batchUpdateTaskStatus(
@@ -545,10 +546,10 @@ export async function syncProjectTasks(
       }
     }
 
-    console.log(`[project-task-sync] Confirmed ${confirmed}/${tasksToConfirm.length} tasks`);
+    syncLogger.info(` Confirmed ${confirmed}/${tasksToConfirm.length} tasks`);
   } else if (!effectiveTxHash && tasksToConfirm.length > 0) {
     // No tx_hash available - use batch-status as fallback (won't set task_hash)
-    console.warn("[project-task-sync] No tx_hash available - using batch-status (task_hash won't be persisted)");
+    syncLogger.warn(" No tx_hash available - using batch-status (task_hash won't be persisted)");
 
     const allTasksToOnChain = tasksToConfirm
       .filter((match) => match.dbTask.index !== undefined)
@@ -568,9 +569,9 @@ export async function syncProjectTasks(
       if (result.errors.length > 0) {
         errors.push(...result.errors);
       }
-      console.log(`[project-task-sync] PENDING_TX → ON_CHAIN (no task_hash): ${result.updated} updated`);
+      syncLogger.info(` PENDING_TX → ON_CHAIN (no task_hash): ${result.updated} updated`);
     } catch (err) {
-      console.error("[project-task-sync] Step 2 fallback error:", err);
+      syncLogger.error(" Step 2 fallback error:", err);
       errors.push(
         `Error updating tasks to ON_CHAIN: ${err instanceof Error ? err.message : String(err)}`
       );
@@ -601,7 +602,7 @@ export async function syncProjectTasks(
     errors,
   };
 
-  console.log(`[project-task-sync] Sync complete: ${confirmed} confirmed, ${errors.length} errors`);
+  syncLogger.info(` Sync complete: ${confirmed} confirmed, ${errors.length} errors`);
 
   return finalResult;
 }

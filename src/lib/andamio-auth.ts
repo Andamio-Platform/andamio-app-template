@@ -489,40 +489,68 @@ export const DEV_JWT_STORAGE_KEY = "andamio_dev_jwt";
 // User JWT helpers (for app features, requires wallet signing)
 export function storeJWT(jwt: string): void {
   if (typeof window !== "undefined") {
-    localStorage.setItem(JWT_STORAGE_KEY, jwt);
+    try {
+      localStorage.setItem(JWT_STORAGE_KEY, jwt);
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+      console.warn("[Auth] Failed to store JWT in localStorage");
+    }
   }
 }
 
 export function getStoredJWT(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem(JWT_STORAGE_KEY);
+    try {
+      return localStorage.getItem(JWT_STORAGE_KEY);
+    } catch {
+      // localStorage may be unavailable
+      return null;
+    }
   }
   return null;
 }
 
 export function clearStoredJWT(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(JWT_STORAGE_KEY);
+    try {
+      localStorage.removeItem(JWT_STORAGE_KEY);
+    } catch {
+      // localStorage may be unavailable
+    }
   }
 }
 
 // Developer JWT helpers (for API key management, no wallet signing)
 export function storeDevJWT(jwt: string): void {
   if (typeof window !== "undefined") {
-    localStorage.setItem(DEV_JWT_STORAGE_KEY, jwt);
+    try {
+      localStorage.setItem(DEV_JWT_STORAGE_KEY, jwt);
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+      console.warn("[Auth] Failed to store dev JWT in localStorage");
+    }
   }
 }
 
 export function getStoredDevJWT(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem(DEV_JWT_STORAGE_KEY);
+    try {
+      return localStorage.getItem(DEV_JWT_STORAGE_KEY);
+    } catch {
+      // localStorage may be unavailable
+      return null;
+    }
   }
   return null;
 }
 
 export function clearStoredDevJWT(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(DEV_JWT_STORAGE_KEY);
+    try {
+      localStorage.removeItem(DEV_JWT_STORAGE_KEY);
+    } catch {
+      // localStorage may be unavailable
+    }
   }
 }
 

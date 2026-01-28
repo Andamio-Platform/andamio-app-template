@@ -551,10 +551,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
                   Create Your First Credential
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <AndamioText variant="muted" className="text-lg leading-relaxed">
                   Every module is a <strong className="text-foreground">verifiable credential</strong> that learners earn on-chain.
                   Design what mastery looks like, and Andamio handles the rest.
-                </p>
+                </AndamioText>
               </div>
 
               {/* Two Path Options */}
@@ -652,10 +652,10 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <AlertIcon className="h-4 w-4" />
                   <AndamioAlertTitle>Course is private</AndamioAlertTitle>
                   <AndamioAlertDescription>
-                    <p>
+                    <AndamioText>
                       Private courses are hidden from Browse Courses. Set this course to Public to
                       make it visible to learners.
-                    </p>
+                    </AndamioText>
                     <AndamioButton
                       variant="outline"
                       size="sm"

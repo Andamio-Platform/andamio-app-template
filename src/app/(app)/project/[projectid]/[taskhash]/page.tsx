@@ -36,10 +36,10 @@ export default function TaskDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Contributor state - in a real app this would come from on-chain data
+  // Contributor state - derived from on-chain data when task is fetched
   const [isEnrolled, setIsEnrolled] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [contributorStateId, _setContributorStateId] = useState<string | null>(null);
+  // Contributor state ID for TX building - currently placeholder until proper user state endpoint available
+  const contributorStateId: string | null = null;
 
   // On-chain task data from Andamioscan (for contributor_state_policy_id)
   const [onChainTask, setOnChainTask] = useState<AndamioscanTask | null>(null);

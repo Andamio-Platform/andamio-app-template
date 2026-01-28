@@ -27,6 +27,7 @@ import { cn } from "~/lib/utils";
 import type { WizardStepConfig } from "../types";
 import type { SLTDraft } from "~/stores/module-draft-store";
 import { AndamioInput } from "~/components/andamio";
+import { AndamioText } from "~/components/andamio/andamio-text";
 
 interface StepSLTsProps {
   config: WizardStepConfig;
@@ -162,10 +163,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
             <div className="flex items-center gap-3 text-muted-foreground">
               <LockedIcon className="h-5 w-5 flex-shrink-0" />
               <div>
-                <p className="font-medium">Learning Targets are locked</p>
-                <p className="text-sm text-muted-foreground">
+                <AndamioText className="font-medium">Learning Targets are locked</AndamioText>
+                <AndamioText variant="small">
                   SLTs cannot be modified after a module is approved. Return the module to Draft status to make changes.
-                </p>
+                </AndamioText>
               </div>
             </div>
           </div>
@@ -214,9 +215,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
             <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
               <SLTIcon className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">
+            <AndamioText variant="muted">
               Add your first learning target above
-            </p>
+            </AndamioText>
           </div>
         ) : (
           <DndContext

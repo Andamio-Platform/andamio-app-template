@@ -2,14 +2,16 @@
  * Debug Logger
  *
  * Conditional logging that can be enabled/disabled via environment variable.
- * Set NEXT_PUBLIC_DEBUG_LOGGING=true to enable debug logs in development.
+ * Set NEXT_PUBLIC_DEBUG_LOGGING=true to enable debug logs.
  *
- * In production, all debug logs are silently dropped.
+ * Logs are OFF by default, even in development. To enable:
+ * - Add NEXT_PUBLIC_DEBUG_LOGGING=true to .env.local
+ * - Or run: NEXT_PUBLIC_DEBUG_LOGGING=true npm run dev
  */
 
 const isDebugEnabled = (): boolean => {
   if (typeof window === "undefined") return false;
-  return process.env.NEXT_PUBLIC_DEBUG_LOGGING === "true" || process.env.NODE_ENV === "development";
+  return process.env.NEXT_PUBLIC_DEBUG_LOGGING === "true";
 };
 
 interface LoggerOptions {
@@ -60,6 +62,13 @@ export function createDebugLogger(options: LoggerOptions = {}) {
 export const authLogger = createDebugLogger({ namespace: "Auth" });
 export const pendingTxLogger = createDebugLogger({ namespace: "PendingTx" });
 export const learnerLogger = createDebugLogger({ namespace: "Learner" });
+export const txLogger = createDebugLogger({ namespace: "TX" });
+export const syncLogger = createDebugLogger({ namespace: "Sync" });
+export const projectLogger = createDebugLogger({ namespace: "Project" });
+export const courseLogger = createDebugLogger({ namespace: "Course" });
+export const gatewayLogger = createDebugLogger({ namespace: "Gateway" });
+export const indexerLogger = createDebugLogger({ namespace: "Cardano Indexer" });
+export const meshLogger = createDebugLogger({ namespace: "Mesh" });
 
 // Generic debug logger
 export const debugLog = createDebugLogger();

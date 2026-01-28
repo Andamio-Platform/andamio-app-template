@@ -8,6 +8,7 @@
  * so we need to check each submission individually.
  */
 
+import { syncLogger } from "./debug-logger";
 import {
   getProject,
   type AndamioscanSubmission,
@@ -141,11 +142,11 @@ export async function checkCommitmentSyncStatus(
   try {
     projectDetails = await getProject(projectId);
     submissions = projectDetails?.submissions ?? [];
-    console.log(
-      `[commitment-sync] Found ${submissions.length} on-chain submissions`
+    syncLogger.info(
+      `[commitment] Found ${submissions.length} on-chain submissions`
     );
   } catch (err) {
-    console.error("[commitment-sync] Andamioscan fetch failed:", err);
+    syncLogger.error("[commitment] Andamioscan fetch failed:", err);
     errors.push(
       `Failed to fetch from Andamioscan: ${err instanceof Error ? err.message : String(err)}`
     );
@@ -191,8 +192,8 @@ export async function checkCommitmentSyncStatus(
     }
   }
 
-  console.log(
-    `[commitment-sync] Sync status: ${synced.length} synced, ${unsynced.length} unsynced`
+  syncLogger.info(
+    `[commitment] Sync status: ${synced.length} synced, ${unsynced.length} unsynced`
   );
 
   return {
@@ -222,7 +223,7 @@ export async function createCommitmentRecord(
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("[commitment-sync] Creating commitment record:", {
+    syncLogger.info("[commitment] Creating commitment record:", {
       taskHash,
       taskHashLength: taskHash?.length,
       hasEvidence: !!evidence,
@@ -245,7 +246,7 @@ export async function createCommitmentRecord(
       return { success: false, error: `Create failed: ${errorText}` };
     }
 
-    console.log("[commitment-sync] Create step completed (status:", createResponse.status, ")");
+    syncLogger.info("[commitment] Create step completed (status:", createResponse.status, ")");
 
     // Step 2: Submit with evidence and tx hash (only if we have a tx hash)
     if (txHash) {
@@ -267,7 +268,7 @@ export async function createCommitmentRecord(
         return { success: false, error: `Submit failed: ${errorText}` };
       }
 
-      console.log("[commitment-sync] Submit step completed");
+      syncLogger.info("[commitment] Submit step completed");
 
       // Step 3: Confirm the transaction
       const confirmResponse = await authenticatedFetch(
@@ -287,9 +288,9 @@ export async function createCommitmentRecord(
         return { success: false, error: `Confirm failed: ${errorText}` };
       }
 
-      console.log("[commitment-sync] Confirm step completed");
+      syncLogger.info("[commitment] Confirm step completed");
     } else {
-      console.log("[commitment-sync] Skipping submit/confirm steps (no tx_hash available)");
+      syncLogger.info("[commitment] Skipping submit/confirm steps (no tx_hash available)");
       // Just create worked - the record exists but isn't fully synced
       // This is a partial sync - better than nothing
     }
@@ -317,7 +318,7 @@ export async function syncSubmission(
   const evidence = hexToText(submission.content);
   const txHash = submission.tx_hash;
 
-  console.log(`[commitment-sync] Syncing submission for task ${taskHash.slice(0, 16)}...`);
+  syncLogger.info(`[commitment] Syncing submission for task ${taskHash.slice(0, 16)}...`);
 
   return createCommitmentRecord(taskHash, evidence, txHash, authenticatedFetch);
 }
@@ -338,7 +339,7 @@ export async function confirmCommitmentTransaction(
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("[commitment-sync] Confirming transaction:", {
+    syncLogger.info("[commitment] Confirming transaction:", {
       taskHash: taskHash.slice(0, 16) + "...",
       txHash: txHash.slice(0, 16) + "...",
     });
@@ -357,14 +358,14 @@ export async function confirmCommitmentTransaction(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[commitment-sync] Confirm-tx failed:", errorText);
+      syncLogger.error("[commitment] Confirm-tx failed:", errorText);
       return { success: false, error: `Confirm failed: ${errorText}` };
     }
 
-    console.log("[commitment-sync] Transaction confirmed in DB");
+    syncLogger.info("[commitment] Transaction confirmed in DB");
     return { success: true };
   } catch (err) {
-    console.error("[commitment-sync] Confirm-tx error:", err);
+    syncLogger.error("[commitment] Confirm-tx error:", err);
     return {
       success: false,
       error: err instanceof Error ? err.message : "Unknown error",
@@ -397,7 +398,7 @@ export async function syncPendingAssessment(
     if (decoded) evidence = decoded;
   }
 
-  console.log(`[commitment-sync] Syncing pending assessment for task ${taskId.slice(0, 16)}...`);
+  syncLogger.info(`[commitment] Syncing pending assessment for task ${taskId.slice(0, 16)}...`);
 
   return createCommitmentRecord(taskId, evidence || null, txHash, authenticatedFetch);
 }
@@ -421,11 +422,11 @@ export async function syncAllCommitments(
   const status = await checkCommitmentSyncStatus(projectId, authenticatedFetch);
 
   if (status.unsynced.length === 0) {
-    console.log("[commitment-sync] All submissions already synced");
+    syncLogger.info("[commitment] All submissions already synced");
     return { synced: 0, failed: 0, errors: [] };
   }
 
-  console.log(`[commitment-sync] Syncing ${status.unsynced.length} submissions...`);
+  syncLogger.info(`[commitment] Syncing ${status.unsynced.length} submissions...`);
 
   for (const item of status.unsynced) {
     const result = await syncSubmission(item.submission, authenticatedFetch);
@@ -440,7 +441,7 @@ export async function syncAllCommitments(
     }
   }
 
-  console.log(`[commitment-sync] Complete: ${synced} synced, ${failed} failed`);
+  syncLogger.info(`[commitment] Complete: ${synced} synced, ${failed} failed`);
 
   return { synced, failed, errors };
 }

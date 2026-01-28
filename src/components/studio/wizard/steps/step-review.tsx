@@ -292,11 +292,11 @@ export function StepReview({ config, direction }: StepReviewProps) {
               </div>
               <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold">Ready to Publish?</h3>
-                <p className="text-sm text-muted-foreground mt-1 text-center max-w-md">
+                <AndamioText variant="small" className="mt-1 text-center max-w-md">
                   Review your module content below. When everything looks good,
                   click <strong>Approve Module</strong> to mark it as ready for
                   on-chain minting.
-                </p>
+                </AndamioText>
               </div>
             </div>
           </WizardStepHighlight>

@@ -53,6 +53,7 @@ import {
   AndamioCardTitle,
   AndamioCardContent,
 } from "./andamio-card";
+import { AndamioText } from "./andamio-text";
 
 export interface AndamioDashboardStatProps {
   /**
@@ -123,7 +124,7 @@ export function AndamioDashboardStat({
           {value}
         </div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <AndamioText variant="small" className="mt-1">{description}</AndamioText>
         )}
       </AndamioCardContent>
     </AndamioCard>

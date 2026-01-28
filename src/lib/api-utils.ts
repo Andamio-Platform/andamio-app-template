@@ -107,3 +107,117 @@ export function getErrorMessage(error: unknown, fallback = "An error occurred"):
 
   return fallback;
 }
+
+// =============================================================================
+// API Request Helpers
+// =============================================================================
+
+/**
+ * Gateway API base path
+ */
+export const GATEWAY_API_BASE = "/api/gateway/api/v2";
+
+/**
+ * Options for API requests
+ */
+export interface ApiRequestOptions {
+  /** Request body (for POST) */
+  body?: unknown;
+  /** Custom error message prefix */
+  errorPrefix?: string;
+  /** Whether to treat 404 as empty result instead of error */
+  treat404AsEmpty?: boolean;
+}
+
+/**
+ * Standard API error class with structured error info
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly details?: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+/**
+ * Make an authenticated POST request to the Gateway API
+ *
+ * This helper reduces boilerplate in mutation hooks by standardizing:
+ * - Content-Type headers
+ * - Error handling
+ * - Response parsing
+ *
+ * @example
+ * ```tsx
+ * const response = await authenticatedPost(
+ *   authenticatedFetch,
+ *   "/course/teacher/course-module/create",
+ *   { course_id: "...", course_module_code: "101" },
+ *   { errorPrefix: "Failed to create module" }
+ * );
+ * ```
+ */
+export async function authenticatedPost<T>(
+  authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>,
+  endpoint: string,
+  body: unknown,
+  options: Omit<ApiRequestOptions, "body"> = {}
+): Promise<T> {
+  const { errorPrefix = "API request failed", treat404AsEmpty = false } = options;
+  const url = `${GATEWAY_API_BASE}${endpoint}`;
+
+  const response = await authenticatedFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (treat404AsEmpty && response.status === 404) {
+    return [] as T;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({})) as { message?: string; details?: string };
+    const errorMessage = errorData.message ?? errorData.details ?? response.statusText;
+    throw new ApiError(`${errorPrefix}: ${errorMessage}`, response.status, errorData.details);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Make an unauthenticated GET request to the Gateway API
+ *
+ * @example
+ * ```tsx
+ * const data = await gatewayGet<CourseListResponse>(
+ *   "/course/user/courses/list",
+ *   { errorPrefix: "Failed to fetch courses", treat404AsEmpty: true }
+ * );
+ * ```
+ */
+export async function gatewayGet<T>(
+  endpoint: string,
+  options: Omit<ApiRequestOptions, "body"> = {}
+): Promise<T> {
+  const { errorPrefix = "API request failed", treat404AsEmpty = false } = options;
+  const url = `${GATEWAY_API_BASE}${endpoint}`;
+
+  const response = await fetch(url);
+
+  if (treat404AsEmpty && response.status === 404) {
+    return [] as T;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({})) as { message?: string; details?: string };
+    const errorMessage = errorData.message ?? errorData.details ?? response.statusText;
+    throw new ApiError(`${errorPrefix}: ${errorMessage}`, response.status, errorData.details);
+  }
+
+  return response.json() as Promise<T>;
+}

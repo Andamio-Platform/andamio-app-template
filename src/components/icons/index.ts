@@ -69,6 +69,7 @@ export {
   // Completion & Success
   SuccessIcon,
   CompletedIcon,
+  CheckIcon,
   VerifiedIcon,
   // Errors & Warnings
   ErrorIcon,

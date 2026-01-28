@@ -18,6 +18,8 @@
  * Uses Koios API (free, no API key required for basic usage).
  */
 
+import { indexerLogger } from "./debug-logger";
+
 export interface TransactionConfirmation {
   txHash: string;
   confirmed: boolean;
@@ -70,7 +72,7 @@ export async function checkTransactionConfirmation(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Cardano Indexer] Koios error response:`, errorText);
+      indexerLogger.error(` Koios error response:`, errorText);
       throw new Error(`Koios API error: ${response.status} ${response.statusText}`);
     }
 
@@ -99,7 +101,7 @@ export async function checkTransactionConfirmation(
       confirmations: txInfo?.num_confirmations,
     };
   } catch (error) {
-    console.error(`[Cardano Indexer] Failed to check transaction ${txHash}:`, error);
+    indexerLogger.error(` Failed to check transaction ${txHash}:`, error);
     throw error;
   }
 }
@@ -127,7 +129,7 @@ export async function getTransactionOutputs(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Cardano Indexer] Koios error response:`, errorText);
+      indexerLogger.error(` Koios error response:`, errorText);
       throw new Error(`Koios API error: ${response.status} ${response.statusText}`);
     }
 
@@ -173,7 +175,7 @@ export async function getTransactionOutputs(
 
     return outputs;
   } catch (error) {
-    console.error(`[Cardano Indexer] Failed to get outputs for transaction ${txHash}:`, error);
+    indexerLogger.error(` Failed to get outputs for transaction ${txHash}:`, error);
     throw error;
   }
 }
@@ -213,7 +215,7 @@ export async function extractOnChainData(
 
     return onChainData;
   } catch (error) {
-    console.error(`[Cardano Indexer] Failed to extract on-chain data for ${txHash}:`, error);
+    indexerLogger.error(` Failed to extract on-chain data for ${txHash}:`, error);
     throw error;
   }
 }
@@ -244,7 +246,7 @@ export async function checkTransactionsBatch(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Cardano Indexer] Koios error response:`, errorText);
+      indexerLogger.error(` Koios error response:`, errorText);
       throw new Error(`Koios API error: ${response.status} ${response.statusText}`);
     }
 

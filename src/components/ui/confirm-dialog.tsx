@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 
 /**
  * Reusable confirmation dialog component
@@ -70,7 +70,7 @@ export function ConfirmDialog({
             disabled={isLoading}
             className={variant === "destructive" ? "bg-destructive hover:bg-destructive/90" : ""}
           >
-            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isLoading && <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />}
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

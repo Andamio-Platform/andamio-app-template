@@ -26,7 +26,6 @@ import {
   AndamioCheckbox,
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";

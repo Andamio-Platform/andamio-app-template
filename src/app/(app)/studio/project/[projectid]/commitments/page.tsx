@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerCommitments, useProject, type ManagerCommitment } from "~/hooks/api";
@@ -42,7 +42,6 @@ import {
 } from "~/components/icons";
 import { type Task } from "~/hooks/api/project/use-project";
 import { TasksAssess } from "~/components/tx";
-import { toast } from "sonner";
 
 /**
  * Project Commitments Page
@@ -58,7 +57,7 @@ import { toast } from "sonner";
 export default function ProjectCommitmentsPage() {
   const params = useParams();
   const projectId = params.projectid as string;
-  const { isAuthenticated, user, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated, user } = useAndamioAuth();
   const managerAlias = user?.accessTokenAlias;
 
   // Project data from merged API

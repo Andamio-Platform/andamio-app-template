@@ -29,7 +29,6 @@ import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject } from "~/lib/andamioscan-events";
-import { toast } from "sonner";
 
 interface ApiError {
   message?: string;

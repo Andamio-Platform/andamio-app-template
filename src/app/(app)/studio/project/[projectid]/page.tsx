@@ -36,7 +36,6 @@ import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generate
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
-import { toast } from "sonner";
 
 interface ApiError {
   message?: string;

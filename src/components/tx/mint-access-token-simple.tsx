@@ -107,8 +107,8 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
-          // Gateway has processed the TX and updated DB
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           console.log("[MintAccessTokenSimple] TX confirmed and DB updated by gateway");
 
           // Refresh auth to get updated user state

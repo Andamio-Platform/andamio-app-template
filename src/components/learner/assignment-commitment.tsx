@@ -131,7 +131,8 @@ export function AssignmentCommitment({
     commitTx.result?.requiresDBUpdate ? commitTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           triggerSuccess("Assignment committed to blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
@@ -146,7 +147,8 @@ export function AssignmentCommitment({
     updateTx.result?.requiresDBUpdate ? updateTx.result.txHash : null,
     {
       onComplete: (status) => {
-        if (status.state === "confirmed" || status.state === "updated") {
+        // "updated" means Gateway has confirmed TX AND updated DB
+        if (status.state === "updated") {
           triggerSuccess("Assignment updated on blockchain!");
           void fetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {

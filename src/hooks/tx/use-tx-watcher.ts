@@ -41,10 +41,10 @@ export type TxState = "pending" | "confirmed" | "updated" | "failed" | "expired"
 
 /**
  * Terminal states - stop polling when reached
- * Includes "confirmed" because once TX is on-chain, we can proceed with our own
- * DB updates rather than waiting for gateway's background processing
+ * IMPORTANT: "confirmed" is NOT terminal - it only means TX is on-chain.
+ * Wait for "updated" which means Gateway has completed DB updates.
  */
-export const TERMINAL_STATES: TxState[] = ["confirmed", "updated", "failed", "expired"];
+export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
 
 /**
  * TX status response from gateway
@@ -198,8 +198,8 @@ export function useTxWatcher(
     checkNow: checkStatus,
     /** Whether TX is in a terminal state */
     isTerminal: status ? TERMINAL_STATES.includes(status.state) : false,
-    /** Whether TX completed successfully (confirmed on-chain or DB updated) */
-    isSuccess: status?.state === "confirmed" || status?.state === "updated",
+    /** Whether TX completed successfully (DB updated by Gateway) */
+    isSuccess: status?.state === "updated",
     /** Whether TX failed */
     isFailed: status?.state === "failed" || status?.state === "expired",
   };

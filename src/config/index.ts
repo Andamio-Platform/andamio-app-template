@@ -84,3 +84,13 @@ export {
   valueSchema,
   type TxParams,
 } from "./transaction-schemas";
+
+// Sidebar configuration
+export {
+  SIDEBAR_LAYOUT,
+  SIDEBAR_DESKTOP,
+  SIDEBAR_MOBILE,
+  WALLET_TRUNCATION,
+  SIDEBAR_COLORS,
+  truncateWalletAddress,
+} from "./sidebar";

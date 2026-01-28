@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
 import { useModuleDraft } from "~/hooks/use-module-draft";
-import { useWizardNavigation, STEP_ORDER } from "~/hooks/ui/use-wizard-navigation";
+import { useWizardNavigation } from "~/hooks/ui/use-wizard-navigation";
 import { useWizardUIStore } from "~/stores/wizard-ui-store";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
@@ -30,9 +30,8 @@ import {
 } from "~/components/andamio";
 import {
   AlertIcon,
-  PreviousIcon,
-  NextIcon,
-  ExternalLinkIcon,
+  SaveIcon,
+  LoadingIcon,
 } from "~/components/icons";
 import type { Course, CourseModule } from "~/hooks/api";
 
@@ -184,7 +183,6 @@ function ModuleWizardContent({
   const {
     currentStep,
     direction,
-    currentIndex,
     canGoNext,
     canGoPrevious,
     goToStep: goToStepRaw,
@@ -343,63 +341,33 @@ function ModuleWizardContent({
     ]
   );
 
-  // Update header with navigation actions (no Save button - saves on exit or approve)
+  // Update header with save action
   useEffect(() => {
     setActions(
-      <div className="flex items-center gap-3">
-        {/* Unsaved indicator */}
+      <div className="flex items-center gap-3 px-2 py-1">
+        {/* Unsaved changes indicator */}
         {isDirty && (
           <span className="text-xs text-muted-foreground">Unsaved changes</span>
         )}
 
-        {/* Step Navigation */}
-        <div className="flex items-center gap-1">
-          <AndamioButton
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2"
-            onClick={goPrevious}
-            disabled={!canGoPrevious}
-          >
-            <PreviousIcon className="h-4 w-4 mr-1" />
-            Back
-          </AndamioButton>
-          <span className="text-xs text-muted-foreground px-2">
-            {currentIndex + 1}/{STEP_ORDER.length}
-          </span>
-          <AndamioButton
-            variant="outline"
-            size="sm"
-            className="h-8 px-3"
-            onClick={goNext}
-            disabled={!canGoNext}
-          >
-            Continue
-            <NextIcon className="h-4 w-4 ml-1" />
-          </AndamioButton>
-        </div>
-
-        {/* On-Chain Link */}
-        {data.courseModule?.status === "active" && (
-          <AndamioButton
-            variant="ghost"
-            size="sm"
-            className="h-8"
-            asChild
-          >
-            <a
-              href={`https://preprod.cardanoscan.io/token/${courseNftPolicyId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLinkIcon className="h-4 w-4 mr-1" />
-              On-Chain
-            </a>
-          </AndamioButton>
-        )}
+        {/* Save button - active when there are unsaved changes */}
+        <AndamioButton
+          variant={isDirty ? "default" : "ghost"}
+          size="sm"
+          className="h-8 px-3"
+          onClick={() => void saveAndSync()}
+          disabled={!isDirty || isSaving}
+        >
+          {isSaving ? (
+            <LoadingIcon className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <SaveIcon className="h-4 w-4 mr-1" />
+          )}
+          {isSaving ? "Saving..." : "Save"}
+        </AndamioButton>
       </div>
     );
-  }, [setActions, data.courseModule, courseNftPolicyId, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext, isDirty]);
+  }, [setActions, isDirty, isSaving, saveAndSync]);
 
   // Auto-save on unmount (navigate away from wizard)
   // Use refs to avoid stale closures - always have latest values

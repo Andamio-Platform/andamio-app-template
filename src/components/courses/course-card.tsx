@@ -110,6 +110,7 @@ export function CourseCard({ course }: CourseCardProps) {
         {/* Image or Gradient Header */}
         <div className="relative h-32 sm:h-40 overflow-hidden rounded-t-xl -mt-6 -mx-0">
           {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imageUrl}
               alt={displayTitle}

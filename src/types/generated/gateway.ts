@@ -10,14 +10,45 @@
  * ---------------------------------------------------------------
  */
 
-export enum AndamioDbClientUpdateModuleStatusV2RequestStatus {
-  UpdateModuleStatusV2RequestStatusAPPROVED = "APPROVED",
-  UpdateModuleStatusV2RequestStatusDRAFT = "DRAFT",
-}
-
 export enum AndamioDbClientReviewAssignmentCommitmentV2RequestDecision {
   Accept = "accept",
   Refuse = "refuse",
+}
+
+export enum AndamioDbClientCourseModuleV2ModuleStatus {
+  CourseModuleV2ModuleStatusAPPROVED = "APPROVED",
+  CourseModuleV2ModuleStatusARCHIVED = "ARCHIVED",
+  CourseModuleV2ModuleStatusDEPRECATED = "DEPRECATED",
+  CourseModuleV2ModuleStatusDRAFT = "DRAFT",
+  CourseModuleV2ModuleStatusONCHAIN = "ON_CHAIN",
+  CourseModuleV2ModuleStatusPENDINGTX = "PENDING_TX",
+}
+
+export enum AndamioDbClientAggregateUpdateModuleV2RequestStatus {
+  AggregateUpdateModuleV2RequestStatusAPPROVED = "APPROVED",
+}
+
+export enum AndamioDbClientAggregateUpdateErrorResponseFailedOperationOperation {
+  Approve = "approve",
+  Create = "create",
+  Delete = "delete",
+  Update = "update",
+}
+
+export enum AndamioDbClientAggregateUpdateErrorResponseFailedOperationEntity {
+  AggregateUpdateErrorResponseFailedOperationEntityAssignment = "assignment",
+  AggregateUpdateErrorResponseFailedOperationEntityIntroduction = "introduction",
+  AggregateUpdateErrorResponseFailedOperationEntityLesson = "lesson",
+  AggregateUpdateErrorResponseFailedOperationEntityModule = "module",
+  AggregateUpdateErrorResponseFailedOperationEntitySlt = "slt",
+}
+
+export enum AndamioDbClientAggregateUpdateErrorResponseCode {
+  BADREQUEST = "BAD_REQUEST",
+  INVALIDSLTHASH = "INVALID_SLT_HASH",
+  MODULENOTFOUND = "MODULE_NOT_FOUND",
+  SLTLOCKED = "SLT_LOCKED",
+  UNAUTHORIZED = "UNAUTHORIZED",
 }
 
 export interface AdminViewmodelsSetUserRoleRequest {
@@ -46,88 +77,6 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientAddTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientBatchReorderSltsV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  /** SltIndices Array of current 1-based SLT indices in desired order. Example: [3, 1, 2] moves SLT at index 3 to first position. */
-  slt_indices?: number[];
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientClaimCredentialV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateIntroductionV2Request {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
-  title?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteAssignmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteIntroductionV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteLessonV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  /** SltIndex SLT index (1-based) */
-  slt_index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteSltV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  /** SltIndex SLT index (1-based) */
-  slt_index?: number;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientPublishModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientRegisterCourseV2Request {
-  category?: string;
-  course_id?: string;
-  description?: string;
-  image_url?: string;
-  is_public?: boolean;
-  title?: string;
-  tx_hash?: string;
-  video_url?: string;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
   description?: string;
   image_url?: string;
@@ -135,68 +84,177 @@ export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequ
   title?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientRemoveTeachersV2Request {
+export interface AndamioDbClientAddTeachersV2Request {
   aliases?: string[];
   course_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  decision?: AndamioDbClientReviewAssignmentCommitmentV2RequestDecision;
-  participant_alias?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: Record<string, any>;
-  evidence_hash?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: Record<string, any>;
-  evidence_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateIntroductionV2Request {
-  /** ContentJson Tiptap JSON content */
+export interface AndamioDbClientAggregateAssignmentInput {
   content_json?: Record<string, any>;
-  course_id?: string;
-  course_module_code?: string;
+  description?: string;
+  image_url?: string;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientAggregateChangeSummary {
+  assignment_created?: boolean;
+  assignment_deleted?: boolean;
+  assignment_updated?: boolean;
+  introduction_created?: boolean;
+  introduction_deleted?: boolean;
+  introduction_updated?: boolean;
+  lessons_created?: number;
+  lessons_deleted?: number;
+  lessons_updated?: number;
+  module_updated?: boolean;
+  slts_created?: number;
+  slts_deleted?: number;
+  slts_reordered?: boolean;
+  slts_updated?: number;
+  /** StatusChanged True if DRAFT → APPROVED */
+  status_changed?: boolean;
+}
+
+export interface AndamioDbClientAggregateIntroductionInput {
+  content_json?: Record<string, any>;
+  description?: string;
   title?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleStatusV2Request {
-  /** CourseId Course identifier */
+export interface AndamioDbClientAggregateLessonInput {
+  content_json?: Record<string, any>;
+  description?: string;
+  image_url?: string;
+  /** SltIndex 1-based SLT index this lesson belongs to */
+  slt_index?: number;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientAggregateSltInput {
+  /** SltIndex 1-based index. If provided: update existing. If omitted: create new. */
+  slt_index?: number;
+  /** SltText The SLT text content */
+  slt_text?: string;
+}
+
+export interface AndamioDbClientAggregateUpdateErrorResponse {
+  code?: AndamioDbClientAggregateUpdateErrorResponseCode;
+  error?: string;
+  failed_operation?: {
+    entity?: AndamioDbClientAggregateUpdateErrorResponseFailedOperationEntity;
+    entity_id?: number;
+    operation?: AndamioDbClientAggregateUpdateErrorResponseFailedOperationOperation;
+    reason?: string;
+  };
+  message?: string;
+}
+
+export interface AndamioDbClientAggregateUpdateModuleV2Request {
+  assignment?: AndamioDbClientAggregateAssignmentInput;
   course_id?: string;
-  /** CourseModuleCode Module code within the course */
   course_module_code?: string;
-  /** SltHash Hash of the SLT list. Required when status = APPROVED. This becomes the module token name on-chain. */
+  /** DeleteAssignment Set to true to delete the assignment */
+  delete_assignment?: boolean;
+  /** DeleteIntroduction Set to true to delete the introduction */
+  delete_introduction?: boolean;
+  /** Description Module description (only send if changed) */
+  description?: string;
+  /** ImageUrl Module image URL (only send if changed) */
+  image_url?: string;
+  introduction?: AndamioDbClientAggregateIntroductionInput;
+  /** Lessons Flat array of lessons keyed by slt_index. Server diffs against current state. */
+  lessons?: AndamioDbClientAggregateLessonInput[];
+  /** SltHash Required when status = 'APPROVED'. Hash of the SLT list. */
   slt_hash?: string;
-  /** Status Target status (DRAFT or APPROVED) */
-  status?: AndamioDbClientUpdateModuleStatusV2RequestStatus;
+  /** Slts Full ordered list of SLTs. Server diffs against current state. ONLY allowed when status is DRAFT. */
+  slts?: AndamioDbClientAggregateSltInput[];
+  /** Status Set to 'APPROVED' to approve a DRAFT module */
+  status?: AndamioDbClientAggregateUpdateModuleV2RequestStatus;
+  /** Title Module title (only send if changed) */
+  title?: string;
+  /** VideoUrl Module video URL (only send if changed) */
+  video_url?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Request {
-  /** Add Aliases to add as teachers */
-  add?: string[];
-  course_id?: string;
-  /** Remove Aliases to remove as teachers */
-  remove?: string[];
+export interface AndamioDbClientAggregateUpdateModuleV2Response {
+  /** Changes Summary of what changed in the aggregate update */
+  changes?: AndamioDbClientAggregateChangeSummary;
+  /** Data Course Module V2 with full content */
+  data?: AndamioDbClientCourseModuleV2;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Response {
+export interface AndamioDbClientAssignmentV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientClaimCredentialV2Request {
   course_id?: string;
-  success?: boolean;
-  teachers_added?: string[];
-  /** TeachersCurrent Final list of teachers after updates */
-  teachers_current?: string[];
-  teachers_removed?: string[];
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientCourseModuleV2 {
+  /** Assignment Assignment V2 (one-to-one with module) */
+  assignment?: AndamioDbClientAssignmentV2;
+  course_module_code?: string;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  introduction?: AndamioDbClientIntroductionV2;
+  is_live?: boolean;
+  module_status?: AndamioDbClientCourseModuleV2ModuleStatus;
+  /** SltHash Hash of SLT list, used as module token name on-chain */
+  slt_hash?: string;
+  slts?: AndamioDbClientSltV2[];
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientCreateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientDeleteModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientIntroductionV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientLeaveAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientLessonV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
 }
 
 export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
@@ -207,6 +265,80 @@ export interface AndamioDbClientProjectManagerTasksListPostRequest {
   project_id?: string;
   /** Optional: filter by task status */
   status?: string;
+}
+
+export interface AndamioDbClientPublishModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientRegisterCourseV2Request {
+  category?: string;
+  course_id?: string;
+  description?: string;
+  image_url?: string;
+  is_public?: boolean;
+  title?: string;
+  tx_hash?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientRemoveTeachersV2Request {
+  aliases?: string[];
+  course_id?: string;
+}
+
+export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  decision?: AndamioDbClientReviewAssignmentCommitmentV2RequestDecision;
+  participant_alias?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientSltV2 {
+  created_by_alias?: string;
+  lesson?: AndamioDbClientLessonV2;
+  /** SltIndex 1-based SLT index (starts at 1, not 0) */
+  slt_index?: number;
+  slt_text?: string;
+}
+
+export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
+  /** CourseId The course ID (policy ID) */
+  course_id?: string;
+  /** Evidence Tiptap JSON evidence content */
+  evidence?: Record<string, any>;
+  /** EvidenceHash Hash of the evidence for on-chain verification */
+  evidence_hash?: string;
+  /** PendingTxHash The pending transaction hash */
+  pending_tx_hash?: string;
+  /** SltHash The SLT hash identifying the module (on-chain identifier) */
+  slt_hash?: string;
+}
+
+export interface AndamioDbClientUpdateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  evidence?: Record<string, any>;
+  evidence_hash?: string;
+}
+
+export interface AndamioDbClientUpdateTeachersV2Request {
+  /** Add Aliases to add as teachers */
+  add?: string[];
+  course_id?: string;
+  /** Remove Aliases to remove as teachers */
+  remove?: string[];
+}
+
+export interface AndamioDbClientUpdateTeachersV2Response {
+  course_id?: string;
+  success?: boolean;
+  teachers_added?: string[];
+  /** TeachersCurrent Final list of teachers after updates */
+  teachers_current?: string[];
+  teachers_removed?: string[];
 }
 
 export interface AndamioDbClientUserAccessTokenAliasPostRequest {
@@ -345,20 +477,10 @@ export interface ApiTypesCourseModule {
   video_url?: string;
 }
 
-export interface ApiTypesCreateAssignmentRequest {
-  content?: string;
-  title: string;
-}
-
 export interface ApiTypesCreateCourseRequest {
   content?: ApiTypesCourseContent;
   /** @example "policy_abc123" */
   course_id: string;
-}
-
-export interface ApiTypesCreateLessonRequest {
-  content?: string;
-  title: string;
 }
 
 export interface ApiTypesCreateModuleRequest {
@@ -369,11 +491,6 @@ export interface ApiTypesCreateProjectRequest {
   content?: ApiTypesProjectContent;
   /** @example "policy_xyz789" */
   project_id: string;
-}
-
-export interface ApiTypesCreateSltRequest {
-  content?: string;
-  title: string;
 }
 
 export interface ApiTypesCreateTaskCommitmentRequest {
@@ -391,14 +508,6 @@ export interface ApiTypesCreateTaskRequest {
 export interface ApiTypesInitRolesResponse {
   courses?: ApiTypesCourse[];
   projects?: ApiTypesProject[];
-}
-
-export interface ApiTypesIntroduction {
-  content?: string;
-  created_at?: string;
-  slt_hash: string;
-  title?: string;
-  updated_at?: string;
 }
 
 export interface ApiTypesLesson {
@@ -520,11 +629,6 @@ export interface ApiTypesTokenResponse {
   token: string;
 }
 
-export interface ApiTypesUpdateAssignmentRequest {
-  content?: string;
-  title?: string;
-}
-
 export interface ApiTypesUpdateCourseRequest {
   category?: string;
   description?: string;
@@ -534,17 +638,6 @@ export interface ApiTypesUpdateCourseRequest {
   video_url?: string;
 }
 
-export interface ApiTypesUpdateLessonRequest {
-  content?: string;
-  title?: string;
-}
-
-export interface ApiTypesUpdateModuleRequest {
-  description?: string;
-  image_url?: string;
-  title?: string;
-}
-
 export interface ApiTypesUpdateProjectRequest {
   category?: string;
   description?: string;
@@ -552,11 +645,6 @@ export interface ApiTypesUpdateProjectRequest {
   is_public?: boolean;
   title?: string;
   video_url?: string;
-}
-
-export interface ApiTypesUpdateSltRequest {
-  content?: string;
-  title?: string;
 }
 
 export interface ApiTypesUpdateTaskCommitmentRequest {

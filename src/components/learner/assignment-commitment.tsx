@@ -26,7 +26,6 @@ import {
   LoadingIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { AndamioSaveButton } from "~/components/andamio/andamio-save-button";
 
 /**
  * Assignment Commitment Component
@@ -196,15 +195,14 @@ export function AssignmentCommitment({
 
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
 
-  // Form state
-  // Note: privateStatus tracks local UI state, setPrivateStatus is called but value not yet used in UI
+  // Form state - privateStatus value tracked for future UI use, currently only setPrivateStatus is called
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
 
   // Evidence content state

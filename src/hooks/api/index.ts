@@ -105,41 +105,31 @@ export {
   type RegisteredModule,
 } from "./course/use-course-module";
 
-// SLTs
+// SLTs (query only - mutations via aggregate-update)
 export {
   useSLTs,
-  useCreateSLT,
-  useUpdateSLT,
-  useDeleteSLT,
-  useReorderSLT,
   sltKeys,
 } from "./course/use-slt";
 
-// Lessons
+// Lessons (query only - mutations via aggregate-update)
 export {
   useLessons,
   useLesson,
-  useCreateLesson,
-  useUpdateLesson,
-  useDeleteLesson,
   lessonKeys,
 } from "./course/use-lesson";
 
-// Assignments (query + mutations)
+// Assignments (query only - mutations via aggregate-update)
 export {
   useAssignment,
-  useCreateAssignment,
-  useUpdateAssignment,
-  useDeleteAssignment,
 } from "./course/use-assignment";
 
-// Introductions (query + CRUD mutations)
+// Introductions (query only - mutations via aggregate-update)
 export {
   useIntroduction,
-  useCreateIntroduction,
-  useUpdateIntroduction,
-  useDeleteIntroduction,
 } from "./course/use-introduction";
+
+// Module draft save (aggregate-update endpoint)
+export { useSaveModuleDraft, createSaveFn } from "./course/use-save-module-draft";
 
 // Course teacher (role-based)
 export {

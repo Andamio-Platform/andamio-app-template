@@ -8,6 +8,13 @@ import type {
   Introduction,
   Lesson,
 } from "~/hooks/api";
+import type {
+  ModuleDraft,
+  SLTDraft,
+  AssignmentDraft,
+  IntroDraft,
+  LessonDraft,
+} from "~/stores/module-draft-store";
 
 /**
  * Wizard step identifiers
@@ -82,7 +89,7 @@ export interface WizardContextValue {
   isStepUnlocked: (step: WizardStepId) => boolean;
   completion: StepCompletion;
 
-  // Data
+  // Data (legacy - from useModuleWizardData)
   data: WizardData;
   refetchData: (moduleCodeOverride?: string) => Promise<void>;
   updateSlts: (slts: WizardData["slts"]) => void;
@@ -98,6 +105,40 @@ export interface WizardContextValue {
   // without triggering a full page refresh from URL change
   createdModuleCode: string | null;
   onModuleCreated: (newModuleCode: string) => Promise<void>;
+
+  // ==========================================================================
+  // Draft Store (new architecture - optional during transition)
+  // ==========================================================================
+
+  // Draft state
+  draft?: ModuleDraft | null;
+  isDirty?: boolean;
+  isSaving?: boolean;
+  lastError?: string | null;
+
+  // Draft selectors
+  draftSlts?: SLTDraft[];
+  draftAssignment?: AssignmentDraft | null;
+  draftIntroduction?: IntroDraft | null;
+  draftLessons?: Map<number, LessonDraft>;
+
+  // Metadata actions
+  setMetadata?: (title: string, description?: string) => void;
+
+  // SLT actions
+  addSlt?: (text: string) => void;
+  updateSlt?: (moduleIndex: number, text: string) => void;
+  deleteSlt?: (moduleIndex: number) => void;
+  reorderSlts?: (newOrder: number[]) => void;
+
+  // Content actions
+  setAssignment?: (data: Omit<AssignmentDraft, "_isModified" | "_isNew"> | null) => void;
+  setIntroduction?: (data: Omit<IntroDraft, "_isModified" | "_isNew"> | null) => void;
+  setLesson?: (sltIndex: number, data: Omit<LessonDraft, "_isModified" | "_isNew" | "sltIndex"> | null) => void;
+
+  // Persistence
+  saveAndSync?: () => Promise<boolean>;
+  discardChanges?: () => void;
 }
 
 /**

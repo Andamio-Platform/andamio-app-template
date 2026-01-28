@@ -23,9 +23,10 @@ import {
 } from "~/components/andamio/andamio-dialog";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCreateCourseModule, useUpdateCourseModule, useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
-import { useCreateSLT } from "~/hooks/api/course/use-slt";
-import { useCreateLesson } from "~/hooks/api/course/use-lesson";
+import { useSaveModuleDraft } from "~/hooks/api/course/use-save-module-draft";
 import type { WizardStepConfig } from "../types";
+import type { ModuleDraft } from "~/stores/module-draft-store";
+import type { JSONContent } from "@tiptap/core";
 
 interface StepCredentialProps {
   config: WizardStepConfig;
@@ -34,7 +35,7 @@ interface StepCredentialProps {
 
 export function StepCredential({ config, direction }: StepCredentialProps) {
   const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule, onModuleCreated } = useWizard();
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
   const [title, setTitle] = useState(
     typeof data.courseModule?.title === "string" ? data.courseModule.title : ""
@@ -47,8 +48,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   // Use hooks for API calls
   const createModule = useCreateCourseModule();
   const updateModule = useUpdateCourseModule();
-  const createSLT = useCreateSLT();
-  const createLesson = useCreateLesson();
+  const saveModuleDraft = useSaveModuleDraft();
 
   // Duplicate module state
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -155,6 +155,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
   /**
    * Duplicate module with all its content
+   *
+   * Uses the aggregate-update endpoint to copy all content in a single request
+   * after creating the new module shell.
    */
   const handleDuplicateModule = async () => {
     if (!isAuthenticated || !duplicateModuleCode.trim() || duplicateCodeExists) return;
@@ -173,69 +176,53 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         description,
       });
 
-      // 2. Copy SLTs (if any) - must be done sequentially to maintain order
-      // Note: index is auto-assigned by the API on create (appends to end)
-      if (data.slts.length > 0) {
-        for (const slt of data.slts) {
-          await createSLT.mutateAsync({
-            courseId: courseNftPolicyId,
-            moduleCode: newCode,
-            sltText: slt.sltText ?? "",
-          });
-        }
-      }
+      // 2. Use aggregate-update to copy all content in a single request
+      const draft: ModuleDraft = {
+        courseId: courseNftPolicyId,
+        moduleCode: newCode,
+        title: `${title} (Copy)`,
+        description,
+        slts: data.slts.map((slt, idx) => ({
+          _localId: `dup-slt-${idx}`,
+          sltText: slt.sltText ?? "",
+          moduleIndex: slt.moduleIndex ?? idx + 1,
+          _isNew: true,
+        })),
+        assignment: data.assignment ? {
+          title: data.assignment.title ?? "",
+          description: data.assignment.description,
+          contentJson: data.assignment.contentJson as JSONContent | null | undefined,
+          imageUrl: data.assignment.imageUrl,
+          videoUrl: data.assignment.videoUrl,
+          _isNew: true,
+        } : null,
+        introduction: data.introduction ? {
+          title: data.introduction.title ?? "",
+          description: data.introduction.description,
+          contentJson: data.introduction.contentJson as JSONContent | null | undefined,
+          imageUrl: data.introduction.imageUrl,
+          videoUrl: data.introduction.videoUrl,
+          _isNew: true,
+        } : null,
+        lessons: new Map(
+          data.lessons.map((lesson) => [
+            lesson.sltIndex ?? 1,
+            {
+              title: lesson.title ?? "",
+              description: lesson.description,
+              contentJson: lesson.contentJson as JSONContent | null | undefined,
+              sltIndex: lesson.sltIndex ?? 1,
+              imageUrl: lesson.imageUrl,
+              videoUrl: lesson.videoUrl,
+              _isNew: true,
+            },
+          ])
+        ),
+      };
 
-      // 3. Copy assignment (if exists) - use direct API call
-      if (data.assignment) {
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/assignment/create`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: newCode,
-              title: data.assignment.title,
-              content_json: data.assignment.contentJson,
-            }),
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to copy assignment: ${response.statusText}`);
-        }
-      }
-
-      // 4. Copy lessons (if any)
-      if (data.lessons.length > 0) {
-        for (const lesson of data.lessons) {
-          await createLesson.mutateAsync({
-            courseId: courseNftPolicyId,
-            moduleCode: newCode,
-            sltIndex: lesson.sltIndex ?? 0,
-            title: lesson.title ?? "",
-            contentJson: lesson.contentJson,
-          });
-        }
-      }
-
-      // 5. Copy introduction (if exists) - use direct API call
-      if (data.introduction) {
-        const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/introduction/create`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: newCode,
-              title: data.introduction.title,
-              content_json: data.introduction.contentJson,
-            }),
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to copy introduction: ${response.statusText}`);
-        }
+      const result = await saveModuleDraft.mutateAsync(draft);
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to copy module content");
       }
 
       // Close dialog and navigate to new module

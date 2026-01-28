@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useId } from "react";
-import { DeleteIcon, EditIcon, CompletedIcon, CloseIcon, AlertIcon, LoadingIcon, AddIcon, SLTIcon, DragHandleIcon, LockedIcon } from "~/components/icons";
+import { DeleteIcon, EditIcon, CompletedIcon, CloseIcon, AlertIcon, AddIcon, SLTIcon, DragHandleIcon, LockedIcon } from "~/components/icons";
 import {
   DndContext,
   closestCenter,
@@ -24,15 +24,8 @@ import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import {
-  useCreateSLT,
-  useUpdateSLT,
-  useDeleteSLT,
-  useReorderSLT,
-} from "~/hooks/api/course/use-slt";
-import type { SLT } from "~/hooks/api";
 import type { WizardStepConfig } from "../types";
+import type { SLTDraft } from "~/stores/module-draft-store";
 import { AndamioInput } from "~/components/andamio";
 
 interface StepSLTsProps {
@@ -40,22 +33,11 @@ interface StepSLTsProps {
   direction: number;
 }
 
-// Local SLT with stable ID for React keys (index changes during reorder/delete)
-type LocalSLT = SLT & { _localId: string };
-
-// Generate a stable local ID for an SLT
-let localIdCounter = 0;
-const generateLocalId = () => `slt-${Date.now()}-${++localIdCounter}`;
-
-// Convert API SLTs to local SLTs with stable IDs
-const toLocalSlts = (slts: SLT[]): LocalSLT[] =>
-  slts.map((slt) => ({ ...slt, _localId: generateLocalId() }));
-
 /**
  * StepSLTs - Define learning targets with "I can..." statements
  *
- * Uses optimistic updates for instant feedback.
- * Simple CSS transitions for performance.
+ * Uses the draft store for optimistic updates.
+ * Changes are saved automatically when navigating to the next step.
  */
 export function StepSLTs({ config, direction }: StepSLTsProps) {
   const {
@@ -63,176 +45,70 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
     goNext,
     goPrevious,
     canGoPrevious,
-    courseNftPolicyId,
     moduleCode,
-    updateSlts,
+    // Draft store actions
+    draftSlts,
+    addSlt,
+    updateSlt,
+    deleteSlt,
+    reorderSlts,
+    isDirty,
+    isSaving,
+    lastError,
   } = useWizard();
-  const { isAuthenticated } = useAndamioAuth();
   const inputId = useId();
-
-  // Use SLT mutation hooks (handles cache invalidation automatically)
-  const createSLT = useCreateSLT();
-  const updateSLT = useUpdateSLT();
-  const deleteSLT = useDeleteSLT();
-  const reorderSLT = useReorderSLT();
 
   // Check if SLTs are locked (module is approved or on-chain)
   const moduleStatus = data.courseModule?.status;
   const isLocked = moduleStatus === "approved" || moduleStatus === "active" || moduleStatus === "pending_tx";
 
-  // Local state for optimistic updates - use LocalSLT with stable IDs
-  const [localSlts, setLocalSlts] = useState<LocalSLT[]>(() => toLocalSlts(data.slts));
+  // Use draft SLTs if available, otherwise fall back to data.slts
+  const slts: SLTDraft[] = draftSlts ?? data.slts.map((slt, idx) => ({
+    id: slt.id,
+    _localId: `slt-fallback-${idx}`,
+    sltText: slt.sltText ?? "",
+    moduleIndex: slt.moduleIndex ?? idx + 1,
+  }));
+
+  // Local UI state
   const [newSltText, setNewSltText] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [pendingOps, setPendingOps] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
 
-  // Sync local state when data changes from server
-  React.useEffect(() => {
-    setLocalSlts(toLocalSlts(data.slts));
-  }, [data.slts]);
-
-  const canProceed = localSlts.length > 0;
-
-  // Track pending operation
-  const addPendingOp = (id: string) => setPendingOps((s) => new Set(s).add(id));
-  const removePendingOp = (id: string) => setPendingOps((s) => { const n = new Set(s); n.delete(id); return n; });
+  const canProceed = slts.length > 0;
 
   /**
-   * Create new SLT with optimistic update
+   * Create new SLT - uses draft store for optimistic update
    */
-  const handleCreate = useCallback(async () => {
-    if (!isAuthenticated || !newSltText.trim()) return;
+  const handleCreate = useCallback(() => {
+    if (!newSltText.trim() || !addSlt) return;
 
-    const text = newSltText.trim();
-    // API v2.0.0+: moduleIndex is 1-based (new item gets next sequential index)
-    const nextSltIndex = localSlts.length + 1;
-    const opId = `create-${nextSltIndex}`;
-
-    // Optimistic update - compute the list we'll set
-    const optimisticSlt: LocalSLT = {
-      moduleIndex: nextSltIndex,
-      sltText: text,
-      _localId: generateLocalId(),
-    };
-    const optimisticList = [...localSlts, optimisticSlt];
-    setLocalSlts(optimisticList);
+    addSlt(newSltText.trim());
     setNewSltText("");
-    setError(null);
-    addPendingOp(opId);
-
-    try {
-      // Use the hook - it handles cache invalidation automatically
-      await createSLT.mutateAsync({
-        courseId: courseNftPolicyId,
-        moduleCode,
-        sltText: text,
-      });
-
-      // Sync to context so wizard stepper updates
-      updateSlts(optimisticList);
-    } catch (err) {
-      // Rollback optimistic update using stable _localId
-      setLocalSlts((prev) => prev.filter((s) => s._localId !== optimisticSlt._localId));
-      setError(err instanceof Error ? err.message : "Failed to create");
-    } finally {
-      removePendingOp(opId);
-    }
-  }, [isAuthenticated, newSltText, localSlts, courseNftPolicyId, moduleCode, updateSlts, createSLT]);
+  }, [newSltText, addSlt]);
 
   /**
-   * Update SLT with optimistic update
+   * Update SLT - uses draft store for optimistic update
    */
-  const handleUpdate = useCallback(async (slt: LocalSLT) => {
-    if (!isAuthenticated || !editingText.trim()) return;
+  const handleUpdate = useCallback((moduleIndex: number) => {
+    if (!editingText.trim() || !updateSlt) return;
 
-    const text = editingText.trim();
-    const opId = `update-${slt.moduleIndex}`;
-    // API v2.0.0+: moduleIndex is already 1-based, no conversion needed
-    const sltIndex = slt.moduleIndex ?? 1;
-
-    // Compute the optimistic list and set it
-    const updatedList = localSlts.map((s) => s.moduleIndex === slt.moduleIndex ? { ...s, sltText: text } : s);
-    setLocalSlts(updatedList);
+    updateSlt(moduleIndex, editingText.trim());
     setEditingIndex(null);
     setEditingText("");
-    setError(null);
-    addPendingOp(opId);
-
-    try {
-      // Use the hook - it handles cache invalidation automatically
-      // API v2.0.0+: moduleIndex is 1-based
-      await updateSLT.mutateAsync({
-        courseId: courseNftPolicyId,
-        moduleCode,
-        sltIndex,
-        sltText: text,
-      });
-
-      // Sync to context so wizard stepper updates
-      updateSlts(updatedList);
-    } catch (err) {
-      // Rollback
-      setLocalSlts((prev) =>
-        prev.map((s) => s.moduleIndex === slt.moduleIndex ? slt : s)
-      );
-      setError(err instanceof Error ? err.message : "Failed to update");
-    } finally {
-      removePendingOp(opId);
-    }
-  }, [isAuthenticated, editingText, localSlts, courseNftPolicyId, moduleCode, updateSlts, updateSLT]);
+  }, [editingText, updateSlt]);
 
   /**
-   * Delete SLT with optimistic update and re-index remaining SLTs
+   * Delete SLT - uses draft store for optimistic update
    */
-  const handleDelete = useCallback(async (slt: LocalSLT) => {
-    if (!isAuthenticated) return;
+  const handleDelete = useCallback((moduleIndex: number) => {
+    if (!deleteSlt) return;
+    deleteSlt(moduleIndex);
+  }, [deleteSlt]);
 
-    const opId = `delete-${slt._localId}`;
-    // API v2.0.0+: moduleIndex is already 1-based, no conversion needed
-    const sltIndex = slt.moduleIndex ?? 1;
-
-    // Remove SLT and re-index remaining ones sequentially (1-based for API v2.0.0+)
-    const filteredList = localSlts
-      .filter((s) => s._localId !== slt._localId)
-      .sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1))
-      .map((s, idx) => ({ ...s, moduleIndex: idx + 1 }));
-
-    setLocalSlts(filteredList);
-    setError(null);
-    addPendingOp(opId);
-
-    try {
-      // Use the hook - it handles cache invalidation automatically
-      // API v2.0.0+: moduleIndex is 1-based
-      await deleteSLT.mutateAsync({
-        courseId: courseNftPolicyId,
-        moduleCode,
-        sltIndex,
-      });
-
-      // Note: Re-indexing remaining SLTs after delete
-      // The API may handle this automatically, or indices may have gaps.
-      // If gaps occur, refetching from API will get correct indices.
-
-      // Sync to context so wizard stepper updates
-      updateSlts(filteredList);
-    } catch (err) {
-      // Rollback - restore the deleted SLT
-      setLocalSlts((prev) => {
-        const newList = [...prev, slt].sort((a, b) => (a.moduleIndex ?? 1) - (b.moduleIndex ?? 1));
-        return newList;
-      });
-      setError(err instanceof Error ? err.message : "Failed to delete");
-    } finally {
-      removePendingOp(opId);
-    }
-  }, [isAuthenticated, localSlts, courseNftPolicyId, moduleCode, updateSlts, deleteSLT]);
-
-  const startEditing = (slt: SLT) => {
-    setEditingIndex(slt.moduleIndex ?? null);
-    setEditingText(slt.sltText ?? "");
+  const startEditing = (slt: SLTDraft) => {
+    setEditingIndex(slt.moduleIndex);
+    setEditingText(slt.sltText);
   };
 
   const cancelEditing = () => {
@@ -242,7 +118,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && newSltText.trim()) {
-      void handleCreate();
+      handleCreate();
     }
   };
 
@@ -257,52 +133,25 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
   );
 
   /**
-   * Handle drag end - reorder SLTs and persist to database
+   * Handle drag end - reorder SLTs using draft store
    */
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id || !reorderSlts) return;
 
     // Find items by _localId (stable identifier for DnD)
-    const oldArrayIndex = localSlts.findIndex((s) => s._localId === active.id);
-    const newArrayIndex = localSlts.findIndex((s) => s._localId === over.id);
+    const oldArrayIndex = slts.findIndex((s) => s._localId === active.id);
+    const newArrayIndex = slts.findIndex((s) => s._localId === over.id);
     if (oldArrayIndex === -1 || newArrayIndex === -1) return;
-
     if (oldArrayIndex === newArrayIndex) return;
 
-    // Reorder the array locally
-    const reorderedArray = arrayMove(localSlts, oldArrayIndex, newArrayIndex);
+    // Reorder the array
+    const reorderedArray = arrayMove(slts, oldArrayIndex, newArrayIndex);
 
-    // Update local state with new 1-based indexes (API v2.0.0+)
-    const reorderedSlts = reorderedArray.map((slt, idx) => ({
-      ...slt,
-      moduleIndex: idx + 1,
-    }));
-    setLocalSlts(reorderedSlts);
-
-    // Build the list of current indices in the new order for the batch API
-    // API v2.0.0+: batch reorder endpoint takes array of current indices in desired order
-    const sltIndices = reorderedArray.map((slt) => slt.moduleIndex ?? 1);
-
-    try {
-      // Use the hook - it handles cache invalidation automatically
-      // API v2.0.0+: batch endpoint with slt_indices array
-      await reorderSLT.mutateAsync({
-        courseId: courseNftPolicyId,
-        moduleCode,
-        sltIndices,
-      });
-
-      // Sync to context
-      updateSlts(reorderedSlts);
-    } catch (err) {
-      // Rollback on error
-      setLocalSlts(localSlts);
-      setError(err instanceof Error ? err.message : "Failed to reorder");
-    }
-  }, [localSlts, courseNftPolicyId, moduleCode, updateSlts, reorderSLT]);
-
-  const isPending = pendingOps.size > 0;
+    // Build the new order as array of current moduleIndex values
+    const newOrder = reorderedArray.map((slt) => slt.moduleIndex);
+    reorderSlts(newOrder);
+  }, [slts, reorderSlts]);
 
   return (
     <WizardStep config={config} direction={direction}>
@@ -330,36 +179,37 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                 onKeyDown={handleKeyDown}
                 placeholder="e.g., Explain how smart contracts execute on-chain"
                 className="h-12 flex-1 text-base px-4"
-                disabled={isPending}
+                disabled={isSaving}
               />
               <Button
-                onClick={() => void handleCreate()}
-                disabled={!newSltText.trim() || isPending}
+                onClick={handleCreate}
+                disabled={!newSltText.trim() || isSaving}
                 className="h-11 px-5"
               >
-                {isPending ? (
-                  <LoadingIcon className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <AddIcon className="h-4 w-4 mr-2" />
-                    Add
-                  </>
-                )}
+                <AddIcon className="h-4 w-4 mr-2" />
+                Add
               </Button>
             </div>
           </div>
         )}
 
         {/* Error display */}
-        {error && (
+        {lastError && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
             <AlertIcon className="h-4 w-4 flex-shrink-0" />
-            {error}
+            {lastError}
+          </div>
+        )}
+
+        {/* Dirty indicator */}
+        {isDirty && !isSaving && (
+          <div className="text-xs text-muted-foreground">
+            Changes will be saved when you continue to the next step.
           </div>
         )}
 
         {/* SLT List */}
-        {localSlts.length === 0 ? (
+        {slts.length === 0 ? (
           <div className="py-16 text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
               <SLTIcon className="h-6 w-6 text-muted-foreground" />
@@ -372,27 +222,26 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={(e: DragEndEvent) => void handleDragEnd(e)}
+            onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={localSlts.map((s) => s._localId)}
+              items={slts.map((s) => s._localId)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {localSlts.map((slt) => (
+                {slts.filter((slt) => !slt._isDeleted).map((slt) => (
                   <SortableSltItem
                     key={slt._localId}
                     slt={slt}
                     moduleCode={moduleCode}
                     isEditing={editingIndex === slt.moduleIndex}
-                    isUpdating={pendingOps.has(`update-${slt.moduleIndex}`)}
                     isLocked={isLocked}
                     editingText={editingText}
                     onEditingTextChange={setEditingText}
                     onStartEditing={() => startEditing(slt)}
                     onCancelEditing={cancelEditing}
-                    onUpdate={() => void handleUpdate(slt)}
-                    onDelete={() => void handleDelete(slt)}
+                    onUpdate={() => handleUpdate(slt.moduleIndex)}
+                    onDelete={() => handleDelete(slt.moduleIndex)}
                   />
                 ))}
               </div>
@@ -407,6 +256,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
         canGoPrevious={canGoPrevious}
         canGoNext={canProceed}
         nextLabel="Design the Assignment"
+        isLoading={isSaving}
       />
     </WizardStep>
   );
@@ -416,10 +266,9 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
  * Sortable SLT Item Component
  */
 interface SortableSltItemProps {
-  slt: LocalSLT;
+  slt: SLTDraft;
   moduleCode: string;
   isEditing: boolean;
-  isUpdating: boolean;
   isLocked: boolean;
   editingText: string;
   onEditingTextChange: (text: string) => void;
@@ -433,7 +282,6 @@ function SortableSltItem({
   slt,
   moduleCode,
   isEditing,
-  isUpdating,
   isLocked,
   editingText,
   onEditingTextChange,
@@ -456,6 +304,9 @@ function SortableSltItem({
     transition,
   };
 
+  const isNew = slt._isNew;
+  const isModified = slt._isModified;
+
   return (
     <div
       ref={setNodeRef}
@@ -466,7 +317,11 @@ function SortableSltItem({
           ? "border-primary bg-primary/5 shadow-lg z-50"
           : isEditing
             ? "border-primary bg-primary/5"
-            : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+            : isNew
+              ? "border-primary/50 bg-primary/5"
+              : isModified
+                ? "border-secondary/50 bg-secondary/5"
+                : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
       )}
     >
       {/* Drag handle - hidden when locked */}
@@ -484,9 +339,13 @@ function SortableSltItem({
         </button>
       )}
 
-      {/* SLT Reference: <module-code>.<moduleIndex> (API v2.0.0+: already 1-based) */}
-      <span className="flex-shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">
-        {moduleCode}.{slt.moduleIndex ?? 1}
+      {/* SLT Reference: <module-code>.<moduleIndex> */}
+      <span className={cn(
+        "flex-shrink-0 px-2 py-0.5 rounded text-xs font-mono font-medium",
+        isNew ? "bg-primary/20 text-primary" : "bg-primary/10 text-primary"
+      )}>
+        {moduleCode}.{slt.moduleIndex}
+        {isNew && <span className="ml-1 text-[10px]">(new)</span>}
       </span>
 
       {/* Content */}
@@ -522,10 +381,7 @@ function SortableSltItem({
         </div>
       ) : (
         <>
-          <span className={cn(
-            "flex-1 text-sm",
-            isUpdating && "opacity-50"
-          )}>
+          <span className="flex-1 text-sm">
             {slt.sltText}
           </span>
           {/* Edit/Delete buttons - hidden when locked */}

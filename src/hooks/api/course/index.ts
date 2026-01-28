@@ -22,3 +22,4 @@ export * from "./use-slt";
 export * from "./use-course-student";
 export * from "./use-course-teacher";
 export * from "./use-module-wizard-data";
+export * from "./use-save-module-draft";

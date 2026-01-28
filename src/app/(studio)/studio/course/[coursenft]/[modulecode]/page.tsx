@@ -3,8 +3,10 @@
 import React, { useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
+import { useModuleDraft } from "~/hooks/use-module-draft";
 import { useWizardNavigation, STEP_ORDER } from "~/hooks/ui/use-wizard-navigation";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import {
@@ -30,6 +32,7 @@ import {
   PreviousIcon,
   NextIcon,
   ExternalLinkIcon,
+  SaveIcon,
 } from "~/components/icons";
 import type { Course, CourseModule } from "~/hooks/api";
 
@@ -110,6 +113,21 @@ function ModuleWizardContent({
     onDataLoaded: handleDataLoaded,
   });
 
+  // Draft store hook - provides local state management with optimistic updates
+  const moduleDraft = useModuleDraft(
+    courseNftPolicyId,
+    effectiveModuleCode,
+    effectiveIsNewModule,
+    {
+      onSaveSuccess: () => {
+        toast.success("Module saved");
+      },
+      onSaveError: (error) => {
+        toast.error("Failed to save module", { description: error });
+      },
+    }
+  );
+
   // Navigation hook
   const {
     currentStep,
@@ -117,12 +135,56 @@ function ModuleWizardContent({
     currentIndex,
     canGoNext,
     canGoPrevious,
-    goToStep,
-    goNext,
-    goPrevious,
+    goToStep: goToStepRaw,
+    goNext: goNextRaw,
+    goPrevious: goPreviousRaw,
     getStepStatus,
     isStepUnlocked,
   } = useWizardNavigation({ completion });
+
+  /**
+   * Save-on-step-change wrapper for goToStep
+   * Saves draft if dirty before navigating to new step
+   */
+  const goToStep = useCallback(
+    async (step: WizardStepId) => {
+      if (moduleDraft.isDirty && !moduleDraft.isSaving) {
+        const saved = await moduleDraft.saveAndSync();
+        if (!saved) {
+          // Save failed - don't navigate, error toast shown by onSaveError
+          return;
+        }
+      }
+      goToStepRaw(step);
+    },
+    [moduleDraft, goToStepRaw]
+  );
+
+  /**
+   * Save-on-step-change wrapper for goNext
+   */
+  const goNext = useCallback(async () => {
+    if (moduleDraft.isDirty && !moduleDraft.isSaving) {
+      const saved = await moduleDraft.saveAndSync();
+      if (!saved) {
+        return;
+      }
+    }
+    goNextRaw();
+  }, [moduleDraft, goNextRaw]);
+
+  /**
+   * Save-on-step-change wrapper for goPrevious
+   */
+  const goPrevious = useCallback(async () => {
+    if (moduleDraft.isDirty && !moduleDraft.isSaving) {
+      const saved = await moduleDraft.saveAndSync();
+      if (!saved) {
+        return;
+      }
+    }
+    goPreviousRaw();
+  }, [moduleDraft, goPreviousRaw]);
 
   /**
    * Handle module creation - updates URL silently and refetches data
@@ -141,7 +203,7 @@ function ModuleWizardContent({
       await refetchData(newModuleCode);
 
       // Navigate to SLTs step
-      goToStep("slts");
+      void goToStep("slts");
     },
     [courseNftPolicyId, refetchData, goToStep]
   );
@@ -162,6 +224,7 @@ function ModuleWizardContent({
   // Build wizard context
   const contextValue: WizardContextValue = useMemo(
     () => ({
+      // Navigation
       currentStep,
       goToStep,
       goNext,
@@ -171,14 +234,48 @@ function ModuleWizardContent({
       getStepStatus,
       isStepUnlocked,
       completion,
+
+      // Data (legacy)
       data,
       refetchData,
       updateSlts,
+
+      // Course identifiers
       courseNftPolicyId,
       moduleCode: effectiveModuleCode,
       isNewModule: effectiveIsNewModule,
       createdModuleCode,
       onModuleCreated,
+
+      // Draft store state
+      draft: moduleDraft.draft,
+      isDirty: moduleDraft.isDirty,
+      isSaving: moduleDraft.isSaving,
+      lastError: moduleDraft.lastError,
+
+      // Draft selectors
+      draftSlts: moduleDraft.slts,
+      draftAssignment: moduleDraft.assignment,
+      draftIntroduction: moduleDraft.introduction,
+      draftLessons: moduleDraft.lessons,
+
+      // Metadata actions
+      setMetadata: moduleDraft.setMetadata,
+
+      // SLT actions
+      addSlt: moduleDraft.addSlt,
+      updateSlt: moduleDraft.updateSlt,
+      deleteSlt: moduleDraft.deleteSlt,
+      reorderSlts: moduleDraft.reorderSlts,
+
+      // Content actions
+      setAssignment: moduleDraft.setAssignment,
+      setIntroduction: moduleDraft.setIntroduction,
+      setLesson: moduleDraft.setLesson,
+
+      // Persistence
+      saveAndSync: moduleDraft.saveAndSync,
+      discardChanges: moduleDraft.discardChanges,
     }),
     [
       currentStep,
@@ -198,6 +295,7 @@ function ModuleWizardContent({
       effectiveIsNewModule,
       createdModuleCode,
       onModuleCreated,
+      moduleDraft,
     ]
   );
 
@@ -206,14 +304,34 @@ function ModuleWizardContent({
     const currentConfig = WIZARD_STEPS.find((s) => s.id === currentStep);
     setActions(
       <div className="flex items-center gap-2">
+        {/* Unsaved Changes Indicator */}
+        {moduleDraft.isDirty && (
+          <div className="flex items-center gap-2 mr-2">
+            <span className="text-xs text-muted-foreground">
+              {moduleDraft.isSaving ? "Saving..." : "Unsaved changes"}
+            </span>
+            {!moduleDraft.isSaving && (
+              <AndamioButton
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => void moduleDraft.saveAndSync()}
+              >
+                <SaveIcon className="h-3.5 w-3.5 mr-1" />
+                Save
+              </AndamioButton>
+            )}
+          </div>
+        )}
+
         {/* Step Navigation */}
         <div className="flex items-center gap-1 mr-2">
           <AndamioButton
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0"
-            onClick={goPrevious}
-            disabled={!canGoPrevious}
+            onClick={() => void goPrevious()}
+            disabled={!canGoPrevious || moduleDraft.isSaving}
           >
             <PreviousIcon className="h-4 w-4" />
           </AndamioButton>
@@ -224,8 +342,8 @@ function ModuleWizardContent({
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0"
-            onClick={goNext}
-            disabled={!canGoNext}
+            onClick={() => void goNext()}
+            disabled={!canGoNext || moduleDraft.isSaving}
           >
             <NextIcon className="h-4 w-4" />
           </AndamioButton>
@@ -251,7 +369,7 @@ function ModuleWizardContent({
         )}
       </div>
     );
-  }, [setActions, data.courseModule, courseNftPolicyId, currentStep, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext]);
+  }, [setActions, data.courseModule, courseNftPolicyId, currentStep, currentIndex, canGoPrevious, canGoNext, goPrevious, goNext, moduleDraft]);
 
   // Loading state
   if (data.isLoading) {

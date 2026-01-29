@@ -36,6 +36,7 @@ import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generate
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface ApiError {
   message?: string;
@@ -106,7 +107,7 @@ export default function ProjectDashboardPage() {
 
       // Step 1: Try to fetch project directly (V2 API)
       const projectResponse = await fetch(
-        `/api/gateway/api/v2/project/user/project/${projectId}`
+        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
       );
 
       if (projectResponse.ok) {
@@ -150,7 +151,7 @@ export default function ProjectDashboardPage() {
         const projectStatePolicyId = projectData.states[0]?.projectNftPolicyId;
         if (projectStatePolicyId) {
           const tasksResponse = await authenticatedFetch(
-            `/api/gateway/api/v2/project/manager/tasks/list`,
+            `${GATEWAY_API_BASE}/project/manager/tasks/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -202,7 +203,7 @@ export default function ProjectDashboardPage() {
     try {
       // V2 API: POST /project/owner/project/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/project/update`,
+        `${GATEWAY_API_BASE}/project/owner/project/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

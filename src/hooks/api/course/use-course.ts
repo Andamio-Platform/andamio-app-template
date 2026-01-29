@@ -30,6 +30,7 @@ import type {
   MergedHandlersMergedCoursesResponse,
 } from "~/types/generated/gateway";
 import { type CourseModule } from "./use-course-module";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -227,7 +228,7 @@ export function useCourse(courseId: string | undefined) {
       // Endpoint: GET /api/v2/course/user/course/get/{course_id}
       // Returns both on-chain and off-chain data
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/course/get/${courseId}`
+        `${GATEWAY_API_BASE}/course/user/course/get/${courseId}`
       );
 
       if (response.status === 404) {
@@ -291,7 +292,7 @@ export function useActiveCourses() {
     queryKey: courseKeys.active(),
     queryFn: async (): Promise<Course[]> => {
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/courses/list`
+        `${GATEWAY_API_BASE}/course/user/courses/list`
       );
 
       // 404 means no published courses exist yet - treat as empty state, not error

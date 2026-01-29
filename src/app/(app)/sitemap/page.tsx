@@ -33,6 +33,7 @@ import {
 import { type CourseListResponse, type ProjectV2Output } from "~/types/generated";
 import type { RouteCategory } from "~/types/ui";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // API Coverage data - tracks implementation status
 interface ApiCoverageCategory {
@@ -307,7 +308,7 @@ export default function SitemapPage() {
       try {
         // Go API: GET /course/user/courses/list
         const pubCourseResponse = await fetch(
-          `/api/gateway/api/v2/course/user/courses/list`
+          `${GATEWAY_API_BASE}/course/user/courses/list`
         );
         if (pubCourseResponse.ok) {
           const pubData = (await pubCourseResponse.json()) as CourseListResponse;
@@ -316,7 +317,7 @@ export default function SitemapPage() {
 
         // V2 API: GET /project/user/projects/list
         const pubProjectResponse = await fetch(
-          `/api/gateway/api/v2/project/user/projects/list`
+          `${GATEWAY_API_BASE}/project/user/projects/list`
         );
         if (pubProjectResponse.ok) {
           const pubData = (await pubProjectResponse.json()) as ProjectV2Output[];
@@ -327,7 +328,7 @@ export default function SitemapPage() {
         if (isAuthenticated) {
           // Go API: POST /course/owner/courses/list
           const ownedCourseResponse = await authenticatedFetch(
-            `/api/gateway/api/v2/course/owner/courses/list`,
+            `${GATEWAY_API_BASE}/course/owner/courses/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -341,7 +342,7 @@ export default function SitemapPage() {
 
           // V2 API: POST /project/owner/projects/list
           const ownedProjectResponse = await authenticatedFetch(
-            `/api/gateway/api/v2/project/owner/projects/list`,
+            `${GATEWAY_API_BASE}/project/owner/projects/list`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

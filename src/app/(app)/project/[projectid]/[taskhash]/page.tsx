@@ -17,6 +17,7 @@ import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { TaskCommit } from "~/components/tx";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality
@@ -56,7 +57,7 @@ export default function TaskDetailPage() {
       try {
         // V2 API: GET /project/user/task/:task_hash
         const taskResponse = await fetch(
-          `/api/gateway/api/v2/project/user/task/${taskHash}`
+          `${GATEWAY_API_BASE}/project/user/task/${taskHash}`
         );
 
         if (!taskResponse.ok) {
@@ -84,7 +85,7 @@ export default function TaskDetailPage() {
         if (isAuthenticated) {
           try {
             const commitmentResponse = await authenticatedFetch(
-              `/api/gateway/api/v2/project/contributor/commitment/get`,
+              `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -350,7 +351,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `/api/gateway/api/v2/project/contributor/commitment/get`,
+                      `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -382,7 +383,7 @@ export default function TaskDetailPage() {
                   // Refetch commitment status
                   try {
                     const commitmentResponse = await authenticatedFetch(
-                      `/api/gateway/api/v2/project/contributor/commitment/get`,
+                      `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

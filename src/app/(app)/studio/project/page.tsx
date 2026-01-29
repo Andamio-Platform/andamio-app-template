@@ -48,6 +48,7 @@ import {
 import { CreateProject } from "~/components/tx";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Project list content - only rendered when authenticated
@@ -313,7 +314,7 @@ function RegisterProjectDrawer({
       // V2 API: POST /project/owner/project/register
       // Registers an existing on-chain project into the database with a title
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/project/register`,
+        `${GATEWAY_API_BASE}/project/owner/project/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

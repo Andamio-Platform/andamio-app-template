@@ -27,6 +27,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { courseModuleKeys, useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import type { WizardStepConfig } from "../types";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface StepReviewProps {
   config: WizardStepConfig;
@@ -137,7 +138,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
       // Step 3: Use aggregate-update endpoint with status field to approve
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

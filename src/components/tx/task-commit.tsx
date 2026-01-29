@@ -35,6 +35,7 @@ import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon, Loa
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface TaskCommitProps {
   /**
@@ -272,7 +273,7 @@ export function TaskCommit({
         if (taskEvidence) {
           try {
             const submitResponse = await authenticatedFetch(
-              `/api/gateway/api/v2/project/contributor/commitment/submit`,
+              `${GATEWAY_API_BASE}/project/contributor/commitment/submit`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

@@ -28,6 +28,7 @@ import { ContentEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { type ProjectV2Output } from "~/types/generated";
 import { toast } from "sonner";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface ApiError {
   message?: string;
@@ -77,7 +78,7 @@ export default function NewTaskPage() {
       try {
         // V2 API: GET /project/user/project/:project_id
         const response = await fetch(
-          `/api/gateway/api/v2/project/user/project/${projectId}`
+          `${GATEWAY_API_BASE}/project/user/project/${projectId}`
         );
 
         if (!response.ok) {
@@ -134,7 +135,7 @@ export default function NewTaskPage() {
       // V2 API: POST /project/manager/task/create
       // API v2.0.0+: uses lovelace_amount instead of lovelace
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/create`,
+        `${GATEWAY_API_BASE}/project/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

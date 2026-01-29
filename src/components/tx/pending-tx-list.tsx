@@ -35,6 +35,7 @@ import {
 } from "~/components/icons";
 import type { TxStatus } from "~/hooks/tx/use-tx-watcher";
 import { cn } from "~/lib/utils";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface PendingTxListProps {
   /** Polling interval in ms (default: 30000 = 30 seconds) */
@@ -143,7 +144,7 @@ export function PendingTxList({
     setError(null);
 
     try {
-      const response = await authenticatedFetch("/api/gateway/api/v2/tx/pending");
+      const response = await authenticatedFetch(`${GATEWAY_API_BASE}/tx/pending`);
 
       if (!response.ok) {
         if (response.status === 404) {

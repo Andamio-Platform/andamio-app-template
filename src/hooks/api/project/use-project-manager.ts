@@ -43,6 +43,7 @@ import {
   type Task,
   type ProjectPrerequisite,
 } from "./use-project";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -266,7 +267,7 @@ export function useManagerProjects() {
     queryFn: async (): Promise<ManagerProject[]> => {
       // Merged endpoint: POST /api/v2/project/manager/projects/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/projects/list`,
+        `${GATEWAY_API_BASE}/project/manager/projects/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -327,7 +328,7 @@ export function useManagerCommitments(projectId?: string) {
     queryFn: async (): Promise<ManagerCommitment[]> => {
       // Merged endpoint: POST /api/v2/project/manager/commitments/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/commitments/list`,
+        `${GATEWAY_API_BASE}/project/manager/commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -388,7 +389,7 @@ export function useManagerTasks(projectId: string | undefined) {
     queryFn: async (): Promise<Task[]> => {
       // GET endpoint with project ID in path
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/tasks/${projectId}`
+        `${GATEWAY_API_BASE}/project/manager/tasks/${projectId}`
       );
 
       if (response.status === 404) {
@@ -463,7 +464,7 @@ export function useCreateTask() {
     }) => {
       // Endpoint: POST /project/manager/task/create
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/create`,
+        `${GATEWAY_API_BASE}/project/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -546,7 +547,7 @@ export function useUpdateTask() {
     }) => {
       // Endpoint: POST /project/manager/task/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/update`,
+        `${GATEWAY_API_BASE}/project/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -616,7 +617,7 @@ export function useDeleteTask() {
     }) => {
       // Endpoint: POST /project/manager/task/delete
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/delete`,
+        `${GATEWAY_API_BASE}/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -715,7 +716,7 @@ export function useTaskBatchStatus() {
     mutationFn: async (input: TaskBatchStatusInput) => {
       // Endpoint: POST /project/manager/task/batch-status
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/batch-status`,
+        `${GATEWAY_API_BASE}/project/manager/task/batch-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

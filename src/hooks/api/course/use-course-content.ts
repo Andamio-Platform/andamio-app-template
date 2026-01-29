@@ -43,6 +43,7 @@ import {
   transformAssignment,
   transformIntroduction,
 } from "./use-course-module";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -121,7 +122,7 @@ export function useSLTs(
     queryFn: async () => {
       // Endpoint: GET /course/user/slts/{course_id}/{course_module_code}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/slts/${courseId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/slts/${courseId}/${moduleCode}`
       );
 
       // 404 means module not on-chain (V2) or doesn't exist
@@ -230,7 +231,7 @@ export function useLesson(
     queryFn: async (): Promise<Lesson | null> => {
       // Endpoint: GET /course/user/lesson/{course_id}/{course_module_code}/{slt_index}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/lesson/${courseId}/${moduleCode}/${sltIndex}`
+        `${GATEWAY_API_BASE}/course/user/lesson/${courseId}/${moduleCode}/${sltIndex}`
       );
 
       // 404 means module not on-chain (V2) or lesson doesn't exist
@@ -303,7 +304,7 @@ export function useAssignment(
     queryFn: async (): Promise<Assignment | null> => {
       // Endpoint: GET /course/user/assignment/{course_id}/{course_module_code}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/assignment/${courseId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/assignment/${courseId}/${moduleCode}`
       );
 
       // 404 means no assignment exists for this module (or module not on-chain in V2)
@@ -398,7 +399,7 @@ export function useIntroduction(
       // Endpoint: GET /course/user/introduction/{course_id}/{course_module_code}
       // NEW in V2 - public introduction endpoint
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/introduction/${courseId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/introduction/${courseId}/${moduleCode}`
       );
 
       // 404 means no introduction exists or module not on-chain

@@ -52,6 +52,7 @@ import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Teacher Dashboard Page
@@ -195,7 +196,7 @@ export default function TeacherDashboardPage() {
     try {
       // Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
+        `${GATEWAY_API_BASE}/course/user/course/get/${courseNftPolicyId}`
       );
 
       if (!courseResponse.ok) {
@@ -212,7 +213,7 @@ export default function TeacherDashboardPage() {
 
       // Go API: POST /course/teacher/assignment-commitments/list
       const commitmentsResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/assignment-commitments/list`,
+        `${GATEWAY_API_BASE}/course/teacher/assignment-commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -29,6 +29,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { GatewayTxType } from "~/types/generated";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Types
@@ -123,7 +124,7 @@ export function useTxWatcher(
 
     try {
       const response = await authenticatedFetchRef.current(
-        `/api/gateway/api/v2/tx/status/${txHash}`
+        `${GATEWAY_API_BASE}/tx/status/${txHash}`
       );
 
       if (!response.ok) {
@@ -223,7 +224,7 @@ export async function registerTransaction(
   jwt: string,
   metadata?: Record<string, string>
 ): Promise<void> {
-  const response = await fetch("/api/gateway/api/v2/tx/register", {
+  const response = await fetch(`${GATEWAY_API_BASE}/tx/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -19,6 +19,7 @@ import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
 import { getCourseStudent, type AndamioscanStudent } from "~/lib/andamioscan-events";
 import type { JSONContent } from "@tiptap/core";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import {
   AlertIcon,
   SuccessIcon,
@@ -252,7 +253,7 @@ export function AssignmentCommitment({
       // V2 Merged API: Returns merged on-chain + DB data
       // POST /course/student/assignment-commitment/get
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/student/assignment-commitment/get`,
+        `${GATEWAY_API_BASE}/course/student/assignment-commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -596,7 +597,7 @@ export function AssignmentCommitment({
                           // Save evidence content to database (upsert)
                           try {
                             const submitResponse = await authenticatedFetch(
-                              `/api/gateway/api/v2/course/student/commitment/submit`,
+                              `${GATEWAY_API_BASE}/course/student/commitment/submit`,
                               {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -773,7 +774,7 @@ export function AssignmentCommitment({
                                 if (evidenceContent) {
                                   try {
                                     const submitResponse = await authenticatedFetch(
-                                      `/api/gateway/api/v2/course/student/commitment/submit`,
+                                      `${GATEWAY_API_BASE}/course/student/commitment/submit`,
                                       {
                                         method: "POST",
                                         headers: { "Content-Type": "application/json" },

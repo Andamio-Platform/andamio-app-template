@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { courseModuleKeys } from "./use-course-module";
 import type { ModuleDraft, SaveModuleDraftResult, SLTDraft } from "~/stores/module-draft-store";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Request/Response Types
@@ -358,7 +359,7 @@ export function useSaveModuleDraft() {
       console.log("[useSaveModuleDraft] Request body:", JSON.stringify(request, null, 2));
 
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

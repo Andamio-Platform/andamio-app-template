@@ -29,6 +29,7 @@ import type {
 } from "~/types/generated/gateway";
 
 import { courseKeys } from "./use-course";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -498,7 +499,7 @@ export function useCourseModules(courseId: string | undefined) {
     queryFn: async (): Promise<CourseModule[]> => {
       // Endpoint: GET /course/user/modules/{course_id}
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/${courseId}`
+        `${GATEWAY_API_BASE}/course/user/modules/${courseId}`
       );
 
       // 404 means no modules yet - return empty array
@@ -561,7 +562,7 @@ export function useTeacherCourseModules(courseId: string | undefined) {
       // Endpoint: POST /api/v2/course/teacher/course-modules/list
       // Returns UNION of on-chain and DB modules with source indicator
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-modules/list`,
+        `${GATEWAY_API_BASE}/course/teacher/course-modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -652,7 +653,7 @@ export function useCourseModule(
       // Endpoint: GET /course/user/modules/{course_id}
       // Fetch list and filter client-side
       const response = await fetch(
-        `/api/gateway/api/v2/course/user/modules/${courseId}`
+        `${GATEWAY_API_BASE}/course/user/modules/${courseId}`
       );
 
       if (!response.ok) {
@@ -711,7 +712,7 @@ export function useCourseModuleMap(courseIds: string[]) {
     queryFn: async (): Promise<Record<string, CourseModuleSummary[]>> => {
       // Endpoint: POST /course/teacher/modules/list - returns modules grouped by course ID
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/modules/list`,
+        `${GATEWAY_API_BASE}/course/teacher/modules/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -782,7 +783,7 @@ export function useCreateCourseModule() {
       // API expects "course_id" and "course_module_code"
       const { courseId, moduleCode, ...rest } = input;
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/create`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -838,7 +839,7 @@ export function useUpdateCourseModule() {
     }) => {
       // Endpoint: POST /course/teacher/course-module/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -934,7 +935,7 @@ export function useUpdateCourseModuleStatus() {
       }
 
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/update-status`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/update-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1009,7 +1010,7 @@ export function useDeleteCourseModule() {
     }) => {
       // Endpoint: POST /course/teacher/course-module/delete
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/delete`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1150,7 +1151,7 @@ export function useRegisterCourseModule() {
     ): Promise<RegisteredModule | null> => {
       // Endpoint: POST /api/v2/course/teacher/course-module/register
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/course-module/register`,
+        `${GATEWAY_API_BASE}/course/teacher/course-module/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

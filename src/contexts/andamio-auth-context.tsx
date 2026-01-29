@@ -15,6 +15,7 @@ import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
 import { env } from "~/env";
 import { BRANDING } from "~/config";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Detect and sync access token from wallet to database
@@ -69,7 +70,7 @@ async function syncAccessTokenFromWallet(
   try {
     authLogger.info("Syncing access token alias to database:", alias);
 
-    const response = await fetch(`/api/gateway/api/v2/user/access-token-alias`, {
+    const response = await fetch(`${GATEWAY_API_BASE}/user/access-token-alias`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -282,7 +283,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         console.log("\nTo use in API requests:");
         console.log(`Authorization: Bearer ${storedJWT}`);
         console.log("\nCurl example:");
-        console.log(`curl -X POST "/api/gateway/api/v2/course/owner/course/sync-teachers" \\
+        console.log(`curl -X POST "${GATEWAY_API_BASE}/course/owner/course/sync-teachers" \\
   -H "Authorization: Bearer ${storedJWT}" \\
   -H "Content-Type: application/json" \\
   -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
@@ -425,7 +426,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       console.log("\nTo use in API requests:");
       console.log(`Authorization: Bearer ${authResponse.jwt}`);
       console.log("\nCurl example:");
-      console.log(`curl -X POST "/api/gateway/api/v2/course/owner/course/sync-teachers" \\
+      console.log(`curl -X POST "${GATEWAY_API_BASE}/course/owner/course/sync-teachers" \\
   -H "Authorization: Bearer ${authResponse.jwt}" \\
   -H "Content-Type: application/json" \\
   -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);

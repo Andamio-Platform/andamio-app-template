@@ -35,6 +35,7 @@ import { StepAssignment } from "./steps/step-assignment";
 import { StepLessons } from "./steps/step-lessons";
 import { StepIntroduction } from "./steps/step-introduction";
 import { StepReview } from "./steps/step-review";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Hook to access wizard context
@@ -123,7 +124,7 @@ export function ModuleWizard({
     try {
       // Fetch SLTs - Go API: GET /course/user/slts/{course_id}/{course_module_code}
       const sltsResponse = await fetch(
-        `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/slts/${courseNftPolicyId}/${moduleCode}`
       );
       let slts: SLT[] = [];
       if (sltsResponse.ok) {
@@ -135,7 +136,7 @@ export function ModuleWizard({
 
       // Fetch assignment - Go API: GET /course/user/assignment/{course_id}/{course_module_code}
       const assignmentResponse = await fetch(
-        `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
       );
       let assignment: Assignment | null = null;
       if (assignmentResponse.ok) {
@@ -160,7 +161,7 @@ export function ModuleWizard({
           const sltIndex = slt.moduleIndex ?? index + 1;
           try {
             const lessonResponse = await fetch(
-              `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}`
+              `${GATEWAY_API_BASE}/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}`
             );
 
             if (lessonResponse.status === 404) {
@@ -209,7 +210,7 @@ export function ModuleWizard({
 
       // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
       const moduleResponse = await fetch(
-        `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
       );
       let updatedModule: CourseModule | null = courseModule;
       if (moduleResponse.ok) {

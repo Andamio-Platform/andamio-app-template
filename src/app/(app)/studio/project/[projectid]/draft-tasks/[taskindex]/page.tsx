@@ -31,6 +31,7 @@ import {
 import { ContentEditor } from "~/components/editor";
 import { type ProjectTaskV2Output, type ProjectV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface ApiError {
   message?: string;
@@ -83,7 +84,7 @@ export default function EditTaskPage() {
       try {
         // V2 API: Get project first to get project_state_policy_id
         const projectResponse = await fetch(
-          `/api/gateway/api/v2/project/user/project/${projectId}`
+          `${GATEWAY_API_BASE}/project/user/project/${projectId}`
         );
 
         if (!projectResponse.ok) {
@@ -103,7 +104,7 @@ export default function EditTaskPage() {
         // V2 API: POST /project/manager/tasks/list with {project_id} in body
         // Manager endpoint returns all tasks including DRAFT status
         const tasksResponse = await authenticatedFetch(
-          `/api/gateway/api/v2/project/manager/tasks/list`,
+          `${GATEWAY_API_BASE}/project/manager/tasks/list`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -173,7 +174,7 @@ export default function EditTaskPage() {
       };
 
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/update`,
+        `${GATEWAY_API_BASE}/project/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

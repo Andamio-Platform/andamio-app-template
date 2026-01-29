@@ -72,6 +72,7 @@ import {
 import { validateTxParams, type TxParams } from "~/config/transaction-schemas";
 import { registerTransaction, getGatewayTxType } from "~/hooks/tx/use-tx-watcher";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { PROXY_BASE } from "~/lib/gateway";
 
 // =============================================================================
 // Types
@@ -166,7 +167,7 @@ export function useTransaction() {
 
         // Step 2: Build transaction (fetch unsigned CBOR)
         const endpoint = TRANSACTION_ENDPOINTS[txType];
-        const url = `/api/gateway${endpoint}`;
+        const url = `${PROXY_BASE}${endpoint}`;
 
         txLogger.buildRequest(txType, url, "POST", params);
 

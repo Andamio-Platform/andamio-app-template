@@ -30,6 +30,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { DeleteIcon, ModuleIcon, AlertIcon, CloseIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface ModuleToBurn {
   /** Module code (for display) */
@@ -124,7 +125,7 @@ export function BurnModuleTokens({
     const results = await Promise.allSettled(
       modules.map(async (m) => {
         const response = await authenticatedFetch(
-          `/api/gateway/api/v2/course/teacher/course-module/update`,
+          `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

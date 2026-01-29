@@ -63,16 +63,13 @@ jobs:
           
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "full_tag=${REGISTRY}/app:${TAG}" >> $GITHUB_OUTPUT
-          echo "latest_tag=${REGISTRY}/app:latest" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: |
-            ${{ steps.tags.outputs.full_tag }}
-            ${{ steps.tags.outputs.latest_tag }}
+          tags: ${{ steps.tags.outputs.full_tag }}
           build-args: |
             NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL }}
             NEXT_PUBLIC_CARDANO_NETWORK=${{ env.NEXT_PUBLIC_CARDANO_NETWORK }}

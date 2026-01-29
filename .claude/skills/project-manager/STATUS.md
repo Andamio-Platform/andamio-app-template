@@ -21,6 +21,21 @@ Current implementation status of the Andamio T3 App Template.
 
 ## 📌 NEXT SESSION PROMPT
 
+> **🔴 BLOCKED: Sync Andamio API with Andamioscan Updates**
+>
+> Issue #68 (`course-module/get` endpoint returning 404) is blocked pending Gateway sync.
+>
+> **Action Required (andamio-api team)**:
+> 1. Sync Andamio API Gateway with latest Andamioscan schema updates
+> 2. Verify `/api/v2/course/user/course-module/get/{id}/{module_code}` endpoint exists
+> 3. Notify T3 team when ready for re-test
+>
+> **After Gateway Sync**: Re-test module wizard UX (issue #68)
+> - File: `src/components/studio/wizard/module-wizard.tsx:212`
+> - Currently hitting 404 on module refetch after lesson load
+>
+> ---
+>
 > **Course UX Testing → Project Hooks Migration**
 >
 > **Immediate**: Test course system UX after hooks refactoring

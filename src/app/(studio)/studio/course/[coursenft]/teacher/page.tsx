@@ -52,6 +52,7 @@ import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Teacher Dashboard Page
@@ -177,13 +178,14 @@ export default function TeacherDashboardPage() {
   );
 
   // Stats - use optional chaining since commitmentStatus might be undefined
-  // Status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN
+  // Display status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ACCEPTED, DENIED
   const stats = {
     total: commitments.length,
     draft: commitments.filter((c) => c.commitmentStatus === "DRAFT").length,
     pendingTx: commitments.filter((c) => c.commitmentStatus === "PENDING_TX").length,
     pendingReview: commitments.filter((c) => c.commitmentStatus === "PENDING_APPROVAL").length,
-    completed: commitments.filter((c) => c.commitmentStatus === "ON_CHAIN" || c.commitmentStatus === "ACCEPTED").length,
+    accepted: commitments.filter((c) => c.commitmentStatus === "ACCEPTED").length,
+    denied: commitments.filter((c) => c.commitmentStatus === "DENIED").length,
   };
 
   // Fetch data function - extracted so it can be called from transaction success handlers
@@ -194,7 +196,7 @@ export default function TeacherDashboardPage() {
     try {
       // Go API: GET /course/user/course/get/{policy_id}
       const courseResponse = await fetch(
-        `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}`
+        `${GATEWAY_API_BASE}/course/user/course/get/${courseNftPolicyId}`
       );
 
       if (!courseResponse.ok) {
@@ -211,7 +213,7 @@ export default function TeacherDashboardPage() {
 
       // Go API: POST /course/teacher/assignment-commitments/list
       const commitmentsResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/assignment-commitments/list`,
+        `${GATEWAY_API_BASE}/course/teacher/assignment-commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -370,9 +372,6 @@ export default function TeacherDashboardPage() {
     return commitment.studentAlias && commitment.commitmentStatus === "PENDING_APPROVAL";
   };
 
-  // Get commitments that are ready for assessment
-  const assessableCommitments = filteredCommitments.filter(isReadyForAssessment);
-
   // Apply filters whenever they change
   useEffect(() => {
     let filtered = [...commitments];
@@ -421,12 +420,13 @@ export default function TeacherDashboardPage() {
         />
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <AndamioDashboardStat icon={TeacherIcon} label="Total" value={stats.total} />
         <AndamioDashboardStat icon={PendingIcon} label="Draft" value={stats.draft} />
         <AndamioDashboardStat icon={PendingIcon} label="Pending TX" value={stats.pendingTx} valueColor="warning" iconColor="warning" />
         <AndamioDashboardStat icon={TeacherIcon} label="Pending Review" value={stats.pendingReview} valueColor="info" iconColor="info" />
-        <AndamioDashboardStat icon={SuccessIcon} label="Completed" value={stats.completed} valueColor="success" iconColor="success" />
+        <AndamioDashboardStat icon={SuccessIcon} label="Accepted" value={stats.accepted} valueColor="success" iconColor="success" />
+        <AndamioDashboardStat icon={CloseIcon} label="Denied" value={stats.denied} valueColor="destructive" iconColor="destructive" />
       </div>
 
       {/* On-Chain Pending Assessments - Live data from merged API */}
@@ -452,7 +452,9 @@ export default function TeacherDashboardPage() {
                   <AndamioSelectItem value="all">All Statuses</AndamioSelectItem>
                   <AndamioSelectItem value="DRAFT">Draft</AndamioSelectItem>
                   <AndamioSelectItem value="PENDING_TX">Pending Transaction</AndamioSelectItem>
-                  <AndamioSelectItem value="ON_CHAIN">On Chain</AndamioSelectItem>
+                  <AndamioSelectItem value="PENDING_APPROVAL">Pending Review</AndamioSelectItem>
+                  <AndamioSelectItem value="ACCEPTED">Accepted</AndamioSelectItem>
+                  <AndamioSelectItem value="DENIED">Denied</AndamioSelectItem>
                 </AndamioSelectContent>
               </AndamioSelect>
             </div>
@@ -861,7 +863,7 @@ export default function TeacherDashboardPage() {
 
                   // Build the assignment_decisions array from pending decisions
                   const decisions = Array.from(pendingDecisions.values()).map(({ commitment, decision }) => ({
-                    alias: commitment.studentAlias!,
+                    alias: commitment.studentAlias,
                     outcome: decision,
                   }));
 

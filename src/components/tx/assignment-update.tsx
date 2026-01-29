@@ -34,6 +34,7 @@ import { SendIcon, EditIcon, ShieldIcon, TransactionIcon, LoadingIcon, SuccessIc
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface AssignmentUpdateProps {
   /**
@@ -198,7 +199,7 @@ export function AssignmentUpdate({
         // Using /api/v2/course/student/commitment/submit as upsert endpoint
         try {
           const submitResponse = await authenticatedFetch(
-            `/api/gateway/api/v2/course/student/commitment/submit`,
+            `${GATEWAY_API_BASE}/course/student/commitment/submit`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

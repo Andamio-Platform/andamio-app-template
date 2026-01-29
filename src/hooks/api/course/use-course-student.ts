@@ -17,6 +17,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -138,7 +139,7 @@ export function useStudentCourses() {
     queryFn: async (): Promise<StudentCoursesResponse> => {
       // Endpoint: POST /api/v2/course/student/courses/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/student/courses/list`,
+        `${GATEWAY_API_BASE}/course/student/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

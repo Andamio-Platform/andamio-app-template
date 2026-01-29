@@ -29,6 +29,7 @@ import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject } from "~/lib/andamioscan-events";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface ApiError {
   message?: string;
@@ -62,7 +63,7 @@ export default function DraftTasksPage() {
     try {
       // V2 API: First get project to find project_state_policy_id
       const projectResponse = await fetch(
-        `/api/gateway/api/v2/project/user/project/${projectId}`
+        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
       );
 
       if (!projectResponse.ok) {
@@ -84,7 +85,7 @@ export default function DraftTasksPage() {
       // V2 API: POST /project/manager/tasks/list with {project_id} in body
       // Manager endpoint returns all tasks including DRAFT status
       const tasksResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/tasks/list`,
+        `${GATEWAY_API_BASE}/project/manager/tasks/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,7 +134,7 @@ export default function DraftTasksPage() {
     try {
       // V2 API: POST /project/manager/task/delete
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/manager/task/delete`,
+        `${GATEWAY_API_BASE}/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

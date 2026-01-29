@@ -1,0 +1,92 @@
+# =============================================================================
+# Andamio Frontend - Deploy to Staging
+# =============================================================================
+# Triggered on release candidate tags: v*.*.*-rc*
+# Example: v1.2.3-rc1, v2.0.0-rc2
+# =============================================================================
+name: Deploy to Staging
+
+on:
+  push:
+    tags:
+      - "v*.*.*-rc*"
+  workflow_dispatch:
+
+env:
+  # Build-time environment variables for staging (NEXT_PUBLIC_* are embedded at build)
+  NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: https://preprod.api.andamio.io
+  NEXT_PUBLIC_CARDANO_NETWORK: preprod
+  # TODO: Set STAGING_ACCESS_TOKEN_POLICY_ID as a repo variable
+  NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: ${{ vars.STAGING_ACCESS_TOKEN_POLICY_ID }}
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.STAGING_WIF_PROVIDER }}
+          service_account: ${{ vars.STAGING_WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.STAGING_GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            DATE=$(date +'%Y%m%d')
+            TAG="manual-${DATE}-${SHORT_SHA}"
+          fi
+          REGISTRY="${{ vars.STAGING_ARTIFACT_REGISTRY }}"
+          
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "full_tag=${REGISTRY}/app:${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tags.outputs.full_tag }}
+          build-args: |
+            NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL }}
+            NEXT_PUBLIC_CARDANO_NETWORK=${{ env.NEXT_PUBLIC_CARDANO_NETWORK }}
+            NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${{ env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ vars.STAGING_CLOUD_RUN_SERVICE }}
+          region: ${{ vars.STAGING_GCP_REGION }}
+          image: ${{ steps.tags.outputs.full_tag }}
+
+      - name: Output deployment details
+        run: |
+          echo "## Staging Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.tags.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ steps.tags.outputs.full_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://preprod.app.andamio.io" >> $GITHUB_STEP_SUMMARY

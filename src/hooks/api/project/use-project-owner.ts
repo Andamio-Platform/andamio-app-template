@@ -36,6 +36,7 @@ import {
   transformProjectListItem,
   type Project,
 } from "./use-project";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import { projectManagerKeys } from "./use-project-manager";
 
 // =============================================================================
@@ -81,7 +82,7 @@ export function useOwnerProjects() {
     queryFn: async (): Promise<Project[]> => {
       // Endpoint: POST /project/owner/projects/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/projects/list`,
+        `${GATEWAY_API_BASE}/project/owner/projects/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -152,7 +153,7 @@ export function useCreateProject() {
     }) => {
       // Endpoint: POST /project/owner/project/create
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/project/create`,
+        `${GATEWAY_API_BASE}/project/owner/project/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -233,7 +234,7 @@ export function useUpdateProject() {
     }) => {
       // Endpoint: POST /project/owner/project/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/project/update`,
+        `${GATEWAY_API_BASE}/project/owner/project/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -330,7 +331,7 @@ export function useRegisterProject() {
     }) => {
       // Endpoint: POST /project/owner/project/register
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/owner/project/register`,
+        `${GATEWAY_API_BASE}/project/owner/project/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

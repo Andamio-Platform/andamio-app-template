@@ -32,6 +32,7 @@ import type {
   MergedHandlersMergedCoursesResponse,
 } from "~/types/generated/gateway";
 import { transformCourse, courseKeys, type Course } from "./use-course";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -76,7 +77,7 @@ export function useOwnerCourses() {
     queryFn: async (): Promise<Course[]> => {
       // Endpoint: POST /course/owner/courses/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/courses/list`,
+        `${GATEWAY_API_BASE}/course/owner/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,7 +143,7 @@ export function useCreateCourse() {
     }) => {
       // Endpoint: POST /course/owner/course/create
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/create`,
+        `${GATEWAY_API_BASE}/course/owner/course/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -220,7 +221,7 @@ export function useUpdateCourse() {
     }) => {
       // Endpoint: POST /course/owner/course/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/update`,
+        `${GATEWAY_API_BASE}/course/owner/course/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -296,7 +297,7 @@ export function useDeleteCourse() {
     mutationFn: async (courseId: string) => {
       // Endpoint: POST /course/owner/course/delete
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/delete`,
+        `${GATEWAY_API_BASE}/course/owner/course/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -374,7 +375,7 @@ export function useRegisterCourse() {
     }) => {
       // Endpoint: POST /course/owner/course/register
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/owner/course/register`,
+        `${GATEWAY_API_BASE}/course/owner/course/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

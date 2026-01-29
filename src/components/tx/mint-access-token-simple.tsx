@@ -47,6 +47,7 @@ import { AccessTokenIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/compone
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface MintAccessTokenSimpleProps {
   /**
@@ -182,7 +183,7 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
         // The gateway will also update it on confirmation, but this gives instant feedback
         try {
           const response = await authenticatedFetch(
-            `/api/gateway/api/v2/user/access-token-alias`,
+            `${GATEWAY_API_BASE}/user/access-token-alias`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

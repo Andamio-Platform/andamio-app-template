@@ -29,6 +29,7 @@ import {
   extractOnChainData,
   type TransactionConfirmation,
 } from "~/lib/cardano-indexer";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 // TX State Machine response type
 interface TxRegistrationResult {
   tx_hash: string;
@@ -166,7 +167,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // TX State Machine: POST /api/v2/tx/register
       // Register TX with Gateway - it handles confirmation and DB updates automatically
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/tx/register`,
+        `${GATEWAY_API_BASE}/tx/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -213,7 +214,7 @@ export function usePendingTxWatcher(config: PendingTxWatcherConfig = {}) {
       // Register TX with Gateway - it handles confirmation and DB updates automatically
       // See: TX_STATE_MACHINE_TRACKER.md section 3.4 (Assignment Commit)
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/tx/register`,
+        `${GATEWAY_API_BASE}/tx/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

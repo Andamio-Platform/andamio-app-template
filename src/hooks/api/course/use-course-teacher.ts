@@ -20,6 +20,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -246,7 +247,7 @@ export function useTeacherCourses() {
     queryFn: async (): Promise<TeacherCoursesResponse> => {
       // Endpoint: POST /api/v2/course/teacher/courses/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/courses/list`,
+        `${GATEWAY_API_BASE}/course/teacher/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -305,7 +306,7 @@ export function useTeacherAssignmentCommitments() {
     queryFn: async (): Promise<TeacherAssignmentCommitmentsResponse> => {
       // Merged endpoint: POST /api/v2/course/teacher/assignment-commitments/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/assignment-commitments/list`,
+        `${GATEWAY_API_BASE}/course/teacher/assignment-commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -376,7 +377,7 @@ export function useTeacherCoursesWithModules() {
     queryFn: async (): Promise<TeacherCourseWithModules[]> => {
       // Step 1: Fetch teacher courses list
       const coursesResponse = await authenticatedFetch(
-        `/api/gateway/api/v2/course/teacher/courses/list`,
+        `${GATEWAY_API_BASE}/course/teacher/courses/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -410,7 +411,7 @@ export function useTeacherCoursesWithModules() {
       for (const course of courses) {
         try {
           const detailResponse = await fetch(
-            `/api/gateway/api/v2/course/user/course/${course.courseId}`
+            `${GATEWAY_API_BASE}/course/user/course/${course.courseId}`
           );
 
           if (detailResponse.ok) {

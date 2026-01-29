@@ -35,10 +35,10 @@ andamio-t3-app-template/
 
 > **DEPRECATED**: The `@andamio/transactions` package at `packages/andamio-transactions/` is deprecated. New transaction code should use `src/config/transaction-schemas.ts` and the TX State Machine pattern.
 
-**Local Hash Utilities** at `src/lib/utils/`:
-- `slt-hash.ts` - Compute module token names from SLTs
-- `assignment-info-hash.ts` - Hash assignment evidence for on-chain storage
-- `task-hash.ts` - Compute project task IDs matching on-chain validators
+**Hash Utilities** - Import from `@andamio/core/hashing`:
+- `computeSltHash` - Compute module token names from SLTs
+- `computeCommitmentHash` - Hash assignment evidence for on-chain storage
+- `computeTaskHash` - Compute project task IDs matching on-chain validators
 
 ### Unified API Gateway
 The app uses the Unified Andamio API Gateway which combines all backend services:

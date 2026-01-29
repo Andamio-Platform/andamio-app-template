@@ -36,6 +36,7 @@ import type {
   OrchestrationProjectCredentialClaimOnChain,
   OrchestrationProjectPrerequisite,
 } from "~/types/generated/gateway";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -594,7 +595,7 @@ export function useProject(projectId: string | undefined) {
     queryKey: projectKeys.detail(projectId ?? ""),
     queryFn: async (): Promise<ProjectDetail | null> => {
       const response = await fetch(
-        `/api/gateway/api/v2/project/user/project/${projectId}`
+        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
       );
 
       if (response.status === 404) {
@@ -629,7 +630,7 @@ export function useProjectRaw(projectId: string | undefined) {
     queryKey: [...projectKeys.detail(projectId ?? ""), "raw"] as const,
     queryFn: async (): Promise<OrchestrationMergedProjectDetail | null> => {
       const response = await fetch(
-        `/api/gateway/api/v2/project/user/project/${projectId}`
+        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
       );
 
       if (response.status === 404) {
@@ -685,7 +686,7 @@ export function useProjects() {
     queryKey: projectKeys.published(),
     queryFn: async (): Promise<Project[]> => {
       const response = await fetch(
-        `/api/gateway/api/v2/project/user/projects/list`
+        `${GATEWAY_API_BASE}/project/user/projects/list`
       );
 
       if (response.status === 404) {
@@ -746,7 +747,7 @@ export function useProjectTasks(projectId: string | undefined) {
     queryKey: projectKeys.tasks(projectId ?? ""),
     queryFn: async (): Promise<Task[]> => {
       const response = await fetch(
-        `/api/gateway/api/v2/project/user/tasks/list`,
+        `${GATEWAY_API_BASE}/project/user/tasks/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

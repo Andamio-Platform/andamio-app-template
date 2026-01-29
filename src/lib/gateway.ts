@@ -11,7 +11,7 @@
  * @see .claude/skills/audit-api-coverage/unified-api-endpoints.md - Full endpoint list
  */
 
-const PROXY_BASE = "/api/gateway";
+export const PROXY_BASE = "/api/gateway";
 
 // =============================================================================
 // Types

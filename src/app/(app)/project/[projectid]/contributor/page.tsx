@@ -41,6 +41,7 @@ import type { JSONContent } from "@tiptap/core";
 import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { useTaskSubmitConfirmation } from "~/hooks/tx/use-event-confirmation";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // Helper to extract string from NullableString (API returns object type for nullable strings)
 function getString(value: string | object | undefined | null): string {
@@ -225,7 +226,7 @@ function ContributorDashboardContent() {
   const fetchDbCommitment = async (taskHash: string): Promise<CommitmentV2Output | null> => {
     try {
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitment/get`,
+        `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -264,7 +265,7 @@ function ContributorDashboardContent() {
 
     try {
       // V2 API: GET /project/user/project/:project_id
-      const projectUrl = `/api/gateway/api/v2/project/user/project/${projectId}`;
+      const projectUrl = `${GATEWAY_API_BASE}/project/user/project/${projectId}`;
       console.log("[Contributor] Fetching project from:", projectUrl);
       const projectResponse = await fetch(projectUrl);
 
@@ -291,7 +292,7 @@ function ContributorDashboardContent() {
         if (projectStatePolicyId) {
           setContributorStateId(projectStatePolicyId);
 
-          const tasksUrl = `/api/gateway/api/v2/project/user/tasks/list`;
+          const tasksUrl = `${GATEWAY_API_BASE}/project/user/tasks/list`;
           console.log("[Contributor] Fetching tasks from:", tasksUrl);
           const tasksResponse = await fetch(tasksUrl, {
             method: "POST",

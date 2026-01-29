@@ -38,6 +38,7 @@ import {
   type ProjectStatus,
   type ProjectPrerequisite,
 } from "./use-project";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // =============================================================================
 // Query Keys
@@ -244,7 +245,7 @@ export function useContributorProjects() {
     queryFn: async (): Promise<ContributorProject[]> => {
       // Merged endpoint: POST /api/v2/project/contributor/projects/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/projects/list`,
+        `${GATEWAY_API_BASE}/project/contributor/projects/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -305,7 +306,7 @@ export function useContributorCommitments(projectId?: string) {
     queryFn: async (): Promise<ContributorCommitment[]> => {
       // Merged endpoint: POST /api/v2/project/contributor/commitments/list
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitments/list`,
+        `${GATEWAY_API_BASE}/project/contributor/commitments/list`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -369,7 +370,7 @@ export function useContributorCommitment(
     queryFn: async (): Promise<ContributorCommitment | null> => {
       // Endpoint: POST /api/v2/project/contributor/commitment/get
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitment/get`,
+        `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -441,7 +442,7 @@ export function useCreateCommitment() {
     }) => {
       // Endpoint: POST /project/contributor/commitment/create
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitment/create`,
+        `${GATEWAY_API_BASE}/project/contributor/commitment/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -520,7 +521,7 @@ export function useUpdateCommitment() {
     }) => {
       // Endpoint: POST /project/contributor/commitment/update
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitment/update`,
+        `${GATEWAY_API_BASE}/project/contributor/commitment/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -593,7 +594,7 @@ export function useDeleteCommitment() {
     }) => {
       // Endpoint: POST /project/contributor/commitment/delete
       const response = await authenticatedFetch(
-        `/api/gateway/api/v2/project/contributor/commitment/delete`,
+        `${GATEWAY_API_BASE}/project/contributor/commitment/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

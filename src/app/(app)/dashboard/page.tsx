@@ -18,16 +18,42 @@ import { ContributingProjectsSummary } from "~/components/dashboard/contributing
 import { ManagingProjectsSummary } from "~/components/dashboard/managing-projects-summary";
 import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summary";
 import { AndamioPageHeader } from "~/components/andamio";
+import {
+  PostMintAuthPrompt,
+  checkAndClearJustMintedFlag,
+} from "~/components/dashboard/post-mint-auth-prompt";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, user, jwt } = useAndamioAuth();
+  const [isPostMint, setIsPostMint] = React.useState(false);
+
+  // Check if user just minted (on mount only)
+  React.useEffect(() => {
+    const justMinted = checkAndClearJustMintedFlag();
+    if (justMinted) {
+      setIsPostMint(true);
+    }
+  }, []);
 
   // TODO: Re-enable pending tx tracking after basic API is working
   const isPendingAccessTokenMint = false;
 
   // Not authenticated state
   if (!isAuthenticated || !user) {
+    // Post-mint: Show contextual auth prompt with step tracker
+    if (isPostMint) {
+      return (
+        <PostMintAuthPrompt
+          onAuthenticated={() => {
+            setIsPostMint(false);
+            router.refresh();
+          }}
+        />
+      );
+    }
+
+    // Default: Standard auth prompt
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
         <AndamioPageHeader

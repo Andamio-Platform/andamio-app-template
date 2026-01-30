@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { AuthStatusBar } from "./auth-status-bar";
-import { StudioSidebar } from "./studio-sidebar";
+import { AppSidebar } from "./app-sidebar";
 import {
   StudioHeader,
   StudioHeaderContext,
@@ -31,12 +31,14 @@ interface StudioLayoutProps {
 /**
  * Focused full-screen layout for studio/content creation
  *
- * Structure (matches main app layout):
+ * Structure (unified app shell):
  * - AuthStatusBar at top (same as main app)
- * - StudioSidebar on left (context-aware for studio workflows)
- * - Full-height content area with StudioHeader
+ * - AppSidebar on left (SAME navigation as main app - unified shell)
+ * - Full-height content area with StudioHeader for context
  *
  * Features:
+ * - Unified navigation shell - sidebar never changes across app
+ * - StudioHeader provides context (breadcrumbs, actions)
  * - Context provider allows child pages to update header
  * - Responsive: sidebar hidden on mobile
  * - Full-height content for editor panels
@@ -86,9 +88,9 @@ export function StudioLayout({
 
         {/* Main Container */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Studio Sidebar - Hidden on mobile, visible on desktop (md+) */}
+          {/* App Sidebar - Unified navigation shell (same as main app) */}
           <div className="hidden md:flex md:flex-shrink-0">
-            <StudioSidebar />
+            <AppSidebar />
           </div>
 
           {/* Content Area - Full height for editor panels */}

@@ -48,6 +48,7 @@ import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { setJustMintedFlag } from "~/components/dashboard/post-mint-auth-prompt";
 
 export interface MintAccessTokenSimpleProps {
   /**
@@ -142,6 +143,9 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     if (isPureOnChainSuccess && !hasHandledSuccessRef.current) {
       hasHandledSuccessRef.current = true;
       console.log("[MintAccessTokenSimple] Pure on-chain TX submitted successfully");
+
+      // Set flag for post-mint auth prompt (shows contextual UI on refresh)
+      setJustMintedFlag();
 
       // Refresh auth to detect the new token in wallet
       refreshAuth();

@@ -385,6 +385,7 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
     createdByAlias: api.created_by,
     onChainContent: api.on_chain_content,
     contributorStateId: api.contributor_state_id,
+    tokens: api.assets ? transformAssets(api.assets) : undefined,
     status: getProjectStatusFromSource(api.source),
     taskStatus: getTaskStatusFromSource(api.source),
   };
@@ -562,6 +563,7 @@ export const projectKeys = {
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (projectId: string) => [...projectKeys.details(), projectId] as const,
   tasks: (projectId: string) => [...projectKeys.detail(projectId), "tasks"] as const,
+  task: (taskHash: string) => [...projectKeys.all, "task", taskHash] as const,
 };
 
 // =============================================================================
@@ -782,6 +784,67 @@ export function useProjectTasks(projectId: string | undefined) {
       return items.map(transformMergedTask);
     },
     enabled: !!projectId,
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Fetch a single task by hash (merged endpoint)
+ *
+ * Uses: GET /api/v2/project/user/task/{task_hash}
+ * Returns a Task with flat camelCase fields.
+ *
+ * @param taskHash - Content-addressed task hash
+ *
+ * @example
+ * ```tsx
+ * function TaskDetail({ taskHash }: { taskHash: string }) {
+ *   const { data: task, isLoading, error } = useTask(taskHash);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (!task) return <NotFound />;
+ *
+ *   return <h1>{task.title}</h1>;
+ * }
+ * ```
+ */
+export function useTask(taskHash: string | undefined) {
+  return useQuery({
+    queryKey: projectKeys.task(taskHash ?? ""),
+    queryFn: async (): Promise<Task | null> => {
+      const response = await fetch(
+        `${GATEWAY_API_BASE}/project/user/task/${taskHash}`
+      );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch task: ${response.statusText}`);
+      }
+
+      const result = (await response.json()) as
+        | { data?: OrchestrationMergedTaskListItem; warning?: string }
+        | OrchestrationMergedTaskListItem;
+
+      // Handle both wrapped { data: ... } and unwrapped formats
+      let item: OrchestrationMergedTaskListItem | undefined;
+
+      if ("data" in result && result.data) {
+        if ((result as { warning?: string }).warning) {
+          console.warn("[useTask] API warning:", (result as { warning?: string }).warning);
+        }
+        item = result.data;
+      } else if ("task_hash" in result) {
+        item = result;
+      }
+
+      if (!item) return null;
+
+      return transformMergedTask(item);
+    },
+    enabled: !!taskHash,
     staleTime: 30 * 1000,
   });
 }

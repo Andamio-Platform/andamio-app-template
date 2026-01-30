@@ -94,13 +94,13 @@ All course system hooks follow the colocated types pattern correctly:
 
 | Location | Endpoint | New Hook |
 |----------|----------|----------|
-| `project/[projectid]/[taskhash]/page.tsx:58` | GET `/project/user/task/${taskHash}` | `useTask(taskHash)` |
-| `project/[projectid]/contributor/page.tsx:334` | GET `/project/user/project/${projectId}` | Already exists: `useProject()` |
-| `project/[projectid]/contributor/page.tsx:361` | POST `/project/user/tasks/list` | `useProjectTasks(projectId)` |
+| `project/[projectid]/[taskhash]/page.tsx` | GET `/project/user/task/${taskHash}` | ✅ `useTask(taskHash)` (new hook) |
+| `project/[projectid]/contributor/page.tsx` | GET `/project/user/project/${projectId}` | ✅ `useProject()` |
+| `project/[projectid]/contributor/page.tsx` | POST `/project/user/tasks/list` | ✅ `useProjectTasks(contributorStateId)` |
 | `studio/project/[projectid]/page.tsx:111` | GET `/project/user/project/${projectId}` | Already exists: `useProject()` |
 | Multiple studio pages | GET `/project/user/project/${projectId}` | Use `useProject()` |
 
-**Status**: [ ] Not started
+**Status**: [x] Public pages complete, studio pages pending
 
 #### Manager tasks list (4+ pages)
 
@@ -117,10 +117,10 @@ All course system hooks follow the colocated types pattern correctly:
 
 | Location | Endpoint | New Hook |
 |----------|----------|----------|
-| `project/[projectid]/[taskhash]/page.tsx:86,352,384` | POST `/project/contributor/commitment/get` | `useContributorCommitment(projectId)` |
-| `project/[projectid]/contributor/page.tsx:230` | POST `/project/contributor/commitment/get` | (same) |
+| `project/[projectid]/[taskhash]/page.tsx` | POST `/project/contributor/commitment/get` | ✅ `useContributorCommitment(projectId, taskHash)` |
+| `project/[projectid]/contributor/page.tsx:230` | POST `/project/contributor/commitment/get` | 🔶 Remains as `fetchDbCommitment` (called with dynamic task hashes from Andamioscan) |
 
-**Status**: [ ] Not started
+**Status**: [x] Task detail page done, contributor page partial (see note)
 
 ### Priority 2: Medium
 
@@ -216,6 +216,21 @@ All course system hooks follow the colocated types pattern correctly:
 
 ## Completion Log
 
+### January 29, 2026
+
+- [x] Phase 3.10: Migrated `project/[projectid]/[taskhash]/page.tsx` (4 direct calls → 3 hooks)
+  - Created `useTask(taskHash)` hook in `use-project.ts`
+  - Updated `transformMergedTask` to include `tokens` from `assets`
+  - Added `task` query key to `projectKeys`
+  - Replaced all `fetch()`/`authenticatedFetch()` with `useTask`, `useProject`, `useContributorCommitment`
+  - Replaced manual refetch in onSuccess with `queryClient.invalidateQueries`
+- [x] Phase 3.10: Migrated `project/[projectid]/contributor/page.tsx` (3 direct calls → 2 hooks + 1 remaining)
+  - Replaced project fetch with `useProject(projectId)` hook
+  - Replaced tasks fetch with `useProjectTasks(contributorStateId)` hook
+  - Restructured `fetchData()` into declarative hooks + orchestration `useEffect`
+  - Added `refreshData()` for onSuccess callbacks (invalidates queries + re-triggers orchestration)
+  - Remaining: `fetchDbCommitment` still uses `authenticatedFetch` (dynamic task hashes from Andamioscan)
+
 ### January 28, 2026
 
 - [x] Phase 3.9 Course System audit complete (8 hook files)
@@ -228,7 +243,8 @@ All course system hooks follow the colocated types pattern correctly:
   - `use-module-wizard-data.ts` - Composition hook
   - `use-save-module-draft.ts` - Aggregate mutation hook
 - [ ] Phase 3.9 Project System migration pending (0/3 hooks)
-- [ ] Phase 3.10 audit complete, implementation not started
+- [x] Phase 3.10 public project pages migrated (2/2 pages, 6 of 7 direct calls extracted)
+- [ ] Phase 3.10 studio project pages pending (6 files, 18 calls)
 
 **Notes**:
 - Debug console.log statements in `use-course-module.ts` and `use-save-module-draft.ts` intentionally kept for merge/status debugging

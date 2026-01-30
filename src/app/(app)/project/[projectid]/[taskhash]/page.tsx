@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -12,106 +12,47 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor } from "~/components/editor";
 import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icons";
-import { type ProjectTaskV2Output, type CommitmentV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { TaskCommit } from "~/components/tx";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useTask, useProject } from "~/hooks/api/project/use-project";
+import { useContributorCommitment, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality
  *
- * API Endpoints (V2):
- * - GET /project/user/task/:task_hash
- * - POST /project/contributor/commitment/get (protected)
+ * Uses React Query hooks:
+ * - useTask(taskHash) - Merged task data
+ * - useProject(projectId) - Project detail for on-chain task data (contributorStateId)
+ * - useContributorCommitment(projectId, taskHash) - Contributor's commitment status
  */
 export default function TaskDetailPage() {
   const params = useParams();
   const projectId = params.projectid as string;
   const taskHash = params.taskhash as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
+  const queryClient = useQueryClient();
 
-  const [task, setTask] = useState<ProjectTaskV2Output | null>(null);
-  const [commitment, setCommitment] = useState<CommitmentV2Output | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks replace manual useState + useEffect + fetch
+  const { data: task, isLoading: isTaskLoading, error: taskError } = useTask(taskHash);
+  const { data: project } = useProject(projectId);
+  const { data: commitment, isLoading: isCommitmentLoading } = useContributorCommitment(
+    projectId,
+    taskHash
+  );
+
+  // Derive on-chain task data from project detail (for contributor_state_policy_id)
+  const onChainTask = project?.tasks?.find((t) => t.taskHash === taskHash);
 
   // Contributor state - derived from on-chain data when task is fetched
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const isEnrolled = !!commitment;
   // Contributor state ID for TX building - currently placeholder until proper user state endpoint available
   const contributorStateId: string | null = null;
-
-  // On-chain task data from Andamioscan (for contributor_state_policy_id)
-  const [onChainTask, setOnChainTask] = useState<AndamioscanTask | null>(null);
 
   // Evidence editor state
   const [evidence, setEvidence] = useState<JSONContent | null>(null);
   const [isEditingEvidence, setIsEditingEvidence] = useState(false);
-
-  useEffect(() => {
-    const fetchTaskAndCommitment = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // V2 API: GET /project/user/task/:task_hash
-        const taskResponse = await fetch(
-          `${GATEWAY_API_BASE}/project/user/task/${taskHash}`
-        );
-
-        if (!taskResponse.ok) {
-          throw new Error("Failed to fetch task");
-        }
-
-        const taskData = (await taskResponse.json()) as ProjectTaskV2Output;
-        setTask(taskData);
-
-        // Fetch on-chain task from Andamioscan (for contributor_state_policy_id)
-        // The taskHash in the URL is the task_id in Andamioscan
-        try {
-          const projectDetails = await getProject(projectId);
-          if (projectDetails?.tasks) {
-            const matchingTask = projectDetails.tasks.find((t: AndamioscanTask) => t.task_id === taskHash);
-            if (matchingTask) {
-              setOnChainTask(matchingTask);
-            }
-          }
-        } catch (scanErr) {
-          console.warn("Failed to fetch on-chain task from Andamioscan:", scanErr);
-        }
-
-        // If authenticated, fetch commitment status
-        if (isAuthenticated) {
-          try {
-            const commitmentResponse = await authenticatedFetch(
-              `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ task_hash: taskHash }),
-              }
-            );
-
-            if (commitmentResponse.ok) {
-              const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
-              setCommitment(commitmentData);
-            }
-          } catch {
-            // User might not have a commitment yet - that's OK
-            console.log("No commitment found for user");
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching task:", err);
-        setError(err instanceof Error ? err.message : "Failed to load task");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchTaskAndCommitment();
-  }, [projectId, taskHash, isAuthenticated, authenticatedFetch]);
 
   // Helper to format POSIX timestamp
   const formatTimestamp = (timestamp: string): string => {
@@ -134,17 +75,25 @@ export default function TaskDetailPage() {
     return "secondary";
   };
 
+  // Invalidate commitment cache after successful TX
+  const invalidateCommitment = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: projectContributorKeys.commitment(projectId, taskHash),
+    });
+  };
+
   // Loading state
-  if (isLoading) {
+  if (isTaskLoading || isCommitmentLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
-  if (error || !task) {
+  const errorMessage = taskError instanceof Error ? taskError.message : taskError ? "Failed to load task" : null;
+  if (errorMessage || !task) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/project/${projectId}`} label="Back to Project" />
-        <AndamioErrorAlert error={error ?? "Task not found"} />
+        <AndamioErrorAlert error={errorMessage ?? "Task not found"} />
       </div>
     );
   }
@@ -166,7 +115,7 @@ export default function TaskDetailPage() {
 
       {/* Task Title and Description */}
       <AndamioPageHeader
-        title={task.title ?? "Untitled Task"}
+        title={task.title || "Untitled Task"}
         description={task.description || undefined}
       />
 
@@ -195,7 +144,7 @@ export default function TaskDetailPage() {
       <div className="p-3 bg-muted rounded-lg">
         <AndamioText variant="small" className="text-xs mb-1">Task Hash (On-Chain ID)</AndamioText>
         <AndamioText className="font-mono text-sm break-all">
-          {typeof task.taskHash === "string" ? task.taskHash : taskHash}
+          {task.taskHash || taskHash}
         </AndamioText>
       </div>
 
@@ -223,12 +172,9 @@ export default function TaskDetailPage() {
           <AndamioCardContent>
             <div className="space-y-2">
               {task.tokens.map((token, idx) => {
-                // TaskToken uses camelCase
-                const policyId = token.policyId ?? "";
-                const assetName = token.assetName ?? "";
-                const displayName = assetName || (policyId ? policyId.slice(0, 16) : `Token ${idx + 1}`);
+                const displayName = token.assetName || (token.policyId ? token.policyId.slice(0, 16) : `Token ${idx + 1}`);
                 return (
-                  <div key={policyId || idx} className="flex items-center justify-between p-2 border rounded">
+                  <div key={token.policyId || idx} className="flex items-center justify-between p-2 border rounded">
                     <div>
                       <AndamioText className="font-medium font-mono text-sm">
                         {displayName}
@@ -269,12 +215,12 @@ export default function TaskDetailPage() {
                 </AndamioBadge>
               </div>
 
-              {typeof commitment.pendingTxHash === "string" && commitment.pendingTxHash && (
+              {commitment.submissionTx && (
                 <>
                   <AndamioSeparator />
                   <div>
                     <AndamioText variant="small" className="mb-1">Pending Transaction</AndamioText>
-                    <AndamioText className="font-mono text-xs break-all">{commitment.pendingTxHash}</AndamioText>
+                    <AndamioText className="font-mono text-xs break-all">{commitment.submissionTx}</AndamioText>
                   </div>
                 </>
               )}
@@ -341,62 +287,29 @@ export default function TaskDetailPage() {
               <TaskCommit
                 projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
-                contributorStatePolicyId={onChainTask?.contributor_state_policy_id ?? "0".repeat(56)}
+                contributorStatePolicyId={onChainTask?.contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
                 taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 onSuccess={async () => {
                   setIsEditingEvidence(false);
-                  // Refetch commitment status
-                  try {
-                    const commitmentResponse = await authenticatedFetch(
-                      `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ task_hash: taskHash }),
-                      }
-                    );
-                    if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
-                      setCommitment(commitmentData);
-                    }
-                  } catch {
-                    // Handled by transaction component
-                  }
+                  await invalidateCommitment();
                 }}
               />
             ) : (
               <TaskCommit
                 projectNftPolicyId={projectId}
                 contributorStateId={contributorStateId ?? "0".repeat(56)}
-                contributorStatePolicyId={onChainTask?.contributor_state_policy_id ?? "0".repeat(56)}
+                contributorStatePolicyId={onChainTask?.contributorStateId ?? "0".repeat(56)}
                 taskHash={taskHash}
                 taskCode={`TASK_${task.index}`}
                 taskTitle={task.title ?? undefined}
                 taskEvidence={evidence}
                 isFirstCommit={true}
                 onSuccess={async () => {
-                  setIsEnrolled(true);
                   setIsEditingEvidence(false);
-                  // Refetch commitment status
-                  try {
-                    const commitmentResponse = await authenticatedFetch(
-                      `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ task_hash: taskHash }),
-                      }
-                    );
-                    if (commitmentResponse.ok) {
-                      const commitmentData = (await commitmentResponse.json()) as CommitmentV2Output;
-                      setCommitment(commitmentData);
-                    }
-                  } catch {
-                    // Handled by transaction component
-                  }
+                  await invalidateCommitment();
                 }}
               />
             )

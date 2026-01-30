@@ -21,3 +21,4 @@ export * from "./use-course-student";
 export * from "./use-course-teacher";
 export * from "./use-module-wizard-data";
 export * from "./use-save-module-draft";
+export * from "./use-assignment-commitment";

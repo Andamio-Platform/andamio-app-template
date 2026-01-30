@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -32,23 +32,21 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
-import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
-
-interface ApiError {
-  message?: string;
-}
+import { useProject, projectKeys } from "~/hooks/api/project/use-project";
+import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
+import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Project Dashboard - Edit project details and access management areas
  *
- * API Endpoints:
- * - POST /projects/list-owned (protected) - with project_id filter
- * - POST /projects/update (protected) - Update project metadata
- * - POST /tasks/list (public) - Get task summary
+ * Uses React Query hooks:
+ * - useProject(projectId) - Project detail with on-chain data
+ * - useManagerTasks(contributorStateId) - Manager task list (includes DRAFT)
+ * - useUpdateProject() - Update project metadata mutation
  */
 export default function ProjectDashboardPage() {
   const params = useParams();
@@ -56,7 +54,8 @@ export default function ProjectDashboardPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const projectId = params.projectid as string;
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { isAuthenticated, user } = useAndamioAuth();
+  const queryClient = useQueryClient();
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
@@ -69,16 +68,19 @@ export default function ProjectDashboardPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const [project, setProject] = useState<ProjectV2Output | null>(null);
-  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks replace manual useState + useEffect + fetch
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
+  const contributorStateId = projectDetail?.contributorStateId;
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
+  const updateProject = useUpdateProject();
+
   // Track user's role: "owner" can view but not manage, "manager" can manage
   const [userRole, setUserRole] = useState<"owner" | "manager" | null>(null);
 
   // On-chain status tracking
   const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
   const [onChainContributorCount, setOnChainContributorCount] = useState<number>(0);
+  const [isOrchestrating, setIsOrchestrating] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -86,148 +88,100 @@ export default function ProjectDashboardPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
 
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
-  // Fetch function extracted so it can be called from transaction success handlers
-  const fetchProjectAndTasks = async () => {
-    if (!isAuthenticated) {
-      setIsLoading(false);
-      return;
-    }
+  // Initialize form state when project data loads
+  useEffect(() => {
+    if (!projectDetail) return;
+    setTitle(projectDetail.title);
+    setDescription(projectDetail.description ?? "");
+    setImageUrl(projectDetail.imageUrl ?? "");
+    // videoUrl not in merged API response
+  }, [projectDetail]);
 
-    setIsLoading(true);
-    setError(null);
-    setUserRole(null);
+  // Orchestration: role detection + on-chain counts (Andamioscan calls)
+  useEffect(() => {
+    if (isProjectLoading || !projectDetail) return;
+    const alias = user?.accessTokenAlias;
+    if (!alias) return;
 
-    try {
-      let projectData: ProjectV2Output | null = null;
-      let detectedRole: "owner" | "manager" | null = null;
+    const orchestrate = async () => {
+      setIsOrchestrating(true);
+      try {
+        let detectedRole: "owner" | "manager" | null = null;
 
-      // Step 1: Try to fetch project directly (V2 API)
-      const projectResponse = await fetch(
-        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
-      );
-
-      if (projectResponse.ok) {
-        projectData = (await projectResponse.json()) as ProjectV2Output;
         // Check if user is owner
-        if (user?.accessTokenAlias && projectData.ownerAlias === user.accessTokenAlias) {
+        if (projectDetail.ownerAlias === alias || projectDetail.owner === alias) {
           detectedRole = "owner";
         }
-      }
 
-      // Step 2: If not owner, check if user is a manager via Andamioscan
-      if (detectedRole !== "owner" && user?.accessTokenAlias) {
-        try {
-          const managingProjects = await getManagingProjects(user.accessTokenAlias);
-          const isManager = managingProjects.some(
-            (p) => p.project_id === projectId
-          );
-
-          if (isManager) {
-            detectedRole = "manager";
-          }
-        } catch (scanErr) {
-          console.warn("Andamioscan check failed, continuing:", scanErr);
-        }
-      }
-
-      if (!projectData) {
-        throw new Error("Project not found or you don't have access");
-      }
-
-      setProject(projectData);
-      setUserRole(detectedRole);
-      setTitle(typeof projectData.title === "string" ? projectData.title : "");
-      setDescription(typeof projectData.description === "string" ? projectData.description : "");
-      setImageUrl(typeof projectData.imageUrl === "string" ? projectData.imageUrl : "");
-      // Note: video_url not available in V2 API
-
-      // V2 API: POST /project/manager/tasks/list with {project_id} in body
-      // Manager endpoint returns all tasks including DRAFT status
-      if (projectData.states && projectData.states.length > 0) {
-        const projectStatePolicyId = projectData.states[0]?.projectNftPolicyId;
-        if (projectStatePolicyId) {
-          const tasksResponse = await authenticatedFetch(
-            `${GATEWAY_API_BASE}/project/manager/tasks/list`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ project_id: projectStatePolicyId }),
+        // If not owner, check if user is a manager via Andamioscan
+        if (detectedRole !== "owner") {
+          try {
+            const managingProjects = await getManagingProjects(alias);
+            const isManager = managingProjects.some(
+              (p) => p.project_id === projectId
+            );
+            if (isManager) {
+              detectedRole = "manager";
             }
-          );
-
-          if (tasksResponse.ok) {
-            const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
-            setTasks(tasksData ?? []);
+          } catch (scanErr) {
+            console.warn("Andamioscan check failed, continuing:", scanErr);
           }
         }
-      }
 
-      // Fetch on-chain data from Andamioscan
-      try {
-        const onChainProject = await getProject(projectId);
-        if (onChainProject) {
-          setOnChainTaskCount(onChainProject.tasks?.length ?? 0);
-          setOnChainContributorCount(onChainProject.contributors?.length ?? 0);
+        setUserRole(detectedRole);
+
+        // Fetch on-chain data from Andamioscan
+        try {
+          const onChainProject = await getProject(projectId);
+          if (onChainProject) {
+            setOnChainTaskCount(onChainProject.tasks?.length ?? 0);
+            setOnChainContributorCount(onChainProject.contributors?.length ?? 0);
+          }
+        } catch {
+          setOnChainTaskCount(0);
+          setOnChainContributorCount(0);
         }
-      } catch {
-        // If Andamioscan fails, just ignore - we'll show DB data only
-        setOnChainTaskCount(0);
-        setOnChainContributorCount(0);
+      } finally {
+        setIsOrchestrating(false);
       }
-    } catch (err) {
-      console.error("Error fetching project:", err);
-      setError(err instanceof Error ? err.message : "Failed to load project");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    void fetchProjectAndTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, projectId, user?.accessTokenAlias]);
+    void orchestrate();
+  }, [isProjectLoading, projectDetail, user?.accessTokenAlias, projectId]);
+
+  // Cache invalidation for onSuccess callbacks
+  const refreshData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    if (contributorStateId) {
+      await queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(contributorStateId) });
+    }
+  }, [queryClient, projectId, contributorStateId]);
 
   const handleSave = async () => {
-    if (!isAuthenticated || !project) {
+    if (!isAuthenticated || !projectDetail) {
       setSaveError("You must be authenticated to edit projects");
       return;
     }
 
-    setIsSaving(true);
     setSaveError(null);
 
     try {
-      // V2 API: POST /project/owner/project/update
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/owner/project/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_id: projectId,
-            title: title || undefined,
-            description: description || undefined,
-            image_url: imageUrl || undefined,
-            video_url: videoUrl || undefined,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to update project");
-      }
-
+      await updateProject.mutateAsync({
+        projectId,
+        data: {
+          title: title || undefined,
+          description: description || undefined,
+          imageUrl: imageUrl || undefined,
+          videoUrl: videoUrl || undefined,
+        },
+      });
       showSuccess();
     } catch (err) {
       console.error("Error saving project:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -245,16 +199,17 @@ export default function ProjectDashboardPage() {
   }
 
   // Loading state
-  if (isLoading) {
+  if (isProjectLoading || isTasksLoading || isOrchestrating) {
     return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
-  if (error || !project) {
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
+  if (errorMessage || !projectDetail) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href="/studio/project" label="Back to Projects" />
-        <AndamioErrorAlert error={error ?? "Project not found"} />
+        <AndamioErrorAlert error={errorMessage ?? "Project not found"} />
       </div>
     );
   }
@@ -263,7 +218,7 @@ export default function ProjectDashboardPage() {
   const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT").length;
   const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN").length;
 
-  const hasChanges = title !== (project.title ?? "");
+  const hasChanges = title !== projectDetail.title;
 
   return (
     <div className="space-y-6">
@@ -298,7 +253,7 @@ export default function ProjectDashboardPage() {
 
       <AndamioPageHeader
         title="Project Dashboard"
-        description={typeof project.title === "string" ? project.title : "Manage project details and tasks"}
+        description={projectDetail.title || "Manage project details and tasks"}
       />
 
       {/* Success/Error Messages */}
@@ -488,7 +443,7 @@ export default function ProjectDashboardPage() {
             projectNftPolicyId={projectId}
             onSuccess={() => {
               // Refresh project data
-              void fetchProjectAndTasks();
+              void refreshData();
             }}
           />
         </AndamioTabsContent>
@@ -499,7 +454,7 @@ export default function ProjectDashboardPage() {
             projectNftPolicyId={projectId}
             onSuccess={() => {
               // Refresh project data
-              void fetchProjectAndTasks();
+              void refreshData();
             }}
           />
         </AndamioTabsContent>
@@ -575,7 +530,7 @@ export default function ProjectDashboardPage() {
                 </AndamioButton>
                 <AndamioSaveButton
                   onClick={handleSave}
-                  isSaving={isSaving}
+                  isSaving={updateProject.isPending}
                   disabled={!hasChanges}
                 />
               </AndamioActionFooter>

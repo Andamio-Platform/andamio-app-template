@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -26,31 +26,27 @@ import {
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
-import { type ProjectV2Output } from "~/types/generated";
 import { toast } from "sonner";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
-
-interface ApiError {
-  message?: string;
-}
+import { useProject } from "~/hooks/api/project/use-project";
+import { useCreateTask } from "~/hooks/api/project/use-project-manager";
 
 /**
  * Create New Task Page
  *
- * API Endpoints (V2):
- * - GET /project/user/project/:project_id - Get project with states
- * - POST /project/manager/task/create - Create new task
+ * Uses React Query hooks:
+ * - useProject(projectId) - Project detail for contributorStateId
+ * - useCreateTask() - Create task mutation
  */
 export default function NewTaskPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.projectid as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
-  // Project state - need to fetch to get project_state_policy_id
-  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
-  const [isLoadingProject, setIsLoadingProject] = useState(true);
-  const [projectError, setProjectError] = useState<string | null>(null);
+  // React Query hooks
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectFetchError } = useProject(projectId);
+  const contributorStateId = projectDetail?.contributorStateId;
+  const createTask = useCreateTask();
 
   // Form state
   const [title, setTitle] = useState("");
@@ -66,44 +62,7 @@ export default function NewTaskPage() {
   };
 
   // Save state
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch project to get project_state_policy_id
-  useEffect(() => {
-    const fetchProject = async () => {
-      setIsLoadingProject(true);
-      setProjectError(null);
-
-      try {
-        // V2 API: GET /project/user/project/:project_id
-        const response = await fetch(
-          `${GATEWAY_API_BASE}/project/user/project/${projectId}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch project");
-        }
-
-        const projectData = (await response.json()) as ProjectV2Output;
-        const rawStatePolicyId = projectData.states?.[0]?.projectNftPolicyId;
-        const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
-
-        if (!statePolicyId) {
-          throw new Error("Project has no on-chain state yet. Please ensure the project is minted first.");
-        }
-
-        setProjectStatePolicyId(statePolicyId);
-      } catch (err) {
-        console.error("Error fetching project:", err);
-        setProjectError(err instanceof Error ? err.message : "Failed to load project");
-      } finally {
-        setIsLoadingProject(false);
-      }
-    };
-
-    void fetchProject();
-  }, [projectId]);
 
   // Calculate ADA from lovelace
   const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
@@ -119,7 +78,7 @@ export default function NewTaskPage() {
       setError("You must be authenticated to create tasks");
       return;
     }
-    if (!projectStatePolicyId) {
+    if (!contributorStateId) {
       setError("Project state not found. Please ensure the project is minted on-chain.");
       return;
     }
@@ -128,39 +87,17 @@ export default function NewTaskPage() {
       return;
     }
 
-    setIsSaving(true);
     setError(null);
 
     try {
-      // V2 API: POST /project/manager/task/create
-      // API v2.0.0+: uses lovelace_amount instead of lovelace
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/task/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_state_policy_id: projectStatePolicyId,
-            title: title.trim(),
-            content: content.trim() || undefined,
-            lovelace_amount: lovelace,
-            expiration_time: expirationTime,
-            content_json: contentJson,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Failed to create task";
-        try {
-          const errorData = JSON.parse(errorText) as ApiError;
-          errorMessage = errorData.message ?? errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
+      await createTask.mutateAsync({
+        projectStatePolicyId: contributorStateId,
+        title: title.trim(),
+        content: content.trim() || undefined,
+        lovelaceAmount: lovelace,
+        expirationTime,
+        contentJson,
+      });
 
       toast.success("Task Created!", {
         description: `"${title.trim()}" saved as draft.`,
@@ -172,8 +109,6 @@ export default function NewTaskPage() {
     } catch (err) {
       console.error("Error creating task:", err);
       setError(err instanceof Error ? err.message : "Failed to create task");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -199,12 +134,13 @@ export default function NewTaskPage() {
   }
 
   // Loading project state
-  if (isLoadingProject) {
+  if (isProjectLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
   // Project error state
-  if (projectError || !projectStatePolicyId) {
+  const projectError = projectFetchError instanceof Error ? projectFetchError.message : projectFetchError ? "Failed to load project" : null;
+  if (projectError || !contributorStateId) {
     return (
       <div className="space-y-6">
         <AndamioBackButton
@@ -329,7 +265,7 @@ export default function NewTaskPage() {
             <AndamioAddButton
               type="button"
               onClick={handleCreate}
-              isLoading={isSaving}
+              isLoading={createTask.isPending}
               disabled={!isValid}
               label="Create Task"
             />

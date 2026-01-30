@@ -1,6 +1,6 @@
 # Direct API Calls in UX Components - Audit Report
 
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-01-29
 
 ## Summary
 
@@ -8,17 +8,29 @@
 - **Page files**: 17 files with API calls
 - **Component files**: 6 files with API calls
 
-These API calls should be extracted to hooks in `src/hooks/api/` to maintain proper separation of concerns.
+**Migrated (Phase 3.10)**: 8 page files migrated to React Query hooks
+- ✅ `project/[projectid]/[taskhash]/page.tsx` (3 calls → hooks)
+- ✅ `project/[projectid]/contributor/page.tsx` (2 calls → hooks, 1 remaining orchestration)
+- ✅ `studio/project/page.tsx` (1 call → hook)
+- ✅ `studio/project/[projectid]/page.tsx` (3 calls → hooks)
+- ✅ `studio/project/[projectid]/draft-tasks/page.tsx` (3 calls → hooks)
+- ✅ `studio/project/[projectid]/draft-tasks/new/page.tsx` (2 calls → hooks)
+- ✅ `studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` (3 calls → hooks)
+- ✅ `studio/project/[projectid]/manage-treasury/page.tsx` (2 calls → hooks, batch-status/confirm-tx remain)
+
+**Remaining**: ~15 files with direct API calls (sitemap, teacher, module wizard, components)
 
 ---
 
 ## Page Files with Direct API Calls
 
-### 1. `/src/app/(app)/project/[projectid]/[taskhash]/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 58 | `fetch()` | `/api/gateway/api/v2/project/user/task/${taskHash}` |
-| 86, 352, 384 | `authenticatedFetch()` | `/api/gateway/api/v2/project/contributor/commitment/get` |
+### 1. `/src/app/(app)/project/[projectid]/[taskhash]/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useTask(taskHash)` | `fetch()` GET `/project/user/task/${taskHash}` |
+| `useProject(projectId)` | `getProject()` Andamioscan call for contributor_state_policy_id |
+| `useContributorCommitment(projectId, taskHash)` | `authenticatedFetch()` POST `/project/contributor/commitment/get` |
+| `queryClient.invalidateQueries()` | Manual refetch in onSuccess |
 
 ### 2. `/src/app/(app)/sitemap/page.tsx`
 | Line | Pattern | Endpoint |
@@ -28,17 +40,18 @@ These API calls should be extracted to hooks in `src/hooks/api/` to maintain pro
 | 329 | `authenticatedFetch()` | `/api/gateway/api/v2/course/owner/courses/list` |
 | 343 | `authenticatedFetch()` | `/api/gateway/api/v2/project/owner/projects/list` |
 
-### 3. `/src/app/(app)/studio/project/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 315 | `authenticatedFetch()` | `/api/gateway/api/v2/project/owner/project/register` |
+### 3. `/src/app/(app)/studio/project/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useRegisterProject()` | `authenticatedFetch()` POST `/project/owner/project/register` |
+| `registerProject.isPending` | Manual `isSubmitting` state |
 
-### 4. `/src/app/(app)/project/[projectid]/contributor/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 230 | `authenticatedFetch()` | `/api/gateway/api/v2/project/contributor/commitment/get` |
-| 334 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 361 | `fetch()` (POST) | `/api/gateway/api/v2/project/user/tasks/list` |
+### 4. `/src/app/(app)/project/[projectid]/contributor/page.tsx` 🔶 PARTIALLY MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useProjectTasks(contributorStateId)` | `fetch()` POST `/project/user/tasks/list` |
+| ~~`fetchDbCommitment`~~ | Still uses `authenticatedFetch()` POST `/project/contributor/commitment/get` (called conditionally with dynamic task hashes from Andamioscan orchestration) |
 
 ### 5. `/src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`
 | Line | Pattern | Endpoint |
@@ -47,40 +60,41 @@ These API calls should be extracted to hooks in `src/hooks/api/` to maintain pro
 | 180 | `authenticatedFetch()` | `/api/gateway/api/v2/course/teacher/assignment-commitments/list` |
 | 251 | `authenticatedFetch()` | `/api/gateway/api/v2/course/student/assignment-commitment/get` |
 
-### 6. `/src/app/(app)/studio/project/[projectid]/manage-treasury/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 113 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 131 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/tasks/list` |
-| 593 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/task/batch-status` |
-| 613 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/task/confirm-tx` |
+### 6. `/src/app/(app)/studio/project/[projectid]/manage-treasury/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useManagerTasks(contributorStateId)` | `authenticatedFetch()` POST `/project/manager/tasks/list` |
+| `queryClient.invalidateQueries()` | Manual `fetchData()` in onSuccess callbacks |
+| Note: Andamioscan orchestration + batch-status/confirm-tx calls remain as useEffect (transaction-specific) |
 
-### 7. `/src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 67 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 89 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/tasks/list` |
-| 138 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/task/delete` |
+### 7. `/src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useManagerTasks(contributorStateId)` | `authenticatedFetch()` POST `/project/manager/tasks/list` |
+| `useDeleteTask()` | `authenticatedFetch()` POST `/project/manager/task/delete` |
 
-### 8. `/src/app/(app)/studio/project/[projectid]/draft-tasks/new/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 79 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 136 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/task/create` |
+### 8. `/src/app/(app)/studio/project/[projectid]/draft-tasks/new/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useCreateTask()` | `authenticatedFetch()` POST `/project/manager/task/create` |
 
-### 9. `/src/app/(app)/studio/project/[projectid]/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 111 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 155 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/tasks/list` |
-| 207 | `authenticatedFetch()` | `/api/gateway/api/v2/project/owner/project/update` |
+### 9. `/src/app/(app)/studio/project/[projectid]/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useManagerTasks(contributorStateId)` | `authenticatedFetch()` POST `/project/manager/tasks/list` |
+| `useUpdateProject()` | `authenticatedFetch()` POST `/project/owner/project/update` |
+| `queryClient.invalidateQueries()` | Manual `fetchProjectAndTasks()` in onSuccess |
 
-### 10. `/src/app/(app)/studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 85 | `fetch()` | `/api/gateway/api/v2/project/user/project/${projectId}` |
-| 105 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/tasks/list` |
-| 175 | `authenticatedFetch()` | `/api/gateway/api/v2/project/manager/task/update` |
+### 10. `/src/app/(app)/studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
+| `useManagerTasks(contributorStateId)` | `authenticatedFetch()` POST `/project/manager/tasks/list` |
+| `useUpdateTask()` | `authenticatedFetch()` POST `/project/manager/task/update` |
 
 ### 11. `/src/app/(studio)/studio/course/[coursenft]/[modulecode]/page.tsx`
 - Module wizard page (needs verification)

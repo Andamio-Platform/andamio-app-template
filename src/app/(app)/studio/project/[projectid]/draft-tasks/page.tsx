@@ -26,132 +26,62 @@ import {
   AndamioErrorAlert,
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon } from "~/components/icons";
-import { type ProjectTaskV2Output } from "~/types/generated";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject } from "~/lib/andamioscan-events";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
-
-interface ApiError {
-  message?: string;
-}
+import { useProject } from "~/hooks/api/project/use-project";
+import { useManagerTasks, useDeleteTask } from "~/hooks/api/project/use-project-manager";
 
 /**
  * Draft Tasks List - View and manage draft tasks for a project
  *
- * API Endpoints (V2):
- * - GET /project/user/tasks/:project_state_policy_id - Get all tasks
- * - POST /project/manager/task/delete - Delete draft task
+ * Uses React Query hooks:
+ * - useProject(projectId) - Project detail for contributorStateId
+ * - useManagerTasks(contributorStateId) - All tasks including DRAFT
+ * - useDeleteTask() - Delete task mutation
  */
 export default function DraftTasksPage() {
   const params = useParams();
   const projectId = params.projectid as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
-  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
-  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
+  const contributorStateId = projectDetail?.contributorStateId;
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
+  const deleteTask = useDeleteTask();
+
   const [deletingTaskIndex, setDeletingTaskIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // On-chain status tracking
   const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
 
-  const fetchTasks = async () => {
-    setIsLoading(true);
-    setError(null);
+  // Orchestration: on-chain task count from Andamioscan
+  useEffect(() => {
+    if (isProjectLoading || !projectDetail) return;
 
-    try {
-      // V2 API: First get project to find project_state_policy_id
-      const projectResponse = await fetch(
-        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
-      );
-
-      if (!projectResponse.ok) {
-        throw new Error("Failed to fetch project");
-      }
-
-      const projectData = await projectResponse.json() as { states?: Array<{ projectNftPolicyId?: string }> };
-      const statePolicyId = projectData.states?.[0]?.projectNftPolicyId;
-
-      if (!statePolicyId) {
-        // No states yet - empty state
-        setProjectStatePolicyId(null);
-        setTasks([]);
-        return;
-      }
-
-      setProjectStatePolicyId(statePolicyId);
-
-      // V2 API: POST /project/manager/tasks/list with {project_id} in body
-      // Manager endpoint returns all tasks including DRAFT status
-      const tasksResponse = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/tasks/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: statePolicyId }),
-        }
-      );
-
-      if (!tasksResponse.ok) {
-        // 404 means no tasks yet
-        if (tasksResponse.status === 404) {
-          setTasks([]);
-          return;
-        }
-        throw new Error("Failed to fetch tasks");
-      }
-
-      const data = (await tasksResponse.json()) as ProjectTaskV2Output[];
-      setTasks(data ?? []);
-
-      // Fetch on-chain task count from Andamioscan
+    const fetchOnChainData = async () => {
       try {
         const projectDetails = await getProject(projectId);
         setOnChainTaskCount(projectDetails?.tasks?.length ?? 0);
       } catch {
-        // If Andamioscan fails, just ignore - we'll show DB count only
         setOnChainTaskCount(0);
       }
-    } catch (err) {
-      console.error("Error fetching tasks:", err);
-      setError(err instanceof Error ? err.message : "Failed to load tasks");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    void fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+    void fetchOnChainData();
+  }, [isProjectLoading, projectDetail, projectId]);
 
   const handleDeleteTask = async (taskIndex: number) => {
-    if (!isAuthenticated || !projectStatePolicyId) return;
+    if (!isAuthenticated || !contributorStateId) return;
 
     setDeletingTaskIndex(taskIndex);
 
     try {
-      // V2 API: POST /project/manager/task/delete
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/task/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_state_policy_id: projectStatePolicyId,
-            index: taskIndex,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to delete task");
-      }
-
-      // Refresh tasks list
-      await fetchTasks();
+      await deleteTask.mutateAsync({
+        projectStatePolicyId: contributorStateId,
+        index: taskIndex,
+      });
     } catch (err) {
       console.error("Error deleting task:", err);
       setError(err instanceof Error ? err.message : "Failed to delete task");
@@ -197,12 +127,13 @@ export default function DraftTasksPage() {
   }
 
   // Loading state
-  if (isLoading) {
+  if (isProjectLoading || isTasksLoading) {
     return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
-  if (error) {
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : error;
+  if (errorMessage) {
     return (
       <div className="space-y-6">
         <AndamioBackButton
@@ -210,7 +141,7 @@ export default function DraftTasksPage() {
           label="Back to Project"
         />
 
-        <AndamioErrorAlert error={error} />
+        <AndamioErrorAlert error={errorMessage} />
       </div>
     );
   }
@@ -282,15 +213,13 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {draftTasks.map((task, index) => {
-                  const taskHash = typeof task.taskHash === "string" ? task.taskHash : null;
                   const taskIndex = task.index ?? 0;
-                  const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
                   return (
-                    <AndamioTableRow key={taskHash ?? `draft-${taskIndex}-${index}`}>
+                    <AndamioTableRow key={task.taskHash || `draft-${taskIndex}-${index}`}>
                       <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
-                      <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                      <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount ?? 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant={getStatusVariant(task.taskStatus ?? "")}>{task.taskStatus}</AndamioBadge>
@@ -300,7 +229,7 @@ export default function DraftTasksPage() {
                           editHref={`/studio/project/${projectId}/draft-tasks/${taskIndex}`}
                           onDelete={() => handleDeleteTask(taskIndex)}
                           itemName="task"
-                          deleteDescription={`Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`}
+                          deleteDescription={`Are you sure you want to delete "${task.title || "Untitled Task"}"? This action cannot be undone.`}
                           isDeleting={deletingTaskIndex === taskIndex}
                         />
                       </AndamioTableCell>
@@ -331,28 +260,23 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {liveTasks.map((task) => {
-                  // NullableString types are generated as `object`, cast to unknown first for type check
-                  const rawHash = task.taskHash as unknown;
-                  const rawTitle = task.title as unknown;
-                  const taskHash = typeof rawHash === "string" ? rawHash : null;
                   const taskIndex = task.index ?? 0;
-                  const taskTitle = typeof rawTitle === "string" ? rawTitle : "Untitled Task";
                   return (
-                    <AndamioTableRow key={taskHash ?? taskIndex}>
+                    <AndamioTableRow key={task.taskHash || taskIndex}>
                       <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
                       <AndamioTableCell className="font-medium">
                         <Link
-                          href={`/project/${projectId}/${taskHash ?? ""}`}
+                          href={`/project/${projectId}/${task.taskHash}`}
                           className="hover:underline"
                         >
-                          {taskTitle}
+                          {task.title || "Untitled Task"}
                         </Link>
                       </AndamioTableCell>
                       <AndamioTableCell className="font-mono text-xs">
-                        {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                        {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
@@ -385,15 +309,13 @@ export default function DraftTasksPage() {
               </AndamioTableHeader>
               <AndamioTableBody>
                 {otherTasks.map((task) => {
-                  const taskHash = typeof task.taskHash === "string" ? task.taskHash : null;
                   const taskIndex = task.index ?? 0;
-                  const taskTitle = typeof task.title === "string" ? task.title : "Untitled Task";
                   return (
-                    <AndamioTableRow key={taskHash ?? taskIndex}>
+                    <AndamioTableRow key={task.taskHash || taskIndex}>
                       <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
-                      <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                      <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount ?? 0)}</AndamioBadge>
+                        <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant={getStatusVariant(task.taskStatus ?? "")}>{task.taskStatus}</AndamioBadge>

@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 28, 2026
+> **Last Updated**: January 30, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -15,12 +15,62 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
-| **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project ⬜ |
+| **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Remaining ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
+> **🔴 BUG: Teacher assignment history missing after acceptance**
+>
+> **Status**: GitHub issue filed — [andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23). Awaiting API team fix.
+>
+> **Summary**: After a teacher accepts assignment commitments at `/studio/course/{coursenft}/teacher`,
+> the accepted items disappear from the list. The `POST /course/teacher/assignment-commitments/list`
+> endpoint only returns pending commitments, not the full history (APPROVED/REJECTED).
+>
+> **Frontend impact**: None — the teacher dashboard UI already supports displaying ACCEPTED and DENIED
+> statuses (stats cards, filter dropdowns, badge variants). The API just needs to return them.
+>
+> **Follow-up**: Once the API team fixes the endpoint, verify that accepted/denied commitments
+> appear in the teacher dashboard with correct status badges.
+>
+> ---
+>
+> **🔴 BUG: `/course/user/modules/` endpoint returns empty for on-chain-only courses**
+>
+> **Status**: API team notified — awaiting fix. May need to share findings.
+>
+> **Summary**: Course at `/course/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4` shows
+> "No modules found" even though the course has on-chain modules.
+>
+> **Root Cause (Gateway inconsistency)**:
+> - `GET /api/v2/course/user/course/get/{id}` — returns module data in `modules[]` array (correct)
+> - `GET /api/v2/course/user/modules/{id}` — returns `{"data":[]}` (empty, incorrect)
+>
+> The dedicated modules endpoint doesn't include on-chain-only modules (courses with no DB module records).
+> The course detail endpoint merges them correctly.
+>
+> **Frontend impact**: `useCourseModules()` hook in `use-course-module.ts:496` calls the dedicated
+> modules endpoint. The page at `course/[coursenft]/page.tsx:51` uses this hook for its module list
+> and never falls back to `course.modules` from `useCourse()`.
+>
+> **Possible frontend workaround**: Fall back to `course.modules` when `useCourseModules` returns empty.
+> Defer until API team confirms whether they'll fix the endpoint.
+>
+> **Verified via curl**:
+> ```
+> # Returns modules embedded in course (correct)
+> GET /api/v2/course/user/course/get/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4
+> → modules: [{slt_hash: "", slts: ["I know who the pirate LeChuck is"], created_by: "Kenny"}]
+>
+> # Returns empty (incorrect)
+> GET /api/v2/course/user/modules/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4
+> → {"data":[]}
+> ```
+>
+> ---
+>
 > **🔴 BLOCKED: Sync Andamio API with Andamioscan Updates**
 >
 > Issue #68 (`course-module/get` endpoint returning 404) is blocked pending Gateway sync.
@@ -116,6 +166,17 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Recent Completions
 
+**January 29, 2026**:
+- ✅ **Phase 3.10**: Migrated all 7 studio project pages to React Query hooks
+  - `studio/project/page.tsx` — `useRegisterProject()` replaces direct `authenticatedFetch`
+  - `studio/project/[projectid]/page.tsx` — `useProject`, `useManagerTasks`, `useUpdateProject`
+  - `studio/project/[projectid]/draft-tasks/page.tsx` — `useProject`, `useManagerTasks`, `useDeleteTask`
+  - `studio/project/[projectid]/draft-tasks/new/page.tsx` — `useProject`, `useCreateTask`
+  - `studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` — `useProject`, `useManagerTasks`, `useUpdateTask`
+  - `studio/project/[projectid]/manage-treasury/page.tsx` — `useProject`, `useManagerTasks` + orchestration
+- ✅ Fixed mutation hook parameters (`useDeleteTask`, `useUpdateTask`, `useCreateTask`) to match actual API parameters (`project_state_policy_id` + `index`)
+- ✅ Cleaned up NullableString workarounds across all migrated pages
+
 **January 28, 2026**:
 - ✅ Completed full audit of all 11 course system hooks
 - ✅ Consolidated 4 content hooks → `use-course-content.ts` (useSLTs, useLesson, useAssignment, useIntroduction)
@@ -136,11 +197,13 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Current Blockers
 
-| Blocker | Status | Notes |
-|---------|--------|-------|
-| **Course UX Testing** | Pending | All course hooks refactored, needs manual testing before project migration |
-| **Project Hooks Migration** | Pending | 3 hooks need colocated types + create `use-project-content.ts` |
-| **Phase 3.10 Direct API Calls** | Pending | 50+ direct fetch calls in 23 files need extraction to hooks |
+| Blocker | Priority | Status | Notes |
+|---------|----------|--------|-------|
+| **Teacher commitments endpoint missing history** | 🔴 High | Waiting on API team | `POST /course/teacher/assignment-commitments/list` only returns pending items. Accepted/denied commitments disappear after assessment. Frontend UI is ready (stats, filters, badges all support ACCEPTED/DENIED). **GitHub**: [andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23) |
+| **Modules endpoint empty for on-chain courses** | 🔴 High | Waiting on API team | `/course/user/modules/` returns `[]` for courses with only on-chain modules; course detail endpoint has the data. May implement frontend fallback. |
+| **Course UX Testing** | 🟡 Medium | Pending | All course hooks refactored, needs manual testing before project migration |
+| **Project Hooks Migration** | 🟡 Medium | Pending | 3 hooks need colocated types + create `use-project-content.ts` |
+| **Phase 3.10 Direct API Calls** | 🟡 Medium | In Progress | 8 project page files migrated; ~15 remaining (sitemap, teacher, module wizard, components) |
 
 ---
 

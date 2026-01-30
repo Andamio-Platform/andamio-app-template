@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import {
   useAssignmentCommitment,
   useSubmitEvidence,
@@ -81,7 +81,7 @@ export function AssignmentCommitment({
   const [txError, setTxError] = useState<string | null>(null);
 
   // Watch for gateway confirmation after commit TX submission
-  const { status: commitTxStatus, isSuccess: commitTxConfirmed } = useTxWatcher(
+  const { status: commitTxStatus, isSuccess: commitTxConfirmed } = useTxStream(
     commitTx.result?.requiresDBUpdate ? commitTx.result.txHash : null,
     {
       onComplete: (status) => {
@@ -97,7 +97,7 @@ export function AssignmentCommitment({
   );
 
   // Watch for gateway confirmation after update TX submission
-  const { status: updateTxStatus, isSuccess: updateTxConfirmed } = useTxWatcher(
+  const { status: updateTxStatus, isSuccess: updateTxConfirmed } = useTxStream(
     updateTx.result?.requiresDBUpdate ? updateTx.result.txHash : null,
     {
       onComplete: (status) => {

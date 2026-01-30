@@ -56,8 +56,33 @@ All API calls go through a single Next.js proxy at `/api/gateway/`:
 - **Proxy Route**: `src/app/api/gateway/[...path]/route.ts`
 - **Gateway Client**: `src/lib/gateway.ts`
 - **Caching**: GET requests cached for 30 seconds server-side
+- **SSE Streaming Proxy**: `src/app/api/gateway-stream/[...path]/route.ts` — Dedicated proxy for Server-Sent Events (streams raw response body without JSON parsing)
 
 > **Note**: All API calls now use the unified gateway. The legacy DB API URL has been removed.
+
+### SSE Transaction Streaming
+
+The app supports **real-time transaction state updates** via Server-Sent Events (SSE) as an alternative to polling.
+
+**How it works**:
+1. After SUBMIT + REGISTER, open an SSE connection to `GET /api/v2/tx/stream/{tx_hash}`
+2. The server pushes `state`, `state_change`, and `complete` events in real-time
+3. Connection auto-closes on terminal states (`updated`, `failed`, `expired`)
+4. If SSE fails, falls back to polling `/api/v2/tx/status/{tx_hash}`
+
+**Architecture**:
+```
+Client → /api/gateway-stream/api/v2/tx/stream/{hash} → Gateway SSE endpoint
+         (Next.js proxy with X-API-Key, streams raw body)
+```
+
+**Key files**:
+- `src/hooks/tx/use-tx-stream.ts` — `useTxStream()` hook (drop-in replacement for `useTxWatcher`)
+- `src/types/tx-stream.ts` — SSE event types (`TxStateEvent`, `TxStateChangeEvent`, `TxCompleteEvent`)
+- `src/lib/tx-polling-fallback.ts` — `pollUntilTerminal()` fallback
+- `src/app/api/gateway-stream/[...path]/route.ts` — SSE proxy route
+
+**Why `fetch` instead of `EventSource`**: The SSE endpoint requires `X-API-Key` headers, which the native `EventSource` API does not support. The hook uses `fetch` with `ReadableStream` parsing instead.
 
 ### Type Safety
 **CRITICAL**: Always import types from the generated types at `~/types/generated`:
@@ -764,22 +789,29 @@ const data = (await response.json()) as YourOutputType;
 - `src/lib/andamio-gateway.ts` - Merged endpoints helper functions
 - `src/lib/andamioscan-events.ts` - Events API + raw on-chain data (projects, courses, user state)
 - `src/lib/type-helpers.ts` - NullableString handling utilities (`getString`, `getOptionalString`)
+- `src/lib/tx-polling-fallback.ts` - Polling fallback for SSE transaction streaming
 - `src/app/api/gateway/[...path]/route.ts` - Unified gateway proxy (single route for all API calls)
+- `src/app/api/gateway-stream/[...path]/route.ts` - SSE streaming proxy (raw body passthrough)
 
 **Generated Types**:
 - `src/types/generated/gateway.ts` - Auto-generated from OpenAPI spec
 - `src/types/generated/index.ts` - Strict type re-exports
 
 **API Hooks** (V2 Gateway):
-- `src/hooks/api/use-course.ts` - Course queries + mutations
-- `src/hooks/api/use-course-module.ts` - Module queries + mutations
-- `src/hooks/api/use-slt.ts` - SLT queries + mutations
-- `src/hooks/api/use-lesson.ts` - Lesson queries + mutations
-- `src/hooks/api/use-project.ts` - Project queries
-- `src/hooks/api/use-contributor-projects.ts` - Contributor project queries
-- `src/hooks/api/use-manager-projects.ts` - Manager project queries
-- `src/hooks/api/use-student-courses.ts` - Student course queries
-- `src/hooks/api/use-teacher-courses.ts` - Teacher course queries
+- `src/hooks/api/course/use-course.ts` - Course queries + mutations
+- `src/hooks/api/course/use-course-module.ts` - Module queries + mutations
+- `src/hooks/api/course/use-course-teacher.ts` - Teacher course + assignment queries
+- `src/hooks/api/course/use-assignment-commitment.ts` - Assignment commitment queries
+- `src/hooks/api/project/use-project.ts` - Project queries + task queries
+- `src/hooks/api/project/use-project-contributor.ts` - Contributor project queries + mutations
+- `src/hooks/api/project/use-project-manager.ts` - Manager project queries + mutations
+- `src/hooks/api/use-user.ts` - User mutations (access token alias)
+
+**Transaction Hooks**:
+- `src/hooks/tx/use-transaction.ts` - Full BUILD → SIGN → SUBMIT → REGISTER flow
+- `src/hooks/tx/use-tx-watcher.ts` - Polling-based TX state tracking (original)
+- `src/hooks/tx/use-tx-stream.ts` - SSE-based TX state tracking (real-time, with polling fallback)
+- `src/hooks/tx/use-event-confirmation.ts` - On-chain event confirmation via Andamioscan
 
 **Providers**:
 - `src/components/providers/auth-provider.tsx` - Auth context wrapper

@@ -9,7 +9,7 @@
  * - COURSE_STUDENT_ASSIGNMENT_COMMIT for committing to a new module
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -18,7 +18,7 @@ import React, { useState, useMemo } from "react";
 import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -34,7 +34,7 @@ import { SendIcon, EditIcon, ShieldIcon, TransactionIcon, LoadingIcon, SuccessIc
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useSubmitEvidence } from "~/hooks/api/course/use-assignment-commitment";
 
 export interface AssignmentUpdateProps {
   /**
@@ -101,12 +101,13 @@ export function AssignmentUpdate({
   evidence,
   onSuccess,
 }: AssignmentUpdateProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
+  const submitEvidence = useSubmitEvidence();
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -194,35 +195,15 @@ export function AssignmentUpdate({
       onSuccess: async (txResult) => {
         console.log("[AssignmentUpdate] TX submitted successfully!", txResult);
 
-        // Save evidence content to database
+        // Save evidence content to database via hook
         // The hash is on-chain, but the actual JSON content needs to be stored for teacher review
-        // Using /api/v2/course/student/commitment/submit as upsert endpoint
-        try {
-          const submitResponse = await authenticatedFetch(
-            `${GATEWAY_API_BASE}/course/student/commitment/submit`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                course_id: courseNftPolicyId,
-                slt_hash: sltHash, // Required - replaces course_module_code
-                evidence: evidence,
-                evidence_hash: hash,
-                pending_tx_hash: txResult.txHash,
-              }),
-            }
-          );
-
-          if (!submitResponse.ok) {
-            console.error("[AssignmentUpdate] Failed to save evidence to DB:", await submitResponse.text());
-            // Don't throw - TX succeeded, evidence save is secondary
-          } else {
-            console.log("[AssignmentUpdate] Evidence saved to database");
-          }
-        } catch (err) {
-          console.error("[AssignmentUpdate] Error saving evidence to DB:", err);
-          // Don't throw - TX succeeded, evidence save is secondary
-        }
+        submitEvidence.mutate({
+          courseId: courseNftPolicyId,
+          sltHash: sltHash ?? "",
+          evidence: evidence,
+          evidenceHash: hash,
+          pendingTxHash: txResult.txHash,
+        });
       },
       onError: (txError) => {
         console.error("[AssignmentUpdate] Error:", txError);

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { usePendingTxContext } from "~/components/pending-tx-watcher";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+// V1 PendingTxContext removed — provisioning system is unused and pending removal
 import type { ProvisioningStep, ProvisioningConfig, ProvisioningState } from "./types";
 
 export interface UseProvisioningStateConfig extends ProvisioningConfig {
@@ -49,7 +49,10 @@ export interface UseProvisioningStateReturn {
 export function useProvisioningState(
   config: UseProvisioningStateConfig | null
 ): UseProvisioningStateReturn {
-  const { pendingTransactions, addPendingTx, removePendingTx } = usePendingTxContext();
+  // Stubbed — V1 PendingTxContext has been removed
+  const pendingTransactions = useMemo<Array<{ id: string }>>(() => [], []);
+  const addPendingTx = useCallback((_tx: Record<string, unknown>) => { /* noop */ }, []);
+  const removePendingTx = useCallback((_id: string) => { /* noop */ }, []);
 
   const [state, setState] = useState<ProvisioningState | null>(null);
   const [currentStep, setCurrentStep] = useState<ProvisioningStep>("submitted");

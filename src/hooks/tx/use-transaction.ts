@@ -14,11 +14,11 @@
  *
  * ## Tracking Confirmation
  *
- * After execution, use `useTxWatcher(result?.txHash)` to poll for confirmation:
+ * After execution, use `useTxStream(result?.txHash)` for real-time confirmation:
  *
  * ```tsx
  * const { execute, result } = useTransaction();
- * const { status, isSuccess } = useTxWatcher(result?.txHash);
+ * const { status, isSuccess } = useTxStream(result?.txHash);
  *
  * // status.state will be: pending → confirmed → updated
  * ```
@@ -27,11 +27,11 @@
  *
  * ```tsx
  * import { useTransaction } from "~/hooks/tx/use-transaction";
- * import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+ * import { useTxStream } from "~/hooks/tx/use-tx-stream";
  *
  * function MintAccessToken() {
  *   const { execute, state, result, reset } = useTransaction();
- *   const { status, isSuccess } = useTxWatcher(result?.txHash);
+ *   const { status, isSuccess } = useTxStream(result?.txHash);
  *
  *   const handleMint = async () => {
  *     await execute({

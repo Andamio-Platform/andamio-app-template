@@ -5,17 +5,16 @@
  * Uses COURSE_TEACHER_MODULES_MANAGE transaction type with gateway auto-confirmation.
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
 
 import React from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
-import { courseModuleKeys } from "~/hooks/api/course/use-course-module";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -30,7 +29,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { DeleteIcon, ModuleIcon, AlertIcon, CloseIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface ModuleToBurn {
   /** Module code (for display) */
@@ -83,12 +81,12 @@ export function BurnModuleTokens({
   onSuccess,
   onError,
 }: BurnModuleTokensProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
-  const queryClient = useQueryClient();
+  const updateModuleStatus = useUpdateCourseModuleStatus();
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -120,40 +118,23 @@ export function BurnModuleTokens({
   /**
    * Update burned modules to DRAFT status in the database.
    * Called after the burn transaction is confirmed on-chain.
+   * Uses useUpdateCourseModuleStatus hook which auto-invalidates caches.
    */
   const revertModulesToDraft = async (modules: ModuleToBurn[]) => {
     const results = await Promise.allSettled(
-      modules.map(async (m) => {
-        const response = await authenticatedFetch(
-          `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              course_id: courseNftPolicyId,
-              course_module_code: m.moduleCode,
-              status: "DRAFT",
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to update ${m.moduleCode} to DRAFT`);
-        }
-
-        return m.moduleCode;
-      })
+      modules.map((m) =>
+        updateModuleStatus.mutateAsync({
+          courseId: courseNftPolicyId,
+          moduleCode: m.moduleCode,
+          status: "DRAFT",
+        })
+      )
     );
 
     const failed = results.filter((r) => r.status === "rejected");
     if (failed.length > 0) {
       console.warn("[BurnModuleTokens] Some modules failed to revert to DRAFT:", failed);
     }
-
-    // Invalidate React Query cache to trigger refetch
-    await queryClient.invalidateQueries({
-      queryKey: courseModuleKeys.list(courseNftPolicyId),
-    });
 
     return results;
   };

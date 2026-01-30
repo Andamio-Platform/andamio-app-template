@@ -205,6 +205,69 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 | `useContributorProjects()` | Hook | List contributed projects |
 | `useInvalidateContributorProjects()` | Hook | Cache invalidation helper |
 
+### use-assignment-commitment.ts
+
+**Owner of**: `AssignmentCommitment`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `AssignmentCommitment` | Type | Student assignment commitment |
+| `assignmentCommitmentKeys` | Object | Query key factory |
+| `useAssignmentCommitment(courseId, moduleCode)` | Hook | Get student's commitment for a module |
+
+---
+
+## User Hooks
+
+### use-user.ts
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `useUpdateAccessTokenAlias()` | Mutation | Update access token alias after minting |
+
+---
+
+## Transaction Hooks
+
+### use-transaction.ts
+
+Full BUILD → SIGN → SUBMIT → REGISTER lifecycle hook.
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `SimpleTransactionState` | Type | `"idle" \| "fetching" \| "signing" \| "submitting" \| "success" \| "error"` |
+| `useTransaction(txType)` | Hook | Execute full transaction flow |
+
+### use-tx-watcher.ts (Polling)
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `TxState` | Type | `"pending" \| "confirmed" \| "updated" \| "failed" \| "expired"` |
+| `TX_TYPE_MAP` | Object | Frontend → gateway tx_type mapping |
+| `registerTransaction()` | Function | POST to `/api/v2/tx/register` |
+| `useTxWatcher(txHash)` | Hook | Poll TX status every 15s until terminal |
+
+### use-tx-stream.ts (SSE — Preferred)
+
+Drop-in replacement for `useTxWatcher` using Server-Sent Events.
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `useTransactionStream()` | Hook | Low-level SSE connection with AbortController |
+| `useTxStream(txHash)` | Hook | High-level SSE tracking with polling fallback |
+
+**SSE Event Types** (from `~/types/tx-stream.ts`):
+- `TxStateEvent` — Initial state on connect
+- `TxStateChangeEvent` — State transition events
+- `TxCompleteEvent` — Terminal state reached
+- `TxStreamCallbacks` — Callback interface
+
+### use-event-confirmation.ts
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `useTaskSubmitConfirmation()` | Hook | On-chain event confirmation via Andamioscan |
+
 ---
 
 ## Query Key Reference
@@ -344,4 +407,4 @@ function TransactionComponent() {
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: January 30, 2026

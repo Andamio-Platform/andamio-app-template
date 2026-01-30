@@ -2,7 +2,7 @@
 
 The Andamio Gateway provides a TX State Machine that handles transaction lifecycle from submission through confirmation and database updates.
 
-> **Last Updated**: 2026-01-28
+> **Last Updated**: 2026-01-30
 > **Source**: Gateway API team REPL note on race condition fix
 
 ## Critical Understanding
@@ -37,19 +37,20 @@ Only these states are terminal (stop polling):
 |----------|--------|---------|
 | `/api/v2/tx/register` | POST | Register TX after wallet submit |
 | `/api/v2/tx/status/{tx_hash}` | GET | Poll individual TX status |
+| `/api/v2/tx/stream/{tx_hash}` | GET (SSE) | Real-time state updates via Server-Sent Events |
 | `/api/v2/tx/pending` | GET | Get all user's pending TXs |
 | `/api/v2/tx/types` | GET | List valid TX types |
 
 ## Full Transaction Flow
 
 ```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
-│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  POLL   │
-└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌──────────────┐
+│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │ STREAM/POLL  │
+└─────────┘    └─────────┘    └─────────┘    └──────────┘    └──────────────┘
      │              │              │              │              │
      │              │              │              │              ▼
-  POST to       wallet.        wallet.       POST to       GET status
-  /tx/*         signTx()      submitTx()    /tx/register   until "updated"
+  POST to       wallet.        wallet.       POST to       SSE stream (preferred)
+  /tx/*         signTx()      submitTx()    /tx/register   or poll until "updated"
 ```
 
 ### Step-by-Step
@@ -58,7 +59,8 @@ Only these states are terminal (stop polling):
 2. **SIGN**: User signs with wallet (`wallet.signTx(cbor, true)`)
 3. **SUBMIT**: Submit to blockchain (`wallet.submitTx(signed)`) → get txHash
 4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType
-5. **POLL**: GET `/api/v2/tx/status/:txHash` every 15 seconds until `updated`, `failed`, or `expired`
+5. **STREAM** (preferred): SSE via `GET /api/v2/tx/stream/:txHash` — real-time state pushes until terminal
+6. **POLL** (fallback): GET `/api/v2/tx/status/:txHash` every 15 seconds until `updated`, `failed`, or `expired`
 
 ## Gateway Backend Processing
 
@@ -96,7 +98,7 @@ Each TX type has a registered handler that knows how to update the DB:
 
 ## Frontend Implementation
 
-### useTxWatcher Hook
+### useTxWatcher Hook (Polling)
 
 The `useTxWatcher` hook in `src/hooks/tx/use-tx-watcher.ts` handles polling:
 
@@ -107,6 +109,25 @@ export const TERMINAL_STATES: TxState[] = ["updated", "failed", "expired"];
 // isSuccess only true when DB is updated
 isSuccess: status?.state === "updated",
 ```
+
+### useTxStream Hook (SSE — Preferred)
+
+The `useTxStream` hook in `src/hooks/tx/use-tx-stream.ts` is a drop-in replacement that uses SSE:
+
+```typescript
+// Same consumer API as useTxWatcher
+const { status, isSuccess, isFailed } = useTxStream(txHash);
+```
+
+**Advantages over polling**:
+- Near-instant state transitions (~0s vs 15s latency)
+- Single held connection instead of repeated HTTP requests
+- Automatic fallback to polling if SSE connection fails
+
+**SSE event types** (defined in `src/types/tx-stream.ts`):
+- `state` — Initial state snapshot on connect
+- `state_change` — Pushed on each state transition
+- `complete` — Terminal state reached, connection closes
 
 ### onComplete Callback
 
@@ -225,7 +246,11 @@ if (status.state === "updated") { ... }
 
 ## See Also
 
-- `~/hooks/tx/use-tx-watcher.ts` - TX status polling hook
+- `~/hooks/tx/use-tx-stream.ts` - SSE-based TX state tracking (preferred)
+- `~/hooks/tx/use-tx-watcher.ts` - Polling-based TX state tracking (fallback)
 - `~/hooks/tx/use-transaction.ts` - Transaction execution hook
+- `~/types/tx-stream.ts` - SSE event type definitions
+- `~/lib/tx-polling-fallback.ts` - Polling fallback utility
+- `~/app/api/gateway-stream/[...path]/route.ts` - SSE proxy route
 - `~/config/transaction-ui.ts` - TX types and endpoints
 - `~/config/transaction-schemas.ts` - Zod validation schemas

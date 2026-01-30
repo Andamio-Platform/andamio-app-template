@@ -192,7 +192,6 @@ export type {
   OrchestrationMergedCourseModuleItem,
   OrchestrationStudentCourseListItem,
   OrchestrationStudentAssignmentCommitmentItem,
-  OrchestrationTeacherAssignmentCommitmentItem,
   OrchestrationAssignmentCommitmentContent,
 
   // Project orchestration
@@ -230,7 +229,6 @@ export type {
   MergedHandlersStudentCoursesResponse,
   MergedHandlersStudentAssignmentCommitmentResponse,
   MergedHandlersStudentAssignmentCommitmentsResponse,
-  MergedHandlersTeacherAssignmentCommitmentsResponse,
   MergedHandlersGetStudentAssignmentCommitmentRequest,
 
   // Project merged handlers
@@ -249,38 +247,59 @@ export type {
 } from "./gateway";
 
 // =============================================================================
-// TX Client Types (re-exports for transaction building)
+// TX Client Types (short aliases for generated fully-qualified names)
 // =============================================================================
 
-export type {
-  // Course transactions
-  AtlasTxClientCreateCourseTxRequest,
-  AtlasTxClientManageModulesTxRequest,
-  AtlasTxClientMintModuleV2,
-  AtlasTxClientUpdateModuleV2,
-  AtlasTxClientCommitAssignmentTxRequest,
-  AtlasTxClientAssignmentActionTxRequest,
-  AtlasTxClientAssessAssignmentsTxRequest,
-  AtlasTxClientClaimCourseCredentialsTxRequest,
-
-  // Project transactions
-  AtlasTxClientCreateProjectTxRequest,
-  AtlasTxClientManageTasksTxRequest,
-  AtlasTxClientTaskData,
-  AtlasTxClientCommitTaskTxRequest,
-  AtlasTxClientTaskActionTxRequest,
-  AtlasTxClientTasksAssessV2TxRequest,
-  AtlasTxClientClaimProjectCredentialsTxRequest,
-  AtlasTxClientProjectOutcome,
-
-  // Global transactions
-  AtlasTxClientMintAccessTokenTxRequest,
-
-  // Response types
-  AtlasTxClientUnsignedTxResponse,
-  AtlasTxClientUnsignedTxResponseInitCourse,
-  AtlasTxClientUnsignedTxResponseInitProject,
+import type {
+  AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientManageModulesTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientMintModuleV2,
+  AndamioApiInternalInternalApiAtlasTxClientUpdateModuleV2,
+  AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientAssignmentActionTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientAssessAssignmentsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTaskData,
+  AndamioApiInternalInternalApiAtlasTxClientCommitTaskTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTasksAssessV2TxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentialsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientProjectOutcome,
+  AndamioApiInternalInternalApiAtlasTxClientMintAccessTokenTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponse,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitProject,
 } from "./gateway";
+
+// Course transactions
+export type AtlasTxClientCreateCourseTxRequest = AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest;
+export type AtlasTxClientManageModulesTxRequest = AndamioApiInternalInternalApiAtlasTxClientManageModulesTxRequest;
+export type AtlasTxClientMintModuleV2 = AndamioApiInternalInternalApiAtlasTxClientMintModuleV2;
+export type AtlasTxClientUpdateModuleV2 = AndamioApiInternalInternalApiAtlasTxClientUpdateModuleV2;
+export type AtlasTxClientCommitAssignmentTxRequest = AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest;
+export type AtlasTxClientAssignmentActionTxRequest = AndamioApiInternalInternalApiAtlasTxClientAssignmentActionTxRequest;
+export type AtlasTxClientAssessAssignmentsTxRequest = AndamioApiInternalInternalApiAtlasTxClientAssessAssignmentsTxRequest;
+export type AtlasTxClientClaimCourseCredentialsTxRequest = AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest;
+
+// Project transactions
+export type AtlasTxClientCreateProjectTxRequest = AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest;
+export type AtlasTxClientManageTasksTxRequest = AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest;
+export type AtlasTxClientTaskData = AndamioApiInternalInternalApiAtlasTxClientTaskData;
+export type AtlasTxClientCommitTaskTxRequest = AndamioApiInternalInternalApiAtlasTxClientCommitTaskTxRequest;
+export type AtlasTxClientTaskActionTxRequest = AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest;
+export type AtlasTxClientTasksAssessV2TxRequest = AndamioApiInternalInternalApiAtlasTxClientTasksAssessV2TxRequest;
+export type AtlasTxClientClaimProjectCredentialsTxRequest = AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentialsTxRequest;
+export type AtlasTxClientProjectOutcome = AndamioApiInternalInternalApiAtlasTxClientProjectOutcome;
+
+// Global transactions
+export type AtlasTxClientMintAccessTokenTxRequest = AndamioApiInternalInternalApiAtlasTxClientMintAccessTokenTxRequest;
+
+// Response types
+export type AtlasTxClientUnsignedTxResponse = AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponse;
+export type AtlasTxClientUnsignedTxResponseInitCourse = AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse;
+export type AtlasTxClientUnsignedTxResponseInitProject = AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitProject;
 
 // =============================================================================
 // Request Types (backward compatibility - custom definitions)

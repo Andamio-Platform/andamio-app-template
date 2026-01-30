@@ -10,7 +10,7 @@
  * import { useCourse, useProject } from "~/hooks";
  *
  * // Transaction hooks
- * import { useTransaction, useTxWatcher } from "~/hooks";
+ * import { useTransaction, useTxStream } from "~/hooks";
  *
  * // Auth hooks
  * import { useAndamioAuth } from "~/hooks";

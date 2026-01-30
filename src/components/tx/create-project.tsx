@@ -8,12 +8,12 @@
  *
  * 1. User enters title, managers, deposit, and prerequisites
  * 2. `useTransaction` builds, signs, submits, and registers TX
- * 3. `useTxWatcher` polls gateway for confirmation status
+ * 3. `useTxStream` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI shows success and calls onSuccess callback
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -22,7 +22,7 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
@@ -72,7 +72,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   const [projectId, setProjectId] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {

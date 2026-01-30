@@ -100,7 +100,7 @@ All course system hooks follow the colocated types pattern correctly:
 | `studio/project/[projectid]/page.tsx:111` | GET `/project/user/project/${projectId}` | Already exists: `useProject()` |
 | Multiple studio pages | GET `/project/user/project/${projectId}` | Use `useProject()` |
 
-**Status**: [x] Public pages complete, studio pages pending
+**Status**: [x] Complete (public pages + studio pages)
 
 #### Manager tasks list (4+ pages)
 
@@ -120,7 +120,7 @@ All course system hooks follow the colocated types pattern correctly:
 | `project/[projectid]/[taskhash]/page.tsx` | POST `/project/contributor/commitment/get` | ✅ `useContributorCommitment(projectId, taskHash)` |
 | `project/[projectid]/contributor/page.tsx:230` | POST `/project/contributor/commitment/get` | 🔶 Remains as `fetchDbCommitment` (called with dynamic task hashes from Andamioscan) |
 
-**Status**: [x] Task detail page done, contributor page partial (see note)
+**Status**: [x] Complete (task detail + contributor page reactive refactor)
 
 ### Priority 2: Medium
 
@@ -138,9 +138,9 @@ All course system hooks follow the colocated types pattern correctly:
 | Location | Endpoint | Action |
 |----------|----------|--------|
 | `components/studio/wizard/steps/step-review.tsx:139` | POST `/course/teacher/course-module/update` | Use `useUpdateCourseModule()` |
-| `components/tx/burn-module-tokens.tsx:125` | POST `/course/teacher/course-module/update` | Use `useUpdateCourseModule()` |
+| `components/tx/burn-module-tokens.tsx:125` | POST `/course/teacher/course-module/update` | ✅ `useUpdateCourseModuleStatus()` |
 
-**Status**: [ ] Not started
+**Status**: [x] burn-module-tokens.tsx migrated; step-review.tsx pending
 
 #### Project registration/update
 
@@ -165,9 +165,9 @@ All course system hooks follow the colocated types pattern correctly:
 
 | Location | Endpoint | New Hook |
 |----------|----------|----------|
-| `components/tx/mint-access-token-simple.tsx:184` | POST `/user/access-token-alias` | `useUpdateAccessTokenAlias()` |
+| `components/tx/mint-access-token-simple.tsx:184` | POST `/user/access-token-alias` | ✅ `useUpdateAccessTokenAlias()` |
 
-**Status**: [ ] Not started
+**Status**: [x] Complete — new `use-user.ts` hook file created
 
 #### Sitemap data
 
@@ -216,6 +216,27 @@ All course system hooks follow the colocated types pattern correctly:
 
 ## Completion Log
 
+### January 30, 2026
+
+- [x] SSE Transaction Streaming: Implemented `useTxStream()` as drop-in replacement for `useTxWatcher`
+  - `src/hooks/tx/use-tx-stream.ts` — SSE connection + high-level hook with polling fallback
+  - `src/types/tx-stream.ts` — Event types (`TxStateEvent`, `TxStateChangeEvent`, `TxCompleteEvent`)
+  - `src/lib/tx-polling-fallback.ts` — `pollUntilTerminal()` for SSE failure fallback
+  - `src/app/api/gateway-stream/[...path]/route.ts` — Dedicated SSE proxy (streams raw body)
+  - Uses `fetch` + `ReadableStream` (not `EventSource`) for `X-API-Key` header support
+- [x] Phase 3.10 (Component Extraction): Extracted all direct `authenticatedFetch` calls from 6 components into hooks
+  - `assignment-update.tsx` → `useSubmitEvidence()` (existing hook)
+  - `burn-module-tokens.tsx` → `useUpdateCourseModuleStatus()` (existing hook)
+  - `pending-reviews-summary.tsx` → `useTeacherCommitmentsQueries()` (new fan-out hook)
+  - `task-commit.tsx` → `useSubmitTaskEvidence()` (new mutation)
+  - `contributor/page.tsx` → `useContributorCommitment()` (reactive refactor replacing imperative `fetchDbCommitment`)
+  - `mint-access-token-simple.tsx` → `useUpdateAccessTokenAlias()` (new mutation)
+- [x] New hooks created:
+  - `useTeacherCommitmentsQueries()` in `use-course-teacher.ts` — `useQueries` fan-out for batch commitment fetching
+  - `useSubmitTaskEvidence()` in `use-project-contributor.ts` — mutation for task evidence submission
+  - `useUpdateAccessTokenAlias()` in `use-user.ts` (new file) — mutation for access token alias
+- [x] Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain with direct `authenticatedFetch` (deferred)
+
 ### January 29, 2026
 
 - [x] Phase 3.10: Migrated `project/[projectid]/[taskhash]/page.tsx` (4 direct calls → 3 hooks)
@@ -252,4 +273,4 @@ All course system hooks follow the colocated types pattern correctly:
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: January 30, 2026

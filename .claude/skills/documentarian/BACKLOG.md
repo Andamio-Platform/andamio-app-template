@@ -20,7 +20,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | ~~`transaction-auditor`~~ | ~~Verify transaction definitions match API endpoints and schemas~~ | ~~**Critical**~~ | **IMPLEMENTED** 2026-01-14. Skill created at `.claude/skills/transaction-auditor/SKILL.md`. Audits `packages/andamio-transactions` against Atlas TX API swagger. |
 | `project-workflow-guide` | Document project contributor/manager workflows with transaction flows | Medium | New project system has complex workflows; would help onboard contributors to projects |
 | `dashboard-builder` | Scaffold dashboard pages with stats grid, filters, and data tables | Medium | New dashboards (Manager, Contributor, Instructor) follow similar patterns with AndamioDashboardStat grids |
-| `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | High | 15 Event endpoints remain unimplemented. Would replace Koios polling with entity-specific confirmation. See GitHub issue #26 |
+| `andamioscan-event-integrator` | Guide integration of Andamioscan Event endpoints for transaction confirmation | Medium | **PARTIALLY ADDRESSED** 2026-01-30. SSE TX streaming (`useTxStream`) now handles real-time transaction confirmation via Gateway. 15 Andamioscan Event endpoints remain for entity-specific queries (not TX confirmation). See GitHub issue #26 |
 | ~~`api-migration-validator`~~ | ~~Validate T3 App endpoints match Go API swagger~~ | ~~**Critical**~~ | **PARTIALLY ADDRESSED** 2026-01-14. Project V2 migration done manually. A validator skill would still be valuable for future API version changes. |
 | `learner-journey-guide` | Document and guide student/learner workflows through courses | Medium | New credential claim feature added complexity. Would help document the full learner journey: enroll → commit assignment → teacher review → claim credential. Could include state diagrams and testing scenarios. |
 | `project-v2-guide` | Guide implementation of Project V2 API integrations | Medium | Project V2 API introduced new patterns (project_state_policy_id fetch, states array). Would help document: two-step API pattern, V2 type usage (ProjectV2Output), route parameter conventions. |
@@ -33,7 +33,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | ~~`nullable-type-validator`~~ | ~~Validate NullableString handling across components~~ | ~~Low~~ | **ADDRESSED** by `typescript-types-expert` skill (2026-01-24). Skill handles: NullableString auditing, getString() pattern enforcement, type guard validation, generated type imports. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-24 (Added typescript-types-expert and getting-started skills)
+**Updated**: 2026-01-30 (Marked andamioscan-event-integrator as partially addressed by SSE)
 
 ---
 
@@ -187,3 +187,6 @@ Items that have been addressed and can be archived.
 | Gateway Taxonomy Compliance documentation | 2026-01-21 | Updated STATUS.md (blocker resolved), CHANGELOG.md (new Fixed entry), CLAUDE.md (NullableString handling pattern + type-helpers.ts in Key Files). Created `src/lib/type-helpers.ts` with getString/getOptionalString utilities. |
 | Create `getting-started` skill | 2026-01-24 | New skill for interactive developer onboarding. Files: SKILL.md (conversation flow), skill-reference.md (all 11 skills), learning-paths.md (5 curated paths). Updated CLAUDE.md, SKILLS-AUDIT.md. |
 | Create `typescript-types-expert` skill | 2026-01-24 | New skill for type safety with 3 modes (audit, fix, design). Files: SKILL.md, type-architecture.md, generated-types.md, zod-schemas.md, anti-patterns.md, checklist.md, type-colocation.md, audit-rules.md. Updated all delegation tables. |
+| Document SSE TX streaming (4 new files) | 2026-01-30 | Updated: CLAUDE.md (Architecture + Key Files sections), CHANGELOG.md (3 new entries), tx-state-machine.md (SSE endpoint + useTxStream docs), HOOK-REFERENCE.md (TX hooks section + assignment commitment), PROGRESS.md (SSE completion log). |
+| Document Phase 3.10 component extraction | 2026-01-30 | CHANGELOG.md entry for 8 components extracted to hooks. PROGRESS.md already had detailed log. |
+| Update BACKLOG.md for SSE impact | 2026-01-30 | Marked `andamioscan-event-integrator` as partially addressed by SSE streaming. |

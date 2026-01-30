@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useContributorCommitment, type ContributorCommitment } from "~/hooks/api/project/use-project-contributor";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioBadge,
@@ -42,44 +43,12 @@ import type { JSONContent } from "@tiptap/core";
 import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { useTaskSubmitConfirmation } from "~/hooks/tx/use-event-confirmation";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // Helper to extract string from NullableString (API returns object type for nullable strings)
 function getString(value: string | object | undefined | null): string {
   if (typeof value === "string") return value;
   return "";
 }
-
-// DB Commitment status type
-type CommitmentV2Status =
-  | "DRAFT"
-  | "PENDING_TX_SUBMIT"
-  | "SUBMITTED"
-  | "PENDING_TX_ASSESS"
-  | "ACCEPTED"
-  | "REFUSED"
-  | "DENIED"
-  | "PENDING_TX_CLAIM"
-  | "REWARDED"
-  | "PENDING_TX_LEAVE"
-  | "ABANDONED";
-
-// DB Commitment output type (from /project/contributor/commitment/get)
-// Uses camelCase for app-level consistency
-type CommitmentV2Output = {
-  taskHash: string;
-  contributorAlias: string;
-  taskCommitmentStatus: CommitmentV2Status;
-  pendingTxHash?: string | null;
-  evidence?: JSONContent | null;
-  taskEvidenceHash?: string | null;
-  assessedBy?: string | null;
-  taskOutcome?: string | null;
-  commitTxHash?: string | null;
-  submitTxHash?: string | null;
-  assessTxHash?: string | null;
-  claimTxHash?: string | null;
-};
 
 // Contributor status from on-chain data
 type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_accepted" | "can_claim";
@@ -97,7 +66,7 @@ type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_ac
 function ContributorDashboardContent() {
   const params = useParams();
   const projectId = params.projectid as string;
-  const { user, authenticatedFetch } = useAndamioAuth();
+  const { user } = useAndamioAuth();
   const queryClient = useQueryClient();
 
   // React Query hooks replace manual project/tasks fetching
@@ -121,8 +90,17 @@ function ContributorDashboardContent() {
   // Pending task from contributor status API (has task details but no tx_hash)
   const [pendingTaskSubmission, setPendingTaskSubmission] = useState<AndamioscanTaskSubmission | null>(null);
 
-  // DB commitment record for the current task
-  const [dbCommitment, setDbCommitment] = useState<CommitmentV2Output | null>(null);
+  // DB commitment record for the current task (fetched reactively via hook)
+  const [dbCommitment, setDbCommitment] = useState<ContributorCommitment | null>(null);
+
+  // Task hash to look up commitment for (set by orchestration, triggers hook fetch)
+  const [lookupTaskHash, setLookupTaskHash] = useState<string | null>(null);
+
+  // Reactive commitment fetch via hook
+  const {
+    data: commitmentData,
+    isLoading: isCommitmentLoading,
+  } = useContributorCommitment(projectId, lookupTaskHash ?? undefined);
 
   // Last submitted task action tx hash (for confirmation checking)
   // This can come from either a new submission OR from DB commitment's pending_tx_hash
@@ -223,44 +201,6 @@ function ContributorDashboardContent() {
       taskEvidence.content[0]?.type === "paragraph" &&
       (!taskEvidence.content[0]?.content || taskEvidence.content[0]?.content.length === 0));
 
-  /**
-   * Fetch the full commitment record from DB API
-   * Returns the commitment with status, evidence, pending_tx_hash, etc.
-   */
-  const fetchDbCommitment = async (taskHash: string): Promise<CommitmentV2Output | null> => {
-    try {
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ task_hash: taskHash }),
-        }
-      );
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        console.warn("[Contributor] Failed to fetch commitment:", response.status);
-        return null;
-      }
-
-      const commitment = (await response.json()) as CommitmentV2Output;
-      console.log("[Contributor] Fetched DB commitment:", {
-        task_hash: commitment.taskHash,
-        commitment_status: commitment.taskCommitmentStatus,
-        pending_tx_hash: commitment.pendingTxHash,
-        hasEvidence: !!commitment.evidence,
-      });
-      return commitment;
-    } catch (err) {
-      console.error("[Contributor] Error fetching commitment:", err);
-      return null;
-    }
-  };
-
   // Orchestration trigger - increment to re-run Andamioscan + contributor status checks
   const [orchestrationTrigger, setOrchestrationTrigger] = useState(0);
   const [isOrchestrating, setIsOrchestrating] = useState(false);
@@ -334,74 +274,30 @@ function ContributorDashboardContent() {
             // Get the pending task submission data directly from contributor status
             const pendingTask = contributorData.tasks_submitted[0];
 
-            // Fetch full commitment record from DB FIRST to check actual status
-            let commitment: CommitmentV2Output | null = null;
+            // Set initial status to task_pending (may be overridden by commitment effect)
+            console.log("[Contributor] Status: task_pending");
+            setContributorStatus("task_pending");
+
             if (pendingTask) {
-              commitment = await fetchDbCommitment(pendingTask.task_id);
-            }
+              console.log("[Contributor] Pending task submission from contributor status:", {
+                task_id: pendingTask.task_id,
+                content: pendingTask.content,
+                lovelace_amount: pendingTask.lovelace_amount,
+              });
+              setPendingTaskSubmission(pendingTask);
 
-            // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
-            if (commitment?.taskCommitmentStatus === "ACCEPTED") {
-              console.log("[Contributor] Andamioscan shows pending, but DB shows ACCEPTED - using DB status");
-              console.log("[Contributor] Status: task_accepted (DB override)");
-              setContributorStatus("task_accepted");
-              setDbCommitment(commitment);
-              // DON'T pre-populate evidence - user needs fresh evidence for the NEW task
-              // Clear any existing evidence so they start fresh
-              setTaskEvidence(null);
+              // Trigger reactive commitment fetch via hook
+              setLookupTaskHash(pendingTask.task_id);
 
-              // Auto-select the first available (non-accepted) task
-              const acceptedTaskHash = commitment.taskHash;
-              const availableTasks = tasks.filter(t => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash);
-              if (availableTasks.length > 0) {
-                console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
-                setSelectedTask(availableTasks[0] ?? null);
-              }
-            } else {
-              // Normal pending flow
-              console.log("[Contributor] Status: task_pending");
-              setContributorStatus("task_pending");
-
-              if (pendingTask) {
-                console.log("[Contributor] Pending task submission from contributor status:", {
-                  task_id: pendingTask.task_id,
-                  content: pendingTask.content,
-                  lovelace_amount: pendingTask.lovelace_amount,
-                });
-                setPendingTaskSubmission(pendingTask);
-
-                if (commitment) {
-                  console.log("[Contributor] DB commitment found:", {
-                    commitment_status: commitment.taskCommitmentStatus,
-                    pending_tx_hash: commitment.pendingTxHash,
-                    hasEvidence: !!commitment.evidence,
-                  });
-                  setDbCommitment(commitment);
-
-                  // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
-                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                    console.log("[Contributor] Setting pendingActionTxHash from DB:", commitment.pendingTxHash);
-                    setPendingActionTxHash(commitment.pendingTxHash);
-                  }
-
-                  // Pre-populate evidence editor with saved evidence
-                  if (commitment.evidence) {
-                    setTaskEvidence(commitment.evidence);
-                  }
-                } else {
-                  console.log("[Contributor] No DB commitment found");
-                }
-
-                // Also try to find full submission in project details for tx_hash
-                if (onChainProjectDetails?.submissions) {
-                  const mySubmission = onChainProjectDetails.submissions.find(
-                    (s) => s.alias === alias &&
-                           s.task.task_id === pendingTask.task_id
-                  );
-                  if (mySubmission) {
-                    console.log("[Contributor] Found full submission with tx_hash:", mySubmission.tx_hash);
-                    setOnChainSubmission(mySubmission);
-                  }
+              // Also try to find full submission in project details for tx_hash
+              if (onChainProjectDetails?.submissions) {
+                const mySubmission = onChainProjectDetails.submissions.find(
+                  (s) => s.alias === alias &&
+                         s.task.task_id === pendingTask.task_id
+                );
+                if (mySubmission) {
+                  console.log("[Contributor] Found full submission with tx_hash:", mySubmission.tx_hash);
+                  setOnChainSubmission(mySubmission);
                 }
               }
             }
@@ -434,22 +330,8 @@ function ContributorDashboardContent() {
                 setContributorStatus("task_pending");
                 setOnChainSubmission(mySubmission);
 
-                // Fetch full commitment record from DB
-                const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-                if (commitment) {
-                  console.log("[Contributor] FALLBACK: DB commitment found:", {
-                    commitment_status: commitment.taskCommitmentStatus,
-                    pending_tx_hash: commitment.pendingTxHash,
-                  });
-                  setDbCommitment(commitment);
-                      if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                    setPendingActionTxHash(commitment.pendingTxHash);
-                  }
-                  if (commitment.evidence) {
-                    setTaskEvidence(commitment.evidence);
-                  }
-                } else {
-                }
+                // Trigger reactive commitment fetch via hook
+                setLookupTaskHash(mySubmission.task.task_id);
               } else {
                 setContributorStatus("enrolled");
               }
@@ -485,22 +367,8 @@ function ContributorDashboardContent() {
                 credentials: [],
               });
 
-              // Fetch full commitment record from DB
-              const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-              if (commitment) {
-                console.log("[Contributor] FALLBACK: DB commitment found:", {
-                  commitment_status: commitment.taskCommitmentStatus,
-                  pending_tx_hash: commitment.pendingTxHash,
-                });
-                setDbCommitment(commitment);
-                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                  setPendingActionTxHash(commitment.pendingTxHash);
-                }
-                if (commitment.evidence) {
-                  setTaskEvidence(commitment.evidence);
-                }
-              } else {
-              }
+              // Trigger reactive commitment fetch via hook
+              setLookupTaskHash(mySubmission.task.task_id);
             } else {
               setContributorStatus("not_enrolled");
             }
@@ -535,21 +403,8 @@ function ContributorDashboardContent() {
               credentials: [],
             });
 
-            // Fetch full commitment record from DB
-            const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-            if (commitment) {
-              console.log("[Contributor] FALLBACK after error: DB commitment found:", {
-                commitment_status: commitment.taskCommitmentStatus,
-                pending_tx_hash: commitment.pendingTxHash,
-              });
-              setDbCommitment(commitment);
-              if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                setPendingActionTxHash(commitment.pendingTxHash);
-              }
-              if (commitment.evidence) {
-                setTaskEvidence(commitment.evidence);
-              }
-            }
+            // Trigger reactive commitment fetch via hook
+            setLookupTaskHash(mySubmission.task.task_id);
           } else {
             setContributorStatus("not_enrolled");
           }
@@ -589,6 +444,54 @@ function ContributorDashboardContent() {
     void orchestrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger]);
+
+  // Commitment processing effect: reacts to hook data when lookupTaskHash triggers a fetch
+  useEffect(() => {
+    // Skip if commitment is still loading or no data yet
+    if (isCommitmentLoading || commitmentData === undefined) return;
+
+    if (commitmentData) {
+      console.log("[Contributor] Commitment data from hook:", {
+        taskHash: commitmentData.taskHash,
+        commitmentStatus: commitmentData.commitmentStatus,
+        pendingTxHash: commitmentData.pendingTxHash,
+        hasEvidence: !!commitmentData.evidence,
+      });
+      setDbCommitment(commitmentData);
+
+      // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
+      if (commitmentData.commitmentStatus === "ACCEPTED") {
+        console.log("[Contributor] DB shows ACCEPTED - overriding to task_accepted");
+        setContributorStatus("task_accepted");
+        // DON'T pre-populate evidence - user needs fresh evidence for the NEW task
+        setTaskEvidence(null);
+
+        // Auto-select the first available (non-accepted) task
+        const acceptedTaskHash = commitmentData.taskHash;
+        const availableTasks = tasks.filter(
+          (t) => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash,
+        );
+        if (availableTasks.length > 0) {
+          console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
+          setSelectedTask(availableTasks[0] ?? null);
+        }
+      } else {
+        // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
+        if (commitmentData.commitmentStatus === "PENDING_TX_SUBMIT" && commitmentData.pendingTxHash) {
+          console.log("[Contributor] Setting pendingActionTxHash from DB:", commitmentData.pendingTxHash);
+          setPendingActionTxHash(commitmentData.pendingTxHash);
+        }
+
+        // Pre-populate evidence editor with saved evidence
+        if (commitmentData.evidence) {
+          setTaskEvidence(commitmentData.evidence as JSONContent);
+        }
+      }
+    } else {
+      console.log("[Contributor] No DB commitment found for lookupTaskHash:", lookupTaskHash);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commitmentData, isCommitmentLoading]);
 
   // Loading state
   if (isProjectLoading || isTasksLoading || isOrchestrating) {
@@ -841,7 +744,7 @@ function ContributorDashboardContent() {
             </div>
 
             {/* Evidence Section - Read-only when PENDING_TX_SUBMIT, editable otherwise */}
-            {dbCommitment?.taskCommitmentStatus === "PENDING_TX_SUBMIT" ? (
+            {dbCommitment?.commitmentStatus === "PENDING_TX_SUBMIT" ? (
               // Read-only view when waiting for transaction confirmation
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -1012,7 +915,7 @@ function ContributorDashboardContent() {
             {liveTasks.map((task) => {
               // Check if this task is the one that was accepted
               const taskHashStr = getString(task.taskHash);
-              const isAcceptedTask = dbCommitment?.taskHash === taskHashStr && dbCommitment?.taskCommitmentStatus === "ACCEPTED";
+              const isAcceptedTask = dbCommitment?.taskHash === taskHashStr && dbCommitment?.commitmentStatus === "ACCEPTED";
               const isSelectable = !isAcceptedTask;
 
               // Diagnostic logging for task data

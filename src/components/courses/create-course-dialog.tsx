@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
@@ -45,7 +45,7 @@ import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-cours
  *
  * ## Flow
  * 1. User enters code + title, clicks "Mint Course NFT"
- * 2. TX builds, signs, submits → useTxWatcher polls for confirmation
+ * 2. TX builds, signs, submits → useTxStream polls for confirmation
  * 3. On confirmation → register course in DB → invalidate cache
  * 4. Close drawer → course appears in list → toast with "Open Course" action
  *
@@ -86,7 +86,7 @@ export function CreateCourseDialog() {
   const hasRegisteredRef = useRef(false);
 
   // Watch for TX confirmation
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {

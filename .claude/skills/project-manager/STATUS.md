@@ -15,28 +15,12 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
-| **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Remaining ⬜ |
+| **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
-> **🔴 BUG: Teacher assignment history missing after acceptance**
->
-> **Status**: GitHub issue filed — [andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23). Awaiting API team fix.
->
-> **Summary**: After a teacher accepts assignment commitments at `/studio/course/{coursenft}/teacher`,
-> the accepted items disappear from the list. The `POST /course/teacher/assignment-commitments/list`
-> endpoint only returns pending commitments, not the full history (APPROVED/REJECTED).
->
-> **Frontend impact**: None — the teacher dashboard UI already supports displaying ACCEPTED and DENIED
-> statuses (stats cards, filter dropdowns, badge variants). The API just needs to return them.
->
-> **Follow-up**: Once the API team fixes the endpoint, verify that accepted/denied commitments
-> appear in the teacher dashboard with correct status badges.
->
-> ---
->
 > **🔴 BUG: `/course/user/modules/` endpoint returns empty for on-chain-only courses**
 >
 > **Status**: API team notified — awaiting fix. May need to share findings.
@@ -166,6 +150,21 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Recent Completions
 
+**January 30, 2026**:
+- ✅ **Teacher Dashboard Blocker Resolved** ([andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23)): API now returns full commitment history. Added client-side filter in `PendingReviewsList` to show only `PENDING_APPROVAL` items in the pending assessments card.
+- ✅ **Phase 3.10 (Component Extraction)**: Extracted all direct `authenticatedFetch` calls from components into React Query hooks
+  - `assignment-update.tsx` → `useSubmitEvidence()` hook
+  - `burn-module-tokens.tsx` → `useUpdateCourseModuleStatus()` hook
+  - `pending-reviews-summary.tsx` → `useTeacherCommitmentsQueries()` (new fan-out hook)
+  - `task-commit.tsx` → `useSubmitTaskEvidence()` (new mutation hook)
+  - `contributor/page.tsx` → `useContributorCommitment()` (reactive refactor)
+  - `mint-access-token-simple.tsx` → `useUpdateAccessTokenAlias()` (new mutation hook)
+- ✅ New hooks created:
+  - `useTeacherCommitmentsQueries()` in `use-course-teacher.ts` — `useQueries` fan-out for batch commitment fetching
+  - `useSubmitTaskEvidence()` in `use-project-contributor.ts` — mutation for project task evidence submission
+  - `useUpdateAccessTokenAlias()` in `use-user.ts` (new file) — mutation for access token alias updates
+- ✅ Only `sitemap/page.tsx` and `pending-tx-list.tsx` still use direct `authenticatedFetch` (deferred, low priority)
+
 **January 29, 2026**:
 - ✅ **Phase 3.10**: Migrated all 7 studio project pages to React Query hooks
   - `studio/project/page.tsx` — `useRegisterProject()` replaces direct `authenticatedFetch`
@@ -199,11 +198,10 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
-| **Teacher commitments endpoint missing history** | 🔴 High | Waiting on API team | `POST /course/teacher/assignment-commitments/list` only returns pending items. Accepted/denied commitments disappear after assessment. Frontend UI is ready (stats, filters, badges all support ACCEPTED/DENIED). **GitHub**: [andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23) |
 | **Modules endpoint empty for on-chain courses** | 🔴 High | Waiting on API team | `/course/user/modules/` returns `[]` for courses with only on-chain modules; course detail endpoint has the data. May implement frontend fallback. |
 | **Course UX Testing** | 🟡 Medium | Pending | All course hooks refactored, needs manual testing before project migration |
 | **Project Hooks Migration** | 🟡 Medium | Pending | 3 hooks need colocated types + create `use-project-content.ts` |
-| **Phase 3.10 Direct API Calls** | 🟡 Medium | In Progress | 8 project page files migrated; ~15 remaining (sitemap, teacher, module wizard, components) |
+| **Phase 3.10 Direct API Calls** | ✅ Done | Complete | All component `authenticatedFetch` calls extracted to hooks. Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain (deferred). |
 
 ---
 

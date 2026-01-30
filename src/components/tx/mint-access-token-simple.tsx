@@ -8,7 +8,7 @@
  *
  * 1. User enters alias and clicks "Mint"
  * 2. `useTransaction` builds, signs, submits, and registers TX
- * 3. `useTxWatcher` polls gateway for confirmation status
+ * 3. `useTxStream` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI refreshes to show the new access token
  *
@@ -21,7 +21,7 @@
  * | Manual DB side effects | Gateway handles DB updates |
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -30,7 +30,7 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -47,7 +47,7 @@ import { AccessTokenIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/compone
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useUpdateAccessTokenAlias } from "~/hooks/api/use-user";
 import { setJustMintedFlag } from "~/components/dashboard/post-mint-auth-prompt";
 
 export interface MintAccessTokenSimpleProps {
@@ -74,8 +74,9 @@ function isValidAlias(alias: string): boolean {
  */
 export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps) {
   const { wallet, connected } = useWallet();
-  const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
+  const { user, isAuthenticated, refreshAuth } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const updateAlias = useUpdateAccessTokenAlias();
   const [alias, setAlias] = useState("");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
@@ -105,7 +106,7 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
 
   // Watch for gateway confirmation after TX submission (only for TXs that need DB updates)
   // Access Token Mint is pure on-chain, so we skip polling
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -186,29 +187,10 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
         // Optimistically update the alias in the database for immediate use
         // The gateway will also update it on confirmation, but this gives instant feedback
         try {
-          const response = await authenticatedFetch(
-            `${GATEWAY_API_BASE}/user/access-token-alias`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ access_token_alias: alias.trim() }),
-            }
-          );
-
-          if (response.ok) {
-            const data = (await response.json()) as {
-              success: boolean;
-              user: {
-                id: string;
-                cardanoBech32Addr: string | null;
-                accessTokenAlias: string | null;
-              };
-              jwt: string;
-            };
-            console.log("[MintAccessTokenSimple] Access token alias updated optimistically");
-
+          const result = await updateAlias.mutateAsync({ alias: alias.trim() });
+          if (result) {
             // Store the new JWT with updated alias
-            storeJWT(data.jwt);
+            storeJWT(result.jwt);
             refreshAuth();
           }
         } catch (dbError) {

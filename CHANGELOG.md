@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **SSE Transaction Streaming** (January 30, 2026): Real-time transaction state updates via Server-Sent Events
+  - New hook: `useTxStream()` — drop-in replacement for `useTxWatcher` using SSE instead of polling
+  - New hook: `useTransactionStream()` — low-level SSE connection management with AbortController
+  - New types: `TxStateEvent`, `TxStateChangeEvent`, `TxCompleteEvent`, `TxStreamCallbacks` in `src/types/tx-stream.ts`
+  - New SSE proxy route: `src/app/api/gateway-stream/[...path]/route.ts` — streams raw response body with proper SSE headers
+  - New polling fallback: `src/lib/tx-polling-fallback.ts` — `pollUntilTerminal()` auto-activates when SSE fails
+  - Uses `fetch` + `ReadableStream` (not `EventSource`) to support `X-API-Key` headers
+  - SSE endpoint: `GET /api/v2/tx/stream/{tx_hash}` — pushes `state`, `state_change`, `complete` events
+  - Near-instant state transitions (~0s latency vs 15s polling intervals)
+- **Project & Assignment Hooks** (January 29-30, 2026): New API hooks for project and course domains
+  - `useProject()`, `useProjects()`, `useTask()`, `useProjectTasks()` in `src/hooks/api/project/use-project.ts`
+  - `useContributorProjects()`, `useContributorCommitment()`, `useSubmitTaskEvidence()` in `src/hooks/api/project/use-project-contributor.ts`
+  - `useManagerProjects()`, `useManagerCommitments()` in `src/hooks/api/project/use-project-manager.ts`
+  - `useAssignmentCommitment()` in `src/hooks/api/course/use-assignment-commitment.ts`
+  - `useUpdateAccessTokenAlias()` in `src/hooks/api/use-user.ts`
+- **Phase 3.10 Component Extraction** (January 30, 2026): Extracted direct API calls from 8 components into hooks
+  - `assignment-update.tsx`, `burn-module-tokens.tsx`, `mint-access-token-simple.tsx`, `task-commit.tsx` — all refactored to use hooks
+  - `pending-reviews-list.tsx`, `pending-reviews-summary.tsx` — teacher views refactored
+  - 7 studio project pages migrated to React Query hooks
+  - Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain with direct `authenticatedFetch` (deferred)
 - **Type Transformation Pattern** (January 24, 2026): Created app-level types with snake_case → camelCase transforms
   - New file: `src/types/project.ts` with `Task`, `Project`, `TaskCommitment` types
   - Transform functions: `transformApiTask()`, `transformProjectDetail()`, `transformApiCommitment()`, etc.

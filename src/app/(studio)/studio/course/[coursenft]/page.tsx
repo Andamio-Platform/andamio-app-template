@@ -193,11 +193,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
 
   // Fetch pending assignment commitments for this course
-  const { data: allPendingCommitments = [] } = useTeacherAssignmentCommitments();
-  const pendingCommitmentsForCourse = useMemo(() =>
-    allPendingCommitments.filter((c) => c.courseId === courseNftPolicyId),
-    [allPendingCommitments, courseNftPolicyId]
-  );
+  const { data: pendingCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseNftPolicyId);
 
   // =============================================================================
   // Module Stats - All derived from hook data (useTeacherCourseModules)

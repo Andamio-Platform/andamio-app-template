@@ -1,0 +1,281 @@
+/**
+ * React Query hooks for Assignment Commitment API endpoints
+ *
+ * Provides cached access to student assignment commitments (merged on-chain + DB data)
+ * and a mutation for submitting evidence to the database.
+ *
+ * @example
+ * ```tsx
+ * function AssignmentProgress({ courseId, moduleCode, sltHash }) {
+ *   const { data: commitment, isLoading } = useAssignmentCommitment(courseId, moduleCode, sltHash);
+ *   const submitEvidence = useSubmitEvidence();
+ *
+ *   // commitment is null when no commitment exists (404)
+ *   if (!commitment) return <CreateCommitmentForm />;
+ *   return <CommitmentDisplay commitment={commitment} />;
+ * }
+ * ```
+ */
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import type { JSONContent } from "@tiptap/core";
+
+// =============================================================================
+// Query Keys
+// =============================================================================
+
+export const assignmentCommitmentKeys = {
+  all: ["assignment-commitment"] as const,
+  detail: (courseId: string, sltHash: string) =>
+    [...assignmentCommitmentKeys.all, "detail", courseId, sltHash] as const,
+};
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/**
+ * App-level AssignmentCommitment type with camelCase fields.
+ *
+ * Normalized from the V2 merged API response which may return
+ * flat or nested `content` structures.
+ */
+export interface AssignmentCommitment {
+  courseId: string;
+  moduleCode: string;
+  sltHash: string | null;
+  onChainStatus: string | null;
+  onChainContent: string | null; // Evidence hash from chain
+  networkStatus: string; // From commitment_status or inferred
+  networkEvidence: Record<string, unknown> | null; // From evidence field
+  networkEvidenceHash: string | null; // From assignment_evidence_hash
+  source: "merged" | "chain_only" | "db_only";
+}
+
+/** Raw API response shape from /course/student/assignment-commitment/get */
+interface CommitmentApiResponse {
+  data?: {
+    course_id?: string;
+    course_module_code?: string;
+    slt_hash?: string;
+    on_chain_status?: string;
+    on_chain_content?: string;
+    commitment_status?: string;
+    evidence?: Record<string, unknown>;
+    assignment_evidence_hash?: string;
+    // Legacy: some endpoints may still nest these in content
+    content?: {
+      commitment_status?: string;
+      evidence?: Record<string, unknown>;
+      assignment_evidence_hash?: string;
+    };
+    source?: "merged" | "chain_only" | "db_only";
+  };
+  warning?: string;
+}
+
+// =============================================================================
+// Transform Functions
+// =============================================================================
+
+/**
+ * Transform raw V2 merged API response to app-level AssignmentCommitment.
+ *
+ * Handles both flat structure and nested `content` structures from the API.
+ */
+export function transformAssignmentCommitment(
+  data: NonNullable<CommitmentApiResponse["data"]>,
+  fallbackCourseId: string,
+  fallbackModuleCode: string,
+): AssignmentCommitment {
+  // API may return flat structure OR nested content — check both
+  const evidence = data.evidence ?? data.content?.evidence;
+  const commitmentStatus =
+    data.commitment_status ?? data.content?.commitment_status;
+  const evidenceHash =
+    data.assignment_evidence_hash ?? data.content?.assignment_evidence_hash;
+  // Narrow source to valid union values
+  const source =
+    data.source === "chain_only" || data.source === "db_only"
+      ? data.source
+      : "merged";
+
+  return {
+    courseId: data.course_id ?? fallbackCourseId,
+    moduleCode: data.course_module_code ?? fallbackModuleCode,
+    sltHash: data.slt_hash ?? null,
+    onChainStatus: data.on_chain_status ?? null,
+    onChainContent: data.on_chain_content ?? null,
+    networkStatus:
+      commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL",
+    networkEvidence: evidence ?? null,
+    networkEvidenceHash: evidenceHash ?? data.on_chain_content ?? null,
+    source,
+  };
+}
+
+// =============================================================================
+// Hooks
+// =============================================================================
+
+/**
+ * Fetch the student's assignment commitment for a specific course + SLT.
+ *
+ * Returns merged on-chain + DB data. Returns `null` when no commitment exists (404).
+ *
+ * @param courseId - Course NFT policy ID
+ * @param moduleCode - Module code (passed in request body for DB enrichment)
+ * @param sltHash - SLT hash (64-char hex) — required for on-chain lookup
+ */
+export function useAssignmentCommitment(
+  courseId: string,
+  moduleCode: string,
+  sltHash: string | null,
+) {
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  return useQuery({
+    queryKey: assignmentCommitmentKeys.detail(courseId, sltHash ?? ""),
+    queryFn: async (): Promise<AssignmentCommitment | null> => {
+      const response = await authenticatedFetch(
+        `${GATEWAY_API_BASE}/course/student/assignment-commitment/get`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_id: courseId,
+            slt_hash: sltHash,
+            course_module_code: moduleCode,
+          }),
+        },
+      );
+
+      // 404 means no commitment (neither on-chain nor DB)
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Failed to fetch commitment:", response.status, errorBody);
+        throw new Error(`Failed to fetch commitment: ${response.status}`);
+      }
+
+      const apiResponse = (await response.json()) as CommitmentApiResponse;
+      console.log("[useAssignmentCommitment] API response:", apiResponse);
+
+      const data = apiResponse.data;
+      if (!data) {
+        return null;
+      }
+
+      return transformAssignmentCommitment(data, courseId, moduleCode);
+    },
+    enabled: isAuthenticated && !!courseId && !!sltHash,
+    staleTime: 30_000,
+  });
+}
+
+// =============================================================================
+// Mutations
+// =============================================================================
+
+/** Input for submitting evidence to the database */
+export interface SubmitEvidenceInput {
+  courseId: string;
+  sltHash: string;
+  evidence: JSONContent;
+  evidenceHash: string;
+  pendingTxHash: string;
+}
+
+/**
+ * Submit evidence content to the database after a successful TX.
+ *
+ * This is a fire-and-forget style mutation — the on-chain TX is the source of truth,
+ * so DB save errors are logged but don't throw.
+ *
+ * On success, invalidates the matching assignment commitment query.
+ */
+export function useSubmitEvidence() {
+  const { authenticatedFetch } = useAndamioAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: SubmitEvidenceInput): Promise<void> => {
+      const response = await authenticatedFetch(
+        `${GATEWAY_API_BASE}/course/student/commitment/submit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            course_id: input.courseId,
+            slt_hash: input.sltHash,
+            evidence: input.evidence,
+            evidence_hash: input.evidenceHash,
+            pending_tx_hash: input.pendingTxHash,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "[useSubmitEvidence] Failed to save evidence to DB:",
+          errorText,
+        );
+        // Don't throw — TX succeeded, evidence save is secondary
+        return;
+      }
+
+      console.log("[useSubmitEvidence] Evidence saved to database");
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate the commitment query so it refetches with new evidence
+      void queryClient.invalidateQueries({
+        queryKey: assignmentCommitmentKeys.detail(
+          variables.courseId,
+          variables.sltHash,
+        ),
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Invalidation
+// =============================================================================
+
+/**
+ * Returns a function to invalidate assignment commitment queries.
+ *
+ * Call with no args to invalidate all, or with courseId + sltHash for a specific one.
+ *
+ * @example
+ * ```tsx
+ * const invalidate = useInvalidateAssignmentCommitment();
+ *
+ * // Invalidate specific commitment
+ * await invalidate(courseId, sltHash);
+ *
+ * // Invalidate all
+ * await invalidate();
+ * ```
+ */
+export function useInvalidateAssignmentCommitment() {
+  const queryClient = useQueryClient();
+
+  return async (courseId?: string, sltHash?: string) => {
+    if (courseId && sltHash) {
+      await queryClient.invalidateQueries({
+        queryKey: assignmentCommitmentKeys.detail(courseId, sltHash),
+      });
+    } else {
+      await queryClient.invalidateQueries({
+        queryKey: assignmentCommitmentKeys.all,
+      });
+    }
+  };
+}

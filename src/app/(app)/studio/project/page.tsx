@@ -4,8 +4,8 @@ import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { env } from "~/env";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerProjects, type ManagerProject } from "~/hooks/api";
+import { useRegisterProject } from "~/hooks/api/project/use-project-owner";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioAlert,
@@ -48,7 +48,6 @@ import {
 import { CreateProject } from "~/components/tx";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Project list content - only rendered when authenticated
@@ -301,34 +300,20 @@ function RegisterProjectDrawer({
   projectId: string;
   onSuccess: () => void;
 }) {
-  const { authenticatedFetch } = useAndamioAuth();
+  const registerProject = useRegisterProject();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSubmitting = registerProject.isPending;
 
   const handleRegister = async () => {
     if (!title.trim()) return;
 
-    setIsSubmitting(true);
     try {
-      // V2 API: POST /project/owner/project/register
-      // Registers an existing on-chain project into the database with a title
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/owner/project/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_id: projectId,
-            title: title.trim(),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string };
-        throw new Error(errorData.message ?? "Failed to register project");
-      }
+      await registerProject.mutateAsync({
+        projectId,
+        title: title.trim(),
+      });
 
       toast.success("Project Registered!", {
         description: `"${title.trim()}" is now ready for configuration.`,
@@ -342,8 +327,6 @@ function RegisterProjectDrawer({
       toast.error("Registration Failed", {
         description: err instanceof Error ? err.message : "Failed to register project",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

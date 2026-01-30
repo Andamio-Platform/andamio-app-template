@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import {
@@ -26,12 +26,13 @@ import {
   AndamioCheckbox,
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
-import { type ProjectTaskV2Output } from "~/types/generated";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { toast } from "sonner";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useProject, projectKeys } from "~/hooks/api/project/use-project";
+import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * ListValue - Array of [asset_class, quantity] tuples
@@ -80,17 +81,16 @@ function hexToText(hex: string): string {
 export default function ManageTreasuryPage() {
   const params = useParams();
   const projectId = params.projectid as string;
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
+  const queryClient = useQueryClient();
 
-  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
+  const contributorStateId = projectDetail?.contributorStateId ?? null;
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId ?? undefined);
 
   // Selected tasks for publishing
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<Set<number>>(new Set());
-
-  // Contributor state ID (needed for transaction)
-  const [contributorStateId, setContributorStateId] = useState<string | null>(null);
 
   // Prerequisites from Andamioscan (needed for transaction)
   const [prerequisites, setPrerequisites] = useState<AndamioscanPrerequisite[]>([]);
@@ -98,68 +98,17 @@ export default function ManageTreasuryPage() {
   // On-chain tasks from Andamioscan (for removal)
   const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
   const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
+  const [isOrchestrating, setIsOrchestrating] = useState(false);
 
   // Derived: on-chain task count
   const onChainTaskCount = onChainTasks.length;
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    setError(null);
+  // Orchestration: Andamioscan data (prerequisites + on-chain tasks)
+  useEffect(() => {
+    if (isProjectLoading || !projectDetail) return;
 
-    try {
-      // V2 API: First get project to find project_state_policy_id
-      const projectResponse = await fetch(
-        `${GATEWAY_API_BASE}/project/user/project/${projectId}`
-      );
-
-      if (!projectResponse.ok) {
-        throw new Error("Failed to fetch project");
-      }
-
-      const projectData = await projectResponse.json() as { states?: Array<{ projectNftPolicyId?: string }> };
-      const projectStatePolicyId = projectData.states?.[0]?.projectNftPolicyId;
-
-      if (!projectStatePolicyId) {
-        setTasks([]);
-        return;
-      }
-
-      // V2 API: POST /project/manager/tasks/list with {project_id} in body
-      // Manager endpoint returns all tasks including DRAFT status
-      const tasksResponse = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/tasks/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: projectStatePolicyId }),
-        }
-      );
-
-      if (!tasksResponse.ok) {
-        // 404 means no tasks yet
-        if (tasksResponse.status === 404) {
-          setTasks([]);
-          return;
-        }
-        throw new Error("Failed to fetch tasks");
-      }
-
-      const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
-      console.log("[manage-treasury] Fetched DB tasks:", {
-        count: tasksData?.length ?? 0,
-        tasks: tasksData?.map((t) => ({
-          index: t.index,
-          title: t.title,
-          task_status: t.taskStatus,
-          task_hash: t.taskHash,
-        })),
-      });
-      setTasks(tasksData ?? []);
-
-      // The project_state_policy_id IS the contributor_state_id for the Atlas TX API
-      setContributorStateId(projectStatePolicyId);
-
-      // Fetch prerequisites and on-chain tasks from Andamioscan
+    const fetchAndamioscanData = async () => {
+      setIsOrchestrating(true);
       try {
         const projectDetails = await getProject(projectId);
         console.log("[manage-treasury] Fetched Andamioscan data:", {
@@ -170,32 +119,26 @@ export default function ManageTreasuryPage() {
             content: hexToText(t.content),
           })),
         });
-        if (projectDetails?.prerequisites) {
-          setPrerequisites(projectDetails.prerequisites);
-        } else {
-          setPrerequisites([]);
-        }
-        // Store full on-chain tasks for removal feature
+        setPrerequisites(projectDetails?.prerequisites ?? []);
         setOnChainTasks(projectDetails?.tasks ?? []);
       } catch {
-        // If Andamioscan fails, use empty prerequisites
         setPrerequisites([]);
         setOnChainTasks([]);
+      } finally {
+        setIsOrchestrating(false);
       }
+    };
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    void fetchAndamioscanData();
+  }, [isProjectLoading, projectDetail, projectId]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      void fetchData();
+  // Cache invalidation for onSuccess callbacks
+  const refreshData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    if (contributorStateId) {
+      await queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(contributorStateId) });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, projectId]);
+  }, [queryClient, projectId, contributorStateId]);
 
   const handleToggleTask = (taskIndex: number) => {
     setSelectedTaskIndices((prev) => {
@@ -256,16 +199,17 @@ export default function ManageTreasuryPage() {
   }
 
   // Loading state
-  if (isLoading) {
+  if (isProjectLoading || isTasksLoading || isOrchestrating) {
     return <AndamioPageLoading variant="detail" />;
   }
 
   // Error state
-  if (error) {
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
+  if (errorMessage) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
-        <AndamioErrorAlert error={error} />
+        <AndamioErrorAlert error={errorMessage} />
       </div>
     );
   }
@@ -282,14 +226,11 @@ export default function ManageTreasuryPage() {
   // expiration_posix must be in MILLISECONDS
   const tasksToAdd: ProjectData[] = selectedTasks.map((task) => {
     // Use task title/description as project_content (truncate to 140 chars)
-    const taskTitle = typeof task.title === "string" ? task.title : "";
-    const taskDescription = typeof task.description === "string" ? task.description : "";
-    const projectContent = (taskTitle || taskDescription || "Task").substring(0, 140);
+    const projectContent = (task.title || task.description || "Task").substring(0, 140);
 
     // Ensure expiration_posix is in milliseconds
     // If it's a small number (< year 2000 in ms), it might be in seconds
-    const expirationStr = typeof task.expirationTime === "string" ? task.expirationTime : "0";
-    let expirationMs = parseInt(expirationStr) || 0;
+    let expirationMs = parseInt(task.expirationTime ?? "0") || 0;
     if (expirationMs < 946684800000) {
       // If less than year 2000 in ms, assume it's in seconds
       expirationMs = expirationMs * 1000;
@@ -298,7 +239,7 @@ export default function ManageTreasuryPage() {
     const projectData: ProjectData = {
       project_content: projectContent,
       expiration_posix: expirationMs,
-      lovelace_amount: parseInt(task.lovelaceAmount ?? "5000000") || 5000000,
+      lovelace_amount: parseInt(task.lovelaceAmount) || 5000000,
       native_assets: [], // Empty for now - could add native tokens later
     };
 
@@ -405,19 +346,14 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {draftTasks.map((task) => {
-                    // NullableString types are generated as `object`, cast to unknown first for type check
-                    const rawTitle = task.title as unknown;
-                    const rawHash = task.taskHash as unknown;
                     const taskIndex = task.index ?? 0;
-                    const taskTitle = typeof rawTitle === "string" ? rawTitle : "";
-                    const taskHash = typeof rawHash === "string" ? rawHash : null;
                     const isSelected = selectedTaskIndices.has(taskIndex);
                     // Task is valid if it has a title (used as project_content)
-                    const isValid = taskTitle.length > 0 && taskTitle.length <= 140;
+                    const isValid = task.title.length > 0 && task.title.length <= 140;
 
                     return (
                       <AndamioTableRow
-                        key={taskHash ?? `draft-${taskIndex}`}
+                        key={task.taskHash || `draft-${taskIndex}`}
                         className={isSelected ? "bg-primary/5" : ""}
                       >
                         <AndamioTableCell>
@@ -433,7 +369,7 @@ export default function ManageTreasuryPage() {
                         </AndamioTableCell>
                         <AndamioTableCell>
                           <div>
-                            <AndamioText as="div" className="font-medium">{taskTitle || "Untitled Task"}</AndamioText>
+                            <AndamioText as="div" className="font-medium">{task.title || "Untitled Task"}</AndamioText>
                             {!isValid && (
                               <AndamioText variant="small" className="text-muted-foreground">
                                 Title required (max 140 chars) for on-chain content
@@ -442,10 +378,10 @@ export default function ManageTreasuryPage() {
                           </div>
                         </AndamioTableCell>
                         <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                          {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                         </AndamioTableCell>
                       </AndamioTableRow>
                     );
@@ -486,7 +422,7 @@ export default function ManageTreasuryPage() {
                     // Just clear selections and refresh data
                     setSelectedTaskIndices(new Set());
                     setSelectedOnChainTaskIds(new Set());
-                    await fetchData();
+                    await refreshData();
                   }}
                 />
               </>
@@ -595,7 +531,7 @@ export default function ManageTreasuryPage() {
                     // No computed hashes for removal - just refresh
                     toast.success("Tasks removed successfully!");
                     setSelectedOnChainTaskIds(new Set());
-                    await fetchData();
+                    await refreshData();
                   }}
                 />
               </>
@@ -630,23 +566,18 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {liveTasks.map((task) => {
-                    // NullableString types are generated as `object`, cast to unknown first for type check
-                    const rawTitle = task.title as unknown;
-                    const rawHash = task.taskHash as unknown;
                     const taskIndex = task.index ?? 0;
-                    const taskTitle = typeof rawTitle === "string" ? rawTitle : "Untitled Task";
-                    const taskHash = typeof rawHash === "string" ? rawHash : null;
                     return (
-                      <AndamioTableRow key={taskHash ?? taskIndex}>
+                      <AndamioTableRow key={task.taskHash || taskIndex}>
                         <AndamioTableCell className="font-mono text-xs">
                           {taskIndex}
                         </AndamioTableCell>
-                        <AndamioTableCell className="font-medium">{taskTitle}</AndamioTableCell>
+                        <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                         <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                          {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(parseInt(task.lovelaceAmount ?? "0") || 0)}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
                           <AndamioBadge variant="default" className="bg-primary text-primary-foreground">

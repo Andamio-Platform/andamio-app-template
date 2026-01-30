@@ -17,7 +17,7 @@ import { AssignmentCommitment } from "~/components/learner/assignment-commitment
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { getCourse } from "~/lib/andamioscan-events";
 import { useCourse, useCourseModule, useSLTs, useAssignment, type SLT } from "~/hooks/api";
-import { computeSltHashDefinite } from "@andamio/core/hashing";
+import { computeSltHash } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 
@@ -58,7 +58,7 @@ export default function LearnerAssignmentPage() {
       const sltTexts = [...slts]
         .sort((a, b) => (a.moduleIndex ?? 0) - (b.moduleIndex ?? 0))
         .map((slt) => slt.sltText ?? "");
-      return computeSltHashDefinite(sltTexts);
+      return computeSltHash(sltTexts);
     }
     return null;
   }, [slts]);

@@ -29,33 +29,37 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
-import { type ProjectTaskV2Output, type ProjectV2Output } from "~/types/generated";
 import type { JSONContent } from "@tiptap/core";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
-
-interface ApiError {
-  message?: string;
-}
+import { useProject } from "~/hooks/api/project/use-project";
+import { useManagerTasks, useUpdateTask } from "~/hooks/api/project/use-project-manager";
 
 /**
  * Edit Draft Task Page
  *
- * API Endpoints (V2):
- * - GET /project/user/project/:project_id - Get project with states
- * - GET /project/manager/tasks/:project_state_policy_id - Get all tasks (including DRAFT)
- * - POST /project/manager/task/update - Update draft task
+ * Uses React Query hooks:
+ * - useProject(projectId) - Project detail for contributorStateId
+ * - useManagerTasks(contributorStateId) - All tasks including DRAFT
+ * - useUpdateTask() - Update draft task mutation
  */
 export default function EditTaskPage() {
   const params = useParams();
   const projectId = params.projectid as string;
   const taskIndex = parseInt(params.taskindex as string);
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { isAuthenticated } = useAndamioAuth();
 
-  // Task state
-  const [task, setTask] = useState<ProjectTaskV2Output | null>(null);
-  const [projectStatePolicyId, setProjectStatePolicyId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // React Query hooks
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
+  const contributorStateId = projectDetail?.contributorStateId;
+  const { data: allTasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
+  const updateTask = useUpdateTask();
+
+  // Find the specific task by index
+  const taskData = allTasks.find((t) => t.index === taskIndex);
+  const loadError = !isProjectLoading && !isTasksLoading && allTasks.length > 0 && !taskData
+    ? "Task not found"
+    : taskData && taskData.taskStatus !== "DRAFT"
+      ? "Only DRAFT tasks can be edited"
+      : null;
 
   // Form state
   const [title, setTitle] = useState("");
@@ -65,84 +69,26 @@ export default function EditTaskPage() {
 
   // Content state for editor
   const [contentJson, setContentJson] = useState<JSONContent | null>(null);
+  const [formInitialized, setFormInitialized] = useState(false);
 
   const handleContentChange = (newContent: JSONContent) => {
     setContentJson(newContent);
   };
 
   // Save state
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { isSuccess: saveSuccess, showSuccess } = useSuccessNotification();
 
-  // Fetch task data
+  // Initialize form when task data loads
   useEffect(() => {
-    const fetchTask = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-
-      try {
-        // V2 API: Get project first to get project_state_policy_id
-        const projectResponse = await fetch(
-          `${GATEWAY_API_BASE}/project/user/project/${projectId}`
-        );
-
-        if (!projectResponse.ok) {
-          throw new Error("Failed to fetch project");
-        }
-
-        const project = (await projectResponse.json()) as ProjectV2Output;
-        const rawStatePolicyId = project.states?.[0]?.projectNftPolicyId;
-        const statePolicyId = typeof rawStatePolicyId === "string" ? rawStatePolicyId : null;
-
-        if (!statePolicyId) {
-          throw new Error("Project has no states");
-        }
-
-        setProjectStatePolicyId(statePolicyId);
-
-        // V2 API: POST /project/manager/tasks/list with {project_id} in body
-        // Manager endpoint returns all tasks including DRAFT status
-        const tasksResponse = await authenticatedFetch(
-          `${GATEWAY_API_BASE}/project/manager/tasks/list`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ project_id: statePolicyId }),
-          }
-        );
-
-        if (!tasksResponse.ok) {
-          throw new Error("Failed to fetch tasks");
-        }
-
-        const tasks = (await tasksResponse.json()) as ProjectTaskV2Output[];
-        const taskData = tasks.find((t) => t.index === taskIndex);
-
-        if (!taskData) {
-          throw new Error("Task not found");
-        }
-
-        if (taskData.taskStatus !== "DRAFT") {
-          throw new Error("Only DRAFT tasks can be edited");
-        }
-
-        setTask(taskData);
-        setTitle(taskData.title ?? "");
-        setContent(taskData.description ?? "");
-        setLovelace(taskData.lovelaceAmount ?? "");
-        setExpirationTime(taskData.expirationTime ?? "");
-        setContentJson((taskData.contentJson as JSONContent) ?? null);
-      } catch (err) {
-        console.error("Error fetching task:", err);
-        setLoadError(err instanceof Error ? err.message : "Failed to load task");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchTask();
-  }, [projectId, taskIndex, authenticatedFetch]);
+    if (!taskData || formInitialized) return;
+    setTitle(taskData.title ?? "");
+    setContent(taskData.description ?? "");
+    setLovelace(taskData.lovelaceAmount ?? "");
+    setExpirationTime(taskData.expirationTime ?? "");
+    setContentJson((taskData.contentJson as JSONContent) ?? null);
+    setFormInitialized(true);
+  }, [taskData, formInitialized]);
 
   // Calculate ADA from lovelace
   const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
@@ -154,45 +100,24 @@ export default function EditTaskPage() {
     expirationTime.trim().length > 0;
 
   const handleSave = async () => {
-    if (!isAuthenticated || !isValid || !projectStatePolicyId || !task) return;
+    if (!isAuthenticated || !isValid || !contributorStateId || !taskData) return;
 
-    setIsSaving(true);
     setSaveError(null);
 
     try {
-      // V2 API: POST /project/manager/task/update
-      // Use task.index from loaded task data, not URL param
-      // UpdateTaskRequest uses `lovelace_amount` not `lovelace`
-      const requestBody = {
-        project_state_policy_id: projectStatePolicyId,
-        index: task.index,
+      await updateTask.mutateAsync({
+        projectStatePolicyId: contributorStateId,
+        index: taskData.index ?? taskIndex,
         title: title.trim(),
         content: content.trim() || undefined,
-        lovelace_amount: lovelace,
-        expiration_time: expirationTime,
-        content_json: contentJson,
-      };
-
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/task/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to update task");
-      }
-
+        lovelaceAmount: lovelace,
+        expirationTime,
+        contentJson,
+      });
       showSuccess();
     } catch (err) {
       console.error("Error updating task:", err);
       setSaveError(err instanceof Error ? err.message : "Failed to update task");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -218,12 +143,13 @@ export default function EditTaskPage() {
   }
 
   // Loading state
-  if (isLoading) {
+  if (isProjectLoading || isTasksLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
-  if (loadError || !task) {
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : loadError;
+  if (errorMessage || !taskData) {
     return (
       <div className="space-y-6">
         <AndamioBackButton
@@ -231,7 +157,7 @@ export default function EditTaskPage() {
           label="Back to Tasks"
         />
 
-        <AndamioErrorAlert error={loadError ?? "Task not found"} />
+        <AndamioErrorAlert error={errorMessage ?? "Task not found"} />
       </div>
     );
   }
@@ -360,7 +286,7 @@ export default function EditTaskPage() {
             </Link>
             <AndamioSaveButton
               onClick={handleSave}
-              isSaving={isSaving}
+              isSaving={updateTask.isPending}
               disabled={!isValid}
             />
           </AndamioActionFooter>

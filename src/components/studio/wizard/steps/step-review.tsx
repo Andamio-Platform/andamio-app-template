@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   VerifiedIcon,
   NeutralIcon,
@@ -25,9 +24,8 @@ import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/anda
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
-import { courseModuleKeys, useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
+import { useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import type { WizardStepConfig } from "../types";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 interface StepReviewProps {
   config: WizardStepConfig;
@@ -49,8 +47,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     isSaving,
     draftSlts,
   } = useWizard();
-  const { authenticatedFetch, isAuthenticated } = useAndamioAuth();
-  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAndamioAuth();
   const updateModuleStatus = useUpdateCourseModuleStatus();
 
   const [isApproving, setIsApproving] = useState(false);
@@ -136,38 +133,13 @@ export function StepReview({ config, direction }: StepReviewProps) {
         .filter((text): text is string => typeof text === "string" && text.length > 0);
       const sltHash = computeSltHashDefinite(sortedSltTexts);
 
-      // Step 3: Use aggregate-update endpoint with status field to approve
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/course/teacher/course-module/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            course_module_code: moduleCode,
-            status: "APPROVED",
-            slt_hash: sltHash,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message ?? "Failed to approve module");
-      }
-
-      // Refetch all relevant queries to ensure fresh data is loaded
-      await Promise.all([
-        queryClient.refetchQueries({
-          queryKey: courseModuleKeys.list(courseNftPolicyId),
-        }),
-        queryClient.refetchQueries({
-          queryKey: courseModuleKeys.teacherList(courseNftPolicyId),
-        }),
-        queryClient.refetchQueries({
-          queryKey: courseModuleKeys.detail(courseNftPolicyId, moduleCode),
-        }),
-      ]);
+      // Step 3: Approve module via dedicated update-status endpoint
+      await updateModuleStatus.mutateAsync({
+        courseId: courseNftPolicyId,
+        moduleCode,
+        status: "APPROVED",
+        sltHash,
+      });
 
       setIsApproved(true);
       await refetchData();

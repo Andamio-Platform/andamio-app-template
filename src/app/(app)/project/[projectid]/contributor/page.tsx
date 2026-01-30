@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -30,7 +30,8 @@ import {
   SuccessIcon,
   PendingIcon,
 } from "~/components/icons";
-import { type ProjectV2Output, type ProjectTaskV2Output } from "~/types/generated";
+import { useProject, useProjectTasks, projectKeys, type Task } from "~/hooks/api/project/use-project";
+import { useQueryClient } from "@tanstack/react-query";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan-events";
@@ -97,17 +98,20 @@ function ContributorDashboardContent() {
   const params = useParams();
   const projectId = params.projectid as string;
   const { user, authenticatedFetch } = useAndamioAuth();
+  const queryClient = useQueryClient();
 
-  const [project, setProject] = useState<ProjectV2Output | null>(null);
-  const [tasks, setTasks] = useState<ProjectTaskV2Output[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks replace manual project/tasks fetching
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
+  const contributorStatePolicyId = projectDetail?.contributorStateId;
+  const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(
+    contributorStatePolicyId ?? undefined
+  );
 
   // On-chain contributor state
   const [contributorStatus, setContributorStatus] = useState<ContributorStatus>("not_enrolled");
   const [onChainContributor, setOnChainContributor] = useState<AndamioscanContributorStatus | null>(null);
-  const [contributorStateId, setContributorStateId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<ProjectTaskV2Output | null>(null);
+  const contributorStateId = contributorStatePolicyId ?? null;
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // On-chain tasks from Andamioscan (for task_id lookup)
   const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
@@ -138,7 +142,7 @@ function ContributorDashboardContent() {
    * Compute task hash from DB task data.
    * Uses the same algorithm as on-chain to reliably match DB tasks to on-chain tasks.
    */
-  const computeTaskHashFromDb = (dbTask: ProjectTaskV2Output): string => {
+  const computeTaskHashFromDb = (dbTask: Task): string => {
     const taskData: TaskData = {
       project_content: dbTask.title ?? "",
       expiration_time: parseInt(dbTask.expirationTime ?? "0") || 0,
@@ -152,7 +156,7 @@ function ContributorDashboardContent() {
    * Get the on-chain task_id for a selected task.
    * Uses computeTaskHash for reliable matching instead of lovelace/index fallbacks.
    */
-  const getOnChainTaskId = (dbTask: ProjectTaskV2Output | null): string => {
+  const getOnChainTaskId = (dbTask: Task | null): string => {
     if (!dbTask) return "";
 
     // If DB already has task_hash, use it
@@ -187,7 +191,7 @@ function ContributorDashboardContent() {
    * This is required by the Atlas TX API for task commits.
    * Uses computeTaskHash for reliable matching.
    */
-  const getOnChainContributorStatePolicyId = (dbTask: ProjectTaskV2Output | null): string => {
+  const getOnChainContributorStatePolicyId = (dbTask: Task | null): string => {
     if (!dbTask) return "";
 
     // Use existing task_hash or compute it
@@ -257,80 +261,39 @@ function ContributorDashboardContent() {
     }
   };
 
-  const fetchData = async () => {
-    console.log("[Contributor] ========== FETCH DATA START ==========");
-    console.log("[Contributor] Fetching data for projectId:", projectId, "length:", projectId.length);
-    setIsLoading(true);
-    setError(null);
+  // Orchestration trigger - increment to re-run Andamioscan + contributor status checks
+  const [orchestrationTrigger, setOrchestrationTrigger] = useState(0);
+  const [isOrchestrating, setIsOrchestrating] = useState(false);
 
-    try {
-      // V2 API: GET /project/user/project/:project_id
-      const projectUrl = `${GATEWAY_API_BASE}/project/user/project/${projectId}`;
-      console.log("[Contributor] Fetching project from:", projectUrl);
-      const projectResponse = await fetch(projectUrl);
+  // Refresh all data: invalidate React Query caches + re-run orchestration
+  const refreshData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    if (contributorStatePolicyId) {
+      await queryClient.invalidateQueries({ queryKey: projectKeys.tasks(contributorStatePolicyId) });
+    }
+    setOrchestrationTrigger((prev) => prev + 1);
+  }, [queryClient, projectId, contributorStatePolicyId]);
 
-      if (!projectResponse.ok) {
-        console.error("[Contributor] Project fetch failed:", projectResponse.status);
-        throw new Error(`Project not found (${projectResponse.status})`);
+  // Auto-select first live task when tasks load
+  useEffect(() => {
+    if (tasks.length > 0 && !selectedTask) {
+      const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+      if (liveTasks.length > 0) {
+        setSelectedTask(liveTasks[0] ?? null);
       }
+    }
+  }, [tasks, selectedTask]);
 
-      const projectData = (await projectResponse.json()) as ProjectV2Output;
-      console.log("[Contributor] Project data received:", {
-        title: getString(projectData.title),
-        statesCount: projectData.states?.length,
-        states: projectData.states?.map(s => ({
-          project_state_policy_id: getString(s.projectNftPolicyId),
-          project_state_policy_id_length: getString(s.projectNftPolicyId).length,
-        })),
-      });
-      setProject(projectData);
+  // Orchestration effect: runs Andamioscan + contributor status checks
+  // Triggered when project/tasks data loads or after refreshData()
+  useEffect(() => {
+    if (isProjectLoading || isTasksLoading || !projectDetail) return;
+    const alias = user?.accessTokenAlias;
+    if (!alias) return;
 
-      // V2 API: POST /project/user/tasks/list with {project_id} in body
-      if (projectData.states && projectData.states.length > 0) {
-        const projectStatePolicyId = getString(projectData.states[0]?.projectNftPolicyId);
-        console.log("[Contributor] Project state policy ID:", projectStatePolicyId, "length:", projectStatePolicyId.length);
-        if (projectStatePolicyId) {
-          setContributorStateId(projectStatePolicyId);
-
-          const tasksUrl = `${GATEWAY_API_BASE}/project/user/tasks/list`;
-          console.log("[Contributor] Fetching tasks from:", tasksUrl);
-          const tasksResponse = await fetch(tasksUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ project_id: projectStatePolicyId }),
-          });
-
-          if (tasksResponse.ok) {
-            const tasksData = (await tasksResponse.json()) as ProjectTaskV2Output[];
-            console.log("[Contributor] Tasks received:", tasksData?.length, "tasks");
-            console.log("[Contributor] Tasks detail:", tasksData?.map(t => ({
-              index: t.index,
-              title: t.title,
-              task_hash: getString(t.taskHash),
-              task_hash_length: getString(t.taskHash).length,
-              task_status: t.taskStatus,
-              lovelace_amount: t.lovelaceAmount,
-            })));
-            setTasks(tasksData ?? []);
-            // Select first available task by default
-            const liveTasks = tasksData.filter((t) => t.taskStatus === "ON_CHAIN");
-            console.log("[Contributor] Live tasks (ON_CHAIN):", liveTasks.length);
-            if (liveTasks.length > 0 && !selectedTask) {
-              const firstTask = liveTasks[0];
-              console.log("[Contributor] Auto-selecting first task:", {
-                index: firstTask?.index,
-                task_hash: getString(firstTask?.taskHash),
-                task_hash_length: getString(firstTask?.taskHash).length,
-              });
-              setSelectedTask(firstTask ?? null);
-            }
-          } else {
-            console.error("[Contributor] Tasks fetch failed:", tasksResponse.status);
-          }
-        }
-      } else {
-        console.log("[Contributor] No project states found");
-      }
+    const orchestrate = async () => {
+      console.log("[Contributor] ========== ORCHESTRATION START ==========");
+      setIsOrchestrating(true);
 
       // Fetch on-chain project details from Andamioscan (for task_id lookup and submission data)
       let onChainProjectDetails = null;
@@ -339,12 +302,6 @@ function ContributorDashboardContent() {
         onChainProjectDetails = await getProject(projectId);
         if (onChainProjectDetails?.tasks) {
           console.log("[Contributor] On-chain tasks found:", onChainProjectDetails.tasks.length);
-          console.log("[Contributor] On-chain tasks:", onChainProjectDetails.tasks.map(t => ({
-            task_id: t.task_id,
-            task_id_length: t.task_id.length,
-            content: t.content.slice(0, 20) + "...",
-            lovelace_amount: t.lovelace_amount,
-          })));
           setOnChainTasks(onChainProjectDetails.tasks);
         }
         if (onChainProjectDetails?.submissions) {
@@ -355,179 +312,127 @@ function ContributorDashboardContent() {
         // Non-fatal - continue without on-chain data
       }
 
-      // Fetch on-chain contributor status and eligibility if user is authenticated
-      if (user?.accessTokenAlias) {
-        console.log("[Contributor] User authenticated, checking status. Alias:", user.accessTokenAlias);
-        setIsCheckingEligibility(true);
+      // Fetch on-chain contributor status
+      console.log("[Contributor] User authenticated, checking status. Alias:", alias);
+      setIsCheckingEligibility(true);
 
-        // Check contributor status from Andamioscan
-        try {
-          console.log("[Contributor] Fetching contributor status from Andamioscan...");
-          const contributorData = await getProjectContributorStatus(projectId, user.accessTokenAlias);
-          console.log("[Contributor] Contributor data from Andamioscan:", contributorData);
-          setOnChainContributor(contributorData);
+      // Check contributor status from Andamioscan
+      try {
+        console.log("[Contributor] Fetching contributor status from Andamioscan...");
+        const contributorData = await getProjectContributorStatus(projectId, alias);
+        console.log("[Contributor] Contributor data from Andamioscan:", contributorData);
+        setOnChainContributor(contributorData);
 
-          if (contributorData) {
-            console.log("[Contributor] On-chain contributor found:", {
-              pending_tasks: contributorData.pending_tasks.length,
-              completed_tasks: contributorData.completed_tasks.length,
-              credentials: contributorData.credentials.length,
-            });
-            // Determine status based on on-chain data
-            if (contributorData.pending_tasks.length > 0) {
-              // Get the pending task submission data directly from contributor status
-              const pendingTask = contributorData.tasks_submitted[0];
+        if (contributorData) {
+          console.log("[Contributor] On-chain contributor found:", {
+            pending_tasks: contributorData.pending_tasks.length,
+            completed_tasks: contributorData.completed_tasks.length,
+            credentials: contributorData.credentials.length,
+          });
+          // Determine status based on on-chain data
+          if (contributorData.pending_tasks.length > 0) {
+            // Get the pending task submission data directly from contributor status
+            const pendingTask = contributorData.tasks_submitted[0];
 
-              // Fetch full commitment record from DB FIRST to check actual status
-              let commitment: CommitmentV2Output | null = null;
-              if (pendingTask) {
-                commitment = await fetchDbCommitment(pendingTask.task_id);
-              }
+            // Fetch full commitment record from DB FIRST to check actual status
+            let commitment: CommitmentV2Output | null = null;
+            if (pendingTask) {
+              commitment = await fetchDbCommitment(pendingTask.task_id);
+            }
 
-              // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
-              if (commitment?.taskCommitmentStatus === "ACCEPTED") {
-                console.log("[Contributor] Andamioscan shows pending, but DB shows ACCEPTED - using DB status");
-                console.log("[Contributor] Status: task_accepted (DB override)");
-                setContributorStatus("task_accepted");
-                setDbCommitment(commitment);
-                // DON'T pre-populate evidence - user needs fresh evidence for the NEW task
-                // Clear any existing evidence so they start fresh
-                setTaskEvidence(null);
+            // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
+            if (commitment?.taskCommitmentStatus === "ACCEPTED") {
+              console.log("[Contributor] Andamioscan shows pending, but DB shows ACCEPTED - using DB status");
+              console.log("[Contributor] Status: task_accepted (DB override)");
+              setContributorStatus("task_accepted");
+              setDbCommitment(commitment);
+              // DON'T pre-populate evidence - user needs fresh evidence for the NEW task
+              // Clear any existing evidence so they start fresh
+              setTaskEvidence(null);
 
-                // Auto-select the first available (non-accepted) task
-                const acceptedTaskHash = commitment.taskHash;
-                const availableTasks = tasks.filter(t => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash);
-                if (availableTasks.length > 0) {
-                  console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
-                  setSelectedTask(availableTasks[0] ?? null);
-                }
-              } else {
-                // Normal pending flow
-                console.log("[Contributor] Status: task_pending");
-                setContributorStatus("task_pending");
-
-                if (pendingTask) {
-                  console.log("[Contributor] Pending task submission from contributor status:", {
-                    task_id: pendingTask.task_id,
-                    content: pendingTask.content,
-                    lovelace_amount: pendingTask.lovelace_amount,
-                  });
-                  setPendingTaskSubmission(pendingTask);
-
-                  if (commitment) {
-                    console.log("[Contributor] DB commitment found:", {
-                      commitment_status: commitment.taskCommitmentStatus,
-                      pending_tx_hash: commitment.pendingTxHash,
-                      hasEvidence: !!commitment.evidence,
-                    });
-                    setDbCommitment(commitment);
-    
-                    // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
-                    if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                      console.log("[Contributor] Setting pendingActionTxHash from DB:", commitment.pendingTxHash);
-                      setPendingActionTxHash(commitment.pendingTxHash);
-                    }
-
-                    // Pre-populate evidence editor with saved evidence
-                    if (commitment.evidence) {
-                      setTaskEvidence(commitment.evidence);
-                    }
-                  } else {
-                    console.log("[Contributor] No DB commitment found");
-                  }
-
-                  // Also try to find full submission in project details for tx_hash
-                  if (onChainProjectDetails?.submissions) {
-                    const mySubmission = onChainProjectDetails.submissions.find(
-                      (s) => s.alias === user.accessTokenAlias &&
-                             s.task.task_id === pendingTask.task_id
-                    );
-                    if (mySubmission) {
-                      console.log("[Contributor] Found full submission with tx_hash:", mySubmission.tx_hash);
-                      setOnChainSubmission(mySubmission);
-                    }
-                  }
-                }
-              }
-            } else if (contributorData.completed_tasks.length > 0) {
-              // Has completed tasks, can commit to new ones or claim credentials
-              if (contributorData.credentials.length > 0) {
-                console.log("[Contributor] Status: can_claim");
-                setContributorStatus("can_claim");
-              } else {
-                console.log("[Contributor] Status: task_accepted");
-                setContributorStatus("task_accepted");
+              // Auto-select the first available (non-accepted) task
+              const acceptedTaskHash = commitment.taskHash;
+              const availableTasks = tasks.filter(t => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash);
+              if (availableTasks.length > 0) {
+                console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
+                setSelectedTask(availableTasks[0] ?? null);
               }
             } else {
-              console.log("[Contributor] Status: enrolled (no pending/completed tasks from API)");
+              // Normal pending flow
+              console.log("[Contributor] Status: task_pending");
+              setContributorStatus("task_pending");
 
-              // FALLBACK: Check project submissions directly
-              // Sometimes the contributor status API doesn't return pending_submissions
-              // but the submission exists in project details
-              if (onChainProjectDetails?.submissions) {
-                const mySubmission = onChainProjectDetails.submissions.find(
-                  (s) => s.alias === user.accessTokenAlias
-                );
-                if (mySubmission) {
-                  console.log("[Contributor] FALLBACK: Found submission in project details:", {
-                    task_id: mySubmission.task.task_id,
-                    tx_hash: mySubmission.tx_hash,
-                    alias: mySubmission.alias,
+              if (pendingTask) {
+                console.log("[Contributor] Pending task submission from contributor status:", {
+                  task_id: pendingTask.task_id,
+                  content: pendingTask.content,
+                  lovelace_amount: pendingTask.lovelace_amount,
+                });
+                setPendingTaskSubmission(pendingTask);
+
+                if (commitment) {
+                  console.log("[Contributor] DB commitment found:", {
+                    commitment_status: commitment.taskCommitmentStatus,
+                    pending_tx_hash: commitment.pendingTxHash,
+                    hasEvidence: !!commitment.evidence,
                   });
-                  // Override status to task_pending
-                  setContributorStatus("task_pending");
-                  setOnChainSubmission(mySubmission);
+                  setDbCommitment(commitment);
 
-                  // Fetch full commitment record from DB
-                  const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-                  if (commitment) {
-                    console.log("[Contributor] FALLBACK: DB commitment found:", {
-                      commitment_status: commitment.taskCommitmentStatus,
-                      pending_tx_hash: commitment.pendingTxHash,
-                    });
-                    setDbCommitment(commitment);
-                        if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                      setPendingActionTxHash(commitment.pendingTxHash);
-                    }
-                    if (commitment.evidence) {
-                      setTaskEvidence(commitment.evidence);
-                    }
-                  } else {
+                  // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
+                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
+                    console.log("[Contributor] Setting pendingActionTxHash from DB:", commitment.pendingTxHash);
+                    setPendingActionTxHash(commitment.pendingTxHash);
+                  }
+
+                  // Pre-populate evidence editor with saved evidence
+                  if (commitment.evidence) {
+                    setTaskEvidence(commitment.evidence);
                   }
                 } else {
-                  setContributorStatus("enrolled");
+                  console.log("[Contributor] No DB commitment found");
                 }
-              } else {
-                setContributorStatus("enrolled");
+
+                // Also try to find full submission in project details for tx_hash
+                if (onChainProjectDetails?.submissions) {
+                  const mySubmission = onChainProjectDetails.submissions.find(
+                    (s) => s.alias === alias &&
+                           s.task.task_id === pendingTask.task_id
+                  );
+                  if (mySubmission) {
+                    console.log("[Contributor] Found full submission with tx_hash:", mySubmission.tx_hash);
+                    setOnChainSubmission(mySubmission);
+                  }
+                }
               }
             }
+          } else if (contributorData.completed_tasks.length > 0) {
+            // Has completed tasks, can commit to new ones or claim credentials
+            if (contributorData.credentials.length > 0) {
+              console.log("[Contributor] Status: can_claim");
+              setContributorStatus("can_claim");
+            } else {
+              console.log("[Contributor] Status: task_accepted");
+              setContributorStatus("task_accepted");
+            }
           } else {
-            console.log("[Contributor] Status: not_enrolled (no contributor data)");
+            console.log("[Contributor] Status: enrolled (no pending/completed tasks from API)");
 
-            // FALLBACK: Even if contributor status returns null, check project submissions
-            // This handles the case where the user has a submission but isn't in contributors list yet
+            // FALLBACK: Check project submissions directly
+            // Sometimes the contributor status API doesn't return pending_submissions
+            // but the submission exists in project details
             if (onChainProjectDetails?.submissions) {
               const mySubmission = onChainProjectDetails.submissions.find(
-                (s) => s.alias === user.accessTokenAlias
+                (s) => s.alias === alias
               );
               if (mySubmission) {
-                console.log("[Contributor] FALLBACK: Not in contributors list but found submission:", {
+                console.log("[Contributor] FALLBACK: Found submission in project details:", {
                   task_id: mySubmission.task.task_id,
                   tx_hash: mySubmission.tx_hash,
                   alias: mySubmission.alias,
                 });
+                // Override status to task_pending
                 setContributorStatus("task_pending");
                 setOnChainSubmission(mySubmission);
-                setOnChainContributor({
-                  alias: user.accessTokenAlias,
-                  project_id: projectId,
-                  joined_at: 0,
-                  completed_tasks: [],
-                  pending_tasks: [mySubmission.task.task_id],
-                  tasks_submitted: [],
-                  tasks_accepted: [],
-                  credentials: [],
-                });
 
                 // Fetch full commitment record from DB
                 const commitment = await fetchDbCommitment(mySubmission.task.task_id);
@@ -537,7 +442,7 @@ function ContributorDashboardContent() {
                     pending_tx_hash: commitment.pendingTxHash,
                   });
                   setDbCommitment(commitment);
-                    if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
+                      if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
                     setPendingActionTxHash(commitment.pendingTxHash);
                   }
                   if (commitment.evidence) {
@@ -546,30 +451,31 @@ function ContributorDashboardContent() {
                 } else {
                 }
               } else {
-                setContributorStatus("not_enrolled");
+                setContributorStatus("enrolled");
               }
             } else {
-              setContributorStatus("not_enrolled");
+              setContributorStatus("enrolled");
             }
           }
-        } catch (contributorError) {
-          // User not a contributor yet - but still check project submissions
-          console.log("[Contributor] Contributor status fetch error:", contributorError);
+        } else {
+          console.log("[Contributor] Status: not_enrolled (no contributor data)");
 
-          // FALLBACK: Check project submissions even on error
+          // FALLBACK: Even if contributor status returns null, check project submissions
+          // This handles the case where the user has a submission but isn't in contributors list yet
           if (onChainProjectDetails?.submissions) {
             const mySubmission = onChainProjectDetails.submissions.find(
-              (s) => s.alias === user?.accessTokenAlias
+              (s) => s.alias === alias
             );
             if (mySubmission) {
-              console.log("[Contributor] FALLBACK after error: Found submission:", {
+              console.log("[Contributor] FALLBACK: Not in contributors list but found submission:", {
                 task_id: mySubmission.task.task_id,
                 tx_hash: mySubmission.tx_hash,
+                alias: mySubmission.alias,
               });
               setContributorStatus("task_pending");
               setOnChainSubmission(mySubmission);
               setOnChainContributor({
-                alias: user?.accessTokenAlias ?? "",
+                alias,
                 project_id: projectId,
                 joined_at: 0,
                 completed_tasks: [],
@@ -582,17 +488,18 @@ function ContributorDashboardContent() {
               // Fetch full commitment record from DB
               const commitment = await fetchDbCommitment(mySubmission.task.task_id);
               if (commitment) {
-                console.log("[Contributor] FALLBACK after error: DB commitment found:", {
+                console.log("[Contributor] FALLBACK: DB commitment found:", {
                   commitment_status: commitment.taskCommitmentStatus,
                   pending_tx_hash: commitment.pendingTxHash,
                 });
                 setDbCommitment(commitment);
-                if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
+                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
                   setPendingActionTxHash(commitment.pendingTxHash);
                 }
                 if (commitment.evidence) {
                   setTaskEvidence(commitment.evidence);
                 }
+              } else {
               }
             } else {
               setContributorStatus("not_enrolled");
@@ -601,60 +508,100 @@ function ContributorDashboardContent() {
             setContributorStatus("not_enrolled");
           }
         }
+      } catch (contributorError) {
+        // User not a contributor yet - but still check project submissions
+        console.log("[Contributor] Contributor status fetch error:", contributorError);
 
-        // Check prerequisites eligibility
-        try {
-          console.log("[Contributor] Checking prerequisites eligibility...");
-          const eligibilityResult = await checkProjectEligibility(projectId, user.accessTokenAlias);
-          console.log("[Contributor] Eligibility result:", {
-            eligible: eligibilityResult.eligible,
-            totalRequired: eligibilityResult.totalRequired,
-            totalCompleted: eligibilityResult.totalCompleted,
-            missingCount: eligibilityResult.missingPrerequisites.length,
-          });
-          setEligibility(eligibilityResult);
-        } catch (eligibilityError) {
-          console.error("[Contributor] Error checking eligibility:", eligibilityError);
-          // If eligibility check fails, assume not eligible (safe default)
-          setEligibility({
-            eligible: false,
-            missingPrerequisites: [],
-            totalRequired: 0,
-            totalCompleted: 0,
-            prerequisites: [],
-          });
+        // FALLBACK: Check project submissions even on error
+        if (onChainProjectDetails?.submissions) {
+          const mySubmission = onChainProjectDetails.submissions.find(
+            (s) => s.alias === alias
+          );
+          if (mySubmission) {
+            console.log("[Contributor] FALLBACK after error: Found submission:", {
+              task_id: mySubmission.task.task_id,
+              tx_hash: mySubmission.tx_hash,
+            });
+            setContributorStatus("task_pending");
+            setOnChainSubmission(mySubmission);
+            setOnChainContributor({
+              alias,
+              project_id: projectId,
+              joined_at: 0,
+              completed_tasks: [],
+              pending_tasks: [mySubmission.task.task_id],
+              tasks_submitted: [],
+              tasks_accepted: [],
+              credentials: [],
+            });
+
+            // Fetch full commitment record from DB
+            const commitment = await fetchDbCommitment(mySubmission.task.task_id);
+            if (commitment) {
+              console.log("[Contributor] FALLBACK after error: DB commitment found:", {
+                commitment_status: commitment.taskCommitmentStatus,
+                pending_tx_hash: commitment.pendingTxHash,
+              });
+              setDbCommitment(commitment);
+              if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
+                setPendingActionTxHash(commitment.pendingTxHash);
+              }
+              if (commitment.evidence) {
+                setTaskEvidence(commitment.evidence);
+              }
+            }
+          } else {
+            setContributorStatus("not_enrolled");
+          }
+        } else {
+          setContributorStatus("not_enrolled");
         }
-
-        setIsCheckingEligibility(false);
-        console.log("[Contributor] ========== FETCH DATA COMPLETE ==========");
-      } else {
-        console.log("[Contributor] User not authenticated, skipping contributor checks");
       }
 
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // Check prerequisites eligibility
+      try {
+        console.log("[Contributor] Checking prerequisites eligibility...");
+        const eligibilityResult = await checkProjectEligibility(projectId, alias);
+        console.log("[Contributor] Eligibility result:", {
+          eligible: eligibilityResult.eligible,
+          totalRequired: eligibilityResult.totalRequired,
+          totalCompleted: eligibilityResult.totalCompleted,
+          missingCount: eligibilityResult.missingPrerequisites.length,
+        });
+        setEligibility(eligibilityResult);
+      } catch (eligibilityError) {
+        console.error("[Contributor] Error checking eligibility:", eligibilityError);
+        // If eligibility check fails, assume not eligible (safe default)
+        setEligibility({
+          eligible: false,
+          missingPrerequisites: [],
+          totalRequired: 0,
+          totalCompleted: 0,
+          prerequisites: [],
+        });
+      }
 
-  useEffect(() => {
-    void fetchData();
+      setIsCheckingEligibility(false);
+      setIsOrchestrating(false);
+      console.log("[Contributor] ========== ORCHESTRATION COMPLETE ==========");
+    };
+
+    void orchestrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger]);
 
   // Loading state
-  if (isLoading) {
+  if (isProjectLoading || isTasksLoading || isOrchestrating) {
     return <AndamioPageLoading variant="content" />;
   }
 
   // Error state
-  if (error || !project) {
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
+  if (errorMessage || !projectDetail) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/project/${projectId}`} label="Back to Project" />
-        <AndamioErrorAlert error={error ?? "Project not found"} />
+        <AndamioErrorAlert error={errorMessage ?? "Project not found"} />
       </div>
     );
   }
@@ -674,7 +621,7 @@ function ContributorDashboardContent() {
 
       <AndamioPageHeader
         title="Contributor Dashboard"
-        description={getString(project.title) || undefined}
+        description={projectDetail.title || undefined}
       />
 
       {/* Project Info */}
@@ -962,7 +909,7 @@ function ContributorDashboardContent() {
                   onSuccess={async (result) => {
                     // Store tx hash for confirmation checking
                     setPendingActionTxHash(result.txHash);
-                    await fetchData();
+                    await refreshData();
                   }}
                 />
               </>
@@ -1019,7 +966,7 @@ function ContributorDashboardContent() {
                         description: `Confirmed at slot ${result.slot}. Gateway will update status shortly.`,
                       });
                       // Refresh data after confirmation
-                      await fetchData();
+                      await refreshData();
                       // Clear pending tx hash
                       setPendingActionTxHash(null);
                     } else {
@@ -1216,7 +1163,7 @@ function ContributorDashboardContent() {
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}
             contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
-            projectTitle={getString(project.title) || undefined}
+            projectTitle={projectDetail.title || undefined}
             taskHash={getOnChainTaskId(selectedTask)}
             taskCode={`TASK_${selectedTask.index}`}
             taskTitle={selectedTask.title ?? undefined}
@@ -1226,7 +1173,7 @@ function ContributorDashboardContent() {
             onSuccess={async () => {
               console.log("[Contributor] TaskCommit onSuccess triggered");
               setContributorStatus("task_pending");
-              await fetchData();
+              await refreshData();
             }}
           />
         );
@@ -1244,7 +1191,7 @@ function ContributorDashboardContent() {
               projectNftPolicyId={projectId}
               contributorStateId={contributorStateId ?? "0".repeat(56)}
               contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
-              projectTitle={getString(project.title) || undefined}
+              projectTitle={projectDetail.title || undefined}
               taskHash={getOnChainTaskId(selectedTask)}
               taskCode={`TASK_${selectedTask.index}`}
               taskTitle={selectedTask.title ?? undefined}
@@ -1254,7 +1201,7 @@ function ContributorDashboardContent() {
               onSuccess={async () => {
                 console.log("[Contributor] TaskCommit (can_claim) onSuccess triggered");
                 setContributorStatus("task_pending");
-                await fetchData();
+                await refreshData();
               }}
             />
           )}
@@ -1263,9 +1210,9 @@ function ContributorDashboardContent() {
           <ProjectCredentialClaim
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}
-            projectTitle={getString(project.title) || undefined}
+            projectTitle={projectDetail.title || undefined}
             onSuccess={async () => {
-              await fetchData();
+              await refreshData();
             }}
           />
         </div>

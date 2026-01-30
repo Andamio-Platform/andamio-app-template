@@ -5,6 +5,10 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import {
+  useAssignmentCommitment,
+  useSubmitEvidence,
+} from "~/hooks/api/course";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -19,7 +23,6 @@ import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
 import { getCourseStudent, type AndamioscanStudent } from "~/lib/andamioscan-events";
 import type { JSONContent } from "@tiptap/core";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import {
   AlertIcon,
   SuccessIcon,
@@ -50,82 +53,32 @@ interface AssignmentCommitmentProps {
   sltHash: string | null; // Module hash (64-char hex) - required for on-chain transactions
 }
 
-// Status constants commented out - not currently used but kept for future reference
-// const PRIVATE_STATUSES = [
-//   { value: "NOT_STARTED", label: "Not Started" },
-//   { value: "SAVE_FOR_LATER", label: "Save for Later" },
-//   { value: "IN_PROGRESS", label: "In Progress" },
-//   { value: "COMPLETE", label: "Complete" },
-//   { value: "COMMITMENT", label: "Ready to Commit" },
-//   { value: "NETWORK_READY", label: "Network Ready" },
-// ] as const;
-
-// const NETWORK_STATUSES = [
-//   { value: "AWAITING_EVIDENCE", label: "Awaiting Evidence" },
-//   { value: "PENDING_TX_COMMITMENT_MADE", label: "Commitment Made (Pending TX)" },
-//   { value: "PENDING_TX_ADD_INFO", label: "Adding Info (Pending TX)" },
-//   { value: "PENDING_APPROVAL", label: "Pending Approval" },
-//   { value: "PENDING_TX_ASSIGNMENT_ACCEPTED", label: "Accepted (Pending TX)" },
-//   { value: "ASSIGNMENT_ACCEPTED", label: "Assignment Accepted" },
-//   { value: "PENDING_TX_ASSIGNMENT_DENIED", label: "Denied (Pending TX)" },
-//   { value: "ASSIGNMENT_DENIED", label: "Assignment Denied" },
-//   { value: "PENDING_TX_CLAIM_CREDENTIAL", label: "Claiming Credential (Pending TX)" },
-//   { value: "CREDENTIAL_CLAIMED", label: "Credential Claimed" },
-//   { value: "PENDING_TX_COURSE_STUDENT_ASSIGNMENT_UPDATE", label: "Leaving (Pending TX)" },
-//   { value: "ASSIGNMENT_LEFT", label: "Assignment Left" },
-// ] as const;
-
-// Response from /course/student/assignment-commitment/get (V2 Merged API)
-// Returns merged on-chain + DB data with source indicator
-// NOTE: API returns FLAT structure (like teacher hooks), not nested content
-interface CommitmentApiResponse {
-  data?: {
-    course_id?: string;
-    course_module_code?: string;
-    slt_hash?: string;
-    // On-chain fields (flat)
-    on_chain_status?: string;
-    on_chain_content?: string; // Hex-encoded evidence hash from chain
-    // Off-chain fields (flat, not nested in content)
-    commitment_status?: string;
-    evidence?: Record<string, unknown>;
-    assignment_evidence_hash?: string;
-    // Legacy: some endpoints may still nest these in content
-    content?: {
-      commitment_status?: string;
-      evidence?: Record<string, unknown>;
-      assignment_evidence_hash?: string;
-    };
-    source?: "merged" | "chain_only" | "db_only";
-  };
-  warning?: string;
-}
-
-// Internal commitment state (normalized from API response)
-interface Commitment {
-  courseId: string;
-  moduleCode: string;
-  sltHash: string | null;
-  onChainStatus: string | null;
-  onChainContent: string | null; // Evidence hash from chain
-  networkStatus: string; // From content.commitment_status or inferred
-  networkEvidence: Record<string, unknown> | null; // From content.evidence
-  networkEvidenceHash: string | null; // From content.assignment_evidence_hash
-  source: "merged" | "chain_only" | "db_only";
-}
-
 export function AssignmentCommitment({
   assignmentTitle,
   courseNftPolicyId,
   moduleCode,
   sltHash,
 }: AssignmentCommitmentProps) {
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { isAuthenticated, user } = useAndamioAuth();
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
 
   // V2 Transaction hooks
   const commitTx = useTransaction();
   const updateTx = useTransaction();
+
+  // Assignment commitment query hook
+  const {
+    data: commitment,
+    isLoading,
+    error: commitmentError,
+    refetch: refetchCommitment,
+  } = useAssignmentCommitment(courseNftPolicyId, moduleCode, sltHash);
+
+  // Evidence submission mutation
+  const submitEvidence = useSubmitEvidence();
+
+  // TX error state (separate from query errors)
+  const [txError, setTxError] = useState<string | null>(null);
 
   // Watch for gateway confirmation after commit TX submission
   const { status: commitTxStatus, isSuccess: commitTxConfirmed } = useTxWatcher(
@@ -135,9 +88,9 @@ export function AssignmentCommitment({
         // "updated" means Gateway has confirmed TX AND updated DB
         if (status.state === "updated") {
           triggerSuccess("Assignment committed to blockchain!");
-          void fetchCommitment();
+          void refetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
-          setError(status.last_error ?? "Transaction failed. Please try again.");
+          setTxError(status.last_error ?? "Transaction failed. Please try again.");
         }
       },
     }
@@ -151,9 +104,9 @@ export function AssignmentCommitment({
         // "updated" means Gateway has confirmed TX AND updated DB
         if (status.state === "updated") {
           triggerSuccess("Assignment updated on blockchain!");
-          void fetchCommitment();
+          void refetchCommitment();
         } else if (status.state === "failed" || status.state === "expired") {
-          setError(status.last_error ?? "Transaction failed. Please try again.");
+          setTxError(status.last_error ?? "Transaction failed. Please try again.");
         }
       },
     }
@@ -189,24 +142,16 @@ export function AssignmentCommitment({
   }, [refetchOnChain]);
 
   // Check if user has already completed THIS module on-chain
-  // Note: hasOnChainCommitment is now handled by the merged API (source: "chain_only")
   const hasCompletedOnChain = !!(
     onChainStudent?.completed &&
     sltHash &&
     onChainStudent.completed.includes(sltHash)
   );
 
-  const [commitment, setCommitment] = useState<Commitment | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
-
-  // Form state - privateStatus value tracked for future UI use, currently only setPrivateStatus is called
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_privateStatus, setPrivateStatus] = useState<string>("NOT_STARTED");
 
   // Evidence content state
   const [localEvidenceContent, setLocalEvidenceContent] = useState<JSONContent | null>(null);
@@ -232,113 +177,12 @@ export function AssignmentCommitment({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges, commitment]);
 
-  // Refetchable commitment loader
-  const fetchCommitment = useCallback(async () => {
-    if (!isAuthenticated || !user?.accessTokenAlias) {
-      setIsLoading(false);
-      return;
-    }
-
-    // slt_hash is required for on-chain lookup
-    if (!sltHash) {
-      console.log("[AssignmentCommitment] No sltHash available, skipping commitment fetch");
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // V2 Merged API: Returns merged on-chain + DB data
-      // POST /course/student/assignment-commitment/get
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/course/student/assignment-commitment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: courseNftPolicyId,
-            slt_hash: sltHash,  // Required for on-chain lookup
-            course_module_code: moduleCode,  // Optional for DB enrichment
-          }),
-        }
-      );
-
-      // 404 means no commitment (neither on-chain nor DB)
-      if (response.status === 404) {
-        setCommitment(null);
-        return;
-      }
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Failed to fetch commitment:", response.status, errorBody);
-        throw new Error(`Failed to fetch commitment: ${response.status}`);
-      }
-
-      const apiResponse = (await response.json()) as CommitmentApiResponse;
-      console.log("[AssignmentCommitment] API response:", apiResponse);
-
-      const data = apiResponse.data;
-      if (!data) {
-        setCommitment(null);
-        return;
-      }
-
-      // Transform V2 merged response to internal state
-      // source: "merged" = both on-chain and DB, "chain_only" = on-chain only, "db_only" = pending
-      // NOTE: API may return flat structure OR nested content - check both
-      const evidence = data.evidence ?? data.content?.evidence;
-      const commitmentStatus = data.commitment_status ?? data.content?.commitment_status;
-      const evidenceHash = data.assignment_evidence_hash ?? data.content?.assignment_evidence_hash;
-      // Narrow source to valid union values
-      const source = data.source === "chain_only" || data.source === "db_only" ? data.source : "merged";
-
-      const existingCommitment: Commitment = {
-        courseId: data.course_id ?? courseNftPolicyId,
-        moduleCode: data.course_module_code ?? moduleCode,
-        sltHash: data.slt_hash ?? null,
-        onChainStatus: data.on_chain_status ?? null,
-        onChainContent: data.on_chain_content ?? null,
-        networkStatus: commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL",
-        networkEvidence: evidence ?? null,
-        networkEvidenceHash: evidenceHash ?? data.on_chain_content ?? null,
-        source,
-      };
-
-      setCommitment(existingCommitment);
-
-      // Log source for debugging
-      if (data.source === "chain_only") {
-        console.log("[AssignmentCommitment] On-chain commitment found, no DB content yet");
-      }
-
-      // Set local UI status based on commitment network status
-      if (existingCommitment.networkStatus === "PENDING_APPROVAL" || existingCommitment.networkStatus === "ON_CHAIN") {
-        setPrivateStatus("COMMITMENT");
-      } else if (existingCommitment.networkStatus?.includes("PENDING")) {
-        setPrivateStatus("COMMITMENT");
-      } else {
-        setPrivateStatus("IN_PROGRESS");
-      }
-
-      // Set local evidence content if evidence exists (only when source is "merged" or "db_only")
-      if (existingCommitment.networkEvidence) {
-        setLocalEvidenceContent(existingCommitment.networkEvidence as JSONContent);
-      }
-    } catch (err) {
-      console.error("Error fetching commitment:", err);
-      setError(err instanceof Error ? err.message : "Failed to load commitment");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated, authenticatedFetch, user?.accessTokenAlias, courseNftPolicyId, moduleCode, sltHash]);
-
-  // Initial fetch on mount
+  // Set local evidence content when commitment loads with evidence
   useEffect(() => {
-    void fetchCommitment();
-  }, [fetchCommitment]);
+    if (commitment?.networkEvidence && !localEvidenceContent) {
+      setLocalEvidenceContent(commitment.networkEvidence as JSONContent);
+    }
+  }, [commitment?.networkEvidence, localEvidenceContent]);
 
   const handleLockEvidence = () => {
     if (!localEvidenceContent) return;
@@ -355,6 +199,9 @@ export function AssignmentCommitment({
     setIsLocked(false);
     setEvidenceHash(null);
   };
+
+  // Derive display error from query error or TX error
+  const displayError = txError ?? (commitmentError ? commitmentError.message : null);
 
   if (!isAuthenticated) {
     return (
@@ -409,10 +256,10 @@ export function AssignmentCommitment({
         <AndamioCardDescription>Track and submit your work for &quot;{assignmentTitle}&quot;</AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {error && (
+        {displayError && (
           <AndamioAlert variant="destructive">
             <AlertIcon className="h-4 w-4" />
-            <AndamioAlertDescription>{error}</AndamioAlertDescription>
+            <AndamioAlertDescription>{displayError}</AndamioAlertDescription>
           </AndamioAlert>
         )}
 
@@ -465,7 +312,7 @@ export function AssignmentCommitment({
               moduleTitle={assignmentTitle}
               onSuccess={() => {
                 // Refresh data after claiming
-                void fetchCommitment();
+                void refetchCommitment();
                 void refetchOnChain();
               }}
             />
@@ -574,7 +421,7 @@ export function AssignmentCommitment({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    void fetchCommitment();
+                    void refetchCommitment();
                   }}
                 >
                   Refresh Status
@@ -596,32 +443,19 @@ export function AssignmentCommitment({
 
                           // Save evidence content to database (upsert)
                           try {
-                            const submitResponse = await authenticatedFetch(
-                              `${GATEWAY_API_BASE}/course/student/commitment/submit`,
-                              {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  course_id: courseNftPolicyId,
-                                  slt_hash: sltHash, // Required - replaces course_module_code
-                                  evidence: localEvidenceContent,
-                                  evidence_hash: newEvidenceHash,
-                                  pending_tx_hash: result.txHash,
-                                }),
-                              }
-                            );
-
-                            if (!submitResponse.ok) {
-                              console.error("[AssignmentCommitment] Failed to save evidence to DB:", await submitResponse.text());
-                            } else {
-                              console.log("[AssignmentCommitment] Evidence saved to database");
-                            }
+                            await submitEvidence.mutateAsync({
+                              courseId: courseNftPolicyId,
+                              sltHash: sltHash,
+                              evidence: localEvidenceContent,
+                              evidenceHash: newEvidenceHash,
+                              pendingTxHash: result.txHash,
+                            });
                           } catch (err) {
                             console.error("[AssignmentCommitment] Error saving evidence to DB:", err);
                           }
                         },
                         onError: (err) => {
-                          setError(err.message);
+                          setTxError(err.message);
                         },
                       });
                     }}
@@ -770,30 +604,15 @@ export function AssignmentCommitment({
                                 setHasUnsavedChanges(false);
 
                                 // Save evidence content to database
-                                // The hash is on-chain, but the actual JSON content needs to be stored for teacher review
                                 if (evidenceContent) {
                                   try {
-                                    const submitResponse = await authenticatedFetch(
-                                      `${GATEWAY_API_BASE}/course/student/commitment/submit`,
-                                      {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                          course_id: courseNftPolicyId,
-                                          slt_hash: sltHash, // Required - replaces course_module_code
-                                          evidence: evidenceContent,
-                                          evidence_hash: evidenceHash,
-                                          pending_tx_hash: result.txHash,
-                                        }),
-                                      }
-                                    );
-
-                                    if (!submitResponse.ok) {
-                                      console.error("[AssignmentCommitment] Failed to save evidence to DB:", await submitResponse.text());
-                                      // Don't throw - TX succeeded, evidence save is secondary
-                                    } else {
-                                      console.log("[AssignmentCommitment] Evidence saved to database");
-                                    }
+                                    await submitEvidence.mutateAsync({
+                                      courseId: courseNftPolicyId,
+                                      sltHash: sltHash,
+                                      evidence: evidenceContent,
+                                      evidenceHash: evidenceHash,
+                                      pendingTxHash: result.txHash,
+                                    });
                                   } catch (err) {
                                     console.error("[AssignmentCommitment] Error saving evidence to DB:", err);
                                     // Don't throw - TX succeeded, evidence save is secondary
@@ -801,7 +620,7 @@ export function AssignmentCommitment({
                                 }
                               },
                               onError: (err) => {
-                                setError(err.message);
+                                setTxError(err.message);
                               },
                             });
                           }}

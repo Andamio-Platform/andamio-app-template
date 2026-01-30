@@ -456,11 +456,12 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: async (input: {
-      projectId: string;
+      projectStatePolicyId: string;
       title: string;
-      description?: string;
-      lovelaceAmount?: number;
-      expirationPosix?: number;
+      content?: string;
+      lovelaceAmount: string;
+      expirationTime: string;
+      contentJson?: unknown;
     }) => {
       // Endpoint: POST /project/manager/task/create
       const response = await authenticatedFetch(
@@ -469,18 +470,26 @@ export function useCreateTask() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_id: input.projectId,
+            project_state_policy_id: input.projectStatePolicyId,
             title: input.title,
-            description: input.description,
+            content: input.content,
             lovelace_amount: input.lovelaceAmount,
-            expiration_posix: input.expirationPosix,
+            expiration_time: input.expirationTime,
+            content_json: input.contentJson,
           }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to create task: ${response.statusText} - ${errorText}`);
+        let errorMessage = `Failed to create task: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText) as { message?: string };
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();
@@ -488,15 +497,11 @@ export function useCreateTask() {
     onSuccess: (_, variables) => {
       // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectId),
+        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
       });
       // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectId),
-      });
-      // Invalidate project detail (task counts may have changed)
-      void queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(variables.projectId),
+        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
       });
     },
   });
@@ -531,19 +536,14 @@ export function useUpdateTask() {
   const { authenticatedFetch } = useAndamioAuth();
 
   return useMutation({
-    mutationFn: async ({
-      projectId,
-      taskHash,
-      data,
-    }: {
-      projectId: string;
-      taskHash: string;
-      data: Partial<{
-        title: string;
-        description: string;
-        lovelaceAmount: number;
-        expirationPosix: number;
-      }>;
+    mutationFn: async (input: {
+      projectStatePolicyId: string;
+      index: number;
+      title: string;
+      content?: string;
+      lovelaceAmount: string;
+      expirationTime: string;
+      contentJson?: unknown;
     }) => {
       // Endpoint: POST /project/manager/task/update
       const response = await authenticatedFetch(
@@ -552,18 +552,27 @@ export function useUpdateTask() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_id: projectId,
-            task_hash: taskHash,
-            title: data.title,
-            description: data.description,
-            lovelace_amount: data.lovelaceAmount,
-            expiration_posix: data.expirationPosix,
+            project_state_policy_id: input.projectStatePolicyId,
+            index: input.index,
+            title: input.title,
+            content: input.content,
+            lovelace_amount: input.lovelaceAmount,
+            expiration_time: input.expirationTime,
+            content_json: input.contentJson,
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to update task: ${response.statusText}`);
+        const errorText = await response.text();
+        let errorMessage = `Failed to update task: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText) as { message?: string };
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();
@@ -571,11 +580,11 @@ export function useUpdateTask() {
     onSuccess: (_, variables) => {
       // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectId),
+        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
       });
       // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectId),
+        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
       });
     },
   });
@@ -609,11 +618,11 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async ({
-      projectId,
-      taskHash,
+      projectStatePolicyId,
+      index,
     }: {
-      projectId: string;
-      taskHash: string;
+      projectStatePolicyId: string;
+      index: number;
     }) => {
       // Endpoint: POST /project/manager/task/delete
       const response = await authenticatedFetch(
@@ -622,8 +631,8 @@ export function useDeleteTask() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_id: projectId,
-            task_hash: taskHash,
+            project_state_policy_id: projectStatePolicyId,
+            index,
           }),
         }
       );
@@ -637,15 +646,11 @@ export function useDeleteTask() {
     onSuccess: (_, variables) => {
       // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectId),
+        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
       });
       // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectId),
-      });
-      // Invalidate project detail
-      void queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(variables.projectId),
+        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
       });
     },
   });

@@ -6,6 +6,23 @@
  * - Managing task commitments (create, update, delete)
  * - Viewing commitment status
  *
+ * ## Reward Claim Lifecycle
+ *
+ * Task rewards are NOT claimed via a standalone endpoint. Instead, rewards
+ * are claimed implicitly through two paths:
+ *
+ * **Path A — Commit to next task**: When a contributor commits to a new task
+ * via `useCreateCommitment`, they automatically receive rewards from their
+ * previously completed (accepted) task. The on-chain TX handles both the
+ * new commitment and the reward payout in a single transaction.
+ *
+ * **Path B — Leave project**: When a contributor un-enrolls from a project,
+ * they claim rewards from their latest completed task as part of exiting.
+ * (Hook: TODO — pending `useLeaveProject` implementation)
+ *
+ * This means there is no `useClaimReward` hook — reward distribution is
+ * built into the commit and leave operations at the protocol level.
+ *
  * Architecture: Role-based hook file
  * - Imports types and transforms from use-project.ts (entity file)
  * - Exports contributor-specific query keys and hooks
@@ -428,6 +445,14 @@ export function useContributorCommitment(
 /**
  * Create a new task commitment
  *
+ * **Reward claim (Path A):** When a contributor already has a completed
+ * (accepted) task in this project, committing to a new task automatically
+ * claims the reward from the previous task. The on-chain transaction
+ * handles both the new commitment and the reward payout atomically.
+ *
+ * UX should inform contributors that committing to a new task will also
+ * release their pending rewards from the previous task.
+ *
  * @example
  * ```tsx
  * function CommitToTask({ projectId, taskHash }: { projectId: string; taskHash: string }) {
@@ -653,7 +678,13 @@ export function useUpdateCommitment() {
 }
 
 /**
- * Delete a commitment
+ * Delete/abandon a task commitment
+ *
+ * **Note:** This abandons a single task commitment. It does NOT claim
+ * rewards and does NOT un-enroll the contributor from the project.
+ *
+ * To un-enroll from a project AND claim pending rewards, use `useLeaveProject`
+ * (TODO — see Reward Claim Lifecycle in file header).
  *
  * @example
  * ```tsx

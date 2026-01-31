@@ -3,14 +3,29 @@
  *
  * Determines if a user meets the prerequisites to contribute to a project.
  * Prerequisites are course modules that must be completed before joining.
+ *
+ * This is a pure function that accepts data from hooks rather than fetching directly.
+ * Callers should pass prerequisites from useProject() and student completion data
+ * from useCourse() or useStudentCourses().
  */
 
-import {
-  getProject,
-  getUserGlobalState,
-  getCourseStudent,
-  type AndamioscanPrerequisite,
-} from "~/lib/andamioscan-events";
+/**
+ * Prerequisite info passed from useProject() hook
+ */
+export interface PrerequisiteInput {
+  courseId: string;
+  sltHashes?: string[];
+}
+
+/**
+ * Student completion record for a course
+ * Callers should provide this from their hooks data
+ */
+export interface StudentCompletionInput {
+  courseId: string;
+  completedModuleHashes: string[];
+  isEnrolled: boolean;
+}
 
 /**
  * Missing prerequisite info for UI display
@@ -35,40 +50,29 @@ export interface EligibilityResult {
   /** Total modules user has completed that count toward prerequisites */
   totalCompleted: number;
   /** Raw project prerequisites for reference */
-  prerequisites: AndamioscanPrerequisite[];
+  prerequisites: PrerequisiteInput[];
 }
 
 /**
  * Check if a user meets the prerequisites for a project
  *
- * @param projectId - Project NFT Policy ID
- * @param userAlias - User's access token alias
+ * Pure function — accepts data from hooks instead of making API calls.
+ *
+ * @param prerequisites - From useProject().projectDetail.prerequisites
+ * @param studentCompletions - From useCourse() or useStudentCourses() for each prerequisite course
  * @returns Eligibility result with details about missing prerequisites
  *
  * @example
  * ```typescript
- * const result = await checkProjectEligibility(projectId, userAlias);
- * if (result.eligible) {
- *   // User can contribute
- * } else {
- *   // Show missing prerequisites
- *   console.log(`Complete ${result.totalRequired - result.totalCompleted} more modules`);
- * }
+ * const prerequisites = projectDetail.prerequisites ?? [];
+ * const completions = await getStudentCompletionsFromHooks(prerequisites, alias);
+ * const result = checkProjectEligibility(prerequisites, completions);
  * ```
  */
-export async function checkProjectEligibility(
-  projectId: string,
-  userAlias: string
-): Promise<EligibilityResult> {
-  // Fetch project details to get prerequisites
-  const projectDetails = await getProject(projectId);
-
-  if (!projectDetails) {
-    throw new Error("Project not found");
-  }
-
-  const prerequisites = projectDetails.prerequisites ?? [];
-
+export function checkProjectEligibility(
+  prerequisites: PrerequisiteInput[],
+  studentCompletions: StudentCompletionInput[],
+): EligibilityResult {
   // No prerequisites = always eligible
   if (prerequisites.length === 0) {
     return {
@@ -80,44 +84,26 @@ export async function checkProjectEligibility(
     };
   }
 
-  // Get user's global state for course progress
-  let userState;
-  try {
-    userState = await getUserGlobalState(userAlias);
-  } catch {
-    // User not found on chain = no completed modules
-    return {
-      eligible: false,
-      missingPrerequisites: prerequisites.map((prereq) => ({
-        courseId: prereq.course_id,
-        requiredModules: prereq.assignment_ids,
-        completedModules: [],
-        missingModules: prereq.assignment_ids,
-      })),
-      totalRequired: prerequisites.reduce((sum, p) => sum + p.assignment_ids.length, 0),
-      totalCompleted: 0,
-      prerequisites,
-    };
+  // Build lookup map for student completions
+  const completionMap = new Map<string, StudentCompletionInput>();
+  for (const completion of studentCompletions) {
+    completionMap.set(completion.courseId, completion);
   }
 
-  // Check each prerequisite course
   const missingPrerequisites: MissingPrerequisite[] = [];
   let totalRequired = 0;
   let totalCompleted = 0;
 
   for (const prereq of prerequisites) {
-    const requiredModules = prereq.assignment_ids;
+    const requiredModules = prereq.sltHashes ?? [];
     totalRequired += requiredModules.length;
 
-    // Check if user is enrolled or has completed this course
-    const courseProgress = userState.courses.find(
-      (c) => c.course_id === prereq.course_id
-    );
+    const courseProgress = completionMap.get(prereq.courseId);
 
-    // If not enrolled at all, user has no progress in this course
+    // If no progress at all, user has no completed modules in this course
     if (!courseProgress) {
       missingPrerequisites.push({
-        courseId: prereq.course_id,
+        courseId: prereq.courseId,
         requiredModules,
         completedModules: [],
         missingModules: requiredModules,
@@ -125,16 +111,7 @@ export async function checkProjectEligibility(
       continue;
     }
 
-    // Fetch detailed student status to get completed modules
-    let completedModules: string[] = [];
-    try {
-      const studentStatus = await getCourseStudent(prereq.course_id, userAlias);
-      if (studentStatus) {
-        completedModules = studentStatus.completed;
-      }
-    } catch {
-      // Could not fetch student status, assume no completed modules
-    }
+    const completedModules = courseProgress.completedModuleHashes;
 
     // Check which required modules are completed
     const missingModules = requiredModules.filter(
@@ -149,7 +126,7 @@ export async function checkProjectEligibility(
 
     if (missingModules.length > 0) {
       missingPrerequisites.push({
-        courseId: prereq.course_id,
+        courseId: prereq.courseId,
         requiredModules,
         completedModules: completedRequiredModules,
         missingModules,
@@ -169,18 +146,14 @@ export async function checkProjectEligibility(
 /**
  * Quick eligibility check (just returns boolean)
  *
- * @param projectId - Project NFT Policy ID
- * @param userAlias - User's access token alias
+ * @param prerequisites - From useProject().projectDetail.prerequisites
+ * @param studentCompletions - Student completion records
  * @returns true if user meets all prerequisites
  */
-export async function isUserEligible(
-  projectId: string,
-  userAlias: string
-): Promise<boolean> {
-  try {
-    const result = await checkProjectEligibility(projectId, userAlias);
-    return result.eligible;
-  } catch {
-    return false;
-  }
+export function isUserEligible(
+  prerequisites: PrerequisiteInput[],
+  studentCompletions: StudentCompletionInput[],
+): boolean {
+  const result = checkProjectEligibility(prerequisites, studentCompletions);
+  return result.eligible;
 }

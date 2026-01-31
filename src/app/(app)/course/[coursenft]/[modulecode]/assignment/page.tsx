@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { ContentViewer } from "~/components/editor";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -15,7 +15,6 @@ import {
 } from "~/components/andamio";
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
-import { getCourse } from "~/lib/andamioscan-events";
 import { useCourse, useCourseModule, useSLTs, useAssignment, type SLT } from "~/hooks/api";
 import { computeSltHash } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
@@ -48,7 +47,6 @@ export default function LearnerAssignmentPage() {
     error: assignmentError,
   } = useAssignment(courseNftPolicyId, moduleCode);
 
-  const [onChainModuleHash, setOnChainModuleHash] = useState<string | null>(null);
   const error = assignmentError?.message ?? null;
 
   // Compute sltHash from fetched SLTs
@@ -63,40 +61,17 @@ export default function LearnerAssignmentPage() {
     return null;
   }, [slts]);
 
-  // Fetch on-chain data and match after we have computed hash
-  useEffect(() => {
-    if (!computedSltHash || !courseNftPolicyId) return;
-
-    const matchOnChain = async () => {
-      try {
-        const onChainCourse = await getCourse(courseNftPolicyId);
-        if (onChainCourse?.modules) {
-          // Find module with matching assignment_id (which is the slt_hash)
-          const matchingModule = onChainCourse.modules.find(
-            (m) => m.assignment_id === computedSltHash
-          );
-          if (matchingModule) {
-            console.log("Found matching on-chain module:", matchingModule.assignment_id);
-            setOnChainModuleHash(matchingModule.assignment_id);
-          } else {
-            console.warn(
-              "No exact SLT hash match found on-chain. Computed:",
-              computedSltHash,
-              "On-chain modules:",
-              onChainCourse.modules.map((m) => m.assignment_id)
-            );
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to fetch on-chain course data:", err);
-      }
-    };
-
-    void matchOnChain();
-  }, [computedSltHash, courseNftPolicyId]);
+  // Match on-chain module hash from course hook data (no direct Andamioscan call)
+  const onChainModuleHash = useMemo(() => {
+    if (!computedSltHash || !course?.modules) return null;
+    const matchingModule = course.modules.find(
+      (m) => m.sltHash === computedSltHash
+    );
+    return matchingModule?.sltHash ?? null;
+  }, [computedSltHash, course?.modules]);
 
   // Determine the sltHash to use:
-  // 1. On-chain hash (authoritative, from Andamioscan) - if verified to match
+  // 1. On-chain hash (authoritative, from course hook) - if verified to match
   // 2. Database slt_hash (if available)
   // 3. Computed hash (fallback)
   const dbSltHash = courseModule?.sltHash ?? null;

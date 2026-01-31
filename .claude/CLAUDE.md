@@ -349,12 +349,21 @@ The app uses a full-screen layout with sidebar navigation:
 
 ### Route Structure
 ```
-/                      → Redirects to /dashboard
+/                      → Landing page (Explore / Sign In / Get Started cards)
 /(app)/dashboard       → User dashboard with sidebar
 /(app)/courses         → Courses page with sidebar
 ```
 
 The `(app)` route group applies the sidebar layout automatically.
+
+### Landing Page (`/`)
+Three-card layout for different user paths:
+- **Explore Card** — Browse courses and projects without a wallet
+- **Login Card** — Returning users connect wallet → auto-auth → redirect to dashboard
+- **Register Card** — New users connect wallet → first-login ceremony → mint access token → redirect to dashboard
+
+Components: `src/components/landing/{explore,login,register,first-login}-card.tsx`
+Marketing copy: `src/config/marketing.ts`
 
 ## Pages
 
@@ -774,7 +783,7 @@ const data = (await response.json()) as YourOutputType;
 - `src/components/layout/app-sidebar.tsx` - Sidebar navigation
 
 **Pages**:
-- `src/app/page.tsx` - Home (redirects to dashboard)
+- `src/app/page.tsx` - Landing page (Explore / Sign In / Get Started)
 - `src/app/(app)/dashboard/page.tsx` - User dashboard
 - `src/app/(app)/courses/page.tsx` - Courses page
 

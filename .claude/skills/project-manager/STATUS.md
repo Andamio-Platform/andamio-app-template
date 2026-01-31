@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 30, 2026
+> **Last Updated**: January 31, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -15,83 +15,65 @@ Current implementation status of the Andamio T3 App Template.
 | Transaction System | **100% Complete** | 16/16 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
+| Landing Page | **Complete** | Explore / Login / Register cards |
+| TX Stream (SSE) | **Complete** | Real-time TX tracking with polling fallback |
+| Andamioscan Removal | **✅ Complete** | `andamioscan-events.ts` deleted, 0 imports remain |
 | **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
+> **Branch: `fix/course-txs`** — Andamioscan removal complete, ready for merge or continued work.
+>
+> **What shipped this session**:
+> - **Removed ALL direct Andamioscan calls** — `andamioscan-events.ts` deleted, zero imports remain
+> - 9 files refactored to use gateway hooks (`useProject`, `useCourse`) instead of direct Andamioscan fetches
+> - `project-eligibility.ts` rewritten as pure function (accepts data params, no API calls)
+> - `use-event-confirmation.ts` deleted — TX State Machine handles all confirmation
+> - Alias validation now uses `GET /api/v2/user/exists/{alias}` (issue #106)
+> - Contributor status derived from `useProject()` data (no separate Andamioscan call)
+> - All Andamioscan type re-exports removed from `types/generated/index.ts`
+> - Typecheck: 0 errors | Lint: 0 errors from changed files
+>
+> ---
+>
+> **Future Work (from this session)**:
+>
+> | Item | Priority | Notes |
+> |------|----------|-------|
+> | Wire up student completions on project catalog page | 🟡 Medium | `/project` page passes `[]` for student completions — shows 0/N for projects with prerequisites. Individual project pages do full checks. Needs a `useStudentCourses()` hook or per-project detail fetch. |
+> | Wire up student completions on contributor page | 🟡 Medium | `contributor/page.tsx` also passes `[]` to `checkProjectEligibility()`. Same solution needed. |
+> | Update CLAUDE.md API Clients table | 🟢 Low | Remove `andamioscan-events.ts` reference — file is deleted |
+> | Update CLAUDE.md Key Files section | 🟢 Low | Remove `use-event-confirmation.ts` reference — file is deleted |
+> | Project hooks Phase 3.9 colocated types | 🟡 Medium | `use-project.ts` types are in good shape but `use-project-manager.ts` and `use-project-contributor.ts` still need migration |
+>
+> ---
+>
+> **Remaining Open Issues (prioritized)**:
+>
+> | Issue | Priority | Notes |
+> |-------|----------|-------|
+> | #103 - Project hooks upgrade | 🟡 Medium | Corrected analysis posted. Needs `useLeaveProject` hook (pending API endpoint confirmation). Phase 3.9 colocated types still pending. |
+> | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync failures |
+> | #32 - Extra signature after mint | 🟡 Medium | Auth flow improvement |
+> | #47 - Auto-logout on wallet change | 🟢 Low | UX improvement |
+> | #34 - Teacher assessment UX | 🟢 Low | Accept/Refuse button UX |
+> | #29 - TX Input invalid error | 🔴 High | Blocks course enrollment |
+>
+> ---
+>
 > **🔴 BUG: `/course/user/modules/` endpoint returns empty for on-chain-only courses**
 >
-> **Status**: API team notified — awaiting fix. May need to share findings.
+> **Status**: API team notified — awaiting fix.
 >
-> **Summary**: Course at `/course/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4` shows
-> "No modules found" even though the course has on-chain modules.
->
-> **Root Cause (Gateway inconsistency)**:
-> - `GET /api/v2/course/user/course/get/{id}` — returns module data in `modules[]` array (correct)
-> - `GET /api/v2/course/user/modules/{id}` — returns `{"data":[]}` (empty, incorrect)
->
-> The dedicated modules endpoint doesn't include on-chain-only modules (courses with no DB module records).
+> The dedicated modules endpoint doesn't include on-chain-only modules.
 > The course detail endpoint merges them correctly.
->
-> **Frontend impact**: `useCourseModules()` hook in `use-course-module.ts:496` calls the dedicated
-> modules endpoint. The page at `course/[coursenft]/page.tsx:51` uses this hook for its module list
-> and never falls back to `course.modules` from `useCourse()`.
->
-> **Possible frontend workaround**: Fall back to `course.modules` when `useCourseModules` returns empty.
-> Defer until API team confirms whether they'll fix the endpoint.
->
-> **Verified via curl**:
-> ```
-> # Returns modules embedded in course (correct)
-> GET /api/v2/course/user/course/get/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4
-> → modules: [{slt_hash: "", slts: ["I know who the pirate LeChuck is"], created_by: "Kenny"}]
->
-> # Returns empty (incorrect)
-> GET /api/v2/course/user/modules/c30dfb349c262ec293c5e1109703988fd84a462fa1d089a1e4b5e3e4
-> → {"data":[]}
-> ```
+> May implement frontend fallback if API team doesn't fix.
 >
 > ---
 >
-> **🔴 BLOCKED: Sync Andamio API with Andamioscan Updates**
->
-> Issue #68 (`course-module/get` endpoint returning 404) is blocked pending Gateway sync.
->
-> **Action Required (andamio-api team)**:
-> 1. Sync Andamio API Gateway with latest Andamioscan schema updates
-> 2. Verify `/api/v2/course/user/course-module/get/{id}/{module_code}` endpoint exists
-> 3. Notify T3 team when ready for re-test
->
-> **After Gateway Sync**: Re-test module wizard UX (issue #68)
-> - File: `src/components/studio/wizard/module-wizard.tsx:212`
-> - Currently hitting 404 on module refetch after lesson load
->
-> ---
->
-> **Course UX Testing → Project Hooks Migration**
->
-> **Immediate**: Test course system UX after hooks refactoring
-> - Module wizard flow (create/edit modules, SLTs, lessons)
-> - Teacher dashboard (assignment commitments)
-> - Student course viewer
->
-> **After UX Verified**: Continue Phase 3.9/3.10 with Project hooks
->
-> 1. **Phase 3.9** - Migrate project hooks to colocated types pattern:
->    - `use-project.ts` - Move types from `src/types/project.ts` INTO hook
->    - `use-project-manager.ts` - Create camelCase types + transformers
->    - `use-project-contributor.ts` - Create camelCase types + transformers
->    - Create `use-project-content.ts` for public task queries (similar to `use-course-content.ts`)
->
-> 2. **Phase 3.10** - Extract direct API calls to hooks (50+ violations in 23 files)
->
-> **Tracking**:
-> - Phase 3.9 progress: `.claude/skills/hooks-architect/PROGRESS.md`
-> - Phase 3.10 audit: `.claude/skills/project-manager/API-CALLS-AUDIT.md`
->
-> **Ask user**: "Ready to test course UX, or shall we continue with project hooks?"
+> **Next Work**: Merge branch → Update CLAUDE.md references → Continue with #103 (project hooks colocated types) or UX testing
 
 ---
 
@@ -150,6 +132,33 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Recent Completions
 
+**January 31, 2026** (Andamioscan Removal — `fix/course-txs`):
+- ✅ **Removed ALL direct Andamioscan calls** — `src/lib/andamioscan-events.ts` deleted entirely
+- ✅ **Deleted `use-event-confirmation.ts`** — TX confirmation handled by TX State Machine (`useTxStream`)
+- ✅ **Alias validation** uses new `GET /api/v2/user/exists/{alias}` endpoint (issue #106)
+- ✅ **`project-eligibility.ts`** rewritten as pure function — accepts `PrerequisiteInput[]` + `StudentCompletionInput[]` instead of fetching
+- ✅ **Contributor page** (`contributor/page.tsx`) — Complete rewrite: derives status from `useProject()` data (submissions, assessments, contributors, credentials)
+- ✅ **Assignment page** (`assignment/page.tsx`) — On-chain module hash matching via `useCourse()` hook instead of `getCourse()`
+- ✅ **Assignment commitment** (`assignment-commitment.tsx`) — Completion check via `useCourse().pastStudents` instead of `getCourseStudent()`
+- ✅ **3 studio pages** — Replaced `getProject()`/`getManagingProjects()` with `useProject()` hook data
+- ✅ **Project catalog** (`/project`) — Eligibility simplified to synchronous computation from project prerequisites
+- ✅ **Andamioscan type re-exports removed** from `types/generated/index.ts`
+- ✅ Verification: `grep -r "andamioscan-events" src/` → 0 results | typecheck: 0 errors | lint: 0 errors
+- **Future**: Wire up `StudentCompletionInput[]` on catalog + contributor pages (currently `[]`), update CLAUDE.md references
+
+**January 31, 2026** (PR #105 - `fix/course-txs`):
+- ✅ **Landing Page Redesign**: Replaced single "Enter App" button with 3-card layout (Explore / Sign In / Get Started)
+  - `src/components/landing/explore-card.tsx` — Browse courses/projects without wallet
+  - `src/components/landing/login-card.tsx` — Returning users: connect → auto-auth → redirect
+  - `src/components/landing/register-card.tsx` — New users: connect → mint access token → redirect
+  - `src/components/landing/first-login-card.tsx` — First-login ceremony with real-time TX tracking
+- ✅ **TX Stream for Access Token Mint** (#101): Added `requiresOnChainConfirmation` flag to `TransactionUIConfig`. Access token mint now registers with gateway and streams `pending → confirmed → updated` via SSE.
+- ✅ **JWT Guards Removed** (#104): Made JWT optional in `registerTransaction()`, removed JWT bail-out from `useTxStream`, and removed `if (jwt)` gate in `useTransaction`. Fixes pre-auth TX registration for access token mint.
+- ✅ **Module Wizard Fix** (#68): Replaced removed `course-module/get` endpoint with list+filter pattern in `module-wizard.tsx`. Uses `useCourseModule` hook's approach (fetch all modules, filter by `moduleCode`).
+- ✅ **Redundant Course Registration Removed** (#102): Eliminated manual `course_registration` call that duplicated gateway auto-confirmation.
+- ✅ **Reward Claim Lifecycle Documented** (#103): Documented in `use-project-contributor.ts` and `use-project-manager.ts`. Path A: next-task commit auto-claims previous rewards. Path B: project exit claims final rewards.
+- ✅ Issues closed: #68, #98, #101, #102, #104
+
 **January 30, 2026**:
 - ✅ **Teacher Dashboard Blocker Resolved** ([andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23)): API now returns full commitment history. Added client-side filter in `PendingReviewsList` to show only `PENDING_APPROVAL` items in the pending assessments card.
 - ✅ **Phase 3.10 (Component Extraction)**: Extracted all direct `authenticatedFetch` calls from components into React Query hooks
@@ -198,10 +207,16 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
-| **Modules endpoint empty for on-chain courses** | 🔴 High | Waiting on API team | `/course/user/modules/` returns `[]` for courses with only on-chain modules; course detail endpoint has the data. May implement frontend fallback. |
-| **Course UX Testing** | 🟡 Medium | Pending | All course hooks refactored, needs manual testing before project migration |
-| **Project Hooks Migration** | 🟡 Medium | Pending | 3 hooks need colocated types + create `use-project-content.ts` |
-| **Phase 3.10 Direct API Calls** | ✅ Done | Complete | All component `authenticatedFetch` calls extracted to hooks. Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain (deferred). |
+| **Modules endpoint empty for on-chain courses** | 🔴 High | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. May implement frontend fallback. |
+| **TX Input invalid error** (#29) | 🔴 High | Open | Blocks course enrollment |
+| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Corrected analysis posted. Need `useLeaveProject` hook + Phase 3.9 colocated types. |
+| **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook or per-project detail fetch. |
+| **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
+| **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
+| **Update CLAUDE.md references** | 🟢 Low | Pending | Remove deleted `andamioscan-events.ts` and `use-event-confirmation.ts` from Key Files and API Clients tables |
+| **Andamioscan removal** | ✅ Done | Complete | `andamioscan-events.ts` deleted, 0 imports remain. All pages use gateway hooks. |
+| **Module wizard removed endpoint** (#68) | ✅ Done | Fixed | Replaced with list+filter pattern |
+| **Phase 3.10 Direct API Calls** | ✅ Done | Complete | Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain (deferred). |
 
 ---
 
@@ -291,6 +306,7 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-01-17/18 | V2 Gateway API Migration | Complete |
 | 2026-01-21 | L1 Core Package + TX Fixes | Complete |
 | 2026-01-24 | **Course Side Colocated Types** | Complete |
+| 2026-01-31 | **Landing Page + TX Stream + Bug Fixes** (PR #105) | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---

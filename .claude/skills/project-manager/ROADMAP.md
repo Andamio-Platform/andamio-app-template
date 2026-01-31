@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 24, 2026
+> **Last Updated**: January 31, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -63,6 +63,14 @@ TYPE TRANSFORMATION (Phase 3.8) ────────────────
   │   74 type errors → 0
   │
   ▼
+ANDAMIOSCAN REMOVAL ───────────────────────────────────── 2026-01-31 ✅
+  │
+  │   All direct Andamioscan calls eliminated
+  │   andamioscan-events.ts deleted (0 imports remain)
+  │   Pages use gateway hooks exclusively
+  │   project-eligibility.ts → pure function
+  │
+  ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
   │
   │   Feature backlog begins!
@@ -84,6 +92,7 @@ MAINNET V2 LAUNCH ────────────────────�
 | 2026-01-16 (Fri) | Final Demos | ✅ Complete |
 | **2026-01-17/18** | **V2 Gateway API Migration** | ✅ Complete |
 | **2026-01-24** | **Phase 3.8 Type Transformation** | ✅ Complete |
+| **2026-01-31** | **Andamioscan Removal** — All direct calls eliminated | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 

@@ -273,9 +273,10 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 ## Package Architecture
 
 **T3 App Template** (this app):
-- `useSimpleTransaction` hook - transaction lifecycle (build → sign → submit → register)
-- `useTxWatcher` hook - gateway confirmation polling
-- `~/config/transaction-ui.ts` - UI strings, endpoints, `requiresDBUpdate` flags
+- `useTransaction` hook (`~/hooks/tx/use-transaction.ts`) - transaction lifecycle (build → sign → submit → register)
+- `useTxStream` hook (`~/hooks/tx/use-tx-stream.ts`) - SSE-based gateway confirmation with polling fallback
+- `useTxWatcher` hook (`~/hooks/tx/use-tx-watcher.ts`) - polling-only gateway confirmation (legacy)
+- `~/config/transaction-ui.ts` - UI strings, endpoints, `requiresDBUpdate` / `requiresOnChainConfirmation` flags
 - `~/config/transaction-schemas.ts` - Zod validation schemas for params
 - `TransactionButton`, `TransactionStatus` - UI components
 - 16 transaction-specific components

@@ -103,6 +103,27 @@ export const MARKETING = {
   },
 
   /**
+   * Landing page cards - three entry paths
+   */
+  landingCards: {
+    explore: {
+      title: "Explore",
+      description:
+        "Browse courses and projects. No wallet required.",
+    },
+    signIn: {
+      title: "Sign In",
+      description:
+        "Returning user? Connect your wallet to pick up where you left off.",
+    },
+    getStarted: {
+      title: "Get Started",
+      description:
+        "New here? Connect a wallet and mint your access token to begin.",
+    },
+  },
+
+  /**
    * Footer content
    */
   footer: {

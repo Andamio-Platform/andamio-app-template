@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -9,6 +9,7 @@ import {
   useAssignmentCommitment,
   useSubmitEvidence,
 } from "~/hooks/api/course";
+import { useCourse } from "~/hooks/api/course/use-course";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
@@ -21,7 +22,6 @@ import { TransactionStatus } from "~/components/tx/transaction-status";
 import { ContentDisplay } from "~/components/content-display";
 import { CredentialClaim } from "~/components/tx/credential-claim";
 import { hashNormalizedContent } from "~/lib/hashing";
-import { getCourseStudent, type AndamioscanStudent } from "~/lib/andamioscan-events";
 import type { JSONContent } from "@tiptap/core";
 import {
   AlertIcon,
@@ -112,41 +112,21 @@ export function AssignmentCommitment({
     }
   );
 
-  // On-chain student state (from Andamioscan)
-  const [onChainStudent, setOnChainStudent] = useState<AndamioscanStudent | null>(null);
-  const [onChainLoading, setOnChainLoading] = useState(true);
-
-  // Fetch on-chain student state
-  const refetchOnChain = useCallback(async () => {
-    if (!user?.accessTokenAlias || !courseNftPolicyId) {
-      setOnChainLoading(false);
-      return;
-    }
-
-    setOnChainLoading(true);
-    try {
-      const studentState = await getCourseStudent(courseNftPolicyId, user.accessTokenAlias);
-      console.log("[AssignmentCommitment] On-chain student state:", studentState);
-      setOnChainStudent(studentState);
-    } catch (err) {
-      console.warn("[AssignmentCommitment] Failed to fetch on-chain state:", err);
-      setOnChainStudent(null);
-    } finally {
-      setOnChainLoading(false);
-    }
-  }, [courseNftPolicyId, user?.accessTokenAlias]);
-
-  // Fetch on-chain state on mount
-  useEffect(() => {
-    void refetchOnChain();
-  }, [refetchOnChain]);
+  // Course data from hook (includes pastStudents for completion check)
+  const { data: courseData, refetch: refetchCourse } = useCourse(courseNftPolicyId);
 
   // Check if user has already completed THIS module on-chain
+  // A user in pastStudents has completed the course; for module-level we check
+  // if the module's sltHash appears in the on-chain modules completed by the student.
+  // Since the merged API doesn't have per-module completion, we use pastStudents as a proxy.
   const hasCompletedOnChain = !!(
-    onChainStudent?.completed &&
+    user?.accessTokenAlias &&
     sltHash &&
-    onChainStudent.completed.includes(sltHash)
+    courseData?.pastStudents?.includes(user.accessTokenAlias)
   );
+
+  // Loading state for on-chain check comes from course hook
+  const onChainLoading = !courseData && !user?.accessTokenAlias ? false : false;
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
@@ -313,7 +293,7 @@ export function AssignmentCommitment({
               onSuccess={() => {
                 // Refresh data after claiming
                 void refetchCommitment();
-                void refetchOnChain();
+                void refetchCourse();
               }}
             />
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { useProjects } from "~/hooks/api";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -9,7 +9,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
 import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer, AndamioText } from "~/components/andamio";
 import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
-import { AlertIcon, ProjectIcon, SuccessIcon, PendingIcon, CredentialIcon, LoadingIcon } from "~/components/icons";
+import { AlertIcon, ProjectIcon, SuccessIcon, PendingIcon, CredentialIcon } from "~/components/icons";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
 
 /**
@@ -28,56 +28,20 @@ export default function ProjectCatalogPage() {
   const { user, isAuthenticated } = useAndamioAuth();
   const userAlias = user?.accessTokenAlias;
 
-  // Eligibility state: projectId -> result
-  const [eligibilityMap, setEligibilityMap] = useState<Map<string, EligibilityResult>>(new Map());
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
+  // Derive eligibility from project prerequisites (pure computation, no API calls)
+  // Note: Without student completion data on the list page, projects with prerequisites
+  // will show progress as 0/N. Individual project pages do full eligibility checks.
+  const eligibilityMap = useMemo(() => {
+    const map = new Map<string, EligibilityResult>();
+    if (!projects?.length) return map;
 
-  // Check eligibility for projects when user is authenticated
-  const checkEligibility = useCallback(async () => {
-    if (!userAlias || !projects?.length) return;
-
-    // Filter to projects with valid project_id
-    const projectsWithId = projects.filter(
-      (p): p is typeof p & { project_id: string } => typeof p.projectId === "string"
-    );
-
-    if (projectsWithId.length === 0) return;
-
-    setIsCheckingEligibility(true);
-
-    try {
-      const results = await Promise.all(
-        projectsWithId.map(async (project) => {
-          try {
-            const result = await checkProjectEligibility(project.projectId, userAlias);
-            return { projectId: project.projectId, result };
-          } catch (err) {
-            console.error(`Error checking eligibility for ${project.projectId}:`, err);
-            return null;
-          }
-        })
-      );
-
-      const newMap = new Map<string, EligibilityResult>();
-      for (const entry of results) {
-        if (entry) {
-          newMap.set(entry.projectId, entry.result);
-        }
-      }
-      setEligibilityMap(newMap);
-    } catch (err) {
-      console.error("Error checking eligibility:", err);
-    } finally {
-      setIsCheckingEligibility(false);
+    for (const project of projects) {
+      if (!project.projectId) continue;
+      const result = checkProjectEligibility(project.prerequisites ?? [], []);
+      map.set(project.projectId, result);
     }
-  }, [userAlias, projects]);
-
-  // Trigger eligibility check when dependencies are ready
-  useEffect(() => {
-    if (isAuthenticated && userAlias && projects && projects.length > 0) {
-      void checkEligibility();
-    }
-  }, [isAuthenticated, userAlias, projects, checkEligibility]);
+    return map;
+  }, [projects]);
 
   // Loading state
   if (isLoading) {
@@ -133,17 +97,6 @@ export default function ProjectCatalogPage() {
         <AndamioText variant="small" className="text-muted-foreground">
           -
         </AndamioText>
-      );
-    }
-
-    if (isCheckingEligibility && !eligibilityMap.has(projectId)) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <LoadingIcon className="h-3 w-3 animate-spin text-muted-foreground" />
-          <AndamioText variant="small" className="text-muted-foreground">
-            Checking...
-          </AndamioText>
-        </div>
       );
     }
 

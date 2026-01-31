@@ -118,8 +118,9 @@ async function proxyRequest(
     const fullPath = `${gatewayPath}${queryString ? `?${queryString}` : ""}`;
     const gatewayUrl = `${env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}/${fullPath}`;
 
-    // For GET requests, check cache first
-    if (method === "GET") {
+    // For GET requests, check cache first (skip for tx/status - needs real-time updates for polling fallback)
+    const isTxStatus = gatewayPath.includes("tx/status/");
+    if (method === "GET" && !isTxStatus) {
       const cached = getCachedResponse(fullPath);
       if (cached) {
         console.log(`[Gateway Proxy] Cache HIT for ${gatewayPath}`);
@@ -181,8 +182,8 @@ async function proxyRequest(
     const data: unknown = await response.json();
     console.log(`[Gateway Proxy] Success response from ${gatewayPath}`);
 
-    // Cache successful GET responses
-    if (method === "GET") {
+    // Cache successful GET responses (skip tx/status - needs real-time updates)
+    if (method === "GET" && !isTxStatus) {
       setCachedResponse(fullPath, data);
     }
 

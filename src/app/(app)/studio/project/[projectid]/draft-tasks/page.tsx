@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -27,7 +27,6 @@ import {
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject } from "~/lib/andamioscan-events";
 import { useProject } from "~/hooks/api/project/use-project";
 import { useManagerTasks, useDeleteTask } from "~/hooks/api/project/use-project-manager";
 
@@ -53,24 +52,8 @@ export default function DraftTasksPage() {
   const [deletingTaskIndex, setDeletingTaskIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // On-chain status tracking
-  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
-
-  // Orchestration: on-chain task count from Andamioscan
-  useEffect(() => {
-    if (isProjectLoading || !projectDetail) return;
-
-    const fetchOnChainData = async () => {
-      try {
-        const projectDetails = await getProject(projectId);
-        setOnChainTaskCount(projectDetails?.tasks?.length ?? 0);
-      } catch {
-        setOnChainTaskCount(0);
-      }
-    };
-
-    void fetchOnChainData();
-  }, [isProjectLoading, projectDetail, projectId]);
+  // On-chain task count derived from hook data
+  const onChainTaskCount = projectDetail?.tasks?.filter(t => t.taskStatus === "ON_CHAIN").length ?? 0;
 
   const handleDeleteTask = async (taskIndex: number) => {
     if (!isAuthenticated || !contributorStateId) return;

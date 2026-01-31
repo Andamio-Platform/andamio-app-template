@@ -23,12 +23,11 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TeacherIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 
@@ -69,7 +68,7 @@ export function TeachersUpdate({
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
 
-  const [teacherInput, setTeacherInput] = useState("");
+  const [teacherAliases, setTeacherAliases] = useState<string[]>([]);
   const [action, setAction] = useState<"add" | "remove">("add");
 
   // Watch for gateway confirmation after TX submission
@@ -87,7 +86,7 @@ export function TeachersUpdate({
           });
 
           // Clear input
-          setTeacherInput("");
+          setTeacherAliases([]);
 
           // Call callback
           void onSuccess?.();
@@ -103,18 +102,7 @@ export function TeachersUpdate({
   const ui = TRANSACTION_UI.COURSE_OWNER_TEACHERS_MANAGE;
 
   const handleUpdateTeachers = async () => {
-    if (!user?.accessTokenAlias || !teacherInput.trim()) {
-      return;
-    }
-
-    // Parse teacher aliases (comma-separated)
-    const teacherAliases = teacherInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    if (teacherAliases.length === 0) {
-      toast.error("No teachers specified");
+    if (!user?.accessTokenAlias || teacherAliases.length === 0) {
       return;
     }
 
@@ -144,7 +132,7 @@ export function TeachersUpdate({
   }
 
   const hasAccessToken = !!user.accessTokenAlias;
-  const hasTeachers = teacherInput.trim().length > 0;
+  const hasTeachers = teacherAliases.length > 0;
   const canSubmit = hasAccessToken && hasTeachers;
 
   return (
@@ -202,22 +190,19 @@ export function TeachersUpdate({
         </div>
 
         {/* Teacher Input */}
-        <div className="space-y-2">
-          <AndamioLabel htmlFor="teachers">
-            {action === "add" ? "Teachers to Add" : "Teachers to Remove"}
-          </AndamioLabel>
-          <AndamioInput
-            id="teachers"
-            type="text"
-            placeholder="alice, bob, carol"
-            value={teacherInput}
-            onChange={(e) => setTeacherInput(e.target.value)}
-            disabled={state !== "idle" && state !== "error"}
-          />
-          <AndamioText variant="small" className="text-xs">
-            Enter access token aliases, separated by commas
-          </AndamioText>
-        </div>
+        <AliasListInput
+          value={teacherAliases}
+          onChange={setTeacherAliases}
+          label={action === "add" ? "Teachers to Add" : "Teachers to Remove"}
+          placeholder="Enter teacher alias"
+          disabled={state !== "idle" && state !== "error"}
+          excludeAliases={currentTeachers}
+          helperText={
+            action === "add"
+              ? "Each alias is verified on-chain before being added."
+              : "Each alias is verified on-chain before being removed."
+          }
+        />
 
         {/* Warning for remove */}
         {action === "remove" && (

@@ -208,15 +208,17 @@ export function ModuleWizard({
 
       const resolvedLessons = lessons.filter((lesson): lesson is Lesson => lesson !== null);
 
-      // Refetch module for latest status - Go API: GET /course/user/course-module/get/{policy_id}/{module_code}
+      // Refetch module for latest status via list+filter (single-module GET was removed in V2)
       const moduleResponse = await fetch(
-        `${GATEWAY_API_BASE}/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/modules/${courseNftPolicyId}`
       );
       let updatedModule: CourseModule | null = courseModule;
       if (moduleResponse.ok) {
-        const rawModule = (await moduleResponse.json()) as Record<string, unknown>;
-        // transformCourseModule expects OrchestrationMergedCourseModuleItem, cast as needed
-        updatedModule = transformCourseModule(rawModule as Parameters<typeof transformCourseModule>[0]);
+        const moduleResult = (await moduleResponse.json()) as { data?: unknown[]; warning?: string };
+        const allModules = (moduleResult.data ?? []).map(
+          (raw) => transformCourseModule(raw as Parameters<typeof transformCourseModule>[0])
+        );
+        updatedModule = allModules.find((m) => m.moduleCode === moduleCode) ?? courseModule;
       }
 
       // Introduction data is embedded in the module response

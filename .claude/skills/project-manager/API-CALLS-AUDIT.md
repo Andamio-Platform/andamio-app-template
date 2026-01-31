@@ -1,6 +1,16 @@
 # Direct API Calls in UX Components - Audit Report
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-01-31
+
+## Andamioscan Removal (2026-01-31)
+
+**All direct Andamioscan calls have been eliminated.** The file `src/lib/andamioscan-events.ts` was deleted and `src/hooks/tx/use-event-confirmation.ts` was removed. All pages now use gateway hooks (`useProject`, `useCourse`, etc.) exclusively.
+
+**Remaining future work**:
+- Wire up `StudentCompletionInput[]` on project catalog + contributor pages (currently `[]`)
+- Create `useStudentCourses()` hook for prerequisite eligibility checking across projects
+
+---
 
 ## Summary
 

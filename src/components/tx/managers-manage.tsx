@@ -23,12 +23,11 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ManagerIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 
@@ -69,7 +68,7 @@ export function ManagersManage({
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
 
-  const [managerInput, setManagerInput] = useState("");
+  const [managerAliases, setManagerAliases] = useState<string[]>([]);
   const [action, setAction] = useState<"add" | "remove">("add");
 
   // Watch for gateway confirmation after TX submission
@@ -87,7 +86,7 @@ export function ManagersManage({
           });
 
           // Clear input
-          setManagerInput("");
+          setManagerAliases([]);
 
           // Call callback
           void onSuccess?.();
@@ -103,18 +102,7 @@ export function ManagersManage({
   const ui = TRANSACTION_UI.PROJECT_OWNER_MANAGERS_MANAGE;
 
   const handleUpdateManagers = async () => {
-    if (!user?.accessTokenAlias || !managerInput.trim()) {
-      return;
-    }
-
-    // Parse manager aliases (comma-separated)
-    const managerAliases = managerInput
-      .split(",")
-      .map((m) => m.trim())
-      .filter((m) => m.length > 0);
-
-    if (managerAliases.length === 0) {
-      toast.error("No managers specified");
+    if (!user?.accessTokenAlias || managerAliases.length === 0) {
       return;
     }
 
@@ -144,7 +132,7 @@ export function ManagersManage({
   }
 
   const hasAccessToken = !!user.accessTokenAlias;
-  const hasManagers = managerInput.trim().length > 0;
+  const hasManagers = managerAliases.length > 0;
   const canSubmit = hasAccessToken && hasManagers;
 
   return (
@@ -202,22 +190,19 @@ export function ManagersManage({
         </div>
 
         {/* Manager Input */}
-        <div className="space-y-2">
-          <AndamioLabel htmlFor="managers">
-            {action === "add" ? "Managers to Add" : "Managers to Remove"}
-          </AndamioLabel>
-          <AndamioInput
-            id="managers"
-            type="text"
-            placeholder="alice, bob, carol"
-            value={managerInput}
-            onChange={(e) => setManagerInput(e.target.value)}
-            disabled={state !== "idle" && state !== "error"}
-          />
-          <AndamioText variant="small" className="text-xs">
-            Enter access token aliases, separated by commas
-          </AndamioText>
-        </div>
+        <AliasListInput
+          value={managerAliases}
+          onChange={setManagerAliases}
+          label={action === "add" ? "Managers to Add" : "Managers to Remove"}
+          placeholder="Enter manager alias"
+          disabled={state !== "idle" && state !== "error"}
+          excludeAliases={currentManagers}
+          helperText={
+            action === "add"
+              ? "Each alias is verified on-chain before being added."
+              : "Each alias is verified on-chain before being removed."
+          }
+        />
 
         {/* Warning for remove */}
         {action === "remove" && (

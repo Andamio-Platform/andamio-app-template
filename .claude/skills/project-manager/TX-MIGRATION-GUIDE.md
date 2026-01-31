@@ -58,7 +58,7 @@ export const TX_TYPE_MAP: Record<string, string> = {
 
 ### Step 1: Update Transaction Config
 
-Add `requiresDBUpdate` to the transaction type in `~/config/transaction-ui.ts`:
+Add registration flags to the transaction type in `~/config/transaction-ui.ts`:
 
 ```typescript
 INSTANCE_COURSE_CREATE: {
@@ -68,9 +68,21 @@ INSTANCE_COURSE_CREATE: {
   footerLink: "...",
   footerLinkText: "Tx Documentation",
   successInfo: "Course created successfully!",
-  requiresDBUpdate: true,  // ← Add this
+  requiresDBUpdate: true,  // ← TX needs gateway DB updates
+},
+
+// For TXs that only need on-chain confirmation (no DB writes):
+GLOBAL_GENERAL_ACCESS_TOKEN_MINT: {
+  // ...
+  requiresDBUpdate: false,
+  requiresOnChainConfirmation: true,  // ← Track on-chain only
 },
 ```
+
+**Registration flags**:
+- `requiresDBUpdate: true` — Most TXs. Gateway monitors and updates DB.
+- `requiresOnChainConfirmation: true` — Pure on-chain TXs (e.g., access token mint). Gateway tracks `pending → confirmed → updated` but does no DB writes.
+- Registration happens when either flag is `true`. JWT is optional for registration.
 
 ### Step 2: Add Validation Schema
 

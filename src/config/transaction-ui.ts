@@ -55,6 +55,16 @@ export interface TransactionUIConfig {
    * - false: Pure on-chain TX, no DB state to update (e.g., Access Token Mint)
    */
   requiresDBUpdate: boolean;
+  /**
+   * Whether this transaction should be registered with the gateway for
+   * on-chain confirmation tracking, even if no DB updates are needed.
+   * Gateway will track pending → confirmed → updated (updated is immediate
+   * since there are no DB writes).
+   *
+   * - true: Register and track via SSE/polling (e.g., Access Token Mint)
+   * - false: No tracking needed (default)
+   */
+  requiresOnChainConfirmation?: boolean;
 }
 
 /**
@@ -106,7 +116,8 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     footerLink: getDocsUrl("accessTokenMint"),
     footerLinkText: "Tx Documentation",
     successInfo: "Access token minted successfully!",
-    requiresDBUpdate: false, // Pure on-chain, token exists only in wallet
+    requiresDBUpdate: false, // No DB state to update after confirmation
+    requiresOnChainConfirmation: true, // Track on-chain confirmation via gateway
   },
 
   // ===========================================================================
@@ -289,6 +300,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     title: "Commit to New Task",
     description: [
       "Commit to a new task in this project. This creates an on-chain commitment to the task.",
+      "If you have a completed (accepted) task, committing to a new task will also claim your pending reward from the previous task.",
     ],
     footerLink: getDocsUrl("taskCommit"),
     footerLinkText: "Tx Documentation",

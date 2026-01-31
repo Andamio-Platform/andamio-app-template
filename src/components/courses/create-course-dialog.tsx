@@ -24,6 +24,7 @@ import {
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { TransactionStatus } from "~/components/tx/transaction-status";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AliasListInput } from "~/components/tx/alias-list-input";
 import {
   AddIcon,
   SparkleIcon,
@@ -44,7 +45,7 @@ import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-cours
  * guides users through the minting process with clear explanation.
  *
  * ## Flow
- * 1. User enters code + title, clicks "Mint Course NFT"
+ * 1. User enters title + optional teachers, clicks "Mint Course NFT"
  * 2. TX builds, signs, submits → useTxStream polls for confirmation
  * 3. On confirmation → register course in DB → invalidate cache
  * 4. Close drawer → course appears in list → toast with "Open Course" action
@@ -61,8 +62,8 @@ export function CreateCourseDialog() {
   const updateCourse = useUpdateCourse();
 
   const [open, setOpen] = useState(false);
-  const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
+  const [additionalTeachers, setAdditionalTeachers] = useState<string[]>([]);
   const [initiatorData, setInitiatorData] = useState<{
     used_addresses: string[];
     change_address: string;
@@ -72,7 +73,6 @@ export function CreateCourseDialog() {
   // Use BOTH state (for UI) and ref (for callback access without stale closure)
   const [courseMetadata, setCourseMetadata] = useState<{
     policyId: string;
-    code: string;
     title: string;
   } | null>(null);
   const courseMetadataRef = useRef<typeof courseMetadata>(null);
@@ -166,8 +166,8 @@ export function CreateCourseDialog() {
           }
 
           // Reset form state
-          setCode("");
           setTitle("");
+          setAdditionalTeachers([]);
           setCourseMetadata(null);
           hasRegisteredRef.current = false;
           reset();
@@ -208,22 +208,24 @@ export function CreateCourseDialog() {
   const ui = TRANSACTION_UI.INSTANCE_COURSE_CREATE;
 
   const handleCreateCourse = async () => {
-    if (!user?.accessTokenAlias || !initiatorData || !code.trim() || !title.trim()) {
+    if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
     }
 
     // Reset registration flag for new attempt
     hasRegisteredRef.current = false;
 
+    // Always include the creator as a teacher
+    const allTeachers = [user.accessTokenAlias, ...additionalTeachers.filter((t) => t !== user.accessTokenAlias)];
+
     await execute({
       txType: "INSTANCE_COURSE_CREATE",
       params: {
         alias: user.accessTokenAlias,
-        teachers: [user.accessTokenAlias],
+        teachers: allTeachers,
         initiator_data: initiatorData,
       },
       metadata: {
-        code: code.trim(),
         title: title.trim(),
       },
       onSuccess: async (txResult) => {
@@ -233,7 +235,6 @@ export function CreateCourseDialog() {
           // Store metadata for registration after TX confirms
           setCourseMetadata({
             policyId: courseNftPolicyId,
-            code: code.trim(),
             title: title.trim(),
           });
         }
@@ -255,8 +256,8 @@ export function CreateCourseDialog() {
 
     setOpen(newOpen);
     if (!newOpen) {
-      setCode("");
       setTitle("");
+      setAdditionalTeachers([]);
       setCourseMetadata(null);
       hasRegisteredRef.current = false;
       reset();
@@ -266,9 +267,8 @@ export function CreateCourseDialog() {
   // Requirements
   const hasAccessToken = !!user?.accessTokenAlias;
   const hasInitiatorData = !!initiatorData;
-  const hasCode = code.trim().length > 0;
   const hasTitle = title.trim().length > 0;
-  const canCreate = hasAccessToken && hasInitiatorData && hasCode && hasTitle;
+  const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
 
   // Determine if we're waiting for confirmation
   const isWaitingForConfirmation = state === "success" && result?.requiresDBUpdate && !txConfirmed;
@@ -320,28 +320,6 @@ export function CreateCourseDialog() {
               </AndamioAlert>
             )}
 
-            {/* Course Code Input */}
-            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
-              <div className="space-y-2">
-                <AndamioLabel htmlFor="course-code" className="text-base">
-                  Course Code <span className="text-destructive">*</span>
-                </AndamioLabel>
-                <AndamioInput
-                  id="course-code"
-                  placeholder="CARDANO-101"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  disabled={state !== "idle" && state !== "error"}
-                  className="h-12 text-base font-mono"
-                  maxLength={50}
-                  autoFocus
-                />
-                <AndamioText variant="small">
-                  A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
-                </AndamioText>
-              </div>
-            )}
-
             {/* Title Input */}
             {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
               <div className="space-y-2">
@@ -361,6 +339,19 @@ export function CreateCourseDialog() {
                   The display name shown to learners. You can change this later.
                 </AndamioText>
               </div>
+            )}
+
+            {/* Additional Teachers Input */}
+            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
+              <AliasListInput
+                value={additionalTeachers}
+                onChange={setAdditionalTeachers}
+                label="Additional Teachers (Optional)"
+                placeholder="Enter teacher alias"
+                disabled={state !== "idle" && state !== "error"}
+                excludeAliases={user?.accessTokenAlias ? [user.accessTokenAlias] : []}
+                helperText="Each alias is verified on-chain before being added. You are automatically included."
+              />
             )}
 
             {/* Transaction Status */}

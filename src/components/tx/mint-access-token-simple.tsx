@@ -55,6 +55,12 @@ export interface MintAccessTokenSimpleProps {
    * Callback fired when access token is successfully minted
    */
   onSuccess?: () => void | Promise<void>;
+  /**
+   * Callback fired after TX is submitted, with the alias and txHash.
+   * Useful for parent components that need to track the submission
+   * (e.g., showing TX status or the first-login ceremony).
+   */
+  onSubmitted?: (info: { alias: string; txHash: string }) => void;
 }
 
 // Alias must contain only alphanumeric characters and underscores
@@ -72,7 +78,7 @@ function isValidAlias(alias: string): boolean {
  * <MintAccessTokenSimple onSuccess={() => router.refresh()} />
  * ```
  */
-export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps) {
+export function MintAccessTokenSimple({ onSuccess, onSubmitted }: MintAccessTokenSimpleProps) {
   const { wallet, connected } = useWallet();
   const { user, isAuthenticated, refreshAuth } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
@@ -104,10 +110,10 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     })();
   }, [connected, wallet]);
 
-  // Watch for gateway confirmation after TX submission (only for TXs that need DB updates)
-  // Access Token Mint is pure on-chain, so we skip polling
+  // Watch for gateway confirmation after TX submission
+  // Tracks on-chain confirmation via SSE (pending → confirmed → updated)
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
-    result?.requiresDBUpdate ? result.txHash : null,
+    (result?.requiresDBUpdate || result?.requiresOnChainConfirmation) ? result.txHash : null,
     {
       onComplete: (status) => {
         // "updated" means Gateway has confirmed TX AND updated DB
@@ -133,8 +139,9 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     }
   );
 
-  // For pure on-chain TXs (no DB updates), treat submission as success
-  const isPureOnChainSuccess = state === "success" && result && !result.requiresDBUpdate;
+  // For pure on-chain TXs with no tracking at all, treat submission as success
+  // TXs with requiresOnChainConfirmation wait for gateway confirmation instead
+  const isPureOnChainSuccess = state === "success" && result && !result.requiresDBUpdate && !result.requiresOnChainConfirmation;
 
   // Track if we've already handled the success to prevent infinite loop
   const hasHandledSuccessRef = React.useRef(false);
@@ -183,7 +190,10 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
         initiator_data: walletAddress,
         alias: alias.trim(),
       },
-      onSuccess: async () => {
+      onSuccess: async (txResult) => {
+        // Notify parent of submission (for TX tracking / first-login ceremony)
+        onSubmitted?.({ alias: alias.trim(), txHash: txResult.txHash });
+
         // Optimistically update the alias in the database for immediate use
         // The gateway will also update it on confirmation, but this gives instant feedback
         try {
@@ -265,15 +275,15 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
             error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: result?.requiresDBUpdate
+              success: (result?.requiresDBUpdate || result?.requiresOnChainConfirmation)
                 ? "Transaction submitted! Waiting for confirmation..."
                 : "Transaction submitted to blockchain!",
             }}
           />
         )}
 
-        {/* Gateway Confirmation Status (only for TXs that need DB updates) */}
-        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+        {/* Gateway Confirmation Status */}
+        {state === "success" && (result?.requiresDBUpdate || result?.requiresOnChainConfirmation) && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />

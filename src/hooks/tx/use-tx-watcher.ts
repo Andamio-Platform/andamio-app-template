@@ -221,15 +221,19 @@ export function useTxWatcher(
 export async function registerTransaction(
   txHash: string,
   txType: string,
-  jwt: string,
+  jwt?: string | null,
   metadata?: Record<string, string>
 ): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (jwt) {
+    headers.Authorization = `Bearer ${jwt}`;
+  }
+
   const response = await fetch(`${GATEWAY_API_BASE}/tx/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${jwt}`,
-    },
+    headers,
     body: JSON.stringify({
       tx_hash: txHash,
       tx_type: txType,

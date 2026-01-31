@@ -704,8 +704,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </span>
                     <AndamioButton
                       size="sm"
-                      variant="secondary"
-                      className="flex-shrink-0"
+                      variant="outline"
+                      className="flex-shrink-0 border-secondary text-secondary hover:bg-secondary/10 hover:text-secondary dark:hover:bg-secondary/10"
                       asChild
                     >
                       <Link href={`/studio/course/${courseNftPolicyId}/teacher`}>

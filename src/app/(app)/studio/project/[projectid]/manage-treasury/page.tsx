@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import {
@@ -28,8 +28,8 @@ import {
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProject, type AndamioscanPrerequisite, type AndamioscanTask } from "~/lib/andamioscan-events";
 import { toast } from "sonner";
+import type { Task } from "~/hooks/api/project/use-project";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
 import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useQueryClient } from "@tanstack/react-query";
@@ -92,45 +92,26 @@ export default function ManageTreasuryPage() {
   // Selected tasks for publishing
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<Set<number>>(new Set());
 
-  // Prerequisites from Andamioscan (needed for transaction)
-  const [prerequisites, setPrerequisites] = useState<AndamioscanPrerequisite[]>([]);
-
-  // On-chain tasks from Andamioscan (for removal)
-  const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
+  // On-chain tasks for removal (derived from hook data)
   const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
-  const [isOrchestrating, setIsOrchestrating] = useState(false);
+
+  // Prerequisites from hook data (mapped to transaction format)
+  const prerequisites = useMemo(() =>
+    (projectDetail?.prerequisites ?? []).map(p => ({
+      course_id: p.courseId,
+      assignment_ids: p.sltHashes ?? [],
+    })),
+    [projectDetail?.prerequisites]
+  );
+
+  // On-chain tasks from hook data (tasks with ON_CHAIN status that have on-chain content)
+  const onChainTasks: Task[] = useMemo(() =>
+    (projectDetail?.tasks ?? []).filter(t => t.taskStatus === "ON_CHAIN"),
+    [projectDetail?.tasks]
+  );
 
   // Derived: on-chain task count
   const onChainTaskCount = onChainTasks.length;
-
-  // Orchestration: Andamioscan data (prerequisites + on-chain tasks)
-  useEffect(() => {
-    if (isProjectLoading || !projectDetail) return;
-
-    const fetchAndamioscanData = async () => {
-      setIsOrchestrating(true);
-      try {
-        const projectDetails = await getProject(projectId);
-        console.log("[manage-treasury] Fetched Andamioscan data:", {
-          taskCount: projectDetails?.tasks?.length ?? 0,
-          tasks: projectDetails?.tasks?.map((t) => ({
-            task_id: t.task_id,
-            lovelace_amount: t.lovelace_amount,
-            content: hexToText(t.content),
-          })),
-        });
-        setPrerequisites(projectDetails?.prerequisites ?? []);
-        setOnChainTasks(projectDetails?.tasks ?? []);
-      } catch {
-        setPrerequisites([]);
-        setOnChainTasks([]);
-      } finally {
-        setIsOrchestrating(false);
-      }
-    };
-
-    void fetchAndamioscanData();
-  }, [isProjectLoading, projectDetail, projectId]);
 
   // Cache invalidation for onSuccess callbacks
   const refreshData = useCallback(async () => {
@@ -163,13 +144,13 @@ export default function ManageTreasuryPage() {
     }
   };
 
-  const handleToggleOnChainTask = (taskId: string) => {
+  const handleToggleOnChainTask = (taskHash: string) => {
     setSelectedOnChainTaskIds((prev) => {
       const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
+      if (next.has(taskHash)) {
+        next.delete(taskHash);
       } else {
-        next.add(taskId);
+        next.add(taskHash);
       }
       return next;
     });
@@ -181,7 +162,7 @@ export default function ManageTreasuryPage() {
       setSelectedOnChainTaskIds(new Set());
     } else {
       // Select all on-chain tasks
-      setSelectedOnChainTaskIds(new Set(onChainTasks.map((t) => t.task_id)));
+      setSelectedOnChainTaskIds(new Set(onChainTasks.map((t) => t.taskHash).filter(Boolean)));
     }
   };
 
@@ -199,7 +180,7 @@ export default function ManageTreasuryPage() {
   }
 
   // Loading state
-  if (isProjectLoading || isTasksLoading || isOrchestrating) {
+  if (isProjectLoading || isTasksLoading) {
     return <AndamioPageLoading variant="detail" />;
   }
 
@@ -253,20 +234,23 @@ export default function ManageTreasuryPage() {
 
   // Convert selected on-chain tasks to ProjectData format for removal
   // IMPORTANT: tasks_to_remove requires full ProjectData objects, NOT just hashes!
-  const selectedOnChainTasks = onChainTasks.filter((t) => selectedOnChainTaskIds.has(t.task_id));
+  const selectedOnChainTasks = onChainTasks.filter((t) => t.taskHash && selectedOnChainTaskIds.has(t.taskHash));
   const tasksToRemove: ProjectData[] = selectedOnChainTasks.map((task) => {
-    // Decode hex content to text
-    const projectContent = hexToText(task.content);
+    // On-chain content from hook data - may be hex or text
+    const onChainContent = task.onChainContent ?? "";
+    const projectContent = /^[0-9a-fA-F]+$/.exec(onChainContent) ? hexToText(onChainContent) : (task.title || "Task");
 
-    // Andamioscan's expiration_posix is already in milliseconds (despite the name)
-    // Atlas API also expects milliseconds
-    const expirationMs = task.expiration_posix;
+    // Expiration from hook data
+    let expirationMs = parseInt(task.expirationTime ?? "0") || 0;
+    if (expirationMs < 946684800000) {
+      expirationMs = expirationMs * 1000;
+    }
 
     return {
       project_content: projectContent,
       expiration_posix: expirationMs,
-      lovelace_amount: task.lovelace_amount,
-      native_assets: [], // On-chain tasks from Andamioscan don't include native_assets yet
+      lovelace_amount: parseInt(task.lovelaceAmount) || 5000000,
+      native_assets: [],
     };
   });
 
@@ -302,7 +286,7 @@ export default function ManageTreasuryPage() {
         </AndamioBadge>
         <AndamioBadge variant="outline">
           <OnChainIcon className="h-3 w-3 mr-1" />
-          {onChainTaskCount} On-Chain (Andamioscan)
+          {onChainTaskCount} On-Chain
         </AndamioBadge>
         {selectedTasks.length > 0 && (
           <AndamioBadge variant="outline" className="bg-primary/10">
@@ -445,7 +429,7 @@ export default function ManageTreasuryPage() {
               <div>
                 <AndamioCardTitle className="flex items-center gap-2">
                   <OnChainIcon className="h-5 w-5" />
-                  On-Chain Tasks (from Andamioscan)
+                  On-Chain Tasks
                 </AndamioCardTitle>
                 <AndamioCardDescription>
                   Select tasks to remove from the project. Removed tasks return their deposit.
@@ -472,32 +456,35 @@ export default function ManageTreasuryPage() {
                 </AndamioTableHeader>
                 <AndamioTableBody>
                   {onChainTasks.map((task) => {
-                    const isSelected = selectedOnChainTaskIds.has(task.task_id);
-                    const decodedContent = hexToText(task.content);
-                    const expirationDate = new Date(task.expiration_posix);
+                    const taskHash = task.taskHash ?? "";
+                    const isSelected = selectedOnChainTaskIds.has(taskHash);
+                    const displayContent = task.title || (task.onChainContent ? hexToText(task.onChainContent) : "(empty content)");
+                    const expirationMs = parseInt(task.expirationTime ?? "0") || 0;
+                    const expirationDate = new Date(expirationMs < 946684800000 ? expirationMs * 1000 : expirationMs);
 
                     return (
                       <AndamioTableRow
-                        key={task.task_id}
+                        key={taskHash || task.index}
                         className={isSelected ? "bg-destructive/5" : ""}
                       >
                         <AndamioTableCell>
                           <AndamioCheckbox
                             checked={isSelected}
-                            onCheckedChange={() => handleToggleOnChainTask(task.task_id)}
+                            onCheckedChange={() => handleToggleOnChainTask(taskHash)}
+                            disabled={!taskHash}
                             aria-label={`Select task for removal`}
                           />
                         </AndamioTableCell>
                         <AndamioTableCell>
                           <AndamioText as="div" className="font-medium">
-                            {decodedContent || "(empty content)"}
+                            {displayContent}
                           </AndamioText>
                         </AndamioTableCell>
                         <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {task.task_id.slice(0, 16)}...
+                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
                         </AndamioTableCell>
                         <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(String(task.lovelace_amount))}</AndamioBadge>
+                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                         </AndamioTableCell>
                         <AndamioTableCell className="hidden sm:table-cell text-center text-xs text-muted-foreground">
                           {expirationDate.toLocaleDateString()}

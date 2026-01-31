@@ -83,6 +83,29 @@ export default function DashboardPage() {
 
   const hasAccessToken = !!user.accessTokenAlias;
 
+  // No access token: show only the mint prompt
+  if (!hasAccessToken) {
+    return (
+      <div className="space-y-6">
+        <WelcomeHero
+          accessTokenAlias={user.accessTokenAlias}
+          isPendingMint={isPendingAccessTokenMint}
+          pendingAlias={undefined}
+        />
+        <AccessTokenConfirmationAlert onComplete={() => router.refresh()} />
+        {!isPendingAccessTokenMint && (
+          <GettingStarted
+            isAuthenticated={isAuthenticated}
+            hasAccessToken={hasAccessToken}
+          />
+        )}
+        {!isPendingAccessTokenMint && (
+          <MintAccessTokenSimple onSuccess={() => router.refresh()} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Hero - Main identity display */}
@@ -92,24 +115,8 @@ export default function DashboardPage() {
         pendingAlias={undefined}
       />
 
-      {/* Access Token Confirmation Alert - Shows during pending mint */}
-      <AccessTokenConfirmationAlert onComplete={() => router.refresh()} />
-
-      {/* Getting Started - Only shows when user needs to mint token and not pending */}
-      {!isPendingAccessTokenMint && (
-        <GettingStarted
-          isAuthenticated={isAuthenticated}
-          hasAccessToken={hasAccessToken}
-        />
-      )}
-
-      {/* Mint Access Token - Only show when user doesn't have one and not pending */}
-      {!hasAccessToken && !isPendingAccessTokenMint && (
-        <MintAccessTokenSimple onSuccess={() => router.refresh()} />
-      )}
-
-      {/* My Learning Section - Only show if user has access token */}
-      {hasAccessToken && <MyLearning />}
+      {/* My Learning Section */}
+      <MyLearning />
 
       {/* Account Details Section */}
       <div className="grid gap-6 md:grid-cols-2">

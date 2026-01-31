@@ -9,9 +9,11 @@ The gateway now provides **server-side transaction monitoring** via the TX State
 **Key Features (V2 Gateway Approach):**
 - ✅ Server-side transaction monitoring and confirmation
 - ✅ Automatic DB updates via TxTypeRegistry
-- ✅ Simple client-side polling of gateway status endpoint
+- ✅ **SSE streaming** for real-time status updates (`useTxStream`)
+- ✅ Polling fallback when SSE fails (`pollUntilTerminal`)
 - ✅ Well-defined terminal states (`updated`, `failed`, `expired`)
 - ✅ Toast notifications for user feedback
+- ✅ JWT-optional registration (supports pre-auth flows like access token mint)
 
 > **Migration Note**: The V1 client-side Koios polling approach is **deprecated**. New transaction components should use the V2 gateway approach documented below.
 
@@ -25,8 +27,9 @@ The gateway provides dedicated endpoints for tracking pending transactions with 
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/v2/tx/register` | POST | Register TX after wallet submit |
+| `/api/v2/tx/register` | POST | Register TX after wallet submit (JWT optional) |
 | `/api/v2/tx/status/:tx_hash` | GET | Poll individual TX status |
+| `/api/v2/tx/stream/:tx_hash` | GET (SSE) | **Real-time streaming** — server pushes state/state_change/complete events |
 | `/api/v2/tx/pending` | GET | Get all user's pending TXs |
 | `/api/v2/tx/types` | GET | List valid TX types |
 
@@ -49,54 +52,64 @@ pending → expired               (exceeded TTL without confirmation)
 ### Full Transaction Flow
 
 ```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
-│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  POLL   │
-└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌──────────┐
+│  BUILD  │ → │  SIGN   │ → │ SUBMIT  │ → │ REGISTER │ → │  STREAM  │
+└─────────┘    └─────────┘    └─────────┘    └──────────┘    └──────────┘
      │              │              │              │              │
      │              │              │              │              ▼
-  POST to       wallet.        wallet.       POST to       GET status
-  /tx/*         signTx()      submitTx()    /tx/register   until terminal
+  POST to       wallet.        wallet.       POST to       SSE stream
+  /tx/*         signTx()      submitTx()    /tx/register   (polling fallback)
 ```
 
 1. **BUILD**: POST to `/api/v2/tx/*` endpoint → get unsigned CBOR
 2. **SIGN**: User signs with wallet (`wallet.signTx(cbor, true)`)
 3. **SUBMIT**: Submit to blockchain (`wallet.submitTx(signed)`) → get txHash
-4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType
-5. **POLL**: GET `/api/v2/tx/status/:txHash` every 10 seconds until terminal state
+4. **REGISTER**: POST to `/api/v2/tx/register` with txHash and txType (JWT optional)
+5. **STREAM**: SSE via `/api/v2/tx/stream/:txHash` for real-time updates. Falls back to polling `/api/v2/tx/status/:txHash` every 6 seconds if SSE fails.
+
+### Registration Flags
+
+`TransactionUIConfig` in `transaction-ui.ts` controls when TXs are registered:
+
+| Flag | Purpose | Example |
+|------|---------|---------|
+| `requiresDBUpdate: true` | TX needs gateway DB updates (most TXs) | Course create, assignment commit |
+| `requiresOnChainConfirmation: true` | TX needs on-chain tracking only (no DB writes) | Access token mint |
+
+Registration happens when either flag is `true`.
 
 ### Implementation
 
 See:
-- `~/hooks/use-tx-watcher.ts` - TX status polling hook
-- `~/hooks/use-simple-transaction.ts` - Simplified transaction hook with auto-registration
+- `~/hooks/tx/use-tx-stream.ts` - **Primary** — SSE-based TX state tracking with polling fallback
+- `~/hooks/tx/use-tx-watcher.ts` - Polling-only TX status tracking (legacy, still used as fallback)
+- `~/hooks/tx/use-transaction.ts` - Full BUILD → SIGN → SUBMIT → REGISTER flow
 - `~/.claude/skills/audit-api-coverage/tx-state-machine.md` - Full API documentation
 
 ### Usage Example
 
 ```typescript
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 
 function MintAccessToken() {
-  const { execute, state, txStatus } = useSimpleTransaction();
+  const { execute, state, result } = useTransaction();
+  const { status, isSuccess } = useTxStream(result?.txHash ?? null);
 
   const handleMint = async () => {
     await execute({
       txType: "GLOBAL_GENERAL_ACCESS_TOKEN_MINT",
       params: { initiator_data: walletAddress, alias: "myalias" },
-      onSuccess: (result) => {
-        // Transaction submitted and registered
-        // txStatus will update automatically as gateway processes
-      },
     });
   };
 
   return (
     <div>
       <button onClick={handleMint}>Mint</button>
-      {txStatus && (
+      {status && (
         <div>
-          Status: {txStatus.state}
-          {txStatus.state === "updated" && "✓ Complete!"}
+          Status: {status.state}
+          {isSuccess && "✓ Complete!"}
         </div>
       )}
     </div>

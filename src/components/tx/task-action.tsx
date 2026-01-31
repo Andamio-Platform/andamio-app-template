@@ -5,7 +5,7 @@
  * Uses PROJECT_CONTRIBUTOR_TASK_ACTION transaction with gateway auto-confirmation.
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -14,7 +14,7 @@ import React, { useState, useMemo } from "react";
 import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -102,7 +102,7 @@ export function TaskAction({
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {

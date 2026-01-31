@@ -170,6 +170,7 @@ NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="your-policy-id"
 | `preprodWarning` | Preprod network warning |
 | `finalCta` | Final call-to-action |
 | `timeline` | Launch dates |
+| `landingCards` | Explore / Sign In / Get Started card titles and descriptions |
 | `footer` | Footer links and brand text |
 
 ### Color Variables

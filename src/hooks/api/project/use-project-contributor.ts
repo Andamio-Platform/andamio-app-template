@@ -6,6 +6,23 @@
  * - Managing task commitments (create, update, delete)
  * - Viewing commitment status
  *
+ * ## Reward Claim Lifecycle
+ *
+ * Task rewards are NOT claimed via a standalone endpoint. Instead, rewards
+ * are claimed implicitly through two paths:
+ *
+ * **Path A — Commit to next task**: When a contributor commits to a new task
+ * via `useCreateCommitment`, they automatically receive rewards from their
+ * previously completed (accepted) task. The on-chain TX handles both the
+ * new commitment and the reward payout in a single transaction.
+ *
+ * **Path B — Leave project**: When a contributor un-enrolls from a project,
+ * they claim rewards from their latest completed task as part of exiting.
+ * (Hook: TODO — pending `useLeaveProject` implementation)
+ *
+ * This means there is no `useClaimReward` hook — reward distribution is
+ * built into the commit and leave operations at the protocol level.
+ *
  * Architecture: Role-based hook file
  * - Imports types and transforms from use-project.ts (entity file)
  * - Exports contributor-specific query keys and hooks
@@ -26,6 +43,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import type { JSONContent } from "@tiptap/core";
 import type {
   MergedHandlersContributorProjectsResponse,
   MergedHandlersContributorCommitmentsResponse,
@@ -127,6 +145,9 @@ export interface ContributorCommitment {
   assessedBy?: string;
   taskOutcome?: string;
 
+  // Transaction tracking
+  pendingTxHash?: string;
+
   // Metadata
   status: ProjectStatus;
 }
@@ -192,6 +213,13 @@ function transformContributorProject(
 function transformContributorCommitment(
   api: OrchestrationContributorCommitmentItem
 ): ContributorCommitment {
+  // Content may include pending_tx_hash not in the generated type
+  const content = api.content as
+    | (OrchestrationContributorCommitmentItem["content"] & {
+        pending_tx_hash?: string;
+      })
+    | undefined;
+
   return {
     // Identifiers
     projectId: api.project_id ?? "",
@@ -203,11 +231,14 @@ function transformContributorCommitment(
     onChainStatus: api.on_chain_status,
 
     // Off-chain content
-    commitmentStatus: api.content?.commitment_status,
-    taskEvidenceHash: api.content?.task_evidence_hash,
-    evidence: api.content?.evidence,
-    assessedBy: api.content?.assessed_by,
-    taskOutcome: api.content?.task_outcome,
+    commitmentStatus: content?.commitment_status,
+    taskEvidenceHash: content?.task_evidence_hash,
+    evidence: content?.evidence,
+    assessedBy: content?.assessed_by,
+    taskOutcome: content?.task_outcome,
+
+    // Transaction tracking
+    pendingTxHash: content?.pending_tx_hash,
 
     // Metadata
     status: getProjectStatusFromSource(api.source),
@@ -414,6 +445,14 @@ export function useContributorCommitment(
 /**
  * Create a new task commitment
  *
+ * **Reward claim (Path A):** When a contributor already has a completed
+ * (accepted) task in this project, committing to a new task automatically
+ * claims the reward from the previous task. The on-chain transaction
+ * handles both the new commitment and the reward payout atomically.
+ *
+ * UX should inform contributors that committing to a new task will also
+ * release their pending rewards from the previous task.
+ *
  * @example
  * ```tsx
  * function CommitToTask({ projectId, taskHash }: { projectId: string; taskHash: string }) {
@@ -472,6 +511,86 @@ export function useCreateCommitment() {
       // Invalidate contributor projects (myCommitments changed)
       void queryClient.invalidateQueries({
         queryKey: projectContributorKeys.all,
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Submit Task Evidence (fire-and-forget after TX)
+// =============================================================================
+
+/** Input for submitting task evidence to the database */
+export interface SubmitTaskEvidenceInput {
+  taskHash: string;
+  evidence: JSONContent;
+  evidenceHash: string;
+  pendingTxHash: string;
+}
+
+/**
+ * Submit task evidence content to the database after a successful TX.
+ *
+ * This is a fire-and-forget style mutation — the on-chain TX is the source of truth,
+ * so DB save errors are logged but don't throw.
+ *
+ * On success, invalidates the matching contributor commitment query.
+ *
+ * @example
+ * ```tsx
+ * const submitEvidence = useSubmitTaskEvidence();
+ *
+ * // After TX success:
+ * submitEvidence.mutate({
+ *   taskHash: "abc123...",
+ *   evidence: tiptapContent,
+ *   evidenceHash: computedHash,
+ *   pendingTxHash: txResult.txHash,
+ * });
+ * ```
+ */
+export function useSubmitTaskEvidence() {
+  const { authenticatedFetch } = useAndamioAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: SubmitTaskEvidenceInput): Promise<void> => {
+      const response = await authenticatedFetch(
+        `${GATEWAY_API_BASE}/project/contributor/commitment/submit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task_hash: input.taskHash,
+            evidence: input.evidence,
+            evidence_hash: input.evidenceHash,
+            pending_tx_hash: input.pendingTxHash,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "[useSubmitTaskEvidence] Failed to save evidence to DB:",
+          errorText,
+        );
+        // Don't throw — TX succeeded, evidence save is secondary
+        return;
+      }
+
+      console.log("[useSubmitTaskEvidence] Evidence saved to database");
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate contributor commitments to refetch with new evidence
+      void queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.all,
+      });
+      // Also invalidate specific commitment if we know the project
+      void queryClient.invalidateQueries({
+        queryKey: [...projectContributorKeys.all, "commitment"],
+        predicate: (query) =>
+          query.queryKey.includes(variables.taskHash),
       });
     },
   });
@@ -559,7 +678,13 @@ export function useUpdateCommitment() {
 }
 
 /**
- * Delete a commitment
+ * Delete/abandon a task commitment
+ *
+ * **Note:** This abandons a single task commitment. It does NOT claim
+ * rewards and does NOT un-enroll the contributor from the project.
+ *
+ * To un-enroll from a project AND claim pending rewards, use `useLeaveProject`
+ * (TODO — see Reward Claim Lifecycle in file header).
  *
  * @example
  * ```tsx

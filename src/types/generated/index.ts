@@ -192,7 +192,6 @@ export type {
   OrchestrationMergedCourseModuleItem,
   OrchestrationStudentCourseListItem,
   OrchestrationStudentAssignmentCommitmentItem,
-  OrchestrationTeacherAssignmentCommitmentItem,
   OrchestrationAssignmentCommitmentContent,
 
   // Project orchestration
@@ -230,7 +229,6 @@ export type {
   MergedHandlersStudentCoursesResponse,
   MergedHandlersStudentAssignmentCommitmentResponse,
   MergedHandlersStudentAssignmentCommitmentsResponse,
-  MergedHandlersTeacherAssignmentCommitmentsResponse,
   MergedHandlersGetStudentAssignmentCommitmentRequest,
 
   // Project merged handlers
@@ -249,7 +247,7 @@ export type {
 } from "./gateway";
 
 // =============================================================================
-// TX Client Types (re-exports for transaction building)
+// TX Client Types (re-exports from generated gateway types)
 // =============================================================================
 
 export type {
@@ -489,23 +487,6 @@ export type GatewayTxType =
   | "treasury_fund";
 
 // =============================================================================
-// Andamioscan Types (re-exports from andamioscan-events.ts)
+// Andamioscan types removed — use gateway merged API hooks instead.
+// See ~/hooks/api/project/use-project.ts and ~/hooks/api/course/use-course.ts
 // =============================================================================
-
-export type {
-  AndamioscanAsset,
-  AndamioscanTask,
-  AndamioscanSubmission,
-  AndamioscanTreasuryFunding,
-  AndamioscanPrerequisite,
-  AndamioscanProjectDetails,
-  AndamioscanProject,
-  AndamioscanModule,
-  AndamioscanCourse,
-  AndamioscanStudent,
-  AndamioscanUserCourse,
-  AndamioscanUserGlobalState,
-  AndamioscanTaskSubmission,
-  AndamioscanContributorStatus,
-  AndamioscanTaskSubmitEvent,
-} from "~/lib/andamioscan-events";

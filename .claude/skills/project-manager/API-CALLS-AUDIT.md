@@ -1,6 +1,16 @@
 # Direct API Calls in UX Components - Audit Report
 
-**Last Updated:** 2026-01-29
+**Last Updated:** 2026-01-31
+
+## Andamioscan Removal (2026-01-31)
+
+**All direct Andamioscan calls have been eliminated.** The file `src/lib/andamioscan-events.ts` was deleted and `src/hooks/tx/use-event-confirmation.ts` was removed. All pages now use gateway hooks (`useProject`, `useCourse`, etc.) exclusively.
+
+**Remaining future work**:
+- Wire up `StudentCompletionInput[]` on project catalog + contributor pages (currently `[]`)
+- Create `useStudentCourses()` hook for prerequisite eligibility checking across projects
+
+---
 
 ## Summary
 
@@ -8,9 +18,11 @@
 - **Page files**: 17 files with API calls
 - **Component files**: 6 files with API calls
 
-**Migrated (Phase 3.10)**: 8 page files migrated to React Query hooks
+**Migrated (Phase 3.10)**: 8 page files + 6 component files migrated to React Query hooks
+
+**Page Files**:
 - ✅ `project/[projectid]/[taskhash]/page.tsx` (3 calls → hooks)
-- ✅ `project/[projectid]/contributor/page.tsx` (2 calls → hooks, 1 remaining orchestration)
+- ✅ `project/[projectid]/contributor/page.tsx` (3 calls → hooks, reactive refactor)
 - ✅ `studio/project/page.tsx` (1 call → hook)
 - ✅ `studio/project/[projectid]/page.tsx` (3 calls → hooks)
 - ✅ `studio/project/[projectid]/draft-tasks/page.tsx` (3 calls → hooks)
@@ -18,7 +30,19 @@
 - ✅ `studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` (3 calls → hooks)
 - ✅ `studio/project/[projectid]/manage-treasury/page.tsx` (2 calls → hooks, batch-status/confirm-tx remain)
 
-**Remaining**: ~15 files with direct API calls (sitemap, teacher, module wizard, components)
+**Component Files**:
+- ✅ `components/tx/assignment-update.tsx` → `useSubmitEvidence()`
+- ✅ `components/tx/burn-module-tokens.tsx` → `useUpdateCourseModuleStatus()`
+- ✅ `components/dashboard/pending-reviews-summary.tsx` → `useTeacherCommitmentsQueries()`
+- ✅ `components/tx/task-commit.tsx` → `useSubmitTaskEvidence()`
+- ✅ `components/tx/mint-access-token-simple.tsx` → `useUpdateAccessTokenAlias()`
+
+**New Hooks Created**:
+- ✅ `useTeacherCommitmentsQueries()` in `use-course-teacher.ts` (useQueries fan-out)
+- ✅ `useSubmitTaskEvidence()` in `use-project-contributor.ts` (mutation)
+- ✅ `useUpdateAccessTokenAlias()` in `use-user.ts` (new file, mutation)
+
+**Remaining**: 2 deferred files (`sitemap/page.tsx`, `pending-tx-list.tsx`) + studio pages with direct calls (teacher, module wizard, learner components)
 
 ---
 
@@ -46,12 +70,12 @@
 | `useRegisterProject()` | `authenticatedFetch()` POST `/project/owner/project/register` |
 | `registerProject.isPending` | Manual `isSubmitting` state |
 
-### 4. `/src/app/(app)/project/[projectid]/contributor/page.tsx` 🔶 PARTIALLY MIGRATED
+### 4. `/src/app/(app)/project/[projectid]/contributor/page.tsx` ✅ MIGRATED
 | Hook | Replaces |
 |------|----------|
 | `useProject(projectId)` | `fetch()` GET `/project/user/project/${projectId}` |
 | `useProjectTasks(contributorStateId)` | `fetch()` POST `/project/user/tasks/list` |
-| ~~`fetchDbCommitment`~~ | Still uses `authenticatedFetch()` POST `/project/contributor/commitment/get` (called conditionally with dynamic task hashes from Andamioscan orchestration) |
+| `useContributorCommitment(projectId, lookupTaskHash)` | `authenticatedFetch()` POST `/project/contributor/commitment/get` (reactive refactor: orchestration sets `lookupTaskHash` state, hook fetches reactively) |
 
 ### 5. `/src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`
 | Line | Pattern | Endpoint |
@@ -122,30 +146,30 @@
 | 162 | `fetch()` (loop) | `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}` |
 | 211 | `fetch()` | `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}` |
 
-### 4. `/src/components/tx/burn-module-tokens.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 125 | `authenticatedFetch()` | `/api/gateway/api/v2/course/teacher/course-module/update` |
+### 4. `/src/components/tx/burn-module-tokens.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useUpdateCourseModuleStatus()` | `authenticatedFetch()` POST `/course/teacher/course-module/update` |
 
-### 5. `/src/components/tx/assignment-update.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 199 | `authenticatedFetch()` | `/api/gateway/api/v2/course/student/commitment/submit` |
+### 5. `/src/components/tx/assignment-update.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useSubmitEvidence()` | `authenticatedFetch()` POST `/course/student/commitment/submit` |
 
 ### 6. `/src/components/tx/pending-tx-list.tsx`
 | Line | Pattern | Endpoint |
 |------|---------|----------|
 | 146 | `authenticatedFetch()` | `/api/gateway/api/v2/tx/pending` |
 
-### 7. `/src/components/tx/mint-access-token-simple.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 184 | `authenticatedFetch()` | `/api/gateway/api/v2/user/access-token-alias` |
+### 7. `/src/components/tx/mint-access-token-simple.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useUpdateAccessTokenAlias()` | `authenticatedFetch()` POST `/user/access-token-alias` |
 
-### 8. `/src/components/tx/task-commit.tsx`
-| Line | Pattern | Endpoint |
-|------|---------|----------|
-| 273 | `authenticatedFetch()` | `/api/gateway/api/v2/project/contributor/commitment/submit` |
+### 8. `/src/components/tx/task-commit.tsx` ✅ MIGRATED
+| Hook | Replaces |
+|------|----------|
+| `useSubmitTaskEvidence()` | `authenticatedFetch()` POST `/project/contributor/commitment/submit` |
 
 ---
 

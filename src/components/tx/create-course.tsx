@@ -1,39 +1,31 @@
 /**
- * CreateCourse Transaction Component (V2 - Gateway Auto-Confirmation + Manual Registration Workaround)
+ * CreateCourse Transaction Component (V2 - Gateway Auto-Confirmation)
  *
  * UI for creating a new Andamio Course on-chain.
  * Uses INSTANCE_COURSE_CREATE transaction with gateway auto-confirmation.
  *
  * ## TX Lifecycle
  *
- * 1. User enters code, title, and optional teachers, clicks "Create Course"
+ * 1. User enters title and optional teachers, clicks "Create Course"
  * 2. `useTransaction` builds, signs, submits, and registers TX
- * 3. `useTxWatcher` polls gateway for confirmation status
- * 4. When status is "confirmed", calls manual registration endpoint
- *    (Workaround: TX State Machine auto-registration fails with 401 because
- *    the background poller runs without user JWT context)
+ * 3. `useTxStream` watches gateway for confirmation status
+ * 4. When status is "updated", gateway has confirmed TX and registered the course
  * 5. UI shows success and calls onSuccess callback
  *
- * ## Note on Manual Registration
- *
- * The manual registration workaround (`POST /api/v2/course/owner/course/register`)
- * is temporary. Once DB API team implements gateway-level auth for
- * `/course/gateway/course/register`, the TX State Machine will auto-register
- * courses and this workaround can be removed.
- *
- * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/tx/use-transaction.ts
+ * @see ~/hooks/tx/use-tx-stream.ts
  */
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { AliasListInput } from "./alias-list-input";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -48,7 +40,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseIcon, TeacherIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-course-owner";
 
 export interface CreateCourseProps {
   /**
@@ -72,89 +63,26 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
-  const registerCourse = useRegisterCourse();
-  const updateCourse = useUpdateCourse();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
-  const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
-  const [additionalTeachers, setAdditionalTeachers] = useState("");
+  const [additionalTeachers, setAdditionalTeachers] = useState<string[]>([]);
   const [courseId, setCourseId] = useState<string | null>(null);
-  // Store course metadata for manual registration after TX confirms
-  const [courseMetadata, setCourseMetadata] = useState<{
-    policyId: string;
-    code: string;
-    title: string;
-  } | null>(null);
-  // Track if we've already registered the course
-  const [hasRegistered, setHasRegistered] = useState(false);
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        // Handle both "confirmed" and "updated" states
-        // "confirmed" = TX on-chain, but auto-registration may have failed
-        // "updated" = TX on-chain AND auto-registration succeeded (future)
-        if ((status.state === "confirmed" || status.state === "updated") && !hasRegistered) {
-          // Wrap async registration in void to satisfy callback signature
-          void (async () => {
-          setHasRegistered(true);
+        if (status.state === "updated") {
+          console.log("[CreateCourse] TX confirmed and DB updated by gateway");
+          toast.success("Course Created!", {
+            description: `"${title.trim()}" is now live on-chain`,
+          });
 
-          // Manual registration workaround: Call registration endpoint after TX confirms
-          // This is needed because TX State Machine auto-registration fails (401 - no user JWT)
-          if (courseMetadata && status.state === "confirmed") {
-            try {
-              console.log("[CreateCourse] Registering course with DB...", courseMetadata);
-              await registerCourse.mutateAsync({
-                courseId: courseMetadata.policyId,
-                title: courseMetadata.title,
-              });
-              console.log("[CreateCourse] Course registered successfully!");
-              toast.success("Course Created!", {
-                description: `"${courseMetadata.title}" is now live and registered`,
-              });
-            } catch (err) {
-              // Check if it's a 409 conflict (course already exists from indexer)
-              const error = err as Error & { status?: number };
-              if (error.status === 409) {
-                console.log("[CreateCourse] Course exists, updating with title...");
-                try {
-                  await updateCourse.mutateAsync({
-                    courseId: courseMetadata.policyId,
-                    data: { title: courseMetadata.title },
-                  });
-                  console.log("[CreateCourse] Course title updated successfully!");
-                  toast.success("Course Created!", {
-                    description: `"${courseMetadata.title}" is now live and registered`,
-                  });
-                } catch (updateErr) {
-                  console.error("[CreateCourse] Update failed:", updateErr);
-                  toast.warning("Course Created (Title Pending)", {
-                    description: `Course is on-chain but title may need manual update`,
-                  });
-                }
-              } else {
-                console.error("[CreateCourse] Registration failed:", err);
-                toast.warning("Course Created (Registration Pending)", {
-                  description: `Course is on-chain but DB registration may need manual sync`,
-                });
-              }
-            }
-          } else {
-            // Auto-registration worked (status.state === "updated") or no metadata
-            console.log("[CreateCourse] TX confirmed and DB updated by gateway");
-            toast.success("Course Created!", {
-              description: `"${title.trim()}" is now live on-chain`,
-            });
-          }
-
-          // Call parent callback with the course ID
           if (courseId) {
             void onSuccess?.(courseId);
           }
-          })();
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Course Creation Failed", {
             description: status.last_error ?? "Please try again or contact support.",
@@ -191,18 +119,12 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const ui = TRANSACTION_UI.INSTANCE_COURSE_CREATE;
 
   const handleCreateCourse = async () => {
-    if (!user?.accessTokenAlias || !initiatorData || !code.trim() || !title.trim()) {
+    if (!user?.accessTokenAlias || !initiatorData || !title.trim()) {
       return;
     }
 
-    // Parse additional teachers (comma-separated)
-    const teachersList = additionalTeachers
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
     // Always include the creator as a teacher
-    const allTeachers = [user.accessTokenAlias, ...teachersList.filter((t) => t !== user.accessTokenAlias)];
+    const allTeachers = [user.accessTokenAlias, ...additionalTeachers.filter((t) => t !== user.accessTokenAlias)];
 
     await execute({
       txType: "INSTANCE_COURSE_CREATE",
@@ -211,24 +133,17 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         teachers: allTeachers,
         initiator_data: initiatorData,
       },
-      // Pass metadata for gateway auto-registration (code + title required)
+      // Pass metadata for gateway auto-registration
       metadata: {
-        code: code.trim(),
         title: title.trim(),
       },
-      onSuccess: async (txResult) => {
+      onSuccess: (txResult) => {
         console.log("[CreateCourse] TX submitted successfully!", txResult);
 
         // Extract course_id from the API response for later use
         const extractedCourseId = txResult.apiResponse?.course_id as string | undefined;
         if (extractedCourseId) {
           setCourseId(extractedCourseId);
-          // Store metadata for manual registration after TX confirms
-          setCourseMetadata({
-            policyId: extractedCourseId,
-            code: code.trim(),
-            title: title.trim(),
-          });
         }
       },
       onError: (txError) => {
@@ -240,9 +155,8 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   // Check requirements
   const hasAccessToken = !!user?.accessTokenAlias;
   const hasInitiatorData = !!initiatorData;
-  const hasCode = code.trim().length > 0;
   const hasTitle = title.trim().length > 0;
-  const canCreate = hasAccessToken && hasInitiatorData && hasCode && hasTitle;
+  const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
 
   if (!isAuthenticated || !user) {
     return null;
@@ -294,28 +208,6 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
           </div>
         )}
 
-        {/* Course Code Input */}
-        {hasAccessToken && hasInitiatorData && (
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="code">
-              Course Code <span className="text-destructive">*</span>
-            </AndamioLabel>
-            <AndamioInput
-              id="code"
-              type="text"
-              placeholder="CARDANO-101"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              disabled={state !== "idle" && state !== "error"}
-              maxLength={50}
-              className="font-mono"
-            />
-            <AndamioText variant="small" className="text-xs">
-              A unique identifier for your course (e.g., MATH-101, INTRO-BLOCKCHAIN)
-            </AndamioText>
-          </div>
-        )}
-
         {/* Course Title Input */}
         {hasAccessToken && hasInitiatorData && (
           <div className="space-y-2">
@@ -339,20 +231,15 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
 
         {/* Additional Teachers Input */}
         {hasAccessToken && hasInitiatorData && (
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="teachers">Additional Teachers (Optional)</AndamioLabel>
-            <AndamioInput
-              id="teachers"
-              type="text"
-              placeholder="teacher1, teacher2"
-              value={additionalTeachers}
-              onChange={(e) => setAdditionalTeachers(e.target.value)}
-              disabled={state !== "idle" && state !== "error"}
-            />
-            <AndamioText variant="small" className="text-xs">
-              Enter access token aliases of additional teachers, separated by commas. You are automatically included.
-            </AndamioText>
-          </div>
+          <AliasListInput
+            value={additionalTeachers}
+            onChange={setAdditionalTeachers}
+            label="Additional Teachers (Optional)"
+            placeholder="Enter teacher alias"
+            disabled={state !== "idle" && state !== "error"}
+            excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
+            helperText="Each alias is verified on-chain before being added. You are automatically included."
+          />
         )}
 
         {/* Transaction Status - Only show during processing, not for final success */}

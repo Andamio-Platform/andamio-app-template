@@ -8,7 +8,7 @@
  *
  * 1. User enters alias and clicks "Mint"
  * 2. `useTransaction` builds, signs, submits, and registers TX
- * 3. `useTxWatcher` polls gateway for confirmation status
+ * 3. `useTxStream` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI refreshes to show the new access token
  *
@@ -21,7 +21,7 @@
  * | Manual DB side effects | Gateway handles DB updates |
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -30,7 +30,7 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -47,7 +47,7 @@ import { AccessTokenIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/compone
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useUpdateAccessTokenAlias } from "~/hooks/api/use-user";
 import { setJustMintedFlag } from "~/components/dashboard/post-mint-auth-prompt";
 
 export interface MintAccessTokenSimpleProps {
@@ -55,6 +55,12 @@ export interface MintAccessTokenSimpleProps {
    * Callback fired when access token is successfully minted
    */
   onSuccess?: () => void | Promise<void>;
+  /**
+   * Callback fired after TX is submitted, with the alias and txHash.
+   * Useful for parent components that need to track the submission
+   * (e.g., showing TX status or the first-login ceremony).
+   */
+  onSubmitted?: (info: { alias: string; txHash: string }) => void;
 }
 
 // Alias must contain only alphanumeric characters and underscores
@@ -72,10 +78,11 @@ function isValidAlias(alias: string): boolean {
  * <MintAccessTokenSimple onSuccess={() => router.refresh()} />
  * ```
  */
-export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps) {
+export function MintAccessTokenSimple({ onSuccess, onSubmitted }: MintAccessTokenSimpleProps) {
   const { wallet, connected } = useWallet();
-  const { user, isAuthenticated, authenticatedFetch, refreshAuth } = useAndamioAuth();
+  const { user, isAuthenticated, refreshAuth } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const updateAlias = useUpdateAccessTokenAlias();
   const [alias, setAlias] = useState("");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
@@ -103,10 +110,10 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     })();
   }, [connected, wallet]);
 
-  // Watch for gateway confirmation after TX submission (only for TXs that need DB updates)
-  // Access Token Mint is pure on-chain, so we skip polling
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
-    result?.requiresDBUpdate ? result.txHash : null,
+  // Watch for gateway confirmation after TX submission
+  // Tracks on-chain confirmation via SSE (pending → confirmed → updated)
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
+    (result?.requiresDBUpdate || result?.requiresOnChainConfirmation) ? result.txHash : null,
     {
       onComplete: (status) => {
         // "updated" means Gateway has confirmed TX AND updated DB
@@ -132,8 +139,9 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
     }
   );
 
-  // For pure on-chain TXs (no DB updates), treat submission as success
-  const isPureOnChainSuccess = state === "success" && result && !result.requiresDBUpdate;
+  // For pure on-chain TXs with no tracking at all, treat submission as success
+  // TXs with requiresOnChainConfirmation wait for gateway confirmation instead
+  const isPureOnChainSuccess = state === "success" && result && !result.requiresDBUpdate && !result.requiresOnChainConfirmation;
 
   // Track if we've already handled the success to prevent infinite loop
   const hasHandledSuccessRef = React.useRef(false);
@@ -182,33 +190,17 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
         initiator_data: walletAddress,
         alias: alias.trim(),
       },
-      onSuccess: async () => {
+      onSuccess: async (txResult) => {
+        // Notify parent of submission (for TX tracking / first-login ceremony)
+        onSubmitted?.({ alias: alias.trim(), txHash: txResult.txHash });
+
         // Optimistically update the alias in the database for immediate use
         // The gateway will also update it on confirmation, but this gives instant feedback
         try {
-          const response = await authenticatedFetch(
-            `${GATEWAY_API_BASE}/user/access-token-alias`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ access_token_alias: alias.trim() }),
-            }
-          );
-
-          if (response.ok) {
-            const data = (await response.json()) as {
-              success: boolean;
-              user: {
-                id: string;
-                cardanoBech32Addr: string | null;
-                accessTokenAlias: string | null;
-              };
-              jwt: string;
-            };
-            console.log("[MintAccessTokenSimple] Access token alias updated optimistically");
-
+          const result = await updateAlias.mutateAsync({ alias: alias.trim() });
+          if (result) {
             // Store the new JWT with updated alias
-            storeJWT(data.jwt);
+            storeJWT(result.jwt);
             refreshAuth();
           }
         } catch (dbError) {
@@ -283,15 +275,15 @@ export function MintAccessTokenSimple({ onSuccess }: MintAccessTokenSimpleProps)
             error={error?.message ?? null}
             onRetry={() => reset()}
             messages={{
-              success: result?.requiresDBUpdate
+              success: (result?.requiresDBUpdate || result?.requiresOnChainConfirmation)
                 ? "Transaction submitted! Waiting for confirmation..."
                 : "Transaction submitted to blockchain!",
             }}
           />
         )}
 
-        {/* Gateway Confirmation Status (only for TXs that need DB updates) */}
-        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+        {/* Gateway Confirmation Status */}
+        {state === "success" && (result?.requiresDBUpdate || result?.requiresOnChainConfirmation) && !txConfirmed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />

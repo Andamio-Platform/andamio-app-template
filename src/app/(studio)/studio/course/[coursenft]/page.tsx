@@ -193,11 +193,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
 
   // Fetch pending assignment commitments for this course
-  const { data: allPendingCommitments = [] } = useTeacherAssignmentCommitments();
-  const pendingCommitmentsForCourse = useMemo(() =>
-    allPendingCommitments.filter((c) => c.courseId === courseNftPolicyId),
-    [allPendingCommitments, courseNftPolicyId]
-  );
+  const { data: pendingCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseNftPolicyId);
 
   // =============================================================================
   // Module Stats - All derived from hook data (useTeacherCourseModules)
@@ -708,8 +704,8 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </span>
                     <AndamioButton
                       size="sm"
-                      variant="secondary"
-                      className="flex-shrink-0"
+                      variant="outline"
+                      className="flex-shrink-0 border-secondary text-secondary hover:bg-secondary/10 hover:text-secondary dark:hover:bg-secondary/10"
                       asChild
                     >
                       <Link href={`/studio/course/${courseNftPolicyId}/teacher`}>

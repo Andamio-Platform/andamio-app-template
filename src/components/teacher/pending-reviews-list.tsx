@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -27,18 +26,26 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useTeacherAssignmentCommitments, type TeacherAssignmentCommitment } from "~/hooks/api";
+import type { TeacherAssignmentCommitment } from "~/hooks/api";
 
 interface PendingReviewsListProps {
-  courseId?: string; // Optional: filter to specific course
+  /** All commitments for the course (filtering done internally) */
+  commitments: TeacherAssignmentCommitment[];
+  /** Whether data is loading */
+  isLoading?: boolean;
+  /** Error from data fetch */
+  error?: Error | null;
+  /** Callback to refetch data */
+  onRefetch?: () => void;
+  /** Callback when an assessment row is clicked */
   onSelectAssessment?: (assessment: TeacherAssignmentCommitment) => void;
 }
 
 /**
  * Pending Reviews List Component
  *
- * Displays a detailed list of assignments awaiting teacher review.
- * Can be filtered to a specific course or show all pending assessments.
+ * Presentational component that displays assignments awaiting teacher review.
+ * Receives data from the parent page — does not fetch internally.
  *
  * UX States:
  * - Loading: Skeleton table rows
@@ -46,17 +53,16 @@ interface PendingReviewsListProps {
  * - Error: Inline alert with retry button
  */
 export function PendingReviewsList({
-  courseId,
+  commitments,
+  isLoading = false,
+  error,
+  onRefetch,
   onSelectAssessment,
 }: PendingReviewsListProps) {
-  const { data: allPendingAssessments, isLoading, error, refetch } = useTeacherAssignmentCommitments();
-
-  // Filter by course if courseId is provided
-  const pendingAssessments = React.useMemo(() => {
-    if (!allPendingAssessments) return [];
-    if (!courseId) return allPendingAssessments;
-    return allPendingAssessments.filter((a) => a.courseId === courseId);
-  }, [allPendingAssessments, courseId]);
+  const refetch = onRefetch ?? (() => { /* noop */ });
+  const pendingAssessments = commitments.filter(
+    (c) => c.commitmentStatus === "PENDING_APPROVAL"
+  );
 
   // Loading state - skeleton table
   if (isLoading) {
@@ -195,7 +201,6 @@ export function PendingReviewsList({
               <AndamioTableRow>
                 <AndamioTableHead>Student</AndamioTableHead>
                 <AndamioTableHead>Assignment</AndamioTableHead>
-                {!courseId && <AndamioTableHead className="hidden md:table-cell">Course</AndamioTableHead>}
                 <AndamioTableHead className="hidden sm:table-cell">Submitted</AndamioTableHead>
                 <AndamioTableHead>Content</AndamioTableHead>
               </AndamioTableRow>
@@ -215,13 +220,6 @@ export function PendingReviewsList({
                       {assessment.moduleCode ?? (assessment.sltHash ?? "").slice(0, 12) + "..."}
                     </code>
                   </AndamioTableCell>
-                  {!courseId && (
-                    <AndamioTableCell className="hidden md:table-cell">
-                      <code className="text-xs font-mono truncate block max-w-[100px]">
-                        {assessment.courseId.slice(0, 12)}...
-                      </code>
-                    </AndamioTableCell>
-                  )}
                   <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
                     {formatSubmissionDate(assessment)}
                   </AndamioTableCell>

@@ -18,7 +18,7 @@
  * ```
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
@@ -29,7 +29,7 @@ import { GATEWAY_API_BASE } from "~/lib/api-utils";
 export const courseTeacherKeys = {
   all: ["teacher-courses"] as const,
   list: () => [...courseTeacherKeys.all, "list"] as const,
-  commitments: () => [...courseTeacherKeys.all, "commitments"] as const,
+  commitments: (courseId: string) => [...courseTeacherKeys.all, "commitments", courseId] as const,
 };
 
 // =============================================================================
@@ -95,7 +95,7 @@ export interface TeacherAssignmentCommitment {
   // Off-chain content (from content object)
   moduleCode?: string;  // Human-readable module code (e.g., "101")
   evidence?: unknown;  // Tiptap JSON document from content.evidence
-  commitmentStatus?: string;  // DRAFT, SUBMITTED, APPROVED, REJECTED (from content.commitment_status)
+  commitmentStatus?: string;  // Display status: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED (mapped from API values)
 
   // Metadata
   status?: TeacherCourseStatus;  // synced, onchain_only, db_only
@@ -196,8 +196,60 @@ function transformTeacherCourse(raw: RawTeacherCourse): TeacherCourse {
 }
 
 /**
+ * Decode a hex string to UTF-8 text.
+ * Used for on_chain_content which is hex-encoded.
+ */
+function hexToText(hex: string): string {
+  try {
+    const bytes = new Uint8Array(
+      hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
+    );
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return hex; // Return original if decode fails
+  }
+}
+
+/**
+ * Map raw API commitment_status + source to display-friendly status.
+ *
+ * API statuses: DRAFT, SUBMITTED, APPROVED, REJECTED
+ * Display statuses: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED
+ */
+function mapToDisplayStatus(
+  source: string | undefined,
+  contentStatus: string | undefined,
+): string {
+  if (contentStatus) {
+    switch (contentStatus) {
+      case "SUBMITTED":
+        return "PENDING_APPROVAL";
+      case "APPROVED":
+        return "ACCEPTED";
+      case "REJECTED":
+        return "DENIED";
+      case "DRAFT":
+        return "DRAFT";
+      default:
+        return contentStatus;
+    }
+  }
+  // Fall back to source-based status
+  switch (source) {
+    case "chain_only":
+    case "merged":
+      return "PENDING_APPROVAL";
+    case "db_only":
+      return "DRAFT";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+/**
  * Transform raw API commitment to app-level TeacherAssignmentCommitment type
  * Updated 2026-01-28: Evidence is now under content.evidence
+ * Updated 2026-01-30: commitmentStatus now mapped to display values
  */
 function transformTeacherCommitment(raw: RawTeacherCommitment): TeacherAssignmentCommitment {
   return {
@@ -206,12 +258,12 @@ function transformTeacherCommitment(raw: RawTeacherCommitment): TeacherAssignmen
     sltHash: raw.slt_hash,
     submissionTx: raw.submission_tx,
     submissionSlot: raw.submission_slot,
-    onChainContent: raw.on_chain_content,
+    onChainContent: raw.on_chain_content ? hexToText(raw.on_chain_content) : undefined,
     moduleCode: raw.course_module_code,
     // Evidence is now under content.evidence (Tiptap JSON document)
     evidence: raw.content?.evidence,
-    // Commitment status is now under content.commitment_status
-    commitmentStatus: raw.content?.commitment_status,
+    // Commitment status mapped to display values (PENDING_APPROVAL, ACCEPTED, DENIED, DRAFT)
+    commitmentStatus: mapToDisplayStatus(raw.source, raw.content?.commitment_status),
     status: mapSourceToStatus(raw.source),
   };
 }
@@ -280,15 +332,17 @@ export function useTeacherCourses() {
 }
 
 /**
- * Fetch assignment commitments pending teacher review
+ * Fetch assignment commitments pending teacher review for a specific course
  *
  * Uses merged endpoint: POST /api/v2/course/teacher/assignment-commitments/list
  * Returns pending assessments with both on-chain and DB data.
  *
+ * @param courseId - The course NFT policy ID to fetch commitments for (required by API)
+ *
  * @example
  * ```tsx
- * function PendingReviews() {
- *   const { data: commitments, isLoading, error, refetch } = useTeacherAssignmentCommitments();
+ * function PendingReviews({ courseId }: { courseId: string }) {
+ *   const { data: commitments, isLoading, error, refetch } = useTeacherAssignmentCommitments(courseId);
  *
  *   if (isLoading) return <Skeleton />;
  *   if (error) return <ErrorAlert message={error.message} />;
@@ -298,11 +352,11 @@ export function useTeacherCourses() {
  * }
  * ```
  */
-export function useTeacherAssignmentCommitments() {
+export function useTeacherAssignmentCommitments(courseId: string | undefined) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: courseTeacherKeys.commitments(),
+    queryKey: courseTeacherKeys.commitments(courseId ?? ""),
     queryFn: async (): Promise<TeacherAssignmentCommitmentsResponse> => {
       // Merged endpoint: POST /api/v2/course/teacher/assignment-commitments/list
       const response = await authenticatedFetch(
@@ -310,7 +364,7 @@ export function useTeacherAssignmentCommitments() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ course_id: courseId }),
         }
       );
 
@@ -323,17 +377,27 @@ export function useTeacherAssignmentCommitments() {
         throw new Error(`Failed to fetch teacher commitments: ${response.statusText}`);
       }
 
-      const result = await response.json() as { data?: RawTeacherCommitment[]; warning?: string };
+      const result: unknown = await response.json();
 
-      // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useTeacherCommitments] API warning:", result.warning);
+      // The API may return { data: [...] } or [...] directly
+      let rawCommitments: RawTeacherCommitment[];
+      if (Array.isArray(result)) {
+        rawCommitments = result as RawTeacherCommitment[];
+      } else if (result && typeof result === "object" && "data" in result) {
+        const wrapped = result as { data?: RawTeacherCommitment[]; warning?: string };
+        if (wrapped.warning) {
+          console.warn("[useTeacherCommitments] API warning:", wrapped.warning);
+        }
+        rawCommitments = Array.isArray(wrapped.data) ? wrapped.data : [];
+      } else {
+        console.warn("[useTeacherCommitments] Unexpected response shape:", result);
+        rawCommitments = [];
       }
 
       // Transform to app-level types with camelCase fields
-      return (result.data ?? []).map(transformTeacherCommitment);
+      return rawCommitments.map(transformTeacherCommitment);
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!courseId,
     staleTime: 30 * 1000, // 30 seconds
   });
 }
@@ -446,6 +510,82 @@ export function useTeacherCoursesWithModules() {
     },
     enabled: isAuthenticated,
     staleTime: 60 * 1000, // 1 minute (longer since this is expensive)
+  });
+}
+
+/**
+ * Batch-fetch assignment commitments for multiple courses
+ *
+ * Uses `useQueries` to fan out one query per courseId.
+ * Each query uses the same key and fetch logic as `useTeacherAssignmentCommitments`.
+ *
+ * @param courseIds - Array of course NFT policy IDs
+ *
+ * @example
+ * ```tsx
+ * function PendingReviewsSummary({ courseIds }: { courseIds: string[] }) {
+ *   const queries = useTeacherCommitmentsQueries(courseIds);
+ *
+ *   const totalPending = queries.reduce((sum, q) => sum + (q.data?.commitments.length ?? 0), 0);
+ *   return <span>{totalPending} pending reviews</span>;
+ * }
+ * ```
+ */
+export function useTeacherCommitmentsQueries(courseIds: string[]) {
+  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+
+  return useQueries({
+    queries: courseIds.map((courseId) => ({
+      queryKey: courseTeacherKeys.commitments(courseId),
+      // IMPORTANT: Returns the same TeacherAssignmentCommitmentsResponse[] shape
+      // as useTeacherAssignmentCommitments so the shared cache key is consistent.
+      // The courseId is available from the input array order (useQueries preserves order).
+      queryFn: async (): Promise<TeacherAssignmentCommitmentsResponse> => {
+        const response = await authenticatedFetch(
+          `${GATEWAY_API_BASE}/course/teacher/assignment-commitments/list`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course_id: courseId }),
+          },
+        );
+
+        if (response.status === 404) {
+          return [];
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch commitments for ${courseId}: ${response.statusText}`,
+          );
+        }
+
+        const result: unknown = await response.json();
+
+        let rawCommitments: RawTeacherCommitment[];
+        if (Array.isArray(result)) {
+          rawCommitments = result as RawTeacherCommitment[];
+        } else if (result && typeof result === "object" && "data" in result) {
+          const wrapped = result as {
+            data?: RawTeacherCommitment[];
+            warning?: string;
+          };
+          if (wrapped.warning) {
+            console.warn(
+              "[useTeacherCommitmentsQueries] API warning:",
+              wrapped.warning,
+            );
+          }
+          rawCommitments = Array.isArray(wrapped.data) ? wrapped.data : [];
+        } else {
+          rawCommitments = [];
+        }
+
+        return rawCommitments.map(transformTeacherCommitment);
+      },
+      enabled: isAuthenticated && courseIds.length > 0,
+      staleTime: 30 * 1000,
+    })),
   });
 }
 

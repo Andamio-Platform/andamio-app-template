@@ -128,6 +128,8 @@ function useTransactionStream() {
 
       // Use fetch + ReadableStream for SSE (works in all modern browsers)
       void (async () => {
+        let reachedTerminal = false;
+
         try {
           const response = await fetch(url, {
             headers,
@@ -179,6 +181,7 @@ function useTransactionStream() {
                   }
                   case "complete": {
                     const payload = JSON.parse(sseEvent.data) as TxCompleteEvent;
+                    reachedTerminal = true;
                     callbacks.onComplete?.(payload);
                     break;
                   }
@@ -190,6 +193,17 @@ function useTransactionStream() {
                 console.warn("[TxStream] Failed to parse SSE event data:", parseErr);
               }
             }
+          }
+
+          // Stream ended cleanly (server closed connection, e.g. Cloud Run timeout).
+          // If we never received a terminal event, fall back to polling.
+          if (!reachedTerminal && !controller.signal.aborted) {
+            console.warn(
+              "[TxStream] SSE stream ended without terminal event, falling back to polling"
+            );
+            callbacks.onError?.(
+              new Error("SSE stream closed before terminal state")
+            );
           }
         } catch (err) {
           if (err instanceof DOMException && err.name === "AbortError") return;
@@ -234,7 +248,7 @@ export function useTxStream(
   txHash: string | null,
   options: UseTxStreamOptions = {}
 ) {
-  const { authenticatedFetch, jwt } = useAndamioAuth();
+  const { authenticatedFetch } = useAndamioAuth();
   const { subscribe, unsubscribe } = useTransactionStream();
 
   const [status, setStatus] = useState<TxStatus | null>(null);
@@ -299,7 +313,7 @@ export function useTxStream(
             onErrorRef.current?.(pollError);
           },
         },
-        { interval: 15_000 },
+        { interval: 6_000 },
         controller.signal
       );
     },
@@ -307,7 +321,9 @@ export function useTxStream(
   );
 
   useEffect(() => {
-    if (!txHash || !jwt) {
+    // JWT is optional — gateway only requires X-API-Key (added by proxy).
+    // This allows streaming for access token mint before the user has a JWT.
+    if (!txHash) {
       setStatus(null);
       setIsPolling(false);
       setError(null);
@@ -367,7 +383,7 @@ export function useTxStream(
         fallbackAbortRef.current = null;
       }
     };
-  }, [txHash, jwt, subscribe, unsubscribe, toTxStatus, startFallback]);
+  }, [txHash, subscribe, unsubscribe, toTxStatus, startFallback]);
 
   return {
     status,

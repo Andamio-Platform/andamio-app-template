@@ -8,12 +8,12 @@
  *
  * 1. User enters title, managers, deposit, and prerequisites
  * 2. `useTransaction` builds, signs, submits, and registers TX
- * 3. `useTxWatcher` polls gateway for confirmation status
+ * 3. `useTxStream` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
  * 5. UI shows success and calls onSuccess callback
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  */
 
 "use client";
@@ -22,10 +22,11 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
+import { AliasListInput } from "./alias-list-input";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -66,13 +67,13 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
-  const [additionalManagers, setAdditionalManagers] = useState("");
+  const [additionalManagers, setAdditionalManagers] = useState<string[]>([]);
   const [depositLovelace, setDepositLovelace] = useState("5000000"); // 5 ADA default
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -128,17 +129,11 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
       return;
     }
 
-    // Parse additional managers (comma-separated)
-    const managersList = additionalManagers
-      .split(",")
-      .map((m) => m.trim())
-      .filter((m) => m.length > 0);
-
     await execute({
       txType: "INSTANCE_PROJECT_CREATE",
       params: {
         alias: user.accessTokenAlias,
-        managers: managersList.length > 0 ? managersList : [user.accessTokenAlias],
+        managers: additionalManagers.length > 0 ? additionalManagers : [user.accessTokenAlias],
         course_prereqs: coursePrereqs,
         initiator_data: initiatorData,
       },
@@ -239,20 +234,15 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
 
         {/* Additional Managers Input */}
         {hasAccessToken && hasInitiatorData && (
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="managers">Additional Managers (Optional)</AndamioLabel>
-            <AndamioInput
-              id="managers"
-              type="text"
-              placeholder="manager1, manager2"
-              value={additionalManagers}
-              onChange={(e) => setAdditionalManagers(e.target.value)}
-              disabled={state !== "idle" && state !== "error"}
-            />
-            <AndamioText variant="small" className="text-xs">
-              Enter access token aliases of additional managers, separated by commas.
-            </AndamioText>
-          </div>
+          <AliasListInput
+            value={additionalManagers}
+            onChange={setAdditionalManagers}
+            label="Additional Managers (Optional)"
+            placeholder="Enter manager alias"
+            disabled={state !== "idle" && state !== "error"}
+            excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
+            helperText="Each alias is verified on-chain before being added. You are automatically included."
+          />
         )}
 
         {/* Deposit Amount Input */}

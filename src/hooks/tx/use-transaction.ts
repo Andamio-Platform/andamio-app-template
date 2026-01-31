@@ -14,11 +14,11 @@
  *
  * ## Tracking Confirmation
  *
- * After execution, use `useTxWatcher(result?.txHash)` to poll for confirmation:
+ * After execution, use `useTxStream(result?.txHash)` for real-time confirmation:
  *
  * ```tsx
  * const { execute, result } = useTransaction();
- * const { status, isSuccess } = useTxWatcher(result?.txHash);
+ * const { status, isSuccess } = useTxStream(result?.txHash);
  *
  * // status.state will be: pending → confirmed → updated
  * ```
@@ -27,11 +27,11 @@
  *
  * ```tsx
  * import { useTransaction } from "~/hooks/tx/use-transaction";
- * import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+ * import { useTxStream } from "~/hooks/tx/use-tx-stream";
  *
  * function MintAccessToken() {
  *   const { execute, state, result, reset } = useTransaction();
- *   const { status, isSuccess } = useTxWatcher(result?.txHash);
+ *   const { status, isSuccess } = useTxStream(result?.txHash);
  *
  *   const handleMint = async () => {
  *     await execute({
@@ -101,6 +101,8 @@ export interface SimpleTransactionResult {
   apiResponse?: Record<string, unknown>;
   /** Whether this TX requires DB updates (determines if polling is needed) */
   requiresDBUpdate: boolean;
+  /** Whether this TX is registered for on-chain confirmation tracking */
+  requiresOnChainConfirmation: boolean;
 }
 
 export interface SimpleTransactionConfig<T extends TransactionType> {
@@ -216,22 +218,21 @@ export function useTransaction() {
         const explorerUrl = getExplorerUrl(txHash);
         txLogger.txSubmitted(txType, txHash, explorerUrl);
 
-        // Step 5: Register with gateway (only for TXs that need DB updates)
-        if (ui.requiresDBUpdate) {
-          if (jwt) {
-            try {
-              const gatewayTxType = getGatewayTxType(txType);
-              await registerTransaction(txHash, gatewayTxType, jwt, metadata);
-              console.log(`[${txType}] Transaction registered with gateway`);
-            } catch (regError) {
-              // Registration failure is non-critical - gateway may still pick it up
-              console.warn(`[${txType}] Failed to register TX:`, regError);
-            }
-          } else {
-            console.warn(`[${txType}] No JWT - skipping TX registration`);
+        // Step 5: Register with gateway (for TXs that need DB updates OR on-chain confirmation tracking)
+        // JWT is optional — gateway only requires X-API-Key (added by proxy).
+        // This allows access token mint to be registered before the user has a JWT.
+        const shouldRegister = ui.requiresDBUpdate || ui.requiresOnChainConfirmation;
+        if (shouldRegister) {
+          try {
+            const gatewayTxType = getGatewayTxType(txType);
+            await registerTransaction(txHash, gatewayTxType, jwt, metadata);
+            console.log(`[${txType}] Transaction registered with gateway`);
+          } catch (regError) {
+            // Registration failure is non-critical - gateway may still pick it up
+            console.warn(`[${txType}] Failed to register TX:`, regError);
           }
         } else {
-          console.log(`[${txType}] Pure on-chain TX - skipping registration (no DB updates needed)`);
+          console.log(`[${txType}] Pure on-chain TX - skipping registration`);
         }
 
         // Step 6: Success!
@@ -243,6 +244,7 @@ export function useTransaction() {
           blockchainExplorerUrl: explorerUrl,
           apiResponse: apiResponse as Record<string, unknown>,
           requiresDBUpdate: ui.requiresDBUpdate,
+          requiresOnChainConfirmation: !!ui.requiresOnChainConfirmation,
         };
         setResult(txResult);
 

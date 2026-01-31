@@ -24,9 +24,9 @@ export interface PollCallbacks {
 }
 
 export interface PollOptions {
-  /** Polling interval in ms (default: 15000) */
+  /** Polling interval in ms (default: 6000) */
   interval?: number;
-  /** Maximum number of polls before giving up (default: 60 = ~15 min at 15s intervals) */
+  /** Maximum number of polls before giving up (default: 150 = ~15 min at 6s intervals) */
   maxPolls?: number;
 }
 
@@ -50,7 +50,7 @@ export async function pollUntilTerminal(
   options: PollOptions = {},
   signal?: AbortSignal
 ): Promise<TxStatus | null> {
-  const { interval = 15_000, maxPolls = 60 } = options;
+  const { interval = 6_000, maxPolls = 150 } = options;
 
   for (let i = 0; i < maxPolls; i++) {
     if (signal?.aborted) return null;

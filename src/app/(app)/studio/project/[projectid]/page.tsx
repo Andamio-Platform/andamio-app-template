@@ -34,7 +34,6 @@ import {
 import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
-import { getManagingProjects, getProject } from "~/lib/andamioscan-events";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
 import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
@@ -74,14 +73,6 @@ export default function ProjectDashboardPage() {
   const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
   const updateProject = useUpdateProject();
 
-  // Track user's role: "owner" can view but not manage, "manager" can manage
-  const [userRole, setUserRole] = useState<"owner" | "manager" | null>(null);
-
-  // On-chain status tracking
-  const [onChainTaskCount, setOnChainTaskCount] = useState<number>(0);
-  const [onChainContributorCount, setOnChainContributorCount] = useState<number>(0);
-  const [isOrchestrating, setIsOrchestrating] = useState(false);
-
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -100,57 +91,18 @@ export default function ProjectDashboardPage() {
     // videoUrl not in merged API response
   }, [projectDetail]);
 
-  // Orchestration: role detection + on-chain counts (Andamioscan calls)
-  useEffect(() => {
-    if (isProjectLoading || !projectDetail) return;
-    const alias = user?.accessTokenAlias;
-    if (!alias) return;
+  // Derive user role from hook data
+  const userRole = (() => {
+    if (!projectDetail || !user?.accessTokenAlias) return null;
+    const alias = user.accessTokenAlias;
+    if (projectDetail.ownerAlias === alias || projectDetail.owner === alias) return "owner" as const;
+    if (projectDetail.managers?.includes(alias)) return "manager" as const;
+    return null;
+  })();
 
-    const orchestrate = async () => {
-      setIsOrchestrating(true);
-      try {
-        let detectedRole: "owner" | "manager" | null = null;
-
-        // Check if user is owner
-        if (projectDetail.ownerAlias === alias || projectDetail.owner === alias) {
-          detectedRole = "owner";
-        }
-
-        // If not owner, check if user is a manager via Andamioscan
-        if (detectedRole !== "owner") {
-          try {
-            const managingProjects = await getManagingProjects(alias);
-            const isManager = managingProjects.some(
-              (p) => p.project_id === projectId
-            );
-            if (isManager) {
-              detectedRole = "manager";
-            }
-          } catch (scanErr) {
-            console.warn("Andamioscan check failed, continuing:", scanErr);
-          }
-        }
-
-        setUserRole(detectedRole);
-
-        // Fetch on-chain data from Andamioscan
-        try {
-          const onChainProject = await getProject(projectId);
-          if (onChainProject) {
-            setOnChainTaskCount(onChainProject.tasks?.length ?? 0);
-            setOnChainContributorCount(onChainProject.contributors?.length ?? 0);
-          }
-        } catch {
-          setOnChainTaskCount(0);
-          setOnChainContributorCount(0);
-        }
-      } finally {
-        setIsOrchestrating(false);
-      }
-    };
-
-    void orchestrate();
-  }, [isProjectLoading, projectDetail, user?.accessTokenAlias, projectId]);
+  // On-chain counts from hook data
+  const onChainTaskCount = projectDetail?.tasks?.filter(t => t.taskStatus === "ON_CHAIN").length ?? 0;
+  const onChainContributorCount = projectDetail?.contributors?.length ?? 0;
 
   // Cache invalidation for onSuccess callbacks
   const refreshData = useCallback(async () => {
@@ -199,7 +151,7 @@ export default function ProjectDashboardPage() {
   }
 
   // Loading state
-  if (isProjectLoading || isTasksLoading || isOrchestrating) {
+  if (isProjectLoading || isTasksLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 

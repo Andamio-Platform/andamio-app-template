@@ -123,6 +123,7 @@ export { useSaveModuleDraft } from "./course/use-save-module-draft";
 export {
   useTeacherCourses,
   useTeacherAssignmentCommitments,
+  useTeacherCommitmentsQueries,
   useTeacherCoursesWithModules,
   useInvalidateTeacherCourses,
   courseTeacherKeys,
@@ -176,8 +177,23 @@ export {
 // Project contributor (role-based)
 export {
   useContributorProjects,
+  useContributorCommitments,
+  useContributorCommitment,
+  useSubmitTaskEvidence,
   useInvalidateContributorProjects,
   projectContributorKeys,
   type ContributorProject,
+  type ContributorCommitment,
   type ContributorProjectsResponse,
+  type SubmitTaskEvidenceInput,
 } from "./project/use-project-contributor";
+
+// =============================================================================
+// User Hooks
+// =============================================================================
+
+export {
+  useUpdateAccessTokenAlias,
+  type UpdateAccessTokenAliasInput,
+  type UpdateAccessTokenAliasResponse,
+} from "./use-user";

@@ -10,11 +10,6 @@
  * ---------------------------------------------------------------
  */
 
-export enum AndamioDbClientUpdateModuleStatusV2RequestStatus {
-  UpdateModuleStatusV2RequestStatusAPPROVED = "APPROVED",
-  UpdateModuleStatusV2RequestStatusDRAFT = "DRAFT",
-}
-
 export enum AndamioDbClientReviewAssignmentCommitmentV2RequestDecision {
   Accept = "accept",
   Refuse = "refuse",
@@ -82,99 +77,6 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientAddTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientAssignmentV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: string;
-  image_url?: string;
-  is_live?: boolean;
-  title?: string;
-  video_url?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientClaimCredentialV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2 {
-  /** Assignment Assignment V2 (one-to-one with module) */
-  assignment?: AndamioApiInternalInternalApiAndamioDbClientAssignmentV2;
-  course_module_code?: string;
-  created_by_alias?: string;
-  description?: string;
-  image_url?: string;
-  introduction?: AndamioApiInternalInternalApiAndamioDbClientIntroductionV2;
-  is_live?: boolean;
-  module_status?: AndamioDbClientCourseModuleV2ModuleStatus;
-  /** SltHash Hash of SLT list, used as module token name on-chain */
-  slt_hash?: string;
-  slts?: AndamioApiInternalInternalApiAndamioDbClientSltV2[];
-  title?: string;
-  video_url?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientCreateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientDeleteModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientIntroductionV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: string;
-  image_url?: string;
-  is_live?: boolean;
-  title?: string;
-  video_url?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientLeaveAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientLessonV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
-  created_by_alias?: string;
-  description?: string;
-  image_url?: string;
-  is_live?: boolean;
-  title?: string;
-  video_url?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientPublishModuleV2Request {
-  course_id?: string;
-  course_module_code?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientRegisterCourseV2Request {
-  category?: string;
-  course_id?: string;
-  description?: string;
-  image_url?: string;
-  is_public?: boolean;
-  title?: string;
-  tx_hash?: string;
-  video_url?: string;
-}
-
 export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
   description?: string;
   image_url?: string;
@@ -182,73 +84,9 @@ export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequ
   title?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientRemoveTeachersV2Request {
+export interface AndamioDbClientAddTeachersV2Request {
   aliases?: string[];
   course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientReviewAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  decision?: AndamioDbClientReviewAssignmentCommitmentV2RequestDecision;
-  participant_alias?: string;
-  pending_tx_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSltV2 {
-  created_by_alias?: string;
-  lesson?: AndamioApiInternalInternalApiAndamioDbClientLessonV2;
-  /** SltIndex 1-based SLT index (starts at 1, not 0) */
-  slt_index?: number;
-  slt_text?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientSubmitAssignmentCommitmentV2Request {
-  /** CourseId The course ID (policy ID) */
-  course_id?: string;
-  /** Evidence Tiptap JSON evidence content */
-  evidence?: Record<string, any>;
-  /** EvidenceHash Hash of the evidence for on-chain verification */
-  evidence_hash?: string;
-  /** PendingTxHash The pending transaction hash */
-  pending_tx_hash?: string;
-  /** SltHash The SLT hash identifying the module (on-chain identifier) */
-  slt_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: Record<string, any>;
-  evidence_hash?: string;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateModuleStatusV2Request {
-  /** CourseId Course identifier */
-  course_id?: string;
-  /** CourseModuleCode Module code within the course */
-  course_module_code?: string;
-  /** SltHash Hash of the SLT list. Required when status = APPROVED. This becomes the module token name on-chain. */
-  slt_hash?: string;
-  /** Status Target status (DRAFT or APPROVED) */
-  status?: AndamioDbClientUpdateModuleStatusV2RequestStatus;
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Request {
-  /** Add Aliases to add as teachers */
-  add?: string[];
-  course_id?: string;
-  /** Remove Aliases to remove as teachers */
-  remove?: string[];
-}
-
-export interface AndamioApiInternalInternalApiAndamioDbClientUpdateTeachersV2Response {
-  course_id?: string;
-  success?: boolean;
-  teachers_added?: string[];
-  /** TeachersCurrent Final list of teachers after updates */
-  teachers_current?: string[];
-  teachers_removed?: string[];
 }
 
 export interface AndamioDbClientAggregateAssignmentInput {
@@ -344,7 +182,79 @@ export interface AndamioDbClientAggregateUpdateModuleV2Response {
   /** Changes Summary of what changed in the aggregate update */
   changes?: AndamioDbClientAggregateChangeSummary;
   /** Data Course Module V2 with full content */
-  data?: AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2;
+  data?: AndamioDbClientCourseModuleV2;
+}
+
+export interface AndamioDbClientAssignmentV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientClaimCredentialV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientCourseModuleV2 {
+  /** Assignment Assignment V2 (one-to-one with module) */
+  assignment?: AndamioDbClientAssignmentV2;
+  course_module_code?: string;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  introduction?: AndamioDbClientIntroductionV2;
+  is_live?: boolean;
+  module_status?: AndamioDbClientCourseModuleV2ModuleStatus;
+  /** SltHash Hash of SLT list, used as module token name on-chain */
+  slt_hash?: string;
+  slts?: AndamioDbClientSltV2[];
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientCreateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientDeleteModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientIntroductionV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientLeaveAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientLessonV2 {
+  /** ContentJson Tiptap JSON content */
+  content_json?: Record<string, any>;
+  created_by_alias?: string;
+  description?: string;
+  image_url?: string;
+  is_live?: boolean;
+  title?: string;
+  video_url?: string;
 }
 
 export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
@@ -355,6 +265,80 @@ export interface AndamioDbClientProjectManagerTasksListPostRequest {
   project_id?: string;
   /** Optional: filter by task status */
   status?: string;
+}
+
+export interface AndamioDbClientPublishModuleV2Request {
+  course_id?: string;
+  course_module_code?: string;
+}
+
+export interface AndamioDbClientRegisterCourseV2Request {
+  category?: string;
+  course_id?: string;
+  description?: string;
+  image_url?: string;
+  is_public?: boolean;
+  title?: string;
+  tx_hash?: string;
+  video_url?: string;
+}
+
+export interface AndamioDbClientRemoveTeachersV2Request {
+  aliases?: string[];
+  course_id?: string;
+}
+
+export interface AndamioDbClientReviewAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  decision?: AndamioDbClientReviewAssignmentCommitmentV2RequestDecision;
+  participant_alias?: string;
+  pending_tx_hash?: string;
+}
+
+export interface AndamioDbClientSltV2 {
+  created_by_alias?: string;
+  lesson?: AndamioDbClientLessonV2;
+  /** SltIndex 1-based SLT index (starts at 1, not 0) */
+  slt_index?: number;
+  slt_text?: string;
+}
+
+export interface AndamioDbClientSubmitAssignmentCommitmentV2Request {
+  /** CourseId The course ID (policy ID) */
+  course_id?: string;
+  /** Evidence Tiptap JSON evidence content */
+  evidence?: Record<string, any>;
+  /** EvidenceHash Hash of the evidence for on-chain verification */
+  evidence_hash?: string;
+  /** PendingTxHash The pending transaction hash */
+  pending_tx_hash?: string;
+  /** SltHash The SLT hash identifying the module (on-chain identifier) */
+  slt_hash?: string;
+}
+
+export interface AndamioDbClientUpdateAssignmentCommitmentV2Request {
+  course_id?: string;
+  course_module_code?: string;
+  evidence?: Record<string, any>;
+  evidence_hash?: string;
+}
+
+export interface AndamioDbClientUpdateTeachersV2Request {
+  /** Add Aliases to add as teachers */
+  add?: string[];
+  course_id?: string;
+  /** Remove Aliases to remove as teachers */
+  remove?: string[];
+}
+
+export interface AndamioDbClientUpdateTeachersV2Response {
+  course_id?: string;
+  success?: boolean;
+  teachers_added?: string[];
+  /** TeachersCurrent Final list of teachers after updates */
+  teachers_current?: string[];
+  teachers_removed?: string[];
 }
 
 export interface AndamioDbClientUserAccessTokenAliasPostRequest {
@@ -421,15 +405,6 @@ export interface ApiKeyViewmodelsRotateAPIKeyRequest {
 export interface ApiKeyViewmodelsRotateAPIKeyResponse {
   /** @example "API key expiration extended to 2026-08-31T23:59:59Z" */
   confirmation?: string;
-}
-
-export interface ApiTypesAssignment {
-  content?: string;
-  created_at?: string;
-  description?: string;
-  slt_hash: string;
-  title: string;
-  updated_at?: string;
 }
 
 export interface ApiTypesAssignmentCommitment {
@@ -526,15 +501,6 @@ export interface ApiTypesInitRolesResponse {
   projects?: ApiTypesProject[];
 }
 
-export interface ApiTypesLesson {
-  content?: string;
-  created_at?: string;
-  slt_hash: string;
-  sort_order: number;
-  title?: string;
-  updated_at?: string;
-}
-
 export interface ApiTypesLoginSession {
   /** @example "2025-01-24T12:00:00Z" */
   expires_at: string;
@@ -585,15 +551,6 @@ export interface ApiTypesProjectContent {
 export interface ApiTypesSignatureData {
   key: string;
   signature: string;
-}
-
-export interface ApiTypesSlt {
-  created_at?: string;
-  description?: string;
-  slt_hash: string;
-  sort_order?: number;
-  title?: string;
-  updated_at?: string;
 }
 
 export interface ApiTypesSuccessResponse {
@@ -898,7 +855,7 @@ export interface ApiUsageViewmodelsUserUsagePerApiKeyName {
 }
 
 export interface AtlasTxClientAddFundsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
   deposit_value?: Record<string, any>[][];
@@ -908,7 +865,7 @@ export interface AtlasTxClientAddFundsTxRequest {
 }
 
 export interface AtlasTxClientAssessAssignmentsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   assignment_decisions?: AtlasTxClientAssignmentOutcome[];
   /** This is the hash of a minting policy script. */
@@ -917,7 +874,7 @@ export interface AtlasTxClientAssessAssignmentsTxRequest {
 }
 
 export interface AtlasTxClientAssignmentActionTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** A text string with a maximum length of 140 characters */
   assignment_info?: string;
@@ -927,21 +884,28 @@ export interface AtlasTxClientAssignmentActionTxRequest {
 }
 
 export interface AtlasTxClientAssignmentOutcome {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   outcome?: string;
 }
 
 export interface AtlasTxClientClaimCourseCredentialsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   course_id?: string;
   initiator_data?: AtlasTxClientWalletData;
 }
 
+export interface AtlasTxClientClaimMigrateCredentialsTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+}
+
 export interface AtlasTxClientClaimProjectCredentialsTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
@@ -952,7 +916,7 @@ export interface AtlasTxClientClaimProjectCredentialsTxRequest {
 }
 
 export interface AtlasTxClientCommitAssignmentTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** A text string with a maximum length of 140 characters */
   assignment_info?: string;
@@ -964,7 +928,7 @@ export interface AtlasTxClientCommitAssignmentTxRequest {
 }
 
 export interface AtlasTxClientCommitTaskTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
@@ -979,22 +943,44 @@ export interface AtlasTxClientCommitTaskTxRequest {
 }
 
 export interface AtlasTxClientCreateCourseTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   initiator_data?: AtlasTxClientWalletData;
   teachers?: string[];
 }
 
 export interface AtlasTxClientCreateProjectTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   course_prereqs?: Record<string, any>[][];
   initiator_data?: AtlasTxClientWalletData;
   managers?: string[];
 }
 
+export interface AtlasTxClientEnrollMigrateStateTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+}
+
+export interface AtlasTxClientInitMigrateStateTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+}
+
+export interface AtlasTxClientIssueMigrateTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
+  /** This is the hash of a minting policy script. */
+  course_id?: string;
+  to_issue?: Record<string, any>[][];
+}
+
 export interface AtlasTxClientManageContributorBlacklistTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   aliases_to_add?: string[];
   aliases_to_remove?: string[];
@@ -1004,7 +990,7 @@ export interface AtlasTxClientManageContributorBlacklistTxRequest {
 }
 
 export interface AtlasTxClientManageManagersTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   initiator_data?: AtlasTxClientWalletData;
   managers_to_add?: string[];
@@ -1014,7 +1000,7 @@ export interface AtlasTxClientManageManagersTxRequest {
 }
 
 export interface AtlasTxClientManageModulesTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   course_id?: string;
@@ -1025,7 +1011,7 @@ export interface AtlasTxClientManageModulesTxRequest {
 }
 
 export interface AtlasTxClientManageTasksTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
@@ -1039,7 +1025,7 @@ export interface AtlasTxClientManageTasksTxRequest {
 }
 
 export interface AtlasTxClientManageTeachersTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   course_id?: string;
@@ -1049,7 +1035,7 @@ export interface AtlasTxClientManageTeachersTxRequest {
 }
 
 export interface AtlasTxClientMintAccessTokenTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** An address, serialised as Bech32. */
   initiator_data?: string;
@@ -1062,13 +1048,19 @@ export interface AtlasTxClientMintModuleV2 {
 }
 
 export interface AtlasTxClientProjectOutcome {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   outcome?: string;
 }
 
+export interface AtlasTxClientRemoveMigrateStateTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
+  course_ids?: string[];
+}
+
 export interface AtlasTxClientTaskActionTxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   initiator_data?: AtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
@@ -1087,7 +1079,7 @@ export interface AtlasTxClientTaskData {
 }
 
 export interface AtlasTxClientTasksAssessV2TxRequest {
-  /** Plain text alias (not hex encoded). Only alphanumeric characters and underscores allowed. */
+  /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
@@ -1233,6 +1225,15 @@ export interface AuthViewmodelsSignatureData {
   signature: string;
 }
 
+export interface DbHandlersUpdateModuleStatusRequest {
+  course_id?: string;
+  course_module_code?: string;
+  /** Required when status = "APPROVED" */
+  slt_hash?: string;
+  /** "APPROVED" or "DRAFT" */
+  status?: string;
+}
+
 export interface ErrorsBadGatewayErrorResponse {
   details?: string;
   /** @example "Bad Gateway: The upstream server returned an invalid response." */
@@ -1360,6 +1361,10 @@ export interface MergedHandlersListManagerTasksRequest {
 
 export interface MergedHandlersListTasksRequest {
   project_id?: string;
+}
+
+export interface MergedHandlersListTeacherAssignmentCommitmentsRequest {
+  course_id?: string;
 }
 
 export interface MergedHandlersListTeacherCourseModulesRequest {
@@ -1946,6 +1951,8 @@ export interface OrchestrationTeacherAssignmentCommitmentItem {
   course_module_code?: string;
   /** Hex-encoded on-chain content */
   on_chain_content?: string;
+  /** On-chain student status (from course details) */
+  on_chain_status?: string;
   slt_hash?: string;
   /** Data source indicator */
   source?: string;
@@ -1953,6 +1960,11 @@ export interface OrchestrationTeacherAssignmentCommitmentItem {
   submission_slot?: number;
   /** On-chain submission info */
   submission_tx?: string;
+}
+
+export interface PublicScanHandlersAliasExistsResponse {
+  alias?: string;
+  exists?: boolean;
 }
 
 /** Response containing the current state of a tracked transaction. */

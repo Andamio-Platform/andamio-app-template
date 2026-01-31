@@ -116,7 +116,6 @@ export function PostMintAuthPrompt({ onAuthenticated }: PostMintAuthPromptProps)
               {/* Steps - horizontal on desktop */}
               <div className="flex-1 flex items-center gap-2 sm:justify-end">
                 {steps.map((step, index) => {
-                  const Icon = step.icon;
                   const isLast = index === steps.length - 1;
 
                   return (

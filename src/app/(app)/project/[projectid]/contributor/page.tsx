@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useContributorCommitment, type ContributorCommitment } from "~/hooks/api/project/use-project-contributor";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioBadge,
@@ -30,19 +31,16 @@ import {
   SuccessIcon,
   PendingIcon,
 } from "~/components/icons";
-import { useProject, useProjectTasks, projectKeys, type Task } from "~/hooks/api/project/use-project";
+import { useProject, useProjectTasks, projectKeys, type Task, type ProjectSubmission } from "~/hooks/api/project/use-project";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { getProjectContributorStatus, getProject, type AndamioscanContributorStatus, type AndamioscanTask, type AndamioscanSubmission, type AndamioscanTaskSubmission } from "~/lib/andamioscan-events";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
 import { computeTaskHash, type TaskData } from "@andamio/core/hashing";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
-import { EditIcon, OnChainIcon, RefreshIcon, LoadingIcon } from "~/components/icons";
+import { EditIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import { toast } from "sonner";
-import { useTaskSubmitConfirmation } from "~/hooks/tx/use-event-confirmation";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 // Helper to extract string from NullableString (API returns object type for nullable strings)
 function getString(value: string | object | undefined | null): string {
@@ -50,38 +48,7 @@ function getString(value: string | object | undefined | null): string {
   return "";
 }
 
-// DB Commitment status type
-type CommitmentV2Status =
-  | "DRAFT"
-  | "PENDING_TX_SUBMIT"
-  | "SUBMITTED"
-  | "PENDING_TX_ASSESS"
-  | "ACCEPTED"
-  | "REFUSED"
-  | "DENIED"
-  | "PENDING_TX_CLAIM"
-  | "REWARDED"
-  | "PENDING_TX_LEAVE"
-  | "ABANDONED";
-
-// DB Commitment output type (from /project/contributor/commitment/get)
-// Uses camelCase for app-level consistency
-type CommitmentV2Output = {
-  taskHash: string;
-  contributorAlias: string;
-  taskCommitmentStatus: CommitmentV2Status;
-  pendingTxHash?: string | null;
-  evidence?: JSONContent | null;
-  taskEvidenceHash?: string | null;
-  assessedBy?: string | null;
-  taskOutcome?: string | null;
-  commitTxHash?: string | null;
-  submitTxHash?: string | null;
-  assessTxHash?: string | null;
-  claimTxHash?: string | null;
-};
-
-// Contributor status from on-chain data
+// Contributor status derived from hook data
 type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_accepted" | "can_claim";
 
 /**
@@ -92,55 +59,51 @@ type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_ac
  * - View current task status
  * - Commit to new tasks
  * - Claim credentials
+ *
+ * All data sourced from useProject() merged hook — no direct Andamioscan calls.
  */
 
 function ContributorDashboardContent() {
   const params = useParams();
   const projectId = params.projectid as string;
-  const { user, authenticatedFetch } = useAndamioAuth();
+  const { user } = useAndamioAuth();
   const queryClient = useQueryClient();
 
-  // React Query hooks replace manual project/tasks fetching
+  // React Query hooks — single source of truth
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStatePolicyId = projectDetail?.contributorStateId;
   const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(
     contributorStatePolicyId ?? undefined
   );
 
-  // On-chain contributor state
+  // Derived contributor state from hook data
   const [contributorStatus, setContributorStatus] = useState<ContributorStatus>("not_enrolled");
-  const [onChainContributor, setOnChainContributor] = useState<AndamioscanContributorStatus | null>(null);
   const contributorStateId = contributorStatePolicyId ?? null;
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // On-chain tasks from Andamioscan (for task_id lookup)
-  const [onChainTasks, setOnChainTasks] = useState<AndamioscanTask[]>([]);
+  // DB commitment record for the current task (fetched reactively via hook)
+  const [dbCommitment, setDbCommitment] = useState<ContributorCommitment | null>(null);
 
-  // On-chain submission for current contributor (when pending task exists)
-  const [onChainSubmission, setOnChainSubmission] = useState<AndamioscanSubmission | null>(null);
-  // Pending task from contributor status API (has task details but no tx_hash)
-  const [pendingTaskSubmission, setPendingTaskSubmission] = useState<AndamioscanTaskSubmission | null>(null);
+  // Task hash to look up commitment for (set by orchestration, triggers hook fetch)
+  const [lookupTaskHash, setLookupTaskHash] = useState<string | null>(null);
 
-  // DB commitment record for the current task
-  const [dbCommitment, setDbCommitment] = useState<CommitmentV2Output | null>(null);
+  // Reactive commitment fetch via hook
+  const {
+    data: commitmentData,
+    isLoading: isCommitmentLoading,
+  } = useContributorCommitment(projectId, lookupTaskHash ?? undefined);
 
-  // Last submitted task action tx hash (for confirmation checking)
-  // This can come from either a new submission OR from DB commitment's pending_tx_hash
+  // Last submitted task action tx hash
   const [pendingActionTxHash, setPendingActionTxHash] = useState<string | null>(null);
-
-  // Event-based confirmation check
-  const { status: confirmStatus, event: confirmEvent, checkOnce: checkConfirmation } = useTaskSubmitConfirmation(pendingActionTxHash);
 
   // Eligibility state (prerequisites)
   const [eligibility, setEligibility] = useState<EligibilityResult | null>(null);
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
 
   // Task evidence from editor
   const [taskEvidence, setTaskEvidence] = useState<JSONContent | null>(null);
 
   /**
    * Compute task hash from DB task data.
-   * Uses the same algorithm as on-chain to reliably match DB tasks to on-chain tasks.
    */
   const computeTaskHashFromDb = (dbTask: Task): string => {
     const taskData: TaskData = {
@@ -154,114 +117,31 @@ function ContributorDashboardContent() {
 
   /**
    * Get the on-chain task_id for a selected task.
-   * Uses computeTaskHash for reliable matching instead of lovelace/index fallbacks.
    */
   const getOnChainTaskId = (dbTask: Task | null): string => {
     if (!dbTask) return "";
-
-    // If DB already has task_hash, use it
     const taskHash = getString(dbTask.taskHash);
-    if (taskHash.length === 64) {
-      return taskHash;
-    }
-
-    // Compute the task hash from DB data
-    const computedHash = computeTaskHashFromDb(dbTask);
-
-    // Verify it exists on-chain
-    const onChainTask = onChainTasks.find(t => t.task_id === computedHash);
-    if (onChainTask) {
-      console.log("[Contributor] Matched task by computed hash:", {
-        computedHash: computedHash.slice(0, 16) + "...",
-        title: dbTask.title,
-      });
-      return computedHash;
-    }
-
-    // Fallback: return computed hash even if not found on-chain yet
-    console.log("[Contributor] Using computed hash (not yet on-chain):", {
-      computedHash: computedHash.slice(0, 16) + "...",
-      title: dbTask.title,
-    });
-    return computedHash;
+    if (taskHash.length === 64) return taskHash;
+    return computeTaskHashFromDb(dbTask);
   };
 
   /**
-   * Get the contributor_state_policy_id from the matching on-chain task.
-   * This is required by the Atlas TX API for task commits.
-   * Uses computeTaskHash for reliable matching.
+   * Get the contributor_state_policy_id for a task.
+   * All tasks in same project share the policy ID, so use contributorStateId.
    */
-  const getOnChainContributorStatePolicyId = (dbTask: Task | null): string => {
-    if (!dbTask) return "";
-
-    // Use existing task_hash or compute it
-    const existingTaskHash = getString(dbTask.taskHash);
-    const taskHash = existingTaskHash.length === 64
-      ? existingTaskHash
-      : computeTaskHashFromDb(dbTask);
-
-    // Find matching on-chain task
-    const matchedTask = onChainTasks.find(t => t.task_id === taskHash);
-    if (matchedTask) {
-      return matchedTask.contributor_state_policy_id;
-    }
-
-    // Fallback: use the first task's policy ID (all tasks in same project share the policy ID)
-    if (onChainTasks.length > 0 && onChainTasks[0]) {
-      return onChainTasks[0].contributor_state_policy_id;
-    }
-
-    return "";
+  const getOnChainContributorStatePolicyId = (_dbTask: Task | null): string => {
+    return contributorStatePolicyId ?? "";
   };
 
   // Check if evidence is valid (has actual content)
   const hasValidEvidence = taskEvidence?.content &&
     Array.isArray(taskEvidence.content) &&
     taskEvidence.content.length > 0 &&
-    // Check it's not just an empty paragraph
     !(taskEvidence.content.length === 1 &&
       taskEvidence.content[0]?.type === "paragraph" &&
       (!taskEvidence.content[0]?.content || taskEvidence.content[0]?.content.length === 0));
 
-  /**
-   * Fetch the full commitment record from DB API
-   * Returns the commitment with status, evidence, pending_tx_hash, etc.
-   */
-  const fetchDbCommitment = async (taskHash: string): Promise<CommitmentV2Output | null> => {
-    try {
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/contributor/commitment/get`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ task_hash: taskHash }),
-        }
-      );
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        console.warn("[Contributor] Failed to fetch commitment:", response.status);
-        return null;
-      }
-
-      const commitment = (await response.json()) as CommitmentV2Output;
-      console.log("[Contributor] Fetched DB commitment:", {
-        task_hash: commitment.taskHash,
-        commitment_status: commitment.taskCommitmentStatus,
-        pending_tx_hash: commitment.pendingTxHash,
-        hasEvidence: !!commitment.evidence,
-      });
-      return commitment;
-    } catch (err) {
-      console.error("[Contributor] Error fetching commitment:", err);
-      return null;
-    }
-  };
-
-  // Orchestration trigger - increment to re-run Andamioscan + contributor status checks
+  // Orchestration trigger - increment to re-run status derivation
   const [orchestrationTrigger, setOrchestrationTrigger] = useState(0);
   const [isOrchestrating, setIsOrchestrating] = useState(false);
 
@@ -284,311 +164,105 @@ function ContributorDashboardContent() {
     }
   }, [tasks, selectedTask]);
 
-  // Orchestration effect: runs Andamioscan + contributor status checks
-  // Triggered when project/tasks data loads or after refreshData()
+  // Derive contributor status from hook data
+  // Replaces the old Andamioscan orchestration effect
+  const mySubmission: ProjectSubmission | undefined = useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !projectDetail?.submissions) return undefined;
+    return projectDetail.submissions.find((s) => s.submittedBy === alias);
+  }, [user?.accessTokenAlias, projectDetail?.submissions]);
+
+  const myAssessments = useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !projectDetail?.assessments) return [];
+    // Assessments where the contributor's task was assessed
+    return projectDetail.assessments.filter(
+      (a) => a.assessedBy !== alias
+    );
+  }, [user?.accessTokenAlias, projectDetail?.assessments]);
+
+  const myCredentials = useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !projectDetail?.credentialClaims) return [];
+    return projectDetail.credentialClaims.filter((c) => c.alias === alias);
+  }, [user?.accessTokenAlias, projectDetail?.credentialClaims]);
+
+  const isEnrolled = useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !projectDetail?.contributors) return false;
+    return projectDetail.contributors.some((c) => c.alias === alias);
+  }, [user?.accessTokenAlias, projectDetail?.contributors]);
+
+  // Orchestration: derive contributor status from hook data
   useEffect(() => {
     if (isProjectLoading || isTasksLoading || !projectDetail) return;
     const alias = user?.accessTokenAlias;
     if (!alias) return;
 
-    const orchestrate = async () => {
-      console.log("[Contributor] ========== ORCHESTRATION START ==========");
-      setIsOrchestrating(true);
+    setIsOrchestrating(true);
 
-      // Fetch on-chain project details from Andamioscan (for task_id lookup and submission data)
-      let onChainProjectDetails = null;
-      try {
-        console.log("[Contributor] Fetching on-chain project details from Andamioscan...");
-        onChainProjectDetails = await getProject(projectId);
-        if (onChainProjectDetails?.tasks) {
-          console.log("[Contributor] On-chain tasks found:", onChainProjectDetails.tasks.length);
-          setOnChainTasks(onChainProjectDetails.tasks);
+    // Determine status from merged hook data
+    if (mySubmission) {
+      // Has a pending submission
+      setContributorStatus("task_pending");
+      setLookupTaskHash(mySubmission.taskHash);
+    } else if (myCredentials.length > 0) {
+      setContributorStatus("can_claim");
+    } else if (myAssessments.some(a => a.decision === "accept")) {
+      // A task was accepted
+      setContributorStatus("task_accepted");
+    } else if (isEnrolled) {
+      setContributorStatus("enrolled");
+    } else {
+      setContributorStatus("not_enrolled");
+    }
+
+    // Compute eligibility from hook data (pure function, no API calls)
+    const prerequisites = projectDetail.prerequisites ?? [];
+    // For now, pass empty completions — callers need to provide course completion data
+    // This matches the previous behavior where eligibility errors defaulted to not eligible
+    const eligibilityResult = checkProjectEligibility(
+      prerequisites,
+      [], // TODO: Wire up student completions from course hooks when prerequisite courses are loaded
+    );
+    setEligibility(eligibilityResult);
+
+    setIsOrchestrating(false);
+  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger, isProjectLoading, isTasksLoading, mySubmission, myCredentials, myAssessments, isEnrolled]);
+
+  // Commitment processing effect: reacts to hook data when lookupTaskHash triggers a fetch
+  useEffect(() => {
+    if (isCommitmentLoading || commitmentData === undefined) return;
+
+    if (commitmentData) {
+      setDbCommitment(commitmentData);
+
+      // Check if DB says task is actually ACCEPTED
+      if (commitmentData.commitmentStatus === "ACCEPTED") {
+        setContributorStatus("task_accepted");
+        setTaskEvidence(null);
+
+        const acceptedTaskHash = commitmentData.taskHash;
+        const availableTasks = tasks.filter(
+          (t) => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash,
+        );
+        if (availableTasks.length > 0) {
+          setSelectedTask(availableTasks[0] ?? null);
         }
-        if (onChainProjectDetails?.submissions) {
-          console.log("[Contributor] On-chain submissions found:", onChainProjectDetails.submissions.length);
+      } else {
+        // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash
+        if (commitmentData.commitmentStatus === "PENDING_TX_SUBMIT" && commitmentData.pendingTxHash) {
+          setPendingActionTxHash(commitmentData.pendingTxHash);
         }
-      } catch (err) {
-        console.error("[Contributor] Error fetching on-chain project details:", err);
-        // Non-fatal - continue without on-chain data
-      }
 
-      // Fetch on-chain contributor status
-      console.log("[Contributor] User authenticated, checking status. Alias:", alias);
-      setIsCheckingEligibility(true);
-
-      // Check contributor status from Andamioscan
-      try {
-        console.log("[Contributor] Fetching contributor status from Andamioscan...");
-        const contributorData = await getProjectContributorStatus(projectId, alias);
-        console.log("[Contributor] Contributor data from Andamioscan:", contributorData);
-        setOnChainContributor(contributorData);
-
-        if (contributorData) {
-          console.log("[Contributor] On-chain contributor found:", {
-            pending_tasks: contributorData.pending_tasks.length,
-            completed_tasks: contributorData.completed_tasks.length,
-            credentials: contributorData.credentials.length,
-          });
-          // Determine status based on on-chain data
-          if (contributorData.pending_tasks.length > 0) {
-            // Get the pending task submission data directly from contributor status
-            const pendingTask = contributorData.tasks_submitted[0];
-
-            // Fetch full commitment record from DB FIRST to check actual status
-            let commitment: CommitmentV2Output | null = null;
-            if (pendingTask) {
-              commitment = await fetchDbCommitment(pendingTask.task_id);
-            }
-
-            // Check if DB says task is actually ACCEPTED (Andamioscan may be out of sync)
-            if (commitment?.taskCommitmentStatus === "ACCEPTED") {
-              console.log("[Contributor] Andamioscan shows pending, but DB shows ACCEPTED - using DB status");
-              console.log("[Contributor] Status: task_accepted (DB override)");
-              setContributorStatus("task_accepted");
-              setDbCommitment(commitment);
-              // DON'T pre-populate evidence - user needs fresh evidence for the NEW task
-              // Clear any existing evidence so they start fresh
-              setTaskEvidence(null);
-
-              // Auto-select the first available (non-accepted) task
-              const acceptedTaskHash = commitment.taskHash;
-              const availableTasks = tasks.filter(t => t.taskStatus === "ON_CHAIN" && getString(t.taskHash) !== acceptedTaskHash);
-              if (availableTasks.length > 0) {
-                console.log("[Contributor] Auto-selecting first available task:", availableTasks[0]?.title);
-                setSelectedTask(availableTasks[0] ?? null);
-              }
-            } else {
-              // Normal pending flow
-              console.log("[Contributor] Status: task_pending");
-              setContributorStatus("task_pending");
-
-              if (pendingTask) {
-                console.log("[Contributor] Pending task submission from contributor status:", {
-                  task_id: pendingTask.task_id,
-                  content: pendingTask.content,
-                  lovelace_amount: pendingTask.lovelace_amount,
-                });
-                setPendingTaskSubmission(pendingTask);
-
-                if (commitment) {
-                  console.log("[Contributor] DB commitment found:", {
-                    commitment_status: commitment.taskCommitmentStatus,
-                    pending_tx_hash: commitment.pendingTxHash,
-                    hasEvidence: !!commitment.evidence,
-                  });
-                  setDbCommitment(commitment);
-
-                  // If commitment is PENDING_TX_SUBMIT, populate pendingActionTxHash for confirmation checking
-                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                    console.log("[Contributor] Setting pendingActionTxHash from DB:", commitment.pendingTxHash);
-                    setPendingActionTxHash(commitment.pendingTxHash);
-                  }
-
-                  // Pre-populate evidence editor with saved evidence
-                  if (commitment.evidence) {
-                    setTaskEvidence(commitment.evidence);
-                  }
-                } else {
-                  console.log("[Contributor] No DB commitment found");
-                }
-
-                // Also try to find full submission in project details for tx_hash
-                if (onChainProjectDetails?.submissions) {
-                  const mySubmission = onChainProjectDetails.submissions.find(
-                    (s) => s.alias === alias &&
-                           s.task.task_id === pendingTask.task_id
-                  );
-                  if (mySubmission) {
-                    console.log("[Contributor] Found full submission with tx_hash:", mySubmission.tx_hash);
-                    setOnChainSubmission(mySubmission);
-                  }
-                }
-              }
-            }
-          } else if (contributorData.completed_tasks.length > 0) {
-            // Has completed tasks, can commit to new ones or claim credentials
-            if (contributorData.credentials.length > 0) {
-              console.log("[Contributor] Status: can_claim");
-              setContributorStatus("can_claim");
-            } else {
-              console.log("[Contributor] Status: task_accepted");
-              setContributorStatus("task_accepted");
-            }
-          } else {
-            console.log("[Contributor] Status: enrolled (no pending/completed tasks from API)");
-
-            // FALLBACK: Check project submissions directly
-            // Sometimes the contributor status API doesn't return pending_submissions
-            // but the submission exists in project details
-            if (onChainProjectDetails?.submissions) {
-              const mySubmission = onChainProjectDetails.submissions.find(
-                (s) => s.alias === alias
-              );
-              if (mySubmission) {
-                console.log("[Contributor] FALLBACK: Found submission in project details:", {
-                  task_id: mySubmission.task.task_id,
-                  tx_hash: mySubmission.tx_hash,
-                  alias: mySubmission.alias,
-                });
-                // Override status to task_pending
-                setContributorStatus("task_pending");
-                setOnChainSubmission(mySubmission);
-
-                // Fetch full commitment record from DB
-                const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-                if (commitment) {
-                  console.log("[Contributor] FALLBACK: DB commitment found:", {
-                    commitment_status: commitment.taskCommitmentStatus,
-                    pending_tx_hash: commitment.pendingTxHash,
-                  });
-                  setDbCommitment(commitment);
-                      if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                    setPendingActionTxHash(commitment.pendingTxHash);
-                  }
-                  if (commitment.evidence) {
-                    setTaskEvidence(commitment.evidence);
-                  }
-                } else {
-                }
-              } else {
-                setContributorStatus("enrolled");
-              }
-            } else {
-              setContributorStatus("enrolled");
-            }
-          }
-        } else {
-          console.log("[Contributor] Status: not_enrolled (no contributor data)");
-
-          // FALLBACK: Even if contributor status returns null, check project submissions
-          // This handles the case where the user has a submission but isn't in contributors list yet
-          if (onChainProjectDetails?.submissions) {
-            const mySubmission = onChainProjectDetails.submissions.find(
-              (s) => s.alias === alias
-            );
-            if (mySubmission) {
-              console.log("[Contributor] FALLBACK: Not in contributors list but found submission:", {
-                task_id: mySubmission.task.task_id,
-                tx_hash: mySubmission.tx_hash,
-                alias: mySubmission.alias,
-              });
-              setContributorStatus("task_pending");
-              setOnChainSubmission(mySubmission);
-              setOnChainContributor({
-                alias,
-                project_id: projectId,
-                joined_at: 0,
-                completed_tasks: [],
-                pending_tasks: [mySubmission.task.task_id],
-                tasks_submitted: [],
-                tasks_accepted: [],
-                credentials: [],
-              });
-
-              // Fetch full commitment record from DB
-              const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-              if (commitment) {
-                console.log("[Contributor] FALLBACK: DB commitment found:", {
-                  commitment_status: commitment.taskCommitmentStatus,
-                  pending_tx_hash: commitment.pendingTxHash,
-                });
-                setDbCommitment(commitment);
-                  if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                  setPendingActionTxHash(commitment.pendingTxHash);
-                }
-                if (commitment.evidence) {
-                  setTaskEvidence(commitment.evidence);
-                }
-              } else {
-              }
-            } else {
-              setContributorStatus("not_enrolled");
-            }
-          } else {
-            setContributorStatus("not_enrolled");
-          }
-        }
-      } catch (contributorError) {
-        // User not a contributor yet - but still check project submissions
-        console.log("[Contributor] Contributor status fetch error:", contributorError);
-
-        // FALLBACK: Check project submissions even on error
-        if (onChainProjectDetails?.submissions) {
-          const mySubmission = onChainProjectDetails.submissions.find(
-            (s) => s.alias === alias
-          );
-          if (mySubmission) {
-            console.log("[Contributor] FALLBACK after error: Found submission:", {
-              task_id: mySubmission.task.task_id,
-              tx_hash: mySubmission.tx_hash,
-            });
-            setContributorStatus("task_pending");
-            setOnChainSubmission(mySubmission);
-            setOnChainContributor({
-              alias,
-              project_id: projectId,
-              joined_at: 0,
-              completed_tasks: [],
-              pending_tasks: [mySubmission.task.task_id],
-              tasks_submitted: [],
-              tasks_accepted: [],
-              credentials: [],
-            });
-
-            // Fetch full commitment record from DB
-            const commitment = await fetchDbCommitment(mySubmission.task.task_id);
-            if (commitment) {
-              console.log("[Contributor] FALLBACK after error: DB commitment found:", {
-                commitment_status: commitment.taskCommitmentStatus,
-                pending_tx_hash: commitment.pendingTxHash,
-              });
-              setDbCommitment(commitment);
-              if (commitment.taskCommitmentStatus === "PENDING_TX_SUBMIT" && commitment.pendingTxHash) {
-                setPendingActionTxHash(commitment.pendingTxHash);
-              }
-              if (commitment.evidence) {
-                setTaskEvidence(commitment.evidence);
-              }
-            }
-          } else {
-            setContributorStatus("not_enrolled");
-          }
-        } else {
-          setContributorStatus("not_enrolled");
+        // Pre-populate evidence editor with saved evidence
+        if (commitmentData.evidence) {
+          setTaskEvidence(commitmentData.evidence as JSONContent);
         }
       }
-
-      // Check prerequisites eligibility
-      try {
-        console.log("[Contributor] Checking prerequisites eligibility...");
-        const eligibilityResult = await checkProjectEligibility(projectId, alias);
-        console.log("[Contributor] Eligibility result:", {
-          eligible: eligibilityResult.eligible,
-          totalRequired: eligibilityResult.totalRequired,
-          totalCompleted: eligibilityResult.totalCompleted,
-          missingCount: eligibilityResult.missingPrerequisites.length,
-        });
-        setEligibility(eligibilityResult);
-      } catch (eligibilityError) {
-        console.error("[Contributor] Error checking eligibility:", eligibilityError);
-        // If eligibility check fails, assume not eligible (safe default)
-        setEligibility({
-          eligible: false,
-          missingPrerequisites: [],
-          totalRequired: 0,
-          totalCompleted: 0,
-          prerequisites: [],
-        });
-      }
-
-      setIsCheckingEligibility(false);
-      setIsOrchestrating(false);
-      console.log("[Contributor] ========== ORCHESTRATION COMPLETE ==========");
-    };
-
-    void orchestrate();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger]);
+  }, [commitmentData, isCommitmentLoading]);
 
   // Loading state
   if (isProjectLoading || isTasksLoading || isOrchestrating) {
@@ -614,6 +288,11 @@ function ContributorDashboardContent() {
     totalRewards: liveTasks.reduce((sum, t) => sum + (parseInt(t.lovelaceAmount ?? "0", 10) || 0), 0),
   };
 
+  // Contributor progress derived from hook data
+  const completedTaskCount = myAssessments.filter(a => a.decision === "accept").length;
+  const pendingTaskCount = mySubmission ? 1 : 0;
+  const credentialCount = myCredentials.length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -629,7 +308,6 @@ function ContributorDashboardContent() {
         <AndamioBadge variant="outline">
           <span className="font-mono text-xs">{projectId.slice(0, 16)}...</span>
         </AndamioBadge>
-{/* Treasury balance removed - total_ada not available in new API */}
       </div>
 
       {/* Stats Cards */}
@@ -638,7 +316,6 @@ function ContributorDashboardContent() {
           icon={ContributorIcon}
           label="Your Status"
           value={
-            isCheckingEligibility ? "Checking..." :
             !eligibility?.eligible ? "Prerequisites Required" :
             contributorStatus === "not_enrolled" ? "Ready to Enroll" :
             contributorStatus === "enrolled" ? "Enrolled" :
@@ -747,8 +424,8 @@ function ContributorDashboardContent() {
         </AndamioCard>
       )}
 
-      {/* On-Chain Contributor Status */}
-      {onChainContributor && (
+      {/* Contributor Progress */}
+      {isEnrolled && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle className="flex items-center gap-2">
@@ -759,15 +436,15 @@ function ContributorDashboardContent() {
           <AndamioCardContent>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold">{onChainContributor.completed_tasks.length}</AndamioText>
+                <AndamioText className="text-2xl font-bold">{completedTaskCount}</AndamioText>
                 <AndamioText variant="small">Tasks Completed</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-muted-foreground">{onChainContributor.pending_tasks.length}</AndamioText>
+                <AndamioText className="text-2xl font-bold text-muted-foreground">{pendingTaskCount}</AndamioText>
                 <AndamioText variant="small">Pending Review</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-primary">{onChainContributor.credentials.length}</AndamioText>
+                <AndamioText className="text-2xl font-bold text-primary">{credentialCount}</AndamioText>
                 <AndamioText variant="small">Credentials Earned</AndamioText>
               </div>
             </div>
@@ -776,17 +453,15 @@ function ContributorDashboardContent() {
       )}
 
       {/* Pending Task Status */}
-      {contributorStatus === "task_pending" && (pendingTaskSubmission || onChainSubmission) && (() => {
-        // Get task info from either source
-        const taskId = onChainSubmission?.task.task_id ?? pendingTaskSubmission?.task_id ?? "";
-        const taskLovelace = onChainSubmission?.task.lovelace_amount ?? pendingTaskSubmission?.lovelace_amount ?? 0;
-        const txHash = onChainSubmission?.tx_hash;
+      {contributorStatus === "task_pending" && mySubmission && (() => {
+        const taskId = mySubmission.taskHash;
+        const txHash = mySubmission.submissionTx;
 
-        // Match on-chain submission to DB task
+        // Match submission to DB task
         const matchedDbTask = tasks.find(t =>
-          getString(t.taskHash) === taskId ||
-          (!getString(t.taskHash) && Number(t.lovelaceAmount) === taskLovelace)
+          getString(t.taskHash) === taskId
         );
+        const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
 
         return (
         <AndamioCard className="border-secondary">
@@ -841,8 +516,7 @@ function ContributorDashboardContent() {
             </div>
 
             {/* Evidence Section - Read-only when PENDING_TX_SUBMIT, editable otherwise */}
-            {dbCommitment?.taskCommitmentStatus === "PENDING_TX_SUBMIT" ? (
-              // Read-only view when waiting for transaction confirmation
+            {dbCommitment?.commitmentStatus === "PENDING_TX_SUBMIT" ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <PendingIcon className="h-4 w-4 text-muted-foreground" />
@@ -863,7 +537,6 @@ function ContributorDashboardContent() {
                 </div>
               </div>
             ) : (
-              // Editable view when not pending confirmation
               <>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -877,15 +550,10 @@ function ContributorDashboardContent() {
                     <ContentEditor
                       content={taskEvidence}
                       onContentChange={(content) => {
-                        console.log("[Contributor] Task evidence updated:", {
-                          hasContent: !!content,
-                          contentLength: content?.content?.length,
-                        });
                         setTaskEvidence(content);
                       }}
                     />
                   </div>
-                  {/* Validation feedback */}
                   {!hasValidEvidence && (
                     <AndamioText variant="small" className="text-muted-foreground">
                       Please provide evidence describing your work on this task.
@@ -899,7 +567,6 @@ function ContributorDashboardContent() {
                   )}
                 </div>
 
-                {/* Task Action - Update evidence on-chain (only when not pending confirmation) */}
                 <TaskAction
                   projectNftPolicyId={projectId}
                   taskHash={taskId}
@@ -907,7 +574,6 @@ function ContributorDashboardContent() {
                   taskTitle={matchedDbTask?.title ?? undefined}
                   taskEvidence={taskEvidence ?? undefined}
                   onSuccess={async (result) => {
-                    // Store tx hash for confirmation checking
                     setPendingActionTxHash(result.txHash);
                     await refreshData();
                   }}
@@ -935,59 +601,22 @@ function ContributorDashboardContent() {
                   </a>
                 </div>
 
-                {confirmStatus === "confirmed" && confirmEvent && (
-                  <div className="flex items-center gap-2 text-primary">
-                    <SuccessIcon className="h-4 w-4" />
-                    <AndamioText variant="small">
-                      Confirmed at slot {confirmEvent.slot}
-                    </AndamioText>
-                  </div>
-                )}
-
-                {confirmStatus === "not_found" && (
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    Transaction not yet indexed. The Gateway will update automatically once confirmed.
-                  </AndamioText>
-                )}
-
-                {confirmStatus === "error" && (
-                  <AndamioText variant="small" className="text-destructive">
-                    Error checking confirmation status.
-                  </AndamioText>
-                )}
+                <AndamioText variant="small" className="text-muted-foreground">
+                  The Gateway TX State Machine will update the status automatically once confirmed.
+                </AndamioText>
 
                 <AndamioButton
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    const result = await checkConfirmation();
-                    if (result) {
-                      toast.success("Transaction Confirmed!", {
-                        description: `Confirmed at slot ${result.slot}. Gateway will update status shortly.`,
-                      });
-                      // Refresh data after confirmation
-                      await refreshData();
-                      // Clear pending tx hash
-                      setPendingActionTxHash(null);
-                    } else {
-                      toast.info("Not yet confirmed", {
-                        description: "Transaction not yet indexed. Try again in a few seconds.",
-                      });
-                    }
+                    await refreshData();
+                    toast.info("Data refreshed", {
+                      description: "Check back in a few seconds if the transaction hasn't confirmed yet.",
+                    });
                   }}
-                  disabled={confirmStatus === "checking"}
                 >
-                  {confirmStatus === "checking" ? (
-                    <>
-                      <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshIcon className="h-4 w-4 mr-2" />
-                      Check Confirmation
-                    </>
-                  )}
+                  <RefreshIcon className="h-4 w-4 mr-2" />
+                  Refresh Status
                 </AndamioButton>
               </div>
             )}
@@ -1010,22 +639,9 @@ function ContributorDashboardContent() {
           </AndamioCardHeader>
           <AndamioCardContent className="space-y-2">
             {liveTasks.map((task) => {
-              // Check if this task is the one that was accepted
               const taskHashStr = getString(task.taskHash);
-              const isAcceptedTask = dbCommitment?.taskHash === taskHashStr && dbCommitment?.taskCommitmentStatus === "ACCEPTED";
+              const isAcceptedTask = dbCommitment?.taskHash === taskHashStr && dbCommitment?.commitmentStatus === "ACCEPTED";
               const isSelectable = !isAcceptedTask;
-
-              // Diagnostic logging for task data
-              console.log("[Contributor] Task data:", {
-                index: task.index,
-                title: task.title,
-                task_hash: taskHashStr,
-                task_hash_length: taskHashStr.length,
-                task_status: task.taskStatus,
-                lovelace_amount: task.lovelaceAmount,
-                isAcceptedTask,
-                isSelectable,
-              });
 
               return (
                 <div
@@ -1038,14 +654,7 @@ function ContributorDashboardContent() {
                         : "hover:border-muted-foreground/50 cursor-pointer"
                   }`}
                   onClick={() => {
-                    if (!isSelectable) return; // Don't allow selecting accepted tasks
-                    console.log("[Contributor] Selected task:", {
-                      index: task.index,
-                      title: task.title,
-                      task_hash: taskHashStr,
-                      task_hash_length: taskHashStr.length,
-                    });
-                    // Clear evidence when selecting a different task
+                    if (!isSelectable) return;
                     if (getString(selectedTask?.taskHash) !== taskHashStr) {
                       setTaskEvidence(null);
                     }
@@ -1102,16 +711,10 @@ function ContributorDashboardContent() {
               <ContentEditor
                 content={taskEvidence}
                 onContentChange={(content) => {
-                  console.log("[Contributor] Evidence content changed:", {
-                    hasContent: !!content,
-                    contentType: content?.type,
-                    contentLength: content?.content?.length,
-                  });
                   setTaskEvidence(content);
                 }}
               />
             </div>
-            {/* Validation feedback */}
             {!hasValidEvidence && (
               <AndamioText variant="small" className="text-muted-foreground">
                 Please provide evidence describing your approach to this task.
@@ -1123,41 +726,14 @@ function ContributorDashboardContent() {
                 Evidence ready for submission
               </AndamioText>
             )}
-            {/* Debug info */}
-            <AndamioText variant="small" className="text-muted-foreground font-mono text-xs">
-              Debug: hasValidEvidence={String(hasValidEvidence)}, contentLength={taskEvidence?.content?.length ?? 0}
-            </AndamioText>
           </AndamioCardContent>
         </AndamioCard>
       )}
 
-      {/* TaskCommit - Used for both enrollment AND subsequent commits
-          The COMMIT transaction handles:
-          1. Enrolling if not yet enrolled
-          2. Claiming rewards from previous approved task (if any)
-          3. Committing to the new task
-      */}
+      {/* TaskCommit - Used for both enrollment AND subsequent commits */}
       {eligibility?.eligible && (contributorStatus === "not_enrolled" || contributorStatus === "enrolled" || contributorStatus === "task_accepted") && selectedTask && (() => {
-        // Diagnostic logging before rendering TaskCommit
         const isFirstCommit = contributorStatus === "not_enrolled";
         const hasApprovedTask = contributorStatus === "task_accepted";
-        const selectedTaskHash = getString(selectedTask.taskHash);
-        console.log("[Contributor] Rendering TaskCommit with:", {
-          isFirstCommit,
-          hasApprovedTask,
-          willClaimRewards: hasApprovedTask,
-          projectNftPolicyId: projectId,
-          projectId_length: projectId.length,
-          contributorStateId: contributorStateId,
-          contributorStateId_length: contributorStateId?.length,
-          taskHash: selectedTaskHash,
-          taskHash_length: selectedTaskHash.length,
-          taskCode: `TASK_${selectedTask.index}`,
-          taskTitle: selectedTask.title,
-          hasEvidence: !!taskEvidence,
-          hasValidEvidence: hasValidEvidence,
-          evidenceContentLength: taskEvidence?.content?.length,
-        });
         return (
           <TaskCommit
             projectNftPolicyId={projectId}
@@ -1171,7 +747,6 @@ function ContributorDashboardContent() {
             isFirstCommit={isFirstCommit}
             willClaimRewards={hasApprovedTask}
             onSuccess={async () => {
-              console.log("[Contributor] TaskCommit onSuccess triggered");
               setContributorStatus("task_pending");
               await refreshData();
             }}
@@ -1179,13 +754,9 @@ function ContributorDashboardContent() {
         );
       })()}
 
-      {/* When contributor has approved task - show BOTH options:
-          1. Commit to another task (claims rewards, stays enrolled)
-          2. Claim credential (claims rewards, leaves project)
-      */}
+      {/* When contributor has approved task - show BOTH options */}
       {eligibility?.eligible && contributorStatus === "can_claim" && (
         <div className="space-y-4">
-          {/* Option 1: Commit to Another Task */}
           {selectedTask && (
             <TaskCommit
               projectNftPolicyId={projectId}
@@ -1199,14 +770,12 @@ function ContributorDashboardContent() {
               isFirstCommit={false}
               willClaimRewards={true}
               onSuccess={async () => {
-                console.log("[Contributor] TaskCommit (can_claim) onSuccess triggered");
                 setContributorStatus("task_pending");
                 await refreshData();
               }}
             />
           )}
 
-          {/* Option 2: Claim Credential and Leave */}
           <ProjectCredentialClaim
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}

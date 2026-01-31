@@ -144,7 +144,7 @@
 
   /* Secondary - Brighter Blue for dark mode (Brand Hub) */
   --secondary: oklch(0.605 0.155 250.505);
-  --secondary-foreground: oklch(0.145 0 0);
+  --secondary-foreground: oklch(1 0 0);
 
   /* Muted - Dark surfaces (Brand Hub) */
   --muted: oklch(0.241 0.018 257.128);

@@ -6,6 +6,30 @@
  * - Viewing pending task assessments
  * - Managing tasks (create, update, delete)
  *
+ * ## Assessment Workflow
+ *
+ * Task assessment is an **on-chain transaction**, not an API mutation.
+ * Use `useTransaction({ txType: "PROJECT_MANAGER_TASKS_ASSESS", ... })`
+ * to accept, refuse, or deny contributor submissions.
+ *
+ * The query hooks here (`useManagerCommitments`) fetch pending submissions
+ * awaiting assessment. The assessment TX itself is built/signed/submitted
+ * through the transaction system, which handles gateway registration and
+ * confirmation tracking automatically.
+ *
+ * ```
+ * useManagerCommitments() → list pending submissions
+ * useTransaction(PROJECT_MANAGER_TASKS_ASSESS) → assess on-chain
+ * useTxStream(txHash) → track confirmation
+ * ```
+ *
+ * ## Reward Claim Note
+ *
+ * After a manager accepts a submission, the contributor claims their
+ * reward by either:
+ * - Committing to their next task (automatic reward payout)
+ * - Leaving the project (final reward claim on exit)
+ *
  * Architecture: Role-based hook file
  * - Imports types and transforms from use-project.ts (entity file)
  * - Exports manager-specific query keys and hooks

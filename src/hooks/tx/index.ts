@@ -8,5 +8,3 @@
 export * from "./use-transaction";
 export * from "./use-tx-watcher";
 export * from "./use-tx-stream";
-export * from "./use-pending-tx-watcher";
-export * from "./use-event-confirmation";

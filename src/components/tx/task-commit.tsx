@@ -9,7 +9,7 @@
  * Uses PROJECT_CONTRIBUTOR_TASK_COMMIT transaction with gateway auto-confirmation.
  *
  * @see ~/hooks/use-transaction.ts
- * @see ~/hooks/use-tx-watcher.ts
+ * @see ~/hooks/use-tx-stream.ts
  * @see .claude/skills/project-manager/CONTRIBUTOR-TRANSACTION-MODEL.md
  */
 
@@ -19,7 +19,7 @@ import React, { useMemo } from "react";
 import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -35,7 +35,7 @@ import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon, Loa
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { useSubmitTaskEvidence } from "~/hooks/api/project/use-project-contributor";
 
 export interface TaskCommitProps {
   /**
@@ -142,11 +142,12 @@ export function TaskCommit({
   willClaimRewards = false,
   onSuccess,
 }: TaskCommitProps) {
-  const { user, isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const submitTaskEvidence = useSubmitTaskEvidence();
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxWatcher(
+  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -268,34 +269,15 @@ export function TaskCommit({
       onSuccess: async (txResult) => {
         console.log("[TaskCommit] TX submitted successfully!", txResult);
 
-        // Save task evidence content to database
+        // Save task evidence content to database via hook
         // The hash is on-chain, but the actual JSON content needs to be stored for manager review
         if (taskEvidence) {
-          try {
-            const submitResponse = await authenticatedFetch(
-              `${GATEWAY_API_BASE}/project/contributor/commitment/submit`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  task_hash: taskHash,
-                  evidence: taskEvidence,
-                  evidence_hash: hash,
-                  pending_tx_hash: txResult.txHash,
-                }),
-              }
-            );
-
-            if (!submitResponse.ok) {
-              console.error("[TaskCommit] Failed to save evidence to DB:", await submitResponse.text());
-              // Don't throw - TX succeeded, evidence save is secondary
-            } else {
-              console.log("[TaskCommit] Evidence saved to database");
-            }
-          } catch (err) {
-            console.error("[TaskCommit] Error saving evidence to DB:", err);
-            // Don't throw - TX succeeded, evidence save is secondary
-          }
+          submitTaskEvidence.mutate({
+            taskHash,
+            evidence: taskEvidence,
+            evidenceHash: hash,
+            pendingTxHash: txResult.txHash,
+          });
         }
       },
       onError: (txError) => {

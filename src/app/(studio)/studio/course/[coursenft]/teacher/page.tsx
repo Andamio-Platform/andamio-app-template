@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -42,17 +42,18 @@ import { TeacherIcon, SuccessIcon, PendingIcon, CloseIcon, LoadingIcon } from "~
 import { ContentDisplay } from "~/components/content-display";
 import type { JSONContent } from "@tiptap/core";
 import {
-  type CourseDetail,
+  useCourse,
+  useTeacherAssignmentCommitments,
+  useInvalidateTeacherCourses,
   type TeacherAssignmentCommitment,
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AlertIcon } from "~/components/icons";
 import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
-import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
  * Teacher Dashboard Page
@@ -63,10 +64,6 @@ import { GATEWAY_API_BASE } from "~/lib/api-utils";
  * - POST /course/teacher/assignment-commitments/list (protected)
  *   Body: { policy_id: string }
  */
-
-interface ApiError {
-  message?: string;
-}
 
 // Network status color mapping based on workflow stages
 const getStatusVariant = (
@@ -97,19 +94,25 @@ const formatNetworkStatus = (status: string | undefined | null): string => {
 export default function TeacherDashboardPage() {
   const params = useParams();
   const courseNftPolicyId = params.coursenft as string;
-  const { isAuthenticated, authenticatedFetch, user } = useAndamioAuth();
+  const { user } = useAndamioAuth();
+
+  // Data hooks
+  const { data: courseData, isLoading: courseLoading, error: courseError } = useCourse(courseNftPolicyId);
+  const { data: rawCommitments, isLoading: commitmentsLoading, error: commitmentsError, refetch: refetchCommitments } = useTeacherAssignmentCommitments(courseNftPolicyId);
+  const commitments = useMemo(() => (Array.isArray(rawCommitments) ? rawCommitments : []), [rawCommitments]);
+  const invalidateTeacher = useInvalidateTeacherCourses();
 
   // V2 Transaction hooks
   const assessTx = useTransaction();
 
   // Watch for gateway confirmation after assess TX submission
-  const { status: assessTxStatus, isSuccess: assessTxConfirmed } = useTxWatcher(
+  const { status: assessTxStatus, isSuccess: assessTxConfirmed } = useTxStream(
     assessTx.result?.requiresDBUpdate ? assessTx.result.txHash : null,
     {
       onComplete: (status) => {
         if (status.state === "updated") {
           // Refresh data and reset UI
-          void fetchData();
+          void invalidateTeacher();
           setSelectedCommitment(null);
           clearAllDecisions();
           assessTx.reset();
@@ -117,12 +120,6 @@ export default function TeacherDashboardPage() {
       },
     }
   );
-
-  const [course, setCourse] = useState<CourseDetail | null>(null);
-  const [commitments, setCommitments] = useState<TeacherAssignmentCommitment[]>([]);
-  const [filteredCommitments, setFilteredCommitments] = useState<TeacherAssignmentCommitment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Batch assessment decisions - keyed by "studentAlias-sltHash"
   const [pendingDecisions, setPendingDecisions] = useState<
@@ -177,8 +174,7 @@ export default function TeacherDashboardPage() {
     new Set(commitments.map((c) => c.moduleCode).filter((c): c is string => !!c))
   );
 
-  // Stats - use optional chaining since commitmentStatus might be undefined
-  // Display status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ACCEPTED, DENIED
+  // Stats - display status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ACCEPTED, DENIED
   const stats = {
     total: commitments.length,
     draft: commitments.filter((c) => c.commitmentStatus === "DRAFT").length,
@@ -188,177 +184,26 @@ export default function TeacherDashboardPage() {
     denied: commitments.filter((c) => c.commitmentStatus === "DENIED").length,
   };
 
-  // Fetch data function - extracted so it can be called from transaction success handlers
-  const fetchData = async () => {
-    setIsLoading(true);
-    setError(null);
+  // Derived filtered commitments
+  const filteredCommitments = useMemo(() => {
+    let filtered = [...commitments];
 
-    try {
-      // Go API: GET /course/user/course/get/{policy_id}
-      const courseResponse = await fetch(
-        `${GATEWAY_API_BASE}/course/user/course/get/${courseNftPolicyId}`
-      );
-
-      if (!courseResponse.ok) {
-        throw new Error(`Failed to fetch course: ${courseResponse.statusText}`);
-      }
-
-      const courseData = (await courseResponse.json()) as CourseDetail;
-      setCourse(courseData);
-
-      // Fetch assignment commitments for this course
-      if (!isAuthenticated) {
-        throw new Error("You must be authenticated to view assignment commitments");
-      }
-
-      // Go API: POST /course/teacher/assignment-commitments/list
-      const commitmentsResponse = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/course/teacher/assignment-commitments/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_id: courseNftPolicyId }),
-        }
-      );
-
-      // 404 means no commitments - use empty array
-      if (commitmentsResponse.status === 404) {
-        setCommitments([]);
-        setFilteredCommitments([]);
-        return;
-      }
-
-      if (!commitmentsResponse.ok) {
-        const errorData = (await commitmentsResponse.json()) as ApiError;
-        throw new Error(errorData.message ?? "Failed to fetch assignment commitments");
-      }
-
-      // API returns { data?: [...], warning?: string } wrapper
-      // Updated 2026-01-28: content object now populated with evidence
-      // See: andamio-api/docs/REPL_NOTES/2026-01-28-teacher-commitments-fix.md
-      interface RawCommitmentContent {
-        evidence?: Record<string, unknown>;  // Tiptap JSON document
-        assignment_evidence_hash?: string;
-        commitment_status?: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
-      }
-
-      interface RawCommitment {
-        course_id: string;
-        slt_hash: string;
-        course_module_code?: string;  // Human-readable module code (e.g., "101")
-        student_alias: string;
-        submission_tx?: string;
-        submission_slot?: number;
-        on_chain_content?: string;  // Hex-encoded on-chain content
-        content?: RawCommitmentContent;  // Off-chain content from DB
-        source: "merged" | "chain_only" | "db_only";
-      }
-
-      const result = (await commitmentsResponse.json()) as {
-        data?: RawCommitment[];
-        warning?: string;
-      };
-
-      // Debug: log the actual API response to see all available fields
-      console.log("[TeacherDashboard] Assignment commitments response:", {
-        count: result.data?.length ?? 0,
-        warning: result.warning,
-        items: result.data?.map((c) => ({
-          student_alias: c.student_alias,
-          slt_hash: c.slt_hash?.slice(0, 16),
-          source: c.source,
-          course_module_code: c.course_module_code,
-          // Content object (from DB)
-          has_content: !!c.content,
-          content_status: c.content?.commitment_status,
-          has_evidence: !!c.content?.evidence,
-          evidence_hash: c.content?.assignment_evidence_hash?.slice(0, 16),
-          // On-chain content (hex)
-          on_chain_content: c.on_chain_content?.slice(0, 32),
-        })),
-      });
-
-      if (result.warning) {
-        console.warn("[TeacherDashboard] API warning:", result.warning);
-      }
-
-      // Helper to decode hex string to UTF-8 text
-      const hexToText = (hex: string): string => {
-        try {
-          const bytes = new Uint8Array(
-            hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
-          );
-          return new TextDecoder().decode(bytes);
-        } catch {
-          return hex; // Return original if decode fails
-        }
-      };
-
-      // Map source + content.commitment_status to a display-friendly status
-      // API statuses: DRAFT, SUBMITTED, APPROVED, REJECTED
-      // Display statuses: DRAFT, PENDING_TX, PENDING_APPROVAL, ON_CHAIN, ACCEPTED
-      const mapToDisplayStatus = (
-        source: string | undefined,
-        contentStatus: string | undefined
-      ): string => {
-        // If we have content status, use it
-        if (contentStatus) {
-          switch (contentStatus) {
-            case "SUBMITTED":
-              return "PENDING_APPROVAL";  // Submitted = awaiting teacher review
-            case "APPROVED":
-              return "ACCEPTED";
-            case "REJECTED":
-              return "DENIED";
-            case "DRAFT":
-              return "DRAFT";
-            default:
-              return contentStatus;
-          }
-        }
-        // Fall back to source-based status
-        switch (source) {
-          case "chain_only":
-            return "PENDING_APPROVAL";  // On-chain but not in DB = pending review
-          case "merged":
-            return "PENDING_APPROVAL";  // Merged data = needs status from content
-          case "db_only":
-            return "DRAFT";
-          default:
-            return "UNKNOWN";
-        }
-      };
-
-      // Transform API response to app types
-      // Evidence is now under content.evidence (Tiptap JSON)
-      const commitmentsData: TeacherAssignmentCommitment[] = (result.data ?? []).map((raw) => ({
-        courseId: raw.course_id,
-        studentAlias: raw.student_alias,
-        sltHash: raw.slt_hash,
-        submissionTx: raw.submission_tx,
-        submissionSlot: raw.submission_slot,
-        onChainContent: raw.on_chain_content ? hexToText(raw.on_chain_content) : undefined,
-        moduleCode: raw.course_module_code,
-        // Evidence is now under content.evidence (Tiptap JSON document)
-        evidence: raw.content?.evidence,
-        // Status from content.commitment_status, mapped to display status
-        commitmentStatus: mapToDisplayStatus(raw.source, raw.content?.commitment_status),
-      }));
-
-      setCommitments(commitmentsData);
-      setFilteredCommitments(commitmentsData);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setIsLoading(false);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((c) => c.commitmentStatus && c.commitmentStatus === statusFilter);
     }
-  };
 
-  useEffect(() => {
-    void fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseNftPolicyId, isAuthenticated]);
+    if (assignmentFilter !== "all") {
+      filtered = filtered.filter((c) => c.moduleCode === assignmentFilter);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter((c) =>
+        c.studentAlias?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [commitments, statusFilter, assignmentFilter, searchQuery]);
 
   // Handle commitment selection - for viewing evidence
   const handleSelectCommitment = (commitment: TeacherAssignmentCommitment) => {
@@ -372,29 +217,9 @@ export default function TeacherDashboardPage() {
     return commitment.studentAlias && commitment.commitmentStatus === "PENDING_APPROVAL";
   };
 
-  // Apply filters whenever they change
-  useEffect(() => {
-    let filtered = [...commitments];
-
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((c) => c.commitmentStatus && c.commitmentStatus === statusFilter);
-    }
-
-    // Assignment filter (by moduleCode)
-    if (assignmentFilter !== "all") {
-      filtered = filtered.filter((c) => c.moduleCode === assignmentFilter);
-    }
-
-    // Search query (by learner participant alias)
-    if (searchQuery) {
-      filtered = filtered.filter((c) =>
-        c.studentAlias?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    setFilteredCommitments(filtered);
-  }, [statusFilter, assignmentFilter, searchQuery, commitments]);
+  // Derived loading/error states
+  const isLoading = courseLoading || commitmentsLoading;
+  const fetchError = courseError?.message ?? commitmentsError?.message ?? null;
 
   // Loading state
   if (isLoading) {
@@ -402,11 +227,11 @@ export default function TeacherDashboardPage() {
   }
 
   // Error state
-  if (error || !course) {
+  if (fetchError || !courseData) {
     return (
       <div className="space-y-6 p-6">
         <AndamioPageHeader title="Teacher Dashboard" />
-        <AndamioErrorAlert error={error ?? "Course not found"} />
+        <AndamioErrorAlert error={fetchError ?? "Course not found"} />
       </div>
     );
   }
@@ -416,7 +241,7 @@ export default function TeacherDashboardPage() {
       <div className="space-y-6 p-6">
         <AndamioPageHeader
           title="Teacher Dashboard"
-          description={typeof course.title === "string" ? course.title : undefined}
+          description={courseData.title}
         />
 
       {/* Stats Cards */}
@@ -431,7 +256,10 @@ export default function TeacherDashboardPage() {
 
       {/* On-Chain Pending Assessments - Live data from merged API */}
       <PendingReviewsList
-        courseId={courseNftPolicyId}
+        commitments={commitments}
+        isLoading={commitmentsLoading}
+        error={commitmentsError}
+        onRefetch={() => void refetchCommitments()}
       />
 
       {/* Filters */}
@@ -873,9 +701,6 @@ export default function TeacherDashboardPage() {
                       alias: user.accessTokenAlias,
                       course_id: courseNftPolicyId,
                       assignment_decisions: decisions,
-                    },
-                    onError: (err) => {
-                      setError(err.message);
                     },
                   });
                 }}

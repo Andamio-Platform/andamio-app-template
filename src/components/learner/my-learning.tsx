@@ -48,7 +48,7 @@ function EnrolledCourseCard({ course }: { course: StudentCourse }) {
             {courseId.slice(0, 16)}...
           </code>
         </div>
-        <AndamioButton size="sm" variant="ghost">
+        <AndamioButton size="sm" variant="secondary">
           Continue
         </AndamioButton>
       </div>

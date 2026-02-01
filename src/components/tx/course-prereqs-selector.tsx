@@ -1,11 +1,9 @@
 /**
- * CoursePrereqsSelector Component
+ * CoursePrereqsSelector Component (V2 - Redesigned)
  *
- * UI for selecting course prerequisites when creating a project.
- * Allows project admins to require learners to have completed
- * specific course modules before contributing to the project.
- *
- * Lists courses where the user is EITHER an owner/admin OR a listed teacher.
+ * Elevated UI for selecting course prerequisites when creating a project.
+ * Prerequisites define what courses a contributor must complete to join
+ * a project and start earning — this is the core decision of project creation.
  *
  * Data format for Atlas API:
  * course_prereqs: [[course_policy_id, [module_hash_1, module_hash_2, ...]]]
@@ -13,21 +11,25 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useTeacherCoursesWithModules } from "~/hooks/api";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
+import React, { useState, useMemo, useCallback } from "react";
+import {
+  useTeacherCoursesWithModules,
+  type TeacherCourseWithModules,
+} from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { CourseIcon, ModuleIcon, DeleteIcon, AddIcon } from "~/components/icons";
+import {
+  CourseIcon,
+  ModuleIcon,
+  SLTIcon,
+  ShieldIcon,
+  ExpandIcon,
+  CollapseIcon,
+  InfoIcon,
+  SuccessIcon,
+} from "~/components/icons";
 import { Skeleton } from "~/components/ui/skeleton";
 
 // Type for the course_prereqs format expected by Atlas API
@@ -42,316 +44,405 @@ interface CoursePrereqsSelectorProps {
   disabled?: boolean;
 }
 
-interface SelectedCourse {
-  courseId: string;
-  courseName: string;
-  selectedModules: string[]; // Array of module hashes (assignment_ids)
-}
-
 export function CoursePrereqsSelector({
   value,
   onChange,
   disabled = false,
 }: CoursePrereqsSelectorProps) {
-  // Fetch courses where user is owner OR teacher (with module details)
   const { data: courses, isLoading: coursesLoading } =
     useTeacherCoursesWithModules();
 
-  // Local state for the course being added
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
-  // Convert value prop to a more workable format
-  const selectedCourses = useMemo(() => {
-    const coursesMap: SelectedCourse[] = [];
+  // Build a lookup: courseId -> selected module hashes
+  const selectionMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
     for (const [courseId, moduleHashes] of value) {
-      const course = courses?.find((c) => c.courseId === courseId);
-      coursesMap.push({
-        courseId,
-        courseName: course ? `Course ${courseId.slice(0, 8)}...` : courseId.slice(0, 8) + "...",
-        selectedModules: moduleHashes,
-      });
+      map.set(courseId, new Set(moduleHashes));
     }
-    return coursesMap;
-  }, [value, courses]);
+    return map;
+  }, [value]);
 
-  // Get available courses (not yet selected)
-  const availableCourses = useMemo(() => {
-    if (!courses) return [];
-    const selectedIds = new Set(value.map(([id]) => id));
-    return courses.filter((c) => !selectedIds.has(c.courseId) && c.modules.length > 0);
-  }, [courses, value]);
+  // Summary stats
+  const selectedCourseCount = value.length;
+  const selectedModuleCount = value.reduce(
+    (sum, [, modules]) => sum + modules.length,
+    0,
+  );
 
-  // Get the currently selected course for adding
-  const courseToAdd = useMemo(() => {
-    if (!selectedCourseId || !courses) return null;
-    return courses.find((c) => c.courseId === selectedCourseId);
-  }, [selectedCourseId, courses]);
+  const handleToggleModule = useCallback(
+    (courseId: string, moduleHash: string) => {
+      const existing = selectionMap.get(courseId);
 
-  // Handle adding a course with selected modules
-  const handleAddCourse = (moduleHashes: string[]) => {
-    if (!selectedCourseId || moduleHashes.length === 0) return;
+      if (existing?.has(moduleHash)) {
+        // Remove module
+        const newModules = [...existing].filter((m) => m !== moduleHash);
+        if (newModules.length === 0) {
+          // Remove course entirely
+          onChange(value.filter(([id]) => id !== courseId));
+        } else {
+          onChange(
+            value.map(([id, modules]): CoursePrereq =>
+              id === courseId ? [id, newModules] : [id, modules],
+            ),
+          );
+        }
+      } else {
+        // Add module
+        if (existing) {
+          onChange(
+            value.map(([id, modules]): CoursePrereq =>
+              id === courseId
+                ? [id, [...modules, moduleHash]]
+                : [id, modules],
+            ),
+          );
+        } else {
+          onChange([...value, [courseId, [moduleHash]]]);
+        }
+      }
+    },
+    [value, onChange, selectionMap],
+  );
 
-    const newPrereqs: CoursePrereq[] = [...value, [selectedCourseId, moduleHashes]];
-    onChange(newPrereqs);
-    setSelectedCourseId("");
-  };
+  const handleToggleCourse = useCallback(
+    (courseId: string, allModuleHashes: string[]) => {
+      const existing = selectionMap.get(courseId);
+      const allSelected =
+        existing && allModuleHashes.every((h) => existing.has(h));
 
-  // Handle removing a course prerequisite
-  const handleRemoveCourse = (courseId: string) => {
-    const newPrereqs = value.filter(([id]) => id !== courseId);
-    onChange(newPrereqs);
-  };
+      if (allSelected) {
+        // Deselect all → remove course
+        onChange(value.filter(([id]) => id !== courseId));
+      } else {
+        // Select all modules
+        if (existing) {
+          onChange(
+            value.map(([id, modules]): CoursePrereq =>
+              id === courseId ? [id, [...allModuleHashes]] : [id, modules],
+            ),
+          );
+        } else {
+          onChange([...value, [courseId, [...allModuleHashes]]]);
+        }
+      }
+    },
+    [value, onChange, selectionMap],
+  );
 
-  // Handle toggling a module within an existing prerequisite
-  const handleToggleModule = (courseId: string, moduleHash: string) => {
-    const newPrereqs = value.map(([id, modules]): CoursePrereq => {
-      if (id !== courseId) return [id, modules];
+  const handleSelectAll = useCallback(
+    (courseId: string, allModuleHashes: string[]) => {
+      const existing = selectionMap.get(courseId);
+      if (existing) {
+        onChange(
+          value.map(([id, modules]): CoursePrereq =>
+            id === courseId ? [id, [...allModuleHashes]] : [id, modules],
+          ),
+        );
+      } else {
+        onChange([...value, [courseId, [...allModuleHashes]]]);
+      }
+    },
+    [value, onChange, selectionMap],
+  );
 
-      const newModules = modules.includes(moduleHash)
-        ? modules.filter((m) => m !== moduleHash)
-        : [...modules, moduleHash];
-
-      return [id, newModules];
-    });
-
-    // Remove courses with no modules selected
-    onChange(newPrereqs.filter(([, modules]) => modules.length > 0));
-  };
+  const handleClearCourse = useCallback(
+    (courseId: string) => {
+      onChange(value.filter(([id]) => id !== courseId));
+    },
+    [value, onChange],
+  );
 
   if (coursesLoading) {
     return (
-      <div className="space-y-2">
-        <AndamioLabel>Course Prerequisites (Optional)</AndamioLabel>
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-4 w-3/4" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        </div>
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
       </div>
     );
   }
 
+  const availableCourses = courses?.filter((c) => c.modules.length > 0) ?? [];
+
   return (
     <div className="space-y-4">
-      <div>
-        <AndamioLabel>Course Prerequisites (Optional)</AndamioLabel>
-        <AndamioText variant="small" className="text-xs mt-1">
-          Require contributors to have completed specific course modules before joining this project.
-        </AndamioText>
+      {/* Hero Header */}
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10">
+          <ShieldIcon className="h-5 w-5 text-secondary" />
+        </div>
+        <div className="flex-1 space-y-1">
+          <h3 className="text-lg font-semibold">
+            Define Contributor Requirements
+          </h3>
+          <AndamioText variant="muted" className="text-sm">
+            Prerequisites determine which courses a contributor must have
+            completed to join this project. This is how you ensure every
+            contributor has the skills your project needs.
+          </AndamioText>
+        </div>
       </div>
 
-      {/* Currently Selected Prerequisites */}
-      {selectedCourses.length > 0 && (
-        <div className="space-y-3">
-          {selectedCourses.map((selected) => {
-            const course = courses?.find((c) => c.courseId === selected.courseId);
-            return (
-              <div
-                key={selected.courseId}
-                className="border rounded-md p-3 bg-muted/30"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <CourseIcon className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">
-                      {course ? `Course` : "Unknown Course"}
-                    </span>
-                    <AndamioBadge variant="outline" className="font-mono text-xs">
-                      {selected.courseId.slice(0, 12)}...
-                    </AndamioBadge>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveCourse(selected.courseId)}
-                    disabled={disabled}
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                  >
-                    <DeleteIcon className="h-4 w-4" />
-                  </Button>
-                </div>
+      {/* Summary Badges */}
+      {selectedCourseCount > 0 && (
+        <div className="flex items-center gap-2">
+          <AndamioBadge variant="secondary">
+            {selectedCourseCount} course{selectedCourseCount !== 1 ? "s" : ""}
+          </AndamioBadge>
+          <AndamioBadge variant="outline">
+            {selectedModuleCount} module{selectedModuleCount !== 1 ? "s" : ""}{" "}
+            required
+          </AndamioBadge>
+        </div>
+      )}
 
-                {/* Module Checkboxes */}
-                {course && (
-                  <div className="space-y-2 pl-6">
-                    <AndamioText variant="small" className="text-xs text-muted-foreground">
-                      Required modules ({selected.selectedModules.length} selected):
-                    </AndamioText>
-                    <div className="grid gap-2">
-                      {course.modules.map((courseModule, idx) => (
-                        <label
-                          key={courseModule.assignmentId}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={selected.selectedModules.includes(courseModule.assignmentId)}
-                            onCheckedChange={() =>
-                              handleToggleModule(selected.courseId, courseModule.assignmentId)
-                            }
-                            disabled={disabled}
-                          />
-                          <ModuleIcon className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">
-                            Module {idx + 1}
-                          </span>
-                          <AndamioBadge variant="secondary" className="font-mono text-xs">
-                            {courseModule.assignmentId.slice(0, 8)}...
-                          </AndamioBadge>
-                          <span className="text-xs text-muted-foreground">
-                            ({courseModule.slts.length} SLTs)
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* Course Cards */}
+      {availableCourses.length > 0 ? (
+        <div className="space-y-3">
+          <AndamioText variant="small" className="font-medium uppercase tracking-wide text-muted-foreground">
+            Your Courses
+          </AndamioText>
+
+          {availableCourses.map((course) => {
+            const allModuleHashes = course.modules.map(
+              (m) => m.assignmentId,
+            );
+            const selected = selectionMap.get(course.courseId);
+            const selectedCount = selected?.size ?? 0;
+            const isExpanded = expandedCourseId === course.courseId;
+
+            return (
+              <CoursePrereqCard
+                key={course.courseId}
+                course={course}
+                selectedModules={selected ? [...selected] : []}
+                selectedCount={selectedCount}
+                totalModules={course.modules.length}
+                isExpanded={isExpanded}
+                onToggleExpand={() =>
+                  setExpandedCourseId(
+                    isExpanded ? null : course.courseId,
+                  )
+                }
+                onToggleCourse={() =>
+                  handleToggleCourse(course.courseId, allModuleHashes)
+                }
+                onToggleModule={(hash) =>
+                  handleToggleModule(course.courseId, hash)
+                }
+                onSelectAll={() =>
+                  handleSelectAll(course.courseId, allModuleHashes)
+                }
+                onClear={() => handleClearCourse(course.courseId)}
+                disabled={disabled}
+              />
             );
           })}
         </div>
-      )}
-
-      {/* Add New Course Prerequisite */}
-      {availableCourses.length > 0 && (
-        <div className="border rounded-md p-3 border-dashed">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <AddIcon className="h-4 w-4 text-muted-foreground" />
-              <AndamioText variant="small" className="font-medium">
-                Add Course Prerequisite
-              </AndamioText>
-            </div>
-
-            <Select
-              value={selectedCourseId}
-              onValueChange={setSelectedCourseId}
-              disabled={disabled}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a course..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCourses.map((course) => (
-                  <SelectItem key={course.courseId} value={course.courseId}>
-                    <div className="flex items-center gap-2">
-                      <CourseIcon className="h-4 w-4" />
-                      <span className="font-mono text-xs">
-                        {course.courseId.slice(0, 12)}...
-                      </span>
-                      <span className="text-muted-foreground">
-                        ({course.modules.length} modules)
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Module Selection for New Course */}
-            {courseToAdd && (
-              <ModuleSelector
-                course={courseToAdd}
-                onAdd={handleAddCourse}
-                disabled={disabled}
-              />
-            )}
-          </div>
+      ) : (
+        <div className="rounded-lg border border-dashed p-6 text-center">
+          <CourseIcon className="mx-auto h-8 w-8 text-muted-foreground/50" />
+          <AndamioText variant="muted" className="mt-2">
+            No courses with published modules available.
+          </AndamioText>
+          <AndamioText variant="small" className="text-muted-foreground">
+            Create and publish a course first to use it as a prerequisite.
+          </AndamioText>
         </div>
       )}
 
-      {/* No Courses Available Message */}
-      {availableCourses.length === 0 && selectedCourses.length === 0 && (
-        <div className="border rounded-md p-4 border-dashed text-center">
+      {/* Permanence Notice */}
+      <div className="flex items-start gap-2 rounded-md bg-muted/40 px-3 py-2.5">
+        <InfoIcon className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+        <AndamioText variant="small" className="text-muted-foreground">
+          {selectedCourseCount === 0
+            ? "No prerequisites? That\u2019s OK. Your project will be open to all access token holders. You can\u2019t change this after creation."
+            : "Prerequisites are set at project creation and become part of the on-chain record. Choose carefully."}
+        </AndamioText>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// CoursePrereqCard
+// =============================================================================
+
+interface CoursePrereqCardProps {
+  course: TeacherCourseWithModules;
+  selectedModules: string[];
+  selectedCount: number;
+  totalModules: number;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onToggleCourse: () => void;
+  onToggleModule: (moduleHash: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  disabled?: boolean;
+}
+
+function CoursePrereqCard({
+  course,
+  selectedModules,
+  selectedCount,
+  totalModules,
+  isExpanded,
+  onToggleExpand,
+  onToggleCourse,
+  onToggleModule,
+  onSelectAll,
+  onClear,
+  disabled = false,
+}: CoursePrereqCardProps) {
+  const selectedSet = useMemo(
+    () => new Set(selectedModules),
+    [selectedModules],
+  );
+  const allSelected = selectedCount === totalModules && totalModules > 0;
+  const someSelected = selectedCount > 0 && !allSelected;
+
+  // Visual state classes
+  const borderClass = allSelected
+    ? "border-primary/40 bg-primary/5"
+    : someSelected
+      ? "border-l-primary border-l-2"
+      : "";
+
+  return (
+    <div className={`rounded-lg border ${borderClass}`}>
+      {/* Course Header — clickable to expand */}
+      <div
+        className="flex items-center gap-3 p-3 cursor-pointer"
+        onClick={onToggleExpand}
+      >
+        <Checkbox
+          checked={allSelected ? true : someSelected ? "indeterminate" : false}
+          onCheckedChange={() => onToggleCourse()}
+          disabled={disabled}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Select all modules from ${course.title ?? course.courseId}`}
+        />
+
+        <CourseIcon className="h-4 w-4 text-primary shrink-0" />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm truncate">
+              {course.title ?? `Course ${course.courseId.slice(0, 8)}...`}
+            </span>
+            {allSelected && (
+              <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
+            )}
+          </div>
           <AndamioText variant="small" className="text-muted-foreground">
-            No courses with on-chain modules available.
-            <br />
-            Create and publish a course first to use it as a prerequisite.
+            {selectedCount === 0
+              ? `${totalModules} module${totalModules !== 1 ? "s" : ""} available`
+              : allSelected
+                ? `All ${totalModules} module${totalModules !== 1 ? "s" : ""} required`
+                : `${selectedCount} of ${totalModules} module${totalModules !== 1 ? "s" : ""} selected`}
           </AndamioText>
+        </div>
+
+        <div className="shrink-0 text-muted-foreground">
+          {isExpanded ? (
+            <CollapseIcon className="h-4 w-4" />
+          ) : (
+            <ExpandIcon className="h-4 w-4" />
+          )}
+        </div>
+      </div>
+
+      {/* Expanded Module List */}
+      {isExpanded && (
+        <div className="border-t px-3 pb-3 pt-2 space-y-2">
+          {course.modules.map((courseModule) => (
+            <ModuleCheckboxRow
+              key={courseModule.assignmentId}
+              moduleCode={courseModule.moduleCode}
+              title={courseModule.title}
+              sltCount={courseModule.slts.length}
+              checked={selectedSet.has(courseModule.assignmentId)}
+              onToggle={() => onToggleModule(courseModule.assignmentId)}
+              disabled={disabled}
+            />
+          ))}
+
+          {/* Select All / Clear buttons */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSelectAll}
+              disabled={disabled || allSelected}
+              className="h-7 text-xs"
+            >
+              Select All
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              disabled={disabled || selectedCount === 0}
+              className="h-7 text-xs"
+            >
+              Clear
+            </Button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Sub-component for selecting modules from a course
-interface ModuleSelectorProps {
-  course: {
-    courseId: string;
-    modules: Array<{
-      assignmentId: string;
-      slts: string[];
-    }>;
-  };
-  onAdd: (moduleHashes: string[]) => void;
+// =============================================================================
+// ModuleCheckboxRow
+// =============================================================================
+
+interface ModuleCheckboxRowProps {
+  moduleCode?: string;
+  title?: string;
+  sltCount: number;
+  checked: boolean;
+  onToggle: () => void;
   disabled?: boolean;
 }
 
-function ModuleSelector({ course, onAdd, disabled }: ModuleSelectorProps) {
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
-
-  const handleToggle = (moduleHash: string) => {
-    setSelectedModules((prev) =>
-      prev.includes(moduleHash)
-        ? prev.filter((m) => m !== moduleHash)
-        : [...prev, moduleHash]
-    );
-  };
-
-  const handleSelectAll = () => {
-    setSelectedModules(course.modules.map((m) => m.assignmentId));
-  };
-
-  const handleAdd = () => {
-    onAdd(selectedModules);
-    setSelectedModules([]);
-  };
-
+function ModuleCheckboxRow({
+  moduleCode,
+  title,
+  sltCount,
+  checked,
+  onToggle,
+  disabled = false,
+}: ModuleCheckboxRowProps) {
   return (
-    <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-      <div className="flex items-center justify-between">
-        <AndamioText variant="small" className="text-muted-foreground">
-          Select required modules:
-        </AndamioText>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSelectAll}
-          disabled={disabled}
-          className="h-6 text-xs"
-        >
-          Select All
-        </Button>
+    <label className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={onToggle}
+        disabled={disabled}
+      />
+      {moduleCode && (
+        <AndamioBadge variant="outline" className="font-mono text-xs shrink-0">
+          {moduleCode}
+        </AndamioBadge>
+      )}
+      <ModuleIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+      <span className="text-sm truncate flex-1">
+        {title ?? "Untitled Module"}
+      </span>
+      <div className="flex items-center gap-1 shrink-0 text-muted-foreground">
+        <SLTIcon className="h-3 w-3" />
+        <span className="text-xs">{sltCount}</span>
       </div>
-
-      <div className="grid gap-2">
-        {course.modules.map((courseModule, idx) => (
-          <label
-            key={courseModule.assignmentId}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            <Checkbox
-              checked={selectedModules.includes(courseModule.assignmentId)}
-              onCheckedChange={() => handleToggle(courseModule.assignmentId)}
-              disabled={disabled}
-            />
-            <ModuleIcon className="h-3 w-3 text-muted-foreground" />
-            <span className="text-sm">Module {idx + 1}</span>
-            <AndamioBadge variant="secondary" className="font-mono text-xs">
-              {courseModule.assignmentId.slice(0, 8)}...
-            </AndamioBadge>
-            <span className="text-xs text-muted-foreground">
-              ({courseModule.slts.length} SLTs)
-            </span>
-          </label>
-        ))}
-      </div>
-
-      <Button
-        size="sm"
-        onClick={handleAdd}
-        disabled={disabled || selectedModules.length === 0}
-        className="w-full"
-      >
-        <AddIcon className="h-4 w-4 mr-2" />
-        Add {selectedModules.length} Module{selectedModules.length !== 1 ? "s" : ""} as Prerequisite
-      </Button>
-    </div>
+    </label>
   );
 }

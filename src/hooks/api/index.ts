@@ -152,13 +152,25 @@ export { useModuleWizardData } from "./course/use-module-wizard-data";
 // Project Hooks
 // =============================================================================
 
-// Core project (public queries)
+// Core project (public queries + types)
 export {
   useProject,
   useProjects,
   useInvalidateProjects,
   projectKeys,
+  type Project,
+  type ProjectStatus,
 } from "./project/use-project";
+
+// Project owner (role-based)
+export {
+  useOwnerProjects,
+  useCreateProject,
+  useUpdateProject,
+  useRegisterProject,
+  useInvalidateOwnerProjects,
+  ownerProjectKeys,
+} from "./project/use-project-owner";
 
 // Project manager (role-based)
 export {

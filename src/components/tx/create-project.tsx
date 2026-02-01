@@ -6,7 +6,7 @@
  *
  * ## TX Lifecycle
  *
- * 1. User enters title, managers, deposit, and prerequisites
+ * 1. User enters title, managers, and prerequisites
  * 2. `useTransaction` builds, signs, submits, and registers TX
  * 3. `useTxStream` polls gateway for confirmation status
  * 4. When status is "updated", gateway has completed DB updates
@@ -19,10 +19,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { projectManagerKeys } from "~/hooks/api/project/use-project-manager";
+import { ownerProjectKeys } from "~/hooks/api/project/use-project-owner";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
@@ -35,12 +38,64 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { ProjectIcon, ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+
+// =============================================================================
+// ChecklistStep — vertical stepper item with numbered circle / checkmark
+// =============================================================================
+
+interface ChecklistStepProps {
+  step: number;
+  title: string;
+  status: string | null; // null = incomplete, string = completion summary
+  isLast?: boolean;
+  children: React.ReactNode;
+}
+
+function ChecklistStep({ step, title, status, isLast = false, children }: ChecklistStepProps) {
+  const isComplete = status !== null;
+
+  return (
+    <div className="flex gap-4">
+      {/* Left rail: indicator + connector line */}
+      <div className="flex flex-col items-center">
+        {isComplete ? (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
+            <SuccessIcon className="h-4 w-4" />
+          </div>
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/30 text-muted-foreground">
+            <span className="text-sm font-semibold">{step}</span>
+          </div>
+        )}
+        {/* Connector line */}
+        {!isLast && (
+          <div className={`w-px flex-1 mt-1 ${isComplete ? "bg-success/40" : "bg-border"}`} />
+        )}
+      </div>
+
+      {/* Right: content */}
+      <div className="flex-1 pb-6 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`text-sm font-semibold ${isComplete ? "text-success" : "text-foreground"}`}>
+            {title}
+          </span>
+          {status && (
+            <AndamioBadge className="text-xs bg-success/10 text-success border-success/20">
+              {status}
+            </AndamioBadge>
+          )}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export interface CreateProjectProps {
   /**
@@ -61,6 +116,7 @@ export interface CreateProjectProps {
  * ```
  */
 export function CreateProject({ onSuccess }: CreateProjectProps) {
+  const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
@@ -68,7 +124,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
   const [additionalManagers, setAdditionalManagers] = useState<string[]>([]);
-  const [depositLovelace, setDepositLovelace] = useState("5000000"); // 5 ADA default
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
 
@@ -80,6 +135,10 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         // "updated" means Gateway has confirmed TX AND updated DB
         if (status.state === "updated") {
           console.log("[CreateProject] TX confirmed and DB updated by gateway");
+
+          // Invalidate project lists so both owner and manager lists show the new project
+          void queryClient.invalidateQueries({ queryKey: projectManagerKeys.all });
+          void queryClient.invalidateQueries({ queryKey: ownerProjectKeys.all });
 
           toast.success("Project Created!", {
             description: `"${title.trim()}" is now live on-chain`,
@@ -143,6 +202,10 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
       onSuccess: async (txResult) => {
         console.log("[CreateProject] TX submitted successfully!", txResult);
 
+        // Invalidate project lists so both owner and manager lists pick up the new chain_only project
+        void queryClient.invalidateQueries({ queryKey: projectManagerKeys.all });
+        void queryClient.invalidateQueries({ queryKey: ownerProjectKeys.all });
+
         // Extract project_id from the API response for later use
         const extractedProjectId = txResult.apiResponse?.projectId as string | undefined;
         if (extractedProjectId) {
@@ -160,6 +223,12 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   const hasInitiatorData = !!initiatorData;
   const hasTitle = title.trim().length > 0;
   const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
+  const isFormActive = state === "idle" || state === "error";
+
+  // Checklist step statuses
+  const prereqModuleCount = coursePrereqs.reduce((sum, [, modules]) => sum + modules.length, 0);
+  const prereqCourseCount = coursePrereqs.length;
+  const managerCount = additionalManagers.length + 1; // +1 for creator
 
   if (!isAuthenticated || !user) {
     return null;
@@ -180,10 +249,10 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
           </div>
         </div>
       </AndamioCardHeader>
-      <AndamioCardContent className="space-y-4">
+      <AndamioCardContent>
         {/* Requirements Check */}
         {!hasAccessToken && (
-          <AndamioAlert variant="destructive">
+          <AndamioAlert variant="destructive" className="mb-4">
             <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               You need an Access Token to create a project. Mint one first!
@@ -192,7 +261,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         )}
 
         {hasAccessToken && !hasInitiatorData && (
-          <AndamioAlert>
+          <AndamioAlert className="mb-4">
             <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
               Loading wallet data... Please ensure your wallet is connected.
@@ -202,7 +271,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
 
         {/* Project Creator Info */}
         {hasAccessToken && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
             <ManagerIcon className="h-4 w-4" />
             <span>Creating as</span>
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
@@ -211,66 +280,72 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
           </div>
         )}
 
-        {/* Project Title Input */}
+        {/* Checklist Steps */}
         {hasAccessToken && hasInitiatorData && (
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="title">
-              Project Title <span className="text-destructive">*</span>
-            </AndamioLabel>
-            <AndamioInput
-              id="title"
-              type="text"
-              placeholder="Cardano Developer Bounty Program"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={state !== "idle" && state !== "error"}
-              maxLength={200}
-            />
-            <AndamioText variant="small" className="text-xs">
-              Give your project a descriptive title. You can update this later.
-            </AndamioText>
+          <div>
+            {/* Step 1: Project Title */}
+            <ChecklistStep
+              step={1}
+              title="Name your project"
+              status={hasTitle ? title.trim() : null}
+            >
+              <AndamioInput
+                id="title"
+                type="text"
+                placeholder="Cardano Developer Bounty Program"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={!isFormActive}
+                maxLength={200}
+              />
+              <AndamioText variant="small" className="text-xs mt-1.5">
+                Give your project a descriptive title. You can update this later.
+              </AndamioText>
+            </ChecklistStep>
+
+            {/* Step 2: Course Prerequisites */}
+            <ChecklistStep
+              step={2}
+              title="Set contributor requirements"
+              status={
+                prereqCourseCount > 0
+                  ? `${prereqModuleCount} module${prereqModuleCount !== 1 ? "s" : ""} from ${prereqCourseCount} course${prereqCourseCount !== 1 ? "s" : ""}`
+                  : null
+              }
+            >
+              <CoursePrereqsSelector
+                value={coursePrereqs}
+                onChange={setCoursePrereqs}
+                disabled={!isFormActive}
+              />
+            </ChecklistStep>
+
+            {/* Step 3: Managers */}
+            <ChecklistStep
+              step={3}
+              title="Add managers"
+              status={`${managerCount} manager${managerCount !== 1 ? "s" : ""}`}
+              isLast
+            >
+              {/* Owner badge — always a manager */}
+              <div className="flex items-center gap-2 mb-3">
+                <AndamioBadge variant="outline" className="gap-1.5 font-mono text-xs">
+                  <ManagerIcon className="h-3 w-3" />
+                  {user.accessTokenAlias}
+                </AndamioBadge>
+                <span className="text-xs text-muted-foreground">Owner &middot; always a manager</span>
+              </div>
+              <AliasListInput
+                value={additionalManagers}
+                onChange={setAdditionalManagers}
+                label=""
+                placeholder="Add another manager alias"
+                disabled={!isFormActive}
+                excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
+                helperText="Each alias is verified on-chain before being added."
+              />
+            </ChecklistStep>
           </div>
-        )}
-
-        {/* Additional Managers Input */}
-        {hasAccessToken && hasInitiatorData && (
-          <AliasListInput
-            value={additionalManagers}
-            onChange={setAdditionalManagers}
-            label="Additional Managers (Optional)"
-            placeholder="Enter manager alias"
-            disabled={state !== "idle" && state !== "error"}
-            excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
-            helperText="Each alias is verified on-chain before being added. You are automatically included."
-          />
-        )}
-
-        {/* Deposit Amount Input */}
-        {hasAccessToken && hasInitiatorData && (
-          <div className="space-y-2">
-            <AndamioLabel htmlFor="deposit">Contributor Deposit (Lovelace)</AndamioLabel>
-            <AndamioInput
-              id="deposit"
-              type="number"
-              placeholder="5000000"
-              value={depositLovelace}
-              onChange={(e) => setDepositLovelace(e.target.value)}
-              disabled={state !== "idle" && state !== "error"}
-              min={1000000}
-            />
-            <AndamioText variant="small" className="text-xs">
-              Required deposit for contributors (1 ADA = 1,000,000 lovelace).
-            </AndamioText>
-          </div>
-        )}
-
-        {/* Course Prerequisites Selector */}
-        {hasAccessToken && hasInitiatorData && (
-          <CoursePrereqsSelector
-            value={coursePrereqs}
-            onChange={setCoursePrereqs}
-            disabled={state !== "idle" && state !== "error"}
-          />
         )}
 
         {/* Transaction Status - Only show during processing, not for final success */}

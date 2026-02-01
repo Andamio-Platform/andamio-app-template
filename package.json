@@ -1,6 +1,7 @@
 {
   "name": "andamio-t3-app-template",
-  "version": "0.5.2",
+  "version": "2.0.0-dev-20260131-34c6556",
+  "apiVersion": "v2.0.0-dev-20260131-a",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +13,8 @@
     "dev:transactions": "cd packages/andamio-transactions && npm run dev",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "generate:types": "npx swagger-typescript-api generate -p https://dev.api.andamio.io/api/v1/docs/doc.json -o src/types/generated -n gateway.ts --no-client",
+    "generate:types": "bash scripts/generate-types.sh",
+    "compile": "npm run generate:types && npm run build",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",

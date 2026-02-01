@@ -3,10 +3,28 @@
  * for Docker builds.
  */
 import "./src/env.js";
+import { readFileSync } from "fs";
+import { execSync } from "child_process";
+
+// Read version from VERSION file (single source of truth)
+const appVersion = readFileSync("VERSION", "utf-8").trim();
+
+// Get short git commit hash
+let gitCommit = "unknown";
+try {
+  gitCommit = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+} catch {
+  // Not a git repo or git not available — keep "unknown"
+}
 
 /** @type {import("next").NextConfig} */
 const config = {
     output: 'standalone',
+    env: {
+      NEXT_PUBLIC_APP_VERSION: appVersion,
+      NEXT_PUBLIC_BUILD_COMMIT: gitCommit,
+      NEXT_PUBLIC_BUILD_ID: `${appVersion}+${gitCommit}`,
+    },
     transpilePackages: ["@andamio/core"],
     images: {
     remotePatterns: [

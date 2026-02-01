@@ -410,6 +410,8 @@ export interface TeacherCourseWithModules {
   title?: string;
   modules: Array<{
     assignmentId: string;
+    moduleCode?: string;
+    title?: string;
     slts: string[];
   }>;
 }
@@ -469,40 +471,58 @@ export function useTeacherCoursesWithModules() {
       // Transform to app-level types
       const courses = rawCourses.map(transformTeacherCourse);
 
-      // Step 2: Fetch full details for each course to get modules
+      // Step 2: Fetch modules for each course via the merged modules endpoint
+      // Uses /course/user/modules/{courseId} which returns content (title, module_code)
+      // and on-chain data (slt_hash, on_chain_slts) for each module.
       const coursesWithModules: TeacherCourseWithModules[] = [];
 
       for (const course of courses) {
         try {
-          const detailResponse = await fetch(
-            `${GATEWAY_API_BASE}/course/user/course/${course.courseId}`
+          const modulesResponse = await fetch(
+            `${GATEWAY_API_BASE}/course/user/modules/${course.courseId}`
           );
 
-          if (detailResponse.ok) {
-            const detailResult = (await detailResponse.json()) as {
-              data?: {
-                course_id?: string;
-                content?: { title?: string };
-                modules?: Array<{ assignment_id?: string; slts?: string[] }>;
-              };
+          if (modulesResponse.ok) {
+            const modulesResult = (await modulesResponse.json()) as {
+              data?: Array<{
+                slt_hash?: string;
+                on_chain_slts?: string[];
+                content?: {
+                  course_module_code?: string;
+                  title?: string;
+                  slts?: unknown[];
+                };
+                source?: string;
+              }>;
             };
 
-            const detail = detailResult.data;
-            if (detail?.modules && detail.modules.length > 0) {
+            const moduleItems = modulesResult.data ?? [];
+            // Filter to modules that have an slt_hash (on-chain identifier)
+            const validModules = moduleItems.filter((m) => m.slt_hash);
+
+            if (validModules.length > 0) {
               coursesWithModules.push({
                 courseId: course.courseId,
-                title: detail.content?.title ?? course.title,
-                modules: detail.modules
-                  .filter((m) => m.assignment_id)
-                  .map((m) => ({
-                    assignmentId: m.assignment_id!,
-                    slts: m.slts ?? [],
-                  })),
+                title: course.title,
+                modules: validModules.map((m) => {
+                  // SLT count: prefer DB slts array, fall back to on_chain_slts
+                  const sltCount = m.content?.slts ?? m.on_chain_slts ?? [];
+                  return {
+                    assignmentId: m.slt_hash!,
+                    moduleCode: m.content?.course_module_code,
+                    title: m.content?.title,
+                    slts: Array.isArray(sltCount)
+                      ? sltCount.map((s) =>
+                          typeof s === "string" ? s : String(s),
+                        )
+                      : [],
+                  };
+                }),
               });
             }
           }
         } catch {
-          // Skip courses that fail to load details
+          // Skip courses that fail to load modules
         }
       }
 

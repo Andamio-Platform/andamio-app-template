@@ -17,24 +17,6 @@ const initiatorDataSchema = z
   .optional();
 
 /**
- * List value schema for deposit specification
- */
-const listValueSchema = z.object({
-  lovelace: z.number(),
-  native_assets: z.array(
-    z.object({
-      policy_id: z.string().length(56),
-      assets: z.array(
-        z.object({
-          asset_name: z.string(),
-          quantity: z.number(),
-        })
-      ),
-    })
-  ),
-});
-
-/**
  * INSTANCE_PROJECT_CREATE Transaction Definition
  *
  * Creates a new project on-chain by minting a Project NFT.
@@ -49,10 +31,6 @@ const listValueSchema = z.object({
  *   "alias": "projectowner",           // Owner's access token alias
  *   "managers": ["manager1", "manager2"],  // Manager aliases
  *   "course_prereqs": ["abc123..."],   // Course policy IDs as prerequisites
- *   "deposit_value": {                 // Required deposit for contributors
- *     "lovelace": 5000000,
- *     "native_assets": []
- *   },
  *   "initiator_data": {                // Optional wallet data
  *     "used_addresses": ["addr_test1..."],
  *     "change_address": "addr_test1..."
@@ -97,8 +75,6 @@ export const INSTANCE_PROJECT_CREATE: AndamioTransactionDefinition = {
             z.array(z.string().length(64)), // slt_hashes (module token names to complete)
           ])
         ),
-        // deposit_value: [[asset_unit, amount]] pairs - flat array format
-        deposit_value: z.array(z.tuple([z.string(), z.number()])),
         initiator_data: initiatorDataSchema,
       }),
       // Side effect parameters (not used by transaction API)

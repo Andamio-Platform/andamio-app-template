@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { env } from "~/env";
-import { useManagerProjects, type ManagerProject } from "~/hooks/api";
+import { useManagerProjects, useOwnerProjects } from "~/hooks/api";
 import { useRegisterProject } from "~/hooks/api/project/use-project-owner";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
@@ -21,6 +21,7 @@ import {
   AndamioTableRow,
   AndamioPageHeader,
   AndamioPageLoading,
+  AndamioSectionHeader,
   AndamioTableContainer,
   AndamioEmptyState,
   AndamioInput,
@@ -44,49 +45,75 @@ import {
   RefreshIcon,
   LoadingIcon,
   ExternalLinkIcon,
+  ManagerIcon,
+  OwnerIcon,
 } from "~/components/icons";
 import { CreateProject } from "~/components/tx";
 import { toast } from "sonner";
 import { getTokenExplorerUrl } from "~/lib/constants";
 
 /**
+ * Shared project row type — both Project and ManagerProject share these fields
+ */
+interface ProjectRowData {
+  projectId: string;
+  status: string;
+  title: string;
+}
+
+/**
  * Project list content - only rendered when authenticated
  *
- * Uses merged manager projects endpoint for clean, single-source data.
+ * Shows two separate lists:
+ * 1. Projects I Own — from owner endpoint
+ * 2. Projects I Manage — from manager endpoint
  */
 function ProjectListContent() {
   const router = useRouter();
 
   const [showCreateProject, setShowCreateProject] = useState(false);
 
-  // Single merged API call for manager projects
+  // Two separate API calls for owner and manager projects
   const {
-    data: projects = [],
-    isLoading,
-    error,
-    refetch,
+    data: ownedProjects = [],
+    isLoading: ownedLoading,
+    error: ownedError,
+    refetch: refetchOwned,
+  } = useOwnerProjects();
+
+  const {
+    data: managedProjects = [],
+    isLoading: managedLoading,
+    error: managedError,
+    refetch: refetchManaged,
   } = useManagerProjects();
 
+  const isLoading = ownedLoading || managedLoading;
+  const error = ownedError ?? managedError;
+
   const handleRefresh = useCallback(() => {
-    void refetch();
-  }, [refetch]);
+    void refetchOwned();
+    void refetchManaged();
+  }, [refetchOwned, refetchManaged]);
 
   const handleImportSuccess = () => {
     handleRefresh();
   };
 
-  // Stats
-  const totalCount = projects.length;
-  const hasDbContent = (p: ManagerProject) => p.title !== undefined && p.title !== null;
-  const unregisteredCount = projects.filter((p) => !hasDbContent(p)).length;
+  // Deduplicate managed projects — exclude any that already appear in owned list
+  const ownedIds = new Set(ownedProjects.map((p) => p.projectId));
+  const managedOnly = managedProjects.filter((p) => !ownedIds.has(p.projectId));
+
+  const totalCount = ownedProjects.length + managedOnly.length;
+  const hasAnyProjects = totalCount > 0;
 
   // Loading state (only show when no data yet)
-  if (isLoading && projects.length === 0) {
+  if (isLoading && !hasAnyProjects) {
     return <AndamioPageLoading variant="list" />;
   }
 
   // Error state
-  if (error && projects.length === 0) {
+  if (error && !hasAnyProjects) {
     return (
       <div className="space-y-6">
         <AndamioPageHeader
@@ -104,7 +131,7 @@ function ProjectListContent() {
   }
 
   // Empty state
-  if (!isLoading && projects.length === 0) {
+  if (!isLoading && !hasAnyProjects) {
     return (
       <div className="space-y-6">
         <AndamioPageHeader
@@ -135,20 +162,6 @@ function ProjectListContent() {
         description="Manage and edit your Andamio projects"
         action={
           <div className="flex items-center gap-2">
-            {/* Status badges */}
-            {!isLoading && totalCount > 0 && (
-              <div className="flex gap-2">
-                <AndamioBadge variant="default">
-                  {totalCount} project{totalCount !== 1 ? "s" : ""}
-                </AndamioBadge>
-                {unregisteredCount > 0 && (
-                  <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground">
-                    <AlertIcon className="h-3 w-3 mr-1" />
-                    {unregisteredCount} unregistered
-                  </AndamioBadge>
-                )}
-              </div>
-            )}
             <AndamioButton
               variant="ghost"
               size="sm"
@@ -177,28 +190,91 @@ function ProjectListContent() {
         />
       )}
 
-      <AndamioTableContainer>
-        <AndamioTable>
-          <AndamioTableHeader>
-            <AndamioTableRow>
-              <AndamioTableHead className="w-[50px]">Status</AndamioTableHead>
-              <AndamioTableHead>Title</AndamioTableHead>
-              <AndamioTableHead>Project ID</AndamioTableHead>
-              <AndamioTableHead className="text-right">Actions</AndamioTableHead>
-            </AndamioTableRow>
-          </AndamioTableHeader>
-          <AndamioTableBody>
-            {projects.map((project) => (
-              <ProjectRow
-                key={project.projectId}
-                project={project}
-                onImportSuccess={handleImportSuccess}
-              />
-            ))}
-          </AndamioTableBody>
-        </AndamioTable>
-      </AndamioTableContainer>
+      {/* Projects I Own */}
+      <section className="space-y-3">
+        <AndamioSectionHeader
+          title="Projects I Own"
+          icon={<OwnerIcon className="h-5 w-5" />}
+          action={
+            ownedProjects.length > 0 ? (
+              <AndamioBadge variant="default">
+                {ownedProjects.length} project{ownedProjects.length !== 1 ? "s" : ""}
+              </AndamioBadge>
+            ) : undefined
+          }
+        />
+        {ownedProjects.length > 0 ? (
+          <ProjectTable
+            projects={ownedProjects}
+            onImportSuccess={handleImportSuccess}
+          />
+        ) : (
+          <AndamioText variant="muted" className="text-sm pl-1">
+            {ownedLoading ? "Loading..." : "You don\u2019t own any projects yet."}
+          </AndamioText>
+        )}
+      </section>
+
+      {/* Projects I Manage */}
+      <section className="space-y-3">
+        <AndamioSectionHeader
+          title="Projects I Manage"
+          icon={<ManagerIcon className="h-5 w-5" />}
+          action={
+            managedOnly.length > 0 ? (
+              <AndamioBadge variant="secondary">
+                {managedOnly.length} project{managedOnly.length !== 1 ? "s" : ""}
+              </AndamioBadge>
+            ) : undefined
+          }
+        />
+        {managedOnly.length > 0 ? (
+          <ProjectTable
+            projects={managedOnly}
+            onImportSuccess={handleImportSuccess}
+          />
+        ) : (
+          <AndamioText variant="muted" className="text-sm pl-1">
+            {managedLoading ? "Loading..." : "You\u2019re not managing any other projects."}
+          </AndamioText>
+        )}
+      </section>
     </div>
+  );
+}
+
+/**
+ * Reusable project table
+ */
+function ProjectTable({
+  projects,
+  onImportSuccess,
+}: {
+  projects: ProjectRowData[];
+  onImportSuccess: () => void;
+}) {
+  return (
+    <AndamioTableContainer>
+      <AndamioTable>
+        <AndamioTableHeader>
+          <AndamioTableRow>
+            <AndamioTableHead className="w-[50px]">Status</AndamioTableHead>
+            <AndamioTableHead>Title</AndamioTableHead>
+            <AndamioTableHead>Project ID</AndamioTableHead>
+            <AndamioTableHead className="text-right">Actions</AndamioTableHead>
+          </AndamioTableRow>
+        </AndamioTableHeader>
+        <AndamioTableBody>
+          {projects.map((project) => (
+            <ProjectRow
+              key={project.projectId}
+              project={project}
+              onImportSuccess={onImportSuccess}
+            />
+          ))}
+        </AndamioTableBody>
+      </AndamioTable>
+    </AndamioTableContainer>
   );
 }
 
@@ -209,23 +285,23 @@ function ProjectRow({
   project,
   onImportSuccess,
 }: {
-  project: ManagerProject;
+  project: ProjectRowData;
   onImportSuccess: () => void;
 }) {
   const truncatedId = `${project.projectId.slice(0, 8)}...${project.projectId.slice(-8)}`;
-  const hasDbContent = project.title !== undefined && project.title !== null;
+  const isRegistered = project.status !== "unregistered";
   const isOnChain = project.status === "active" || project.status === "unregistered";
 
   // Determine status icon
   const getStatusIcon = () => {
-    if (hasDbContent && isOnChain) {
+    if (isRegistered && isOnChain) {
       // Registered and on-chain
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
           <SuccessIcon className="h-4 w-4 text-primary" />
         </div>
       );
-    } else if (hasDbContent) {
+    } else if (isRegistered) {
       // Draft (in DB but not on-chain)
       return (
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/10">
@@ -244,9 +320,9 @@ function ProjectRow({
 
   // Determine status text
   const getStatusText = () => {
-    if (hasDbContent && isOnChain) {
+    if (isRegistered && isOnChain) {
       return <span className="text-xs text-primary">Live</span>;
-    } else if (hasDbContent) {
+    } else if (isRegistered) {
       return <span className="text-xs text-muted-foreground">Draft</span>;
     } else {
       return <span className="text-xs text-muted-foreground">Unregistered</span>;
@@ -272,7 +348,7 @@ function ProjectRow({
         <span title={project.projectId}>{truncatedId}</span>
       </AndamioTableCell>
       <AndamioTableCell className="text-right">
-        {hasDbContent ? (
+        {isRegistered ? (
           <Link href={`/studio/project/${project.projectId}`}>
             <AndamioButton variant="ghost" size="sm">
               <SettingsIcon className="h-4 w-4 mr-1" />

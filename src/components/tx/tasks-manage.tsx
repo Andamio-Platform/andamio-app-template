@@ -60,14 +60,6 @@ interface ProjectData {
 }
 
 /**
- * Prerequisite - Course completion requirement
- */
-interface Prerequisite {
-  course_id: string;
-  assignment_ids: string[];
-}
-
-/**
  * Computed task hash with its associated task index
  */
 export interface ComputedTaskHash {
@@ -86,12 +78,6 @@ export interface TasksManageProps {
    * Contributor state policy ID (56 char hex) - REQUIRED
    */
   contributorStateId: string;
-
-  /**
-   * Course prerequisites for the project (from Andamioscan)
-   * Pass [] if none
-   */
-  prerequisites: Prerequisite[];
 
   /**
    * Pre-configured tasks to add (ProjectData objects)
@@ -167,7 +153,6 @@ export interface TasksManageProps {
 export function TasksManage({
   projectNftPolicyId,
   contributorStateId,
-  prerequisites,
   tasksToAdd: preConfiguredTasksToAdd,
   tasksToRemove: preConfiguredTasksToRemove,
   depositValue: preConfiguredDepositValue,
@@ -326,7 +311,6 @@ export function TasksManage({
       alias: user.accessTokenAlias,
       project_id: projectNftPolicyId,
       contributor_state_id: contributorStateId,
-      prerequisites,
       tasks_to_add,
       tasks_to_remove,
       deposit_value,

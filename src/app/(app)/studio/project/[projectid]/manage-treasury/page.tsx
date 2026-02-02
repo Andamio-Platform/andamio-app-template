@@ -95,15 +95,6 @@ export default function ManageTreasuryPage() {
   // On-chain tasks for removal (derived from hook data)
   const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
 
-  // Prerequisites from hook data (mapped to transaction format)
-  const prerequisites = useMemo(() =>
-    (projectDetail?.prerequisites ?? []).map(p => ({
-      course_id: p.courseId,
-      assignment_ids: p.sltHashes ?? [],
-    })),
-    [projectDetail?.prerequisites]
-  );
-
   // On-chain tasks from hook data (tasks with ON_CHAIN status that have on-chain content)
   const onChainTasks: Task[] = useMemo(() =>
     (projectDetail?.tasks ?? []).filter(t => t.taskStatus === "ON_CHAIN"),
@@ -395,7 +386,7 @@ export default function ManageTreasuryPage() {
                 <TasksManage
                   projectNftPolicyId={projectId}
                   contributorStateId={contributorStateId}
-                  prerequisites={prerequisites}
+
                   tasksToAdd={tasksToAdd}
                   tasksToRemove={tasksToRemove}
                   depositValue={depositValue}
@@ -508,7 +499,7 @@ export default function ManageTreasuryPage() {
                 <TasksManage
                   projectNftPolicyId={projectId}
                   contributorStateId={contributorStateId}
-                  prerequisites={prerequisites}
+
                   tasksToAdd={[]}
                   tasksToRemove={tasksToRemove}
                   depositValue={[]}

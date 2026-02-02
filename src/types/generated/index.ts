@@ -252,32 +252,32 @@ export type {
 
 export type {
   // Course transactions
-  AtlasTxClientCreateCourseTxRequest,
-  AtlasTxClientManageModulesTxRequest,
-  AtlasTxClientMintModuleV2,
-  AtlasTxClientUpdateModuleV2,
-  AtlasTxClientCommitAssignmentTxRequest,
-  AtlasTxClientAssignmentActionTxRequest,
-  AtlasTxClientAssessAssignmentsTxRequest,
-  AtlasTxClientClaimCourseCredentialsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest as AtlasTxClientCreateCourseTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientManageModulesTxRequest as AtlasTxClientManageModulesTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientMintModuleV2 as AtlasTxClientMintModuleV2,
+  AndamioApiInternalInternalApiAtlasTxClientUpdateModuleV2 as AtlasTxClientUpdateModuleV2,
+  AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest as AtlasTxClientCommitAssignmentTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientAssignmentActionTxRequest as AtlasTxClientAssignmentActionTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientAssessAssignmentsTxRequest as AtlasTxClientAssessAssignmentsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredentialsTxRequest as AtlasTxClientClaimCourseCredentialsTxRequest,
 
   // Project transactions
-  AtlasTxClientCreateProjectTxRequest,
-  AtlasTxClientManageTasksTxRequest,
-  AtlasTxClientTaskData,
-  AtlasTxClientCommitTaskTxRequest,
-  AtlasTxClientTaskActionTxRequest,
-  AtlasTxClientTasksAssessV2TxRequest,
-  AtlasTxClientClaimProjectCredentialsTxRequest,
-  AtlasTxClientProjectOutcome,
+  AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest as AtlasTxClientCreateProjectTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest as AtlasTxClientManageTasksTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTaskData as AtlasTxClientTaskData,
+  AndamioApiInternalInternalApiAtlasTxClientCommitTaskTxRequest as AtlasTxClientCommitTaskTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest as AtlasTxClientTaskActionTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientTasksAssessV2TxRequest as AtlasTxClientTasksAssessV2TxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentialsTxRequest as AtlasTxClientClaimProjectCredentialsTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientProjectOutcome as AtlasTxClientProjectOutcome,
 
   // Global transactions
-  AtlasTxClientMintAccessTokenTxRequest,
+  AndamioApiInternalInternalApiAtlasTxClientMintAccessTokenTxRequest as AtlasTxClientMintAccessTokenTxRequest,
 
   // Response types
-  AtlasTxClientUnsignedTxResponse,
-  AtlasTxClientUnsignedTxResponseInitCourse,
-  AtlasTxClientUnsignedTxResponseInitProject,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponse as AtlasTxClientUnsignedTxResponse,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitCourse as AtlasTxClientUnsignedTxResponseInitCourse,
+  AndamioApiInternalInternalApiAtlasTxClientUnsignedTxResponseInitProject as AtlasTxClientUnsignedTxResponseInitProject,
 } from "./gateway";
 
 // =============================================================================

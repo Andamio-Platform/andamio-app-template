@@ -218,7 +218,7 @@ export interface Project {
 }
 
 /**
- * Project state info (for accessing project_state_policy_id)
+ * Project state info (for accessing contributor_state_id)
  * @deprecated Use contributorStateId directly on Project/ProjectDetail
  */
 export interface ProjectState {
@@ -336,7 +336,9 @@ export function transformOnChainTask(
     title,
     description: "",
     lovelaceAmount: String(api.lovelace_amount ?? 0),
-    expirationTime: api.expiration,
+    expirationTime: api.expiration_posix
+      ? String(api.expiration_posix)
+      : undefined,
     expirationPosix: api.expiration_posix,
     createdByAlias: api.created_by,
     onChainContent: api.on_chain_content,
@@ -380,7 +382,9 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
     title,
     description,
     lovelaceAmount: String(api.lovelace_amount ?? 0),
-    expirationTime: api.expiration,
+    expirationTime: api.expiration_posix
+      ? String(api.expiration_posix)
+      : undefined,
     expirationPosix: api.expiration_posix,
     createdByAlias: api.created_by,
     onChainContent: api.on_chain_content,
@@ -729,7 +733,7 @@ export function useProjects() {
  * Uses: POST /api/v2/project/user/tasks/list with { project_id }
  * Returns Task[] with flat camelCase fields
  *
- * @param projectId - Project NFT Policy ID (the project_state_policy_id)
+ * @param projectId - Project ID
  *
  * @example
  * ```tsx

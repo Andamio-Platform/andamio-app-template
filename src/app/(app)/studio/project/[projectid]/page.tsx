@@ -44,7 +44,7 @@ import { useQueryClient } from "@tanstack/react-query";
  *
  * Uses React Query hooks:
  * - useProject(projectId) - Project detail with on-chain data
- * - useManagerTasks(contributorStateId) - Manager task list (includes DRAFT)
+ * - useManagerTasks(projectId) - Manager task list (includes DRAFT)
  * - useUpdateProject() - Update project metadata mutation
  */
 export default function ProjectDashboardPage() {
@@ -70,7 +70,7 @@ export default function ProjectDashboardPage() {
   // React Query hooks replace manual useState + useEffect + fetch
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStateId = projectDetail?.contributorStateId;
-  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
   const updateProject = useUpdateProject();
 
   // Form state

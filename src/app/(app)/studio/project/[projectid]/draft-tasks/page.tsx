@@ -35,7 +35,7 @@ import { useManagerTasks, useDeleteTask } from "~/hooks/api/project/use-project-
  *
  * Uses React Query hooks:
  * - useProject(projectId) - Project detail for contributorStateId
- * - useManagerTasks(contributorStateId) - All tasks including DRAFT
+ * - useManagerTasks(projectId) - All tasks including DRAFT
  * - useDeleteTask() - Delete task mutation
  */
 export default function DraftTasksPage() {
@@ -46,7 +46,7 @@ export default function DraftTasksPage() {
   // React Query hooks
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStateId = projectDetail?.contributorStateId;
-  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId);
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
   const deleteTask = useDeleteTask();
 
   const [deletingTaskIndex, setDeletingTaskIndex] = useState<number | null>(null);
@@ -55,15 +55,15 @@ export default function DraftTasksPage() {
   // On-chain task count derived from hook data
   const onChainTaskCount = projectDetail?.tasks?.filter(t => t.taskStatus === "ON_CHAIN").length ?? 0;
 
-  const handleDeleteTask = async (taskIndex: number) => {
-    if (!isAuthenticated || !contributorStateId) return;
+  const handleDeleteTask = async (taskIndex: number, taskHash: string) => {
+    if (!isAuthenticated || !contributorStateId || !taskHash) return;
 
     setDeletingTaskIndex(taskIndex);
 
     try {
       await deleteTask.mutateAsync({
-        projectStatePolicyId: contributorStateId,
-        index: taskIndex,
+        projectId,
+        taskHash,
       });
     } catch (err) {
       console.error("Error deleting task:", err);
@@ -210,7 +210,7 @@ export default function DraftTasksPage() {
                       <AndamioTableCell className="text-right">
                         <AndamioRowActions
                           editHref={`/studio/project/${projectId}/draft-tasks/${taskIndex}`}
-                          onDelete={() => handleDeleteTask(taskIndex)}
+                          onDelete={() => handleDeleteTask(taskIndex, task.taskHash ?? "")}
                           itemName="task"
                           deleteDescription={`Are you sure you want to delete "${task.title || "Untitled Task"}"? This action cannot be undone.`}
                           isDeleting={deletingTaskIndex === taskIndex}

@@ -1,7 +1,7 @@
 {
   "name": "andamio-t3-app-template",
   "version": "2.0.0-dev-20260131-34c6556",
-  "apiVersion": "v2.0.0-dev-20260201-d",
+  "apiVersion": "v2.0.0-dev-20260202-e",
   "private": true,
   "type": "module",
   "scripts": {

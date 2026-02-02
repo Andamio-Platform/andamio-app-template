@@ -357,7 +357,7 @@ export default function ProjectDetailPage() {
                   <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
                     {task.expirationTime ? (
                       <AndamioText variant="small">
-                        Expires: {new Date(task.expirationTime).toLocaleDateString()}
+                        Expires: {new Date(Number(task.expirationTime)).toLocaleDateString()}
                       </AndamioText>
                     ) : (
                       <AndamioText variant="small" className="text-muted-foreground">

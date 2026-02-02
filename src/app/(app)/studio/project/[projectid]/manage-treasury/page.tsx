@@ -87,7 +87,7 @@ export default function ManageTreasuryPage() {
   // React Query hooks
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStateId = projectDetail?.contributorStateId ?? null;
-  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(contributorStateId ?? undefined);
+  const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
 
   // Selected tasks for publishing
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<Set<number>>(new Set());

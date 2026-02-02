@@ -248,7 +248,9 @@ function transformManagerCommitment(api: OrchestrationManagerCommitmentItem): Ma
     task: api.task
       ? {
           lovelaceAmount: api.task.lovelace_amount,
-          expirationTime: api.task.expiration,
+          expirationTime: api.task.expiration_posix
+            ? String(api.task.expiration_posix)
+            : undefined,
           expirationPosix: api.task.expiration_posix,
           onChainContent: api.task.on_chain_content,
           assets: api.task.assets,
@@ -387,10 +389,10 @@ export function useManagerCommitments(projectId?: string) {
 /**
  * Fetch tasks for a managed project
  *
- * Uses: GET /api/v2/project/manager/tasks/{project_state_policy_id}
+ * Uses: POST /api/v2/project/manager/tasks/list
  * Returns Task[] with flat camelCase fields
  *
- * @param projectId - Project NFT Policy ID
+ * @param projectId - Project ID
  *
  * @example
  * ```tsx
@@ -411,9 +413,14 @@ export function useManagerTasks(projectId: string | undefined) {
   return useQuery({
     queryKey: projectManagerKeys.tasks(projectId ?? ""),
     queryFn: async (): Promise<Task[]> => {
-      // GET endpoint with project ID in path
+      // POST /project/manager/tasks/list
       const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/tasks/${projectId}`
+        `${GATEWAY_API_BASE}/project/manager/tasks/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: projectId }),
+        }
       );
 
       if (response.status === 404) {
@@ -480,7 +487,8 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: async (input: {
-      projectStatePolicyId: string;
+      projectId: string;
+      contributorStateId: string;
       title: string;
       content?: string;
       lovelaceAmount: string;
@@ -488,13 +496,14 @@ export function useCreateTask() {
       contentJson?: unknown;
     }) => {
       // Endpoint: POST /project/manager/task/create
+      // API expects: contributor_state_id (required), title, lovelace_amount, expiration_time
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/project/manager/task/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_state_policy_id: input.projectStatePolicyId,
+            contributor_state_id: input.contributorStateId,
             title: input.title,
             content: input.content,
             lovelace_amount: input.lovelaceAmount,
@@ -519,13 +528,11 @@ export function useCreateTask() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectManagerKeys.tasks(variables.projectId),
       });
-      // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectKeys.tasks(variables.projectId),
       });
     },
   });
@@ -561,7 +568,8 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async (input: {
-      projectStatePolicyId: string;
+      projectId: string;
+      contributorStateId: string;
       index: number;
       title: string;
       content?: string;
@@ -570,13 +578,14 @@ export function useUpdateTask() {
       contentJson?: unknown;
     }) => {
       // Endpoint: POST /project/manager/task/update
+      // API expects: contributor_state_id (required), index (required)
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/project/manager/task/update`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_state_policy_id: input.projectStatePolicyId,
+            contributor_state_id: input.contributorStateId,
             index: input.index,
             title: input.title,
             content: input.content,
@@ -602,13 +611,11 @@ export function useUpdateTask() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectManagerKeys.tasks(variables.projectId),
       });
-      // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectKeys.tasks(variables.projectId),
       });
     },
   });
@@ -642,21 +649,20 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async ({
-      projectStatePolicyId,
-      index,
+      taskHash,
     }: {
-      projectStatePolicyId: string;
-      index: number;
+      projectId: string;
+      taskHash: string;
     }) => {
       // Endpoint: POST /project/manager/task/delete
+      // API expects: task_hash
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_state_policy_id: projectStatePolicyId,
-            index,
+            task_hash: taskHash,
           }),
         }
       );
@@ -668,13 +674,11 @@ export function useDeleteTask() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectManagerKeys.tasks(variables.projectId),
       });
-      // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectKeys.tasks(variables.projectId),
       });
     },
   });
@@ -705,7 +709,8 @@ export function useInvalidateManagerProjects() {
  * Input for batch task status update
  */
 export interface TaskBatchStatusInput {
-  projectStatePolicyId: string;
+  projectId: string;
+  contributorStateId: string;
   tasks: Array<{
     index: number;
     status: "PENDING_TX" | "ON_CHAIN";
@@ -726,7 +731,7 @@ export interface TaskBatchStatusInput {
  *   const handleSubmitToChain = async () => {
  *     // Mark tasks as pending before submitting transaction
  *     await batchStatus.mutateAsync({
- *       projectStatePolicyId: projectId,
+ *       contributorStateId: projectId,
  *       tasks: tasks.map((t, i) => ({ index: i, status: "PENDING_TX" })),
  *     });
  *
@@ -750,7 +755,7 @@ export function useTaskBatchStatus() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_state_policy_id: input.projectStatePolicyId,
+            contributor_state_id: input.contributorStateId,
             tasks: input.tasks.map((t) => ({
               index: t.index,
               status: t.status,
@@ -769,11 +774,11 @@ export function useTaskBatchStatus() {
     onSuccess: (_, variables) => {
       // Invalidate manager tasks for this project
       void queryClient.invalidateQueries({
-        queryKey: projectManagerKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectManagerKeys.tasks(variables.projectId),
       });
       // Invalidate public tasks
       void queryClient.invalidateQueries({
-        queryKey: projectKeys.tasks(variables.projectStatePolicyId),
+        queryKey: projectKeys.tasks(variables.projectId),
       });
     },
   });

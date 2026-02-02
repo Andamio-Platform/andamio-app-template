@@ -10,7 +10,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { computeTaskHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -113,6 +113,12 @@ export interface TasksManageProps {
    * @param computedHashes - Pre-computed task hashes (can be used to update DB immediately)
    */
   onSuccess?: (txHash: string, computedHashes?: ComputedTaskHash[]) => void | Promise<void>;
+
+  /**
+   * Callback fired when the TX is submitted to the blockchain (wallet signed)
+   * but before gateway confirmation. Use this to keep the component mounted.
+   */
+  onTxSubmit?: () => void;
 }
 
 /**
@@ -159,9 +165,13 @@ export function TasksManage({
   taskCodes: preConfiguredTaskCodes,
   taskIndices: preConfiguredTaskIndices,
   onSuccess,
+  onTxSubmit,
 }: TasksManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+
+  // Store computed hashes in a ref so they're available in onComplete callback
+  const computedHashesRef = useRef<ComputedTaskHash[]>([]);
 
   const [action, setAction] = useState<"add" | "remove">("add");
 
@@ -193,10 +203,8 @@ export function TasksManage({
           setTaskCode("");
           setTaskHashesToRemove("");
 
-          // Note: We can't pass computed hashes here since onComplete doesn't have access to them
-          // The parent should handle this via the initial onSuccess callback
           if (result?.txHash) {
-            void onSuccess?.(result.txHash, undefined);
+            void onSuccess?.(result.txHash, computedHashesRef.current);
           }
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Task Management Failed", {
@@ -316,14 +324,17 @@ export function TasksManage({
       deposit_value,
     };
 
+    // Store computed hashes in ref so onComplete can access them
+    computedHashesRef.current = computedHashes;
+
     await execute({
       txType: "PROJECT_MANAGER_TASKS_MANAGE",
       params: txParams,
-      onSuccess: async (txResult) => {
+      onSuccess: (txResult) => {
         console.log("[TasksManage] TX submitted successfully!", txResult);
-        // Pass computed hashes to parent immediately after submission
-        // They can use these to optimistically update the DB
-        await onSuccess?.(txResult.txHash, computedHashes);
+        // Notify parent that TX is in flight (keeps component mounted)
+        // Do NOT call onSuccess here — wait for gateway confirmation in onComplete
+        onTxSubmit?.();
       },
       onError: (txError) => {
         console.error("[TasksManage] Error:", txError);

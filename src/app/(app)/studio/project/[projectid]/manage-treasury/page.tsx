@@ -89,6 +89,10 @@ export default function ManageTreasuryPage() {
   const contributorStateId = projectDetail?.contributorStateId ?? null;
   const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
 
+  // Track which section has an active TX to prevent unmounting the TasksManage component
+  // "add" = draft tasks section, "remove" = on-chain tasks section, null = no TX in flight
+  const [txInProgress, setTxInProgress] = useState<"add" | "remove" | null>(null);
+
   // Selected tasks for publishing
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<Set<number>>(new Set());
 
@@ -253,8 +257,8 @@ export default function ManageTreasuryPage() {
   // Calculate deposit value (only if net positive - i.e., adding more than removing)
   const depositValue: ListValue = netDeposit > 0 ? [["lovelace", netDeposit]] : [];
 
-  // Show transaction UI if any tasks are selected (to add or remove)
-  const hasTasksToManage = tasksToAdd.length > 0 || tasksToRemove.length > 0;
+  // Show transaction UI if any tasks are selected (to add or remove), or if a TX is in flight
+  const hasTasksToManage = tasksToAdd.length > 0 || tasksToRemove.length > 0 || txInProgress === "add";
 
   return (
     <div className="space-y-6">
@@ -392,9 +396,11 @@ export default function ManageTreasuryPage() {
                   depositValue={depositValue}
                   taskCodes={taskCodes}
                   taskIndices={taskIndices}
+                  onTxSubmit={() => setTxInProgress("add")}
                   onSuccess={async () => {
                     // Gateway TX State Machine handles DB updates automatically
-                    // Just clear selections and refresh data
+                    // Clear selections and refresh data after confirmation
+                    setTxInProgress(null);
                     setSelectedTaskIndices(new Set());
                     setSelectedOnChainTaskIds(new Set());
                     await refreshData();
@@ -487,8 +493,8 @@ export default function ManageTreasuryPage() {
               </AndamioTable>
             </AndamioTableContainer>
 
-            {/* Show transaction UI if tasks selected for removal (and no draft tasks selected) */}
-            {tasksToRemove.length > 0 && tasksToAdd.length === 0 && contributorStateId && (
+            {/* Show transaction UI if tasks selected for removal (and no draft tasks selected), or remove TX in flight */}
+            {((tasksToRemove.length > 0 && tasksToAdd.length === 0) || txInProgress === "remove") && contributorStateId && (
               <>
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1 mt-4">
                   <div><strong>Transaction Preview:</strong></div>
@@ -505,8 +511,10 @@ export default function ManageTreasuryPage() {
                   depositValue={[]}
                   taskCodes={[]}
                   taskIndices={[]}
-                  onSuccess={async (_txHash, _computedHashes) => {
+                  onTxSubmit={() => setTxInProgress("remove")}
+                  onSuccess={async () => {
                     // No computed hashes for removal - just refresh
+                    setTxInProgress(null);
                     toast.success("Tasks removed successfully!");
                     setSelectedOnChainTaskIds(new Set());
                     await refreshData();

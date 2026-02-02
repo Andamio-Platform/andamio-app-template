@@ -105,11 +105,14 @@ export default function ProjectDashboardPage() {
   const onChainContributorCount = projectDetail?.contributors?.length ?? 0;
 
   // Cache invalidation for onSuccess callbacks
+  // Uses refetchQueries to force immediate refetch (not just mark stale)
   const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
-    if (contributorStateId) {
-      await queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(contributorStateId) });
-    }
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: projectKeys.detail(projectId) }),
+      ...(contributorStateId
+        ? [queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(contributorStateId) })]
+        : []),
+    ]);
   }, [queryClient, projectId, contributorStateId]);
 
   const handleSave = async () => {

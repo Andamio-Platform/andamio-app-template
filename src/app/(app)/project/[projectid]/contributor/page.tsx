@@ -493,7 +493,7 @@ function ContributorDashboardContent() {
 
             <div className="grid gap-2 text-sm p-4 rounded-lg bg-muted/30">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Task ID:</span>
+                <span className="text-muted-foreground">Hash:</span>
                 <span className="font-mono text-xs">{taskId.slice(0, 16)}...{taskId.slice(-8)}</span>
               </div>
               {txHash && (

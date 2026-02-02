@@ -446,7 +446,7 @@ export default function ManageTreasuryPage() {
                   <AndamioTableRow>
                     <AndamioTableHead className="w-12"></AndamioTableHead>
                     <AndamioTableHead>Content</AndamioTableHead>
-                    <AndamioTableHead className="hidden md:table-cell">Task ID</AndamioTableHead>
+                    <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
                     <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
                     <AndamioTableHead className="hidden sm:table-cell w-32 text-center">Expires</AndamioTableHead>
                   </AndamioTableRow>

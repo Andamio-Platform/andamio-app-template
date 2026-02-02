@@ -331,7 +331,7 @@ export default function ProjectDetailPage() {
             <AndamioTableHeader>
               <AndamioTableRow>
                 <AndamioTableHead className="w-12 sm:w-16">#</AndamioTableHead>
-                <AndamioTableHead className="min-w-[150px]">Task ID</AndamioTableHead>
+                <AndamioTableHead className="min-w-[150px]">Hash</AndamioTableHead>
                 <AndamioTableHead className="min-w-[200px] hidden md:table-cell">Expiration</AndamioTableHead>
                 <AndamioTableHead className="w-24 sm:w-32 text-center">Reward</AndamioTableHead>
               </AndamioTableRow>

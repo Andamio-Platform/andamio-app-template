@@ -713,6 +713,7 @@ export interface TaskBatchStatusInput {
   contributorStateId: string;
   tasks: Array<{
     index: number;
+    set_task_hash?: string;
     status: "PENDING_TX" | "ON_CHAIN";
   }>;
 }
@@ -758,6 +759,7 @@ export function useTaskBatchStatus() {
             contributor_state_id: input.contributorStateId,
             tasks: input.tasks.map((t) => ({
               index: t.index,
+              ...(t.set_task_hash ? { set_task_hash: t.set_task_hash } : {}),
               status: t.status,
             })),
           }),

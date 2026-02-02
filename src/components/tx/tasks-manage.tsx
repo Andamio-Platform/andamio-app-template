@@ -32,6 +32,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { TaskIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { useTaskBatchStatus } from "~/hooks/api/project/use-project-manager";
 
 /**
  * ListValue - Array of [asset_class, quantity] tuples
@@ -169,6 +170,7 @@ export function TasksManage({
 }: TasksManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const batchStatus = useTaskBatchStatus();
 
   // Store computed hashes in a ref so they're available in onComplete callback
   const computedHashesRef = useRef<ComputedTaskHash[]>([]);
@@ -312,6 +314,33 @@ export function TasksManage({
         index: h.taskIndex,
         hash: h.taskHash.slice(0, 16) + "...",
       })));
+    }
+
+    // =========================================================================
+    // PRE-POPULATE TASK HASHES IN DB BEFORE TX SUBMISSION
+    // =========================================================================
+    // Set task_hash and status=PENDING_TX on each draft task so the gateway's
+    // batch-status lookup by task_hash succeeds after on-chain confirmation.
+    if (computedHashes.length > 0 && preConfiguredTaskIndices) {
+      try {
+        console.log("[TasksManage] Pre-populating task hashes via batch-status...");
+        await batchStatus.mutateAsync({
+          projectId: projectNftPolicyId,
+          contributorStateId,
+          tasks: computedHashes.map((h) => ({
+            index: h.taskIndex,
+            set_task_hash: h.taskHash,
+            status: "PENDING_TX" as const,
+          })),
+        });
+        console.log("[TasksManage] Task hashes pre-populated successfully");
+      } catch (batchError) {
+        console.error("[TasksManage] Failed to pre-populate task hashes:", batchError);
+        toast.error("Failed to prepare tasks", {
+          description: "Could not update task records before submission. Please try again.",
+        });
+        return;
+      }
     }
 
     // Build the final request params

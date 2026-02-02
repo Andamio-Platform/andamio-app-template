@@ -184,7 +184,7 @@
 - `POST /project/manager/task/create` - Create task
 - `POST /project/manager/task/update` - Update task
 - `POST /project/manager/task/delete` - Delete task
-- `POST /project/manager/task/batch-status` - Batch status update
+- `POST /project/manager/tasks/batch-status` - Batch status update
 - `POST /project/manager/task/confirm-tx` - Confirm transaction
 - `POST /project/owner/project/register` - Register project
 - `POST /project/owner/project/update` - Update project

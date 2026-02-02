@@ -749,9 +749,9 @@ export function useTaskBatchStatus() {
 
   return useMutation({
     mutationFn: async (input: TaskBatchStatusInput) => {
-      // Endpoint: POST /project/manager/task/batch-status
+      // Endpoint: POST /project/manager/tasks/batch-status
       const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/manager/task/batch-status`,
+        `${GATEWAY_API_BASE}/project/manager/tasks/batch-status`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

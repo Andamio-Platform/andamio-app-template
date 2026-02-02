@@ -20,9 +20,10 @@
 | `issue-handler` | ✅ Active | Medium | 1 file | Issue routing across repos |
 | `product-iteration` | ✅ Active | Medium | 4 files | Full product feedback cycle (Test → Design → Ship) |
 | `bootstrap-skill` | ✅ Active | Medium | 1 file | Meta-skill: scaffold and register new skills |
+| `ship` | ✅ Active | Medium | 1 file | Full shipping workflow (version, docs, commit, PR, merge, cleanup) |
 | `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
 
-**Total**: 14 Andamio skills + 1 external skill
+**Total**: 15 Andamio skills + 1 external skill
 
 ---
 
@@ -195,7 +196,21 @@
 
 ---
 
-### 15. `mesh-expert` 📦 (External)
+### 15. `ship` ✅
+
+**Purpose**: Full shipping workflow — version bump, docs check, commit, PR, merge, cleanup
+
+**Commands**:
+1. `/ship` - Full workflow (all phases)
+2. `/ship version` - Bump version only
+3. `/ship pr` - Push + create PR only
+4. `/ship merge` - Merge existing PR + clean up
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 16. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
@@ -233,6 +248,9 @@
 │      │                                                        │
 │      ├──────────► getting-started (registers new skills)     │
 │      └──────────► SKILLS-AUDIT.md + CLAUDE.md (registration) │
+│                                                               │
+│  ship ────────────────► documentarian (docs check)             │
+│      └──────────► (commit, PR, merge workflow)                │
 │                                                               │
 │  Standalone skills:                                           │
 │    transaction-auditor    react-query-auditor                │

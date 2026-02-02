@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
@@ -30,6 +31,7 @@ interface JWTPayload {
  * AuthStatusBar - A minimal, professional status bar showing connection state
  */
 export function AuthStatusBar() {
+  const router = useRouter();
   const { name: walletName } = useWallet();
   const { theme, setTheme } = useTheme();
   const {
@@ -43,6 +45,11 @@ export function AuthStatusBar() {
   const [mounted, setMounted] = useState(false);
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<string | null>(null);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    router.push("/");
+  }, [logout, router]);
 
   // Avoid hydration mismatch for theme
   useEffect(() => {
@@ -224,7 +231,7 @@ export function AuthStatusBar() {
             <AndamioButton
               variant="ghost"
               size="sm"
-              onClick={logout}
+              onClick={handleLogout}
               className="hidden sm:flex h-6 px-2 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
             >
               <LogOutIcon className="mr-1.5 h-3 w-3" />

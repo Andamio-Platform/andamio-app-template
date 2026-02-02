@@ -1,51 +1,59 @@
 # Skills Audit Report
 
-> **Last Updated**: January 24, 2026
+> **Last Updated**: February 1, 2026
 
 ## Summary
 
 | Skill | Status | Maturity | Supporting Files | Notes |
 |-------|--------|----------|------------------|-------|
-| `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints, 63% coverage) |
-| `design-system` | ✅ Active | High | 11 files | 3 modes (review, diagnose, reference) |
-| `documentarian` | ✅ Active | High | 2 files | Active backlog with skill suggestions |
 | `getting-started` | ✅ Active | Medium | 3 files | Interactive onboarding and skill discovery |
-| `issue-handler` | ✅ Active | Medium | 0 files | Issue routing to appropriate repos |
-| `project-manager` | ✅ Active | High | 16+ files | Comprehensive project tracking |
-| `react-query-auditor` | ✅ Active | Medium | 0 files | Audit hooks for type safety |
-| `review-pr` | ✅ Active | High | 3 files | Orchestrates other skills |
-| `transaction-auditor` | ✅ Active | Medium | 0 files | Sync TX schemas with Gateway API |
-| `tx-loop-guide` | ✅ Active | Medium | 2 files | Guide testers through TX loops |
+| `hooks-architect` | ✅ Active | High | 4 files | 5 modes (learn, implement, audit, extract, reference) |
+| `design-system` | ✅ Active | High | 11 files | 3 modes (review, diagnose, reference) |
+| `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints, 63% coverage) |
 | `typescript-types-expert` | ✅ Active | High | 8 files | 3 modes (audit, fix, design) |
+| `project-manager` | ✅ Active | High | 16+ files | Project tracking, status, roadmap |
+| `review-pr` | ✅ Active | High | 3 files | Orchestrates other skills |
+| `documentarian` | ✅ Active | High | 2 files | Active backlog with 190+ completed items |
+| `transaction-auditor` | ✅ Active | Medium | 1 file | Sync TX schemas with Gateway API |
+| `tx-loop-guide` | ✅ Active | Medium | 3 files | Guide testers through TX loops |
+| `react-query-auditor` | ✅ Active | Medium | 2 files | Cache and query pattern auditing |
+| `issue-handler` | ✅ Active | Medium | 1 file | Issue routing across repos |
+| `product-iteration` | ✅ Active | Medium | 4 files | Full product feedback cycle (Test → Design → Ship) |
+| `bootstrap-skill` | ✅ Active | Medium | 1 file | Meta-skill: scaffold and register new skills |
+| `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
 
-**Total**: 11 active skills, all relevant
+**Total**: 14 Andamio skills + 1 external skill
 
 ---
 
 ## Skill Details
 
-### 1. `audit-api-coverage` ✅
+### 1. `getting-started` ✅
 
-**Purpose**: Audit API coverage for the Unified Andamio API Gateway (108 endpoints)
+**Purpose**: Interactive onboarding for new developers
 
-**Current Coverage**: 63% (68/108 endpoints)
+**Entry Point**: Best first skill for newcomers. Guides to appropriate skill based on intent.
 
-**Files**:
-| File | Purpose | Status |
-|------|---------|--------|
-| `SKILL.md` | Main instructions | ✅ Current |
-| `scripts/audit-coverage.ts` | Automated scanner | ✅ Active |
-| `COVERAGE-REPORT.md` | Auto-generated report | Auto-generated |
-| `coverage-report.json` | Machine-readable data | Auto-generated |
-| `unified-api-endpoints.md` | Gateway endpoints reference | ✅ Current |
-| `api-coverage.md` | Implementation status | ✅ Current |
-| `tx-state-machine.md` | TX state machine docs | ✅ Current |
-| `V2-MIGRATION-CHECKLIST.md` | V2 migration tracking | Historical |
-| `API-REFINEMENT-SESSION.md` | API refinement notes | Historical |
+**Files** (3): `SKILL.md`, `skill-reference.md`, `learning-paths.md`
 
 ---
 
-### 2. `design-system` ✅
+### 2. `hooks-architect` ✅
+
+**Purpose**: Guide developers through creating, using, and auditing API hooks
+
+**Modes**:
+1. `learn` - Walk through hook rules and patterns
+2. `implement` - Step-by-step hook creation
+3. `audit` - Check hooks for compliance
+4. `extract` - Move direct API calls into hooks
+5. `reference` - Find existing hooks
+
+**Files** (4): `SKILL.md`, `HOOK-RULES.md`, `HOOK-REFERENCE.md`, `PROGRESS.md`
+
+---
+
+### 3. `design-system` ✅
 
 **Purpose**: Unified design system expertise with 3 modes
 
@@ -54,62 +62,49 @@
 2. `diagnose` - Debug CSS specificity conflicts
 3. `reference` - Query design patterns
 
-**Files** (11): All current and well-organized
-- `style-rules.md`, `semantic-colors.md`, `responsive-design.md`
-- `icon-system.md`, `extracted-components.md`, `global-overrides.md`
-- `layouts.md`, `spacing.md`, `components.md`
-- `cannot-customize.md`, `route-reference.md`
+**Files** (11): `style-rules.md`, `semantic-colors.md`, `responsive-design.md`, `icon-system.md`, `extracted-components.md`, `global-overrides.md`, `layouts.md`, `spacing.md`, `components.md`, `cannot-customize.md`, `route-reference.md`
 
 ---
 
-### 3. `documentarian` ✅
+### 4. `audit-api-coverage` ✅
 
-**Purpose**: Update docs after codebase changes
+**Purpose**: Audit API coverage for the Unified Andamio API Gateway
 
-**Backlog Status**: Active with skill suggestions and 129+ completed items
-
-**Files** (2): `SKILL.md`, `BACKLOG.md`
-
----
-
-### 4. `issue-handler` ✅
-
-**Purpose**: View error logs and route issues to appropriate repos
-
-**Key Function**: Route issues through the stack:
-```
-T3 App Template → Andamio API Gateway → Backend subsystems
-```
-
-**Files**: Skill-only (no supporting docs)
+**Files**:
+| File | Purpose | Status |
+|------|---------|--------|
+| `SKILL.md` | Main instructions | ✅ Current |
+| `scripts/audit-coverage.ts` | Automated scanner | ✅ Active |
+| `unified-api-endpoints.md` | Gateway endpoints reference | ✅ Current |
+| `api-coverage.md` | Implementation status | ✅ Current |
+| `tx-state-machine.md` | TX state machine docs | ✅ Current |
+| `tx-hooks-audit.md` | TX hook patterns | ✅ Current |
+| `api-hooks-audit.md` | API hook patterns | ✅ Current |
+| `HOOKS-STATUS.md` | Hook migration tracking | ✅ Current |
+| `archive/` | Historical plans (API-HOOKS-CLEANUP-PLAN, HOOK-ORGANIZATION-PLAN) | Archive |
 
 ---
 
-### 5. `project-manager` ✅
+### 5. `typescript-types-expert` ✅
+
+**Purpose**: Audit, fix, and design TypeScript types (3 modes)
+
+**Files** (8): `SKILL.md`, `type-architecture.md`, `type-colocation.md`, `audit-rules.md`, `generated-types.md`, `zod-schemas.md`, `anti-patterns.md`, `checklist.md`
+
+---
+
+### 6. `project-manager` ✅
 
 **Purpose**: Track project status, coordinate skills
 
 **Files** (16+):
-- Core: `STATUS.md`, `ROADMAP.md`, `README.md`, `SITEMAP.md`
+- Core: `STATUS.md`, `ROADMAP.md`, `SKILL.md`, `SITEMAP.md`, `ROLES-AND-ROUTES.md`
 - Transaction: `TX-MIGRATION-GUIDE.md`, `TRANSACTION-COMPONENTS.md`, `PENDING-TX-WATCHER.md`
 - State: `course-local-state.md`, `project-local-state.md`
-- API: `andamioscan-api.md`, `ANDAMIOSCAN-EVENTS-CONFIRMATION.md`, `API-UPGRADE-PLAN.md`
-- Architecture: `layered-proposal.md`, `layered-proposal-review.md`
-- Getting Started: `GETTING-STARTED.md`, `FRONTEND_V2_CHECKLIST.md`
-- Archive: `archived-bugs/`
-
----
-
-### 6. `react-query-auditor` ✅
-
-**Purpose**: Audit React Query hooks for type safety and cache management
-
-**Checks**:
-1. Type safety (generated types used correctly)
-2. Proper patterns (queryKey, staleTime, etc.)
-3. Cache management (invalidation, optimistic updates)
-
-**Files**: Skill-only
+- Reference: `ANDAMIOSCAN-EVENTS-CONFIRMATION.md` (historical), `API-CALLS-AUDIT.md`
+- Architecture: `layered-proposal-review.md`, `better-fork-readiness.md`
+- Onboarding: `GETTING-STARTED.md`, `HOOK-ARCHITECTURE-GUIDE.md`, `README.md`
+- Archive: `archived-sessions/`, `archived-bugs/`
 
 ---
 
@@ -117,31 +112,36 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 
 **Purpose**: Comprehensive PR review with skill delegation
 
-**Delegates to**: `design-system`, `audit-api-coverage`, `documentarian`
+**Delegates to**: `design-system`, `hooks-architect`, `typescript-types-expert`, `documentarian`
 
 **Files** (3): `SKILL.md`, `review-checklists.md`, `native-capabilities.md`
 
 ---
 
-### 8. `transaction-auditor` ✅
+### 8. `documentarian` ✅
+
+**Purpose**: Update docs after codebase changes
+
+**Delegates to**: `transaction-auditor`, `hooks-architect`, `design-system`, `project-manager`
+
+**Files** (2): `SKILL.md`, `BACKLOG.md`
+
+---
+
+### 9. `transaction-auditor` ✅
 
 **Purpose**: Keep TX schemas in sync with Gateway API spec
-
-**When to Use**:
-- After Gateway API releases with breaking changes
-- When adding new transaction types
-- When debugging transaction failures
 
 **Syncs**:
 - `src/config/transaction-schemas.ts`
 - `src/config/transaction-ui.ts`
-- `src/hooks/use-tx-watcher.ts`
+- `src/hooks/tx/use-tx-watcher.ts`
 
-**Files**: Skill-only
+**Files** (1): `SKILL.md`
 
 ---
 
-### 9. `tx-loop-guide` ✅
+### 10. `tx-loop-guide` ✅
 
 **Purpose**: Guide testers through transaction loops to validate functionality
 
@@ -157,92 +157,97 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 
 ---
 
-### 10. `typescript-types-expert` ✅
+### 11. `react-query-auditor` ✅
 
-**Purpose**: Audit, fix, and design TypeScript types (3 modes)
+**Purpose**: Audit React Query hooks for type safety and cache management
 
-**Modes**:
-1. `audit` - Analyze type usage, generate health report
-2. `fix` - Correct type violations
-3. `design` - Create types for new features
+**Focus**: Cache invalidation, stale data debugging, query key matching, UX update issues
 
-**Key Capabilities**:
-- Generated types from OpenAPI spec
-- NullableString handling with type-helpers.ts
-- Zod schema alignment with API
-- Import discipline enforcement
-
-**Files** (8):
-- `SKILL.md` - Main instructions
-- `type-architecture.md` - Type hierarchy and organization
-- `type-colocation.md` - When inline types are correct
-- `audit-rules.md` - Pass/fail criteria and scoring
-- `generated-types.md` - Working with auto-generated types
-- `zod-schemas.md` - Runtime validation patterns
-- `anti-patterns.md` - What NOT to do
-- `checklist.md` - Quick reference
+**Files** (2): `SKILL.md`, `react-query-best-practices.md`
 
 ---
 
-### 11. `getting-started` ✅
+### 12. `issue-handler` ✅
 
-**Purpose**: Interactive onboarding for new developers
+**Purpose**: View error logs and route issues to appropriate repos
 
-**Entry Point**: Best first skill for newcomers
+**Routes through**: `T3 App Template → Andamio API Gateway → Backend subsystems`
 
-**Features**:
-- Role-based skill recommendations
-- Curated learning paths
-- Quick reference for all skills
-- Interactive conversation-based onboarding
+**Files** (1): `SKILL.md`
 
-**Files** (3):
-- `SKILL.md` - Main instructions with interactive flow
-- `skill-reference.md` - Quick reference table of all skills
-- `learning-paths.md` - Curated paths by developer role
+---
+
+### 13. `product-iteration` ✅
+
+**Purpose**: Orchestrate the full product iteration cycle
+
+**Phases**: Test → Design → Triage → Ship
+
+**Files** (4): `SKILL.md`, `templates/feedback-digest.md`, `templates/design-proposal.md`, `templates/backlog-item.md`
+
+---
+
+### 14. `bootstrap-skill` ✅
+
+**Purpose**: Meta-skill that scaffolds new Claude skills with consistent structure, registers them across SKILLS-AUDIT.md, CLAUDE.md, and getting-started, and ensures proper integration with the skill ecosystem.
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 15. `mesh-expert` 📦 (External)
+
+**Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
+
+**Note**: This is a copy of the [MeshJS/Mesh-AI](https://github.com/MeshJS/Mesh-AI) skill files. Not Andamio-specific — provides general Mesh SDK API reference, patterns, and troubleshooting.
+
+**Files** (1): `readme.md`
 
 ---
 
 ## Skill Relationships
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   User-Invocable Skills                 │
-├────────────────────────────────────────────────────────┤
-│                                                         │
-│  getting-started ───────► (all skills via guidance)    │
-│                                                         │
-│  review-pr ──────────► design-system (review mode)     │
-│      │                                                  │
-│      ├──────────► audit-api-coverage                   │
-│      │                                                  │
-│      ├──────────► typescript-types-expert              │
-│      │                                                  │
-│      └──────────► documentarian                        │
-│                         │                               │
-│                         ▼                               │
-│                  project-manager                        │
-│                                                         │
-│  transaction-auditor (sync TX schemas)                 │
-│  react-query-auditor (audit hooks)                     │
-│  typescript-types-expert (type system)                 │
-│  tx-loop-guide (for Pioneers testing)                  │
-│  issue-handler (route issues)                          │
-│                                                         │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    User-Invocable Skills                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  getting-started ─────────► (all skills via guidance)        │
+│                                                               │
+│  review-pr ────────────► design-system (review mode)         │
+│      │                                                        │
+│      ├──────────► hooks-architect (audit mode)               │
+│      │                                                        │
+│      ├──────────► typescript-types-expert (audit mode)       │
+│      │                                                        │
+│      └──────────► documentarian                              │
+│                         │                                     │
+│                         ├──► project-manager                 │
+│                         ├──► transaction-auditor             │
+│                         └──► hooks-architect                 │
+│                                                               │
+│  product-iteration ──► tx-loop-guide (testing phase)         │
+│                    └──► project-manager (backlog phase)       │
+│                                                               │
+│  bootstrap-skill ◄──── documentarian (BACKLOG.md suggestions) │
+│      │                                                        │
+│      ├──────────► getting-started (registers new skills)     │
+│      └──────────► SKILLS-AUDIT.md + CLAUDE.md (registration) │
+│                                                               │
+│  Standalone skills:                                           │
+│    transaction-auditor    react-query-auditor                │
+│    tx-loop-guide          issue-handler                      │
+│    mesh-expert (external)                                     │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Verdict: All 11 Skills Relevant ✅
+## Audit History
 
-All skills are actively used and well-maintained.
-
-**Recent Changes** (since January 11, 2026):
-- Added `getting-started` skill (January 24, 2026)
-- Added `typescript-types-expert` skill (January 24, 2026)
-- Added `issue-handler` skill (error routing)
-- Added `react-query-auditor` skill (hook auditing)
-- Added `transaction-auditor` skill (schema sync)
-- Updated `audit-api-coverage` for unified gateway (108 endpoints)
-- Gateway taxonomy compliance complete (January 21, 2026)
+| Date | Action |
+|------|--------|
+| 2026-02-01 | Full audit: Added hooks-architect, product-iteration, mesh-expert. Fixed stale refs (andamioscan-events, use-event-confirmation, old file paths). Updated skill count to 14. |
+| 2026-01-24 | Added getting-started, typescript-types-expert skills. Count was 11. |
+| 2026-01-14 | Added transaction-auditor, issue-handler, react-query-auditor. |

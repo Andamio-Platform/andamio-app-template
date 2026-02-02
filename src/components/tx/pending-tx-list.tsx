@@ -38,7 +38,7 @@ import { cn } from "~/lib/utils";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 export interface PendingTxListProps {
-  /** Polling interval in ms (default: 30000 = 30 seconds) */
+  /** Polling interval in ms (default: 5000 = 5 seconds) */
   pollInterval?: number;
   /** Maximum number of items to show */
   maxItems?: number;
@@ -106,6 +106,7 @@ function getTxTypeLabel(txType: string): string {
     task_submit: "Submit Task",
     task_assess: "Assess Task",
     project_join: "Join Project",
+    managers_manage: "Update Managers",
     project_credential_claim: "Project Credential",
     treasury_fund: "Fund Treasury",
     blacklist_update: "Update Blacklist",
@@ -127,7 +128,7 @@ function getTxTypeLabel(txType: string): string {
  * ```
  */
 export function PendingTxList({
-  pollInterval = 30000,
+  pollInterval = 5000,
   maxItems = 10,
   className,
   onChange,

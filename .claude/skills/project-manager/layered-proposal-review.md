@@ -68,7 +68,7 @@ src/hooks/
 │   ├── use-transaction.ts
 │   ├── use-tx-watcher.ts
 │   ├── use-pending-tx-watcher.ts
-│   └── use-event-confirmation.ts
+│   └── use-tx-stream.ts
 ├── auth/
 │   ├── index.ts
 │   └── use-andamio-auth.ts

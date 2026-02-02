@@ -17,6 +17,8 @@ import {
 import { SettingsIcon, OnChainIcon, AssignmentIcon, NextIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
+import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
+import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
 
@@ -47,6 +49,20 @@ export default function ModuleLessonsPage() {
     error: moduleError,
   } = useCourseModule(courseNftPolicyId, moduleCode);
   const { data: slts, isLoading: sltsLoading } = useSLTs(courseNftPolicyId, moduleCode);
+
+  // Fetch student commitments for this course (cache hit if already fetched on detail page)
+  const { data: studentCommitments } = useStudentAssignmentCommitments(
+    isAuthenticated ? courseNftPolicyId : undefined,
+  );
+
+  // Derive commitment status for this specific module
+  const moduleCommitmentStatus = useMemo(() => {
+    if (!studentCommitments) return null;
+    const moduleCommitments = studentCommitments.filter(
+      (c) => c.moduleCode === moduleCode,
+    );
+    return getModuleCommitmentStatus(moduleCommitments);
+  }, [studentCommitments, moduleCode]);
 
   // Get on-chain modules from the merged course data - memoized to stabilize reference
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
@@ -165,32 +181,94 @@ export default function ModuleLessonsPage() {
         />
       </div>
 
-      {/* Assignment CTA */}
-      <AndamioCard className="border-primary/50 bg-primary/5">
-        <AndamioCardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex-shrink-0">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <AssignmentIcon className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <div className="flex-1 text-center sm:text-left space-y-2">
-              <h3 className="text-xl font-semibold">Ready to demonstrate your learning?</h3>
-              <AndamioText variant="muted">
-                Complete the assignment to show your understanding of this module&apos;s learning targets and earn your credential.
-              </AndamioText>
-            </div>
-            <div className="flex-shrink-0">
-              <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
-                <AndamioButton size="lg">
-                  Start Assignment
-                  <NextIcon className="h-4 w-4 ml-2" />
-                </AndamioButton>
-              </Link>
-            </div>
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
+      {/* Assignment CTA - context-aware based on commitment status */}
+      <AssignmentCTA
+        courseNftPolicyId={courseNftPolicyId}
+        moduleCode={moduleCode}
+        commitmentStatus={moduleCommitmentStatus}
+      />
     </div>
   );
+}
+
+// =============================================================================
+// Assignment CTA - adapts heading and button based on commitment status
+// =============================================================================
+
+interface AssignmentCTAProps {
+  courseNftPolicyId: string;
+  moduleCode: string;
+  commitmentStatus: string | null;
+}
+
+function AssignmentCTA({
+  courseNftPolicyId,
+  moduleCode,
+  commitmentStatus,
+}: AssignmentCTAProps) {
+  const ctaConfig = getAssignmentCTAConfig(commitmentStatus);
+
+  return (
+    <AndamioCard className="border-primary/50 bg-primary/5">
+      <AndamioCardContent className="pt-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex-shrink-0">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <AssignmentIcon className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <div className="flex-1 text-center sm:text-left space-y-2">
+            <div className="flex items-center gap-2 justify-center sm:justify-start">
+              <h3 className="text-xl font-semibold">{ctaConfig.heading}</h3>
+              {commitmentStatus && (
+                <CommitmentStatusBadge status={commitmentStatus} />
+              )}
+            </div>
+            <AndamioText variant="muted">{ctaConfig.description}</AndamioText>
+          </div>
+          <div className="flex-shrink-0">
+            <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+              <AndamioButton size="lg">
+                {ctaConfig.buttonLabel}
+                <NextIcon className="h-4 w-4 ml-2" />
+              </AndamioButton>
+            </Link>
+          </div>
+        </div>
+      </AndamioCardContent>
+    </AndamioCard>
+  );
+}
+
+function getAssignmentCTAConfig(status: string | null) {
+  switch (status) {
+    case "PENDING_APPROVAL":
+      return {
+        heading: "Assignment Submitted",
+        description:
+          "Your assignment is being reviewed. You can view your submission while you wait.",
+        buttonLabel: "View Assignment",
+      };
+    case "ASSIGNMENT_ACCEPTED":
+      return {
+        heading: "Assignment Accepted!",
+        description:
+          "Your assignment has been approved. Claim your credential to record your achievement on-chain.",
+        buttonLabel: "Claim Credential",
+      };
+    case "ASSIGNMENT_REFUSED":
+      return {
+        heading: "Revision Requested",
+        description:
+          "Your assignment needs some revisions. Review the feedback and resubmit when ready.",
+        buttonLabel: "Revise Assignment",
+      };
+    default:
+      return {
+        heading: "Ready to demonstrate your learning?",
+        description:
+          "Complete the assignment to show your understanding of this module\u2019s learning targets and earn your credential.",
+        buttonLabel: "Start Assignment",
+      };
+  }
 }

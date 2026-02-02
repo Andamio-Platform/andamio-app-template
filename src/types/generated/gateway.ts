@@ -858,7 +858,7 @@ export interface AtlasTxClientAddFundsTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
+  deposit_value?: any[][];
   initiator_data?: AtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -952,7 +952,7 @@ export interface AtlasTxClientCreateCourseTxRequest {
 export interface AtlasTxClientCreateProjectTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
-  course_prereqs?: Record<string, any>[][];
+  course_prereqs?: any[][];
   initiator_data?: AtlasTxClientWalletData;
   managers?: string[];
 }
@@ -976,7 +976,7 @@ export interface AtlasTxClientIssueMigrateTxRequest {
   alias?: string;
   /** This is the hash of a minting policy script. */
   course_id?: string;
-  to_issue?: Record<string, any>[][];
+  to_issue?: any[][];
 }
 
 export interface AtlasTxClientManageContributorBlacklistTxRequest {
@@ -1016,7 +1016,7 @@ export interface AtlasTxClientManageTasksTxRequest {
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
+  deposit_value?: any[][];
   initiator_data?: AtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -1073,7 +1073,7 @@ export interface AtlasTxClientTaskData {
   expiration_posix?: number;
   lovelace_amount?: number;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  native_assets?: Record<string, any>[][];
+  native_assets?: any[][];
   /** A text string with a maximum length of 140 characters */
   project_content?: string;
 }
@@ -2015,6 +2015,7 @@ export interface TxStateHandlersPendingTxResponse {
     | "course_enroll"
     | "modules_manage"
     | "teachers_update"
+    | "managers_manage"
     | "assignment_submit"
     | "assessment_assess"
     | "credential_claim"
@@ -2062,6 +2063,7 @@ export interface TxStateHandlersRegisterPendingTxRequest {
     | "course_enroll"
     | "modules_manage"
     | "teachers_update"
+    | "managers_manage"
     | "assignment_submit"
     | "assessment_assess"
     | "credential_claim"

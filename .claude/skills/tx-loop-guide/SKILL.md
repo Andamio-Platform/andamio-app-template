@@ -23,7 +23,8 @@ This skill guides a tester or developer through a specified Andamio Transaction 
 
 - **[tx-loops.md](./tx-loops.md)** - Catalog of all V2 tx loops with steps and side effects
 - **[loop-history.md](./loop-history.md)** - Testing status and history for each loop
-- **[@andamio/transactions](../../../packages/andamio-transactions/README.md)** - Transaction definitions (V2 pattern)
+- **`src/config/transaction-schemas.ts`** - Transaction Zod schemas
+- **`src/config/transaction-ui.ts`** - TX types, endpoints, UI strings
 
 ## V2 Gateway API
 

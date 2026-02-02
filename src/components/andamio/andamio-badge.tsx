@@ -30,7 +30,7 @@ const statusStyles = {
   draft: "bg-muted text-muted-foreground",
   archived: "bg-muted text-muted-foreground",
   pending: "bg-secondary text-secondary-foreground",
-  success: "bg-primary text-primary-foreground",
+  success: "bg-success text-success-foreground",
   error: "bg-destructive text-destructive-foreground",
 };
 

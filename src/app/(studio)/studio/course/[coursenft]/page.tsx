@@ -51,6 +51,7 @@ import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
 import { useTeacherAssignmentCommitments } from "~/hooks/api/course/use-course-teacher";
+import { TeachersUpdate } from "~/components/tx/teachers-update";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
@@ -844,6 +845,15 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
               {/* Course Team */}
               <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
+
+              {/* Manage Teachers (On-Chain Transaction) */}
+              <TeachersUpdate
+                courseNftPolicyId={courseNftPolicyId}
+                currentTeachers={course.teachers ?? []}
+                onSuccess={() => {
+                  void refetchCourse();
+                }}
+              />
             </AndamioTabsContent>
 
             {/* On-Chain Tab */}

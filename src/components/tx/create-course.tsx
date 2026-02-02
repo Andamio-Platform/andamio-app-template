@@ -25,7 +25,6 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
-import { AliasListInput } from "./alias-list-input";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -66,7 +65,6 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
-  const [additionalTeachers, setAdditionalTeachers] = useState<string[]>([]);
   const [courseId, setCourseId] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
@@ -123,14 +121,13 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
       return;
     }
 
-    // Always include the creator as a teacher
-    const allTeachers = [user.accessTokenAlias, ...additionalTeachers.filter((t) => t !== user.accessTokenAlias)];
-
+    // Gateway enforces single teacher (owner) at creation time.
+    // Use /v2/tx/course/owner/teachers/manage to add more teachers after creation.
     await execute({
       txType: "INSTANCE_COURSE_CREATE",
       params: {
         alias: user.accessTokenAlias,
-        teachers: allTeachers,
+        teachers: [user.accessTokenAlias],
         initiator_data: initiatorData,
       },
       // Pass metadata for gateway auto-registration
@@ -227,19 +224,6 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
               The display name shown to learners. You can update this later.
             </AndamioText>
           </div>
-        )}
-
-        {/* Additional Teachers Input */}
-        {hasAccessToken && hasInitiatorData && (
-          <AliasListInput
-            value={additionalTeachers}
-            onChange={setAdditionalTeachers}
-            label="Additional Teachers (Optional)"
-            placeholder="Enter teacher alias"
-            disabled={state !== "idle" && state !== "error"}
-            excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
-            helperText="Each alias is verified on-chain before being added. You are automatically included."
-          />
         )}
 
         {/* Transaction Status - Only show during processing, not for final success */}

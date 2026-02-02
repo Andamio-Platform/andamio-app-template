@@ -145,6 +145,13 @@ export {
   type StudentCoursesResponse,
 } from "./course/use-course-student";
 
+// Student assignment commitments (cross-route status)
+export {
+  useStudentAssignmentCommitments,
+  getModuleCommitmentStatus,
+  type StudentCommitmentSummary,
+} from "./course/use-student-assignment-commitments";
+
 // Module wizard (composite UI hook)
 export { useModuleWizardData } from "./course/use-module-wizard-data";
 

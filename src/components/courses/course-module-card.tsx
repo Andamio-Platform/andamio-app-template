@@ -11,6 +11,7 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
+import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
 
 /**
  * SLT data for display in module card
@@ -36,6 +37,8 @@ export interface CourseModuleCardProps {
   isOnChain?: boolean;
   /** Course NFT policy ID for link generation */
   courseNftPolicyId: string;
+  /** Student's commitment status for this module (derived from commitments list) */
+  commitmentStatus?: string | null;
 }
 
 /**
@@ -53,6 +56,7 @@ export function CourseModuleCard({
   onChainSlts = new Set(),
   isOnChain = false,
   courseNftPolicyId,
+  commitmentStatus,
 }: CourseModuleCardProps) {
   // Display: moduleCode > shortened sltHash > index
   const displayCode = moduleCode || (sltHash ? `#${sltHash.slice(0, 4)}` : String(index));
@@ -86,6 +90,9 @@ export function CourseModuleCard({
               <AndamioBadge variant="secondary" className="text-xs sm:text-sm">
                 {slts.length} {slts.length === 1 ? "target" : "targets"}
               </AndamioBadge>
+              {commitmentStatus && (
+                <CommitmentStatusBadge status={commitmentStatus} />
+              )}
               <NextIcon className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>

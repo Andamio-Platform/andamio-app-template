@@ -29,7 +29,6 @@ import { ownerProjectKeys } from "~/hooks/api/project/use-project-owner";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
-import { AliasListInput } from "./alias-list-input";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -123,7 +122,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
   const [title, setTitle] = useState("");
-  const [additionalManagers, setAdditionalManagers] = useState<string[]>([]);
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
 
@@ -188,11 +186,13 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
       return;
     }
 
+    // Gateway enforces single manager (owner) at creation time.
+    // Use /v2/tx/project/owner/managers/manage to add more managers after creation.
     await execute({
       txType: "INSTANCE_PROJECT_CREATE",
       params: {
         alias: user.accessTokenAlias,
-        managers: additionalManagers.length > 0 ? additionalManagers : [user.accessTokenAlias],
+        managers: [user.accessTokenAlias],
         course_prereqs: coursePrereqs,
         initiator_data: initiatorData,
       },
@@ -228,7 +228,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   // Checklist step statuses
   const prereqModuleCount = coursePrereqs.reduce((sum, [, modules]) => sum + modules.length, 0);
   const prereqCourseCount = coursePrereqs.length;
-  const managerCount = additionalManagers.length + 1; // +1 for creator
 
   if (!isAuthenticated || !user) {
     return null;
@@ -250,149 +249,161 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         </div>
       </AndamioCardHeader>
       <AndamioCardContent>
-        {/* Requirements Check */}
-        {!hasAccessToken && (
-          <AndamioAlert variant="destructive" className="mb-4">
-            <AlertIcon className="h-4 w-4" />
-            <AndamioAlertDescription>
-              You need an Access Token to create a project. Mint one first!
-            </AndamioAlertDescription>
-          </AndamioAlert>
-        )}
-
-        {hasAccessToken && !hasInitiatorData && (
-          <AndamioAlert className="mb-4">
-            <AlertIcon className="h-4 w-4" />
-            <AndamioAlertDescription>
-              Loading wallet data... Please ensure your wallet is connected.
-            </AndamioAlertDescription>
-          </AndamioAlert>
-        )}
-
-        {/* Project Creator Info */}
-        {hasAccessToken && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-            <ManagerIcon className="h-4 w-4" />
-            <span>Creating as</span>
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
-              {user.accessTokenAlias}
-            </code>
-          </div>
-        )}
-
-        {/* Checklist Steps */}
-        {hasAccessToken && hasInitiatorData && (
-          <div>
-            {/* Step 1: Project Title */}
-            <ChecklistStep
-              step={1}
-              title="Name your project"
-              status={hasTitle ? title.trim() : null}
-            >
-              <AndamioInput
-                id="title"
-                type="text"
-                placeholder="Cardano Developer Bounty Program"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={!isFormActive}
-                maxLength={200}
-              />
-              <AndamioText variant="small" className="text-xs mt-1.5">
-                Give your project a descriptive title. You can update this later.
-              </AndamioText>
-            </ChecklistStep>
-
-            {/* Step 2: Course Prerequisites */}
-            <ChecklistStep
-              step={2}
-              title="Set contributor requirements"
-              status={
-                prereqCourseCount > 0
-                  ? `${prereqModuleCount} module${prereqModuleCount !== 1 ? "s" : ""} from ${prereqCourseCount} course${prereqCourseCount !== 1 ? "s" : ""}`
-                  : null
-              }
-            >
-              <CoursePrereqsSelector
-                value={coursePrereqs}
-                onChange={setCoursePrereqs}
-                disabled={!isFormActive}
-              />
-            </ChecklistStep>
-
-            {/* Step 3: Managers */}
-            <ChecklistStep
-              step={3}
-              title="Add managers"
-              status={`${managerCount} manager${managerCount !== 1 ? "s" : ""}`}
-              isLast
-            >
-              {/* Owner badge — always a manager */}
-              <div className="flex items-center gap-2 mb-3">
-                <AndamioBadge variant="outline" className="gap-1.5 font-mono text-xs">
-                  <ManagerIcon className="h-3 w-3" />
-                  {user.accessTokenAlias}
-                </AndamioBadge>
-                <span className="text-xs text-muted-foreground">Owner &middot; always a manager</span>
-              </div>
-              <AliasListInput
-                value={additionalManagers}
-                onChange={setAdditionalManagers}
-                label=""
-                placeholder="Add another manager alias"
-                disabled={!isFormActive}
-                excludeAliases={user.accessTokenAlias ? [user.accessTokenAlias] : []}
-                helperText="Each alias is verified on-chain before being added."
-              />
-            </ChecklistStep>
-          </div>
-        )}
-
-        {/* Transaction Status - Only show during processing, not for final success */}
-        {state !== "idle" && !txConfirmed && (
-          <TransactionStatus
-            state={state}
-            result={result}
-            error={error?.message ?? null}
-            onRetry={() => reset()}
-            messages={{
-              success: "Transaction submitted! Waiting for confirmation...",
-            }}
-          />
-        )}
-
-        {/* Gateway Confirmation Status */}
-        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="flex items-center gap-3">
-              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
-              <div className="flex-1">
-                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
-                <AndamioText variant="small" className="text-xs">
-                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
-                  {txStatus?.state === "confirmed" && "Processing database updates"}
-                  {!txStatus && "Registering transaction..."}
-                </AndamioText>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Success */}
-        {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        {/* Post-Success Certificate View */}
+        {txConfirmed ? (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <AndamioText className="font-medium text-primary">
-                  Project Created!
+                  Project Created
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
-                  &quot;{title}&quot; is now live on-chain.
+                  Your project is live on-chain
                 </AndamioText>
               </div>
             </div>
+
+            <div className="border-t border-primary/20" />
+
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                <span className="text-sm text-muted-foreground w-32 shrink-0">Project Name</span>
+                <span className="text-sm font-medium text-foreground">{title.trim()}</span>
+              </div>
+
+              {projectId && (
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                  <span className="text-sm text-muted-foreground w-32 shrink-0">Project ID</span>
+                  <span className="text-sm font-mono text-foreground truncate">{projectId}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                <span className="text-sm text-muted-foreground w-32 shrink-0">Owner</span>
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground">
+                  {user.accessTokenAlias}
+                </code>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                <span className="text-sm text-muted-foreground w-32 shrink-0">Prerequisites</span>
+                <span className="text-sm text-foreground">
+                  {prereqCourseCount > 0
+                    ? `${prereqModuleCount} module${prereqModuleCount !== 1 ? "s" : ""} from ${prereqCourseCount} course${prereqCourseCount !== 1 ? "s" : ""}`
+                    : "None"}
+                </span>
+              </div>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* Requirements Check */}
+            {!hasAccessToken && (
+              <AndamioAlert variant="destructive" className="mb-4">
+                <AlertIcon className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  You need an Access Token to create a project. Mint one first!
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            )}
+
+            {hasAccessToken && !hasInitiatorData && (
+              <AndamioAlert className="mb-4">
+                <AlertIcon className="h-4 w-4" />
+                <AndamioAlertDescription>
+                  Loading wallet data... Please ensure your wallet is connected.
+                </AndamioAlertDescription>
+              </AndamioAlert>
+            )}
+
+            {/* Project Creator Info */}
+            {hasAccessToken && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+                <ManagerIcon className="h-4 w-4" />
+                <span>Creating as</span>
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
+                  {user.accessTokenAlias}
+                </code>
+              </div>
+            )}
+
+            {/* Checklist Steps */}
+            {hasAccessToken && hasInitiatorData && (
+              <div>
+                {/* Step 1: Project Title */}
+                <ChecklistStep
+                  step={1}
+                  title="Name your project"
+                  status={hasTitle ? title.trim() : null}
+                >
+                  <AndamioInput
+                    id="title"
+                    type="text"
+                    placeholder="Cardano Developer Bounty Program"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={!isFormActive}
+                    maxLength={200}
+                  />
+                  <AndamioText variant="small" className="text-xs mt-1.5">
+                    Give your project a descriptive title. You can update this later.
+                  </AndamioText>
+                </ChecklistStep>
+
+                {/* Step 2: Course Prerequisites */}
+                <ChecklistStep
+                  step={2}
+                  title="Set contributor requirements"
+                  status={
+                    prereqCourseCount > 0
+                      ? `${prereqModuleCount} module${prereqModuleCount !== 1 ? "s" : ""} from ${prereqCourseCount} course${prereqCourseCount !== 1 ? "s" : ""}`
+                      : null
+                  }
+                  isLast
+                >
+                  <CoursePrereqsSelector
+                    value={coursePrereqs}
+                    onChange={setCoursePrereqs}
+                    disabled={!isFormActive}
+                  />
+                  <AndamioText variant="small" className="text-xs mt-3 text-muted-foreground">
+                    You can add additional managers after the project is created.
+                  </AndamioText>
+                </ChecklistStep>
+              </div>
+            )}
+
+            {/* Transaction Status - Only show during processing, not for final success */}
+            {state !== "idle" && (
+              <TransactionStatus
+                state={state}
+                result={result}
+                error={error?.message ?? null}
+                onRetry={() => reset()}
+                messages={{
+                  success: "Transaction submitted! Waiting for confirmation...",
+                }}
+              />
+            )}
+
+            {/* Gateway Confirmation Status */}
+            {state === "success" && result?.requiresDBUpdate && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="flex items-center gap-3">
+                  <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
+                  <div className="flex-1">
+                    <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                      {txStatus?.state === "confirmed" && "Processing database updates"}
+                      {!txStatus && "Registering transaction..."}
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Create Button - Hide after success */}

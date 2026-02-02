@@ -202,7 +202,7 @@ interface TxRegisterRequest {
 | `COURSE_STUDENT_ASSIGNMENT_COMMIT` | `assignment_submit` |
 | `COURSE_STUDENT_ASSIGNMENT_UPDATE` | `assignment_submit` |
 | `COURSE_STUDENT_CREDENTIAL_CLAIM` | `credential_claim` |
-| `PROJECT_OWNER_MANAGERS_MANAGE` | `project_join` |
+| `PROJECT_OWNER_MANAGERS_MANAGE` | `managers_manage` |
 | `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist_update` |
 | `PROJECT_MANAGER_TASKS_MANAGE` | `tasks_manage` |
 | `PROJECT_MANAGER_TASKS_ASSESS` | `task_assess` |
@@ -215,8 +215,9 @@ interface TxRegisterRequest {
 ```
 course_create, course_enroll, modules_manage, teachers_update,
 assignment_submit, assessment_assess, credential_claim,
-project_create, project_join, tasks_manage, task_submit, task_assess,
-project_credential_claim, blacklist_update, treasury_fund, access_token_mint
+project_create, project_join, managers_manage, tasks_manage, task_submit,
+task_assess, project_credential_claim, blacklist_update, treasury_fund,
+access_token_mint
 ```
 
 ## Common Issues

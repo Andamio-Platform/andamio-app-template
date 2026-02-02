@@ -25,7 +25,7 @@ All transaction components use the V2 architecture with gateway auto-confirmatio
 
 ### Core Components
 
-**1. Transaction Hook (`useSimpleTransaction`)**
+**1. Transaction Hook (`useTransaction`)**
 - Simplified hook for transaction lifecycle: build → sign → submit → register
 - Validates params using Zod schemas from `~/config/transaction-schemas.ts`
 - Registers TXs with gateway for auto-confirmation (when `requiresDBUpdate: true`)
@@ -57,7 +57,7 @@ All transaction components use the V2 architecture with gateway auto-confirmatio
 ```
 1. User clicks TransactionButton
    ↓
-2. useSimpleTransaction validates params with Zod schema
+2. useTransaction validates params with Zod schema
    ↓
 3. Fetch unsigned CBOR from gateway endpoint
    ↓
@@ -111,7 +111,7 @@ When `partialSign: true`:
 
 ## Implemented Transactions (V2)
 
-All 16 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useSimpleTransaction` + `useTxWatcher` which:
+All 16 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useTransaction` + `useTxWatcher` which:
 - Validates params using Zod schemas from `~/config/transaction-schemas.ts`
 - Registers TXs with gateway for automatic DB updates
 - Provides consistent state management and error handling
@@ -157,7 +157,7 @@ All 16 V2 transactions are implemented using the gateway auto-confirmation patte
 **Flow**:
 1. User enters desired alias on dashboard
 2. Click "Mint Access Token" button
-3. `useSimpleTransaction` validates params and fetches unsigned CBOR from gateway
+3. `useTransaction` validates params and fetches unsigned CBOR from gateway
 4. User signs with wallet
 5. Transaction submitted to blockchain
 6. No gateway registration (pure on-chain TX with `requiresDBUpdate: false`)
@@ -165,7 +165,7 @@ All 16 V2 transactions are implemented using the gateway auto-confirmation patte
 8. Auth context refreshed
 
 **Components**:
-- `src/hooks/use-simple-transaction.ts` - Simplified transaction hook
+- `src/hooks/tx/use-transaction.ts` - Simplified transaction hook
 - `src/components/transactions/transaction-button.tsx` - Reusable tx button
 - `src/components/transactions/transaction-status.tsx` - Status display
 - `src/components/transactions/mint-access-token.tsx` - Mint token UI
@@ -197,7 +197,7 @@ All 16 V2 transactions are implemented using the gateway auto-confirmation patte
 1. User visits course page and selects a module
 2. User provides initial evidence for the module
 3. Click "Enroll & Submit" button
-4. `useSimpleTransaction` validates params and builds transaction
+4. `useTransaction` validates params and builds transaction
 5. User signs with wallet, TX submitted to blockchain
 6. TX registered with gateway for auto-confirmation
 7. `useTxWatcher` polls until status is "updated"
@@ -289,8 +289,8 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 **Key Files**:
 ```typescript
 // Transaction hooks (V2)
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
-import { useTxWatcher } from "~/hooks/use-tx-watcher";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 
 // Configuration
 import { TRANSACTION_UI, TRANSACTION_ENDPOINTS } from "~/config/transaction-ui";

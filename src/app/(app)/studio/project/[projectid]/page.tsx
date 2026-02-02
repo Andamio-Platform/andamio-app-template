@@ -197,8 +197,7 @@ export default function ProjectDashboardPage() {
           <AlertIcon className="h-4 w-4" />
           <AndamioAlertTitle>Owner View</AndamioAlertTitle>
           <AndamioAlertDescription>
-            As the project owner, you can view project details and manage team settings.
-            To manage tasks and assess contributor work, you need to be added as a Manager.
+            As owner, you can add and remove managers. As manager, you can create tasks and review commitments.
           </AndamioAlertDescription>
         </AndamioAlert>
       )}
@@ -326,36 +325,66 @@ export default function ProjectDashboardPage() {
 
         {/* Tasks Tab */}
         <AndamioTabsContent value="tasks" className="mt-6 space-y-4">
+          {/* Draft Tasks Card */}
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
                 <TaskIcon className="h-5 w-5" />
-                Task Management
+                Draft Tasks
               </AndamioCardTitle>
-              <AndamioCardDescription>Create and manage project tasks</AndamioCardDescription>
+              <AndamioCardDescription>Create tasks and publish them on-chain</AndamioCardDescription>
             </AndamioCardHeader>
-            <AndamioCardContent className="space-y-3">
-              <Link href={`/studio/project/${projectId}/draft-tasks`}>
-                <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <TaskIcon className="h-5 w-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-medium">Draft Tasks</div>
-                    <div className="text-sm text-muted-foreground">
-                      {draftTasks} draft, {liveTasks} live
-                    </div>
+            <AndamioCardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold">{draftTasks}</div>
+                  <div className="text-sm text-muted-foreground">Draft Tasks</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{liveTasks}</div>
+                  <div className="text-sm text-muted-foreground">Live Tasks</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold flex items-center justify-center gap-1">
+                    <OnChainIcon className="h-5 w-5" />
+                    {onChainTaskCount}
                   </div>
-                </AndamioButton>
-              </Link>
+                  <div className="text-sm text-muted-foreground">On-Chain Tasks</div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href={`/studio/project/${projectId}/draft-tasks`}>
+                  <AndamioButton className="w-full sm:w-auto">
+                    <TaskIcon className="h-4 w-4 mr-2" />
+                    {draftTasks === 0 && liveTasks === 0 ? "Create Your First Task" : "Manage Draft Tasks"}
+                  </AndamioButton>
+                </Link>
+                {draftTasks > 0 && (
+                  <Link href={`/studio/project/${projectId}/manage-treasury`}>
+                    <AndamioButton variant="outline" className="w-full sm:w-auto">
+                      <OnChainIcon className="h-4 w-4 mr-2" />
+                      Publish to Chain
+                    </AndamioButton>
+                  </Link>
+                )}
+              </div>
+            </AndamioCardContent>
+          </AndamioCard>
 
+          {/* Task Commitments Card */}
+          <AndamioCard>
+            <AndamioCardHeader>
+              <AndamioCardTitle className="flex items-center gap-2">
+                <AssignmentIcon className="h-5 w-5" />
+                Task Commitments
+              </AndamioCardTitle>
+              <AndamioCardDescription>Review and assess contributor submissions</AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent>
               <Link href={`/studio/project/${projectId}/commitments`}>
-                <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <AssignmentIcon className="h-5 w-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-medium">Task Commitments</div>
-                    <div className="text-sm text-muted-foreground">
-                      View and assess contributor submissions
-                    </div>
-                  </div>
+                <AndamioButton className="w-full sm:w-auto">
+                  <AssignmentIcon className="h-4 w-4 mr-2" />
+                  Review Commitments
                 </AndamioButton>
               </Link>
             </AndamioCardContent>
@@ -393,6 +422,7 @@ export default function ProjectDashboardPage() {
           {/* Managers Management (On-Chain Transaction) */}
           <ManagersManage
             projectNftPolicyId={projectId}
+            currentManagers={projectDetail.managers ?? []}
             onSuccess={() => {
               // Refresh project data
               void refreshData();

@@ -167,7 +167,7 @@ Current work (Phase 3.10):
 ### Step 1: Understand TX Architecture
 - Read `src/config/transaction-schemas.ts`
 - Read `src/config/transaction-ui.ts`
-- Review `src/hooks/use-tx-watcher.ts`
+- Review `src/hooks/tx/use-tx-watcher.ts`
 
 ### Step 2: Learn TX State Machine
 ```

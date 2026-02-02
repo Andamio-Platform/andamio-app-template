@@ -631,7 +631,6 @@ The app uses a unified gateway client:
 |--------|------|---------|
 | `gateway.ts` | `src/lib/gateway.ts` | **Primary** - All gateway API calls |
 | `andamio-auth.ts` | `src/lib/andamio-auth.ts` | Authentication (hybrid gateway/legacy) |
-| `andamioscan-events.ts` | `src/lib/andamioscan-events.ts` | On-chain data (events API, raw project/course data) |
 
 ### Gateway Client (Recommended)
 Use the gateway client for all API calls:
@@ -796,7 +795,6 @@ const data = (await response.json()) as YourOutputType;
 **API Clients**:
 - `src/lib/gateway.ts` - **Primary** - Unified gateway client
 - `src/lib/andamio-gateway.ts` - Merged endpoints helper functions
-- `src/lib/andamioscan-events.ts` - Events API + raw on-chain data (projects, courses, user state)
 - `src/lib/type-helpers.ts` - NullableString handling utilities (`getString`, `getOptionalString`)
 - `src/lib/tx-polling-fallback.ts` - Polling fallback for SSE transaction streaming
 - `src/app/api/gateway/[...path]/route.ts` - Unified gateway proxy (single route for all API calls)
@@ -810,7 +808,8 @@ const data = (await response.json()) as YourOutputType;
 - `src/hooks/api/course/use-course.ts` - Course queries + mutations
 - `src/hooks/api/course/use-course-module.ts` - Module queries + mutations
 - `src/hooks/api/course/use-course-teacher.ts` - Teacher course + assignment queries
-- `src/hooks/api/course/use-assignment-commitment.ts` - Assignment commitment queries
+- `src/hooks/api/course/use-student-assignment-commitments.ts` - Student commitments list + per-module status derivation
+- `src/hooks/api/course/use-assignment-commitment.ts` - Single assignment commitment detail
 - `src/hooks/api/project/use-project.ts` - Project queries + task queries
 - `src/hooks/api/project/use-project-contributor.ts` - Contributor project queries + mutations
 - `src/hooks/api/project/use-project-manager.ts` - Manager project queries + mutations
@@ -820,7 +819,6 @@ const data = (await response.json()) as YourOutputType;
 - `src/hooks/tx/use-transaction.ts` - Full BUILD → SIGN → SUBMIT → REGISTER flow
 - `src/hooks/tx/use-tx-watcher.ts` - Polling-based TX state tracking (original)
 - `src/hooks/tx/use-tx-stream.ts` - SSE-based TX state tracking (real-time, with polling fallback)
-- `src/hooks/tx/use-event-confirmation.ts` - On-chain event confirmation via Andamioscan
 
 **Providers**:
 - `src/components/providers/auth-provider.tsx` - Auth context wrapper
@@ -953,6 +951,7 @@ This project uses Claude Skills for AI-assisted development workflows:
 
 | Skill | Purpose |
 |-------|---------|
+| `bootstrap-skill` | Meta-skill: scaffold and register new Claude skills with consistent structure |
 | `getting-started` | Interactively onboard new developers to all available skills and learning paths |
 | `review-pr` | Comprehensive PR review with automatic skill delegation |
 | `design-system` | Unified design system skill with 3 modes: `review` (route audit), `diagnose` (CSS conflicts), `reference` (patterns) |

@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Student Assignment Checklist** (February 1, 2026): Per-module assignment checklist in the enrolled course status card (`UserCourseStatus`)
+  - Shows each module with commitment status badge (accepted, pending review, needs revision, not started)
+  - Uses existing `useStudentAssignmentCommitments` data — no new API calls
+- **Project Workflows** (February 1, 2026): PR #111 — Studio and project creation improvements
+  - Studio project page redesigned: separated "Projects I Own" and "Projects I Manage" lists
+  - Step-based checklist for streamlined project creation
+  - Enhanced course prerequisites selector with expandable cards and per-module controls
+  - Version endpoint (`/api/version`) exposing app version and build metadata
+  - Automated version synchronization with `scripts/stamp-version.sh`
 - **SSE Transaction Streaming** (January 30, 2026): Real-time transaction state updates via Server-Sent Events
   - New hook: `useTxStream()` — drop-in replacement for `useTxWatcher` using SSE instead of polling
   - New hook: `useTransactionStream()` — low-level SSE connection management with AbortController
@@ -36,6 +45,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 17 files updated to use new app-level types
 
 ### Fixed
+- **Commitment Status Enum Normalization** (February 1, 2026): Fixed STATUS_MAP mismatches across all hooks (#115, #116)
+  - Student hooks: Added ACCEPTED/REFUSED mappings (DB sends these, not APPROVED/REJECTED)
+  - Teacher hook: Added TEACHER_STATUS_MAP with ACCEPTED/REFUSED → ACCEPTED/DENIED display values
+  - Project contributor hook: Added `normalizeProjectCommitmentStatus()` with uppercase normalization and legacy aliases
+  - Cross-course contamination: Added courseId filter to `commitmentsByModule` grouping on course detail page and UserCourseStatus
+  - Cleaned up dead `"SUBMITTED"` fallback in `assignment-commitment.tsx`
+- **TX Polling Intervals** (February 1, 2026): Reduced default polling from 15s to 5s to match gateway confirmation speed (#112)
+  - New `POLLING_INTERVALS` constants in `src/config/ui-constants.ts`
+- **Managers Manage tx_type Mapping** (February 1, 2026): Fixed `PROJECT_OWNER_MANAGERS_MANAGE` mapped to `managers_manage` instead of `project_join` (#113)
+  - SSE streams were freezing after manager update transactions due to incorrect tx_type
+- **Single Teacher/Manager on Create** (February 1, 2026): Aligned course/project create forms with gateway PR #46
+  - Removed multi-alias input from create forms to prevent TX_TOO_BIG errors
+  - Added `TeachersUpdate` component to course owner detail page for post-create management
+  - Project owner view now passes `currentManagers` to `ManagersManage` for proper display
+- **Owner Alias in Managers List** (February 1, 2026): Owner alias always included when sending managers list to gateway
 - **Gateway Taxonomy Compliance** (January 21, 2026): Fixed 41 files to handle API field name changes and NullableString typing
   - **Field renames**: `status` → `module_status`/`task_status`/`commitment_status`, `module_code` → `course_module_code`, `module_index` → `index`, `module_hash` → `slt_hash`, `lovelace` → `lovelace_amount`
   - **NullableString handling**: API generates nullable strings as `object` type requiring special handling
@@ -44,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Build now passes with no type errors
 
 ### Changed
+- **Deposit Field Removed from Project Creation** (February 1, 2026): Removed `deposit_value` from project create form (#109), aligned with gateway
 - **Hash Utilities Migration** (January 19, 2026): Migrated hash utilities from `@andamio/transactions` to local `src/lib/utils/`
   - `computeSltHashDefinite` → `~/lib/utils/slt-hash.ts`
   - `computeAssignmentInfoHash` → `~/lib/utils/assignment-info-hash.ts`

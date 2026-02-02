@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import {
   AndamioSectionHeader,
@@ -8,13 +8,15 @@ import {
   AndamioNotFoundCard,
   AndamioEmptyState,
 } from "~/components/andamio";
-import { CourseIcon, OnChainIcon, SLTIcon } from "~/components/icons";
+import { CourseIcon, SLTIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { CourseModuleCard } from "~/components/courses/course-module-card";
 import { useCourse, useCourseModules, useTeacherCourseModules } from "~/hooks/api";
+import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
 import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 
 /**
@@ -55,6 +57,26 @@ export default function CourseDetailPage() {
     isLoading: teacherModulesLoading,
     error: teacherModulesError,
   } = useTeacherCourseModules(courseNftPolicyId);
+
+  // Fetch student commitments for per-module status badges
+  const { isAuthenticated } = useAndamioAuth();
+  const { data: studentCommitments } = useStudentAssignmentCommitments(
+    isAuthenticated ? courseNftPolicyId : undefined,
+  );
+
+  // Group commitments by module code for quick lookup
+  // Filter by courseId to prevent cross-course contamination (see #116)
+  const commitmentsByModule = useMemo(() => {
+    if (!studentCommitments) return new Map<string, typeof studentCommitments>();
+    const map = new Map<string, typeof studentCommitments>();
+    for (const c of studentCommitments) {
+      if (c.courseId !== courseNftPolicyId) continue;
+      const existing = map.get(c.moduleCode) ?? [];
+      existing.push(c);
+      map.set(c.moduleCode, existing);
+    }
+    return map;
+  }, [studentCommitments, courseNftPolicyId]);
 
   const resolvedModules = isTeacherPreview
     ? (teacherModules?.length ? teacherModules : modules ?? [])
@@ -118,11 +140,6 @@ export default function CourseDetailPage() {
     return sum + (dbCount > 0 ? dbCount : chainCount);
   }, 0);
 
-  // Count modules with on-chain verification
-  const verifiedModuleCount = moduleList.filter(
-    (m) => (m.onChainSlts?.length ?? 0) > 0
-  ).length;
-
   // Course and modules display
   return (
     <div className="space-y-8">
@@ -154,16 +171,16 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* Course Team */}
-      <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
+      {/* Your Learning Journey - enrollment status + progress */}
+      <div className="space-y-3">
+        <AndamioSectionHeader title="Your Learning Journey" />
+        <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />
+      </div>
 
-      {/* User Course Status */}
-      <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />
-
-      {/* Course Learning Journey - SLTs as the Story */}
+      {/* Course Outline - Module cards with SLTs */}
       <div className="space-y-6">
         <div>
-          <AndamioSectionHeader title="Your Learning Journey" />
+          <AndamioSectionHeader title="Course Outline" />
           <AndamioText variant="muted" className="mt-2">
             This course is structured around specific learning targets. Complete each module to master these skills.
           </AndamioText>
@@ -189,6 +206,10 @@ export default function CourseDetailPage() {
             const hasOnChain = (courseModule.onChainSlts ?? []).length > 0;
             const onChainSltsSet = new Set(courseModule.onChainSlts ?? []);
 
+            // Derive per-module commitment status
+            const moduleCommitments = commitmentsByModule.get(courseModule.moduleCode ?? "") ?? [];
+            const moduleCommitmentStatus = getModuleCommitmentStatus(moduleCommitments);
+
             return (
               <CourseModuleCard
                 key={courseModule.moduleCode ?? courseModule.sltHash}
@@ -200,24 +221,16 @@ export default function CourseDetailPage() {
                 onChainSlts={onChainSltsSet}
                 isOnChain={hasOnChain}
                 courseNftPolicyId={courseNftPolicyId}
+                commitmentStatus={moduleCommitmentStatus}
               />
             );
           })}
         </div>
       </div>
 
-      {/* On-Chain Verified SLTs - Additional Detail Section */}
-      {verifiedModuleCount > 0 && (
-        <div className="space-y-4 border-t pt-8">
-          <div className="flex items-center gap-2">
-            <OnChainIcon className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Blockchain Verification</h2>
-          </div>
-          <AndamioText variant="small">
-            This course has {verifiedModuleCount} {verifiedModuleCount === 1 ? "module" : "modules"} with learning targets verified on the Cardano blockchain.
-          </AndamioText>
-        </div>
-      )}
+      {/* Course Team */}
+      <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
+
     </div>
   );
 }

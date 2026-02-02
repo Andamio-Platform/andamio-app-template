@@ -24,7 +24,6 @@ import {
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { TransactionStatus } from "~/components/tx/transaction-status";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AliasListInput } from "~/components/tx/alias-list-input";
 import {
   AddIcon,
   SparkleIcon,
@@ -63,7 +62,6 @@ export function CreateCourseDialog() {
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [additionalTeachers, setAdditionalTeachers] = useState<string[]>([]);
   const [initiatorData, setInitiatorData] = useState<{
     used_addresses: string[];
     change_address: string;
@@ -167,7 +165,6 @@ export function CreateCourseDialog() {
 
           // Reset form state
           setTitle("");
-          setAdditionalTeachers([]);
           setCourseMetadata(null);
           hasRegisteredRef.current = false;
           reset();
@@ -215,14 +212,13 @@ export function CreateCourseDialog() {
     // Reset registration flag for new attempt
     hasRegisteredRef.current = false;
 
-    // Always include the creator as a teacher
-    const allTeachers = [user.accessTokenAlias, ...additionalTeachers.filter((t) => t !== user.accessTokenAlias)];
-
+    // Gateway enforces single teacher (owner) at creation time.
+    // Use /v2/tx/course/owner/teachers/manage to add more teachers after creation.
     await execute({
       txType: "INSTANCE_COURSE_CREATE",
       params: {
         alias: user.accessTokenAlias,
-        teachers: allTeachers,
+        teachers: [user.accessTokenAlias],
         initiator_data: initiatorData,
       },
       metadata: {
@@ -257,7 +253,6 @@ export function CreateCourseDialog() {
     setOpen(newOpen);
     if (!newOpen) {
       setTitle("");
-      setAdditionalTeachers([]);
       setCourseMetadata(null);
       hasRegisteredRef.current = false;
       reset();
@@ -282,8 +277,8 @@ export function CreateCourseDialog() {
         </AndamioButton>
       </AndamioDrawerTrigger>
       <AndamioDrawerContent>
-        <div className="mx-auto w-full max-w-lg">
-          <AndamioDrawerHeader className="text-left">
+        <div className="mx-auto flex w-full max-w-lg flex-col overflow-hidden">
+          <AndamioDrawerHeader className="shrink-0 text-left">
             <div className="mb-2 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                 <SparkleIcon className="h-5 w-5 text-primary" />
@@ -300,7 +295,7 @@ export function CreateCourseDialog() {
             </AndamioDrawerDescription>
           </AndamioDrawerHeader>
 
-          <div className="space-y-6 px-4">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4">
             {/* Requirements Alert */}
             {!hasAccessToken && (
               <AndamioAlert variant="destructive">
@@ -339,19 +334,6 @@ export function CreateCourseDialog() {
                   The display name shown to learners. You can change this later.
                 </AndamioText>
               </div>
-            )}
-
-            {/* Additional Teachers Input */}
-            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
-              <AliasListInput
-                value={additionalTeachers}
-                onChange={setAdditionalTeachers}
-                label="Additional Teachers (Optional)"
-                placeholder="Enter teacher alias"
-                disabled={state !== "idle" && state !== "error"}
-                excludeAliases={user?.accessTokenAlias ? [user.accessTokenAlias] : []}
-                helperText="Each alias is verified on-chain before being added. You are automatically included."
-              />
             )}
 
             {/* Transaction Status */}
@@ -421,7 +403,7 @@ export function CreateCourseDialog() {
             )}
           </div>
 
-          <AndamioDrawerFooter className="flex-row gap-3 pt-6">
+          <AndamioDrawerFooter className="shrink-0 flex-row gap-3 pt-6">
             {!isWaitingForConfirmation && (
               <>
                 <AndamioDrawerClose asChild>

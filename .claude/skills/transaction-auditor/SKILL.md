@@ -9,6 +9,16 @@ description: Sync transaction schemas with the Andamio Gateway API spec when bre
 
 > **Last Updated**: 2026-01-28
 
+## Entry Point
+
+When `/transaction-auditor` is invoked, present a multiple-choice menu using `AskUserQuestion`:
+
+| Option | Description |
+|--------|-------------|
+| **Run TX UX Audit** | Interactive interview to verify each transaction's submit, confirmation, off-chain sync, and UX refresh. See `tx-ux-audit-20260202.md`. |
+| **Sync Schemas from Gateway** | Fetch the latest API spec and update local Zod schemas, TX_TYPE_MAP, and generated types. See "Audit Workflow" below. |
+| **Check Terminal States** | Quick check that `TERMINAL_STATES` and `onComplete` callbacks don't treat `confirmed` as terminal. |
+
 ## When to Use
 
 - After Andamio Gateway API releases with breaking changes

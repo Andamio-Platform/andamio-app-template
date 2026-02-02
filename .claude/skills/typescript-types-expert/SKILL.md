@@ -331,8 +331,7 @@ src/config/
 └── transaction-ui.ts        # TX types, endpoints, strings
 
 src/lib/
-├── type-helpers.ts    # getString, getOptionalString (deprecated - use app types)
-└── andamioscan-events.ts    # On-chain event types
+└── type-helpers.ts    # getString, getOptionalString (deprecated - use app types)
 ```
 
 **Type transformation docs**: `.claude/dev-notes/TYPE-TRANSFORMATION.md`

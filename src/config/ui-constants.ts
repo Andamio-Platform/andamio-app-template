@@ -33,8 +33,8 @@ export const UI_TIMEOUTS = {
  * Blockchain polling intervals by entity type (in milliseconds)
  */
 export const POLLING_INTERVALS = {
-  /** Default polling interval for most transactions */
-  DEFAULT: 30000, // 30 seconds
+  /** Default polling interval for most transactions (gateway confirms in ~5s) */
+  DEFAULT: 5000, // 5 seconds
   /** Fast polling for access token minting (user waiting on onboarding) */
   ACCESS_TOKEN: 5000, // 5 seconds
 } as const;

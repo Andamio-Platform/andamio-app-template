@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AndamioPageHeader,
   AndamioPageLoading,
@@ -8,7 +8,8 @@ import {
   AndamioEmptyState,
 } from "~/components/andamio";
 import { CourseIcon, SuccessIcon, PendingIcon, InfoIcon } from "~/components/icons";
-import { useActiveCourses } from "~/hooks/api";
+import { useActiveCourses, useStudentCourses } from "~/hooks/api";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { CourseCard } from "~/components/courses/course-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 
@@ -25,11 +26,26 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
  * - Automatic caching via React Query
  */
 export default function CoursePage() {
+  const { isAuthenticated } = useAndamioAuth();
   const {
     data: courses = [],
     isLoading,
     error: coursesError,
   } = useActiveCourses();
+
+  const { data: studentCourses } = useStudentCourses();
+
+  // Build a map of courseId → enrollmentStatus for authenticated users
+  const enrollmentMap = useMemo(() => {
+    if (!isAuthenticated || !studentCourses) return new Map<string, "enrolled" | "completed">();
+    const map = new Map<string, "enrolled" | "completed">();
+    for (const sc of studentCourses) {
+      if (sc.courseId && sc.enrollmentStatus) {
+        map.set(sc.courseId, sc.enrollmentStatus);
+      }
+    }
+    return map;
+  }, [isAuthenticated, studentCourses]);
 
   const error = coursesError?.message ?? null;
 
@@ -108,7 +124,11 @@ export default function CoursePage() {
       {/* Course cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <CourseCard key={course.courseId} course={course} />
+          <CourseCard
+            key={course.courseId}
+            course={course}
+            enrollmentStatus={enrollmentMap.get(course.courseId)}
+          />
         ))}
       </div>
     </div>

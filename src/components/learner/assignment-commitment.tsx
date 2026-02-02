@@ -250,6 +250,59 @@ export function AssignmentCommitment({
           </AndamioAlert>
         )}
 
+        {/* Top-level Gateway Confirmation Progress — persists across view transitions */}
+        {((commitTx.state === "success" && commitTx.result?.requiresDBUpdate && !commitTxConfirmed) ||
+          (updateTx.state === "success" && updateTx.result?.requiresDBUpdate && !updateTxConfirmed)) && (
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
+              <div className="flex-1">
+                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  {(commitTxStatus?.state === "pending" || updateTxStatus?.state === "pending") && "Waiting for block confirmation"}
+                  {(commitTxStatus?.state === "confirmed" || updateTxStatus?.state === "confirmed") && "Processing database updates"}
+                  {!commitTxStatus && !updateTxStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+            {/* Show TX hash */}
+            {(commitTx.result?.txHash ?? updateTx.result?.txHash) && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <code className="font-mono bg-muted px-2 py-1 rounded">
+                  {((commitTx.result?.txHash ?? updateTx.result?.txHash) ?? "").slice(0, 16)}...{((commitTx.result?.txHash ?? updateTx.result?.txHash) ?? "").slice(-8)}
+                </code>
+                {(commitTx.result?.blockchainExplorerUrl ?? updateTx.result?.blockchainExplorerUrl) && (
+                  <a
+                    href={commitTx.result?.blockchainExplorerUrl ?? updateTx.result?.blockchainExplorerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    View <ExternalLinkIcon className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Top-level Gateway Success — persists across view transitions */}
+        {(commitTxConfirmed || updateTxConfirmed) && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-primary" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-primary">
+                  {commitTxConfirmed ? "Assignment submitted successfully!" : "Evidence updated successfully!"}
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  Your assignment is now pending teacher review.
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Check if already completed on-chain */}
         {hasCompletedOnChain ? (
           <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-primary/10 border-primary/20">
@@ -621,20 +674,57 @@ export function AssignmentCommitment({
         ) : (
           // Commitment exists - show read-only evidence and status
           <div className="space-y-4">
-            {/* Status Banner */}
-            {commitment?.networkStatus === "PENDING_APPROVAL" && (
-              <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
-                <div className="flex items-center gap-3">
-                  <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
-                  <div>
-                    <AndamioText className="font-medium">Pending Teacher Review</AndamioText>
-                    <AndamioText variant="small" className="text-xs">
-                      Your assignment has been submitted and is awaiting review by your teacher.
-                    </AndamioText>
+            {/* Status Banner — handles normalized + fallback status values */}
+            {(() => {
+              const status = commitment?.networkStatus;
+              if (status === "PENDING_APPROVAL") {
+                return (
+                  <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
+                      <div>
+                        <AndamioText className="font-medium">Pending Teacher Review</AndamioText>
+                        <AndamioText variant="small" className="text-xs">
+                          Your assignment has been submitted and is awaiting review by your teacher.
+                        </AndamioText>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                );
+              }
+              if (status === "PENDING_TX_COMMITMENT_MADE") {
+                return (
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <LoadingIcon className="h-5 w-5 animate-spin text-secondary shrink-0" />
+                      <div>
+                        <AndamioText className="font-medium">Submitting to blockchain...</AndamioText>
+                        <AndamioText variant="small" className="text-xs">
+                          Your commitment transaction is being processed.
+                        </AndamioText>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              // Default fallback for any unrecognized status (skip for statuses handled by parent branches)
+              if (status && status !== "ASSIGNMENT_ACCEPTED" && status !== "ASSIGNMENT_REFUSED") {
+                return (
+                  <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
+                      <div>
+                        <AndamioText className="font-medium">Assignment Submitted</AndamioText>
+                        <AndamioText variant="small" className="text-xs">
+                          Your assignment has been recorded. Current status: {status}
+                        </AndamioText>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Submitted Evidence (Read-Only Display) */}
             <div className="space-y-2">

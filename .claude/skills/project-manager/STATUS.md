@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: January 31, 2026
+> **Last Updated**: February 1, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -18,35 +18,42 @@ Current implementation status of the Andamio T3 App Template.
 | Landing Page | **Complete** | Explore / Login / Register cards |
 | TX Stream (SSE) | **Complete** | Real-time TX tracking with polling fallback |
 | Andamioscan Removal | **✅ Complete** | `andamioscan-events.ts` deleted, 0 imports remain |
+| Project Workflows | **In Progress** | Owner/manager UX on `feat/project-tx-state-machines` |
 | **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
-> **Branch: `fix/course-txs`** — Andamioscan removal complete, ready for merge or continued work.
+> **Branch: `feat/project-tx-state-machines`** — Enum normalization sweep + student assignment checklist.
 >
 > **What shipped this session**:
-> - **Removed ALL direct Andamioscan calls** — `andamioscan-events.ts` deleted, zero imports remain
-> - 9 files refactored to use gateway hooks (`useProject`, `useCourse`) instead of direct Andamioscan fetches
-> - `project-eligibility.ts` rewritten as pure function (accepts data params, no API calls)
-> - `use-event-confirmation.ts` deleted — TX State Machine handles all confirmation
-> - Alias validation now uses `GET /api/v2/user/exists/{alias}` (issue #106)
-> - Contributor status derived from `useProject()` data (no separate Andamioscan call)
-> - All Andamioscan type re-exports removed from `types/generated/index.ts`
-> - Typecheck: 0 errors | Lint: 0 errors from changed files
+>
+> **Bug fixes** (4 commits):
+> - `84d74f8` — fix: correct STATUS_MAP enum values (ACCEPTED/REFUSED) and filter commitments by courseId (closes #115, #116)
+> - `ee4afee` — fix: normalize commitment status enums across teacher and project hooks
+>   - Teacher hook: `mapToDisplayStatus` now maps ACCEPTED/REFUSED (was only APPROVED/REJECTED)
+>   - Project contributor hook: added `normalizeProjectCommitmentStatus()` with uppercase normalization and legacy aliases
+>   - Assignment commitment: removed dead `"SUBMITTED"` fallback check
+>
+> **Feature**:
+> - `5cce140` — feat: add per-module assignment checklist to enrolled course status card (UserCourseStatus)
+>
+> **Docs**:
+> - `e2844fe` — docs: update TX UX audit status for assignment assess and commit
 >
 > ---
 >
-> **Future Work (from this session)**:
+> **Enum audit findings** (all fixed this session):
 >
-> | Item | Priority | Notes |
-> |------|----------|-------|
-> | Wire up student completions on project catalog page | 🟡 Medium | `/project` page passes `[]` for student completions — shows 0/N for projects with prerequisites. Individual project pages do full checks. Needs a `useStudentCourses()` hook or per-project detail fetch. |
-> | Wire up student completions on contributor page | 🟡 Medium | `contributor/page.tsx` also passes `[]` to `checkProjectEligibility()`. Same solution needed. |
-> | Update CLAUDE.md API Clients table | 🟢 Low | Remove `andamioscan-events.ts` reference — file is deleted |
-> | Update CLAUDE.md Key Files section | 🟢 Low | Remove `use-event-confirmation.ts` reference — file is deleted |
-> | Project hooks Phase 3.9 colocated types | 🟡 Medium | `use-project.ts` types are in good shape but `use-project-manager.ts` and `use-project-contributor.ts` still need migration |
+> | Issue | Location | Problem | Fix |
+> |-------|----------|---------|-----|
+> | #115 (closed) | Student STATUS_MAP (2 files) | ACCEPTED/REFUSED not mapped | Added mappings + legacy aliases |
+> | #116 (closed) | Course page + UserCourseStatus | Cross-course commitment contamination | Added courseId filter |
+> | Issue B | Teacher `mapToDisplayStatus` | Same as #115 but teacher-side | Added TEACHER_STATUS_MAP |
+> | Issue C | Student vs teacher vocabulary | Different display strings (ASSIGNMENT_ACCEPTED vs ACCEPTED) | Documented — intentional per-role vocabulary |
+> | Issue D | Project contributor hook | Raw status passthrough, casing mismatch | Added `normalizeProjectCommitmentStatus()` |
+> | Issue F | `assignment-commitment.tsx` | Dead `"SUBMITTED"` fallback | Removed |
 >
 > ---
 >
@@ -54,26 +61,24 @@ Current implementation status of the Andamio T3 App Template.
 >
 > | Issue | Priority | Notes |
 > |-------|----------|-------|
-> | #103 - Project hooks upgrade | 🟡 Medium | Corrected analysis posted. Needs `useLeaveProject` hook (pending API endpoint confirmation). Phase 3.9 colocated types still pending. |
+> | #114 - Managers list stale after TX | 🔴 High | **Blocked by** Andamioscan#24 — revisit Monday Feb 2 |
+> | #103 - Project hooks upgrade | 🟡 Medium | Colocated types still pending for project hooks |
 > | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync failures |
+> | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed in PR #111 |
 > | #32 - Extra signature after mint | 🟡 Medium | Auth flow improvement |
 > | #47 - Auto-logout on wallet change | 🟢 Low | UX improvement |
 > | #34 - Teacher assessment UX | 🟢 Low | Accept/Refuse button UX |
-> | #29 - TX Input invalid error | 🔴 High | Blocks course enrollment |
 >
 > ---
 >
-> **🔴 BUG: `/course/user/modules/` endpoint returns empty for on-chain-only courses**
+> **Known API bugs**:
 >
-> **Status**: API team notified — awaiting fix.
->
-> The dedicated modules endpoint doesn't include on-chain-only modules.
-> The course detail endpoint merges them correctly.
-> May implement frontend fallback if API team doesn't fix.
+> - `/course/user/modules/` returns empty for on-chain-only courses — API team notified, awaiting fix
+> - `COURSE_STUDENT_ASSIGNMENT_COMMIT` TX build returns 500 from Atlas TX API — backend issue, frontend payload verified correct
 >
 > ---
 >
-> **Next Work**: Merge branch → Update CLAUDE.md references → Continue with #103 (project hooks colocated types) or UX testing
+> **Next Work**: Continue `/transaction-auditor` TX UX audit (priority #1) → #103 project hooks colocated types → Merge branch after DB updates land → #114 managers list (Monday Feb 2)
 
 ---
 
@@ -131,6 +136,26 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 1, 2026** (Enum Normalization Sweep + Student Assignment Checklist):
+- ✅ **STATUS_MAP fix** (closes #115) — Student hooks mapped APPROVED/REJECTED but DB sends ACCEPTED/REFUSED. Fixed in both `use-student-assignment-commitments.ts` and `use-assignment-commitment.ts`.
+- ✅ **Cross-course contamination fix** (closes #116) — Gateway ignores course_id filter, returns all commitments. Added courseId filtering to `commitmentsByModule` grouping in course detail page and UserCourseStatus.
+- ✅ **Teacher mapToDisplayStatus fix** — Same enum mismatch on teacher side. Added TEACHER_STATUS_MAP with ACCEPTED/REFUSED mappings.
+- ✅ **Project contributor normalization** — Added `normalizeProjectCommitmentStatus()` to handle casing inconsistency (OpenAPI says lowercase, components expect uppercase) plus legacy aliases.
+- ✅ **Dead code cleanup** — Removed `|| status === "SUBMITTED"` fallback in assignment-commitment.tsx (was workaround for #115).
+- ✅ **Assignment checklist** — New per-module checklist in UserCourseStatus enrolled card showing each module with its commitment status badge.
+- ✅ **TX UX audit updated** — #6 COURSE_TEACHER_ASSIGNMENTS_ASSESS all pass, #7 COURSE_STUDENT_ASSIGNMENT_COMMIT fails at Atlas TX API (backend issue).
+
+**February 1, 2026** (Project Workflows — PR #111 merged + `feat/project-tx-state-machines`):
+- ✅ **PR #111 merged**: Studio redesign (own vs manage project lists), step-based project creation, prereqs selector overhaul, deposit field removed
+- ✅ **TX polling reduced to 5s** — Gateway confirms in ~5s now (closes #112)
+- ✅ **Single teacher/manager on create** — Aligned with gateway PR #46 to prevent TX_TOO_BIG errors
+- ✅ **TeachersUpdate component** added to course owner detail page for post-create teacher management
+- ✅ **ManagersManage** now receives `currentManagers` for proper alias display in project owner view
+- ✅ **Owner alias always included** in project managers list (was being excluded when additional managers added)
+- ✅ **tx_type mapping fixed** — `PROJECT_OWNER_MANAGERS_MANAGE` → `managers_manage` (was incorrectly `project_join`, causing SSE freeze)
+- ✅ **Issue #114 filed** — Tracking managers list stale data, blocked by Andamioscan#24
+- **Blocker**: Managers list doesn't update after TX because Andamioscan doesn't return `managers` in project details (unlike courses which include `teachers`)
 
 **January 31, 2026** (Andamioscan Removal — `fix/course-txs`):
 - ✅ **Removed ALL direct Andamioscan calls** — `src/lib/andamioscan-events.ts` deleted entirely
@@ -207,16 +232,19 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
-| **Modules endpoint empty for on-chain courses** | 🔴 High | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. May implement frontend fallback. |
-| **TX Input invalid error** (#29) | 🔴 High | Open | Blocks course enrollment |
-| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Corrected analysis posted. Need `useLeaveProject` hook + Phase 3.9 colocated types. |
-| **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook or per-project detail fetch. |
+| **Managers list stale after TX** (#114) | 🔴 High | Blocked | Andamioscan#24 — revisit Monday Feb 2 |
+| **Atlas TX API 500 on assignment commit** | 🔴 High | Backend | `COURSE_STUDENT_ASSIGNMENT_COMMIT` TX build fails at Atlas. Frontend payload verified correct. Waiting for DB updates. |
+| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. May implement frontend fallback. |
+| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Colocated types still pending for `use-project-manager.ts` and `use-project-contributor.ts`. |
+| **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook. |
 | **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
 | **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
 | **Update CLAUDE.md references** | 🟢 Low | Pending | Remove deleted `andamioscan-events.ts` and `use-event-confirmation.ts` from Key Files and API Clients tables |
-| **Andamioscan removal** | ✅ Done | Complete | `andamioscan-events.ts` deleted, 0 imports remain. All pages use gateway hooks. |
-| **Module wizard removed endpoint** (#68) | ✅ Done | Fixed | Replaced with list+filter pattern |
-| **Phase 3.10 Direct API Calls** | ✅ Done | Complete | Only `sitemap/page.tsx` and `pending-tx-list.tsx` remain (deferred). |
+| **STATUS_MAP enum mismatch** (#115) | ✅ Done | Closed | ACCEPTED/REFUSED mapped in student, teacher, and project hooks |
+| **Cross-course contamination** (#116) | ✅ Done | Closed | courseId filter added to commitment grouping |
+| **TX polling intervals** (#112) | ✅ Done | Fixed | Reduced to 5s to match gateway speed |
+| **tx_type mapping** (#113) | ✅ Done | On branch | Fix committed on `feat/project-tx-state-machines`, will close on merge |
+| **Single teacher/manager on create** | ✅ Done | On branch | Aligned with gateway PR #46 |
 
 ---
 
@@ -307,6 +335,7 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-01-21 | L1 Core Package + TX Fixes | Complete |
 | 2026-01-24 | **Course Side Colocated Types** | Complete |
 | 2026-01-31 | **Landing Page + TX Stream + Bug Fixes** (PR #105) | Complete |
+| 2026-02-01 | **Project Workflows** (PR #111) + owner/manager fixes | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---

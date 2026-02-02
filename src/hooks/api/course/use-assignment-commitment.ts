@@ -20,6 +20,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { courseStudentKeys } from "./use-course-student";
 import type { JSONContent } from "@tiptap/core";
 
 // =============================================================================
@@ -102,14 +103,27 @@ export function transformAssignmentCommitment(
       ? data.source
       : "merged";
 
+  // Normalize raw DB status values to display-friendly values
+  // The DB sends: SUBMITTED, ACCEPTED, REFUSED
+  // The UI expects: PENDING_APPROVAL, ASSIGNMENT_ACCEPTED, ASSIGNMENT_REFUSED
+  const rawStatus = commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL";
+  const STATUS_MAP: Record<string, string> = {
+    SUBMITTED: "PENDING_APPROVAL",
+    ACCEPTED: "ASSIGNMENT_ACCEPTED",
+    REFUSED: "ASSIGNMENT_REFUSED",
+    // Legacy aliases (gateway may still send these)
+    APPROVED: "ASSIGNMENT_ACCEPTED",
+    REJECTED: "ASSIGNMENT_REFUSED",
+  };
+  const networkStatus = STATUS_MAP[rawStatus] ?? rawStatus;
+
   return {
     courseId: data.course_id ?? fallbackCourseId,
     moduleCode: data.course_module_code ?? fallbackModuleCode,
     sltHash: data.slt_hash ?? null,
     onChainStatus: data.on_chain_status ?? null,
     onChainContent: data.on_chain_content ?? null,
-    networkStatus:
-      commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL",
+    networkStatus,
     networkEvidence: evidence ?? null,
     networkEvidenceHash: evidenceHash ?? data.on_chain_content ?? null,
     source,
@@ -239,6 +253,10 @@ export function useSubmitEvidence() {
           variables.courseId,
           variables.sltHash,
         ),
+      });
+      // Also invalidate the student commitments list so status badges refresh
+      void queryClient.invalidateQueries({
+        queryKey: courseStudentKeys.commitments(),
       });
     },
   });

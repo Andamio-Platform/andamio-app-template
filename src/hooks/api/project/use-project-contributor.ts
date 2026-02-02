@@ -153,6 +153,35 @@ export interface ContributorCommitment {
 }
 
 // =============================================================================
+// Status Normalization
+// =============================================================================
+
+/**
+ * Normalize project commitment status to uppercase display values.
+ *
+ * The gateway may send lowercase (OpenAPI: "committed, submitted, approved")
+ * or uppercase (DB: "DRAFT, COMMITTED, SUBMITTED, ACCEPTED"). Components
+ * expect uppercase. This normalizer handles both and maps legacy values.
+ *
+ * DB values: DRAFT, COMMITTED, SUBMITTED, ACCEPTED, REFUSED, PENDING_TX_SUBMIT
+ * Legacy aliases: APPROVED → ACCEPTED, REJECTED/DENIED → REFUSED
+ */
+const PROJECT_STATUS_MAP: Record<string, string> = {
+  ACCEPTED: "ACCEPTED",
+  REFUSED: "REFUSED",
+  // Legacy aliases
+  APPROVED: "ACCEPTED",
+  REJECTED: "REFUSED",
+  DENIED: "REFUSED",
+};
+
+function normalizeProjectCommitmentStatus(raw: string | undefined): string {
+  if (!raw) return "UNKNOWN";
+  const upper = raw.toUpperCase();
+  return PROJECT_STATUS_MAP[upper] ?? upper;
+}
+
+// =============================================================================
 // Transform Functions
 // =============================================================================
 
@@ -164,7 +193,7 @@ function transformMyCommitmentSummary(
 ): MyCommitmentSummary {
   return {
     taskHash: api.task_hash ?? "",
-    commitmentStatus: api.commitment_status ?? "unknown",
+    commitmentStatus: normalizeProjectCommitmentStatus(api.commitment_status),
     taskEvidenceHash: api.content?.task_evidence_hash,
     evidence: api.content?.evidence,
   };
@@ -230,8 +259,8 @@ function transformContributorCommitment(
     onChainContent: api.on_chain_content,
     onChainStatus: api.on_chain_status,
 
-    // Off-chain content
-    commitmentStatus: content?.commitment_status,
+    // Off-chain content (normalized to uppercase)
+    commitmentStatus: normalizeProjectCommitmentStatus(content?.commitment_status),
     taskEvidenceHash: content?.task_evidence_hash,
     evidence: content?.evidence,
     assessedBy: content?.assessed_by,

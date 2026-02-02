@@ -77,7 +77,7 @@ When reviewing hook changes, use `/audit-api-coverage api-hooks` to verify patte
 |------|---------|
 | `src/config/transaction-schemas.ts` | Zod validation schemas |
 | `src/config/transaction-ui.ts` | TX types, endpoints, UI strings |
-| `src/hooks/use-tx-watcher.ts` | TX_TYPE_MAP, status polling |
+| `src/hooks/tx/use-tx-watcher.ts` | TX_TYPE_MAP, status polling |
 | `.claude/skills/audit-api-coverage/tx-state-machine.md` | TX State Machine docs |
 | `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md` | Migration patterns |
 

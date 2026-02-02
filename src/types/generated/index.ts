@@ -479,6 +479,7 @@ export type GatewayTxType =
   | "credential_claim"
   | "project_create"
   | "project_join"
+  | "managers_manage"
   | "blacklist_update"
   | "tasks_manage"
   | "task_submit"

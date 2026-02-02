@@ -5,7 +5,7 @@ description: Interactively onboard new developers to all available skills and le
 
 # Getting Started
 
-Welcome to the Andamio T3 App Template! This skill helps developers discover and learn how to use all 12 available Claude skills.
+Welcome to the Andamio T3 App Template! This skill helps developers discover and learn how to use all 13 available Claude skills.
 
 ## Instructions
 
@@ -126,10 +126,11 @@ See `learning-paths.md` for detailed path content.
 
 Point them to `skill-reference.md` for a complete overview of all 12 skills.
 
-## All 12 Skills at a Glance
+## All 13 Skills at a Glance
 
 | Skill | Purpose |
 |-------|---------|
+| `/bootstrap-skill` | Scaffold and register new Claude skills |
 | `/getting-started` | Onboarding and skill discovery |
 | `/hooks-architect` | Hook patterns, creation, auditing |
 | `/design-system` | UI patterns, styling, components |
@@ -142,6 +143,7 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 | `/tx-loop-guide` | Transaction flow testing |
 | `/react-query-auditor` | React Query patterns and cache |
 | `/issue-handler` | Error routing across repos |
+| `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
 
 ## Key Files
 
@@ -189,4 +191,4 @@ Would you like to learn the hook pattern first, or jump into implementing a spec
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 1, 2026

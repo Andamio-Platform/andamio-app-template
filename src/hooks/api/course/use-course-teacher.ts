@@ -95,7 +95,7 @@ export interface TeacherAssignmentCommitment {
   // Off-chain content (from content object)
   moduleCode?: string;  // Human-readable module code (e.g., "101")
   evidence?: unknown;  // Tiptap JSON document from content.evidence
-  commitmentStatus?: string;  // Display status: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED (mapped from API values)
+  commitmentStatus?: string;  // Display status: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED (mapped from DB: SUBMITTED, ACCEPTED, REFUSED)
 
   // Metadata
   status?: TeacherCourseStatus;  // synced, onchain_only, db_only
@@ -137,7 +137,7 @@ interface RawTeacherCourse {
 interface RawTeacherCommitmentContent {
   evidence?: Record<string, unknown>;  // Tiptap JSON document
   assignment_evidence_hash?: string;
-  commitment_status?: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+  commitment_status?: "DRAFT" | "SUBMITTED" | "ACCEPTED" | "REFUSED" | "APPROVED" | "REJECTED";
 }
 
 interface RawTeacherCommitment {
@@ -213,26 +213,25 @@ function hexToText(hex: string): string {
 /**
  * Map raw API commitment_status + source to display-friendly status.
  *
- * API statuses: DRAFT, SUBMITTED, APPROVED, REJECTED
+ * DB sends: DRAFT, SUBMITTED, ACCEPTED, REFUSED
  * Display statuses: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED
  */
+const TEACHER_STATUS_MAP: Record<string, string> = {
+  SUBMITTED: "PENDING_APPROVAL",
+  ACCEPTED: "ACCEPTED",
+  REFUSED: "DENIED",
+  DRAFT: "DRAFT",
+  // Legacy aliases (gateway may still send these)
+  APPROVED: "ACCEPTED",
+  REJECTED: "DENIED",
+};
+
 function mapToDisplayStatus(
   source: string | undefined,
   contentStatus: string | undefined,
 ): string {
   if (contentStatus) {
-    switch (contentStatus) {
-      case "SUBMITTED":
-        return "PENDING_APPROVAL";
-      case "APPROVED":
-        return "ACCEPTED";
-      case "REJECTED":
-        return "DENIED";
-      case "DRAFT":
-        return "DRAFT";
-      default:
-        return contentStatus;
-    }
+    return TEACHER_STATUS_MAP[contentStatus] ?? contentStatus;
   }
   // Fall back to source-based status
   switch (source) {

@@ -104,11 +104,6 @@ Overview of the type system hierarchy and organization in the Andamio T3 App.
 - `getString()` - Extract string from NullableString
 - `getOptionalString()` - Same, returns undefined
 
-**andamioscan-events.ts** (on-chain types)
-- Event types from indexer
-- On-chain state types
-- Raw project/course data types
-
 ## Import Hierarchy Rules
 
 ```typescript
@@ -168,7 +163,7 @@ New type needed?
 │
 └─ Is it domain-specific utility type?
    │
-   └─ Add to relevant lib file (andamioscan-events.ts, etc.)
+   └─ Add to relevant lib file or hook file
 ```
 
 ## Naming Conventions

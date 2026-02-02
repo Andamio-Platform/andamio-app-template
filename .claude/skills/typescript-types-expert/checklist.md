@@ -220,7 +220,7 @@ import { z } from "zod";
 | Transaction schemas | `~/config/transaction-schemas.ts` |
 | Transaction UI | `~/config/transaction-ui.ts` |
 | Type helpers | `~/lib/type-helpers.ts` |
-| On-chain types | `~/lib/andamioscan-events.ts` |
+| App-level types | `~/types/project.ts` (Task, Project, TaskCommitment) |
 
 ## When to Use Each Pattern
 

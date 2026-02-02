@@ -46,7 +46,7 @@ pending → confirmed → updated (success)
 Frontend uses `SCREAMING_SNAKE_CASE`, gateway uses `snake_case`:
 
 ```typescript
-// ~/hooks/use-tx-watcher.ts
+// ~/hooks/tx/use-tx-watcher.ts
 export const TX_TYPE_MAP: Record<string, string> = {
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "access_token_mint",
   INSTANCE_COURSE_CREATE: "course_create",
@@ -118,8 +118,8 @@ await execute({
 });
 
 // After (V2)
-import { useSimpleTransaction } from "~/hooks/use-simple-transaction";
-import { useTxWatcher } from "~/hooks/use-tx-watcher";
+import { useSimpleTransaction } from "~/hooks/tx/use-transaction";
+import { useTxWatcher } from "~/hooks/tx/use-tx-watcher";
 
 const { state, result, execute, reset } = useSimpleTransaction();
 const { status, isSuccess } = useTxWatcher(
@@ -176,7 +176,7 @@ For each transaction type, update these files:
 |------|---------|
 | `~/config/transaction-ui.ts` | Add `requiresDBUpdate` flag |
 | `~/config/transaction-schemas.ts` | Add Zod validation schema |
-| `~/hooks/use-tx-watcher.ts` | Add TX_TYPE_MAP entry (if not exists) |
+| `~/hooks/tx/use-tx-watcher.ts` | Add TX_TYPE_MAP entry (if not exists) |
 | Component file | Use `useSimpleTransaction` + `useTxWatcher` |
 
 ## Transaction Types Checklist
@@ -208,8 +208,8 @@ For each transaction type, update these files:
 
 See `MintAccessTokenSimple` for a complete example:
 - **Component**: `~/components/transactions/mint-access-token-simple.tsx`
-- **Hook**: `~/hooks/use-simple-transaction.ts`
-- **Watcher**: `~/hooks/use-tx-watcher.ts`
+- **Hook**: `~/hooks/tx/use-transaction.ts`
+- **Watcher**: `~/hooks/tx/use-tx-watcher.ts`
 
 ## API Endpoints
 

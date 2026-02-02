@@ -73,7 +73,7 @@ export interface TxRegisterRequest {
 // =============================================================================
 
 export interface UseTxWatcherOptions {
-  /** Polling interval in ms (default: 15000 = 15 seconds, ~1 per Cardano block) */
+  /** Polling interval in ms (default: 5000 = 5 seconds, matching gateway confirmation speed) */
   pollInterval?: number;
   /** Callback when TX reaches terminal state */
   onComplete?: (status: TxStatus) => void;
@@ -91,7 +91,7 @@ export function useTxWatcher(
   txHash: string | null,
   options: UseTxWatcherOptions = {}
 ) {
-  const { pollInterval = 15_000, onComplete, onError } = options;
+  const { pollInterval = 5_000, onComplete, onError } = options;
   const { authenticatedFetch, jwt } = useAndamioAuth();
 
   const [status, setStatus] = useState<TxStatus | null>(null);
@@ -281,7 +281,7 @@ export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
   INSTANCE_PROJECT_CREATE: "project_create",
 
   // Project - Owner
-  PROJECT_OWNER_MANAGERS_MANAGE: "project_join",
+  PROJECT_OWNER_MANAGERS_MANAGE: "managers_manage",
   PROJECT_OWNER_BLACKLIST_MANAGE: "blacklist_update",
 
   // Project - Manager

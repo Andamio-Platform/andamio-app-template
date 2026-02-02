@@ -24,6 +24,11 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
+import { Calendar } from "~/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { CalendarIcon } from "~/components/icons";
+import { cn } from "~/lib/utils";
+import { format } from "date-fns";
 import { ContentEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import { toast } from "sonner";
@@ -245,15 +250,36 @@ export default function NewTaskPage() {
 
           {/* Expiration Time */}
           <div className="space-y-2">
-            <AndamioLabel htmlFor="expiration">Expiration Time (POSIX Timestamp) *</AndamioLabel>
-            <AndamioInput
-              id="expiration"
-              value={expirationTime}
-              onChange={(e) => setExpirationTime(e.target.value)}
-              placeholder="e.g., 1735689600000"
-            />
+            <AndamioLabel>Expiration Date *</AndamioLabel>
+            <Popover>
+              <PopoverTrigger asChild>
+                <AndamioButton
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !expirationTime && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {expirationTime
+                    ? format(new Date(parseInt(expirationTime)), "PPP")
+                    : "Select expiration date"}
+                </AndamioButton>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={expirationTime ? new Date(parseInt(expirationTime)) : undefined}
+                  onSelect={(date) =>
+                    setExpirationTime(date ? date.getTime().toString() : "")
+                  }
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
             <AndamioText variant="small" className="text-xs">
-              POSIX timestamp in milliseconds. Current time: {Date.now()}
+              Task will expire at end of selected date
             </AndamioText>
           </div>
 

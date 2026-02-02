@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: January 31, 2026
+> **Last Updated**: February 1, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -71,6 +71,14 @@ ANDAMIOSCAN REMOVAL ────────────────────
   │   project-eligibility.ts → pure function
   │
   ▼
+PROJECT WORKFLOWS ─────────────────────────────────────── 2026-02-01 ✅
+  │
+  │   PR #111: Studio redesign, step-based project creation
+  │   Single teacher/manager on create (gateway alignment)
+  │   TX polling reduced to 5s, tx_type mapping fixes
+  │   Owner/manager UX for post-create management
+  │
+  ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
   │
   │   Feature backlog begins!
@@ -93,6 +101,7 @@ MAINNET V2 LAUNCH ────────────────────�
 | **2026-01-17/18** | **V2 Gateway API Migration** | ✅ Complete |
 | **2026-01-24** | **Phase 3.8 Type Transformation** | ✅ Complete |
 | **2026-01-31** | **Andamioscan Removal** — All direct calls eliminated | ✅ Complete |
+| **2026-02-01** | **Project Workflows** (PR #111) + owner/manager fixes | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 
@@ -138,7 +147,7 @@ This template continues as the **reference implementation** and will receive upd
 
 **Tracking**: `.claude/skills/audit-api-coverage/API-HOOKS-CLEANUP-PLAN.md`
 
-### 🔜 Phase 3.10: Extract Direct API Calls to Hooks (Upcoming)
+### ✅ Phase 3.10: Extract Direct API Calls to Hooks (Complete)
 
 **Goal**: Move all direct `fetch()` and `authenticatedFetch()` calls from components/pages into hooks.
 
@@ -175,7 +184,8 @@ Phase 2: Optimization & Quality   ━━━━━━━━━━━━━━━�
 Phase 3: Project & Contribution   ━━━━━━━━━━━━━━━━ 🔄 In Progress (10/13 routes, 9/9 tx)
 Phase 3.5: V2 Gateway Migration   ━━━━━━━━━━━━━━━━ ✅ Complete (all APIs unified)
 Phase 3.8: Type Transformation    ━━━━━━━━━━━━━━━━ ✅ Complete (snake_case → camelCase)
-Phase 3.9: API Hooks Cleanup      ━━━━━━━━━━━━━━━━ 🔄 In Progress (6/11 hooks approved)
+Phase 3.9: API Hooks Cleanup      ━━━━━━━━━━━━━━━━ 🔄 In Progress (course ✅, project ⬜)
+Phase 3.10: Extract Direct Calls  ━━━━━━━━━━━━━━━━ ✅ Complete (only sitemap + pending-tx deferred)
 Phase 4: Polish & Publish         ━━━━━━━━━━━━━━━━ 🎯 Future (Post-Mainnet 2026)
 ```
 

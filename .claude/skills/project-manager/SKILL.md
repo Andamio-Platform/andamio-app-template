@@ -140,14 +140,15 @@ Based on their answer, guide them to the right skill:
 | `/review-pr` | PR reviews, code quality checks |
 | `/audit-api-coverage` | Check which API endpoints are implemented |
 | `/getting-started` | Onboard new developers, skill discovery |
+| `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
 
 ## Current Priority
 
 Check `STATUS.md` for the latest, but the current focus areas are:
 
-1. **Hook Architecture** (Phase 3.9, 3.10) - Use `/hooks-architect`
-2. **UX Testing** - Course Module Wizard, Teacher Dashboard
-3. **Project Route Consolidation** - Dashboard tab structure
+1. **Mainnet Launch Prep** (Feb 6) - Bug fixes, project workflows
+2. **Project Owner/Manager UX** - Post-create management (teachers, managers)
+3. **Hook Architecture** (Phase 3.9) - Project hooks colocated types
 
 ## Maintenance Tasks
 
@@ -161,9 +162,10 @@ After significant changes:
 ### Clean Up Stale Docs
 
 Remove docs that reference:
-- `@andamio/transactions` package (deprecated)
-- Old confirm-transaction patterns (replaced by TX State Machine)
-- Legacy DB API references (now unified gateway)
+- `andamioscan-events.ts` (deleted)
+- `use-event-confirmation.ts` (deleted)
+- `use-simple-transaction.ts` (renamed to `tx/use-transaction.ts`)
+- Old hook paths without `tx/` subdirectory
 
 ### Delegate to Skills
 
@@ -179,4 +181,4 @@ Start with the interactive question, then guide to the appropriate skill or prov
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 1, 2026

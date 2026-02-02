@@ -33,7 +33,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | ~~`nullable-type-validator`~~ | ~~Validate NullableString handling across components~~ | ~~Low~~ | **ADDRESSED** by `typescript-types-expert` skill (2026-01-24). Skill handles: NullableString auditing, getString() pattern enforcement, type guard validation, generated type imports. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-01-30 (Marked andamioscan-event-integrator as partially addressed by SSE)
+**Updated**: 2026-02-01 (Marked andamioscan-event-integrator as partially addressed by SSE)
 
 ---
 
@@ -190,3 +190,7 @@ Items that have been addressed and can be archived.
 | Document SSE TX streaming (4 new files) | 2026-01-30 | Updated: CLAUDE.md (Architecture + Key Files sections), CHANGELOG.md (3 new entries), tx-state-machine.md (SSE endpoint + useTxStream docs), HOOK-REFERENCE.md (TX hooks section + assignment commitment), PROGRESS.md (SSE completion log). |
 | Document Phase 3.10 component extraction | 2026-01-30 | CHANGELOG.md entry for 8 components extracted to hooks. PROGRESS.md already had detailed log. |
 | Update BACKLOG.md for SSE impact | 2026-01-30 | Marked `andamioscan-event-integrator` as partially addressed by SSE streaming. |
+| Fix tx_type mapping in tx-state-machine.md | 2026-02-01 | Updated `PROJECT_OWNER_MANAGERS_MANAGE` from `project_join` to `managers_manage`. Added `managers_manage` to valid tx_type list. |
+| Remove stale CLAUDE.md references | 2026-02-01 | Removed deleted `andamioscan-events.ts` from API Clients table and Key Files. Removed deleted `use-event-confirmation.ts` from Key Files. |
+| Update STATUS.md for Feb 1 session | 2026-02-01 | Added PR #111 merge, `feat/project-tx-state-machines` branch commits, issue #114, updated blockers and milestones. |
+| Update ROADMAP.md for Feb 1 | 2026-02-01 | Added Project Workflows milestone, updated Phase 3.10 to Complete, added phase progress bars. |

@@ -1,6 +1,6 @@
 # Skill Quick Reference
 
-> Complete reference for all 12 Claude skills in the Andamio T3 App Template.
+> Complete reference for all 13 Claude skills in the Andamio T3 App Template.
 
 ## At a Glance
 
@@ -18,6 +18,7 @@
 | TX Loop Guide | `/tx-loop-guide` | Transaction flow testing | Interactive |
 | React Query Auditor | `/react-query-auditor` | Hook patterns and cache | Single |
 | Issue Handler | `/issue-handler` | Error routing across repos | Single |
+| Product Iteration | `/product-iteration` | Full product feedback cycle | 4 phases (Test, Design, Triage, Ship) |
 
 ---
 
@@ -183,7 +184,7 @@
 **Syncs**:
 - `src/config/transaction-schemas.ts`
 - `src/config/transaction-ui.ts`
-- `src/hooks/use-tx-watcher.ts`
+- `src/hooks/tx/use-tx-watcher.ts`
 
 ---
 
@@ -243,4 +244,18 @@ T3 App Template → Andamio API Gateway → Backend subsystems
 
 ---
 
-**Last Updated**: January 28, 2026
+### `/product-iteration`
+
+**Purpose**: Orchestrate the full product iteration cycle
+
+**Phases**: Test → Design → Triage → Ship
+
+**When to use**:
+- Running user testing sessions
+- Creating design proposals from feedback
+- Managing the product backlog
+- Full feedback loop from testing to shipping
+
+---
+
+**Last Updated**: February 1, 2026

@@ -40,7 +40,7 @@ Ensure the transaction system is consistent across all config and hook files:
 | `src/hooks/tx/use-tx-watcher.ts` | TX registration and polling | `TX_TYPE_MAP`, `useTxWatcher`, `registerTransaction` |
 | `src/hooks/tx/use-transaction.ts` | Main transaction execution | `useTransaction` |
 | `src/hooks/tx/use-pending-tx-watcher.ts` | Watch all pending TXs | `usePendingTxWatcher` |
-| `src/hooks/tx/use-event-confirmation.ts` | Event-based confirmation | `useEventConfirmation` |
+| `src/hooks/tx/use-tx-stream.ts` | SSE-based real-time TX tracking | `useTxStream` |
 
 ## Audit Checklist
 

@@ -52,6 +52,8 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 | `TeacherCourseWithModules` | Type | Teacher course with modules |
 | `transformTeacherCourse()` | Function | API → TeacherCourse |
 | `transformTeacherCommitment()` | Function | API → TeacherAssignmentCommitment |
+| `TEACHER_STATUS_MAP` | Const | Maps DB statuses (ACCEPTED/REFUSED) to display values (ACCEPTED/DENIED) |
+| `mapToDisplayStatus()` | Function | Normalize commitment_status + source → display status |
 | `courseTeacherKeys` | Object | Query key factory |
 | `useTeacherCourses()` | Hook | List courses where user is teacher |
 | `useTeacherCoursesWithModules()` | Hook | Teacher courses with module data |
@@ -195,15 +197,32 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 
 ### use-project-contributor.ts
 
-**Owner of**: `ContributorProject`
+**Owner of**: `ContributorProject`, `ContributorCommitment`, `MyCommitmentSummary`
 
 | Export | Type | Description |
 |--------|------|-------------|
 | `ContributorProject` | Type | Project from contributor view |
-| `ContributorProjectsResponse` | Type | List response |
+| `ContributorCommitment` | Type | Task commitment with on-chain + off-chain data |
+| `MyCommitmentSummary` | Type | Lightweight commitment summary |
+| `PROJECT_STATUS_MAP` | Const | Maps DB statuses (ACCEPTED/REFUSED + legacy APPROVED/REJECTED) |
+| `normalizeProjectCommitmentStatus()` | Function | Uppercase + alias normalization for commitment statuses |
 | `projectContributorKeys` | Object | Query key factory |
 | `useContributorProjects()` | Hook | List contributed projects |
+| `useContributorCommitment(projectId, taskHash)` | Hook | Get specific task commitment |
+| `useSubmitTaskEvidence()` | Mutation | Submit task evidence |
 | `useInvalidateContributorProjects()` | Hook | Cache invalidation helper |
+
+### use-student-assignment-commitments.ts
+
+**Owner of**: `StudentCommitmentSummary`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `StudentCommitmentSummary` | Type | Lightweight commitment with normalized status |
+| `useStudentAssignmentCommitments(courseId)` | Hook | List all commitments for a course |
+| `getModuleCommitmentStatus(commitments)` | Function | Derive single status from module's commitments |
+
+**Status normalization**: Maps DB values (SUBMITTED→PENDING_APPROVAL, ACCEPTED→ASSIGNMENT_ACCEPTED, REFUSED→ASSIGNMENT_REFUSED) with APPROVED/REJECTED as legacy aliases.
 
 ### use-assignment-commitment.ts
 
@@ -211,9 +230,10 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 
 | Export | Type | Description |
 |--------|------|-------------|
-| `AssignmentCommitment` | Type | Student assignment commitment |
-| `assignmentCommitmentKeys` | Object | Query key factory |
-| `useAssignmentCommitment(courseId, moduleCode)` | Hook | Get student's commitment for a module |
+| `AssignmentCommitment` | Type | Student assignment commitment (full detail) |
+| `useAssignmentCommitment(courseId, moduleCode, sltHash)` | Hook | Get student's commitment for a specific SLT |
+
+**Status normalization**: Same STATUS_MAP as `use-student-assignment-commitments.ts`.
 
 ---
 
@@ -261,12 +281,6 @@ Drop-in replacement for `useTxWatcher` using Server-Sent Events.
 - `TxStateChangeEvent` — State transition events
 - `TxCompleteEvent` — Terminal state reached
 - `TxStreamCallbacks` — Callback interface
-
-### use-event-confirmation.ts
-
-| Export | Type | Description |
-|--------|------|-------------|
-| `useTaskSubmitConfirmation()` | Hook | On-chain event confirmation via Andamioscan |
 
 ---
 

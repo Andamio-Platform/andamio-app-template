@@ -27,6 +27,8 @@ import type { Course, CourseStatus } from "~/hooks/api";
 
 interface CourseCardProps {
   course: Course;
+  /** Optional enrollment status for authenticated students */
+  enrollmentStatus?: "enrolled" | "completed";
 }
 
 /**
@@ -91,7 +93,7 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
  * Shows course title, description, status, and metadata.
  * Links to the course detail page on click.
  */
-export function CourseCard({ course }: CourseCardProps) {
+export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
   const {
     courseId,
     title,
@@ -176,12 +178,25 @@ export function CourseCard({ course }: CourseCardProps) {
               </div>
             )}
 
-            {/* Active indicator */}
-            {status === "active" && (
-              <div className="flex items-center gap-1">
-                <SuccessIcon className="h-3.5 w-3.5 text-primary" />
-                <span className="text-primary text-xs">Live</span>
-              </div>
+            {/* Enrollment status badge */}
+            {enrollmentStatus === "completed" ? (
+              <AndamioBadge status="success" className="text-xs">
+                <SuccessIcon className="h-3 w-3 mr-1" />
+                Completed
+              </AndamioBadge>
+            ) : enrollmentStatus === "enrolled" ? (
+              <AndamioBadge status="pending" className="text-xs">
+                <OnChainIcon className="h-3 w-3 mr-1" />
+                Enrolled
+              </AndamioBadge>
+            ) : (
+              /* Active indicator (only when no enrollment status) */
+              status === "active" && (
+                <div className="flex items-center gap-1">
+                  <SuccessIcon className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-primary text-xs">Live</span>
+                </div>
+              )
             )}
           </div>
         </AndamioCardFooter>

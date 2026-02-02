@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -50,6 +51,7 @@ export function SidebarUserSection({
   onDisconnect,
   className,
 }: SidebarUserSectionProps) {
+  const router = useRouter();
   const { isAuthenticated, user, logout } = useAndamioAuth();
 
   const isExpanded = variant === "expanded";
@@ -57,6 +59,8 @@ export function SidebarUserSection({
   const handleDisconnect = () => {
     logout();
     onDisconnect?.();
+    // Redirect to home so next user sees proper onboarding
+    router.push("/");
   };
 
   if (!isAuthenticated || !user) {

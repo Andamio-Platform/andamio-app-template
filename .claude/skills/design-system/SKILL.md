@@ -67,7 +67,7 @@ Work through each file. Apply rules from:
 
 #### Step 5: Look for Extraction Candidates
 
-Check [extracted-components.md](./extracted-components.md) for existing components. If you see reusable patterns not yet extracted, note them as suggestions.
+Check [component-index.md](./component-index.md) for existing components. Only read [extracted-components.md](./extracted-components.md) if you need full usage details for a specific component.
 
 #### Step 6: Run Typecheck
 
@@ -179,7 +179,8 @@ Provide guidance about Andamio's design system, layout patterns, and theme rules
 | [cannot-customize.md](./cannot-customize.md) | What you CANNOT do |
 | [responsive-design.md](./responsive-design.md) | Responsive layout components |
 | [icon-system.md](./icon-system.md) | Centralized icon system |
-| [extracted-components.md](./extracted-components.md) | Reusable Andamio components |
+| [component-index.md](./component-index.md) | Component quick reference (read first) |
+| [extracted-components.md](./extracted-components.md) | Full component docs (read on-demand) |
 | [route-reference.md](./route-reference.md) | Route patterns and examples |
 
 ### Quick Reference
@@ -226,7 +227,8 @@ Provide clear, actionable guidance with:
 | [semantic-colors.md](./semantic-colors.md) | Color system and usage |
 | [responsive-design.md](./responsive-design.md) | Responsive layout components |
 | [icon-system.md](./icon-system.md) | Centralized icon imports |
-| [extracted-components.md](./extracted-components.md) | Existing Andamio components |
+| [component-index.md](./component-index.md) | Component quick reference |
+| [extracted-components.md](./extracted-components.md) | Full component docs (on-demand) |
 | [global-overrides.md](./global-overrides.md) | CSS specificity conflicts |
 | [layouts.md](./layouts.md) | Layout patterns |
 | [spacing.md](./spacing.md) | Spacing scale |

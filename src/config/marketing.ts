@@ -103,7 +103,32 @@ export const MARKETING = {
   },
 
   /**
-   * Landing page cards - three entry paths
+   * Landing page hero section
+   */
+  landingHero: {
+    headline: "Learn. Build. Earn On-Chain Credentials.",
+    subtext:
+      "Andamio connects learning with real project contributions. Complete courses, earn credentials, join funded projects.",
+    primaryCta: "Get Started",
+    browseCourses: "Browse Courses",
+    browseProjects: "Browse Projects",
+    signInText: "Already have an account?",
+    signInLink: "Sign In",
+  },
+
+  /**
+   * Landing page builder section
+   */
+  landingBuilder: {
+    headline: "Want to build on Andamio?",
+    subtext:
+      "Create courses or launch projects with on-chain credentials.",
+    createCourse: "Create a Course",
+    launchProject: "Launch a Project",
+  },
+
+  /**
+   * Landing page cards - three entry paths (legacy, kept for compatibility)
    */
   landingCards: {
     explore: {

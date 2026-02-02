@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { CardanoWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -26,6 +27,7 @@ const WEB3_SERVICES_CONFIG = {
  * - Authenticated state display
  */
 export function AndamioAuthButton() {
+  const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const { resolvedTheme } = useTheme();
   const {
@@ -43,6 +45,11 @@ export function AndamioAuthButton() {
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleLogout = React.useCallback(() => {
+    logout();
+    router.push("/");
+  }, [logout, router]);
 
   // Authenticated state
   if (isAuthenticated && user) {
@@ -67,7 +74,7 @@ export function AndamioAuthButton() {
               </div>
             )}
           </div>
-          <AndamioButton onClick={logout} variant="destructive" className="w-full">
+          <AndamioButton onClick={handleLogout} variant="destructive" className="w-full">
             Disconnect from Andamio
           </AndamioButton>
         </AndamioCardContent>

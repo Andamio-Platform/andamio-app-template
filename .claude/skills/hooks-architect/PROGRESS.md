@@ -216,6 +216,16 @@ All course system hooks follow the colocated types pattern correctly:
 
 ## Completion Log
 
+### February 3, 2026
+
+- [x] `useDeleteTask` rewritten per issue #148 — simplified to `{ contributor_state_id, index }` contract
+  - Removed `task_hash` and `project_id` parameters (API no longer requires them for draft deletion)
+  - Removed `computeTaskHash` workaround from create/update/delete hooks
+  - Draft tasks page `handleDeleteTask` now shows explicit error messages instead of silently returning
+- [x] `transformMergedTask` updated — uses top-level `task_index` field from API (per #147)
+- [x] `transformAssets` typed — uses `ApiTypesAsset { policy_id, name, amount }` instead of untyped `any`
+- [x] Generated types regenerated to `v2.0.0-dev-20260203-g`
+
 ### January 30, 2026
 
 - [x] SSE Transaction Streaming: Implemented `useTxStream()` as drop-in replacement for `useTxWatcher`
@@ -273,4 +283,4 @@ All course system hooks follow the colocated types pattern correctly:
 
 ---
 
-**Last Updated**: January 30, 2026
+**Last Updated**: February 3, 2026

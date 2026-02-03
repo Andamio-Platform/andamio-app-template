@@ -87,6 +87,16 @@ GATEWAY API SYNC + TX UX AUDIT ────────────────�
   │   slt_hashes validation in mint-module-tokens
   │
   ▼
+DRAFT TASK DELETE FIX + TX AUDIT ──────────────────────── 2026-02-03 ✅
+  │
+  │   Draft task delete working (issues #147, #148)
+  │   useDeleteTask simplified to { contributor_state_id, index }
+  │   transformMergedTask: top-level task_index
+  │   transformAssets: typed ApiTypesAsset[]
+  │   TX UX audit: 9/16 passing, 0 backend-blocked
+  │   TX #7, #10 all pass; TX #6 regression fixed
+  │
+  ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
   │
   │   Feature backlog begins!
@@ -111,6 +121,7 @@ MAINNET V2 LAUNCH ────────────────────�
 | **2026-01-31** | **Andamioscan Removal** — All direct calls eliminated | ✅ Complete |
 | **2026-02-01** | **Project Workflows** (PR #111) + owner/manager fixes | ✅ Complete |
 | **2026-02-03** | **Gateway API Sync + TX UX Audit** — types regen, 6 issues closed | ✅ Complete |
+| **2026-02-03** | **Draft Task Delete Fix** — #147/#148, typed assets, TX audit 9/16 | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 

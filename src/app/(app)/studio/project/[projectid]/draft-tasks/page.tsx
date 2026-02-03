@@ -27,7 +27,7 @@ import {
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { useProject } from "~/hooks/api/project/use-project";
+import { useProject, type Task } from "~/hooks/api/project/use-project";
 import { useManagerTasks, useDeleteTask } from "~/hooks/api/project/use-project-manager";
 
 /**
@@ -55,16 +55,28 @@ export default function DraftTasksPage() {
   // On-chain task count derived from hook data
   const onChainTaskCount = projectDetail?.tasks?.filter(t => t.taskStatus === "ON_CHAIN").length ?? 0;
 
-  const handleDeleteTask = async (taskIndex: number, taskHash: string) => {
-    if (!isAuthenticated || !contributorStateId || !taskHash) return;
+  const handleDeleteTask = async (task: Task) => {
+    if (!isAuthenticated) {
+      setError("You must be authenticated to delete tasks");
+      return;
+    }
+    if (!contributorStateId) {
+      setError("Missing project contributor state. Try refreshing the page.");
+      return;
+    }
+    if (task.index === undefined) {
+      setError("Cannot delete task: missing task index");
+      return;
+    }
 
-    setDeletingTaskIndex(taskIndex);
+    setDeletingTaskIndex(task.index);
+    setError(null);
 
     try {
       await deleteTask.mutateAsync({
         projectId,
-        taskHash,
         contributorStateId,
+        taskIndex: task.index,
       });
     } catch (err) {
       console.error("Error deleting task:", err);
@@ -211,7 +223,7 @@ export default function DraftTasksPage() {
                       <AndamioTableCell className="text-right">
                         <AndamioRowActions
                           editHref={`/studio/project/${projectId}/draft-tasks/${taskIndex}`}
-                          onDelete={() => handleDeleteTask(taskIndex, task.taskHash ?? "")}
+                          onDelete={() => handleDeleteTask(task)}
                           itemName="task"
                           deleteDescription={`Are you sure you want to delete "${task.title || "Untitled Task"}"? This action cannot be undone.`}
                           isDeleting={deletingTaskIndex === taskIndex}

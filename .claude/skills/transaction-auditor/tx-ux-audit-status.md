@@ -12,11 +12,11 @@
 | 3 | INSTANCE_PROJECT_CREATE | `create-project.tsx` | pass | pass | pass | pass | Audited 2026-02-01. UX enhancement: post-success certificate view requested. |
 | 4 | COURSE_OWNER_TEACHERS_MANAGE | `teachers-update.tsx` | pass | pass | pass | pass | Audited 2026-02-01 (simple: add or remove single teacher) |
 | 5 | COURSE_TEACHER_MODULES_MANAGE | `mint-module-tokens.tsx` / `burn-module-tokens.tsx` | pass | pass | pass | pass | Audited 2026-02-01 (simple: mint-only and burn-only) |
-| 6 | COURSE_TEACHER_ASSIGNMENTS_ASSESS | `assess-assignment.tsx` | pass | pass | pass | pass | Audited 2026-02-02 (simple: single accept) |
-| 7 | COURSE_STUDENT_ASSIGNMENT_COMMIT | `assignment-commitment.tsx` | pass | pass (blocked) | fail | --- | Q1 pass (backend 500 resolved). Q3 fail: Gateway confirmation handler 404 "Module not found". See issue log. |
+| 6 | COURSE_TEACHER_ASSIGNMENTS_ASSESS | `teacher/page.tsx` (batch) | pass | pass (fixed) | pass | pass (fixed) | Audited 2026-02-03. Regression from e8d76ec refactor: decision cart unmounted on success because `pendingDecisions` cleared before "done" UI shown. Fixed by keeping cart visible during batch state. |
+| 7 | COURSE_STUDENT_ASSIGNMENT_COMMIT | `assignment-commitment.tsx` | pass | pass | pass | pass | Audited 2026-02-03. All 4 checks pass — backend 404 "Module not found" issue resolved. |
 | 8 | COURSE_STUDENT_ASSIGNMENT_UPDATE | `assignment-update.tsx` | --- | --- | --- | --- | |
 | 9 | COURSE_STUDENT_CREDENTIAL_CLAIM | `user-course-status.tsx` (inline CTA) | pass | pass | pass | pass | Audited 2026-02-02. Moved from module page to course home "Your Learning Journey" card. Uses success color. |
-| 10 | PROJECT_OWNER_MANAGERS_MANAGE | `managers-manage.tsx` | pass | fail (blocked) | --- | --- | Q1 pass. Q2 fail: spinner stuck forever — gateway likely not reaching `updated`. Dispatched to ops. |
+| 10 | PROJECT_OWNER_MANAGERS_MANAGE | `managers-manage.tsx` | pass | pass | pass | pass | Audited 2026-02-03. All 4 checks pass — backend `managers_manage` handler resolved by ops. |
 | 11 | PROJECT_OWNER_BLACKLIST_MANAGE | `blacklist-manage.tsx` | --- | --- | --- | --- | |
 | 12 | PROJECT_MANAGER_TASKS_MANAGE | `tasks-manage.tsx` | --- | --- | --- | --- | |
 | 13 | PROJECT_MANAGER_TASKS_ASSESS | `tasks-assess.tsx` | --- | --- | --- | --- | |
@@ -44,50 +44,13 @@
 
 ---
 
-### TX Audit Issue — COURSE_STUDENT_ASSIGNMENT_COMMIT (Q3 — Gateway Confirmation)
+### ~~TX Audit Issue — COURSE_STUDENT_ASSIGNMENT_COMMIT (Q3 — RESOLVED)~~
 
-**Transaction**: `COURSE_STUDENT_ASSIGNMENT_COMMIT`
-**Gateway tx_type**: `assignment_submit`
-**Endpoint**: `POST /api/v2/tx/course/student/assignment/commit`
-**Failed Check**: Q3 — Off-chain data does not update after on-chain confirmation
-**Error**: Gateway confirmation handler returns 404 "Module not found" when trying to update DB after on-chain confirmation.
-**TX Status Response**:
-```json
-{
-  "tx_hash": "849393e36bea1d87fecba140a1a0f14311847160fcb2bce643ecd7bc347fd97d",
-  "tx_type": "assignment_submit",
-  "state": "confirmed",
-  "retry_count": 4,
-  "last_error": "failed to confirm commitment: status 404, body: {\"code\":\"NOT_FOUND\",\"message\":\"Module not found\"}"
-}
-```
-**Expected**: Gateway should transition from `confirmed` → `updated` after processing the `assignment_submit` confirmation handler. The module exists on-chain (TX confirmed at block) but the gateway's DB handler can't resolve it.
-**Frontend Status**: Frontend code is correct. `useTxStream` and `onComplete` callback properly check for `"updated"` state. The spinner is correct behavior — the TX genuinely hasn't reached terminal state.
-**Root Cause**: Gateway DB API confirmation handler for `assignment_submit` tx_type fails to find the module. Possible causes:
-  - DB API `/module` lookup uses a different key than what the gateway passes
-  - Module record not yet synced to DB API (race condition with module minting)
-  - Module lookup expects `module_code` but receives `slt_hash` (or vice versa)
-**Dispatch**:
-  - **andamio-api**: Investigate the `assignment_submit` TxTypeHandler confirmation logic — why is the module lookup returning 404?
-  - **db-api**: Verify the module record exists for course `fd68e0d150dcf57086c391f0c48553461776b75e28f316adccb003cb` with slt_hash `644d83db53fa235f43eb3a9fc202b47ebd49234888e8290db40def451de4eb1e`
-**Component**: `src/components/learner/assignment-commitment.tsx:628-659`
-**Date**: 2026-02-02
+> **Resolved 2026-02-03**: Gateway 404 "Module not found" issue in the `assignment_submit` confirmation handler has been fixed backend-side. All 4 checks now pass.
 
-### TX Audit Issue — PROJECT_OWNER_MANAGERS_MANAGE (Q2 — Gateway Confirmation)
+### ~~TX Audit Issue — PROJECT_OWNER_MANAGERS_MANAGE (Q2 — RESOLVED)~~
 
-**Transaction**: `PROJECT_OWNER_MANAGERS_MANAGE`
-**Gateway tx_type**: `managers_manage`
-**Endpoint**: `POST /api/v2/tx/project/owner/managers/manage`
-**Failed Check**: Q2 — Confirmation message never appears (spinner stuck forever)
-**Error**: After TX submits and goes on-chain, the gateway never transitions to `updated` state. The spinner ("Confirming on blockchain...") persists indefinitely.
-**Frontend Status**: Frontend code is correct. `managers-manage.tsx` uses `useTxStream`, properly checks for `"updated"` state, and has correct `TERMINAL_STATES`. The stuck spinner is correct behavior — the TX genuinely hasn't reached terminal state.
-**Possible Causes**:
-  - Gateway `managers_manage` TxTypeHandler confirmation logic failing (similar to #7 assignment_submit 404)
-  - TX registered with wrong tx_type (verified: `managers_manage` is correct per API spec enum)
-  - Gateway DB update handler not implemented for `managers_manage`
-**Dispatch**: Forwarded to ops team for investigation.
-**Component**: `src/components/tx/managers-manage.tsx`
-**Date**: 2026-02-03
+> **Resolved 2026-02-03**: Gateway `managers_manage` handler fixed by ops team. All 4 checks now pass.
 
 ---
 
@@ -103,6 +66,9 @@
 - **2026-02-02**: #7 COURSE_STUDENT_ASSIGNMENT_COMMIT — Re-test: Q1 now PASS (backend 500 resolved). Q2 PASS (spinner correctly shows, SSE stream connected). Q3 FAIL: Gateway confirmation handler returns 404 "Module not found" after 4 retries. TX stuck in `confirmed` state. Dispatched to andamio-api and db-api teams.
 - **2026-02-02**: #9 COURSE_STUDENT_CREDENTIAL_CLAIM — all pass. Relocated from module assignment page to course home page "Your Learning Journey" card as inline CTA with completion-aware messaging. Uses success (green) color for accepted/complete states.
 - **2026-02-03**: #10 PROJECT_OWNER_MANAGERS_MANAGE — Q1 PASS (TX builds, signs, submits). Q2 FAIL: spinner stuck forever, gateway never reaches `updated` state. Frontend code verified correct. Dispatched to ops team.
+- **2026-02-03**: #7 COURSE_STUDENT_ASSIGNMENT_COMMIT — Re-test: ALL PASS. Backend 404 "Module not found" issue resolved. Full flow working: submit → confirm → off-chain update → UX refresh.
+- **2026-02-03**: #10 PROJECT_OWNER_MANAGERS_MANAGE — Re-test: ALL PASS. Backend `managers_manage` handler resolved by ops. Full flow working.
+- **2026-02-03**: #6 COURSE_TEACHER_ASSIGNMENTS_ASSESS — Regression from `e8d76ec` two-panel refactor. Decision cart (including progress spinner and "done" message) was gated on `pendingDecisions.size > 0`. After successful batch submit, decisions are cleared → cart unmounts → success message never visible. Fixed: cart now also visible when `batchState !== "idle"`.
 
 ## Advanced Testing Backlog
 

@@ -1,7 +1,7 @@
 {
   "name": "andamio-t3-app-template",
-  "version": "2.0.0-dev-20260202-a",
-  "apiVersion": "v2.0.0-dev-20260203-f",
+  "version": "2.0.0-dev-20260203-a",
+  "apiVersion": "v2.0.0-dev-20260203-h",
   "private": true,
   "type": "module",
   "scripts": {
@@ -93,6 +93,7 @@
     "markdown-it": "^14.1.0",
     "next": "^15.2.6",
     "next-themes": "^0.4.6",
+    "radix-ui": "^1.4.3",
     "react": "^19.0.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.0.0",

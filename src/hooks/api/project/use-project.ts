@@ -278,34 +278,16 @@ export interface TaskCommitment {
 // =============================================================================
 
 /**
- * Transform assets from on-chain format
+ * Transform API Asset[] to app-level TaskToken[]
+ *
+ * API schema (ApiTypesAsset): { policy_id, name, amount }
  */
-function transformAssets(assets: unknown): TaskToken[] {
-  if (!assets || typeof assets !== "object") return [];
-
-  // Assets can be various formats - handle common ones
-  if (Array.isArray(assets)) {
-    return assets.map((a) => ({
-      policyId: String(a.policy_id ?? a.policyId ?? ""),
-      assetName: String(a.asset_name ?? a.assetName ?? ""),
-      quantity: Number(a.quantity ?? a.amount ?? 0),
-    }));
-  }
-
-  // Object format { policyId: { assetName: quantity } }
-  const result: TaskToken[] = [];
-  for (const [policyId, assetMap] of Object.entries(assets)) {
-    if (typeof assetMap === "object" && assetMap !== null) {
-      for (const [assetName, quantity] of Object.entries(assetMap as Record<string, unknown>)) {
-        result.push({
-          policyId,
-          assetName,
-          quantity: Number(quantity) || 0,
-        });
-      }
-    }
-  }
-  return result;
+function transformAssets(assets: { policy_id?: string; name?: string; amount?: string }[]): TaskToken[] {
+  return assets.map((a) => ({
+    policyId: a.policy_id ?? "",
+    assetName: a.name ?? "",
+    quantity: Number(a.amount ?? 0),
+  }));
 }
 
 /**
@@ -378,7 +360,7 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
   return {
     taskHash: api.task_hash ?? "",
     projectId: api.project_id ?? "",
-    index: api.content?.task_index,
+    index: api.task_index ?? api.content?.task_index,
     title,
     description,
     lovelaceAmount: String(api.lovelace_amount ?? 0),

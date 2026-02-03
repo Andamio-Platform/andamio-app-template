@@ -599,12 +599,6 @@ export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
   task_hash?: string;
 }
 
-export interface AndamioDbClientProjectManagerTasksListPostRequest {
-  project_id?: string;
-  /** Optional: filter by task status */
-  status?: string;
-}
-
 export interface AndamioDbClientUserAccessTokenAliasPostRequest {
   access_token_alias?: string;
 }
@@ -669,6 +663,15 @@ export interface ApiKeyViewmodelsRotateAPIKeyRequest {
 export interface ApiKeyViewmodelsRotateAPIKeyResponse {
   /** @example "API key expiration extended to 2026-08-31T23:59:59Z" */
   confirmation?: string;
+}
+
+export interface ApiTypesAsset {
+  /** @example "1000000" */
+  amount?: string;
+  /** @example "AndamioToken" */
+  name?: string;
+  /** @example "abc123def456" */
+  policy_id?: string;
 }
 
 export interface ApiTypesAssignmentCommitment {
@@ -776,6 +779,13 @@ export interface ApiTypesCreateTaskToken {
   policy_id: string;
   /** @example "100" */
   quantity: string;
+}
+
+export interface ApiTypesDeleteTaskRequest {
+  /** @example "policy_xyz789" */
+  contributor_state_id: string;
+  /** @example 0 */
+  index: number;
 }
 
 export interface ApiTypesInitRolesResponse {
@@ -1578,7 +1588,7 @@ export interface OrchestrationManagerCommitmentItem {
 }
 
 export interface OrchestrationManagerCommitmentTaskInfo {
-  assets?: any;
+  assets?: ApiTypesAsset[];
   expiration?: string;
   expiration_posix?: number;
   lovelace_amount?: number;
@@ -1777,7 +1787,7 @@ export interface OrchestrationMergedSltsResponse {
 
 export interface OrchestrationMergedTaskListItem {
   /** Native assets */
-  assets?: any;
+  assets?: ApiTypesAsset[];
   /** Off-chain content (nested) */
   content?: OrchestrationTaskContent;
   contributor_state_id?: string;
@@ -1793,6 +1803,8 @@ export interface OrchestrationMergedTaskListItem {
   source?: string;
   /** On-chain fields (top level) */
   task_hash?: string;
+  /** DB task index (for draft identification) */
+  task_index?: number;
   /** DB task status (for db_only tasks: DRAFT, PENDING_TX, ON_CHAIN, etc.) */
   task_status?: string;
 }
@@ -1864,7 +1876,7 @@ export interface OrchestrationProjectSubmissionOnChain {
 
 export interface OrchestrationProjectTaskOnChain {
   /** Native assets */
-  assets?: any;
+  assets?: ApiTypesAsset[];
   contributor_state_id?: string;
   created_by?: string;
   /** ISO timestamp */
@@ -1878,7 +1890,7 @@ export interface OrchestrationProjectTaskOnChain {
 
 export interface OrchestrationProjectTreasuryFundingOnChain {
   alias?: string;
-  assets?: any;
+  assets?: ApiTypesAsset[];
   lovelace_amount?: number;
   slot?: number;
   tx_hash?: string;

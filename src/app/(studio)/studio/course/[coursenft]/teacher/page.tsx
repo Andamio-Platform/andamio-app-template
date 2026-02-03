@@ -1,35 +1,16 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
-  AndamioTable,
-  AndamioTableBody,
-  AndamioTableCell,
-  AndamioTableHead,
-  AndamioTableHeader,
-  AndamioTableRow,
-} from "~/components/andamio/andamio-table";
-import {
-  AndamioPageHeader,
-  AndamioTableContainer,
-  AndamioDashboardStat,
   AndamioPageLoading,
   AndamioErrorAlert,
-  AndamioEmptyState,
   AndamioSearchInput,
   AndamioScrollArea,
 } from "~/components/andamio";
-import {
-  AndamioCard,
-  AndamioCardContent,
-  AndamioCardDescription,
-  AndamioCardHeader,
-  AndamioCardTitle,
-} from "~/components/andamio/andamio-card";
 import {
   AndamioSelect,
   AndamioSelectContent,
@@ -37,8 +18,22 @@ import {
   AndamioSelectTrigger,
   AndamioSelectValue,
 } from "~/components/andamio/andamio-select";
+import {
+  AndamioResizablePanelGroup,
+  AndamioResizablePanel,
+  AndamioResizableHandle,
+} from "~/components/andamio/andamio-resizable";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { TeacherIcon, SuccessIcon, PendingIcon, CloseIcon, LoadingIcon } from "~/components/icons";
+import {
+  TeacherIcon,
+  SuccessIcon,
+  CloseIcon,
+  LoadingIcon,
+  AlertIcon,
+  ExpandIcon,
+  CollapseIcon,
+  NextIcon,
+} from "~/components/icons";
 import { ContentDisplay } from "~/components/content-display";
 import type { JSONContent } from "@tiptap/core";
 import {
@@ -49,42 +44,45 @@ import {
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useTransaction } from "~/hooks/tx/use-transaction";
-import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
-import { AlertIcon } from "~/components/icons";
-import { PendingReviewsList } from "~/components/teacher/pending-reviews-list";
 
-/**
- * Teacher Dashboard Page
- *
- * View all student assignment commitments for a course
- *
- * API Endpoint:
- * - POST /course/teacher/assignment-commitments/list (protected)
- *   Body: { policy_id: string }
- */
+// =============================================================================
+// Batch TX Types
+// =============================================================================
+
+interface ModuleGroup {
+  sltHash: string;
+  moduleCode: string | undefined;
+  decisions: Array<{ alias: string; outcome: "accept" | "refuse" }>;
+}
+
+type BatchGroupStatus = "pending" | "submitting" | "success" | "error";
+
+interface BatchGroupResult {
+  sltHash: string;
+  moduleCode: string | undefined;
+  status: BatchGroupStatus;
+  txHash?: string;
+  error?: string;
+}
+
+type BatchState = "idle" | "submitting" | "done";
 
 // Network status color mapping based on workflow stages
 const getStatusVariant = (
   status: string | undefined | null
 ): "default" | "secondary" | "destructive" | "outline" => {
   if (!status) return "outline";
-  // Pending/in-progress states
   if (status.includes("PENDING")) return "secondary";
-  // Success states
   if (status.includes("ACCEPTED") || status.includes("CLAIMED") || status === "ON_CHAIN") return "default";
-  // Failure states
   if (status.includes("DENIED")) return "destructive";
-  // Initial states
   if (status === "AWAITING_EVIDENCE" || status === "DRAFT") return "outline";
-  // Other states
   return "default";
 };
 
 const formatNetworkStatus = (status: string | undefined | null): string => {
   if (!status) return "Unknown";
-  // Convert SNAKE_CASE to Title Case
   return status
     .split("_")
     .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
@@ -102,24 +100,15 @@ export default function TeacherDashboardPage() {
   const commitments = useMemo(() => (Array.isArray(rawCommitments) ? rawCommitments : []), [rawCommitments]);
   const invalidateTeacher = useInvalidateTeacherCourses();
 
-  // V2 Transaction hooks
+  // V2 Transaction hook
   const assessTx = useTransaction();
 
-  // Watch for gateway confirmation after assess TX submission
-  const { status: assessTxStatus, isSuccess: assessTxConfirmed } = useTxStream(
-    assessTx.result?.requiresDBUpdate ? assessTx.result.txHash : null,
-    {
-      onComplete: (status) => {
-        if (status.state === "updated") {
-          // Refresh data and reset UI
-          void invalidateTeacher();
-          setSelectedCommitment(null);
-          clearAllDecisions();
-          assessTx.reset();
-        }
-      },
-    }
-  );
+  // Batch assessment state
+  const [batchState, setBatchState] = useState<BatchState>("idle");
+  const [batchResults, setBatchResults] = useState<BatchGroupResult[]>([]);
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+  const [totalGroups, setTotalGroups] = useState(0);
+  const batchAbortedRef = useRef(false);
 
   // Batch assessment decisions - keyed by "studentAlias-sltHash"
   const [pendingDecisions, setPendingDecisions] = useState<
@@ -129,19 +118,27 @@ export default function TeacherDashboardPage() {
   // Selected commitment for viewing evidence detail
   const [selectedCommitment, setSelectedCommitment] = useState<TeacherAssignmentCommitment | null>(null);
 
+  // New state: tab filter and decision summary expansion
+  const [currentTab, setCurrentTab] = useState<"pending" | "all">("pending");
+  const [decisionSummaryExpanded, setDecisionSummaryExpanded] = useState(false);
+
+  // Filtering state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assignmentFilter, setAssignmentFilter] = useState<string>("all");
+
   // Helper to create unique key for a commitment
   const getCommitmentKey = (commitment: TeacherAssignmentCommitment) =>
     `${commitment.studentAlias}-${commitment.sltHash}`;
 
   // Helper to set/update a decision
-  const setDecision = (commitment: TeacherAssignmentCommitment, decision: "accept" | "refuse") => {
+  const setDecision = useCallback((commitment: TeacherAssignmentCommitment, decision: "accept" | "refuse") => {
     const key = getCommitmentKey(commitment);
     setPendingDecisions((prev) => {
       const next = new Map(prev);
       next.set(key, { commitment, decision });
       return next;
     });
-  };
+  }, []);
 
   // Helper to remove a decision
   const removeDecision = (commitment: TeacherAssignmentCommitment) => {
@@ -164,32 +161,137 @@ export default function TeacherDashboardPage() {
     return pendingDecisions.get(key)?.decision ?? null;
   };
 
-  // Filtering state
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [assignmentFilter, setAssignmentFilter] = useState<string>("all");
+  // Group pending decisions by slt_hash for batch submission
+  const moduleGroups = useMemo((): ModuleGroup[] => {
+    const groupMap = new Map<string, ModuleGroup>();
+
+    for (const [, { commitment, decision }] of pendingDecisions) {
+      const sltHash = commitment.sltHash ?? "unknown";
+      let group = groupMap.get(sltHash);
+      if (!group) {
+        group = {
+          sltHash,
+          moduleCode: commitment.moduleCode,
+          decisions: [],
+        };
+        groupMap.set(sltHash, group);
+      }
+      group.decisions.push({
+        alias: commitment.studentAlias,
+        outcome: decision,
+      });
+    }
+
+    return Array.from(groupMap.values());
+  }, [pendingDecisions]);
+
+  const isMultiModuleBatch = moduleGroups.length > 1;
+
+  // Batch submit: execute one TX per module group, sequentially.
+  const handleBatchSubmit = useCallback(async () => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || moduleGroups.length === 0) return;
+
+    batchAbortedRef.current = false;
+    setBatchState("submitting");
+    setTotalGroups(moduleGroups.length);
+    const results: BatchGroupResult[] = moduleGroups.map((g) => ({
+      sltHash: g.sltHash,
+      moduleCode: g.moduleCode,
+      status: "pending" as BatchGroupStatus,
+    }));
+    setBatchResults([...results]);
+
+    for (let i = 0; i < moduleGroups.length; i++) {
+      if (batchAbortedRef.current) break;
+
+      const group = moduleGroups[i]!;
+      setCurrentGroupIndex(i);
+      results[i] = { ...results[i]!, status: "submitting" };
+      setBatchResults([...results]);
+
+      assessTx.reset();
+
+      await new Promise<void>((resolve) => {
+        void assessTx.execute({
+          txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
+          params: {
+            alias: alias,
+            course_id: courseNftPolicyId,
+            assignment_decisions: group.decisions,
+          },
+          onSuccess: (txResult) => {
+            results[i] = {
+              ...results[i]!,
+              status: "success",
+              txHash: txResult.txHash,
+            };
+            setBatchResults([...results]);
+            resolve();
+          },
+          onError: (err) => {
+            results[i] = {
+              ...results[i]!,
+              status: "error",
+              error: err.message,
+            };
+            setBatchResults([...results]);
+            resolve();
+          },
+        });
+      });
+    }
+
+    setBatchState("done");
+
+    const anySuccess = results.some((r) => r.status === "success");
+    if (anySuccess) {
+      void invalidateTeacher();
+      void refetchCommitments();
+    }
+
+    const successSltHashes = new Set(
+      results.filter((r) => r.status === "success").map((r) => r.sltHash)
+    );
+    if (successSltHashes.size > 0) {
+      setPendingDecisions((prev) => {
+        const next = new Map(prev);
+        for (const [key, { commitment }] of prev) {
+          if (successSltHashes.has(commitment.sltHash ?? "unknown")) {
+            next.delete(key);
+          }
+        }
+        return next;
+      });
+    }
+  }, [user?.accessTokenAlias, moduleGroups, courseNftPolicyId, assessTx, invalidateTeacher, refetchCommitments]);
+
+  // Reset batch state
+  const resetBatch = useCallback(() => {
+    setBatchState("idle");
+    setBatchResults([]);
+    setCurrentGroupIndex(0);
+    setTotalGroups(0);
+    assessTx.reset();
+  }, [assessTx]);
 
   // Get unique assignments for filter (by moduleCode)
   const uniqueModuleCodes = Array.from(
     new Set(commitments.map((c) => c.moduleCode).filter((c): c is string => !!c))
   );
 
-  // Stats - display status values: DRAFT, PENDING_TX, PENDING_APPROVAL, ACCEPTED, DENIED
+  // Stats
   const stats = {
     total: commitments.length,
-    draft: commitments.filter((c) => c.commitmentStatus === "DRAFT").length,
-    pendingTx: commitments.filter((c) => c.commitmentStatus === "PENDING_TX").length,
     pendingReview: commitments.filter((c) => c.commitmentStatus === "PENDING_APPROVAL").length,
-    accepted: commitments.filter((c) => c.commitmentStatus === "ACCEPTED").length,
-    denied: commitments.filter((c) => c.commitmentStatus === "DENIED").length,
   };
 
-  // Derived filtered commitments
+  // Derived filtered commitments — uses currentTab instead of statusFilter
   const filteredCommitments = useMemo(() => {
     let filtered = [...commitments];
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((c) => c.commitmentStatus && c.commitmentStatus === statusFilter);
+    if (currentTab === "pending") {
+      filtered = filtered.filter((c) => c.commitmentStatus === "PENDING_APPROVAL");
     }
 
     if (assignmentFilter !== "all") {
@@ -203,13 +305,16 @@ export default function TeacherDashboardPage() {
     }
 
     return filtered;
-  }, [commitments, statusFilter, assignmentFilter, searchQuery]);
+  }, [commitments, currentTab, assignmentFilter, searchQuery]);
 
-  // Handle commitment selection - for viewing evidence
+  // Handle commitment selection
   const handleSelectCommitment = (commitment: TeacherAssignmentCommitment) => {
-    setSelectedCommitment(selectedCommitment?.studentAlias === commitment.studentAlias &&
-                          selectedCommitment?.sltHash === commitment.sltHash
-                          ? null : commitment);
+    setSelectedCommitment(
+      selectedCommitment?.studentAlias === commitment.studentAlias &&
+        selectedCommitment?.sltHash === commitment.sltHash
+        ? null
+        : commitment
+    );
   };
 
   // Check if a commitment is ready for assessment
@@ -217,217 +322,223 @@ export default function TeacherDashboardPage() {
     return commitment.studentAlias && commitment.commitmentStatus === "PENDING_APPROVAL";
   };
 
+  // Find next undecided pending assignment for auto-advance
+  const findNextPending = useCallback(
+    (current: TeacherAssignmentCommitment | null) => {
+      const pendingItems = commitments.filter(
+        (c) => c.commitmentStatus === "PENDING_APPROVAL"
+      );
+      if (pendingItems.length === 0) return null;
+
+      const currentKey = current ? getCommitmentKey(current) : null;
+
+      // Find items that don't have a decision yet
+      const undecided = pendingItems.filter((c) => {
+        const key = getCommitmentKey(c);
+        return key !== currentKey && !pendingDecisions.has(key);
+      });
+
+      return undecided[0] ?? null;
+    },
+    [commitments, pendingDecisions]
+  );
+
+  // Make a decision and auto-advance
+  const handleDecisionAndAdvance = useCallback(
+    (commitment: TeacherAssignmentCommitment, decision: "accept" | "refuse") => {
+      setDecision(commitment, decision);
+      // Brief delay then auto-advance
+      setTimeout(() => {
+        const next = findNextPending(commitment);
+        if (next) {
+          setSelectedCommitment(next);
+        }
+      }, 300);
+    },
+    [findNextPending, setDecision]
+  );
+
   // Derived loading/error states
   const isLoading = courseLoading || commitmentsLoading;
   const fetchError = courseError?.message ?? commitmentsError?.message ?? null;
 
-  // Loading state
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
   }
 
-  // Error state
   if (fetchError || !courseData) {
     return (
       <div className="space-y-6 p-6">
-        <AndamioPageHeader title="Teacher Dashboard" />
         <AndamioErrorAlert error={fetchError ?? "Course not found"} />
       </div>
     );
   }
 
   return (
-    <AndamioScrollArea className="h-full">
-      <div className="space-y-6 p-6">
-        <AndamioPageHeader
-          title="Teacher Dashboard"
-          description={courseData.title}
-        />
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
-        <AndamioDashboardStat icon={TeacherIcon} label="Total" value={stats.total} />
-        <AndamioDashboardStat icon={PendingIcon} label="Draft" value={stats.draft} />
-        <AndamioDashboardStat icon={PendingIcon} label="Pending TX" value={stats.pendingTx} valueColor="warning" iconColor="warning" />
-        <AndamioDashboardStat icon={TeacherIcon} label="Pending Review" value={stats.pendingReview} valueColor="info" iconColor="info" />
-        <AndamioDashboardStat icon={SuccessIcon} label="Accepted" value={stats.accepted} valueColor="success" iconColor="success" />
-        <AndamioDashboardStat icon={CloseIcon} label="Denied" value={stats.denied} valueColor="destructive" iconColor="destructive" />
-      </div>
-
-      {/* On-Chain Pending Assessments - Live data from merged API */}
-      <PendingReviewsList
-        commitments={commitments}
-        isLoading={commitmentsLoading}
-        error={commitmentsError}
-        onRefetch={() => void refetchCommitments()}
-      />
-
-      {/* Filters */}
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>Filters</AndamioCardTitle>
-          <AndamioCardDescription>Filter and search assignment commitments</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="status-filter">Status</AndamioLabel>
-              <AndamioSelect value={statusFilter} onValueChange={setStatusFilter}>
-                <AndamioSelectTrigger id="status-filter">
-                  <AndamioSelectValue placeholder="All statuses" />
-                </AndamioSelectTrigger>
-                <AndamioSelectContent>
-                  <AndamioSelectItem value="all">All Statuses</AndamioSelectItem>
-                  <AndamioSelectItem value="DRAFT">Draft</AndamioSelectItem>
-                  <AndamioSelectItem value="PENDING_TX">Pending Transaction</AndamioSelectItem>
-                  <AndamioSelectItem value="PENDING_APPROVAL">Pending Review</AndamioSelectItem>
-                  <AndamioSelectItem value="ACCEPTED">Accepted</AndamioSelectItem>
-                  <AndamioSelectItem value="DENIED">Denied</AndamioSelectItem>
-                </AndamioSelectContent>
-              </AndamioSelect>
-            </div>
-
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="assignment-filter">Assignment</AndamioLabel>
-              <AndamioSelect value={assignmentFilter} onValueChange={setAssignmentFilter}>
-                <AndamioSelectTrigger id="assignment-filter">
-                  <AndamioSelectValue placeholder="All assignments" />
-                </AndamioSelectTrigger>
-                <AndamioSelectContent>
-                  <AndamioSelectItem value="all">All Assignments</AndamioSelectItem>
-                  {uniqueModuleCodes.map((moduleCode) => (
-                    <AndamioSelectItem key={moduleCode} value={moduleCode}>
-                      {moduleCode}
-                    </AndamioSelectItem>
-                  ))}
-                </AndamioSelectContent>
-              </AndamioSelect>
-            </div>
-
-            <div className="space-y-2">
-              <AndamioLabel htmlFor="search">Search Learner</AndamioLabel>
-              <AndamioSearchInput
-                id="search"
-                placeholder="Search by access token alias..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+    <AndamioResizablePanelGroup direction="horizontal" className="h-full">
+      {/* ================================================================= */}
+      {/* LEFT PANEL — Browse & Decide                                      */}
+      {/* ================================================================= */}
+      <AndamioResizablePanel defaultSize={40} minSize={30} maxSize={55}>
+        <div className="flex h-full flex-col">
+          {/* Header */}
+          <div className="border-b px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">{courseData.title}</h2>
+                <AndamioText variant="small" className="text-muted-foreground mt-0.5">
+                  Teacher Dashboard
+                </AndamioText>
+              </div>
+              {stats.pendingReview > 0 && (
+                <AndamioBadge variant="secondary">
+                  {stats.pendingReview} pending
+                </AndamioBadge>
+              )}
             </div>
           </div>
 
-          {(statusFilter !== "all" || assignmentFilter !== "all" || searchQuery) && (
-            <div className="flex items-center gap-2">
-              <AndamioText variant="small">
-                Showing {filteredCommitments.length} of {commitments.length} commitments
-              </AndamioText>
-              <AndamioButton
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setStatusFilter("all");
-                  setAssignmentFilter("all");
-                  setSearchQuery("");
-                }}
-              >
-                Clear Filters
-              </AndamioButton>
-            </div>
-          )}
-        </AndamioCardContent>
-      </AndamioCard>
+          {/* Tab bar */}
+          <div className="flex border-b px-1">
+            <button
+              type="button"
+              onClick={() => setCurrentTab("pending")}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                currentTab === "pending"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pending Review ({stats.pendingReview})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentTab("all")}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                currentTab === "all"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All Assignments ({stats.total})
+            </button>
+          </div>
 
-      {/* Commitments Table */}
-      {filteredCommitments.length === 0 ? (
-        <AndamioEmptyState
-          icon={TeacherIcon}
-          title={commitments.length === 0 ? "No assignment commitments yet" : "No commitments match your filters"}
-          description="Assignment commitments from learners will appear here for review."
-          action={
-            commitments.length > 0 ? (
-              <AndamioButton
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setStatusFilter("all");
-                  setAssignmentFilter("all");
-                  setSearchQuery("");
-                }}
-              >
-                Clear Filters
-              </AndamioButton>
-            ) : undefined
-          }
-        />
-      ) : (
-        <AndamioTableContainer>
-          <AndamioTable>
-            <AndamioTableHeader>
-              <AndamioTableRow>
-                <AndamioTableHead>Learner</AndamioTableHead>
-                <AndamioTableHead>Assignment</AndamioTableHead>
-                <AndamioTableHead>Status</AndamioTableHead>
-                <AndamioTableHead>Evidence</AndamioTableHead>
-                <AndamioTableHead className="text-center">Decision</AndamioTableHead>
-              </AndamioTableRow>
-            </AndamioTableHeader>
-            <AndamioTableBody>
-              {filteredCommitments.map((commitment) => {
-                const decision = getDecision(commitment);
-                const canAssess = isReadyForAssessment(commitment);
-                const isSelected = selectedCommitment?.studentAlias === commitment.studentAlias &&
-                                   selectedCommitment?.sltHash === commitment.sltHash;
+          {/* Inline filters */}
+          <div className="flex items-center gap-3 border-b px-4 py-3">
+            <AndamioSearchInput
+              inputSize="sm"
+              placeholder="Search learner..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+            <AndamioSelect value={assignmentFilter} onValueChange={setAssignmentFilter}>
+              <AndamioSelectTrigger className="h-8 w-[140px] text-xs">
+                <AndamioSelectValue placeholder="Module" />
+              </AndamioSelectTrigger>
+              <AndamioSelectContent>
+                <AndamioSelectItem value="all">All Modules</AndamioSelectItem>
+                {uniqueModuleCodes.map((moduleCode) => (
+                  <AndamioSelectItem key={moduleCode} value={moduleCode}>
+                    {moduleCode}
+                  </AndamioSelectItem>
+                ))}
+              </AndamioSelectContent>
+            </AndamioSelect>
+          </div>
 
-                return (
-                  <AndamioTableRow
-                    key={`${commitment.moduleCode}-${commitment.studentAlias}`}
-                    className={`${isSelected ? "bg-muted" : ""} ${
-                      decision === "accept" ? "bg-primary/5" : decision === "refuse" ? "bg-destructive/5" : ""
-                    }`}
+          {/* Scrollable assignment list */}
+          <AndamioScrollArea className="flex-1">
+            {filteredCommitments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <TeacherIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                <AndamioText variant="small" className="text-muted-foreground text-center">
+                  {commitments.length === 0
+                    ? "No assignment commitments yet"
+                    : "No commitments match your filters"}
+                </AndamioText>
+                {(assignmentFilter !== "all" || searchQuery) && (
+                  <AndamioButton
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      setAssignmentFilter("all");
+                      setSearchQuery("");
+                    }}
                   >
-                    <AndamioTableCell
-                      className="font-mono text-xs cursor-pointer hover:text-primary"
+                    Clear Filters
+                  </AndamioButton>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y">
+                {filteredCommitments.map((commitment) => {
+                  const decision = getDecision(commitment);
+                  const canAssess = isReadyForAssessment(commitment);
+                  const isSelected =
+                    selectedCommitment?.studentAlias === commitment.studentAlias &&
+                    selectedCommitment?.sltHash === commitment.sltHash;
+
+                  return (
+                    <div
+                      key={`${commitment.moduleCode}-${commitment.studentAlias}`}
+                      className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-muted border-l-2 border-l-primary"
+                          : decision === "accept"
+                            ? "bg-success/5 border-l-2 border-l-success/50"
+                            : decision === "refuse"
+                              ? "bg-destructive/5 border-l-2 border-l-destructive/50"
+                              : "border-l-2 border-l-transparent hover:bg-muted/50"
+                      }`}
                       onClick={() => handleSelectCommitment(commitment)}
                     >
-                      {commitment.studentAlias ?? "No access token"}
-                    </AndamioTableCell>
-                    <AndamioTableCell
-                      className="cursor-pointer hover:text-primary"
-                      onClick={() => handleSelectCommitment(commitment)}
-                    >
-                      <div className="font-medium">
-                        {commitment.moduleCode ?? (commitment.sltHash ? `${commitment.sltHash.slice(0, 8)}...` : "Unknown")}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <AndamioText className="font-mono text-xs truncate">
+                            {commitment.studentAlias ?? "No access token"}
+                          </AndamioText>
+                          {(commitment.evidence || commitment.onChainContent) && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" title="Has evidence" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <AndamioText variant="small" className="text-muted-foreground">
+                            {commitment.moduleCode ?? (commitment.sltHash ? `${commitment.sltHash.slice(0, 8)}...` : "Unknown")}
+                          </AndamioText>
+                          <AndamioBadge variant={getStatusVariant(commitment.commitmentStatus)} className="text-[10px] px-1.5 py-0">
+                            {formatNetworkStatus(commitment.commitmentStatus)}
+                          </AndamioBadge>
+                        </div>
                       </div>
-                    </AndamioTableCell>
-                    <AndamioTableCell>
-                      <AndamioBadge variant={getStatusVariant(commitment.commitmentStatus)}>
-                        {formatNetworkStatus(commitment.commitmentStatus)}
-                      </AndamioBadge>
-                    </AndamioTableCell>
-                    <AndamioTableCell>
-                      {commitment.evidence || commitment.onChainContent ? (
-                        <AndamioBadge variant="outline" className="text-primary">Has Evidence</AndamioBadge>
-                      ) : (
-                        <AndamioText variant="small" className="italic text-muted-foreground">None</AndamioText>
-                      )}
-                    </AndamioTableCell>
-                    <AndamioTableCell>
+
+                      {/* Quick decision buttons */}
                       {canAssess ? (
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             type="button"
-                            onClick={() => setDecision(commitment, "accept")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDecision(commitment, "accept");
+                            }}
                             className={`rounded-md p-1.5 transition-all ${
                               decision === "accept"
-                                ? "bg-primary text-primary-foreground"
-                                : "hover:bg-primary/20 text-muted-foreground hover:text-primary"
+                                ? "bg-success text-success-foreground"
+                                : "hover:bg-success/20 text-muted-foreground hover:text-success"
                             }`}
                             title="Accept"
                           >
-                            <SuccessIcon className="h-4 w-4" />
+                            <SuccessIcon className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => setDecision(commitment, "refuse")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDecision(commitment, "refuse");
+                            }}
                             className={`rounded-md p-1.5 transition-all ${
                               decision === "refuse"
                                 ? "bg-destructive text-destructive-foreground"
@@ -435,289 +546,392 @@ export default function TeacherDashboardPage() {
                             }`}
                             title="Refuse"
                           >
-                            <CloseIcon className="h-4 w-4" />
+                            <CloseIcon className="h-3.5 w-3.5" />
                           </button>
-                          {decision && (
-                            <button
-                              type="button"
-                              onClick={() => removeDecision(commitment)}
-                              className="ml-1 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                              title="Clear decision"
-                            >
-                              <CloseIcon className="h-3 w-3" />
-                            </button>
-                          )}
                         </div>
                       ) : (
-                        <AndamioText variant="small" className="text-center text-muted-foreground">—</AndamioText>
+                        decision && (
+                          <div className="flex-shrink-0">
+                            {decision === "accept" ? (
+                              <SuccessIcon className="h-4 w-4 text-success" />
+                            ) : (
+                              <CloseIcon className="h-4 w-4 text-destructive" />
+                            )}
+                          </div>
+                        )
                       )}
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                );
-              })}
-            </AndamioTableBody>
-          </AndamioTable>
-        </AndamioTableContainer>
-      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </AndamioScrollArea>
 
-      {/* Assignment Detail Viewer - Shows when a commitment is selected */}
-      {selectedCommitment && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <AndamioCardTitle>Assignment Details</AndamioCardTitle>
-                <AndamioCardDescription>
-                  Review submission details and evidence
-                </AndamioCardDescription>
-              </div>
-              <AndamioButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedCommitment(null)}
-              >
-                <CloseIcon className="h-4 w-4" />
-              </AndamioButton>
-            </div>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            {/* Assignment Info */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <AndamioLabel>Learner</AndamioLabel>
-                <AndamioText variant="small" className="font-mono mt-1">
-                  {selectedCommitment.studentAlias ?? "No access token"}
-                </AndamioText>
-              </div>
-              <div>
-                <AndamioLabel>Assignment</AndamioLabel>
-                <AndamioText variant="small" className="font-medium mt-1">
-                  {selectedCommitment.moduleCode ?? (selectedCommitment.sltHash ? `${selectedCommitment.sltHash.slice(0, 12)}...` : "Unknown")}
-                </AndamioText>
-              </div>
-              <div>
-                <AndamioLabel>Status</AndamioLabel>
-                <div className="mt-1">
-                  <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
-                    {formatNetworkStatus(selectedCommitment.commitmentStatus)}
-                  </AndamioBadge>
+          {/* Sticky bottom bar — decision cart (also visible during/after batch submission) */}
+          {(pendingDecisions.size > 0 || batchState !== "idle") && (
+            <div className="border-t bg-muted/30">
+              {/* Collapsed summary row — hidden when batch is done and no pending decisions remain */}
+              {pendingDecisions.size > 0 && (
+                <div className="flex items-center justify-between px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <AndamioBadge variant="secondary">
+                      {pendingDecisions.size} ready
+                    </AndamioBadge>
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      {moduleGroups.length} module{moduleGroups.length !== 1 ? "s" : ""}
+                    </AndamioText>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <AndamioButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDecisionSummaryExpanded(!decisionSummaryExpanded)}
+                    >
+                      {decisionSummaryExpanded ? (
+                        <CollapseIcon className="h-4 w-4 mr-1" />
+                      ) : (
+                        <ExpandIcon className="h-4 w-4 mr-1" />
+                      )}
+                      {decisionSummaryExpanded ? "Hide" : "View Summary"}
+                    </AndamioButton>
+                  </div>
                 </div>
+              )}
+
+              {/* Expanded decision summary */}
+              {decisionSummaryExpanded && (
+                <div className="border-t px-4 pb-2">
+                  <AndamioScrollArea className="max-h-48">
+                    {moduleGroups.map((group) => {
+                      const groupResult = batchResults.find((r) => r.sltHash === group.sltHash);
+                      return (
+                        <div key={group.sltHash} className="py-2 border-b last:border-b-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <AndamioText className="font-medium text-xs">
+                              {group.moduleCode ?? group.sltHash.slice(0, 12)}
+                            </AndamioText>
+                            <div className="flex items-center gap-1">
+                              <AndamioText variant="small" className="text-muted-foreground">
+                                {group.decisions.length} decision{group.decisions.length !== 1 ? "s" : ""}
+                              </AndamioText>
+                              {groupResult && (
+                                <AndamioBadge
+                                  variant={
+                                    groupResult.status === "success" ? "default" :
+                                    groupResult.status === "error" ? "destructive" :
+                                    groupResult.status === "submitting" ? "secondary" : "outline"
+                                  }
+                                  className="text-[10px] px-1.5 py-0"
+                                >
+                                  {groupResult.status === "pending" && "Waiting"}
+                                  {groupResult.status === "submitting" && "Submitting..."}
+                                  {groupResult.status === "success" && "Submitted"}
+                                  {groupResult.status === "error" && "Failed"}
+                                </AndamioBadge>
+                              )}
+                            </div>
+                          </div>
+                          {group.decisions.map((d) => {
+                            const entry = Array.from(pendingDecisions.values()).find(
+                              (e) =>
+                                e.commitment.studentAlias === d.alias &&
+                                (e.commitment.sltHash ?? "unknown") === group.sltHash
+                            );
+                            return (
+                              <div
+                                key={`${group.sltHash}-${d.alias}`}
+                                className="flex items-center justify-between py-0.5 pl-2"
+                              >
+                                <AndamioText variant="small" className="font-mono">
+                                  {d.alias}
+                                </AndamioText>
+                                <div className="flex items-center gap-1">
+                                  <AndamioBadge
+                                    variant={d.outcome === "accept" ? "default" : "destructive"}
+                                    className="text-[10px] px-1.5 py-0"
+                                  >
+                                    {d.outcome === "accept" ? "Accept" : "Refuse"}
+                                  </AndamioBadge>
+                                  {batchState === "idle" && entry && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDecision(entry.commitment)}
+                                      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      title="Remove"
+                                    >
+                                      <CloseIcon className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {groupResult?.status === "error" && groupResult.error && (
+                            <AndamioText variant="small" className="text-destructive mt-1">
+                              {groupResult.error}
+                            </AndamioText>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </AndamioScrollArea>
+
+                  {/* Clear all */}
+                  <div className="flex justify-end pt-1">
+                    <AndamioButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        clearAllDecisions();
+                        resetBatch();
+                      }}
+                      disabled={batchState === "submitting"}
+                    >
+                      Clear All
+                    </AndamioButton>
+                  </div>
+                </div>
+              )}
+
+              {/* Multi-module warning */}
+              {isMultiModuleBatch && batchState === "idle" && decisionSummaryExpanded && (
+                <div className="px-4 pb-2">
+                  <AndamioAlert>
+                    <AlertIcon className="h-4 w-4" />
+                    <AndamioAlertDescription>
+                      {moduleGroups.length} modules — you will sign {moduleGroups.length} transactions.
+                    </AndamioAlertDescription>
+                  </AndamioAlert>
+                </div>
+              )}
+
+              {/* Batch progress inline */}
+              {batchState === "submitting" && (
+                <div className="px-4 pb-2">
+                  <div className="flex items-center gap-2">
+                    <LoadingIcon className="h-4 w-4 animate-spin text-secondary" />
+                    <AndamioText variant="small">
+                      TX {currentGroupIndex + 1}/{totalGroups}
+                      {moduleGroups[currentGroupIndex]?.moduleCode && (
+                        <span className="text-muted-foreground"> — {moduleGroups[currentGroupIndex]?.moduleCode}</span>
+                      )}
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      {assessTx.state === "fetching" && "Preparing..."}
+                      {assessTx.state === "signing" && "Sign in wallet..."}
+                      {assessTx.state === "submitting" && "Submitting..."}
+                      {assessTx.state === "success" && "Done"}
+                    </AndamioText>
+                  </div>
+                </div>
+              )}
+
+              {/* Batch complete inline */}
+              {batchState === "done" && (
+                <div className="px-4 pb-2 space-y-2">
+                  {batchResults.every((r) => r.status === "success") ? (
+                    <div className="flex items-center gap-2">
+                      <SuccessIcon className="h-4 w-4 text-success" />
+                      <AndamioText variant="small" className="text-success font-medium">
+                        All {batchResults.length} TX{batchResults.length !== 1 ? "s" : ""} submitted!
+                      </AndamioText>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {batchResults.some((r) => r.status === "success") && (
+                        <div className="flex items-center gap-2">
+                          <SuccessIcon className="h-4 w-4 text-success" />
+                          <AndamioText variant="small" className="text-success">
+                            {batchResults.filter((r) => r.status === "success").length}/{batchResults.length} succeeded
+                          </AndamioText>
+                        </div>
+                      )}
+                      {batchResults.some((r) => r.status === "error") && (
+                        <div className="flex items-center gap-2">
+                          <AlertIcon className="h-4 w-4 text-destructive" />
+                          <AndamioText variant="small" className="text-destructive">
+                            {batchResults.filter((r) => r.status === "error").length} failed — retry below
+                          </AndamioText>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <AndamioButton variant="outline" size="sm" onClick={resetBatch} className="w-full">
+                    {pendingDecisions.size > 0 ? "Retry Failed" : "Done"}
+                  </AndamioButton>
+                </div>
+              )}
+
+              {/* Submit button */}
+              {batchState === "idle" && (
+                <div className="px-4 pb-3">
+                  <TransactionButton
+                    txState={assessTx.state}
+                    onClick={handleBatchSubmit}
+                    disabled={!user?.accessTokenAlias || pendingDecisions.size === 0}
+                    stateText={{
+                      idle: isMultiModuleBatch
+                        ? `Submit ${pendingDecisions.size} Assessment${pendingDecisions.size !== 1 ? "s" : ""} (${moduleGroups.length} TX)`
+                        : `Submit ${pendingDecisions.size} Assessment${pendingDecisions.size !== 1 ? "s" : ""}`,
+                      fetching: "Preparing...",
+                      signing: "Sign in Wallet",
+                      submitting: "Submitting...",
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </AndamioResizablePanel>
+
+      <AndamioResizableHandle withHandle />
+
+      {/* ================================================================= */}
+      {/* RIGHT PANEL — Evidence Detail                                     */}
+      {/* ================================================================= */}
+      <AndamioResizablePanel defaultSize={60}>
+        <AndamioScrollArea className="h-full">
+          {selectedCommitment ? (
+            <div className="p-6 space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">
+                      {selectedCommitment.moduleCode ??
+                        (selectedCommitment.sltHash
+                          ? `${selectedCommitment.sltHash.slice(0, 12)}...`
+                          : "Unknown")}
+                    </h3>
+                    <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
+                      {formatNetworkStatus(selectedCommitment.commitmentStatus)}
+                    </AndamioBadge>
+                  </div>
+                  <AndamioText variant="small" className="font-mono text-muted-foreground">
+                    {selectedCommitment.studentAlias ?? "No access token"}
+                  </AndamioText>
+                </div>
+                <AndamioButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedCommitment(null)}
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </AndamioButton>
               </div>
+
+              {/* Transaction info */}
               {selectedCommitment.submissionTx && (
                 <div>
                   <AndamioLabel>Transaction</AndamioLabel>
                   <AndamioText variant="small" className="font-mono mt-1">
-                    {selectedCommitment.submissionTx.slice(0, 12)}...
+                    {selectedCommitment.submissionTx.slice(0, 24)}...
                   </AndamioText>
                 </div>
               )}
-            </div>
 
-            {/* Evidence Section */}
-            <div className="space-y-2 pt-4 border-t">
-              <AndamioLabel>Student Evidence</AndamioLabel>
-              {selectedCommitment.evidence ? (
-                <div className="border rounded-md">
-                  <ContentDisplay content={selectedCommitment.evidence as JSONContent} variant="muted" />
-                </div>
-              ) : selectedCommitment.onChainContent ? (
-                <div className="py-4 px-3 border rounded-md bg-muted/20">
-                  <AndamioText variant="small" className="font-mono break-all">
-                    {selectedCommitment.onChainContent}
-                  </AndamioText>
-                  <AndamioText variant="small" className="text-muted-foreground italic mt-2">
-                    On-chain evidence hash. Database record not found.
-                  </AndamioText>
-                </div>
-              ) : (
-                <div className="py-4 px-3 border rounded-md bg-muted/20">
-                  <AndamioText variant="small" className="text-muted-foreground italic">
-                    No evidence submitted yet.
-                  </AndamioText>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Decision Buttons */}
-            {isReadyForAssessment(selectedCommitment) && (
-              <div className="flex items-center gap-3 pt-4 border-t">
-                <AndamioText variant="small" className="text-muted-foreground">Quick decision:</AndamioText>
-                <div className="flex gap-2">
-                  <AndamioButton
-                    size="sm"
-                    variant={getDecision(selectedCommitment) === "accept" ? "default" : "outline"}
-                    onClick={() => setDecision(selectedCommitment, "accept")}
-                  >
-                    <SuccessIcon className="h-4 w-4 mr-1" />
-                    Accept
-                  </AndamioButton>
-                  <AndamioButton
-                    size="sm"
-                    variant={getDecision(selectedCommitment) === "refuse" ? "destructive" : "outline"}
-                    onClick={() => setDecision(selectedCommitment, "refuse")}
-                  >
-                    <CloseIcon className="h-4 w-4 mr-1" />
-                    Refuse
-                  </AndamioButton>
-                </div>
-                {getDecision(selectedCommitment) && (
-                  <AndamioButton
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeDecision(selectedCommitment)}
-                  >
-                    Clear
-                  </AndamioButton>
+              {/* Evidence Section — main focus */}
+              <div className="space-y-2">
+                <AndamioLabel>Student Evidence</AndamioLabel>
+                {selectedCommitment.evidence ? (
+                  <div className="border rounded-md">
+                    <ContentDisplay content={selectedCommitment.evidence as JSONContent} variant="muted" />
+                  </div>
+                ) : selectedCommitment.onChainContent ? (
+                  <div className="py-4 px-3 border rounded-md bg-muted/20">
+                    <AndamioText variant="small" className="font-mono break-all">
+                      {selectedCommitment.onChainContent}
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-muted-foreground italic mt-2">
+                      On-chain evidence hash. Database record not found.
+                    </AndamioText>
+                  </div>
+                ) : (
+                  <div className="py-4 px-3 border rounded-md bg-muted/20">
+                    <AndamioText variant="small" className="text-muted-foreground italic">
+                      No evidence submitted yet.
+                    </AndamioText>
+                  </div>
                 )}
               </div>
-            )}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
 
-      {/* Batch Submit Card - Shows when there are pending decisions */}
-      {pendingDecisions.size > 0 && (
-        <AndamioCard className="border-primary/50">
-          <AndamioCardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <AndamioCardTitle>Pending Assessment Decisions</AndamioCardTitle>
-                <AndamioCardDescription>
-                  {pendingDecisions.size} decision{pendingDecisions.size !== 1 ? "s" : ""} ready to submit
-                </AndamioCardDescription>
-              </div>
-              <AndamioButton
-                variant="ghost"
-                size="sm"
-                onClick={clearAllDecisions}
-              >
-                Clear All
-              </AndamioButton>
-            </div>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            {/* Decision Summary Table */}
-            <div className="rounded-md border">
-              <AndamioTable>
-                <AndamioTableHeader>
-                  <AndamioTableRow>
-                    <AndamioTableHead>Learner</AndamioTableHead>
-                    <AndamioTableHead>Assignment</AndamioTableHead>
-                    <AndamioTableHead>Decision</AndamioTableHead>
-                    <AndamioTableHead className="w-10"></AndamioTableHead>
-                  </AndamioTableRow>
-                </AndamioTableHeader>
-                <AndamioTableBody>
-                  {Array.from(pendingDecisions.entries()).map(([key, { commitment, decision }]) => (
-                    <AndamioTableRow key={key}>
-                      <AndamioTableCell className="font-mono text-xs">
-                        {commitment.studentAlias}
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        {commitment.moduleCode ?? commitment.sltHash?.slice(0, 8)}
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        <AndamioBadge variant={decision === "accept" ? "default" : "destructive"}>
-                          {decision === "accept" ? "Accept" : "Refuse"}
-                        </AndamioBadge>
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        <button
-                          type="button"
-                          onClick={() => removeDecision(commitment)}
-                          className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                          title="Remove"
-                        >
-                          <CloseIcon className="h-4 w-4" />
-                        </button>
-                      </AndamioTableCell>
-                    </AndamioTableRow>
-                  ))}
-                </AndamioTableBody>
-              </AndamioTable>
-            </div>
-
-            {/* Transaction Status */}
-            {assessTx.state !== "idle" && !assessTxConfirmed && (
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <div className="flex items-center gap-3">
-                  <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
-                  <div className="flex-1">
-                    <AndamioText className="font-medium">
-                      {assessTx.state === "fetching" && "Preparing assessments..."}
-                      {assessTx.state === "signing" && "Please sign in your wallet..."}
-                      {assessTx.state === "submitting" && "Submitting assessments..."}
-                      {assessTx.state === "success" && "Waiting for confirmation..."}
-                    </AndamioText>
-                    {assessTx.state === "success" && assessTxStatus && (
-                      <AndamioText variant="small" className="text-xs">
-                        {assessTxStatus.state === "pending" && "Waiting for block confirmation"}
-                        {assessTxStatus.state === "confirmed" && "Processing database updates"}
+              {/* Decision buttons — sticky bottom area */}
+              {isReadyForAssessment(selectedCommitment) && (
+                <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-6 px-6 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <AndamioButton
+                      size="default"
+                      variant={getDecision(selectedCommitment) === "accept" ? "default" : "outline"}
+                      onClick={() => handleDecisionAndAdvance(selectedCommitment, "accept")}
+                      className={`flex-1 ${getDecision(selectedCommitment) === "accept" ? "bg-success text-success-foreground hover:bg-success/90" : ""}`}
+                    >
+                      <SuccessIcon className="h-4 w-4 mr-2" />
+                      Accept
+                    </AndamioButton>
+                    <AndamioButton
+                      size="default"
+                      variant={getDecision(selectedCommitment) === "refuse" ? "destructive" : "outline"}
+                      onClick={() => handleDecisionAndAdvance(selectedCommitment, "refuse")}
+                      className="flex-1"
+                    >
+                      <CloseIcon className="h-4 w-4 mr-2" />
+                      Refuse
+                    </AndamioButton>
+                    {getDecision(selectedCommitment) && (
+                      <AndamioButton
+                        size="default"
+                        variant="ghost"
+                        onClick={() => removeDecision(selectedCommitment)}
+                      >
+                        Clear
+                      </AndamioButton>
+                    )}
+                  </div>
+                  {/* Current decision indicator + next pending */}
+                  <div className="flex items-center justify-between">
+                    {getDecision(selectedCommitment) ? (
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        Decision:{" "}
+                        <span className={getDecision(selectedCommitment) === "accept" ? "text-success font-medium" : "text-destructive font-medium"}>
+                          {getDecision(selectedCommitment) === "accept" ? "Accept" : "Refuse"}
+                        </span>
                       </AndamioText>
+                    ) : (
+                      <span />
+                    )}
+                    {findNextPending(selectedCommitment) && (
+                      <AndamioButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const next = findNextPending(selectedCommitment);
+                          if (next) setSelectedCommitment(next);
+                        }}
+                      >
+                        Next pending
+                        <NextIcon className="h-4 w-4 ml-1" />
+                      </AndamioButton>
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          ) : (
+            /* Empty state */
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <TeacherIcon className="h-12 w-12 text-muted-foreground/50" />
+              <div>
+                <AndamioText className="font-medium">Select an assignment to review</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground mt-1">
+                  Click on a learner in the list to view their evidence and make assessment decisions.
+                </AndamioText>
               </div>
-            )}
-
-            {/* Success State */}
-            {assessTxConfirmed && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center gap-3">
-                  <SuccessIcon className="h-5 w-5 text-primary" />
-                  <AndamioText className="font-medium text-primary">
-                    All assessments submitted successfully!
-                  </AndamioText>
-                </div>
-              </div>
-            )}
-
-            {/* Error State */}
-            {assessTx.state === "error" && (
-              <AndamioAlert variant="destructive">
-                <AlertIcon className="h-4 w-4" />
-                <AndamioAlertDescription>
-                  {assessTx.error?.message ?? "Assessment failed"}
-                </AndamioAlertDescription>
-              </AndamioAlert>
-            )}
-
-            {/* Submit Button */}
-            {!assessTxConfirmed && (
-              <TransactionButton
-                txState={assessTx.state}
-                onClick={async () => {
-                  if (!user?.accessTokenAlias) return;
-
-                  // Build the assignment_decisions array from pending decisions
-                  const decisions = Array.from(pendingDecisions.values()).map(({ commitment, decision }) => ({
-                    alias: commitment.studentAlias,
-                    outcome: decision,
-                  }));
-
-                  await assessTx.execute({
-                    txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
-                    params: {
-                      alias: user.accessTokenAlias,
-                      course_id: courseNftPolicyId,
-                      assignment_decisions: decisions,
-                    },
-                  });
-                }}
-                disabled={!user?.accessTokenAlias || pendingDecisions.size === 0}
-                stateText={{
-                  idle: `Submit ${pendingDecisions.size} Assessment${pendingDecisions.size !== 1 ? "s" : ""}`,
-                  fetching: "Preparing...",
-                  signing: "Sign in Wallet",
-                  submitting: "Submitting...",
-                }}
-                className="w-full"
-              />
-            )}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
-      </div>
-    </AndamioScrollArea>
+            </div>
+          )}
+        </AndamioScrollArea>
+      </AndamioResizablePanel>
+    </AndamioResizablePanelGroup>
   );
 }

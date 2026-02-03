@@ -648,30 +648,36 @@ export function useDeleteTask() {
   const { authenticatedFetch } = useAndamioAuth();
 
   return useMutation({
-    mutationFn: async ({
-      taskHash,
-      contributorStateId,
-    }: {
+    mutationFn: async (input: {
       projectId: string;
-      taskHash: string;
       contributorStateId: string;
+      /** Task position index (from task_index field) */
+      taskIndex: number;
     }) => {
       // Endpoint: POST /project/manager/task/delete
-      // API expects: task_hash, contributor_state_id
+      // API identifies tasks by contributor_state_id + index (per #148)
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/project/manager/task/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            task_hash: taskHash,
-            contributor_state_id: contributorStateId,
+            contributor_state_id: input.contributorStateId,
+            index: input.taskIndex,
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to delete task: ${response.statusText}`);
+        const errorText = await response.text();
+        let errorMessage = `Failed to delete task: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText) as { message?: string };
+          errorMessage = errorData.message ?? errorMessage;
+        } catch {
+          // Use default error message
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();

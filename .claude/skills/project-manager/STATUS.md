@@ -26,30 +26,22 @@ Current implementation status of the Andamio T3 App Template.
 
 ## 📌 NEXT SESSION PROMPT
 
-> **Branch: `review/tx-ux-audit`** — Gateway sync, issue cleanup, TX UX audit continuation.
+> **Branch: `fix/batch-assessment-group-by-module`** — Draft task delete fix, TX UX audit continuation.
 >
-> **What shipped this session (Feb 2–3)**:
+> **What shipped this session (Feb 3)**:
 >
-> **Commits on branch** (merged from main):
-> - `c1301e0` — feat: add Assignments Complete indicator to studio course header
-> - `33f7890` — fix: filter pending review banner to only PENDING_APPROVAL commitments
-> - `02ba499` — fix: correct batch-status endpoint path from singular to plural (#137, #138)
-> - `1ce9dff` — fix: pre-populate task hashes before TX registration (#135, #136)
-> - `b6d3fb2` — fix: TasksManage TX UX — prevent unmount before confirmation (#134)
-> - `6fd7db8` — feat: project routes (#133)
-> - `0acd892` — fix: remove prerequisites field from tasks-manage transaction (#132)
+> **Draft task delete fixed** (issues #147, #148):
+> - `useDeleteTask` simplified to `{ contributor_state_id, index }` contract per #148
+> - `handleDeleteTask` in draft-tasks page updated with explicit error messages (was silently failing)
+> - `transformMergedTask` updated to use top-level `task_index` field
+> - `transformAssets` updated for typed `ApiTypesAsset[]` (was untyped `any`)
+> - Generated types regenerated to `v2.0.0-dev-20260203-g`
 >
-> **Uncommitted changes** (this session):
-> - `use-transaction.ts` — Added `slt_hashes?: string[]` to `UnsignedTxResponse` for modules/manage endpoint
-> - `mint-module-tokens.tsx` — Hash validation: extracts `slt_hashes` from API response, compares with client-computed Blake2b-256 hashes, logs match/mismatch
-> - `gateway.ts` + `api-metadata.json` — Regenerated types from latest gateway spec (managers field, SSE fix)
->
-> **Issues closed** (6 total):
-> - #140 — Gateway API sync: Andamioscan regen + SSE fix
-> - #139 — Gateway API sync: slt_hashes, managers, typo fixes (superseded by #140)
-> - #114 — Managers list stale after TX (resolved by Andamioscan regen)
-> - #130 — useManagerTasks wrong HTTP method and identifier (already fixed)
-> - #129 — Tasks disappear after edit: wrong project_id in tasks/list (already fixed)
+> **TX UX audit progress**:
+> - TX #7 (COURSE_STUDENT_ASSIGNMENT_COMMIT) — ALL PASS. Backend 404 "Module not found" resolved.
+> - TX #10 (PROJECT_OWNER_MANAGERS_MANAGE) — ALL PASS. Backend `managers_manage` handler resolved by ops.
+> - TX #6 (COURSE_TEACHER_ASSIGNMENTS_ASSESS) — Regression from `e8d76ec` fixed. Decision cart kept visible during batch state.
+> - **Score: 9/16 passing** (up from 7), 0 backend-blocked, 7 untested, 1 no UI
 >
 > ---
 >
@@ -69,14 +61,11 @@ Current implementation status of the Andamio T3 App Template.
 >
 > **Known API bugs**:
 >
-> - `COURSE_STUDENT_ASSIGNMENT_COMMIT` — Gateway confirmation handler returns 404 "Module not found" (TX #7 in audit). Frontend correct, backend issue.
-> - `PROJECT_OWNER_MANAGERS_MANAGE` — Gateway never reaches `updated` state (TX #10 in audit). SSE fix in #140 may resolve this — needs re-test.
 > - `/course/user/modules/` returns empty for on-chain-only courses — API team notified
-> - `assets` / `native_assets` fields untyped (`any`) across 5 treasury/task interfaces — frontend can only show ADA. Typed schema requested in [andamio-api#79](https://github.com/Andamio-Platform/andamio-api/issues/79). 🟢 Low priority.
 >
 > ---
 >
-> **Next Work**: Re-test TX #10 (managers manage) after SSE fix → #103 implement 3 missing project hooks → Continue TX UX audit (#11–#16) → #118 access token mint bug
+> **Next Work**: Continue TX UX audit (#1, #8, #11–#16) → #103 implement 3 missing project hooks → #118 access token mint bug
 
 ---
 
@@ -134,6 +123,16 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 3, 2026** (Draft Task Delete Fix + TX UX Audit):
+- ✅ **Draft task delete fixed** — Root cause: silent guard clauses + API didn't support deleting tasks without `task_hash`. Issue #148 simplified contract to `{ contributor_state_id, index }`. `useDeleteTask` rewritten, `handleDeleteTask` now shows explicit error messages.
+- ✅ **`transformMergedTask` updated** — Uses top-level `task_index` field (per #147 API changes).
+- ✅ **`transformAssets` typed** — Now uses `ApiTypesAsset { policy_id, name, amount }` instead of untyped `any`.
+- ✅ **Generated types regenerated** — `v2.0.0-dev-20260203-g` with `ApiTypesAsset`, top-level `task_index`, updated `DeleteTaskRequest`.
+- ✅ **TX #7 ALL PASS** — Backend 404 "Module not found" resolved. Full flow working.
+- ✅ **TX #10 ALL PASS** — Backend `managers_manage` handler resolved by ops.
+- ✅ **TX #6 regression fixed** — Decision cart kept visible during batch state (was unmounting on success after `e8d76ec` refactor).
+- ✅ **TX UX audit score: 9/16 passing** — Up from 7. 0 backend-blocked. 7 untested.
 
 **February 3, 2026** (Gateway API Sync + Issue Cleanup):
 - ✅ **Gateway API sync** (#139, #140) — Regenerated types from latest gateway spec. `managers` field, SSE fix, `slt_hashes` in modules/manage response all integrated.
@@ -248,13 +247,14 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
 | **Access token mint fails on preprod** (#118) | 🔴 High | Open | Bug report from preprod.app.andamio.io |
-| **Assignment commit gateway 404** | 🔴 High | Backend | `COURSE_STUDENT_ASSIGNMENT_COMMIT` — TX submits but gateway confirmation handler returns 404 "Module not found". Frontend correct. |
-| **Managers manage stuck spinner** (#10 in TX audit) | 🟡 Medium | Re-test needed | SSE fix in #140 may resolve. Gateway never reaches `updated` state. |
 | **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Structural compliance ✅. 3 missing hooks: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment`. |
 | **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. |
 | **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook. |
 | **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
 | **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
+| **Draft task delete** (#147, #148) | ✅ Done | Closed | Simplified to `{ contributor_state_id, index }`. Working. |
+| **Assignment commit gateway 404** (TX #7) | ✅ Done | Resolved | Backend 404 "Module not found" fixed. All 4 checks pass. |
+| **Managers manage stuck spinner** (TX #10) | ✅ Done | Resolved | Backend `managers_manage` handler fixed by ops. All 4 checks pass. |
 | **Managers list stale after TX** (#114) | ✅ Done | Closed | Resolved by Andamioscan regen in #140 |
 | **useManagerTasks wrong method** (#130) | ✅ Done | Closed | Now uses POST /tasks/list with projectId |
 | **Tasks disappear after edit** (#129) | ✅ Done | Closed | project_id and cache invalidation fixed |
@@ -353,6 +353,7 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-01-31 | **Landing Page + TX Stream + Bug Fixes** (PR #105) | Complete |
 | 2026-02-01 | **Project Workflows** (PR #111) + owner/manager fixes | Complete |
 | 2026-02-03 | **Gateway API Sync + TX UX Audit** — 6 issues closed, types regen | Complete |
+| 2026-02-03 | **Draft Task Delete Fix** — #147/#148, typed assets, TX audit 9/16 | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---

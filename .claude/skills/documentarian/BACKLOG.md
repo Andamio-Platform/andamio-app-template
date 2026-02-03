@@ -199,3 +199,10 @@ Items that have been addressed and can be archived.
 | Document slt_hashes validation | 2026-02-03 | New hash validation in `mint-module-tokens.tsx` — compares API-returned hashes with client-computed Blake2b-256. Updated `UnsignedTxResponse` in `use-transaction.ts`. |
 | Update tx-ux-audit-status.md | 2026-02-03 | TX #10 PROJECT_OWNER_MANAGERS_MANAGE audited. 9/16 TXs tested, 7 pass, 2 backend-blocked. |
 | Document #103 status clarification | 2026-02-03 | Structural compliance confirmed. 3 missing hooks identified: useAssessCommitment, useClaimCommitment, useLeaveCommitment. |
+| Update STATUS.md for draft task delete fix | 2026-02-03 | Draft task delete working (#147, #148). useDeleteTask simplified. TX #7, #10 all pass. TX #6 regression fixed. Score: 9/16. |
+| Update ROADMAP.md with draft task delete milestone | 2026-02-03 | Added milestone entry for #147/#148 fix, typed assets, TX audit 9/16. |
+| Update tx-ux-audit-status.md | 2026-02-03 | TX #7 all pass (backend resolved), TX #10 all pass (ops resolved), TX #6 regression fixed. Audit history updated. |
+| Document useDeleteTask contract change (#148) | 2026-02-03 | Simplified from hash-preferred to `{ contributor_state_id, index }` only. Removed computeTaskHash workaround. |
+| Document transformMergedTask top-level task_index | 2026-02-03 | Per #147, `task_index` is now top-level on `OrchestrationMergedTaskListItem`. Transform updated. |
+| Document transformAssets typed ApiTypesAsset | 2026-02-03 | Assets now typed `{ policy_id, name, amount }` instead of untyped `any`. |
+| Update blockers: TX #7, #10, draft delete resolved | 2026-02-03 | Removed 3 blockers from STATUS.md. 0 backend-blocked items remaining. |

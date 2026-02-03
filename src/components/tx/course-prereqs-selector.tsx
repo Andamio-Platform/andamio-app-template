@@ -29,7 +29,10 @@ import {
   CollapseIcon,
   InfoIcon,
   SuccessIcon,
+  AlertIcon,
 } from "~/components/icons";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import Link from "next/link";
 import { Skeleton } from "~/components/ui/skeleton";
 
 // Type for the course_prereqs format expected by Atlas API
@@ -247,26 +250,50 @@ export function CoursePrereqsSelector({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-6 text-center">
-          <CourseIcon className="mx-auto h-8 w-8 text-muted-foreground/50" />
-          <AndamioText variant="muted" className="mt-2">
-            No courses with published modules available.
-          </AndamioText>
-          <AndamioText variant="small" className="text-muted-foreground">
-            Create and publish a course first to use it as a prerequisite.
-          </AndamioText>
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertIcon className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h4 className="font-semibold text-foreground">
+                Create a Prerequisite First
+              </h4>
+              <AndamioText variant="muted" className="text-sm">
+                Projects require contributor qualifications. Before creating a
+                project, you need at least one course module that contributors
+                must complete to prove they have the skills your project needs.
+              </AndamioText>
+            </div>
+          </div>
+
+          <div className="border-t border-warning/20 pt-4">
+            <AndamioText variant="small" className="text-muted-foreground mb-3">
+              This ensures:
+            </AndamioText>
+            <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+              <li>Only qualified contributors can join</li>
+              <li>Contributors understand expectations before committing</li>
+              <li>You have an auditable record of qualifications</li>
+            </ul>
+          </div>
+
+          <Link href="/studio/course?create=true">
+            <AndamioButton className="w-full">
+              <CourseIcon className="h-4 w-4 mr-2" />
+              Go to Course Studio
+            </AndamioButton>
+          </Link>
         </div>
       )}
 
-      {/* Permanence Notice */}
-      <div className="flex items-start gap-2 rounded-md bg-muted/40 px-3 py-2.5">
-        <InfoIcon className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-        <AndamioText variant="small" className="text-muted-foreground">
-          {selectedCourseCount === 0
-            ? "No prerequisites? That\u2019s OK. Your project will be open to all access token holders. You can\u2019t change this after creation."
-            : "Prerequisites are set at project creation and become part of the on-chain record. Choose carefully."}
-        </AndamioText>
-      </div>
+      {/* Permanence Notice - only show when prerequisites are selected */}
+      {selectedCourseCount > 0 && (
+        <div className="flex items-start gap-2 rounded-md bg-muted/40 px-3 py-2.5">
+          <InfoIcon className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+          <AndamioText variant="small" className="text-muted-foreground">
+            Prerequisites are permanent and become part of the on-chain record.
+          </AndamioText>
+        </div>
+      )}
     </div>
   );
 }

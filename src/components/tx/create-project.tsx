@@ -222,7 +222,8 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
   const hasAccessToken = !!user?.accessTokenAlias;
   const hasInitiatorData = !!initiatorData;
   const hasTitle = title.trim().length > 0;
-  const canCreate = hasAccessToken && hasInitiatorData && hasTitle;
+  const hasPrereqs = coursePrereqs.length > 0;
+  const canCreate = hasAccessToken && hasInitiatorData && hasTitle && hasPrereqs;
   const isFormActive = state === "idle" || state === "error";
 
   // Checklist step statuses
@@ -367,9 +368,6 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
                     onChange={setCoursePrereqs}
                     disabled={!isFormActive}
                   />
-                  <AndamioText variant="small" className="text-xs mt-3 text-muted-foreground">
-                    You can add additional managers after the project is created.
-                  </AndamioText>
                 </ChecklistStep>
               </div>
             )}

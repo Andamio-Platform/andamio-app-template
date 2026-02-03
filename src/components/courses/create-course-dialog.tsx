@@ -37,6 +37,11 @@ import { TRANSACTION_UI } from "~/config/transaction-ui";
 import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-course-owner";
 
+interface CreateCourseDialogProps {
+  /** If true, the dialog opens immediately on mount */
+  defaultOpen?: boolean;
+}
+
 /**
  * CreateCourseDialog - Elegant bottom drawer for minting a Course NFT
  *
@@ -51,7 +56,7 @@ import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-cours
  *
  * No page redirect, no wallet disconnect. Clean and elegant.
  */
-export function CreateCourseDialog() {
+export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogProps) {
   const router = useRouter();
   const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
@@ -60,7 +65,7 @@ export function CreateCourseDialog() {
   const registerCourse = useRegisterCourse();
   const updateCourse = useUpdateCourse();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [title, setTitle] = useState("");
   const [initiatorData, setInitiatorData] = useState<{
     used_addresses: string[];

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudioHeader } from "~/components/layout/studio-header";
@@ -60,6 +60,10 @@ import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 export default function StudioCourseListPage() {
   const { isAuthenticated } = useAndamioAuth();
   const { setActions } = useStudioHeader();
+  const searchParams = useSearchParams();
+
+  // Check if we should auto-open the create dialog (linked from Project creation)
+  const shouldOpenCreateDialog = searchParams.get("create") === "true";
 
   // Local UI state
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,10 +111,10 @@ export default function StudioCourseListPage() {
         >
           <RefreshIcon className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </AndamioButton>
-        <CreateCourseDialog />
+        <CreateCourseDialog defaultOpen={shouldOpenCreateDialog} />
       </div>
     );
-  }, [setActions, isLoading, handleRefresh]);
+  }, [setActions, isLoading, handleRefresh, shouldOpenCreateDialog]);
 
   // Auth gate
   if (!isAuthenticated) {

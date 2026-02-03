@@ -350,6 +350,164 @@ export function AssignmentCommitment({
               }}
             />
           </div>
+        ) : commitment?.networkStatus === "ASSIGNMENT_REFUSED" ? (
+          // Assignment refused - show revision flow
+          <div className="space-y-4">
+            {/* Needs Revision Banner */}
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-destructive/10 border-destructive/30">
+              <AlertIcon className="h-8 w-8 text-destructive shrink-0" />
+              <div>
+                <AndamioText className="font-medium">Needs Revision</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Your teacher has reviewed your work and requested revisions. Please update your evidence and resubmit.
+                </AndamioText>
+              </div>
+            </div>
+
+            {/* Previous Evidence (Read-Only) */}
+            {commitment.networkEvidence && (
+              <div className="space-y-2">
+                <AndamioLabel>Previous Evidence (Refused)</AndamioLabel>
+                <ContentDisplay
+                  content={commitment.networkEvidence as JSONContent}
+                  variant="muted"
+                />
+                {commitment.networkEvidenceHash && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                    <span>Previous Hash:</span>
+                    <span className="font-mono bg-muted px-2 py-1 rounded">{commitment.networkEvidenceHash.slice(0, 16)}...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <AndamioSeparator />
+
+            {/* Evidence Editor — pre-populated with previous content */}
+            <div className="space-y-2">
+              <AndamioLabel>Revised Evidence</AndamioLabel>
+              <AndamioText variant="small" className="text-xs mb-2">
+                Edit your evidence below and resubmit. The on-chain record and database will both be updated.
+              </AndamioText>
+              <div className="border border-foreground/30 dark:border-muted-foreground rounded-md overflow-hidden">
+                <ContentEditor
+                  content={localEvidenceContent}
+                  onContentChange={handleEvidenceContentChange}
+                  minHeight="200px"
+                  placeholder="Revise your assignment evidence..."
+                />
+              </div>
+              {localEvidenceContent && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span>New Hash:</span>
+                  <span className="font-mono bg-muted px-2 py-1 rounded">{hashNormalizedContent(localEvidenceContent)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Transaction Status - Only show during processing */}
+            {updateTx.state !== "idle" && updateTx.state !== "success" && (
+              <TransactionStatus
+                state={updateTx.state}
+                result={updateTx.result}
+                error={updateTx.error?.message ?? null}
+                onRetry={() => updateTx.reset()}
+                messages={{
+                  success: "Transaction submitted! Waiting for confirmation...",
+                }}
+              />
+            )}
+
+            {/* Gateway Confirmation Status - Show after TX submitted */}
+            {updateTx.state === "success" && updateTx.result?.requiresDBUpdate && !updateTxConfirmed && (
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
+                  <div className="flex-1">
+                    <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      {updateTxStatus?.state === "pending" && "Waiting for block confirmation"}
+                      {updateTxStatus?.state === "confirmed" && "Processing database updates"}
+                      {!updateTxStatus && "Registering transaction..."}
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Success State */}
+            {updateTxConfirmed && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-center gap-3">
+                  <SuccessIcon className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <AndamioText className="font-medium text-primary">
+                      Revised evidence submitted successfully!
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-xs">
+                      Your assignment is now pending teacher review.
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {updateTx.state === "idle" && !updateTxConfirmed && (
+              <div className="flex justify-end gap-2">
+                <AndamioButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void refetchCommitment();
+                  }}
+                >
+                  Refresh Status
+                </AndamioButton>
+                {user?.accessTokenAlias && localEvidenceContent && (
+                  <TransactionButton
+                    txState={updateTx.state}
+                    onClick={async () => {
+                      const newEvidenceHash = hashNormalizedContent(localEvidenceContent);
+                      await updateTx.execute({
+                        txType: "COURSE_STUDENT_ASSIGNMENT_UPDATE",
+                        params: {
+                          alias: user.accessTokenAlias!,
+                          course_id: courseNftPolicyId,
+                          assignment_info: newEvidenceHash,
+                        },
+                        onSuccess: async (result) => {
+                          setHasUnsavedChanges(false);
+
+                          // Save revised evidence content to database (upsert)
+                          try {
+                            await submitEvidence.mutateAsync({
+                              courseId: courseNftPolicyId,
+                              sltHash: sltHash,
+                              evidence: localEvidenceContent,
+                              evidenceHash: newEvidenceHash,
+                              pendingTxHash: result.txHash,
+                            });
+                          } catch (err) {
+                            console.error("[AssignmentCommitment] Error saving revised evidence to DB:", err);
+                          }
+                        },
+                        onError: (err) => {
+                          setTxError(err.message);
+                        },
+                      });
+                    }}
+                    stateText={{
+                      idle: "Resubmit Evidence",
+                      fetching: "Preparing...",
+                      signing: "Sign in Wallet",
+                      submitting: "Submitting...",
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         ) : commitment?.source === "chain_only" ? (
           // On-chain commitment exists but no database content - use UPDATE TX to sync
           <div className="space-y-4">

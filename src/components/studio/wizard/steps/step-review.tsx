@@ -14,6 +14,7 @@ import {
   IntroductionIcon,
   SendIcon,
   CelebrateIcon,
+  NextIcon,
 } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepHighlight } from "../wizard-step";
@@ -46,6 +47,10 @@ export function StepReview({ config, direction }: StepReviewProps) {
     isDirty,
     isSaving,
     draftSlts,
+    draftAssignment,
+    draftIntroduction,
+    draftLessons,
+    draft,
   } = useWizard();
   const { isAuthenticated } = useAndamioAuth();
   const updateModuleStatus = useUpdateCourseModuleStatus();
@@ -55,13 +60,15 @@ export function StepReview({ config, direction }: StepReviewProps) {
   const moduleStatus = data.courseModule?.status;
   const [isApproved, setIsApproved] = useState(moduleStatus === "approved" || moduleStatus === "active");
 
-  const slts = data.slts;
-  const lessons = data.lessons;
-  const moduleTitle = typeof data.courseModule?.title === "string" ? data.courseModule.title : "Untitled Module";
-  const assignmentTitle = typeof data.assignment?.title === "string" ? data.assignment.title : "Not created";
-  const introductionTitle = typeof data.introduction?.title === "string" ? data.introduction.title : "Not created";
+  // Prefer draft store data (Zustand) over server state (React Query)
+  // so the review step reflects unsaved local edits
+  const slts = draftSlts?.filter(s => !s._isDeleted) ?? data.slts;
+  const lessonCount = draftLessons?.size ?? data.lessons.length;
+  const moduleTitle = draft?.title?.trim() || (typeof data.courseModule?.title === "string" ? data.courseModule.title : "Untitled Module");
+  const assignmentTitle = draftAssignment?.title?.trim() || (typeof data.assignment?.title === "string" ? data.assignment.title : "Not created");
+  const introductionTitle = draftIntroduction?.title?.trim() || (typeof data.introduction?.title === "string" ? data.introduction.title : "Not created");
 
-  const reviewItems = [
+  const requiredItems = [
     {
       id: "credential",
       icon: CredentialIcon,
@@ -87,15 +94,6 @@ export function StepReview({ config, direction }: StepReviewProps) {
       step: "assignment" as const,
     },
     {
-      id: "lessons",
-      icon: LessonIcon,
-      label: "Lessons",
-      value: `${lessons.length} of ${slts.length} lessons`,
-      completed: lessons.length > 0,
-      optional: true,
-      step: "lessons" as const,
-    },
-    {
       id: "introduction",
       icon: IntroductionIcon,
       label: "Introduction",
@@ -105,7 +103,19 @@ export function StepReview({ config, direction }: StepReviewProps) {
     },
   ];
 
-  const allRequiredComplete = completion.credential && completion.slts && completion.assignment && completion.introduction;
+  const optionalItems = [
+    {
+      id: "lessons",
+      icon: LessonIcon,
+      label: "Lessons",
+      value: `${lessonCount} of ${slts.length} lessons`,
+      completed: lessonCount > 0,
+      step: "lessons" as const,
+    },
+  ];
+
+  const requiredCompleteCount = requiredItems.filter((item) => item.completed).length;
+  const allRequiredComplete = requiredCompleteCount === requiredItems.length;
 
   const handleApprove = async () => {
     if (!isAuthenticated || !allRequiredComplete) return;
@@ -274,13 +284,19 @@ export function StepReview({ config, direction }: StepReviewProps) {
             </div>
           </WizardStepHighlight>
 
+          {/* Required items */}
           <AndamioCard>
             <AndamioCardHeader className="pb-3">
-              <AndamioCardTitle className="text-base">Module Checklist</AndamioCardTitle>
+              <div className="flex items-center justify-between">
+                <AndamioCardTitle className="text-base">Required</AndamioCardTitle>
+                <AndamioBadge variant={allRequiredComplete ? "default" : "secondary"}>
+                  {requiredCompleteCount} of {requiredItems.length} complete
+                </AndamioBadge>
+              </div>
             </AndamioCardHeader>
             <AndamioCardContent>
               <div className="space-y-3">
-                {reviewItems.map((item, index) => {
+                {requiredItems.map((item, index) => {
                   const Icon = item.icon;
                   const StatusIcon = item.completed ? VerifiedIcon : NeutralIcon;
 
@@ -301,23 +317,66 @@ export function StepReview({ config, direction }: StepReviewProps) {
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">{item.label}</span>
-                          {item.optional && (
-                            <span className="text-xs text-muted-foreground">(optional)</span>
-                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">{item.value}</span>
-                        {!item.completed && !item.optional && (
-                          <AndamioButton
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => goToStep(item.step)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            Fix
-                          </AndamioButton>
-                        )}
+                        <AndamioButton
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => goToStep(item.step)}
+                          className="h-8 w-8 shrink-0"
+                        >
+                          <NextIcon className="h-4 w-4" />
+                        </AndamioButton>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </AndamioCardContent>
+          </AndamioCard>
+
+          {/* Optional items */}
+          <AndamioCard>
+            <AndamioCardHeader className="pb-3">
+              <AndamioCardTitle className="text-base text-muted-foreground">Optional</AndamioCardTitle>
+            </AndamioCardHeader>
+            <AndamioCardContent>
+              <div className="space-y-3">
+                {optionalItems.map((item, index) => {
+                  const Icon = item.icon;
+                  const StatusIcon = item.completed ? VerifiedIcon : NeutralIcon;
+
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: (requiredItems.length + index) * 0.1 }}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <StatusIcon
+                          className={`h-5 w-5 ${
+                            item.completed ? "text-primary" : "text-muted-foreground"
+                          }`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{item.value}</span>
+                        <AndamioButton
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => goToStep(item.step)}
+                          className="h-8 w-8 shrink-0"
+                        >
+                          <NextIcon className="h-4 w-4" />
+                        </AndamioButton>
                       </div>
                     </motion.div>
                   );

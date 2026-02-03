@@ -132,6 +132,76 @@ export function getModuleCommitmentStatus(
 }
 
 // =============================================================================
+// Shared Query Key + Fetch (reusable by useStudentCompletionsForPrereqs)
+// =============================================================================
+
+/**
+ * Build the query key for student commitments for a specific course.
+ * Exported so parallel-query hooks can share cache entries.
+ */
+export function studentCommitmentsQueryKey(courseId: string) {
+  return [...courseStudentKeys.commitments(), courseId] as const;
+}
+
+/**
+ * Fetch student commitments for a course (standalone function).
+ * Exported so `useQueries()` callers can reuse without duplicating logic.
+ */
+export async function fetchStudentCommitments(
+  courseId: string,
+  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>,
+): Promise<StudentCommitmentSummary[]> {
+  const response = await authenticatedFetch(
+    `${GATEWAY_API_BASE}/course/student/assignment-commitments/list`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ course_id: courseId }),
+    },
+  );
+
+  // 404 means no commitments — return empty
+  if (response.status === 404) {
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch student commitments: ${response.statusText}`,
+    );
+  }
+
+  const result: unknown = await response.json();
+
+  let rawCommitments: RawStudentCommitment[];
+  if (Array.isArray(result)) {
+    rawCommitments = result as RawStudentCommitment[];
+  } else if (result && typeof result === "object" && "data" in result) {
+    const wrapped = result as {
+      data?: RawStudentCommitment[];
+      warning?: string;
+    };
+    if (wrapped.warning) {
+      console.warn(
+        "[useStudentCommitments] API warning:",
+        wrapped.warning,
+      );
+    }
+    rawCommitments = Array.isArray(wrapped.data) ? wrapped.data : [];
+  } else {
+    console.warn(
+      "[useStudentCommitments] Unexpected response shape:",
+      result,
+    );
+    rawCommitments = [];
+  }
+
+  return rawCommitments.map((r) =>
+    transformStudentCommitment(r, courseId),
+  );
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -147,57 +217,8 @@ export function useStudentAssignmentCommitments(courseId: string | undefined) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
-    queryKey: [...courseStudentKeys.commitments(), courseId],
-    queryFn: async (): Promise<StudentCommitmentSummary[]> => {
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/course/student/assignment-commitments/list`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ course_id: courseId }),
-        },
-      );
-
-      // 404 means no commitments — return empty
-      if (response.status === 404) {
-        return [];
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch student commitments: ${response.statusText}`,
-        );
-      }
-
-      const result: unknown = await response.json();
-
-      let rawCommitments: RawStudentCommitment[];
-      if (Array.isArray(result)) {
-        rawCommitments = result as RawStudentCommitment[];
-      } else if (result && typeof result === "object" && "data" in result) {
-        const wrapped = result as {
-          data?: RawStudentCommitment[];
-          warning?: string;
-        };
-        if (wrapped.warning) {
-          console.warn(
-            "[useStudentCommitments] API warning:",
-            wrapped.warning,
-          );
-        }
-        rawCommitments = Array.isArray(wrapped.data) ? wrapped.data : [];
-      } else {
-        console.warn(
-          "[useStudentCommitments] Unexpected response shape:",
-          result,
-        );
-        rawCommitments = [];
-      }
-
-      return rawCommitments.map((r) =>
-        transformStudentCommitment(r, courseId ?? ""),
-      );
-    },
+    queryKey: studentCommitmentsQueryKey(courseId ?? ""),
+    queryFn: () => fetchStudentCommitments(courseId ?? "", authenticatedFetch),
     enabled: isAuthenticated && !!courseId,
     staleTime: 30_000,
   });

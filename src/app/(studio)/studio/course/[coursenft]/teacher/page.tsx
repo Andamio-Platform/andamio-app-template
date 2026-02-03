@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useCallback, useRef } from "react";
+import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -44,6 +44,7 @@ import {
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 
@@ -65,9 +66,41 @@ interface BatchGroupResult {
   status: BatchGroupStatus;
   txHash?: string;
   error?: string;
+  /** Gateway confirmation state: tracks post-submit DB update progress */
+  confirmationState?: "pending" | "confirming" | "confirmed" | "failed";
 }
 
 type BatchState = "idle" | "submitting" | "done";
+
+// =============================================================================
+// Batch TX Stream Watcher
+// =============================================================================
+
+/**
+ * Watches a single txHash via SSE stream and reports terminal state.
+ * Renders nothing visible — purely a side-effect component.
+ */
+function BatchTxStreamWatcher({
+  txHash,
+  onConfirmed,
+  onFailed,
+}: {
+  txHash: string;
+  onConfirmed: (txHash: string) => void;
+  onFailed: (txHash: string) => void;
+}) {
+  const { isSuccess, isFailed, isStalled } = useTxStream(txHash);
+
+  useEffect(() => {
+    if (isSuccess) {
+      onConfirmed(txHash);
+    } else if (isFailed || isStalled) {
+      onFailed(txHash);
+    }
+  }, [isSuccess, isFailed, isStalled, txHash, onConfirmed, onFailed]);
+
+  return null;
+}
 
 // Network status color mapping based on workflow stages
 const getStatusVariant = (
@@ -244,11 +277,15 @@ export default function TeacherDashboardPage() {
 
     setBatchState("done");
 
-    const anySuccess = results.some((r) => r.status === "success");
-    if (anySuccess) {
-      void invalidateTeacher();
-      void refetchCommitments();
+    // Don't invalidate caches here — let BatchTxStreamWatcher handle it
+    // after the gateway confirms DB updates via SSE stream.
+    // Mark successful results as awaiting confirmation.
+    for (const r of results) {
+      if (r.status === "success" && r.txHash) {
+        r.confirmationState = "confirming";
+      }
     }
+    setBatchResults([...results]);
 
     const successSltHashes = new Set(
       results.filter((r) => r.status === "success").map((r) => r.sltHash)
@@ -264,7 +301,7 @@ export default function TeacherDashboardPage() {
         return next;
       });
     }
-  }, [user?.accessTokenAlias, moduleGroups, courseNftPolicyId, assessTx, invalidateTeacher, refetchCommitments]);
+  }, [user?.accessTokenAlias, moduleGroups, courseNftPolicyId, assessTx]);
 
   // Reset batch state
   const resetBatch = useCallback(() => {
@@ -274,6 +311,46 @@ export default function TeacherDashboardPage() {
     setTotalGroups(0);
     assessTx.reset();
   }, [assessTx]);
+
+  // Stream watcher callbacks: update confirmation state per txHash
+  const handleTxConfirmed = useCallback((txHash: string) => {
+    setBatchResults((prev) =>
+      prev.map((r) =>
+        r.txHash === txHash ? { ...r, confirmationState: "confirmed" as const } : r
+      )
+    );
+  }, []);
+
+  const handleTxFailed = useCallback((txHash: string) => {
+    setBatchResults((prev) =>
+      prev.map((r) =>
+        r.txHash === txHash ? { ...r, confirmationState: "failed" as const } : r
+      )
+    );
+  }, []);
+
+  // When all batch TXs reach terminal confirmation state, invalidate caches
+  const pendingConfirmations = batchResults.filter(
+    (r) => r.status === "success" && r.confirmationState === "confirming"
+  );
+  const allConfirmed =
+    batchState === "done" &&
+    batchResults.some((r) => r.status === "success") &&
+    pendingConfirmations.length === 0;
+
+  const hasInvalidatedRef = useRef(false);
+
+  useEffect(() => {
+    if (allConfirmed && !hasInvalidatedRef.current) {
+      hasInvalidatedRef.current = true;
+      void invalidateTeacher();
+      void refetchCommitments();
+    }
+    // Reset the ref when batch goes back to idle
+    if (batchState === "idle") {
+      hasInvalidatedRef.current = false;
+    }
+  }, [allConfirmed, batchState, invalidateTeacher, refetchCommitments]);
 
   // Get unique assignments for filter (by moduleCode)
   const uniqueModuleCodes = Array.from(
@@ -625,7 +702,11 @@ export default function TeacherDashboardPage() {
                                 >
                                   {groupResult.status === "pending" && "Waiting"}
                                   {groupResult.status === "submitting" && "Submitting..."}
-                                  {groupResult.status === "success" && "Submitted"}
+                                  {groupResult.status === "success" && (
+                                    groupResult.confirmationState === "confirmed" ? "Confirmed" :
+                                    groupResult.confirmationState === "failed" ? "Confirm Failed" :
+                                    "Confirming..."
+                                  )}
                                   {groupResult.status === "error" && "Failed"}
                                 </AndamioBadge>
                               )}
@@ -731,19 +812,41 @@ export default function TeacherDashboardPage() {
                 <div className="px-4 pb-2 space-y-2">
                   {batchResults.every((r) => r.status === "success") ? (
                     <div className="flex items-center gap-2">
-                      <SuccessIcon className="h-4 w-4 text-success" />
-                      <AndamioText variant="small" className="text-success font-medium">
-                        All {batchResults.length} TX{batchResults.length !== 1 ? "s" : ""} submitted!
-                      </AndamioText>
+                      {allConfirmed ? (
+                        <>
+                          <SuccessIcon className="h-4 w-4 text-success" />
+                          <AndamioText variant="small" className="text-success font-medium">
+                            All {batchResults.length} TX{batchResults.length !== 1 ? "s" : ""} confirmed!
+                          </AndamioText>
+                        </>
+                      ) : (
+                        <>
+                          <LoadingIcon className="h-4 w-4 animate-spin text-secondary" />
+                          <AndamioText variant="small" className="font-medium">
+                            Confirming {pendingConfirmations.length} TX{pendingConfirmations.length !== 1 ? "s" : ""}...
+                          </AndamioText>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-1">
                       {batchResults.some((r) => r.status === "success") && (
                         <div className="flex items-center gap-2">
-                          <SuccessIcon className="h-4 w-4 text-success" />
-                          <AndamioText variant="small" className="text-success">
-                            {batchResults.filter((r) => r.status === "success").length}/{batchResults.length} succeeded
-                          </AndamioText>
+                          {pendingConfirmations.length > 0 ? (
+                            <>
+                              <LoadingIcon className="h-4 w-4 animate-spin text-secondary" />
+                              <AndamioText variant="small">
+                                Confirming {pendingConfirmations.length} of {batchResults.filter((r) => r.status === "success").length} TX{batchResults.filter((r) => r.status === "success").length !== 1 ? "s" : ""}...
+                              </AndamioText>
+                            </>
+                          ) : (
+                            <>
+                              <SuccessIcon className="h-4 w-4 text-success" />
+                              <AndamioText variant="small" className="text-success">
+                                {batchResults.filter((r) => r.status === "success").length}/{batchResults.length} confirmed
+                              </AndamioText>
+                            </>
+                          )}
                         </div>
                       )}
                       {batchResults.some((r) => r.status === "error") && (
@@ -756,9 +859,25 @@ export default function TeacherDashboardPage() {
                       )}
                     </div>
                   )}
-                  <AndamioButton variant="outline" size="sm" onClick={resetBatch} className="w-full">
-                    {pendingDecisions.size > 0 ? "Retry Failed" : "Done"}
+                  <AndamioButton variant="outline" size="sm" onClick={resetBatch} className="w-full" disabled={pendingConfirmations.length > 0}>
+                    {pendingConfirmations.length > 0
+                      ? "Waiting for confirmation..."
+                      : pendingDecisions.size > 0
+                        ? "Retry Failed"
+                        : "Done"}
                   </AndamioButton>
+
+                  {/* Invisible stream watchers for each successful TX */}
+                  {batchResults
+                    .filter((r) => r.status === "success" && r.txHash && r.confirmationState === "confirming")
+                    .map((r) => (
+                      <BatchTxStreamWatcher
+                        key={r.txHash}
+                        txHash={r.txHash!}
+                        onConfirmed={handleTxConfirmed}
+                        onFailed={handleTxFailed}
+                      />
+                    ))}
                 </div>
               )}
 

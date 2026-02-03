@@ -149,8 +149,15 @@ export {
 export {
   useStudentAssignmentCommitments,
   getModuleCommitmentStatus,
+  fetchStudentCommitments,
+  studentCommitmentsQueryKey,
   type StudentCommitmentSummary,
 } from "./course/use-student-assignment-commitments";
+
+// Student completions for project prerequisites
+export {
+  useStudentCompletionsForPrereqs,
+} from "./course/use-student-completions-for-prereqs";
 
 // Module wizard (composite UI hook)
 export { useModuleWizardData } from "./course/use-module-wizard-data";

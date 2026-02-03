@@ -4,14 +4,22 @@ import React from "react";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import type { ProjectPrerequisite } from "~/hooks/api/project/use-project";
+import type { StudentCompletionInput } from "~/lib/project-eligibility";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseIcon, SLTIcon } from "~/components/icons";
+import { CourseIcon, SLTIcon, SuccessIcon, PendingIcon } from "~/components/icons";
 
 /**
  * Renders a single prerequisite row, fetching course title and module names by ID.
+ * When `completions` is provided, shows per-module completion status.
  */
-export function PrerequisiteRow({ prereq }: { prereq: ProjectPrerequisite }) {
+export function PrerequisiteRow({
+  prereq,
+  completions,
+}: {
+  prereq: ProjectPrerequisite;
+  completions?: StudentCompletionInput[];
+}) {
   const { data: courseData, isLoading: isCourseLoading } = useCourse(prereq.courseId);
   const { data: modules = [], isLoading: isModulesLoading } = useCourseModules(prereq.courseId);
   const courseTitle = courseData?.title;
@@ -22,17 +30,40 @@ export function PrerequisiteRow({ prereq }: { prereq: ProjectPrerequisite }) {
     modules.map((m) => [m.sltHash, { moduleCode: m.moduleCode, title: m.title }])
   );
 
+  // Build completed hashes set for this course
+  const courseCompletion = completions?.find((c) => c.courseId === prereq.courseId);
+  const completedSet = new Set(courseCompletion?.completedModuleHashes ?? []);
+  const hasCompletionData = !!courseCompletion;
+
+  // Count completed vs total for this course's required modules
+  const requiredHashes = prereq.sltHashes ?? [];
+  const completedCount = requiredHashes.filter((h) => completedSet.has(h)).length;
+
   return (
     <div className="flex items-start gap-3 p-3 border rounded-lg">
       <CourseIcon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium">
-          {isLoading ? (
-            <span className="text-muted-foreground">Loading...</span>
-          ) : courseTitle ? (
-            courseTitle
-          ) : (
-            <span className="font-mono truncate">{prereq.courseId}</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm font-medium">
+            {isLoading ? (
+              <span className="text-muted-foreground">Loading...</span>
+            ) : courseTitle ? (
+              courseTitle
+            ) : (
+              <span className="font-mono truncate">{prereq.courseId}</span>
+            )}
+          </div>
+          {hasCompletionData && requiredHashes.length > 0 && (
+            <AndamioBadge
+              variant="outline"
+              className={
+                completedCount === requiredHashes.length
+                  ? "text-primary border-primary/30"
+                  : "text-muted-foreground"
+              }
+            >
+              {completedCount}/{requiredHashes.length} completed
+            </AndamioBadge>
           )}
         </div>
         {courseTitle && (
@@ -40,22 +71,39 @@ export function PrerequisiteRow({ prereq }: { prereq: ProjectPrerequisite }) {
             {prereq.courseId}
           </div>
         )}
-        {prereq.sltHashes && prereq.sltHashes.length > 0 && (
+        {requiredHashes.length > 0 && (
           <div className="mt-2 space-y-1">
             <AndamioText variant="small" className="text-muted-foreground">
-              {prereq.sltHashes.length} required module{prereq.sltHashes.length !== 1 ? "s" : ""}
+              {requiredHashes.length} required module{requiredHashes.length !== 1 ? "s" : ""}
             </AndamioText>
             <div className="flex flex-wrap gap-1">
-              {prereq.sltHashes.map((hash) => {
+              {requiredHashes.map((hash) => {
                 const mod = moduleMap.get(hash);
                 const label = mod?.moduleCode && mod?.title
                   ? `${mod.moduleCode}: ${mod.title}`
                   : mod?.moduleCode
                     ? mod.moduleCode
                     : `${hash.slice(0, 12)}...`;
+                const isCompleted = completedSet.has(hash);
                 return (
-                  <AndamioBadge key={hash} variant="outline" className="text-xs">
-                    <SLTIcon className="h-3 w-3 mr-1" />
+                  <AndamioBadge
+                    key={hash}
+                    variant={hasCompletionData && isCompleted ? "default" : "outline"}
+                    className={
+                      hasCompletionData && isCompleted
+                        ? "text-xs bg-primary text-primary-foreground"
+                        : "text-xs"
+                    }
+                  >
+                    {hasCompletionData ? (
+                      isCompleted ? (
+                        <SuccessIcon className="h-3 w-3 mr-1" />
+                      ) : (
+                        <PendingIcon className="h-3 w-3 mr-1" />
+                      )
+                    ) : (
+                      <SLTIcon className="h-3 w-3 mr-1" />
+                    )}
                     {label}
                   </AndamioBadge>
                 );
@@ -84,8 +132,15 @@ export function useModuleLabel(courseId: string, sltHash: string): { label: stri
 
 /**
  * Renders a list of prerequisites with course titles and module names.
+ * When `completions` is provided, shows per-module completion status overlay.
  */
-export function PrerequisiteList({ prerequisites }: { prerequisites: ProjectPrerequisite[] }) {
+export function PrerequisiteList({
+  prerequisites,
+  completions,
+}: {
+  prerequisites: ProjectPrerequisite[];
+  completions?: StudentCompletionInput[];
+}) {
   if (prerequisites.length === 0) {
     return (
       <div className="text-center py-6 text-muted-foreground">
@@ -99,7 +154,11 @@ export function PrerequisiteList({ prerequisites }: { prerequisites: ProjectPrer
   return (
     <div className="space-y-3">
       {prerequisites.map((prereq, i) => (
-        <PrerequisiteRow key={prereq.courseId || i} prereq={prereq} />
+        <PrerequisiteRow
+          key={prereq.courseId || i}
+          prereq={prereq}
+          completions={completions}
+        />
       ))}
     </div>
   );

@@ -36,6 +36,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { checkProjectEligibility, type EligibilityResult, type MissingPrerequisite } from "~/lib/project-eligibility";
+import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import { computeTaskHash, type TaskData } from "@andamio/core/hashing";
@@ -155,6 +156,16 @@ function ContributorDashboardContent() {
 
   // Last submitted task action tx hash
   const [pendingActionTxHash, setPendingActionTxHash] = useState<string | null>(null);
+
+  // Prerequisite completions from course hooks
+  const prereqCourseIds = useMemo(() => {
+    if (!projectDetail?.prerequisites) return [];
+    return projectDetail.prerequisites
+      .map((p) => p.courseId)
+      .filter((id): id is string => !!id);
+  }, [projectDetail?.prerequisites]);
+
+  const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
 
   // Eligibility state (prerequisites)
   const [eligibility, setEligibility] = useState<EligibilityResult | null>(null);
@@ -279,16 +290,14 @@ function ContributorDashboardContent() {
 
     // Compute eligibility from hook data (pure function, no API calls)
     const prerequisites = projectDetail.prerequisites ?? [];
-    // For now, pass empty completions — callers need to provide course completion data
-    // This matches the previous behavior where eligibility errors defaulted to not eligible
     const eligibilityResult = checkProjectEligibility(
       prerequisites,
-      [], // TODO: Wire up student completions from course hooks when prerequisite courses are loaded
+      completions,
     );
     setEligibility(eligibilityResult);
 
     setIsOrchestrating(false);
-  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger, isProjectLoading, isTasksLoading, mySubmission, myCredentials, myAssessments, isEnrolled]);
+  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger, isProjectLoading, isTasksLoading, mySubmission, myCredentials, myAssessments, isEnrolled, completions]);
 
   // Commitment processing effect: reacts to hook data when lookupTaskHash triggers a fetch
   useEffect(() => {

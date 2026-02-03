@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { useProjects } from "~/hooks/api";
+import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -28,20 +29,33 @@ export default function ProjectCatalogPage() {
   const { user, isAuthenticated } = useAndamioAuth();
   const userAlias = user?.accessTokenAlias;
 
-  // Derive eligibility from project prerequisites (pure computation, no API calls)
-  // Note: Without student completion data on the list page, projects with prerequisites
-  // will show progress as 0/N. Individual project pages do full eligibility checks.
+  // Collect all unique prerequisite course IDs across projects
+  const allPrereqCourseIds = useMemo(() => {
+    if (!projects?.length) return [];
+    const ids = new Set<string>();
+    for (const project of projects) {
+      for (const prereq of project.prerequisites ?? []) {
+        if (prereq.courseId) ids.add(prereq.courseId);
+      }
+    }
+    return Array.from(ids);
+  }, [projects]);
+
+  // Fetch student completions for all prerequisite courses (parallel queries, cached)
+  const { completions } = useStudentCompletionsForPrereqs(allPrereqCourseIds);
+
+  // Derive eligibility from project prerequisites + student completions
   const eligibilityMap = useMemo(() => {
     const map = new Map<string, EligibilityResult>();
     if (!projects?.length) return map;
 
     for (const project of projects) {
       if (!project.projectId) continue;
-      const result = checkProjectEligibility(project.prerequisites ?? [], []);
+      const result = checkProjectEligibility(project.prerequisites ?? [], completions);
       map.set(project.projectId, result);
     }
     return map;
-  }, [projects]);
+  }, [projects, completions]);
 
   // Loading state
   if (isLoading) {

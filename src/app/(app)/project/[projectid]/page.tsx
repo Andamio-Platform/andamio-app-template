@@ -33,12 +33,13 @@ import {
   TaskIcon,
   ContributorIcon,
   OnChainIcon,
-  CourseIcon,
   CredentialIcon,
   TreasuryIcon,
 } from "~/components/icons";
 import { type ProjectDetail } from "~/hooks/api/project/use-project";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
+import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
+import type { StudentCompletionInput } from "~/lib/project-eligibility";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
@@ -48,9 +49,11 @@ import { formatLovelace } from "~/lib/cardano-utils";
 function ProjectDataCard({
   project,
   isLoading,
+  completions,
 }: {
   project: ProjectDetail | null | undefined;
   isLoading: boolean;
+  completions?: StudentCompletionInput[];
 }) {
   // Loading state
   if (isLoading) {
@@ -95,6 +98,7 @@ function ProjectDataCard({
   // Calculate totals
   const contributors = project.contributors ?? [];
   const tasks = project.tasks ?? [];
+  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
   const submissions = project.submissions ?? [];
   const assessments = project.assessments ?? [];
   const credentialClaims = project.credentialClaims ?? [];
@@ -140,10 +144,10 @@ function ProjectDataCard({
           <div className="rounded-lg bg-muted/30 p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TaskIcon className="h-4 w-4" />
-              <AndamioText variant="small">Tasks</AndamioText>
+              <AndamioText variant="small">Live Tasks</AndamioText>
             </div>
             <AndamioText className="text-2xl font-bold">
-              {tasks.length}
+              {liveTasks.length}
             </AndamioText>
           </div>
 
@@ -192,7 +196,7 @@ function ProjectDataCard({
               <AndamioText variant="small" className="font-medium mb-2">
                 Prerequisites
               </AndamioText>
-              <PrerequisiteList prerequisites={prerequisites} />
+              <PrerequisiteList prerequisites={prerequisites} completions={completions} />
             </div>
           )}
         </div>
@@ -239,6 +243,16 @@ export default function ProjectDetailPage() {
     error,
   } = useProject(projectId);
 
+  // Collect prerequisite course IDs for completion overlay
+  const prereqCourseIds = React.useMemo(() => {
+    if (!project?.prerequisites) return [];
+    return project.prerequisites
+      .map((p) => p.courseId)
+      .filter((id): id is string => !!id);
+  }, [project?.prerequisites]);
+
+  const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
+
   // Loading state
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
@@ -254,10 +268,9 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Get tasks from merged project data
+  // Get tasks from merged project data — only show ON_CHAIN tasks publicly
   const allTasks = project.tasks ?? [];
-  // For on-chain tasks, filter based on availability (not deleted)
-  const liveTasks = allTasks;
+  const liveTasks = allTasks.filter((t) => t.taskStatus === "ON_CHAIN");
 
   // Get project title (flattened from content by transform)
   const projectTitle = project.title ?? "Project";
@@ -279,6 +292,7 @@ export default function ProjectDetailPage() {
         <ProjectDataCard
           project={project}
           isLoading={false}
+          completions={completions}
         />
 
         <AndamioEmptyState

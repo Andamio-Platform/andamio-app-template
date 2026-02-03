@@ -12,7 +12,7 @@ Current implementation status of the Andamio T3 App Template.
 |------|--------|----------|
 | Course System | Stable | 13/13 routes |
 | Project System | In Progress | 10/11 routes |
-| Transaction System | **100% Complete** | 16/16 V2 components |
+| Transaction System | **100% Complete** | 17/17 V2 components |
 | Gateway Migration | **Complete** | Unified V2 Gateway |
 | L1 Core Package | **Complete** | `@andamio/core` created |
 | Landing Page | **Complete** | Explore / Login / Register cards |
@@ -26,22 +26,14 @@ Current implementation status of the Andamio T3 App Template.
 
 ## 📌 NEXT SESSION PROMPT
 
-> **Branch: `fix/batch-assessment-group-by-module`** — Draft task delete fix, TX UX audit continuation.
+> **What shipped this session (Feb 3, session 3)** — TX UX Audit continuation:
 >
-> **What shipped this session (Feb 3)**:
+> **TX UX Audit progress: 14/17 passing** (up from 10):
+> - **#8** COURSE_STUDENT_ASSIGNMENT_UPDATE — all 4 checks pass
+> - **#11** PROJECT_OWNER_BLACKLIST_MANAGE — TX works e2e (Q3 n/a: no blacklist data in project detail aggregate yet)
+> - **#12** PROJECT_MANAGER_TASKS_MANAGE — all 4 checks pass
 >
-> **Draft task delete fixed** (issues #147, #148):
-> - `useDeleteTask` simplified to `{ contributor_state_id, index }` contract per #148
-> - `handleDeleteTask` in draft-tasks page updated with explicit error messages (was silently failing)
-> - `transformMergedTask` updated to use top-level `task_index` field
-> - `transformAssets` updated for typed `ApiTypesAsset[]` (was untyped `any`)
-> - Generated types regenerated to `v2.0.0-dev-20260203-g`
->
-> **TX UX audit progress**:
-> - TX #7 (COURSE_STUDENT_ASSIGNMENT_COMMIT) — ALL PASS. Backend 404 "Module not found" resolved.
-> - TX #10 (PROJECT_OWNER_MANAGERS_MANAGE) — ALL PASS. Backend `managers_manage` handler resolved by ops.
-> - TX #6 (COURSE_TEACHER_ASSIGNMENTS_ASSESS) — Regression from `e8d76ec` fixed. Decision cart kept visible during batch state.
-> - **Score: 9/16 passing** (up from 7), 0 backend-blocked, 7 untested, 1 no UI
+> **Blacklist naming discussion filed**: [andamioscan#28](https://github.com/Andamio-Platform/andamioscan/issues/28) — discuss renaming "blacklist" across API/subsystems, and whether/how to expose the alias list in project detail aggregate.
 >
 > ---
 >
@@ -54,6 +46,7 @@ Current implementation status of the Andamio T3 App Template.
 > | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync failures |
 > | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed in PR #111 |
 > | #32 - Extra signature after mint | 🟡 Medium | Auth flow improvement |
+> | andamioscan#28 - Blacklist naming + data exposure | 🟡 Medium | Discuss renaming and API inclusion |
 > | #47 - Auto-logout on wallet change | 🟢 Low | UX improvement |
 > | #34 - Teacher assessment UX | 🟢 Low | Accept/Refuse button UX |
 >
@@ -65,7 +58,7 @@ Current implementation status of the Andamio T3 App Template.
 >
 > ---
 >
-> **Next Work**: Continue TX UX audit (#1, #8, #11–#16) → #103 implement 3 missing project hooks → #118 access token mint bug
+> **Next Work**: Continue TX UX audit — 3 remaining (#1 Access Token Mint, #13 Tasks Assess, #14-16 Contributor TXs) → #103 implement 3 missing project hooks → #118 access token mint bug
 
 ---
 
@@ -123,6 +116,17 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 3, 2026** (TX UX Audit session 3):
+- ✅ **TX #8** COURSE_STUDENT_ASSIGNMENT_UPDATE — all 4 checks pass
+- ✅ **TX #11** PROJECT_OWNER_BLACKLIST_MANAGE — TX works e2e (Q3 n/a). Filed andamioscan#28 for blacklist naming + API inclusion.
+- ✅ **TX #12** PROJECT_MANAGER_TASKS_MANAGE — all 4 checks pass
+- ✅ **TX UX audit score: 14/17 passing** — Up from 10. Remaining: #1, #13, #14, #15, #16.
+
+**February 3, 2026** (Prerequisites + Treasury TX — PR #152):
+- ✅ **TX #17 `PROJECT_USER_TREASURY_ADD_FUNDS`** — New `treasury-add-funds.tsx` component. All 4 audit checks pass. 17/17 TX types now have UI components.
+- ✅ **Shared `PrerequisiteList` component** — Resolves course titles and module names. Used on studio, public, and contributor project pages.
+- ✅ **Studio project dashboard redesign** — Prerequisites + stats side-by-side, consolidated stats column, treasury balance inline.
 
 **February 3, 2026** (Draft Task Delete Fix + TX UX Audit):
 - ✅ **Draft task delete fixed** — Root cause: silent guard clauses + API didn't support deleting tasks without `task_hash`. Issue #148 simplified contract to `{ contributor_state_id, index }`. `useDeleteTask` rewritten, `handleDeleteTask` now shows explicit error messages.

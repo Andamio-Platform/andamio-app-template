@@ -21,6 +21,9 @@ export { Trash2 as DeleteIcon } from "lucide-react";
 /** Save - persist changes */
 export { Save as SaveIcon } from "lucide-react";
 
+/** Undo/Discard - revert changes */
+export { Undo2 as UndoIcon } from "lucide-react";
+
 // =============================================================================
 // Content Actions
 // =============================================================================

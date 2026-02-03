@@ -43,6 +43,7 @@ import { StepLessons } from "~/components/studio/wizard/steps/step-lessons";
 import { StepIntroduction } from "~/components/studio/wizard/steps/step-introduction";
 import { StepReview } from "~/components/studio/wizard/steps/step-review";
 import { WIZARD_STEPS } from "~/components/studio/wizard/wizard-stepper";
+import { WizardSaveBar } from "~/components/studio/wizard/wizard-save-bar";
 import {
   WizardContext,
   type WizardStepId,
@@ -434,30 +435,42 @@ function ModuleWizardContent({
 
         {/* Right Panel: Step Content */}
         <ResizablePanel defaultSize={80}>
-          <AndamioScrollArea className="h-full">
-            <div className="p-4">
-              <AnimatePresence mode="wait" custom={direction}>
-              {currentStep === "credential" && (
-                <StepCredential key="credential" config={currentConfig} direction={direction} />
-              )}
-              {currentStep === "slts" && (
-                <StepSLTs key="slts" config={currentConfig} direction={direction} />
-              )}
-              {currentStep === "assignment" && (
-                <StepAssignment key="assignment" config={currentConfig} direction={direction} />
-              )}
-              {currentStep === "lessons" && (
-                <StepLessons key="lessons" config={currentConfig} direction={direction} />
-              )}
-              {currentStep === "introduction" && (
-                <StepIntroduction key="introduction" config={currentConfig} direction={direction} />
-              )}
-              {currentStep === "review" && (
-                <StepReview key="review" config={currentConfig} direction={direction} />
-              )}
-              </AnimatePresence>
+          <div className="flex flex-col h-full">
+            <AndamioScrollArea className="flex-1">
+              <div className="p-4">
+                <AnimatePresence mode="wait" custom={direction}>
+                {currentStep === "credential" && (
+                  <StepCredential key="credential" config={currentConfig} direction={direction} />
+                )}
+                {currentStep === "slts" && (
+                  <StepSLTs key="slts" config={currentConfig} direction={direction} />
+                )}
+                {currentStep === "assignment" && (
+                  <StepAssignment key="assignment" config={currentConfig} direction={direction} />
+                )}
+                {currentStep === "lessons" && (
+                  <StepLessons key="lessons" config={currentConfig} direction={direction} />
+                )}
+                {currentStep === "introduction" && (
+                  <StepIntroduction key="introduction" config={currentConfig} direction={direction} />
+                )}
+                {currentStep === "review" && (
+                  <StepReview key="review" config={currentConfig} direction={direction} />
+                )}
+                </AnimatePresence>
+              </div>
+            </AndamioScrollArea>
+
+            {/* Contextual Save Bar - appears when there are unsaved changes */}
+            <div className="shrink-0 border-t px-4 py-3">
+              <WizardSaveBar
+                isDirty={isDirty}
+                isSaving={isSaving}
+                onSave={() => void saveAndSync()}
+                onDiscard={discardChanges}
+              />
             </div>
-          </AndamioScrollArea>
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </WizardContext.Provider>

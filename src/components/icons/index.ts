@@ -97,6 +97,7 @@ export {
   EditIcon,
   DeleteIcon,
   SaveIcon,
+  UndoIcon,
   // Content Actions
   SendIcon,
   CopyIcon,

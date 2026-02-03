@@ -10,6 +10,14 @@ yarn.lock
 # testing
 /coverage
 
+# playwright
+/e2e/test-results/
+/e2e/reports/
+/e2e/screenshots/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # database
 /prisma/db.sqlite
 /prisma/db.sqlite-journal

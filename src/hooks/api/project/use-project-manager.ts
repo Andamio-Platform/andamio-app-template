@@ -650,12 +650,14 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: async ({
       taskHash,
+      contributorStateId,
     }: {
       projectId: string;
       taskHash: string;
+      contributorStateId: string;
     }) => {
       // Endpoint: POST /project/manager/task/delete
-      // API expects: task_hash
+      // API expects: task_hash, contributor_state_id
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/project/manager/task/delete`,
         {
@@ -663,6 +665,7 @@ export function useDeleteTask() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             task_hash: taskHash,
+            contributor_state_id: contributorStateId,
           }),
         }
       );

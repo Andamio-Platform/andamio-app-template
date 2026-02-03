@@ -187,7 +187,7 @@ export function TasksManage({
   const [taskHashesToRemove, setTaskHashesToRemove] = useState("");
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
+  const { status: txStatus, isSuccess: txConfirmed, isStalled } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -212,6 +212,14 @@ export function TasksManage({
           toast.error("Task Management Failed", {
             description: status.last_error ?? "Please try again or contact support.",
           });
+        } else if (status.state === "confirmed" && status.last_error) {
+          // TX confirmed on-chain but gateway DB update failed
+          toast.warning("Transaction Confirmed", {
+            description: "Your transaction is on-chain but the database sync failed. Refresh to see updated data.",
+          });
+          if (result?.txHash) {
+            void onSuccess?.(result.txHash, computedHashesRef.current);
+          }
         }
       },
     }
@@ -269,11 +277,9 @@ export function TasksManage({
       return;
     }
 
-    // Calculate total deposit if not provided
-    if (deposit_value.length === 0 && tasks_to_add.length > 0) {
-      const totalLovelace = tasks_to_add.reduce((sum, t) => sum + t.lovelace_amount, 0);
-      deposit_value = [["lovelace", totalLovelace]];
-    }
+    // deposit_value is calculated by the caller (manage-treasury page)
+    // accounting for existing treasury balance — an empty array means
+    // the treasury already covers the cost, so no override here.
 
     // =========================================================================
     // COMPUTE TASK HASHES CLIENT-SIDE
@@ -563,7 +569,7 @@ export function TasksManage({
         )}
 
         {/* Gateway Confirmation Status */}
-        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && !isStalled && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
@@ -573,6 +579,23 @@ export function TasksManage({
                   {txStatus?.state === "pending" && "Waiting for block confirmation"}
                   {txStatus?.state === "confirmed" && "Processing database updates"}
                   {!txStatus && "Registering transaction..."}
+                </AndamioText>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stalled — TX confirmed on-chain but gateway DB sync failed */}
+        {isStalled && (
+          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4">
+            <div className="flex items-center gap-3">
+              <SuccessIcon className="h-5 w-5 text-yellow-600" />
+              <div className="flex-1">
+                <AndamioText className="font-medium text-yellow-600">
+                  Transaction Confirmed
+                </AndamioText>
+                <AndamioText variant="small" className="text-xs">
+                  Your transaction is on-chain. Database sync is delayed — refresh to see updated data.
                 </AndamioText>
               </div>
             </div>

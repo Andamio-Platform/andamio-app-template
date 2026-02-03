@@ -64,6 +64,7 @@ export default function DraftTasksPage() {
       await deleteTask.mutateAsync({
         projectId,
         taskHash,
+        contributorStateId,
       });
     } catch (err) {
       console.error("Error deleting task:", err);

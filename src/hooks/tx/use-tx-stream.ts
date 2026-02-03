@@ -385,15 +385,23 @@ export function useTxStream(
     };
   }, [txHash, subscribe, unsubscribe, toTxStatus, startFallback]);
 
+  // TX confirmed on-chain but gateway DB update is stuck with errors
+  const isStalled =
+    status?.state === "confirmed" && !!status.last_error && !isPolling;
+
   return {
     status,
     isPolling,
     error,
-    /** Whether TX is in a terminal state */
-    isTerminal: status ? TERMINAL_STATES.includes(status.state) : false,
+    /** Whether TX is in a terminal state (or stalled — confirmed but DB update failed) */
+    isTerminal: status
+      ? TERMINAL_STATES.includes(status.state) || isStalled
+      : false,
     /** Whether TX completed successfully (DB updated by Gateway) */
     isSuccess: status?.state === "updated",
     /** Whether TX failed */
     isFailed: status?.state === "failed" || status?.state === "expired",
+    /** Whether TX confirmed on-chain but gateway DB update is stuck */
+    isStalled,
   };
 }

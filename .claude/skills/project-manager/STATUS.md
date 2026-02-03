@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: February 1, 2026
+> **Last Updated**: February 3, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -18,42 +18,38 @@ Current implementation status of the Andamio T3 App Template.
 | Landing Page | **Complete** | Explore / Login / Register cards |
 | TX Stream (SSE) | **Complete** | Real-time TX tracking with polling fallback |
 | Andamioscan Removal | **✅ Complete** | `andamioscan-events.ts` deleted, 0 imports remain |
-| Project Workflows | **In Progress** | Owner/manager UX on `feat/project-tx-state-machines` |
+| Project Workflows | **Complete** | Owner/manager UX merged via PR #133 |
+| Gateway API Sync | **Complete** | Types regenerated, SSE fix, Andamioscan regen (#139/#140) |
 | **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
-> **Branch: `feat/project-tx-state-machines`** — Enum normalization sweep + student assignment checklist.
+> **Branch: `review/tx-ux-audit`** — Gateway sync, issue cleanup, TX UX audit continuation.
 >
-> **What shipped this session**:
+> **What shipped this session (Feb 2–3)**:
 >
-> **Bug fixes** (4 commits):
-> - `84d74f8` — fix: correct STATUS_MAP enum values (ACCEPTED/REFUSED) and filter commitments by courseId (closes #115, #116)
-> - `ee4afee` — fix: normalize commitment status enums across teacher and project hooks
->   - Teacher hook: `mapToDisplayStatus` now maps ACCEPTED/REFUSED (was only APPROVED/REJECTED)
->   - Project contributor hook: added `normalizeProjectCommitmentStatus()` with uppercase normalization and legacy aliases
->   - Assignment commitment: removed dead `"SUBMITTED"` fallback check
+> **Commits on branch** (merged from main):
+> - `c1301e0` — feat: add Assignments Complete indicator to studio course header
+> - `33f7890` — fix: filter pending review banner to only PENDING_APPROVAL commitments
+> - `02ba499` — fix: correct batch-status endpoint path from singular to plural (#137, #138)
+> - `1ce9dff` — fix: pre-populate task hashes before TX registration (#135, #136)
+> - `b6d3fb2` — fix: TasksManage TX UX — prevent unmount before confirmation (#134)
+> - `6fd7db8` — feat: project routes (#133)
+> - `0acd892` — fix: remove prerequisites field from tasks-manage transaction (#132)
 >
-> **Feature**:
-> - `5cce140` — feat: add per-module assignment checklist to enrolled course status card (UserCourseStatus)
+> **Uncommitted changes** (this session):
+> - `use-transaction.ts` — Added `slt_hashes?: string[]` to `UnsignedTxResponse` for modules/manage endpoint
+> - `mint-module-tokens.tsx` — Hash validation: extracts `slt_hashes` from API response, compares with client-computed Blake2b-256 hashes, logs match/mismatch
+> - `gateway.ts` + `api-metadata.json` — Regenerated types from latest gateway spec (managers field, SSE fix)
 >
-> **Docs**:
-> - `e2844fe` — docs: update TX UX audit status for assignment assess and commit
->
-> ---
->
-> **Enum audit findings** (all fixed this session):
->
-> | Issue | Location | Problem | Fix |
-> |-------|----------|---------|-----|
-> | #115 (closed) | Student STATUS_MAP (2 files) | ACCEPTED/REFUSED not mapped | Added mappings + legacy aliases |
-> | #116 (closed) | Course page + UserCourseStatus | Cross-course commitment contamination | Added courseId filter |
-> | Issue B | Teacher `mapToDisplayStatus` | Same as #115 but teacher-side | Added TEACHER_STATUS_MAP |
-> | Issue C | Student vs teacher vocabulary | Different display strings (ASSIGNMENT_ACCEPTED vs ACCEPTED) | Documented — intentional per-role vocabulary |
-> | Issue D | Project contributor hook | Raw status passthrough, casing mismatch | Added `normalizeProjectCommitmentStatus()` |
-> | Issue F | `assignment-commitment.tsx` | Dead `"SUBMITTED"` fallback | Removed |
+> **Issues closed** (6 total):
+> - #140 — Gateway API sync: Andamioscan regen + SSE fix
+> - #139 — Gateway API sync: slt_hashes, managers, typo fixes (superseded by #140)
+> - #114 — Managers list stale after TX (resolved by Andamioscan regen)
+> - #130 — useManagerTasks wrong HTTP method and identifier (already fixed)
+> - #129 — Tasks disappear after edit: wrong project_id in tasks/list (already fixed)
 >
 > ---
 >
@@ -61,8 +57,8 @@ Current implementation status of the Andamio T3 App Template.
 >
 > | Issue | Priority | Notes |
 > |-------|----------|-------|
-> | #114 - Managers list stale after TX | 🔴 High | **Blocked by** Andamioscan#24 — revisit Monday Feb 2 |
-> | #103 - Project hooks upgrade | 🟡 Medium | Colocated types still pending for project hooks |
+> | #118 - Cannot mint access token from preprod | 🔴 High | Bug report |
+> | #103 - Project hooks upgrade | 🟡 Medium | Structural compliance ✅, **3 missing hooks**: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment` |
 > | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync failures |
 > | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed in PR #111 |
 > | #32 - Extra signature after mint | 🟡 Medium | Auth flow improvement |
@@ -73,12 +69,14 @@ Current implementation status of the Andamio T3 App Template.
 >
 > **Known API bugs**:
 >
-> - `/course/user/modules/` returns empty for on-chain-only courses — API team notified, awaiting fix
-> - `COURSE_STUDENT_ASSIGNMENT_COMMIT` TX build returns 500 from Atlas TX API — backend issue, frontend payload verified correct
+> - `COURSE_STUDENT_ASSIGNMENT_COMMIT` — Gateway confirmation handler returns 404 "Module not found" (TX #7 in audit). Frontend correct, backend issue.
+> - `PROJECT_OWNER_MANAGERS_MANAGE` — Gateway never reaches `updated` state (TX #10 in audit). SSE fix in #140 may resolve this — needs re-test.
+> - `/course/user/modules/` returns empty for on-chain-only courses — API team notified
+> - `assets` / `native_assets` fields untyped (`any`) across 5 treasury/task interfaces — frontend can only show ADA. Typed schema requested in [andamio-api#79](https://github.com/Andamio-Platform/andamio-api/issues/79). 🟢 Low priority.
 >
 > ---
 >
-> **Next Work**: Continue `/transaction-auditor` TX UX audit (priority #1) → #103 project hooks colocated types → Merge branch after DB updates land → #114 managers list (Monday Feb 2)
+> **Next Work**: Re-test TX #10 (managers manage) after SSE fix → #103 implement 3 missing project hooks → Continue TX UX audit (#11–#16) → #118 access token mint bug
 
 ---
 
@@ -136,6 +134,23 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 3, 2026** (Gateway API Sync + Issue Cleanup):
+- ✅ **Gateway API sync** (#139, #140) — Regenerated types from latest gateway spec. `managers` field, SSE fix, `slt_hashes` in modules/manage response all integrated.
+- ✅ **`slt_hashes` validation** in `mint-module-tokens.tsx` — Extracts hashes from API response, compares with client-computed Blake2b-256 hashes, logs match/mismatch to console.
+- ✅ **`UnsignedTxResponse` typed** — Added `slt_hashes?: string[]` field to `use-transaction.ts`.
+- ✅ **Issue #114 closed** — Managers list now reflects on-chain changes (Andamioscan regen).
+- ✅ **Issue #129 closed** — Tasks disappear after edit bug already fixed (`useManagerTasks` sends `projectId` correctly).
+- ✅ **Issue #130 closed** — `useManagerTasks` already uses `POST /tasks/list` with `projectId` in body.
+- ✅ **Issue #103 status updated** — Structural compliance confirmed. 3 missing hooks identified: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment`.
+- ✅ **TX UX audit** — TX #10 (PROJECT_OWNER_MANAGERS_MANAGE) audited: submits OK, gateway confirmation stuck. Dispatched to ops.
+
+**February 2, 2026** (TX UX Audit Continuation):
+- ✅ **TX #6** COURSE_TEACHER_ASSIGNMENTS_ASSESS — all pass (simple: single accept)
+- ✅ **TX #7** COURSE_STUDENT_ASSIGNMENT_COMMIT — Q1 pass (backend 500 resolved), Q3 fail (gateway 404 "Module not found")
+- ✅ **TX #9** COURSE_STUDENT_CREDENTIAL_CLAIM — all pass. Relocated to course home page.
+- ✅ **Assignments Complete indicator** — `c1301e0` Added to studio course header
+- ✅ **Pending review filter** — `33f7890` Filter to only PENDING_APPROVAL commitments
 
 **February 1, 2026** (Enum Normalization Sweep + Student Assignment Checklist):
 - ✅ **STATUS_MAP fix** (closes #115) — Student hooks mapped APPROVED/REJECTED but DB sends ACCEPTED/REFUSED. Fixed in both `use-student-assignment-commitments.ts` and `use-assignment-commitment.ts`.
@@ -232,19 +247,20 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
-| **Managers list stale after TX** (#114) | 🔴 High | Blocked | Andamioscan#24 — revisit Monday Feb 2 |
-| **Atlas TX API 500 on assignment commit** | 🔴 High | Backend | `COURSE_STUDENT_ASSIGNMENT_COMMIT` TX build fails at Atlas. Frontend payload verified correct. Waiting for DB updates. |
-| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. May implement frontend fallback. |
-| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Colocated types still pending for `use-project-manager.ts` and `use-project-contributor.ts`. |
+| **Access token mint fails on preprod** (#118) | 🔴 High | Open | Bug report from preprod.app.andamio.io |
+| **Assignment commit gateway 404** | 🔴 High | Backend | `COURSE_STUDENT_ASSIGNMENT_COMMIT` — TX submits but gateway confirmation handler returns 404 "Module not found". Frontend correct. |
+| **Managers manage stuck spinner** (#10 in TX audit) | 🟡 Medium | Re-test needed | SSE fix in #140 may resolve. Gateway never reaches `updated` state. |
+| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Structural compliance ✅. 3 missing hooks: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment`. |
+| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. |
 | **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook. |
 | **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
 | **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
-| **Update CLAUDE.md references** | 🟢 Low | Pending | Remove deleted `andamioscan-events.ts` and `use-event-confirmation.ts` from Key Files and API Clients tables |
+| **Managers list stale after TX** (#114) | ✅ Done | Closed | Resolved by Andamioscan regen in #140 |
+| **useManagerTasks wrong method** (#130) | ✅ Done | Closed | Now uses POST /tasks/list with projectId |
+| **Tasks disappear after edit** (#129) | ✅ Done | Closed | project_id and cache invalidation fixed |
+| **Gateway API sync** (#139, #140) | ✅ Done | Closed | Types regenerated, managers field, SSE fix |
 | **STATUS_MAP enum mismatch** (#115) | ✅ Done | Closed | ACCEPTED/REFUSED mapped in student, teacher, and project hooks |
 | **Cross-course contamination** (#116) | ✅ Done | Closed | courseId filter added to commitment grouping |
-| **TX polling intervals** (#112) | ✅ Done | Fixed | Reduced to 5s to match gateway speed |
-| **tx_type mapping** (#113) | ✅ Done | On branch | Fix committed on `feat/project-tx-state-machines`, will close on merge |
-| **Single teacher/manager on create** | ✅ Done | On branch | Aligned with gateway PR #46 |
 
 ---
 
@@ -336,6 +352,7 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-01-24 | **Course Side Colocated Types** | Complete |
 | 2026-01-31 | **Landing Page + TX Stream + Bug Fixes** (PR #105) | Complete |
 | 2026-02-01 | **Project Workflows** (PR #111) + owner/manager fixes | Complete |
+| 2026-02-03 | **Gateway API Sync + TX UX Audit** — 6 issues closed, types regen | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---

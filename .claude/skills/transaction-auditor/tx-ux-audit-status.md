@@ -1,6 +1,6 @@
 # TX UX Audit Status Table
 
-> **Last Updated**: 2026-02-02
+> **Last Updated**: 2026-02-03
 > **Legend**: `---` = not tested | `pass` = confirmed working | `fail` = issue found | `n/a` = not applicable
 >
 > **Note**: This audit tests the **simple/happy-path case** of each TX first. Complex scenarios (e.g., combined operations in a single TX) are tracked in the **Advanced Testing Backlog** below.
@@ -16,7 +16,7 @@
 | 7 | COURSE_STUDENT_ASSIGNMENT_COMMIT | `assignment-commitment.tsx` | pass | pass (blocked) | fail | --- | Q1 pass (backend 500 resolved). Q3 fail: Gateway confirmation handler 404 "Module not found". See issue log. |
 | 8 | COURSE_STUDENT_ASSIGNMENT_UPDATE | `assignment-update.tsx` | --- | --- | --- | --- | |
 | 9 | COURSE_STUDENT_CREDENTIAL_CLAIM | `user-course-status.tsx` (inline CTA) | pass | pass | pass | pass | Audited 2026-02-02. Moved from module page to course home "Your Learning Journey" card. Uses success color. |
-| 10 | PROJECT_OWNER_MANAGERS_MANAGE | `managers-manage.tsx` | --- | --- | --- | --- | |
+| 10 | PROJECT_OWNER_MANAGERS_MANAGE | `managers-manage.tsx` | pass | fail (blocked) | --- | --- | Q1 pass. Q2 fail: spinner stuck forever — gateway likely not reaching `updated`. Dispatched to ops. |
 | 11 | PROJECT_OWNER_BLACKLIST_MANAGE | `blacklist-manage.tsx` | --- | --- | --- | --- | |
 | 12 | PROJECT_MANAGER_TASKS_MANAGE | `tasks-manage.tsx` | --- | --- | --- | --- | |
 | 13 | PROJECT_MANAGER_TASKS_ASSESS | `tasks-assess.tsx` | --- | --- | --- | --- | |
@@ -73,6 +73,24 @@
 **Component**: `src/components/learner/assignment-commitment.tsx:628-659`
 **Date**: 2026-02-02
 
+### TX Audit Issue — PROJECT_OWNER_MANAGERS_MANAGE (Q2 — Gateway Confirmation)
+
+**Transaction**: `PROJECT_OWNER_MANAGERS_MANAGE`
+**Gateway tx_type**: `managers_manage`
+**Endpoint**: `POST /api/v2/tx/project/owner/managers/manage`
+**Failed Check**: Q2 — Confirmation message never appears (spinner stuck forever)
+**Error**: After TX submits and goes on-chain, the gateway never transitions to `updated` state. The spinner ("Confirming on blockchain...") persists indefinitely.
+**Frontend Status**: Frontend code is correct. `managers-manage.tsx` uses `useTxStream`, properly checks for `"updated"` state, and has correct `TERMINAL_STATES`. The stuck spinner is correct behavior — the TX genuinely hasn't reached terminal state.
+**Possible Causes**:
+  - Gateway `managers_manage` TxTypeHandler confirmation logic failing (similar to #7 assignment_submit 404)
+  - TX registered with wrong tx_type (verified: `managers_manage` is correct per API spec enum)
+  - Gateway DB update handler not implemented for `managers_manage`
+**Dispatch**: Forwarded to ops team for investigation.
+**Component**: `src/components/tx/managers-manage.tsx`
+**Date**: 2026-02-03
+
+---
+
 ## Audit History
 
 <!-- Record audit sessions here -->
@@ -84,6 +102,7 @@
 - **2026-02-02**: #6 COURSE_TEACHER_ASSIGNMENTS_ASSESS — all pass (simple: single accept via teacher dashboard)
 - **2026-02-02**: #7 COURSE_STUDENT_ASSIGNMENT_COMMIT — Re-test: Q1 now PASS (backend 500 resolved). Q2 PASS (spinner correctly shows, SSE stream connected). Q3 FAIL: Gateway confirmation handler returns 404 "Module not found" after 4 retries. TX stuck in `confirmed` state. Dispatched to andamio-api and db-api teams.
 - **2026-02-02**: #9 COURSE_STUDENT_CREDENTIAL_CLAIM — all pass. Relocated from module assignment page to course home page "Your Learning Journey" card as inline CTA with completion-aware messaging. Uses success (green) color for accepted/complete states.
+- **2026-02-03**: #10 PROJECT_OWNER_MANAGERS_MANAGE — Q1 PASS (TX builds, signs, submits). Q2 FAIL: spinner stuck forever, gateway never reaches `updated` state. Frontend code verified correct. Dispatched to ops team.
 
 ## Advanced Testing Backlog
 

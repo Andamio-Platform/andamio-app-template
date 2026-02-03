@@ -31,9 +31,10 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, HistoryIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
+import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
 import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
@@ -296,34 +297,18 @@ export default function ProjectDashboardPage() {
           </AndamioCard>
 
           {/* Treasury Overview */}
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle className="flex items-center gap-2">
-                <TreasuryIcon className="h-5 w-5" />
-                Treasury
-              </AndamioCardTitle>
-              <AndamioCardDescription>Project funds and transactions</AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <div className="text-sm text-muted-foreground">Treasury Management</div>
-                  <div className="text-lg font-medium">Configure project treasury settings</div>
-                </div>
-                <Link href={`/studio/project/${projectId}/manage-treasury`}>
-                  <AndamioButton variant="outline">
-                    <TreasuryIcon className="h-4 w-4 mr-2" />
-                    Manage Treasury
-                  </AndamioButton>
-                </Link>
-              </div>
-              <AndamioButton variant="outline" className="w-full justify-start" disabled>
-                <HistoryIcon className="h-4 w-4 mr-2" />
-                View Transaction History
-                <AndamioBadge variant="outline" className="ml-auto">Coming Soon</AndamioBadge>
+          <TreasuryBalanceCard
+            treasuryFundings={projectDetail.treasuryFundings ?? []}
+            treasuryAddress={projectDetail.treasuryAddress}
+          />
+          <div className="flex gap-3">
+            <Link href={`/studio/project/${projectId}/manage-treasury`}>
+              <AndamioButton variant="outline">
+                <TreasuryIcon className="h-4 w-4 mr-2" />
+                Manage Treasury
               </AndamioButton>
-            </AndamioCardContent>
-          </AndamioCard>
+            </Link>
+          </div>
         </AndamioTabsContent>
 
         {/* Tasks Tab */}

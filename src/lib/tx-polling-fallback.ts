@@ -43,6 +43,12 @@ export interface PollOptions {
  * @param signal - AbortSignal to cancel polling
  * @returns Final TxStatus or null if aborted
  */
+/**
+ * Max consecutive polls seeing "confirmed" + last_error before treating as stalled.
+ * At 6s intervals, 5 polls = 30s — enough time for the gateway to retry if it's going to.
+ */
+const STALLED_THRESHOLD = 5;
+
 export async function pollUntilTerminal(
   txHash: string,
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>,
@@ -51,6 +57,7 @@ export async function pollUntilTerminal(
   signal?: AbortSignal
 ): Promise<TxStatus | null> {
   const { interval = 6_000, maxPolls = 150 } = options;
+  let stalledCount = 0;
 
   for (let i = 0; i < maxPolls; i++) {
     if (signal?.aborted) return null;
@@ -94,6 +101,24 @@ export async function pollUntilTerminal(
       if (TERMINAL_STATES.includes(status.state)) {
         callbacks.onComplete?.(status);
         return status;
+      }
+
+      // Detect stalled TX: confirmed on-chain but DB update keeps failing.
+      // The gateway retries with exponential backoff, but if it exhausts retries
+      // it stays in "confirmed" forever instead of transitioning to "failed".
+      if (status.state === "confirmed" && status.last_error) {
+        stalledCount++;
+        if (stalledCount >= STALLED_THRESHOLD) {
+          console.warn(
+            `[TxPolling] TX ${txHash} stalled in "confirmed" with error after ${stalledCount} polls:`,
+            status.last_error
+          );
+          // Treat as terminal — the TX confirmed on-chain but DB sync failed
+          callbacks.onComplete?.(status);
+          return status;
+        }
+      } else {
+        stalledCount = 0;
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return null;

@@ -43,6 +43,7 @@ import {
   CredentialIcon,
   VerifiedIcon,
   TeacherIcon,
+  DiplomaIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -193,8 +194,16 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
 
-  // Fetch pending assignment commitments for this course
-  const { data: pendingCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseNftPolicyId);
+  // Fetch assignment commitments for this course, filter to pending review only
+  const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseNftPolicyId);
+  const pendingCommitmentsForCourse = useMemo(
+    () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
+    [allCommitmentsForCourse]
+  );
+  const acceptedCommitmentsCount = useMemo(
+    () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "ACCEPTED").length,
+    [allCommitmentsForCourse]
+  );
 
   // =============================================================================
   // Module Stats - All derived from hook data (useTeacherCourseModules)
@@ -512,6 +521,18 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     <div className="text-2xl font-bold text-secondary">{moduleStats.draft + moduleStats.approved}</div>
                     <AndamioText variant="small" className="text-[10px]">Draft</AndamioText>
                   </div>
+                  {allCommitmentsForCourse.length > 0 && (
+                    <>
+                      <div className="w-px h-8 bg-border" />
+                      <Link href={`/studio/course/${courseNftPolicyId}/teacher`} className="text-center hover:opacity-80 transition-opacity">
+                        <div className="flex items-center justify-center gap-1">
+                          <DiplomaIcon className="h-5 w-5 text-primary" />
+                          <span className="text-2xl font-bold text-primary">{acceptedCommitmentsCount}</span>
+                        </div>
+                        <AndamioText variant="small" className="text-[10px]">Assignments Complete</AndamioText>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

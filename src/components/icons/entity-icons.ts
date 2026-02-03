@@ -37,6 +37,9 @@ export { FileEdit as IntroductionIcon } from "lucide-react";
 // User & Role Entities
 // =============================================================================
 
+/** Diploma - completed/accepted assignments */
+export { ScrollText as DiplomaIcon } from "lucide-react";
+
 /** Learners - students taking courses */
 export { GraduationCap as LearnerIcon } from "lucide-react";
 

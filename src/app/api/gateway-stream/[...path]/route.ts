@@ -42,6 +42,10 @@ export async function GET(
       headers,
       // Disable automatic response buffering for streaming
       cache: "no-store",
+      // Fail fast if the gateway doesn't respond with headers within 15s.
+      // This hands control to the polling fallback sooner rather than hanging
+      // for minutes on undici's default 300s headersTimeout.
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!response.ok) {
@@ -84,14 +88,24 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("[Gateway Stream] Error:", error);
+    // Distinguish timeout (expected when gateway is slow) from other errors
+    const isTimeout =
+      error instanceof DOMException && error.name === "TimeoutError";
+    console.warn(
+      `[Gateway Stream] ${isTimeout ? "Connection timed out (15s) — client should fall back to polling" : "Error:"}`,
+      isTimeout ? undefined : error
+    );
     return new Response(
       JSON.stringify({
-        error: "Failed to connect to Gateway stream",
+        error: isTimeout
+          ? "Gateway stream connection timed out"
+          : "Failed to connect to Gateway stream",
         details: error instanceof Error ? error.message : "Unknown error",
+        fallback: "polling",
       }),
       {
-        status: 500,
+        // 504 for timeout (gateway didn't respond), 502 for other upstream errors
+        status: isTimeout ? 504 : 502,
         headers: { "Content-Type": "application/json" },
       }
     );

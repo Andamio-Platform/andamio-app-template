@@ -14,7 +14,7 @@
 
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef } from "react";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -48,9 +48,10 @@ export interface MintModuleTokensProps {
   courseModules: CourseModule[];
 
   /**
-   * Callback fired when minting is successful
+   * Callback fired when minting is successful.
+   * Optional params provide hash validation info from the API response.
    */
-  onSuccess?: () => void | Promise<void>;
+  onSuccess?: (txHash?: string, hashInfo?: { computed: string[]; fromApi: string[]; validated: boolean }) => void | Promise<void>;
 
   /**
    * Callback fired when minting fails
@@ -90,6 +91,7 @@ export function MintModuleTokens({
 }: MintModuleTokensProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const hashInfoRef = useRef<{ computed: string[]; fromApi: string[]; validated: boolean } | null>(null);
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
@@ -105,7 +107,7 @@ export function MintModuleTokens({
             description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} minted successfully`,
           });
 
-          void onSuccess?.();
+          void onSuccess?.(result?.txHash, hashInfoRef.current ?? undefined);
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Minting Failed", {
             description: status.last_error ?? "Please try again or contact support.",
@@ -186,6 +188,34 @@ export function MintModuleTokens({
       },
       onSuccess: async (txResult) => {
         console.log("[MintModuleTokens] TX submitted successfully!", txResult);
+
+        // Extract and validate slt_hashes from API response
+        const apiHashes = txResult.apiResponse?.slt_hashes;
+        if (Array.isArray(apiHashes) && apiHashes.length > 0) {
+          const computedHashes = modulesWithData.map((m) => m.hash);
+          const sortedApi = [...apiHashes].sort();
+          const sortedComputed = [...computedHashes].sort();
+          const matched =
+            sortedApi.length === sortedComputed.length &&
+            sortedApi.every((h, i) => h === sortedComputed[i]);
+
+          hashInfoRef.current = {
+            computed: computedHashes,
+            fromApi: apiHashes as string[],
+            validated: matched,
+          };
+
+          if (matched) {
+            console.log("[MintModuleTokens] Hash validation: API hashes match computed");
+          } else {
+            console.warn("[MintModuleTokens] Hash validation: MISMATCH", {
+              computed: computedHashes,
+              fromApi: apiHashes,
+            });
+          }
+        } else {
+          console.log("[MintModuleTokens] No slt_hashes in API response (endpoint may not return them)");
+        }
       },
       onError: (txError) => {
         console.error("[MintModuleTokens] Error:", txError);

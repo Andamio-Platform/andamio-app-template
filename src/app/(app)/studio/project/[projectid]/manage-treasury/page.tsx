@@ -26,6 +26,7 @@ import {
   AndamioCheckbox,
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
+import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
 import { TasksManage } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { toast } from "sonner";
@@ -249,13 +250,23 @@ export default function ManageTreasuryPage() {
     };
   });
 
-  // Net deposit: add lovelace for new tasks, subtract for removed tasks
+  // Deposit calculation: account for available treasury funds
   const addLovelace = tasksToAdd.reduce((sum, t) => sum + t.lovelace_amount, 0);
   const removeLovelace = tasksToRemove.reduce((sum, t) => sum + t.lovelace_amount, 0);
-  const netDeposit = addLovelace - removeLovelace;
-
-  // Calculate deposit value (only if net positive - i.e., adding more than removing)
-  const depositValue: ListValue = netDeposit > 0 ? [["lovelace", netDeposit]] : [];
+  const netRequired = addLovelace - removeLovelace;
+  const treasuryBalance = (projectDetail?.treasuryFundings ?? []).reduce(
+    (sum, f) => sum + (f.lovelaceAmount ?? 0),
+    0,
+  );
+  // Existing on-chain tasks already consume part of the treasury balance
+  const onChainCommitted = onChainTasks.reduce(
+    (sum, t) => sum + (parseInt(t.lovelaceAmount) || 0),
+    0,
+  );
+  const availableFunds = treasuryBalance - onChainCommitted;
+  // Manager only deposits the shortfall: if available funds cover it, deposit nothing
+  const depositAmount = Math.max(0, netRequired - availableFunds);
+  const depositValue: ListValue = depositAmount > 0 ? [["lovelace", depositAmount]] : [];
 
   // Show transaction UI if any tasks are selected (to add or remove), or if a TX is in flight
   const hasTasksToManage = tasksToAdd.length > 0 || tasksToRemove.length > 0 || txInProgress === "add";
@@ -289,6 +300,12 @@ export default function ManageTreasuryPage() {
           </AndamioBadge>
         )}
       </div>
+
+      {/* Treasury Balance */}
+      <TreasuryBalanceCard
+        treasuryFundings={projectDetail?.treasuryFundings ?? []}
+        treasuryAddress={projectDetail?.treasuryAddress}
+      />
 
       {/* Draft Tasks for Publishing */}
       {draftTasks.length > 0 ? (
@@ -381,8 +398,12 @@ export default function ManageTreasuryPage() {
                   {tasksToRemove.length > 0 && (
                     <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
                   )}
-                  <div className={netDeposit >= 0 ? "" : "text-primary"}>
-                    Net deposit: {netDeposit >= 0 ? `${netDeposit / 1_000_000} ADA` : `${Math.abs(netDeposit) / 1_000_000} ADA returned`}
+                  <div>Treasury: {treasuryBalance / 1_000_000} ADA (committed: {onChainCommitted / 1_000_000}, available: {availableFunds / 1_000_000})</div>
+                  <div>Net requirement: {netRequired / 1_000_000} ADA</div>
+                  <div className={depositAmount > 0 ? "" : "text-primary"}>
+                    {depositAmount > 0
+                      ? `Deposit: ${depositAmount / 1_000_000} ADA`
+                      : "No additional deposit needed (treasury covers it)"}
                   </div>
                   <div>Contributor State ID: {contributorStateId}</div>
                 </div>

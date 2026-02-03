@@ -33,7 +33,7 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | ~~`nullable-type-validator`~~ | ~~Validate NullableString handling across components~~ | ~~Low~~ | **ADDRESSED** by `typescript-types-expert` skill (2026-01-24). Skill handles: NullableString auditing, getString() pattern enforcement, type guard validation, generated type imports. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-02-01 (Marked andamioscan-event-integrator as partially addressed by SSE)
+**Updated**: 2026-02-03 (react-query-auditor implemented)
 
 ---
 
@@ -194,3 +194,8 @@ Items that have been addressed and can be archived.
 | Remove stale CLAUDE.md references | 2026-02-01 | Removed deleted `andamioscan-events.ts` from API Clients table and Key Files. Removed deleted `use-event-confirmation.ts` from Key Files. |
 | Update STATUS.md for Feb 1 session | 2026-02-01 | Added PR #111 merge, `feat/project-tx-state-machines` branch commits, issue #114, updated blockers and milestones. |
 | Update ROADMAP.md for Feb 1 | 2026-02-01 | Added Project Workflows milestone, updated Phase 3.10 to Complete, added phase progress bars. |
+| Update STATUS.md for Feb 3 session | 2026-02-03 | Gateway API sync, 6 issues closed (#114, #129, #130, #139, #140), updated blockers, milestones, next session prompt. |
+| Update ROADMAP.md for Feb 3 | 2026-02-03 | Added Gateway API Sync + TX UX Audit milestone. |
+| Document slt_hashes validation | 2026-02-03 | New hash validation in `mint-module-tokens.tsx` — compares API-returned hashes with client-computed Blake2b-256. Updated `UnsignedTxResponse` in `use-transaction.ts`. |
+| Update tx-ux-audit-status.md | 2026-02-03 | TX #10 PROJECT_OWNER_MANAGERS_MANAGE audited. 9/16 TXs tested, 7 pass, 2 backend-blocked. |
+| Document #103 status clarification | 2026-02-03 | Structural compliance confirmed. 3 missing hooks identified: useAssessCommitment, useClaimCommitment, useLeaveCommitment. |

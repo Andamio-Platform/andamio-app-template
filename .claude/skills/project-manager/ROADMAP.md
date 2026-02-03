@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> **Last Updated**: February 1, 2026
+> **Last Updated**: February 3, 2026
 >
 > **Strategy**: Build incrementally, test thoroughly, establish patterns that scale
 
@@ -79,6 +79,14 @@ PROJECT WORKFLOWS ────────────────────�
   │   Owner/manager UX for post-create management
   │
   ▼
+GATEWAY API SYNC + TX UX AUDIT ────────────────────────── 2026-02-03 ✅
+  │
+  │   Types regenerated (managers, slt_hashes, SSE fix)
+  │   6 issues closed (#114, #129, #130, #139, #140)
+  │   TX UX audit: 9/16 tested, 7 pass, 2 backend-blocked
+  │   slt_hashes validation in mint-module-tokens
+  │
+  ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
   │
   │   Feature backlog begins!
@@ -102,6 +110,7 @@ MAINNET V2 LAUNCH ────────────────────�
 | **2026-01-24** | **Phase 3.8 Type Transformation** | ✅ Complete |
 | **2026-01-31** | **Andamioscan Removal** — All direct calls eliminated | ✅ Complete |
 | **2026-02-01** | **Project Workflows** (PR #111) + owner/manager fixes | ✅ Complete |
+| **2026-02-03** | **Gateway API Sync + TX UX Audit** — types regen, 6 issues closed | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 

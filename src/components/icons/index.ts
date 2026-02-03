@@ -37,6 +37,7 @@ export {
   LessonIcon,
   AssignmentIcon,
   IntroductionIcon,
+  DiplomaIcon,
   // Users & Roles
   LearnerIcon,
   TeacherIcon,

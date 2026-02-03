@@ -126,6 +126,7 @@ interface UnsignedTxResponse {
   // Additional fields returned by some endpoints
   course_id?: string;
   project_id?: string;
+  slt_hashes?: string[];  // modules/manage endpoint returns affected SLT hashes
   [key: string]: unknown;
 }
 

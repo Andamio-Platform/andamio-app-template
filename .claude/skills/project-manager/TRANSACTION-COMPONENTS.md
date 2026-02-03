@@ -111,7 +111,7 @@ When `partialSign: true`:
 
 ## Implemented Transactions (V2)
 
-All 16 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useTransaction` + `useTxWatcher` which:
+All 17 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useTransaction` + `useTxWatcher` which:
 - Validates params using Zod schemas from `~/config/transaction-schemas.ts`
 - Registers TXs with gateway for automatic DB updates
 - Provides consistent state management and error handling
@@ -137,6 +137,7 @@ All 16 V2 transactions are implemented using the gateway auto-confirmation patte
 | `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task-commit.tsx` | project-contributor |
 | `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task-action.tsx` | project-contributor |
 | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project-credential-claim.tsx` | project-contributor |
+| `PROJECT_USER_TREASURY_ADD_FUNDS` | `treasury-add-funds.tsx` | project-user |
 
 ---
 
@@ -279,7 +280,7 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 - `~/config/transaction-ui.ts` - UI strings, endpoints, `requiresDBUpdate` / `requiresOnChainConfirmation` flags
 - `~/config/transaction-schemas.ts` - Zod validation schemas for params
 - `TransactionButton`, `TransactionStatus` - UI components
-- 16 transaction-specific components
+- 17 transaction-specific components
 - Hash utilities at `~/lib/utils/` (migrated from `@andamio/transactions`)
 
 **`@andamio/transactions` Package** (local, deprecated):

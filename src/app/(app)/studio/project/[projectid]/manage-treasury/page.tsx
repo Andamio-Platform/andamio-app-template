@@ -27,7 +27,7 @@ import {
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
 import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
-import { TasksManage } from "~/components/tx";
+import { TasksManage, TreasuryAddFunds } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { toast } from "sonner";
 import type { Task } from "~/hooks/api/project/use-project";
@@ -305,6 +305,14 @@ export default function ManageTreasuryPage() {
       <TreasuryBalanceCard
         treasuryFundings={projectDetail?.treasuryFundings ?? []}
         treasuryAddress={projectDetail?.treasuryAddress}
+      />
+
+      {/* Add Funds to Treasury */}
+      <TreasuryAddFunds
+        projectNftPolicyId={projectId}
+        onSuccess={async () => {
+          await refreshData();
+        }}
       />
 
       {/* Draft Tasks for Publishing */}

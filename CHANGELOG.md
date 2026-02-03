@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Treasury Add Funds TX Component** (February 3, 2026): TX #17 `PROJECT_USER_TREASURY_ADD_FUNDS` — new `treasury-add-funds.tsx` component
+  - ADA amount input with lovelace conversion and minimum 1 ADA validation
+  - Full TX lifecycle: submit → gateway confirmation → success with `useTxStream`
+  - Integrated on `/studio/project/[projectid]/manage-treasury` route
+  - All 17/17 TX types now have UI components (was 16/17)
+- **Prerequisite Display with Course Titles** (February 3, 2026): Shared `PrerequisiteList` component resolving course and module names
+  - `PrerequisiteRow` fetches course title via `useCourse()` and module names via `useCourseModules()`
+  - Module badges show `MODULE_CODE: Module Title` instead of raw SLT hashes
+  - Used on studio project dashboard, public project detail, and contributor dashboard
+  - New shared component: `src/components/project/prerequisite-list.tsx`
+- **Studio Project Dashboard Redesign** (February 3, 2026): Prerequisites + stats side-by-side layout
+  - Prerequisites card front-and-center on overview tab
+  - Stats consolidated into single column with treasury balance inline
+  - Renamed "Live" tasks to "Active", removed redundant "Total Tasks" stat
 - **Student Assignment Checklist** (February 1, 2026): Per-module assignment checklist in the enrolled course status card (`UserCourseStatus`)
   - Shows each module with commitment status badge (accepted, pending review, needs revision, not started)
   - Uses existing `useStudentAssignmentCommitments` data — no new API calls

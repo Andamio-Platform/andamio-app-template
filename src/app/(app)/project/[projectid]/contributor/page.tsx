@@ -35,7 +35,9 @@ import { useProject, useProjectTasks, projectKeys, type Task, type ProjectSubmis
 import { useQueryClient } from "@tanstack/react-query";
 import { TaskCommit, ProjectCredentialClaim, TaskAction } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
+import { checkProjectEligibility, type EligibilityResult, type MissingPrerequisite } from "~/lib/project-eligibility";
+import { useCourse } from "~/hooks/api/course/use-course";
+import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import { computeTaskHash, type TaskData } from "@andamio/core/hashing";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
@@ -62,6 +64,64 @@ type ContributorStatus = "not_enrolled" | "enrolled" | "task_pending" | "task_ac
  *
  * All data sourced from useProject() merged hook — no direct Andamioscan calls.
  */
+
+/**
+ * Renders a single missing prerequisite with resolved course title and module names.
+ */
+function MissingPrerequisiteRow({ prereq }: { prereq: MissingPrerequisite }) {
+  const { data: courseData } = useCourse(prereq.courseId);
+  const { data: modules = [] } = useCourseModules(prereq.courseId);
+  const courseTitle = courseData?.title;
+
+  const moduleMap = new Map(
+    modules.map((m) => [m.sltHash, { moduleCode: m.moduleCode, title: m.title }])
+  );
+
+  const getModuleLabel = (hash: string) => {
+    const mod = moduleMap.get(hash);
+    if (mod?.moduleCode && mod?.title) return `${mod.moduleCode}: ${mod.title}`;
+    if (mod?.moduleCode) return mod.moduleCode;
+    return `${hash.slice(0, 12)}...`;
+  };
+
+  return (
+    <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CourseIcon className="h-4 w-4 text-muted-foreground" />
+          <AndamioText className="text-sm font-medium">
+            {courseTitle ?? `${prereq.courseId.slice(0, 16)}...`}
+          </AndamioText>
+        </div>
+        <AndamioBadge variant="outline">
+          {prereq.completedModules.length}/{prereq.requiredModules.length} completed
+        </AndamioBadge>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {prereq.missingModules.map((moduleHash) => (
+          <AndamioBadge key={moduleHash} variant="secondary" className="text-xs">
+            <PendingIcon className="h-3 w-3 mr-1" />
+            {getModuleLabel(moduleHash)}
+          </AndamioBadge>
+        ))}
+        {prereq.completedModules.map((moduleHash) => (
+          <AndamioBadge key={moduleHash} variant="default" className="text-xs bg-primary text-primary-foreground">
+            <SuccessIcon className="h-3 w-3 mr-1" />
+            {getModuleLabel(moduleHash)}
+          </AndamioBadge>
+        ))}
+      </div>
+
+      <Link href={`/course/${prereq.courseId}`}>
+        <AndamioButton variant="outline" size="sm" className="mt-2">
+          <CourseIcon className="h-4 w-4 mr-2" />
+          Go to Course
+        </AndamioButton>
+      </Link>
+    </div>
+  );
+}
 
 function ContributorDashboardContent() {
   const params = useParams();
@@ -366,43 +426,7 @@ function ContributorDashboardContent() {
             {/* Missing Prerequisites List */}
             <div className="space-y-3">
               {eligibility.missingPrerequisites.map((prereq) => (
-                <div key={prereq.courseId} className="p-3 rounded-lg bg-muted/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CourseIcon className="h-4 w-4 text-muted-foreground" />
-                      <AndamioText className="font-mono text-sm">
-                        Course: {prereq.courseId.slice(0, 16)}...
-                      </AndamioText>
-                    </div>
-                    <AndamioBadge variant="outline">
-                      {prereq.completedModules.length}/{prereq.requiredModules.length} completed
-                    </AndamioBadge>
-                  </div>
-
-                  {/* Missing modules */}
-                  <div className="flex flex-wrap gap-2">
-                    {prereq.missingModules.map((moduleHash) => (
-                      <AndamioBadge key={moduleHash} variant="secondary" className="text-xs font-mono">
-                        <PendingIcon className="h-3 w-3 mr-1" />
-                        {moduleHash.slice(0, 12)}...
-                      </AndamioBadge>
-                    ))}
-                    {prereq.completedModules.map((moduleHash) => (
-                      <AndamioBadge key={moduleHash} variant="default" className="text-xs font-mono bg-primary text-primary-foreground">
-                        <SuccessIcon className="h-3 w-3 mr-1" />
-                        {moduleHash.slice(0, 12)}...
-                      </AndamioBadge>
-                    ))}
-                  </div>
-
-                  {/* Link to course */}
-                  <Link href={`/course/${prereq.courseId}`}>
-                    <AndamioButton variant="outline" size="sm" className="mt-2">
-                      <CourseIcon className="h-4 w-4 mr-2" />
-                      Go to Course
-                    </AndamioButton>
-                  </Link>
-                </div>
+                <MissingPrerequisiteRow key={prereq.courseId} prereq={prereq} />
               ))}
             </div>
           </AndamioCardContent>

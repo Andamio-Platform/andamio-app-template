@@ -38,6 +38,7 @@ import {
   TreasuryIcon,
 } from "~/components/icons";
 import { type ProjectDetail } from "~/hooks/api/project/use-project";
+import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
@@ -191,14 +192,7 @@ function ProjectDataCard({
               <AndamioText variant="small" className="font-medium mb-2">
                 Prerequisites
               </AndamioText>
-              <div className="flex flex-wrap gap-2">
-                {prerequisites.map((prereq, i) => (
-                  <AndamioBadge key={i} variant="outline" className="font-mono text-xs">
-                    <CourseIcon className="h-3 w-3 mr-1" />
-                    {prereq.courseId?.slice(0, 12)}... ({prereq.sltHashes?.length ?? 0} modules)
-                  </AndamioBadge>
-                ))}
-              </div>
+              <PrerequisiteList prerequisites={prerequisites} />
             </div>
           )}
         </div>

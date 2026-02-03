@@ -23,7 +23,7 @@
 | 14 | PROJECT_CONTRIBUTOR_TASK_COMMIT | `task-commit.tsx` | --- | --- | --- | --- | |
 | 15 | PROJECT_CONTRIBUTOR_TASK_ACTION | `task-action.tsx` | --- | --- | --- | --- | |
 | 16 | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM | `project-credential-claim.tsx` | --- | --- | --- | --- | |
-| 17 | PROJECT_USER_TREASURY_ADD_FUNDS | *no component* | n/a | n/a | n/a | n/a | Schema defined, no UI yet |
+| 17 | PROJECT_USER_TREASURY_ADD_FUNDS | `treasury-add-funds.tsx` | pass | pass | pass | pass | Audited 2026-02-03. All 4 checks pass on first test. |
 
 ## Column Definitions
 
@@ -69,6 +69,7 @@
 - **2026-02-03**: #7 COURSE_STUDENT_ASSIGNMENT_COMMIT — Re-test: ALL PASS. Backend 404 "Module not found" issue resolved. Full flow working: submit → confirm → off-chain update → UX refresh.
 - **2026-02-03**: #10 PROJECT_OWNER_MANAGERS_MANAGE — Re-test: ALL PASS. Backend `managers_manage` handler resolved by ops. Full flow working.
 - **2026-02-03**: #6 COURSE_TEACHER_ASSIGNMENTS_ASSESS — Regression from `e8d76ec` two-panel refactor. Decision cart (including progress spinner and "done" message) was gated on `pendingDecisions.size > 0`. After successful batch submit, decisions are cleared → cart unmounts → success message never visible. Fixed: cart now also visible when `batchState !== "idle"`.
+- **2026-02-03**: #17 PROJECT_USER_TREASURY_ADD_FUNDS — New component created. All 4 checks pass on first test.
 
 ## Advanced Testing Backlog
 

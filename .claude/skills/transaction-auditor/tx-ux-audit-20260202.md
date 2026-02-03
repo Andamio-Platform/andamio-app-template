@@ -72,7 +72,6 @@ When routing issues to the ops team, provide:
 
 ## Current Coverage
 
-- **16/17** TX types have UI components
-- **Missing**: `PROJECT_USER_TREASURY_ADD_FUNDS` (schema only, no component)
+- **17/17** TX types have UI components
 - All implemented components use `useTransaction()` + `useTxStream()`
 - All show toast feedback on success/error

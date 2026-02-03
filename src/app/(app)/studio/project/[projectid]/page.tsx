@@ -31,10 +31,11 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
-import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
+import { PrerequisiteList } from "~/components/project/prerequisite-list";
+import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
 import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
@@ -254,60 +255,77 @@ export default function ProjectDashboardPage() {
 
         {/* Overview Tab */}
         <AndamioTabsContent value="overview" className="mt-6 space-y-4">
-          {/* Project Stats */}
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle className="flex items-center gap-2">
-                <ChartIcon className="h-5 w-5" />
-                Project Stats
-              </AndamioCardTitle>
-              <AndamioCardDescription>Overview of project activity</AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{tasks.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Tasks (DB)</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold">{draftTasks}</div>
-                  <div className="text-sm text-muted-foreground">Draft Tasks</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{liveTasks}</div>
-                  <div className="text-sm text-muted-foreground">Live Tasks (DB)</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold flex items-center justify-center gap-1">
-                    <OnChainIcon className="h-5 w-5" />
-                    {onChainTaskCount}
-                  </div>
-                  <div className="text-sm text-muted-foreground">On-Chain Tasks</div>
-                </div>
-              </div>
-              {onChainContributorCount > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <OnChainIcon className="h-4 w-4" />
-                    {onChainContributorCount} contributor{onChainContributorCount !== 1 ? "s" : ""} on-chain
-                  </div>
-                </div>
-              )}
-            </AndamioCardContent>
-          </AndamioCard>
+          {/* Prerequisites + Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Prerequisites Card */}
+            <AndamioCard>
+              <AndamioCardHeader>
+                <AndamioCardTitle className="flex items-center gap-2">
+                  <CourseIcon className="h-5 w-5" />
+                  Prerequisites
+                </AndamioCardTitle>
+                <AndamioCardDescription>
+                  Courses contributors must complete before joining
+                </AndamioCardDescription>
+              </AndamioCardHeader>
+              <AndamioCardContent>
+                <PrerequisiteList prerequisites={projectDetail.prerequisites ?? []} />
+              </AndamioCardContent>
+            </AndamioCard>
 
-          {/* Treasury Overview */}
-          <TreasuryBalanceCard
-            treasuryFundings={projectDetail.treasuryFundings ?? []}
-            treasuryAddress={projectDetail.treasuryAddress}
-          />
-          <div className="flex gap-3">
-            <Link href={`/studio/project/${projectId}/manage-treasury`}>
-              <AndamioButton variant="outline">
-                <TreasuryIcon className="h-4 w-4 mr-2" />
-                Manage Treasury
-              </AndamioButton>
-            </Link>
+            {/* Project Stats Column */}
+            <AndamioCard>
+              <AndamioCardHeader>
+                <AndamioCardTitle className="flex items-center gap-2">
+                  <ChartIcon className="h-5 w-5" />
+                  Project Stats
+                </AndamioCardTitle>
+              </AndamioCardHeader>
+              <AndamioCardContent className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Draft Tasks</span>
+                  <span className="text-sm font-bold">{draftTasks}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground">Active Tasks</span>
+                  <span className="text-sm font-bold text-primary">{liveTasks}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <OnChainIcon className="h-3.5 w-3.5" />
+                    On-Chain Tasks
+                  </span>
+                  <span className="text-sm font-bold">{onChainTaskCount}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <OnChainIcon className="h-3.5 w-3.5" />
+                    Contributors
+                  </span>
+                  <span className="text-sm font-bold">{onChainContributorCount}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <TreasuryIcon className="h-3.5 w-3.5" />
+                    Treasury Balance
+                  </span>
+                  <span className="text-sm font-bold">
+                    {formatLovelace(
+                      (projectDetail.treasuryFundings ?? []).reduce(
+                        (sum, f) => sum + (f.lovelaceAmount ?? 0),
+                        0,
+                      )
+                    )}
+                  </span>
+                </div>
+                <Link href={`/studio/project/${projectId}/manage-treasury`}>
+                  <AndamioButton variant="outline" size="sm" className="w-full mt-1">
+                    <TreasuryIcon className="h-4 w-4 mr-2" />
+                    Manage Treasury
+                  </AndamioButton>
+                </Link>
+              </AndamioCardContent>
+            </AndamioCard>
           </div>
         </AndamioTabsContent>
 

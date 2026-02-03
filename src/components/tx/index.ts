@@ -72,3 +72,6 @@ export type { TaskCommitProps } from "./task-commit";
 
 export { ProjectCredentialClaim } from "./project-credential-claim";
 export type { ProjectCredentialClaimProps } from "./project-credential-claim";
+
+export { TreasuryAddFunds } from "./treasury-add-funds";
+export type { TreasuryAddFundsProps } from "./treasury-add-funds";

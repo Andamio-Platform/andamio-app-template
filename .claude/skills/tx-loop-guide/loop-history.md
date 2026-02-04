@@ -45,7 +45,7 @@ A loop is **Validated** when:
 | 1: Onboarding | Ready for UX | 2026-01-24 | @james | - | Access Token minting works, UI issues resolved |
 | 3: Create & Publish Course | Ready for UX | 2026-01-24 | @james | - | Full owner/teacher flow validated |
 | 6: Team Teaching Setup | Ready for UX | 2026-01-24 | @james | - | Teacher management working |
-| 2: Earn Credential | Untested | - | - | - | Student enrollment flow not yet tested |
+| 2: Earn Credential | Issues Found | 2026-02-04 | @claude | #165 | UI validated, needs wallet testing for TX |
 | 4: Assignment Revision | Untested | - | - | - | Depends on Loop 2 validation |
 | 5: Multi-Module Path | Untested | - | - | - | Depends on Loop 2 validation |
 
@@ -241,6 +241,45 @@ Project loops require frontend development before testing can begin. Transaction
 1. UX testing for Course Owner/Teacher flows
 2. Implement and validate Course Student flows (Loops 2, 4, 5)
 3. Build Project UI components before testing Project loops
+
+---
+
+### 2026-02-04 — Loop 2: Earn Credential (Exploration)
+
+**Tester:** Claude (AI-assisted via Playwright)
+**Result:** Issues Found
+
+**Transactions:**
+- [ ] COURSE_STUDENT_ASSIGNMENT_COMMIT — Not tested (requires wallet)
+- [ ] COURSE_TEACHER_ASSIGNMENTS_ASSESS — Not tested
+- [ ] COURSE_STUDENT_CREDENTIAL_CLAIM — Not tested
+
+**Issues Created:**
+- #165 — Tx Loop Feedback: Loop 2 - Earn a Credential (Exploration)
+
+**Notes:**
+Comprehensive UI exploration using Playwright automation:
+
+**What Works:**
+- Course catalog loads 12 courses correctly
+- Course detail page shows modules and learning targets
+- Assignment page renders with verified on-chain module (hash: fe74a5bcf7a4d8c2...)
+- AssignmentCommitment component present with "Connect wallet" prompt
+
+**Issues Found:**
+- No enrollment CTA on course detail page for unauthenticated users
+- `UserCourseStatus` returns null when not authenticated
+- Module shows "Draft" badge (may not block enrollment)
+
+**Blocker:**
+- Cannot test actual `COURSE_STUDENT_ASSIGNMENT_COMMIT` transaction without wallet connection
+- Need manual testing with wallet to verify previous blocker #29 is resolved
+
+**Test artifacts created:**
+- `e2e/tests/tx-loop-exploration.spec.ts`
+- `e2e/tests/tx-loop-enrollment.spec.ts`
+- `e2e/tests/tx-loop-full-enrollment.spec.ts`
+- `e2e/screenshots/loop2/` - UI screenshots
 
 ---
 

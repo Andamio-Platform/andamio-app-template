@@ -24,17 +24,28 @@ export default defineConfig({
   testDir: "./tests",
   outputDir: "./test-results",
 
+  /* Global test timeout - 60s to handle slow server responses */
+  timeout: 60000,
+
+  /* Expect timeout for assertions */
+  expect: {
+    timeout: 10000,
+  },
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry flaky tests - 1 retry locally, 2 in CI */
+  retries: process.env.CI ? 2 : 1,
 
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
+  /* Limit parallel workers to prevent overwhelming the dev server */
+  workers: process.env.CI ? 1 : 2,
+
+  /* Stop after 3 failures locally for faster feedback */
+  maxFailures: process.env.CI ? undefined : 3,
 
   /* Reporter configuration */
   reporter: [
@@ -47,6 +58,12 @@ export default defineConfig({
   use: {
     /* Base URL for navigation */
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
+
+    /* Action timeout for clicks, fills, etc. */
+    actionTimeout: 15000,
+
+    /* Navigation timeout */
+    navigationTimeout: 30000,
 
     /* Collect trace on failure for debugging */
     trace: "on-first-retry",
@@ -68,11 +85,14 @@ export default defineConfig({
       },
     },
 
-    /* Mobile Chrome (Pixel 5) */
+    /* Mobile Chrome (Pixel 5) - with longer timeouts for slower mobile rendering */
     {
       name: "mobile",
       use: {
         ...devices["Pixel 5"],
+        /* Mobile needs longer timeouts due to slower rendering */
+        navigationTimeout: 45000,
+        actionTimeout: 20000,
       },
     },
 

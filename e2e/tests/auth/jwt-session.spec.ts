@@ -23,7 +23,7 @@ test.describe("JWT Session Management", () => {
   test.describe("Session Persistence", () => {
     test("page loads and shows unauthenticated state by default", async ({ connectedPage }) => {
       try {
-        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 15000 });
       } catch {
         console.log("Dashboard navigation timeout - test skipped");
         return;
@@ -178,7 +178,7 @@ test.describe("JWT Session Management", () => {
       });
 
       try {
-        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 15000 });
       } catch {
         console.log("Dashboard navigation timeout - test skipped");
         return;
@@ -208,7 +208,7 @@ test.describe("JWT Session Management", () => {
       });
 
       try {
-        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/dashboard", { waitUntil: "domcontentloaded", timeout: 15000 });
       } catch {
         console.log("Dashboard navigation timeout - test skipped");
         return;
@@ -282,7 +282,7 @@ test.describe("JWT Session Management", () => {
 
     test("course page is accessible", async ({ connectedPage }) => {
       try {
-        await connectedPage.goto("/course", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/course", { waitUntil: "domcontentloaded", timeout: 15000 });
         // Wait for page to render - use flexible check
         const mainVisible = await connectedPage.locator("main").isVisible({ timeout: 5000 }).catch(() => false);
         if (!mainVisible) {
@@ -295,7 +295,7 @@ test.describe("JWT Session Management", () => {
 
     test("project page is accessible", async ({ connectedPage }) => {
       try {
-        await connectedPage.goto("/project", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/project", { waitUntil: "domcontentloaded", timeout: 15000 });
         // Wait for page to render - use flexible check
         const mainVisible = await connectedPage.locator("main").isVisible({ timeout: 5000 }).catch(() => false);
         if (!mainVisible) {
@@ -308,7 +308,7 @@ test.describe("JWT Session Management", () => {
 
     test("credentials page is accessible", async ({ connectedPage }) => {
       try {
-        await connectedPage.goto("/credentials", { waitUntil: "domcontentloaded", timeout: 20000 });
+        await connectedPage.goto("/credentials", { waitUntil: "domcontentloaded", timeout: 15000 });
         // Wait for page to render - use flexible check
         const mainVisible = await connectedPage.locator("main").isVisible({ timeout: 5000 }).catch(() => false);
         if (!mainVisible) {

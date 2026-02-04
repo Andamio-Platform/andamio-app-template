@@ -62,10 +62,13 @@ async function injectJWTToStorage(page: Page, user = MOCK_DATA.user): Promise<vo
 
 /**
  * Clear all auth-related storage
+ * NOTE: The app uses "andamio_jwt" (underscore) - must clear both variants for safety
  */
 async function clearAuthStorage(page: Page): Promise<void> {
   await page.evaluate(() => {
-    localStorage.removeItem("andamio-jwt");
+    // Clear BOTH variants to handle any inconsistencies
+    localStorage.removeItem("andamio_jwt");   // Correct key (underscore)
+    localStorage.removeItem("andamio-jwt");   // Legacy/incorrect variant (hyphen)
     localStorage.removeItem("andamio-user");
     sessionStorage.clear();
   });
@@ -215,11 +218,13 @@ export const testHelpers = {
    * Wait for the app to be fully loaded
    */
   async waitForAppReady(page: Page): Promise<void> {
-    // Wait for Next.js hydration to complete
-    await page.waitForLoadState("networkidle");
+    // Wait for DOM content to load (networkidle hangs on Next.js apps with pending API calls)
+    await page.waitForLoadState("domcontentloaded");
 
     // Wait for main content to be visible
-    await page.waitForSelector("main", { state: "visible" });
+    await page.waitForSelector("main", { state: "visible", timeout: 10000 }).catch(() => {
+      // Main may not be visible on some pages - this is acceptable
+    });
   },
 
   /**

@@ -73,6 +73,7 @@ export interface TransactionUIConfig {
 export type TransactionType =
   // Global
   | "GLOBAL_GENERAL_ACCESS_TOKEN_MINT"
+  | "GLOBAL_USER_ACCESS_TOKEN_CLAIM"
   // Instance
   | "INSTANCE_COURSE_CREATE"
   | "INSTANCE_PROJECT_CREATE"
@@ -118,6 +119,19 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     successInfo: "Access token minted successfully!",
     requiresDBUpdate: false, // No DB state to update after confirmation
     requiresOnChainConfirmation: true, // Track on-chain confirmation via gateway
+  },
+
+  GLOBAL_USER_ACCESS_TOKEN_CLAIM: {
+    buttonText: "Claim V2 Access Token",
+    title: "Claim V2 Access Token",
+    description: [
+      "Claim your V2 access token using your existing V1 token. This is a one-time migration — your V1 token proves ownership, so no authentication is required.",
+    ],
+    footerLink: getDocsUrl("accessTokenMint"),
+    footerLinkText: "Tx Documentation",
+    successInfo: "V2 access token claimed successfully!",
+    requiresDBUpdate: false,
+    requiresOnChainConfirmation: true,
   },
 
   // ===========================================================================
@@ -359,6 +373,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
  */
 export const TRANSACTION_ENDPOINTS: Record<TransactionType, string> = {
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "/api/v2/tx/global/user/access-token/mint",
+  GLOBAL_USER_ACCESS_TOKEN_CLAIM: "/api/v2/tx/global/user/access-token/claim",
   INSTANCE_COURSE_CREATE: "/api/v2/tx/instance/owner/course/create",
   INSTANCE_PROJECT_CREATE: "/api/v2/tx/instance/owner/project/create",
   COURSE_OWNER_TEACHERS_MANAGE: "/api/v2/tx/course/owner/teachers/manage",

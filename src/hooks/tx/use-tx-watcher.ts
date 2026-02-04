@@ -261,6 +261,7 @@ export async function registerTransaction(
 export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
   // Global
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: "access_token_mint",
+  GLOBAL_USER_ACCESS_TOKEN_CLAIM: "access_token_mint",
 
   // Course - Instance
   INSTANCE_COURSE_CREATE: "course_create",

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **V1→V2 Access Token Migration Page** (February 4, 2026): Standalone `/migrate` route for V1 token holders to claim V2 tokens
+  - No sidebar or auth required — wallet connect, V1 token detection, and claim TX only
+  - 5-state UI: no wallet → scanning → no token found → ready to claim → success
+  - V1 token detection via hardcoded policy ID `c76c35088ac826c8...`
+  - Uses `GLOBAL_USER_ACCESS_TOKEN_CLAIM` TX type with `useTransaction` + `useTxStream`
+  - New TX_TYPE_MAP entry mapping to `access_token_mint` gateway type
 - **Treasury Add Funds TX Component** (February 3, 2026): TX #17 `PROJECT_USER_TREASURY_ADD_FUNDS` — new `treasury-add-funds.tsx` component
   - ADA amount input with lovelace conversion and minimum 1 ADA validation
   - Full TX lifecycle: submit → gateway confirmation → success with `useTxStream`

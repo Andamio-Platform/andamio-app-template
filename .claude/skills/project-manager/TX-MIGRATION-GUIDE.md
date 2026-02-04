@@ -184,6 +184,7 @@ For each transaction type, update these files:
 | TX Type | requiresDBUpdate | Migrated |
 |---------|------------------|----------|
 | GLOBAL_GENERAL_ACCESS_TOKEN_MINT | `false` | ✅ |
+| GLOBAL_USER_ACCESS_TOKEN_CLAIM | `false` | ✅ |
 | INSTANCE_COURSE_CREATE | `true` | ✅ |
 | INSTANCE_PROJECT_CREATE | `true` | ✅ |
 | COURSE_OWNER_TEACHERS_MANAGE | `true` | ✅ |
@@ -201,8 +202,7 @@ For each transaction type, update these files:
 | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM | `true` | ✅ |
 | PROJECT_USER_TREASURY_ADD_FUNDS | `true` | ⏳ |
 
-> **Note**: All 16 core transaction components have been migrated to V2 as of January 18, 2026.
-> Treasury transactions are pending backend implementation.
+> **Note**: All 18 transaction types now have V2 UI components (including V1→V2 claim and treasury add-funds).
 
 ## Reference Implementation
 

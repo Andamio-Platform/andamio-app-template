@@ -95,6 +95,14 @@ export const txSchemas = {
     initiator_data: z.string().min(1), // Bech32 address string
   }),
 
+  /**
+   * Claim V2 access token using existing V1 token (no auth required)
+   * @see ClaimV2AccessTokenTxRequest
+   */
+  GLOBAL_USER_ACCESS_TOKEN_CLAIM: z.object({
+    alias: aliasSchema,
+  }),
+
   // ===========================================================================
   // Instance Transactions
   // ===========================================================================

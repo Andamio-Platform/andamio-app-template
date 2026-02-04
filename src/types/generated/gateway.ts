@@ -239,7 +239,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientAddFundsTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: any[][];
+  deposit_value?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -278,13 +278,6 @@ export interface AndamioApiInternalInternalApiAtlasTxClientClaimCourseCredential
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
 }
 
-export interface AndamioApiInternalInternalApiAtlasTxClientClaimMigrateCredentialsTxRequest {
-  /** Plain text alias. Any characters allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-}
-
 export interface AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentialsTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
@@ -294,6 +287,11 @@ export interface AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentia
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
+}
+
+export interface AndamioApiInternalInternalApiAtlasTxClientClaimV2AccessTokenTxRequest {
+  /** Plain text alias. Any characters allowed. */
+  alias?: string;
 }
 
 export interface AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest {
@@ -333,31 +331,9 @@ export interface AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest
 export interface AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
-  course_prereqs?: any[][];
+  course_prereqs?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   managers?: string[];
-}
-
-export interface AndamioApiInternalInternalApiAtlasTxClientEnrollMigrateStateTxRequest {
-  /** Plain text alias. Any characters allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAtlasTxClientInitMigrateStateTxRequest {
-  /** Plain text alias. Any characters allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-}
-
-export interface AndamioApiInternalInternalApiAtlasTxClientIssueMigrateTxRequest {
-  /** Plain text alias. Any characters allowed. */
-  alias?: string;
-  /** This is the hash of a minting policy script. */
-  course_id?: string;
-  to_issue?: any[][];
 }
 
 export interface AndamioApiInternalInternalApiAtlasTxClientManageContributorBlacklistTxRequest {
@@ -397,7 +373,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest 
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: any[][];
+  deposit_value?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -434,12 +410,6 @@ export interface AndamioApiInternalInternalApiAtlasTxClientProjectOutcome {
   outcome?: string;
 }
 
-export interface AndamioApiInternalInternalApiAtlasTxClientRemoveMigrateStateTxRequest {
-  /** Plain text alias. Any characters allowed. */
-  alias?: string;
-  course_ids?: string[];
-}
-
 export interface AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
@@ -454,7 +424,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientTaskData {
   expiration_posix?: number;
   lovelace_amount?: number;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  native_assets?: any[][];
+  native_assets?: Record<string, any>[][];
   /** A text string with a maximum length of 140 characters */
   project_content?: string;
 }

@@ -1,6 +1,6 @@
 # Andamio Template Transaction Components
 
-> Last Updated: February 3, 2026
+> Last Updated: February 4, 2026
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
@@ -111,7 +111,7 @@ When `partialSign: true`:
 
 ## Implemented Transactions (V2)
 
-All 17 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useTransaction` + `useTxWatcher` which:
+All 18 V2 transactions are implemented using the gateway auto-confirmation pattern. Each component uses `useTransaction` + `useTxWatcher` which:
 - Validates params using Zod schemas from `~/config/transaction-schemas.ts`
 - Registers TXs with gateway for automatic DB updates
 - Provides consistent state management and error handling
@@ -122,6 +122,7 @@ All 17 V2 transactions are implemented using the gateway auto-confirmation patte
 | Definition | Component | Role |
 |------------|-----------|------|
 | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` | general |
+| `GLOBAL_USER_ACCESS_TOKEN_CLAIM` | `migrate/page.tsx` | general |
 | `INSTANCE_COURSE_CREATE` | `create-course.tsx` | instance-owner |
 | `INSTANCE_PROJECT_CREATE` | `create-project.tsx` | instance-owner |
 | `COURSE_OWNER_TEACHERS_MANAGE` | `teachers-update.tsx` | course-owner |

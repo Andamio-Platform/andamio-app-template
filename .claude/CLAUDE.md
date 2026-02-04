@@ -64,6 +64,7 @@ const data = await gatewayAuth<CourseResponse[]>("/api/v2/course/owner/courses/l
 ### Route Structure
 ```
 /                → Landing page
+/migrate         → V1→V2 access token migration (no sidebar, no auth)
 /(app)/dashboard → Dashboard (sidebar layout)
 /(app)/courses   → Courses (sidebar layout)
 ```

@@ -488,14 +488,23 @@ function ContributorDashboardContent() {
         const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
 
         return (
-        <AndamioCard className="border-secondary">
+        <AndamioCard className={dbCommitment?.commitmentStatus === "REFUSED" ? "border-destructive" : "border-secondary"}>
           <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-secondary">
-              <PendingIcon className="h-5 w-5" />
-              Task Pending Review
+            <AndamioCardTitle className={`flex items-center gap-2 ${dbCommitment?.commitmentStatus === "REFUSED" ? "text-destructive" : "text-secondary"}`}>
+              {dbCommitment?.commitmentStatus === "REFUSED" ? (
+                <><AlertIcon className="h-5 w-5" />Resubmission Needed</>
+              ) : (
+                <><PendingIcon className="h-5 w-5" />Task Pending Review</>
+              )}
             </AndamioCardTitle>
             <AndamioCardDescription>
-              Your submission is awaiting manager review. You can update your evidence below before the manager reviews it.
+              {dbCommitment?.commitmentStatus === "REFUSED"
+                ? "Your work was not accepted. Update your evidence and resubmit."
+                : dbCommitment?.commitmentStatus === "COMMITTED"
+                  ? "You've joined this task. Your manager may review at any time — submit evidence when ready."
+                  : dbCommitment?.commitmentStatus === "SUBMITTED"
+                    ? "Evidence submitted. Waiting for manager review."
+                    : "Your submission is awaiting manager review. You can update your evidence below."}
             </AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent className="space-y-4">
@@ -565,10 +574,14 @@ function ContributorDashboardContent() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <EditIcon className="h-4 w-4 text-muted-foreground" />
-                    <AndamioText className="font-medium">Update Your Evidence</AndamioText>
+                    <AndamioText className="font-medium">
+                      {dbCommitment?.commitmentStatus === "REFUSED" ? "Resubmit Your Evidence" : "Update Your Evidence"}
+                    </AndamioText>
                   </div>
                   <AndamioText variant="small" className="text-muted-foreground">
-                    Add or update your evidence before the manager reviews your submission. The evidence hash will be recorded on-chain.
+                    {dbCommitment?.commitmentStatus === "REFUSED"
+                      ? "Your previous submission was not accepted. Revise your evidence and resubmit."
+                      : "Add or update your evidence before the manager reviews your submission. The evidence hash will be recorded on-chain."}
                   </AndamioText>
                   <div className="min-h-[200px] border rounded-lg">
                     <ContentEditor
@@ -852,7 +865,7 @@ function ContributorDashboardContent() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
             <div>
               <AndamioText className="font-medium">Get Reviewed</AndamioText>
-              <AndamioText variant="small">A project manager reviews your work and approves, refuses, or denies it.</AndamioText>
+              <AndamioText variant="small">A project manager can review your commitment at any point — even before you submit evidence. If refused, you can resubmit.</AndamioText>
             </div>
           </div>
           <div className="flex items-start gap-3">

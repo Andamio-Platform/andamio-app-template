@@ -54,11 +54,6 @@ export interface TasksAssessProps {
   taskHash: string;
 
   /**
-   * Task code for display and side effects
-   */
-  taskCode: string;
-
-  /**
    * Task title for display (optional)
    */
   taskTitle?: string;
@@ -84,7 +79,6 @@ export interface TasksAssessProps {
  *   contributorStateId="def456..."
  *   contributorAlias="alice"
  *   taskHash="ghi789..."
- *   taskCode="TASK_001"
  *   onSuccess={(result) => refetchSubmissions()}
  * />
  * ```
@@ -94,7 +88,6 @@ export function TasksAssess({
   contributorStateId,
   contributorAlias,
   taskHash: _taskHash,
-  taskCode,
   taskTitle,
   onSuccess,
 }: TasksAssessProps) {
@@ -191,9 +184,6 @@ export function TasksAssess({
         <div className="flex flex-wrap items-center gap-2">
           <AndamioBadge variant="outline" className="text-xs font-mono">
             Contributor: {contributorAlias}
-          </AndamioBadge>
-          <AndamioBadge variant="secondary" className="text-xs">
-            {taskTitle ?? taskCode}
           </AndamioBadge>
         </div>
 

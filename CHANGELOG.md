@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Manager Commitments Page UX Overhaul** (February 4, 2026): Rewrote `/studio/project/[projectid]/commitments` with resizable list/detail panels
+  - Left panel: searchable commitment list with status badges and evidence indicators
+  - Right panel: full submission detail with ContentDisplay evidence rendering, task context, and assessment actions
+  - Inline transaction flow (accept/refuse/deny → confirm → on-chain) replaces separate `TasksAssess` component
+  - Auto-advance to next pending commitment after assessment
+  - Matches Course Teacher page "shopping cart" UX pattern
+
 ### Added
 - **V1 Token Detection on Home Page** (February 4, 2026): Auto-detect V1 access tokens on wallet connect and show inline migrate UX
   - New `V1MigrateCard` component (`components/landing/v1-migrate-card.tsx`) — reusable claim card with `onMinted` callback

@@ -88,7 +88,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | `/studio/project/[projectid]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
 | `/studio/project/[projectid]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
-| `/studio/project/[projectid]/commitments` | `app/(app)/studio/project/.../commitments/page.tsx` | Yes | Manager view - pending assessments, DB sync |
+| `/studio/project/[projectid]/commitments` | `app/(app)/studio/project/.../commitments/page.tsx` | Yes | Manager view - list/detail resizable panels, assess submissions with ContentDisplay evidence rendering |
 
 ---
 

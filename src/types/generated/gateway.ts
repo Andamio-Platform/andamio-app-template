@@ -239,7 +239,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientAddFundsTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
+  deposit_value?: any[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -331,7 +331,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest
 export interface AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
-  course_prereqs?: Record<string, any>[][];
+  course_prereqs?: any[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   managers?: string[];
 }
@@ -373,7 +373,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest 
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: Record<string, any>[][];
+  deposit_value?: any[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -424,7 +424,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientTaskData {
   expiration_posix?: number;
   lovelace_amount?: number;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  native_assets?: Record<string, any>[][];
+  native_assets?: any[][];
   /** A text string with a maximum length of 140 characters */
   project_content?: string;
 }

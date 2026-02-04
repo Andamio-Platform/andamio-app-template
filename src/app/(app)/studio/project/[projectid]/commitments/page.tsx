@@ -1,133 +1,264 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useManagerCommitments, useProject, type ManagerCommitment } from "~/hooks/api";
+import { useInvalidateManagerProjects } from "~/hooks/api/project/use-project-manager";
+import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { TransactionButton } from "~/components/tx/transaction-button";
+import { ContentDisplay } from "~/components/content-display";
+import type { JSONContent } from "@tiptap/core";
 import {
   AndamioBadge,
   AndamioButton,
-  AndamioCard,
-  AndamioCardContent,
-  AndamioCardDescription,
-  AndamioCardHeader,
-  AndamioCardTitle,
-  AndamioPageHeader,
   AndamioPageLoading,
-  AndamioTable,
-  AndamioTableBody,
-  AndamioTableCell,
-  AndamioTableHead,
-  AndamioTableHeader,
-  AndamioTableRow,
-  AndamioTableContainer,
   AndamioBackButton,
   AndamioErrorAlert,
   AndamioSearchInput,
   AndamioText,
-  AndamioDashboardStat,
+  AndamioScrollArea,
   AndamioLabel,
 } from "~/components/andamio";
-import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import {
+  AndamioResizablePanelGroup,
+  AndamioResizablePanel,
+  AndamioResizableHandle,
+} from "~/components/andamio/andamio-resizable";
 import {
   ManagerIcon,
   SuccessIcon,
   ErrorIcon,
   CloseIcon,
   BlockIcon,
-  RefreshIcon,
+  LoadingIcon,
   AlertIcon,
-  TaskIcon,
+  NextIcon,
 } from "~/components/icons";
-import { type Task } from "~/hooks/api/project/use-project";
-import { TasksAssess } from "~/components/tx";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+type AssessmentOutcome = "accept" | "refuse" | "deny";
+
+// =============================================================================
+// TX Stream Watcher
+// =============================================================================
+
+function TxStreamWatcher({
+  txHash,
+  onConfirmed,
+  onFailed,
+}: {
+  txHash: string;
+  onConfirmed: (txHash: string) => void;
+  onFailed: (txHash: string) => void;
+}) {
+  const { isSuccess, isFailed, isStalled } = useTxStream(txHash);
+
+  useEffect(() => {
+    if (isSuccess) {
+      onConfirmed(txHash);
+    } else if (isFailed || isStalled) {
+      onFailed(txHash);
+    }
+  }, [isSuccess, isFailed, isStalled, txHash, onConfirmed, onFailed]);
+
+  return null;
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+const getStatusVariant = (
+  status: string | undefined | null
+): "default" | "secondary" | "destructive" | "outline" => {
+  if (!status) return "outline";
+  if (status === "SUBMITTED") return "secondary";
+  if (status === "ACCEPTED") return "default";
+  if (status === "REFUSED" || status === "DENIED") return "destructive";
+  return "outline";
+};
+
+const formatStatus = (status: string | undefined | null): string => {
+  if (!status) return "Unknown";
+  return status
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+// =============================================================================
+// Page Component
+// =============================================================================
 
 /**
  * Project Commitments Page
  *
- * View and assess contributor task submissions for a project.
- * Uses Andamioscan for on-chain pending assessments.
+ * Manager review UI for contributor task submissions.
+ * Uses a resizable two-panel layout:
+ * - Left: browsable list with quick decision buttons
+ * - Right: full detail view with evidence rendering
  *
- * API Endpoints:
- * - Andamioscan: GET /api/v2/projects/managers/{alias}/assessments/pending
- * - Andamioscan: GET /api/v2/projects/{project_id}/details
- * - DB API: GET /project/user/project/:project_id
+ * Supports single assessment per submission (accept/refuse/deny).
  */
 export default function ProjectCommitmentsPage() {
   const params = useParams();
   const projectId = params.projectid as string;
   const { isAuthenticated, user } = useAndamioAuth();
-  const managerAlias = user?.accessTokenAlias;
 
-  // Project data from merged API
+  // Data hooks
+  const { data: project, isLoading, error: projectError } = useProject(projectId);
   const {
-    data: project,
-    isLoading,
-    error: projectError,
-  } = useProject(projectId);
-
-  // Pending assessments from merged API
-  const {
-    data: allPendingAssessments,
-    isLoading: isLoadingAssessments,
-    error: assessmentsError,
-    refetch,
+    data: allCommitments,
+    isLoading: isLoadingCommitments,
+    error: commitmentsError,
+    refetch: refetchCommitments,
   } = useManagerCommitments(projectId);
+  const commitments = useMemo(() => allCommitments ?? [], [allCommitments]);
+  const invalidateManager = useInvalidateManagerProjects();
 
-  // Pending assessments are already filtered by projectId in the hook - memoized to stabilize reference
-  const pendingAssessments = useMemo(() => allPendingAssessments ?? [], [allPendingAssessments]);
+  // V2 Transaction hook
+  const assessTx = useTransaction();
 
-  // Map task_id to task details from merged project data
-  const taskMap = useMemo(() => {
-    const map = new Map<string, Task>();
-    if (project?.tasks) {
-      for (const task of project.tasks) {
-        if (task.taskHash) {
-          map.set(task.taskHash, task);
-        }
-      }
-    }
-    return map;
-  }, [project?.tasks]);
+  // Selected commitment for detail view
+  const [selectedCommitment, setSelectedCommitment] = useState<ManagerCommitment | null>(null);
 
-  /**
-   * Find task by hash
-   */
-  const findMatchingTask = useCallback((commitment: ManagerCommitment): Task | undefined => {
-    return taskMap.get(commitment.taskHash);
-  }, [taskMap]);
+  // Pending decision for the selected commitment
+  const [pendingDecision, setPendingDecision] = useState<{
+    commitment: ManagerCommitment;
+    outcome: AssessmentOutcome;
+  } | null>(null);
 
-  // Selected assessment for management
-  const [selectedAssessment, setSelectedAssessment] =
-    useState<ManagerCommitment | null>(null);
+  // TX state
+  const [txSubmitting, setTxSubmitting] = useState(false);
+  const [txResult, setTxResult] = useState<{
+    txHash: string;
+    outcome: AssessmentOutcome;
+    contributor: string;
+  } | null>(null);
+  const [confirmationState, setConfirmationState] = useState<
+    "idle" | "confirming" | "confirmed" | "failed"
+  >("idle");
 
-  // Filtering state
+  // Filtering
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Apply search filter
-  const filteredAssessments = useMemo(() => {
-    if (!searchQuery) return pendingAssessments;
-    return pendingAssessments.filter(
-      (a) =>
-        a.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.taskHash.toLowerCase().includes(searchQuery.toLowerCase())
+  // Derived
+  const filteredCommitments = useMemo(() => {
+    if (!searchQuery) return commitments;
+    return commitments.filter(
+      (c) =>
+        c.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.taskHash.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [pendingAssessments, searchQuery]);
+  }, [commitments, searchQuery]);
 
-  // Get task title from commitment
-  const getTaskTitle = useCallback((commitment: ManagerCommitment): string => {
-    const task = findMatchingTask(commitment);
-    if (task?.taskHash && task?.lovelaceAmount) {
-      const lovelace = Number(task.lovelaceAmount) || 0;
-      return `Task ${task.taskHash.slice(0, 8)}... (${(lovelace / 1_000_000).toFixed(0)} ADA)`;
-    }
-    // Task not found in project
-    return `Task ${commitment.taskHash.slice(0, 8)}...`;
-  }, [findMatchingTask]);
+  // Get reward from commitment task context
+  const getRewardAda = useCallback((commitment: ManagerCommitment): string | null => {
+    const lovelace = commitment.task?.lovelaceAmount;
+    if (lovelace) return (lovelace / 1_000_000).toFixed(0);
+    return null;
+  }, []);
 
-  // Not authenticated
-  if (!isAuthenticated || !managerAlias) {
+  // Handle selection
+  const handleSelect = (commitment: ManagerCommitment) => {
+    setSelectedCommitment(
+      selectedCommitment?.taskHash === commitment.taskHash &&
+        selectedCommitment?.submittedBy === commitment.submittedBy
+        ? null
+        : commitment
+    );
+  };
+
+  // Handle decision
+  const handleDecision = useCallback(
+    (commitment: ManagerCommitment, outcome: AssessmentOutcome) => {
+      setPendingDecision({ commitment, outcome });
+    },
+    []
+  );
+
+  // Submit assessment TX
+  const handleSubmitAssessment = useCallback(async () => {
+    if (!pendingDecision || !user?.accessTokenAlias || !project?.contributorStateId) return;
+
+    setTxSubmitting(true);
+    assessTx.reset();
+
+    await assessTx.execute({
+      txType: "PROJECT_MANAGER_TASKS_ASSESS",
+      params: {
+        alias: user.accessTokenAlias,
+        project_id: projectId,
+        contributor_state_id: project.contributorStateId,
+        task_decisions: [
+          {
+            alias: pendingDecision.commitment.submittedBy,
+            outcome: pendingDecision.outcome,
+          },
+        ],
+      },
+      onSuccess: (result) => {
+        setTxResult({
+          txHash: result.txHash,
+          outcome: pendingDecision.outcome,
+          contributor: pendingDecision.commitment.submittedBy,
+        });
+        setConfirmationState("confirming");
+        setTxSubmitting(false);
+      },
+      onError: () => {
+        setTxSubmitting(false);
+      },
+    });
+  }, [pendingDecision, user?.accessTokenAlias, project?.contributorStateId, projectId, assessTx]);
+
+  // TX stream callbacks
+  const handleTxConfirmed = useCallback(
+    (_txHash: string) => {
+      setConfirmationState("confirmed");
+      void invalidateManager();
+      void refetchCommitments();
+    },
+    [invalidateManager, refetchCommitments]
+  );
+
+  const handleTxFailed = useCallback(() => {
+    setConfirmationState("failed");
+  }, []);
+
+  // Reset after assessment
+  const resetAssessment = useCallback(() => {
+    setPendingDecision(null);
+    setTxResult(null);
+    setConfirmationState("idle");
+    assessTx.reset();
+    setSelectedCommitment(null);
+  }, [assessTx]);
+
+  // Find next unreviewed commitment
+  const findNextPending = useCallback(
+    (current: ManagerCommitment | null) => {
+      const pending = commitments.filter(
+        (c) =>
+          c.commitmentStatus === "SUBMITTED" &&
+          !(c.taskHash === current?.taskHash && c.submittedBy === current?.submittedBy)
+      );
+      return pending[0] ?? null;
+    },
+    [commitments]
+  );
+
+  // Loading / error states
+  if (isLoading) {
+    return <AndamioPageLoading variant="detail" />;
+  }
+
+  if (!isAuthenticated || !user?.accessTokenAlias) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
@@ -139,327 +270,439 @@ export default function ProjectCommitmentsPage() {
     );
   }
 
-  // Loading project
-  if (isLoading) {
-    return <AndamioPageLoading variant="detail" />;
-  }
-
-  // Error state
   if (projectError || !project) {
     return (
       <div className="space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
-        <AndamioPageHeader title="Task Commitments" />
         <AndamioErrorAlert error={projectError?.message ?? "Project not found"} />
       </div>
     );
   }
 
+  const pendingCount = commitments.filter((c) => c.commitmentStatus === "SUBMITTED").length;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
-
-      <AndamioPageHeader
-        title="Task Commitments"
-        description={`Review and assess contributor submissions for ${project.title ?? "this project"}`}
-      />
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <AndamioDashboardStat
-          icon={TaskIcon}
-          label="Pending Reviews"
-          value={pendingAssessments.length}
-          valueColor={pendingAssessments.length > 0 ? "warning" : undefined}
-          iconColor={pendingAssessments.length > 0 ? "warning" : undefined}
-        />
-        <AndamioDashboardStat
-          icon={ManagerIcon}
-          label="Total Tasks"
-          value={project.tasks?.length ?? 0}
-        />
-        <AndamioDashboardStat
-          icon={SuccessIcon}
-          label="Contributors"
-          value={project.contributors?.length ?? 0}
-          valueColor="success"
-          iconColor="success"
-        />
-      </div>
-
-      {/* Pending Assessments Card */}
-      <AndamioCard>
-        <AndamioCardHeader>
-          <div className="flex items-center justify-between">
-            <AndamioCardIconHeader
-              icon={ManagerIcon}
-              title="Pending Task Assessments"
-              description="Task submissions from contributors awaiting your review"
-            />
-            <div className="flex items-center gap-2">
-              {pendingAssessments.length > 0 && (
-                <AndamioBadge variant="secondary">
-                  {pendingAssessments.length} pending
-                </AndamioBadge>
-              )}
-              <AndamioButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => void refetch()}
-                disabled={isLoadingAssessments}
-              >
-                <RefreshIcon className={`h-4 w-4 ${isLoadingAssessments ? "animate-spin" : ""}`} />
-              </AndamioButton>
-            </div>
-          </div>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-4">
-          {/* Search filter */}
-          {pendingAssessments.length > 0 && (
-            <div className="max-w-sm">
-              <AndamioLabel htmlFor="search" className="sr-only">
-                Search
-              </AndamioLabel>
-              <AndamioSearchInput
-                id="search"
-                placeholder="Search by contributor or task..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* Loading state */}
-          {isLoadingAssessments && (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-md bg-muted/30">
-                  <AndamioSkeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <AndamioSkeleton className="h-4 w-48" />
-                    <AndamioSkeleton className="h-3 w-32" />
-                  </div>
-                  <AndamioSkeleton className="h-6 w-20" />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Error state */}
-          {assessmentsError && !isLoadingAssessments && (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-3">
-                <AlertIcon className="h-6 w-6 text-destructive" />
-              </div>
-              <AndamioText variant="small" className="font-medium text-destructive">
-                Failed to load pending assessments
-              </AndamioText>
-              <AndamioText variant="small" className="text-xs mt-1 max-w-[250px]">
-                {assessmentsError.message}
-              </AndamioText>
-              <AndamioButton
-                variant="outline"
-                size="sm"
-                onClick={() => void refetch()}
-                className="mt-4"
-              >
-                <RefreshIcon className="mr-2 h-4 w-4" />
-                Retry
-              </AndamioButton>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!isLoadingAssessments && !assessmentsError && pendingAssessments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
-                <SuccessIcon className="h-6 w-6 text-primary" />
-              </div>
-              <AndamioText className="font-medium">All caught up!</AndamioText>
-              <AndamioText variant="muted" className="mt-1 max-w-[250px]">
-                No pending task reviews for this project at this time
-              </AndamioText>
-            </div>
-          )}
-
-          {/* Pending assessments table */}
-          {!isLoadingAssessments && !assessmentsError && filteredAssessments.length > 0 && (
-            <AndamioTableContainer>
-              <AndamioTable>
-                <AndamioTableHeader>
-                  <AndamioTableRow>
-                    <AndamioTableHead>Contributor</AndamioTableHead>
-                    <AndamioTableHead>Task</AndamioTableHead>
-                    <AndamioTableHead className="hidden sm:table-cell">Submitted</AndamioTableHead>
-                    <AndamioTableHead>Evidence</AndamioTableHead>
-                  </AndamioTableRow>
-                </AndamioTableHeader>
-                <AndamioTableBody>
-                  {filteredAssessments.map((assessment) => {
-                    const taskHash = assessment.taskHash;
-                    return (
-                    <AndamioTableRow
-                      key={`${taskHash}-${assessment.submittedBy}`}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedAssessment(assessment)}
-                    >
-                      <AndamioTableCell className="font-mono text-xs">
-                        {assessment.submittedBy}
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        <code className="text-xs font-mono truncate block max-w-[150px]">
-                          {getTaskTitle(assessment)}
-                        </code>
-                      </AndamioTableCell>
-                      <AndamioTableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                        —
-                      </AndamioTableCell>
-                      <AndamioTableCell>
-                        <AndamioText variant="small" className="max-w-[200px] truncate">
-                          {assessment.onChainContent ?? (typeof assessment.evidence === "string" ? assessment.evidence : null) ?? (
-                            <span className="italic text-muted-foreground">No content</span>
-                          )}
-                        </AndamioText>
-                      </AndamioTableCell>
-                    </AndamioTableRow>
-                    );
-                  })}
-                </AndamioTableBody>
-              </AndamioTable>
-            </AndamioTableContainer>
-          )}
-
-          {/* Filter results info */}
-          {searchQuery && filteredAssessments.length !== pendingAssessments.length && (
-            <div className="flex items-center gap-2">
-              <AndamioText variant="small">
-                Showing {filteredAssessments.length} of {pendingAssessments.length} pending reviews
-              </AndamioText>
-              <AndamioButton variant="ghost" size="sm" onClick={() => setSearchQuery("")}>
-                Clear
-              </AndamioButton>
-            </div>
-          )}
-        </AndamioCardContent>
-      </AndamioCard>
-
-      {/* Selected Assessment Detail View */}
-      {selectedAssessment && (() => {
-        const selectedTaskHash = selectedAssessment.taskHash;
-        const selectedMatchedTask = findMatchingTask(selectedAssessment);
-        return (
-        <AndamioCard>
-          <AndamioCardHeader>
+    <AndamioResizablePanelGroup direction="horizontal" className="h-full">
+      {/* ================================================================= */}
+      {/* LEFT PANEL — Submission List                                      */}
+      {/* ================================================================= */}
+      <AndamioResizablePanel defaultSize={40} minSize={30} maxSize={55}>
+        <div className="flex h-full flex-col">
+          {/* Header */}
+          <div className="border-b px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <AndamioCardTitle>Assess Task Submission</AndamioCardTitle>
-                <AndamioCardDescription>
-                  Review and accept, refuse, or deny this task submission
-                </AndamioCardDescription>
+                <h2 className="text-lg font-semibold leading-tight">
+                  {project.title ?? "Project"}
+                </h2>
+                <AndamioText variant="small" className="text-muted-foreground mt-0.5">
+                  Task Assessments
+                </AndamioText>
               </div>
-              <AndamioButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedAssessment(null)}
-              >
-                <CloseIcon className="h-4 w-4" />
-              </AndamioButton>
+              <div className="flex items-center gap-2">
+                {pendingCount > 0 && (
+                  <AndamioBadge variant="secondary">{pendingCount} pending</AndamioBadge>
+                )}
+              </div>
             </div>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-6">
-            {/* Submission Details */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <AndamioLabel>Contributor</AndamioLabel>
-                <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.submittedBy}
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center gap-3 border-b px-4 py-3">
+            <AndamioSearchInput
+              inputSize="sm"
+              placeholder="Search contributor or task..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+
+          {/* Scrollable list */}
+          <AndamioScrollArea className="flex-1">
+            {isLoadingCommitments ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : commitmentsError ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <AlertIcon className="h-8 w-8 text-destructive mb-2" />
+                <AndamioText variant="small" className="text-destructive text-center">
+                  Failed to load commitments
+                </AndamioText>
+                <AndamioButton
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => void refetchCommitments()}
+                >
+                  Retry
+                </AndamioButton>
+              </div>
+            ) : filteredCommitments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <SuccessIcon className="h-8 w-8 text-primary mb-2" />
+                <AndamioText className="font-medium">All caught up!</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground mt-1 text-center">
+                  {commitments.length === 0
+                    ? "No task submissions to review"
+                    : "No submissions match your search"}
                 </AndamioText>
               </div>
-              <div>
-                <AndamioLabel>Task</AndamioLabel>
-                <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedTaskHash ? `${selectedTaskHash.slice(0, 16)}...` : "Unknown"}
-                </AndamioText>
-                {selectedMatchedTask?.lovelaceAmount && (
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    {(Number(selectedMatchedTask.lovelaceAmount) / 1_000_000).toFixed(0)} ADA reward
+            ) : (
+              <div className="divide-y">
+                {filteredCommitments.map((commitment) => {
+                  const isSelected =
+                    selectedCommitment?.taskHash === commitment.taskHash &&
+                    selectedCommitment?.submittedBy === commitment.submittedBy;
+                  const reward = getRewardAda(commitment);
+
+                  return (
+                    <div
+                      key={`${commitment.taskHash}-${commitment.submittedBy}`}
+                      className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-muted border-l-2 border-l-primary"
+                          : "border-l-2 border-l-transparent hover:bg-muted/50"
+                      }`}
+                      onClick={() => handleSelect(commitment)}
+                    >
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <AndamioText className="font-mono text-xs truncate">
+                            {commitment.submittedBy}
+                          </AndamioText>
+                          {!!commitment.evidence && (
+                            <span
+                              className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0"
+                              title="Has evidence"
+                            />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <AndamioText variant="small" className="text-muted-foreground font-mono">
+                            {commitment.taskHash.slice(0, 8)}...
+                          </AndamioText>
+                          {reward && (
+                            <AndamioText variant="small" className="text-muted-foreground">
+                              {reward} ADA
+                            </AndamioText>
+                          )}
+                          <AndamioBadge
+                            variant={getStatusVariant(commitment.commitmentStatus)}
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {formatStatus(commitment.commitmentStatus)}
+                          </AndamioBadge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </AndamioScrollArea>
+
+          {/* Back button at bottom */}
+          <div className="border-t px-4 py-3">
+            <AndamioBackButton
+              href={`/studio/project/${projectId}`}
+              label="Back to Project"
+            />
+          </div>
+        </div>
+      </AndamioResizablePanel>
+
+      <AndamioResizableHandle withHandle />
+
+      {/* ================================================================= */}
+      {/* RIGHT PANEL — Detail + Assessment                                 */}
+      {/* ================================================================= */}
+      <AndamioResizablePanel defaultSize={60}>
+        <AndamioScrollArea className="h-full">
+          {selectedCommitment ? (
+            <div className="p-6 space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold font-mono">
+                      {selectedCommitment.submittedBy}
+                    </h3>
+                    <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
+                      {formatStatus(selectedCommitment.commitmentStatus)}
+                    </AndamioBadge>
+                  </div>
+                  <AndamioText variant="small" className="font-mono text-muted-foreground">
+                    Task: {selectedCommitment.taskHash.slice(0, 16)}...
+                  </AndamioText>
+                </div>
+                <AndamioButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedCommitment(null)}
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </AndamioButton>
+              </div>
+
+              {/* Task context */}
+              {selectedCommitment.task && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {selectedCommitment.task.lovelaceAmount != null && (
+                    <div>
+                      <AndamioLabel>Reward</AndamioLabel>
+                      <AndamioText variant="small" className="mt-1 font-medium text-foreground">
+                        {(selectedCommitment.task.lovelaceAmount / 1_000_000).toFixed(0)} ADA
+                      </AndamioText>
+                    </div>
+                  )}
+                  {selectedCommitment.task.expirationTime && (
+                    <div>
+                      <AndamioLabel>Expiration</AndamioLabel>
+                      <AndamioText variant="small" className="mt-1 text-foreground">
+                        {selectedCommitment.task.expirationTime}
+                      </AndamioText>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Submission TX */}
+              {selectedCommitment.submissionTx && (
+                <div>
+                  <AndamioLabel>Submission TX</AndamioLabel>
+                  <AndamioText variant="small" className="font-mono mt-1 text-muted-foreground">
+                    {selectedCommitment.submissionTx.slice(0, 24)}...
+                  </AndamioText>
+                </div>
+              )}
+
+              {/* Evidence Section */}
+              <div className="space-y-2">
+                <AndamioLabel>Submitted Evidence</AndamioLabel>
+                {selectedCommitment.evidence ? (
+                  <div className="border rounded-md">
+                    <ContentDisplay
+                      content={selectedCommitment.evidence as JSONContent}
+                      variant="muted"
+                    />
+                  </div>
+                ) : selectedCommitment.onChainContent ? (
+                  <div className="py-4 px-3 border rounded-md bg-muted/20">
+                    <AndamioText variant="small" className="font-mono break-all">
+                      {selectedCommitment.onChainContent}
+                    </AndamioText>
+                    <AndamioText variant="small" className="text-muted-foreground italic mt-2">
+                      On-chain evidence hash. Database record not available.
+                    </AndamioText>
+                  </div>
+                ) : (
+                  <div className="py-4 px-3 border rounded-md bg-muted/20">
+                    <AndamioText variant="small" className="text-muted-foreground italic">
+                      No evidence submitted yet.
+                    </AndamioText>
+                  </div>
+                )}
+                {selectedCommitment.taskEvidenceHash && (
+                  <AndamioText variant="small" className="text-muted-foreground font-mono text-xs">
+                    Hash: {selectedCommitment.taskEvidenceHash.slice(0, 24)}...
                   </AndamioText>
                 )}
               </div>
-              <div>
-                <AndamioLabel>Submitted</AndamioLabel>
-                <AndamioText variant="small" className="mt-1 text-foreground">
-                  —
-                </AndamioText>
-              </div>
-              <div>
-                <AndamioLabel>Submission TX</AndamioLabel>
-                <AndamioText variant="small" className="font-mono mt-1 text-foreground">
-                  {selectedAssessment.submissionTx
-                    ? `${selectedAssessment.submissionTx.slice(0, 16)}...`
-                    : "—"}
-                </AndamioText>
-              </div>
-            </div>
 
-            {/* Evidence Content */}
-            <div>
-              <AndamioLabel>Submitted Evidence</AndamioLabel>
-              <div className="mt-2 rounded-md border bg-muted/30 p-4">
-                <AndamioText variant="small" className="whitespace-pre-wrap">
-                  {selectedAssessment.onChainContent ?? (typeof selectedAssessment.evidence === "string" ? selectedAssessment.evidence : null) ?? (
-                    <span className="italic text-muted-foreground">
-                      No evidence content submitted
-                    </span>
+              {/* Assessment Actions */}
+              {confirmationState === "confirmed" && txResult ? (
+                // Success state
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center gap-3">
+                      <SuccessIcon className="h-5 w-5 text-primary" />
+                      <div className="flex-1">
+                        <AndamioText className="font-medium text-primary">
+                          Assessment Recorded
+                        </AndamioText>
+                        <AndamioText variant="small" className="text-xs text-muted-foreground">
+                          {txResult.contributor}&apos;s submission{" "}
+                          {txResult.outcome === "accept"
+                            ? "accepted"
+                            : txResult.outcome === "refuse"
+                              ? "refused"
+                              : "denied"}
+                        </AndamioText>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <AndamioButton variant="outline" size="sm" onClick={resetAssessment}>
+                      Done
+                    </AndamioButton>
+                    {findNextPending(selectedCommitment) && (
+                      <AndamioButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const next = findNextPending(selectedCommitment);
+                          if (next) {
+                            resetAssessment();
+                            setSelectedCommitment(next);
+                          }
+                        }}
+                      >
+                        Next pending
+                        <NextIcon className="h-4 w-4 ml-1" />
+                      </AndamioButton>
+                    )}
+                  </div>
+                </div>
+              ) : confirmationState === "confirming" ? (
+                // Confirming on chain
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-3">
+                    <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
+                    <div className="flex-1">
+                      <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
+                      <AndamioText variant="small" className="text-xs text-muted-foreground">
+                        Waiting for block confirmation and database update
+                      </AndamioText>
+                    </div>
+                  </div>
+                  {txResult && (
+                    <TxStreamWatcher
+                      txHash={txResult.txHash}
+                      onConfirmed={handleTxConfirmed}
+                      onFailed={handleTxFailed}
+                    />
                   )}
+                </div>
+              ) : confirmationState === "failed" ? (
+                // Confirmation failed
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertIcon className="h-5 w-5 text-destructive" />
+                      <AndamioText className="font-medium text-destructive">
+                        Confirmation failed
+                      </AndamioText>
+                    </div>
+                  </div>
+                  <AndamioButton variant="outline" size="sm" onClick={resetAssessment}>
+                    Try Again
+                  </AndamioButton>
+                </div>
+              ) : selectedCommitment.commitmentStatus === "SUBMITTED" ? (
+                // Decision buttons
+                <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-6 px-6 space-y-3">
+                  {/* Irreversibility warning */}
+                  <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
+                    <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <AndamioText variant="small" className="text-xs text-muted-foreground">
+                      Assessment decisions are recorded on-chain and cannot be undone.
+                    </AndamioText>
+                  </div>
+
+                  {/* Pending decision indicator */}
+                  {pendingDecision?.commitment.taskHash === selectedCommitment.taskHash &&
+                    pendingDecision?.commitment.submittedBy === selectedCommitment.submittedBy && (
+                      <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3">
+                        <div className="flex items-center gap-2">
+                          <AndamioText variant="small" className="text-muted-foreground">
+                            Decision:
+                          </AndamioText>
+                          <AndamioBadge
+                            variant={
+                              pendingDecision.outcome === "accept"
+                                ? "default"
+                                : pendingDecision.outcome === "refuse"
+                                  ? "secondary"
+                                  : "destructive"
+                            }
+                          >
+                            {pendingDecision.outcome.charAt(0).toUpperCase() +
+                              pendingDecision.outcome.slice(1)}
+                          </AndamioBadge>
+                        </div>
+                        <AndamioButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPendingDecision(null)}
+                          disabled={txSubmitting}
+                        >
+                          Clear
+                        </AndamioButton>
+                      </div>
+                    )}
+
+                  {/* Decision buttons or submit */}
+                  {pendingDecision?.commitment.taskHash === selectedCommitment.taskHash &&
+                  pendingDecision?.commitment.submittedBy === selectedCommitment.submittedBy ? (
+                    <TransactionButton
+                      txState={assessTx.state}
+                      onClick={handleSubmitAssessment}
+                      disabled={txSubmitting}
+                      stateText={{
+                        idle: `Confirm ${pendingDecision.outcome.charAt(0).toUpperCase() + pendingDecision.outcome.slice(1)}`,
+                        fetching: "Preparing...",
+                        signing: "Sign in Wallet",
+                        submitting: "Submitting...",
+                      }}
+                      className="w-full"
+                    />
+                  ) : (
+                    <div className="flex gap-2">
+                      <AndamioButton
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => handleDecision(selectedCommitment, "accept")}
+                      >
+                        <SuccessIcon className="h-4 w-4 mr-2" />
+                        Accept
+                      </AndamioButton>
+                      <AndamioButton
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => handleDecision(selectedCommitment, "refuse")}
+                      >
+                        <ErrorIcon className="h-4 w-4 mr-2" />
+                        Refuse
+                      </AndamioButton>
+                      <AndamioButton
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => handleDecision(selectedCommitment, "deny")}
+                      >
+                        <BlockIcon className="h-4 w-4 mr-2" />
+                        Deny
+                      </AndamioButton>
+                    </div>
+                  )}
+
+                  {/* TX error display */}
+                  {assessTx.error && (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                      <AndamioText variant="small" className="text-destructive">
+                        {assessTx.error.message}
+                      </AndamioText>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            /* Empty state */
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <ManagerIcon className="h-12 w-12 text-muted-foreground/50" />
+              <div>
+                <AndamioText className="font-medium">Select a submission to review</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground mt-1">
+                  Click on a contributor in the list to view their evidence and make an assessment decision.
                 </AndamioText>
               </div>
             </div>
-
-            {/* Assessment Options Info */}
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
-              <AndamioText variant="small" className="font-medium">
-                Assessment Options:
-              </AndamioText>
-              <div className="space-y-1 text-xs">
-                <div className="flex items-center gap-2">
-                  <SuccessIcon className="h-3 w-3 text-primary" />
-                  <span>
-                    <strong>Accept</strong>: Approve and release reward to contributor
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ErrorIcon className="h-3 w-3 text-muted-foreground" />
-                  <span>
-                    <strong>Refuse</strong>: Reject but allow contributor to resubmit
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BlockIcon className="h-3 w-3 text-destructive" />
-                  <span>
-                    <strong>Deny</strong>: Permanently reject, contributor loses deposit
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* TasksAssess Transaction Component */}
-            <TasksAssess
-              projectNftPolicyId={projectId}
-              contributorStateId={project.contributorStateId ?? ""}
-              contributorAlias={selectedAssessment.submittedBy}
-              taskHash={selectedTaskHash}
-              taskCode={selectedTaskHash ? selectedTaskHash.slice(0, 8) : "TASK"}
-              onSuccess={async () => {
-                await refetch();
-                setSelectedAssessment(null);
-              }}
-            />
-          </AndamioCardContent>
-        </AndamioCard>
-        );
-      })()}
-    </div>
+          )}
+        </AndamioScrollArea>
+      </AndamioResizablePanel>
+    </AndamioResizablePanelGroup>
   );
 }

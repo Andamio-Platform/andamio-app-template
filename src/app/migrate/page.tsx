@@ -80,7 +80,7 @@ export default function MigratePage() {
         if (cancelled) return;
 
         if (v1Asset) {
-          const alias = extractAliasFromUnit(v1Asset.unit, V1_POLICY_ID);
+          const alias = extractAliasFromUnit(v1Asset.unit, V1_POLICY_ID, 3);
           setDetectedAlias(alias);
           setMigrateState("ready");
         } else {

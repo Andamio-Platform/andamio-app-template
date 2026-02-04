@@ -154,6 +154,14 @@ export {
   type StudentCommitmentSummary,
 } from "./course/use-student-assignment-commitments";
 
+// Student credentials (enrolled + completed courses, claimed credentials)
+export {
+  useStudentCredentials,
+  studentCredentialKeys,
+  type StudentCourseCredential,
+  type CredentialModuleInfo,
+} from "./course/use-student-credentials";
+
 // Student completions for project prerequisites
 export {
   useStudentCompletionsForPrereqs,

@@ -15,17 +15,20 @@ import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icon
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { TaskCommit } from "~/components/tx";
-import { useTask, useProject } from "~/hooks/api/project/use-project";
+import { useProjectTask } from "~/hooks/api/project/use-project";
 import { useContributorCommitment, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
 import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Task Detail Page - Public view of a task with commitment functionality
  *
- * Uses React Query hooks:
- * - useTask(taskHash) - Merged task data
- * - useProject(projectId) - Project detail for on-chain task data (contributorStateId)
- * - useContributorCommitment(projectId, taskHash) - Contributor's commitment status
+ * Data strategy: Two hooks, no redundancy.
+ * - useProjectTask(projectId, taskHash) — selects one task from the shared
+ *   projectKeys.tasks(projectId) cache. If the project page was visited first,
+ *   this is a pure cache hit (zero network requests). All task fields including
+ *   contentJson and contributorStateId come from this single source.
+ * - useContributorCommitment(projectId, taskHash) — authenticated-only query
+ *   for the user's commitment status on this task. 404 = no commitment yet.
  */
 export default function TaskDetailPage() {
   const params = useParams();
@@ -34,21 +37,17 @@ export default function TaskDetailPage() {
   const { isAuthenticated } = useAndamioAuth();
   const queryClient = useQueryClient();
 
-  // React Query hooks replace manual useState + useEffect + fetch
-  const { data: task, isLoading: isTaskLoading, error: taskError } = useTask(taskHash);
-  const { data: project } = useProject(projectId);
+  // Task data from shared cache — includes contentJson, contributorStateId, etc.
+  const { data: task, isLoading: isTaskLoading, error: taskError } = useProjectTask(projectId, taskHash);
+
+  // Commitment status (authenticated only, 404 → null = no commitment yet)
   const { data: commitment, isLoading: isCommitmentLoading } = useContributorCommitment(
     projectId,
     taskHash
   );
 
-  // Derive on-chain task data from project detail (for contributor_state_policy_id)
-  const onChainTask = project?.tasks?.find((t) => t.taskHash === taskHash);
-
-  // Contributor state - derived from on-chain data when task is fetched
+  // Whether the user already has a commitment on this task
   const isEnrolled = !!commitment;
-  // Contributor state ID for TX building - currently placeholder until proper user state endpoint available
-  const contributorStateId: string | null = null;
 
   // Evidence editor state
   const [evidence, setEvidence] = useState<JSONContent | null>(null);
@@ -82,8 +81,8 @@ export default function TaskDetailPage() {
     });
   };
 
-  // Loading state
-  if (isTaskLoading || isCommitmentLoading) {
+  // Loading: only wait for task data. Commitment loading doesn't block task display.
+  if (isTaskLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
@@ -97,6 +96,10 @@ export default function TaskDetailPage() {
       </div>
     );
   }
+
+  const createdBy = task.createdByAlias
+    ? (task.createdByAlias.length > 12 ? task.createdByAlias.slice(0, 12) + "…" : task.createdByAlias)
+    : "Unknown";
 
   return (
     <div className="space-y-6">
@@ -135,7 +138,7 @@ export default function TaskDetailPage() {
         <AndamioDashboardStat
           icon={TeacherIcon}
           label="Created By"
-          value={task.createdByAlias?.slice(0, 12) + "..." || "Unknown"}
+          value={createdBy}
           iconColor="info"
         />
       </div>
@@ -148,7 +151,7 @@ export default function TaskDetailPage() {
         </AndamioText>
       </div>
 
-      {/* Task Content */}
+      {/* Task Content (rich content from contentJson) */}
       {!!task.contentJson && (
         <AndamioCard>
           <AndamioCardHeader>
@@ -160,7 +163,6 @@ export default function TaskDetailPage() {
           </AndamioCardContent>
         </AndamioCard>
       )}
-
 
       {/* Token Rewards (if any) */}
       {task.tokens && task.tokens.length > 0 && (
@@ -195,9 +197,11 @@ export default function TaskDetailPage() {
           <AndamioCardTitle>Your Commitment</AndamioCardTitle>
           <AndamioCardDescription>
             {isAuthenticated
-              ? commitment
-                ? "Track your progress on this task"
-                : "Commit to this task to get started"
+              ? isCommitmentLoading
+                ? "Loading commitment status…"
+                : commitment
+                  ? "Track your progress on this task"
+                  : "Commit to this task to get started"
               : "Connect your wallet to commit to this task"}
           </AndamioCardDescription>
         </AndamioCardHeader>
@@ -205,6 +209,10 @@ export default function TaskDetailPage() {
           {!isAuthenticated ? (
             <div className="text-center py-6">
               <AndamioText variant="muted" className="mb-4">Connect your wallet to commit to this task</AndamioText>
+            </div>
+          ) : isCommitmentLoading ? (
+            <div className="text-center py-6">
+              <AndamioText variant="muted">Checking commitment status…</AndamioText>
             </div>
           ) : commitment ? (
             <div className="space-y-4">
@@ -281,38 +289,21 @@ export default function TaskDetailPage() {
             </AndamioCardContent>
           </AndamioCard>
 
-          {/* Transaction Component */}
+          {/* Transaction Component - PROJECT_CONTRIBUTOR_TASK_COMMIT */}
           {evidence && Object.keys(evidence).length > 0 && (
-            isEnrolled ? (
-              <TaskCommit
-                projectNftPolicyId={projectId}
-                contributorStateId={contributorStateId ?? "0".repeat(56)}
-                contributorStatePolicyId={onChainTask?.contributorStateId ?? "0".repeat(56)}
-                taskHash={taskHash}
-                taskCode={`TASK_${task.index}`}
-                taskTitle={task.title ?? undefined}
-                taskEvidence={evidence}
-                onSuccess={async () => {
-                  setIsEditingEvidence(false);
-                  await invalidateCommitment();
-                }}
-              />
-            ) : (
-              <TaskCommit
-                projectNftPolicyId={projectId}
-                contributorStateId={contributorStateId ?? "0".repeat(56)}
-                contributorStatePolicyId={onChainTask?.contributorStateId ?? "0".repeat(56)}
-                taskHash={taskHash}
-                taskCode={`TASK_${task.index}`}
-                taskTitle={task.title ?? undefined}
-                taskEvidence={evidence}
-                isFirstCommit={true}
-                onSuccess={async () => {
-                  setIsEditingEvidence(false);
-                  await invalidateCommitment();
-                }}
-              />
-            )
+            <TaskCommit
+              projectNftPolicyId={projectId}
+              contributorStateId={task.contributorStateId ?? "0".repeat(56)}
+              taskHash={taskHash}
+              taskCode={`TASK_${task.index}`}
+              taskTitle={task.title ?? undefined}
+              taskEvidence={evidence}
+              isFirstCommit={!isEnrolled}
+              onSuccess={async () => {
+                setIsEditingEvidence(false);
+                await invalidateCommitment();
+              }}
+            />
           )}
 
           {/* Cancel Button */}

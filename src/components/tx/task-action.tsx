@@ -38,7 +38,12 @@ export interface TaskActionProps {
   projectNftPolicyId: string;
 
   /**
-   * Task hash (64 char hex) - required for side effects
+   * Contributor state ID (56 char hex)
+   */
+  contributorStateId: string;
+
+  /**
+   * Task hash (64 char hex)
    */
   taskHash: string;
 
@@ -90,7 +95,8 @@ export interface TaskActionProps {
  */
 export function TaskAction({
   projectNftPolicyId,
-  taskHash: _taskHash,
+  contributorStateId,
+  taskHash,
   taskCode,
   taskTitle,
   projectInfo,
@@ -161,8 +167,17 @@ export function TaskAction({
       params: {
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
+        contributor_state_id: contributorStateId,
+        task_hash: taskHash,
         project_info: projectInfoValue ?? "",
       },
+      metadata: taskEvidence && hash
+        ? {
+            task_hash: taskHash,
+            evidence: JSON.stringify(taskEvidence),
+            evidence_hash: hash,
+          }
+        : undefined,
       onSuccess: async (txResult) => {
         console.log("[TaskAction] TX submitted successfully!", txResult);
       },

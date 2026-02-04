@@ -35,7 +35,6 @@ import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon, Loa
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
-import { useSubmitTaskEvidence } from "~/hooks/api/project/use-project-contributor";
 
 export interface TaskCommitProps {
   /**
@@ -47,13 +46,6 @@ export interface TaskCommitProps {
    * Contributor state ID (56 char hex) - used for top-level API param
    */
   contributorStateId: string;
-
-  /**
-   * Contributor state POLICY ID (56 char hex) - from Andamioscan task
-   * Required in tasks array for Atlas TX API
-   * @see https://github.com/Andamio-Platform/andamioscan/issues/10
-   */
-  contributorStatePolicyId: string;
 
   /**
    * Project title for display
@@ -132,7 +124,6 @@ export interface TaskCommitProps {
 export function TaskCommit({
   projectNftPolicyId,
   contributorStateId,
-  contributorStatePolicyId,
   projectTitle,
   taskHash,
   taskCode,
@@ -144,7 +135,6 @@ export function TaskCommit({
 }: TaskCommitProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
-  const submitTaskEvidence = useSubmitTaskEvidence();
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
@@ -228,57 +218,25 @@ export function TaskCommit({
     console.log("[TaskCommit] Computed evidence hash:", hash, "length:", hash.length);
 
     const txParams = {
-      // Transaction API params (snake_case per V2 API)
-      // NOTE: Swagger shows flat fields, but backend internally expects a `tasks` array
       alias: user.accessTokenAlias,
       project_id: projectNftPolicyId,
       contributor_state_id: contributorStateId,
       task_hash: taskHash,
-      task_info: hash, // Evidence hash (computed from taskEvidence)
-      // Backend expects tasks array with contributor_state_policy_id from Andamioscan
-      // @see https://github.com/Andamio-Platform/andamioscan/issues/10
-      tasks: [
-        {
-          task_hash: taskHash,
-          task_info: hash,
-          contributor_state_policy_id: contributorStatePolicyId, // From Andamioscan task
-        },
-      ],
-      // Side effect params (matches /project/contributor/commitment/submit)
-      evidence: taskEvidence,
+      task_info: hash,
     };
 
-    console.log("[TaskCommit] Transaction params:", {
-      alias: txParams.alias,
-      project_id: txParams.project_id,
-      project_id_length: txParams.project_id.length,
-      contributor_state_id: txParams.contributor_state_id,
-      contributor_state_id_length: txParams.contributor_state_id.length,
-      contributor_state_policy_id: contributorStatePolicyId,
-      contributor_state_policy_id_length: contributorStatePolicyId.length,
-      task_hash: txParams.task_hash,
-      task_hash_length: txParams.task_hash.length,
-      task_info: txParams.task_info,
-      tasks: txParams.tasks,
-      hasEvidence: !!txParams.evidence,
-    });
+    console.log("[TaskCommit] Transaction params:", txParams);
 
     await execute({
       txType: "PROJECT_CONTRIBUTOR_TASK_COMMIT",
       params: txParams,
+      metadata: {
+        task_hash: taskHash,
+        evidence: JSON.stringify(taskEvidence),
+        evidence_hash: hash,
+      },
       onSuccess: async (txResult) => {
         console.log("[TaskCommit] TX submitted successfully!", txResult);
-
-        // Save task evidence content to database via hook
-        // The hash is on-chain, but the actual JSON content needs to be stored for manager review
-        if (taskEvidence) {
-          submitTaskEvidence.mutate({
-            taskHash,
-            evidence: taskEvidence,
-            evidenceHash: hash,
-            pendingTxHash: txResult.txHash,
-          });
-        }
       },
       onError: (txError) => {
         console.error("[TaskCommit] Error:", txError);

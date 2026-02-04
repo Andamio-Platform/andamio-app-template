@@ -22,4 +22,5 @@ export * from "./use-course-teacher";
 export * from "./use-module-wizard-data";
 export * from "./use-save-module-draft";
 export * from "./use-assignment-commitment";
+export * from "./use-student-credentials";
 export * from "./use-student-completions-for-prereqs";

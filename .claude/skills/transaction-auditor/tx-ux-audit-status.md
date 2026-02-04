@@ -20,9 +20,9 @@
 | 11 | PROJECT_OWNER_BLACKLIST_MANAGE | `blacklist-manage.tsx` | pass | pass | n/a | pass | Audited 2026-02-03. TX works e2e. Off-chain: no blacklist data in project detail yet (andamioscan#28). |
 | 12 | PROJECT_MANAGER_TASKS_MANAGE | `tasks-manage.tsx` | pass | pass | pass | pass | Audited 2026-02-03. All 4 checks pass. |
 | 13 | PROJECT_MANAGER_TASKS_ASSESS | `tasks-assess.tsx` | --- | --- | --- | --- | |
-| 14 | PROJECT_CONTRIBUTOR_TASK_COMMIT | `task-commit.tsx` | --- | --- | --- | --- | |
-| 15 | PROJECT_CONTRIBUTOR_TASK_ACTION | `task-action.tsx` | --- | --- | --- | --- | |
-| 16 | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM | `project-credential-claim.tsx` | --- | --- | --- | --- | |
+| 14 | PROJECT_CONTRIBUTOR_TASK_COMMIT | `task-commit.tsx` | pass | blocked | blocked | blocked | Q1 pass. Blocked: Andamioscan indexer not returning contributor data. Retry 2026-02-04. |
+| 15 | PROJECT_CONTRIBUTOR_TASK_ACTION | `task-action.tsx` | --- | --- | --- | --- | Blocked by #14 (needs existing commitment) |
+| 16 | PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM | `project-credential-claim.tsx` | --- | --- | --- | --- | Blocked by #14 (needs committed + assessed tasks) |
 | 17 | PROJECT_USER_TREASURY_ADD_FUNDS | `treasury-add-funds.tsx` | pass | pass | pass | pass | Audited 2026-02-03. All 4 checks pass on first test. |
 
 ## Column Definitions
@@ -54,6 +54,19 @@
 
 ---
 
+### TX Audit Issue — PROJECT_CONTRIBUTOR_TASK_COMMIT (Q2-Q4 — BLOCKED)
+
+**Transaction**: `PROJECT_CONTRIBUTOR_TASK_COMMIT`
+**Endpoint**: `/api/v2/tx/project/contributor/task/commit`
+**Failed Check**: Q2/Q3/Q4 — Andamioscan indexer not returning contributor data
+**Error**: TX submits on-chain (Q1 pass) but gateway cannot complete state machine because indexer data is unavailable
+**Expected**: Gateway should transition from `confirmed` → `updated` after indexer picks up the TX
+**Steps to Reproduce**: Commit to a project task as contributor, observe gateway status polling
+**Component**: `src/components/tx/task-commit.tsx`
+**Scheduled Retry**: 2026-02-04
+
+---
+
 ## Audit History
 
 <!-- Record audit sessions here -->
@@ -74,6 +87,7 @@
 - **2026-02-03**: #8 COURSE_STUDENT_ASSIGNMENT_UPDATE — All 4 checks pass.
 - **2026-02-03**: #11 PROJECT_OWNER_BLACKLIST_MANAGE — Q1 PASS, Q2 PASS, Q3 N/A (no blacklist data in project detail aggregate yet — andamioscan#28), Q4 PASS. TX works e2e.
 - **2026-02-03**: #12 PROJECT_MANAGER_TASKS_MANAGE — All 4 checks pass.
+- **2026-02-03**: #14 PROJECT_CONTRIBUTOR_TASK_COMMIT — Q1 PASS (TX builds, signs, submits on-chain). Q2-Q4 BLOCKED: Andamioscan indexer not returning contributor data, so gateway state machine cannot complete. Scheduled for retry 2026-02-04.
 
 ## Advanced Testing Backlog
 

@@ -97,6 +97,14 @@ DRAFT TASK DELETE FIX + TX AUDIT ───────────────�
   │   TX #7, #10 all pass; TX #6 regression fixed
   │
   ▼
+CONTRIBUTOR TX STATE MACHINE CLEANUP ─────────────────── 2026-02-03 ✅
+  │
+  │   All 3 Project Contributor TXs production-ready
+  │   TaskCommit: schema-only fields, no undocumented params
+  │   TaskAction: contributor_state_id + task_hash + evidence saving
+  │   TX_TYPE_MAP: TASK_COMMIT → project_join (distinct from task_submit)
+  │
+  ▼
 MAINNET V2 LAUNCH ──────────────────────────────────────── 2026-02-06
   │
   │   Feature backlog begins!
@@ -122,6 +130,7 @@ MAINNET V2 LAUNCH ────────────────────�
 | **2026-02-01** | **Project Workflows** (PR #111) + owner/manager fixes | ✅ Complete |
 | **2026-02-03** | **Gateway API Sync + TX UX Audit** — types regen, 6 issues closed | ✅ Complete |
 | **2026-02-03** | **Draft Task Delete Fix** — #147/#148, typed assets, TX audit 9/16 | ✅ Complete |
+| **2026-02-03** | **Contributor TX Cleanup** — All 3 contributor TXs production-ready | ✅ Complete |
 | 2026-01-16 → 2026-02-06 | V1→V2 Migration Focus (app.andamio.io) | 🔄 In Progress |
 | 2026-02-06 (Fri) | Andamio V2 Mainnet Launch | ⏳ Upcoming |
 

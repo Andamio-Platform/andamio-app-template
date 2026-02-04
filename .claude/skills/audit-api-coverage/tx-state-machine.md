@@ -206,7 +206,7 @@ interface TxRegisterRequest {
 | `PROJECT_OWNER_BLACKLIST_MANAGE` | `blacklist_update` |
 | `PROJECT_MANAGER_TASKS_MANAGE` | `tasks_manage` |
 | `PROJECT_MANAGER_TASKS_ASSESS` | `task_assess` |
-| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `task_submit` |
+| `PROJECT_CONTRIBUTOR_TASK_COMMIT` | `project_join` |
 | `PROJECT_CONTRIBUTOR_TASK_ACTION` | `task_submit` |
 | `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` | `project_credential_claim` |
 | `PROJECT_USER_TREASURY_ADD_FUNDS` | `treasury_fund` |

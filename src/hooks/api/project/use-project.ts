@@ -355,7 +355,18 @@ function getTaskStatusFromSource(source: string | undefined): TaskStatusValue {
  * Note: `task_id` in merged response IS the task_hash (content-addressed).
  */
 export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task {
-  const title = api.content?.title ?? "";
+  // Use DB title if available, otherwise decode on-chain content as fallback
+  let title = api.content?.title ?? "";
+  if (!title && api.on_chain_content) {
+    try {
+      const bytes = new Uint8Array(
+        api.on_chain_content.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? []
+      );
+      title = new TextDecoder().decode(bytes);
+    } catch {
+      // leave title empty
+    }
+  }
   const description = api.content?.description ?? "";
   return {
     taskHash: api.task_hash ?? "",
@@ -363,6 +374,7 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
     index: api.task_index ?? api.content?.task_index,
     title,
     description,
+    contentJson: api.content?.content_json,
     lovelaceAmount: String(api.lovelace_amount ?? 0),
     expirationTime: api.expiration_posix
       ? String(api.expiration_posix)
@@ -549,7 +561,6 @@ export const projectKeys = {
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (projectId: string) => [...projectKeys.details(), projectId] as const,
   tasks: (projectId: string) => [...projectKeys.detail(projectId), "tasks"] as const,
-  task: (taskHash: string) => [...projectKeys.all, "task", taskHash] as const,
 };
 
 // =============================================================================
@@ -775,62 +786,51 @@ export function useProjectTasks(projectId: string | undefined) {
 }
 
 /**
- * Fetch a single task by hash (merged endpoint)
+ * Fetch a single task by hash from the project tasks list.
  *
- * Uses: GET /api/v2/project/user/task/{task_hash}
- * Returns a Task with flat camelCase fields.
- *
- * @param taskHash - Content-addressed task hash
- *
- * @example
- * ```tsx
- * function TaskDetail({ taskHash }: { taskHash: string }) {
- *   const { data: task, isLoading, error } = useTask(taskHash);
- *
- *   if (isLoading) return <Skeleton />;
- *   if (!task) return <NotFound />;
- *
- *   return <h1>{task.title}</h1>;
- * }
- * ```
+ * Shares the same cache as useProjectTasks — no extra network request.
+ * Uses React Query `select` to pick one task from the cached list.
  */
-export function useTask(taskHash: string | undefined) {
-  return useQuery({
-    queryKey: projectKeys.task(taskHash ?? ""),
-    queryFn: async (): Promise<Task | null> => {
+export function useProjectTask(projectId: string | undefined, taskHash: string | undefined) {
+  return useQuery<Task[], Error, Task | null>({
+    queryKey: projectKeys.tasks(projectId ?? ""),
+    queryFn: async (): Promise<Task[]> => {
       const response = await fetch(
-        `${GATEWAY_API_BASE}/project/user/task/${taskHash}`
+        `${GATEWAY_API_BASE}/project/user/tasks/list`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: projectId }),
+        }
       );
 
       if (response.status === 404) {
-        return null;
+        return [];
       }
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch task: ${response.statusText}`);
+        throw new Error(`Failed to fetch tasks: ${response.statusText}`);
       }
 
       const result = (await response.json()) as
-        | { data?: OrchestrationMergedTaskListItem; warning?: string }
-        | OrchestrationMergedTaskListItem;
+        | MergedHandlersMergedTasksResponse
+        | OrchestrationMergedTaskListItem[];
 
-      // Handle both wrapped { data: ... } and unwrapped formats
-      let item: OrchestrationMergedTaskListItem | undefined;
+      let items: OrchestrationMergedTaskListItem[];
 
-      if ("data" in result && result.data) {
-        if ((result as { warning?: string }).warning) {
-          console.warn("[useTask] API warning:", (result as { warning?: string }).warning);
+      if (Array.isArray(result)) {
+        items = result;
+      } else {
+        if (result.warning) {
+          console.warn("[useProjectTask] API warning:", result.warning);
         }
-        item = result.data;
-      } else if ("task_hash" in result) {
-        item = result;
+        items = result.data ?? [];
       }
 
-      if (!item) return null;
-
-      return transformMergedTask(item);
+      return items.map(transformMergedTask);
     },
-    enabled: !!taskHash,
+    select: (tasks) => tasks.find((t) => t.taskHash === taskHash) ?? null,
+    enabled: !!projectId && !!taskHash,
     staleTime: 30 * 1000,
   });
 }

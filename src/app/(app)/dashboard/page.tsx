@@ -12,8 +12,7 @@ import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-toke
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AccountDetailsCard } from "~/components/dashboard/account-details";
 import { PendingReviewsSummary } from "~/components/dashboard/pending-reviews-summary";
-import { EnrolledCoursesSummary } from "~/components/dashboard/enrolled-courses-summary";
-import { CredentialsSummary } from "~/components/dashboard/credentials-summary";
+import { StudentAccomplishments } from "~/components/dashboard/student-accomplishments";
 import { ContributingProjectsSummary } from "~/components/dashboard/contributing-projects-summary";
 import { ManagingProjectsSummary } from "~/components/dashboard/managing-projects-summary";
 import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summary";
@@ -120,12 +119,10 @@ export default function DashboardPage() {
 
       {/* Account Details Section */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Enrolled Courses Card - Shows on-chain enrolled courses for learners */}
-        <EnrolledCoursesSummary accessTokenAlias={user.accessTokenAlias} />
+        {/* Accomplishments Card - Enrolled courses, completed courses, credentials (single API call) */}
+        <StudentAccomplishments accessTokenAlias={user.accessTokenAlias} />
         {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}
         <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
-        {/* Credentials Card - Shows on-chain earned credentials */}
-        <CredentialsSummary accessTokenAlias={user.accessTokenAlias} />
         {/* Contributing Projects Card - Shows on-chain project contributions */}
         <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
         {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}

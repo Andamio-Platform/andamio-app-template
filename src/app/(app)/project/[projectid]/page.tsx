@@ -4,6 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useProject } from "~/hooks/api";
+import { useProjectTasks } from "~/hooks/api/project/use-project";
 import {
   AndamioBadge,
   AndamioButton,
@@ -16,7 +17,6 @@ import {
   AndamioPageHeader,
   AndamioPageLoading,
   AndamioEmptyState,
-  AndamioSectionHeader,
   AndamioTableContainer,
   AndamioBackButton,
   AndamioErrorAlert,
@@ -25,225 +25,43 @@ import {
   AndamioCard,
   AndamioCardContent,
   AndamioCardHeader,
+  AndamioCardTitle,
+  AndamioCardDescription,
 } from "~/components/andamio/andamio-card";
-import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import {
   TaskIcon,
   ContributorIcon,
-  OnChainIcon,
   CredentialIcon,
   TreasuryIcon,
+  SuccessIcon,
+  AlertIcon,
+  CourseIcon,
 } from "~/components/icons";
-import { type ProjectDetail } from "~/hooks/api/project/use-project";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
-import type { StudentCompletionInput } from "~/lib/project-eligibility";
+import { checkProjectEligibility } from "~/lib/project-eligibility";
 import { formatLovelace } from "~/lib/cardano-utils";
 
 /**
- * Project Data Component
- * Displays project data from the merged API
- */
-function ProjectDataCard({
-  project,
-  isLoading,
-  completions,
-}: {
-  project: ProjectDetail | null | undefined;
-  isLoading: boolean;
-  completions?: StudentCompletionInput[];
-}) {
-  // Loading state
-  if (isLoading) {
-    return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardIconHeader icon={OnChainIcon} title="On-Chain Data" />
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2">
-                <AndamioSkeleton className="h-4 w-20" />
-                <AndamioSkeleton className="h-8 w-full" />
-              </div>
-            ))}
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-    );
-  }
-
-  // Not available
-  if (!project) {
-    return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardIconHeader icon={OnChainIcon} title="Project Data" />
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <OnChainIcon className="h-4 w-4" />
-            <AndamioText variant="small">
-              Project data not available
-            </AndamioText>
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-    );
-  }
-
-  // Calculate totals
-  const contributors = project.contributors ?? [];
-  const tasks = project.tasks ?? [];
-  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
-  const submissions = project.submissions ?? [];
-  const assessments = project.assessments ?? [];
-  const credentialClaims = project.credentialClaims ?? [];
-  const treasuryFundings = project.treasuryFundings ?? [];
-  const prerequisites = project.prerequisites ?? [];
-
-  const totalFunding = treasuryFundings.reduce(
-    (sum, f) => sum + (f.lovelaceAmount ?? 0),
-    0
-  );
-  const pendingSubmissions = submissions.length;
-  const completedAssessments = assessments.length;
-
-  return (
-    <AndamioCard>
-      <AndamioCardHeader>
-        <div className="flex items-center justify-between">
-          <AndamioCardIconHeader
-            icon={OnChainIcon}
-            title="Project Data"
-            description="Live blockchain data"
-          />
-          {project.status === "active" && (
-            <AndamioBadge status="success">
-              Verified
-            </AndamioBadge>
-          )}
-        </div>
-      </AndamioCardHeader>
-      <AndamioCardContent className="space-y-6">
-        {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <ContributorIcon className="h-4 w-4" />
-              <AndamioText variant="small">Contributors</AndamioText>
-            </div>
-            <AndamioText className="text-2xl font-bold">
-              {contributors.length}
-            </AndamioText>
-          </div>
-
-          <div className="rounded-lg bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TaskIcon className="h-4 w-4" />
-              <AndamioText variant="small">Live Tasks</AndamioText>
-            </div>
-            <AndamioText className="text-2xl font-bold">
-              {liveTasks.length}
-            </AndamioText>
-          </div>
-
-          <div className="rounded-lg bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <CredentialIcon className="h-4 w-4" />
-              <AndamioText variant="small">Credentials Claimed</AndamioText>
-            </div>
-            <AndamioText className="text-2xl font-bold">
-              {credentialClaims.length}
-            </AndamioText>
-          </div>
-
-          <div className="rounded-lg bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TreasuryIcon className="h-4 w-4" />
-              <AndamioText variant="small">Total Funded</AndamioText>
-            </div>
-            <AndamioText className="text-2xl font-bold">
-              {formatLovelace(totalFunding)}
-            </AndamioText>
-          </div>
-        </div>
-
-        {/* Activity Summary */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <AndamioText variant="small" className="font-medium mb-2">
-              Submission Activity
-            </AndamioText>
-            <div className="flex items-center gap-4">
-              <AndamioBadge variant="secondary">
-                {submissions.length} submissions
-              </AndamioBadge>
-              <AndamioBadge variant="outline">
-                {pendingSubmissions} pending
-              </AndamioBadge>
-              <AndamioBadge variant="default">
-                {completedAssessments} assessed
-              </AndamioBadge>
-            </div>
-          </div>
-
-          {prerequisites.length > 0 && (
-            <div>
-              <AndamioText variant="small" className="font-medium mb-2">
-                Prerequisites
-              </AndamioText>
-              <PrerequisiteList prerequisites={prerequisites} completions={completions} />
-            </div>
-          )}
-        </div>
-
-        {/* Contributors List */}
-        {contributors.length > 0 && (
-          <div>
-            <AndamioText variant="small" className="font-medium mb-2">
-              Active Contributors
-            </AndamioText>
-            <div className="flex flex-wrap gap-2">
-              {contributors.slice(0, 10).map((contributor, i) => (
-                <AndamioBadge key={contributor.alias ?? i} variant="secondary" className="font-mono text-xs">
-                  {contributor.alias ?? "Unknown"}
-                </AndamioBadge>
-              ))}
-              {contributors.length > 10 && (
-                <AndamioBadge variant="outline">
-                  +{contributors.length - 10} more
-                </AndamioBadge>
-              )}
-            </div>
-          </div>
-        )}
-      </AndamioCardContent>
-    </AndamioCard>
-  );
-}
-
-/**
- * Project detail page displaying project info and tasks list
+ * Project detail page — the public-facing view of a project.
  *
- * API Endpoint (V2 Merged):
- * - GET /api/v2/project/user/project/{project_id}
+ * Layout:
+ * 1. Header (title, policy ID, Contribute CTA)
+ * 2. Stats bar (treasury, tasks, contributors, credentials)
+ * 3. Prerequisites + eligibility (combined, only if project has prereqs)
+ * 4. Available Tasks table
  */
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.projectid as string;
 
-  // Fetch project with all data from merged endpoint
-  const {
-    data: project,
-    isLoading,
-    error,
-  } = useProject(projectId);
+  const { data: project, isLoading, error } = useProject(projectId);
+  const { data: mergedTasks } = useProjectTasks(projectId);
+  const { isAuthenticated } = useAndamioAuth();
 
-  // Collect prerequisite course IDs for completion overlay
+  // Prerequisite eligibility
   const prereqCourseIds = React.useMemo(() => {
     if (!project?.prerequisites) return [];
     return project.prerequisites
@@ -253,12 +71,16 @@ export default function ProjectDetailPage() {
 
   const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
 
-  // Loading state
+  const prerequisites = project?.prerequisites ?? [];
+  const eligibility = React.useMemo(() => {
+    if (!isAuthenticated || prerequisites.length === 0) return null;
+    return checkProjectEligibility(prerequisites, completions);
+  }, [isAuthenticated, prerequisites, completions]);
+
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
   }
 
-  // Error state
   if (error || !project) {
     return (
       <div className="space-y-6">
@@ -268,122 +90,230 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Get tasks from merged project data — only show ON_CHAIN tasks publicly
-  const allTasks = project.tasks ?? [];
+  const allTasks = mergedTasks ?? project.tasks ?? [];
   const liveTasks = allTasks.filter((t) => t.taskStatus === "ON_CHAIN");
-
-  // Get project title (flattened from content by transform)
   const projectTitle = project.title ?? "Project";
 
-  // Empty tasks state
-  if (liveTasks.length === 0) {
-    return (
-      <div className="space-y-6">
+  // Derived stats
+  const contributors = project.contributors ?? [];
+  const credentialClaims = project.credentialClaims ?? [];
+  const treasuryFundings = project.treasuryFundings ?? [];
+  const totalFunding = treasuryFundings.reduce(
+    (sum, f) => sum + (f.lovelaceAmount ?? 0),
+    0,
+  );
+  const totalRewards = liveTasks.reduce(
+    (sum, t) => sum + (parseInt(t.lovelaceAmount ?? "0", 10) || 0),
+    0,
+  );
+
+  return (
+    <div className="space-y-8">
+      {/* ── Header ────────────────────────────────────────────────── */}
+      <div>
         <AndamioBackButton href="/project" label="Back to Projects" />
 
-        <AndamioPageHeader title={projectTitle} />
-        <div className="flex flex-wrap items-center gap-2">
-          <AndamioBadge variant="outline" className="font-mono text-xs">
-            {project.projectId?.slice(0, 16)}...
-          </AndamioBadge>
+        <div className="mt-4">
+          <AndamioPageHeader
+            title={projectTitle}
+            description={project.description || undefined}
+            action={
+              liveTasks.length > 0 ? (
+                <Link href={`/project/${projectId}/contributor`}>
+                  <AndamioButton>
+                    <ContributorIcon className="h-4 w-4 mr-2" />
+                    Contribute
+                  </AndamioButton>
+                </Link>
+              ) : undefined
+            }
+          />
         </div>
 
-        {/* Project Data Section */}
-        <ProjectDataCard
-          project={project}
-          isLoading={false}
-          completions={completions}
-        />
+        <AndamioText variant="small" className="font-mono text-muted-foreground mt-1">
+          {project.projectId}
+        </AndamioText>
+      </div>
 
+      {/* ── Stats Bar ─────────────────────────────────────────────── */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TreasuryIcon className="h-4 w-4" />
+            <AndamioText variant="small">Treasury</AndamioText>
+          </div>
+          <AndamioText className="text-2xl font-bold">
+            {formatLovelace(totalFunding)}
+          </AndamioText>
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TaskIcon className="h-4 w-4" />
+            <AndamioText variant="small">Available Rewards</AndamioText>
+          </div>
+          <AndamioText className="text-2xl font-bold">
+            {formatLovelace(totalRewards)}
+          </AndamioText>
+          <AndamioText variant="small" className="text-muted-foreground">
+            across {liveTasks.length} task{liveTasks.length !== 1 ? "s" : ""}
+          </AndamioText>
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <ContributorIcon className="h-4 w-4" />
+            <AndamioText variant="small">Contributors</AndamioText>
+          </div>
+          <AndamioText className="text-2xl font-bold">
+            {contributors.length}
+          </AndamioText>
+          {contributors.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {contributors.slice(0, 5).map((c, i) => (
+                <AndamioBadge key={c.alias ?? i} variant="secondary" className="font-mono text-xs">
+                  {c.alias ?? "?"}
+                </AndamioBadge>
+              ))}
+              {contributors.length > 5 && (
+                <AndamioBadge variant="outline" className="text-xs">
+                  +{contributors.length - 5}
+                </AndamioBadge>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <CredentialIcon className="h-4 w-4" />
+            <AndamioText variant="small">Credentials Claimed</AndamioText>
+          </div>
+          <AndamioText className="text-2xl font-bold">
+            {credentialClaims.length}
+          </AndamioText>
+        </div>
+      </div>
+
+      {/* ── Prerequisites + Eligibility (combined) ────────────────── */}
+      {prerequisites.length > 0 && (
+        <AndamioCard>
+          <AndamioCardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CourseIcon className="h-5 w-5" />
+                <div>
+                  <AndamioCardTitle>Prerequisites</AndamioCardTitle>
+                  <AndamioCardDescription>
+                    Complete these course modules to contribute
+                  </AndamioCardDescription>
+                </div>
+              </div>
+              {eligibility && (
+                eligibility.eligible ? (
+                  <AndamioBadge status="success" className="gap-1">
+                    <SuccessIcon className="h-3.5 w-3.5" />
+                    Eligible
+                  </AndamioBadge>
+                ) : (
+                  <AndamioBadge variant="outline" className="gap-1 text-muted-foreground">
+                    <AlertIcon className="h-3.5 w-3.5" />
+                    {eligibility.totalCompleted}/{eligibility.totalRequired} completed
+                  </AndamioBadge>
+                )
+              )}
+            </div>
+          </AndamioCardHeader>
+          <AndamioCardContent>
+            <PrerequisiteList prerequisites={prerequisites} completions={completions} />
+
+            {/* Eligibility CTA for authenticated users */}
+            {eligibility?.eligible && (
+              <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
+                <AndamioText variant="small" className="text-primary">
+                  You meet all prerequisites
+                </AndamioText>
+                <Link href={`/project/${projectId}/contributor`} className="ml-auto">
+                  <AndamioButton size="sm" variant="outline">
+                    <ContributorIcon className="h-3.5 w-3.5 mr-1.5" />
+                    Get Started
+                  </AndamioButton>
+                </Link>
+              </div>
+            )}
+          </AndamioCardContent>
+        </AndamioCard>
+      )}
+
+      {/* ── Available Tasks ───────────────────────────────────────── */}
+      {liveTasks.length > 0 ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TaskIcon className="h-5 w-5" />
+              <AndamioText className="text-lg font-semibold">Available Tasks</AndamioText>
+            </div>
+          </div>
+          <AndamioTableContainer>
+            <AndamioTable>
+              <AndamioTableHeader>
+                <AndamioTableRow>
+                  <AndamioTableHead className="w-12">#</AndamioTableHead>
+                  <AndamioTableHead>Task</AndamioTableHead>
+                  <AndamioTableHead className="hidden md:table-cell">Expiration</AndamioTableHead>
+                  <AndamioTableHead className="text-right">Reward</AndamioTableHead>
+                </AndamioTableRow>
+              </AndamioTableHeader>
+              <AndamioTableBody>
+                {liveTasks.map((task, index) => (
+                  <AndamioTableRow key={task.taskHash ?? index}>
+                    <AndamioTableCell className="font-mono text-xs text-muted-foreground">
+                      {task.index ?? index + 1}
+                    </AndamioTableCell>
+                    <AndamioTableCell>
+                      {task.taskHash ? (
+                        <Link href={`/project/${projectId}/${task.taskHash}`}>
+                          <AndamioText className="font-medium hover:underline">
+                            {task.title || "Untitled Task"}
+                          </AndamioText>
+                          <AndamioText variant="small" className="font-mono text-xs text-muted-foreground">
+                            {task.taskHash.slice(0, 20)}...
+                          </AndamioText>
+                        </Link>
+                      ) : (
+                        <AndamioText className="text-muted-foreground">No ID</AndamioText>
+                      )}
+                    </AndamioTableCell>
+                    <AndamioTableCell className="hidden md:table-cell">
+                      {task.expirationTime ? (
+                        <AndamioText variant="small">
+                          {new Date(Number(task.expirationTime)).toLocaleDateString()}
+                        </AndamioText>
+                      ) : (
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          None
+                        </AndamioText>
+                      )}
+                    </AndamioTableCell>
+                    <AndamioTableCell className="text-right">
+                      <AndamioBadge variant="outline">
+                        {formatLovelace(task.lovelaceAmount ?? "0")}
+                      </AndamioBadge>
+                    </AndamioTableCell>
+                  </AndamioTableRow>
+                ))}
+              </AndamioTableBody>
+            </AndamioTable>
+          </AndamioTableContainer>
+        </div>
+      ) : (
         <AndamioEmptyState
           icon={TaskIcon}
           title="No tasks available"
-          description="This project doesn't have any tasks yet. Check back later."
+          description="This project doesn't have any active tasks yet. Check back later."
         />
-      </div>
-    );
-  }
-
-  // Project and tasks display
-  return (
-    <div className="space-y-6">
-      <AndamioBackButton href="/project" label="Back to Projects" />
-
-      <AndamioPageHeader
-        title={projectTitle}
-        action={
-          <Link href={`/project/${projectId}/contributor`}>
-            <AndamioButton>
-              <ContributorIcon className="h-4 w-4 mr-2" />
-              Contribute
-            </AndamioButton>
-          </Link>
-        }
-      />
-      <div className="flex flex-wrap items-center gap-2">
-        <AndamioBadge variant="outline" className="font-mono text-xs">
-          {project.projectId?.slice(0, 16)}...
-        </AndamioBadge>
-      </div>
-
-      {/* Project Data Section */}
-      <ProjectDataCard
-        project={project}
-        isLoading={false}
-      />
-
-      <div className="space-y-4">
-        <AndamioSectionHeader title="Available Tasks" />
-        <AndamioTableContainer>
-          <AndamioTable>
-            <AndamioTableHeader>
-              <AndamioTableRow>
-                <AndamioTableHead className="w-12 sm:w-16">#</AndamioTableHead>
-                <AndamioTableHead className="min-w-[150px]">Hash</AndamioTableHead>
-                <AndamioTableHead className="min-w-[200px] hidden md:table-cell">Expiration</AndamioTableHead>
-                <AndamioTableHead className="w-24 sm:w-32 text-center">Reward</AndamioTableHead>
-              </AndamioTableRow>
-            </AndamioTableHeader>
-            <AndamioTableBody>
-              {liveTasks.map((task, index) => (
-                <AndamioTableRow key={task.taskHash ?? index}>
-                  <AndamioTableCell className="font-mono text-xs">
-                    {index + 1}
-                  </AndamioTableCell>
-                  <AndamioTableCell>
-                    {task.taskHash ? (
-                      <Link
-                        href={`/project/${projectId}/${task.taskHash}`}
-                        className="font-medium font-mono text-sm hover:underline"
-                      >
-                        {task.taskHash.slice(0, 16)}...
-                      </Link>
-                    ) : (
-                      <AndamioText className="font-medium text-muted-foreground">No ID</AndamioText>
-                    )}
-                  </AndamioTableCell>
-                  <AndamioTableCell className="max-w-xs truncate hidden md:table-cell">
-                    {task.expirationTime ? (
-                      <AndamioText variant="small">
-                        Expires: {new Date(Number(task.expirationTime)).toLocaleDateString()}
-                      </AndamioText>
-                    ) : (
-                      <AndamioText variant="small" className="text-muted-foreground">
-                        No expiration
-                      </AndamioText>
-                    )}
-                  </AndamioTableCell>
-                  <AndamioTableCell className="text-center">
-                    <AndamioBadge variant="outline">
-                      {formatLovelace(task.lovelaceAmount ?? "0")}
-                    </AndamioBadge>
-                  </AndamioTableCell>
-                </AndamioTableRow>
-              ))}
-            </AndamioTableBody>
-          </AndamioTable>
-        </AndamioTableContainer>
-      </div>
+      )}
     </div>
   );
 }

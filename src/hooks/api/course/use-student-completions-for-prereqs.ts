@@ -1,9 +1,9 @@
 /**
- * Hook to bridge student course completion data into the format
+ * Hook to bridge student credential data into the format
  * that `checkProjectEligibility()` expects.
  *
- * Uses `useQueries()` to fetch commitments for each prerequisite course
- * in parallel, sharing cache keys with `useStudentAssignmentCommitments`.
+ * Uses the single `POST /api/v2/course/student/credentials/list` endpoint
+ * instead of N+1 parallel queries — one network call for all prerequisite data.
  *
  * @example
  * ```tsx
@@ -12,63 +12,48 @@
  * ```
  */
 
-import { useQueries } from "@tanstack/react-query";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useStudentCourses } from "./use-course-student";
-import {
-  fetchStudentCommitments,
-  studentCommitmentsQueryKey,
-} from "./use-student-assignment-commitments";
+import { useStudentCredentials } from "./use-student-credentials";
 import type { StudentCompletionInput } from "~/lib/project-eligibility";
 
 /**
  * Fetch student course completions for a set of prerequisite course IDs.
  *
  * Returns `StudentCompletionInput[]` ready for `checkProjectEligibility()`.
+ * Uses the credentials endpoint which returns everything in one call.
  *
  * @param prerequisiteCourseIds - Unique course IDs from project prerequisites
  */
 export function useStudentCompletionsForPrereqs(
   prerequisiteCourseIds: string[],
 ) {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
+  const {
+    data: credentials,
+    isLoading,
+    isError,
+  } = useStudentCredentials();
 
-  // Fetch enrolled courses for enrollment status
-  const { data: studentCourses } = useStudentCourses();
-
-  // Build enrollment lookup
-  const enrollmentMap = new Map(
-    (studentCourses ?? []).map((c) => [c.courseId, true]),
+  // Build a lookup from credentials data
+  const credentialMap = new Map(
+    (credentials ?? []).map((c) => [c.courseId, c]),
   );
 
-  // Parallel queries for commitments per course
-  const commitmentQueries = useQueries({
-    queries: prerequisiteCourseIds.map((courseId) => ({
-      queryKey: studentCommitmentsQueryKey(courseId),
-      queryFn: () => fetchStudentCommitments(courseId, authenticatedFetch),
-      enabled: isAuthenticated && !!courseId,
-      staleTime: 30_000,
-    })),
-  });
-
-  const isLoading = commitmentQueries.some((q) => q.isLoading);
-
-  // Transform into StudentCompletionInput[]
+  // Map each prerequisite course to a StudentCompletionInput
   const completions: StudentCompletionInput[] = prerequisiteCourseIds.map(
-    (courseId, index) => {
-      const query = commitmentQueries[index];
-      const commitments = query?.data ?? [];
+    (courseId) => {
+      const cred = credentialMap.get(courseId);
 
-      // Only count ASSIGNMENT_ACCEPTED commitments as completed
-      const completedModuleHashes = commitments
-        .filter((c) => c.networkStatus === "ASSIGNMENT_ACCEPTED")
-        .map((c) => c.sltHash)
-        .filter((hash): hash is string => hash !== null);
+      if (!cred) {
+        return {
+          courseId,
+          completedModuleHashes: [],
+          isEnrolled: false,
+        };
+      }
 
       return {
         courseId,
-        completedModuleHashes,
-        isEnrolled: enrollmentMap.has(courseId),
+        completedModuleHashes: cred.claimedCredentials,
+        isEnrolled: cred.isEnrolled,
       };
     },
   );
@@ -76,6 +61,6 @@ export function useStudentCompletionsForPrereqs(
   return {
     completions,
     isLoading,
-    isAuthenticated,
+    isAuthenticated: !isError,
   };
 }

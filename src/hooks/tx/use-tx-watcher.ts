@@ -289,7 +289,7 @@ export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
   PROJECT_MANAGER_TASKS_ASSESS: "task_assess",
 
   // Project - Contributor
-  PROJECT_CONTRIBUTOR_TASK_COMMIT: "task_submit",
+  PROJECT_CONTRIBUTOR_TASK_COMMIT: "project_join",
   PROJECT_CONTRIBUTOR_TASK_ACTION: "task_submit",
   PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM: "project_credential_claim",
 

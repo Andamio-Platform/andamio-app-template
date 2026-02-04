@@ -11,8 +11,8 @@
  */
 
 export enum AndamioDbClientReviewAssignmentCommitmentV2RequestDecision {
-  Accept = "accept",
-  Refuse = "refuse",
+  ReviewAssignmentCommitmentV2RequestDecisionAccept = "accept",
+  ReviewAssignmentCommitmentV2RequestDecisionRefuse = "refuse",
 }
 
 export enum AndamioDbClientCourseModuleV2ModuleStatus {
@@ -1507,6 +1507,11 @@ export interface MergedHandlersStudentCoursesResponse {
   warning?: string;
 }
 
+export interface MergedHandlersStudentCredentialsResponse {
+  data?: OrchestrationStudentCourseCredential[];
+  warning?: string;
+}
+
 export interface MergedHandlersTeacherAssignmentCommitmentsResponse {
   data?: OrchestrationTeacherAssignmentCommitmentItem[];
   warning?: string;
@@ -1568,6 +1573,12 @@ export interface OrchestrationCourseModule {
   prerequisites?: string[];
   slt_hash?: string;
   slts?: string[];
+}
+
+export interface OrchestrationCredentialModuleInfo {
+  course_module_code?: string;
+  slt_hash?: string;
+  title?: string;
 }
 
 export interface OrchestrationManagerCommitmentItem {
@@ -1956,6 +1967,22 @@ export interface OrchestrationStudentAssignmentCommitmentItem {
   source?: string;
 }
 
+export interface OrchestrationStudentCourseCredential {
+  /** Claimed credentials (slt_hashes from on-chain, for completed courses) */
+  claimed_credentials?: string[];
+  /** Course identity */
+  course_id?: string;
+  course_title?: string;
+  /** "enrolled", "completed" */
+  enrollment_status?: string;
+  /** Enrollment state (from on-chain) */
+  is_enrolled?: boolean;
+  /** Module metadata (from DB, for resolving slt_hash → title/code) */
+  modules?: OrchestrationCredentialModuleInfo[];
+  /** Data source indicator */
+  source?: string;
+}
+
 export interface OrchestrationStudentCourseListItem {
   /** Off-chain content (nested) */
   content?: OrchestrationCourseContent;
@@ -1987,6 +2014,8 @@ export interface OrchestrationTaskCommitmentContent {
 }
 
 export interface OrchestrationTaskContent {
+  /** Rich Tiptap JSON document */
+  content_json?: any;
   description?: string;
   task_index?: number;
   title?: string;

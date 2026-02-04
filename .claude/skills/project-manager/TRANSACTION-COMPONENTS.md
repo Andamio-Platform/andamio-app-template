@@ -1,6 +1,6 @@
 # Andamio Template Transaction Components
 
-> Last Updated: January 24, 2026
+> Last Updated: February 3, 2026
 
 Andamio is a Web3 platform with many transactions happening on-chain.
 
@@ -167,9 +167,9 @@ All 17 V2 transactions are implemented using the gateway auto-confirmation patte
 
 **Components**:
 - `src/hooks/tx/use-transaction.ts` - Simplified transaction hook
-- `src/components/transactions/transaction-button.tsx` - Reusable tx button
-- `src/components/transactions/transaction-status.tsx` - Status display
-- `src/components/transactions/mint-access-token.tsx` - Mint token UI
+- `src/components/tx/transaction-button.tsx` - Reusable tx button
+- `src/components/tx/transaction-status.tsx` - Status display
+- `src/components/tx/mint-access-token.tsx` - Mint token UI
 
 **Special Note**: This is a pure on-chain transaction (`requiresDBUpdate: false`). No gateway registration or polling needed - success is shown immediately after wallet submission.
 
@@ -205,7 +205,7 @@ All 17 V2 transactions are implemented using the gateway auto-confirmation patte
 8. Gateway auto-updates database with enrollment record
 
 **Components**:
-- `src/components/transactions/enroll-in-course.tsx` - Enrollment UI with module selection
+- `src/components/tx/enroll-in-course.tsx` - Enrollment UI with module selection
 
 **Used In**:
 - `/course/[coursenft]` - Course detail page
@@ -221,7 +221,7 @@ All 17 V2 transactions are implemented using the gateway auto-confirmation patte
 **Definition**: `COURSE_STUDENT_ASSIGNMENT_UPDATE` or `COURSE_STUDENT_ASSIGNMENT_COMMIT`
 
 **Components**:
-- `src/components/transactions/assignment-update.tsx` - Supports both update and new commitment modes
+- `src/components/tx/assignment-update.tsx` - Supports both update and new commitment modes
 
 **Note**: Component uses `isNewCommitment` prop to switch between `ASSIGNMENT_UPDATE` (updating existing) and `ASSIGNMENT_COMMIT` (new module commitment).
 
@@ -229,31 +229,35 @@ All 17 V2 transactions are implemented using the gateway auto-confirmation patte
 
 ### Project Contributor Transactions (V2 Model)
 
-**Status**: ✅ Active
+**Status**: ✅ Production-Ready (all 3 TXs fully wired end-to-end)
 
 The Project Contributor flow uses **only 3 transactions** for the entire lifecycle:
 
-| Transaction | API Endpoint | Purpose |
-|-------------|--------------|---------|
-| **COMMIT** | `/v2/tx/project/contributor/task/commit` | Enroll + Claim Previous Rewards + Commit to New Task |
-| **ACTION** | `/v2/tx/project/contributor/task/action` | Update Evidence OR Cancel Commitment |
-| **CLAIM** | `/v2/tx/project/contributor/credential/claim` | Unenroll + Get Credential + Claim Final Rewards |
+| Transaction | API Endpoint | Gateway tx_type | Purpose |
+|-------------|--------------|-----------------|---------|
+| **COMMIT** | `/v2/tx/project/contributor/task/commit` | `project_join` | Enroll + Claim Previous Rewards + Commit to New Task |
+| **ACTION** | `/v2/tx/project/contributor/task/action` | `task_submit` | Update Evidence on Pending Commitment |
+| **CLAIM** | `/v2/tx/project/contributor/credential/claim` | `project_credential_claim` | Unenroll + Get Credential + Claim Final Rewards |
 
 **Key Insight**: There is NO separate "enroll" transaction. COMMIT handles:
 1. Enrolling the contributor (if not already enrolled)
 2. Claiming rewards from previous approved task (if any)
 3. Committing to a new task
 
-**Reward Distribution**:
-- Rewards are claimed automatically with COMMIT (continue contributing) or CLAIM (leave project)
-- No separate "claim rewards" transaction needed
+**Schema Fields** (from `transaction-schemas.ts`):
+
+| TX | Fields |
+|----|--------|
+| COMMIT | `alias`, `project_id`, `contributor_state_id`, `task_hash`, `task_info`, `fee_tier?`, `initiator_data?` |
+| ACTION | `alias`, `project_id`, `contributor_state_id`, `task_hash`, `project_info`, `initiator_data?` |
+| CLAIM | `alias`, `project_id`, `contributor_state_id`, `fee_tier?`, `initiator_data?` |
+
+**Evidence Saving**: Both COMMIT and ACTION call `useSubmitTaskEvidence()` after TX success to POST evidence JSON to `/project/contributor/commitment/submit`. CLAIM has no evidence (pure on-chain credential claim).
 
 **Components**:
-- `src/components/transactions/task-commit.tsx` - Enrollment AND subsequent commits (single component)
-- `src/components/transactions/task-action.tsx` - Update evidence or cancel commitment
-- `src/components/transactions/project-credential-claim.tsx` - Leave project and get credential
-
-**Note**: `project-enroll.tsx` is **deprecated** - use `task-commit.tsx` for all commit scenarios.
+- `src/components/tx/task-commit.tsx` - Enrollment AND subsequent commits (single component)
+- `src/components/tx/task-action.tsx` - Update evidence on pending commitment
+- `src/components/tx/project-credential-claim.tsx` - Leave project and get credential
 
 **Reward Distribution**:
 - **Continue contributing (COMMIT)**: Rewards from previous approved task claimed automatically, contributor stays enrolled
@@ -263,11 +267,12 @@ The Project Contributor flow uses **only 3 transactions** for the entire lifecyc
 | State | Available Actions |
 |-------|-------------------|
 | Not enrolled | COMMIT ("Enroll & Commit") |
-| Committed (pending review) | ACTION ("Update Evidence" or "Cancel") |
+| Committed (pending review) | ACTION ("Update Evidence") |
 | Task approved | COMMIT (next task) or CLAIM (leave with credential) |
 
 **Used In**:
-- `/project/[projectid]/contributor` - Contributor dashboard
+- `/project/[projectid]/contributor` - Contributor dashboard (all 3 TXs)
+- `/project/[projectid]/[taskhash]` - Task detail page (COMMIT only)
 
 ---
 

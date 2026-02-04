@@ -26,14 +26,20 @@ Current implementation status of the Andamio T3 App Template.
 
 ## 📌 NEXT SESSION PROMPT
 
-> **What shipped this session (Feb 3, session 3)** — TX UX Audit continuation:
+> **What shipped this session (Feb 3, session 4)** — Contributor TX State Machine Cleanup:
 >
-> **TX UX Audit progress: 14/17 passing** (up from 10):
-> - **#8** COURSE_STUDENT_ASSIGNMENT_UPDATE — all 4 checks pass
-> - **#11** PROJECT_OWNER_BLACKLIST_MANAGE — TX works e2e (Q3 n/a: no blacklist data in project detail aggregate yet)
-> - **#12** PROJECT_MANAGER_TASKS_MANAGE — all 4 checks pass
+> **All 3 Project Contributor TXs fully wired end-to-end** (commit `3a6ac31`):
+> - **TaskCommit**: Removed undocumented `tasks` array and `evidence` from txParams — now only sends schema-defined fields. Removed leftover `contributorStatePolicyId` prop.
+> - **TaskAction**: Added `contributor_state_id` and `task_hash` to schema + component. Added `useSubmitTaskEvidence` for evidence saving after TX success (same pattern as TaskCommit).
+> - **TX_TYPE_MAP**: `PROJECT_CONTRIBUTOR_TASK_COMMIT` → `"project_join"` (was `"task_submit"`, causing ambiguity with TaskAction). Distinct tracking: commits = `project_join`, actions = `task_submit`.
+> - **ProjectCredentialClaim**: Already complete — no changes needed.
 >
-> **Blacklist naming discussion filed**: [andamioscan#28](https://github.com/Andamio-Platform/andamioscan/issues/28) — discuss renaming "blacklist" across API/subsystems, and whether/how to expose the alias list in project detail aggregate.
+> **Contributor TX Summary**:
+> | TX Type | Gateway Type | Evidence | Status |
+> |---------|-------------|----------|--------|
+> | `TASK_COMMIT` | `project_join` | Yes (`task_info`) | ✅ Ready |
+> | `TASK_ACTION` | `task_submit` | Yes (`project_info`) | ✅ Ready |
+> | `CREDENTIAL_CLAIM` | `project_credential_claim` | N/A | ✅ Ready |
 >
 > ---
 >
@@ -58,7 +64,7 @@ Current implementation status of the Andamio T3 App Template.
 >
 > ---
 >
-> **Next Work**: Continue TX UX audit — 3 remaining (#1 Access Token Mint, #13 Tasks Assess, #14-16 Contributor TXs) → #103 implement 3 missing project hooks → #118 access token mint bug
+> **Next Work**: TX UX audit remaining (#1 Access Token Mint, #13 Tasks Assess) → E2E test contributor flow on preprod → #103 implement 3 missing project hooks → #118 access token mint bug
 
 ---
 
@@ -116,6 +122,13 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 3, 2026** (Contributor TX State Machine Cleanup):
+- ✅ **All 3 Project Contributor TXs production-ready** — TaskCommit, TaskAction, ProjectCredentialClaim fully wired end-to-end
+- ✅ **TaskCommit cleaned** — Removed undocumented `tasks` array, `evidence` field, and `contributorStatePolicyId` prop from params
+- ✅ **TaskAction completed** — Added `contributor_state_id` + `task_hash` to schema and component, added `useSubmitTaskEvidence` for evidence saving
+- ✅ **TX_TYPE_MAP fixed** — `PROJECT_CONTRIBUTOR_TASK_COMMIT` → `"project_join"` (was `"task_submit"`, conflicting with TaskAction)
+- ✅ **Page props updated** — Task detail page and contributor dashboard pass correct props, removed dead `getOnChainContributorStatePolicyId` helper
 
 **February 3, 2026** (TX UX Audit session 3):
 - ✅ **TX #8** COURSE_STUDENT_ASSIGNMENT_UPDATE — all 4 checks pass
@@ -358,6 +371,7 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-02-01 | **Project Workflows** (PR #111) + owner/manager fixes | Complete |
 | 2026-02-03 | **Gateway API Sync + TX UX Audit** — 6 issues closed, types regen | Complete |
 | 2026-02-03 | **Draft Task Delete Fix** — #147/#148, typed assets, TX audit 9/16 | Complete |
+| 2026-02-03 | **Contributor TX Cleanup** — All 3 contributor TXs production-ready | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
 ---

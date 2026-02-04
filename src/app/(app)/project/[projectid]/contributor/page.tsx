@@ -132,14 +132,13 @@ function ContributorDashboardContent() {
 
   // React Query hooks — single source of truth
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
-  const contributorStatePolicyId = projectDetail?.contributorStateId;
+  const contributorStateId = projectDetail?.contributorStateId ?? null;
   const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(
-    contributorStatePolicyId ?? undefined
+    contributorStateId ?? undefined
   );
 
   // Derived contributor state from hook data
   const [contributorStatus, setContributorStatus] = useState<ContributorStatus>("not_enrolled");
-  const contributorStateId = contributorStatePolicyId ?? null;
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // DB commitment record for the current task (fetched reactively via hook)
@@ -196,14 +195,6 @@ function ContributorDashboardContent() {
     return computeTaskHashFromDb(dbTask);
   };
 
-  /**
-   * Get the contributor_state_policy_id for a task.
-   * All tasks in same project share the policy ID, so use contributorStateId.
-   */
-  const getOnChainContributorStatePolicyId = (_dbTask: Task | null): string => {
-    return contributorStatePolicyId ?? "";
-  };
-
   // Check if evidence is valid (has actual content)
   const hasValidEvidence = taskEvidence?.content &&
     Array.isArray(taskEvidence.content) &&
@@ -219,11 +210,11 @@ function ContributorDashboardContent() {
   // Refresh all data: invalidate React Query caches + re-run orchestration
   const refreshData = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
-    if (contributorStatePolicyId) {
-      await queryClient.invalidateQueries({ queryKey: projectKeys.tasks(contributorStatePolicyId) });
+    if (contributorStateId) {
+      await queryClient.invalidateQueries({ queryKey: projectKeys.tasks(contributorStateId) });
     }
     setOrchestrationTrigger((prev) => prev + 1);
-  }, [queryClient, projectId, contributorStatePolicyId]);
+  }, [queryClient, projectId, contributorStateId]);
 
   // Auto-select first live task when tasks load
   useEffect(() => {
@@ -602,6 +593,7 @@ function ContributorDashboardContent() {
 
                 <TaskAction
                   projectNftPolicyId={projectId}
+                  contributorStateId={contributorStateId ?? "0".repeat(56)}
                   taskHash={taskId}
                   taskCode={matchedDbTask ? `TASK_${matchedDbTask.index}` : "TASK"}
                   taskTitle={matchedDbTask?.title ?? undefined}
@@ -771,7 +763,6 @@ function ContributorDashboardContent() {
           <TaskCommit
             projectNftPolicyId={projectId}
             contributorStateId={contributorStateId ?? "0".repeat(56)}
-            contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
             projectTitle={projectDetail.title || undefined}
             taskHash={getOnChainTaskId(selectedTask)}
             taskCode={`TASK_${selectedTask.index}`}
@@ -794,7 +785,6 @@ function ContributorDashboardContent() {
             <TaskCommit
               projectNftPolicyId={projectId}
               contributorStateId={contributorStateId ?? "0".repeat(56)}
-              contributorStatePolicyId={getOnChainContributorStatePolicyId(selectedTask)}
               projectTitle={projectDetail.title || undefined}
               taskHash={getOnChainTaskId(selectedTask)}
               taskCode={`TASK_${selectedTask.index}`}

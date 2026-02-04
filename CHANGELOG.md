@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **V1 Token Detection on Home Page** (February 4, 2026): Auto-detect V1 access tokens on wallet connect and show inline migrate UX
+  - New `V1MigrateCard` component (`components/landing/v1-migrate-card.tsx`) — reusable claim card with `onMinted` callback
+  - `LandingHero` scans wallet for V1 policy ID after auth when no V2 token exists
+  - Flow: wallet connect → V1 scan → migrate card → claim TX → FirstLoginCard ceremony
+  - No separate page visit required — migration happens inline on the home page
 - **V1→V2 Access Token Migration Page** (February 4, 2026): Standalone `/migrate` route for V1 token holders to claim V2 tokens
   - No sidebar or auth required — wallet connect, V1 token detection, and claim TX only
   - 5-state UI: no wallet → scanning → no token found → ready to claim → success

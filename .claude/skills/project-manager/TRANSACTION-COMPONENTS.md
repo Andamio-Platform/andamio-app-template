@@ -122,7 +122,7 @@ All 18 V2 transactions are implemented using the gateway auto-confirmation patte
 | Definition | Component | Role |
 |------------|-----------|------|
 | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT` | `mint-access-token.tsx` | general |
-| `GLOBAL_USER_ACCESS_TOKEN_CLAIM` | `migrate/page.tsx` | general |
+| `GLOBAL_USER_ACCESS_TOKEN_CLAIM` | `v1-migrate-card.tsx`, `migrate/page.tsx` | general |
 | `INSTANCE_COURSE_CREATE` | `create-course.tsx` | instance-owner |
 | `INSTANCE_PROJECT_CREATE` | `create-project.tsx` | instance-owner |
 | `COURSE_OWNER_TEACHERS_MANAGE` | `teachers-update.tsx` | course-owner |

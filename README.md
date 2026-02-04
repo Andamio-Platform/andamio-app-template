@@ -324,10 +324,44 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 - [packages/andamio-transactions/README.md](./packages/andamio-transactions/README.md) - Transaction package docs
 - [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
 
-### Template Sync
-- [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md) - Features excluded from template
-- [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md) - Sync workflow details
-- [/sync-template skill](./.claude/skills/sync-template/SKILL.md) - Claude skill for syncing
+## Syncing with Upstream
+
+This template tracks [`andamio-app-v2`](https://github.com/Andamio-Platform/andamio-app-v2) (the production Andamio app). Both repos share git history, so upstream changes can be pulled in via rebase.
+
+### One-time setup
+
+```bash
+git remote add upstream git@github.com:Andamio-Platform/andamio-app-v2.git
+```
+
+### Periodic sync
+
+```bash
+git fetch upstream
+git rebase upstream/main
+# Resolve conflicts in divergence commit(s) if any
+git push --force-with-lease
+```
+
+### What syncs automatically
+
+- Access token, Course V2, Project V2 changes
+- Design system and component updates
+- Auth system improvements
+- Type generation pipeline changes
+- Dependency updates
+
+### What may cause conflicts
+
+- `src/config/navigation.ts` — sidebar config (template removed Dev Tools section)
+- `src/lib/andamio-auth.ts` — auth functions (template removed developer auth)
+- New routes added in the production app that the template doesn't include
+
+### When to stop rebasing
+
+- When conflicts become frequent and tedious
+- When you start building template-specific features that diverge significantly
+- This is the success signal — the repos are mature enough to be independent
 
 ## Resources
 

@@ -285,7 +285,7 @@ Add this package as a dependency:
 }
 ```
 
-### 4. Integrate with andamio-t3-app-template
+### 4. Integrate with andamio-app-v2
 
 Use for:
 - Transaction building

@@ -1008,7 +1008,7 @@ When protocol specs change in andamio-docs:
 ## Development
 
 This package is embedded in the Andamio T3 App Template at:
-`andamio-t3-app-template/packages/andamio-transactions/`
+`andamio-app-v2/packages/andamio-transactions/`
 
 This allows direct editing of transaction definitions without publishing. The main app's `package.json` references it via `"@andamio/transactions": "file:packages/andamio-transactions"`.
 

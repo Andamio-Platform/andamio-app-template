@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Andamio-Platform/andamio-t3-app-template.git
-   cd andamio-t3-app-template
+   git clone https://github.com/Andamio-Platform/andamio-app-v2.git
+   cd andamio-app-v2
    ```
 
 2. **Install dependencies**

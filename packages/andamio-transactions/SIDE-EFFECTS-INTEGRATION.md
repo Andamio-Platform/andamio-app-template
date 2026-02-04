@@ -258,7 +258,7 @@ packages/andamio-transactions/
 ### T3 App Template
 
 ```
-andamio-t3-app-template/
+andamio-app-v2/
 ├── src/
 │   ├── hooks/
 │   │   └── use-andamio-transaction.ts ⭐ NEW

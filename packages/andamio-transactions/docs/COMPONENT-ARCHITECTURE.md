@@ -267,7 +267,7 @@ ui: {
 ## File Structure
 
 ```
-andamio-t3-app-template/
+andamio-app-v2/
 ├── packages/
 │   └── andamio-transactions/          # Transaction definitions (embedded)
 │       ├── src/

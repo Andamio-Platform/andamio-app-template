@@ -59,8 +59,8 @@ Before starting, ensure you have:
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/Andamio-Platform/andamio-t3-app-template.git
-cd andamio-t3-app-template
+git clone https://github.com/Andamio-Platform/andamio-app-v2.git
+cd andamio-app-v2
 npm install
 ```
 

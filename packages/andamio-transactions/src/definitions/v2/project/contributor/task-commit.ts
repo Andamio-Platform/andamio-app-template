@@ -91,7 +91,7 @@ export const PROJECT_CONTRIBUTOR_TASK_COMMIT: AndamioTransactionDefinition = {
         task_hash: { source: "context", path: "txParams.task_hash" },
       },
       // Non-critical: Task may not exist in DB yet if task_hash wasn't synced
-      // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+      // See: https://github.com/Andamio-Platform/andamio-app-v2/issues/44
       critical: false,
     },
     {
@@ -117,7 +117,7 @@ export const PROJECT_CONTRIBUTOR_TASK_COMMIT: AndamioTransactionDefinition = {
         tx_hash: { source: "context", path: "txHash" },
       },
       // Non-critical until task sync is implemented
-      // See: https://github.com/Andamio-Platform/andamio-t3-app-template/issues/44
+      // See: https://github.com/Andamio-Platform/andamio-app-v2/issues/44
       critical: false,
     },
   ],

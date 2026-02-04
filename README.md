@@ -33,8 +33,8 @@ A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadc
 
 ```bash
 # Clone the repository
-git clone https://github.com/Andamio-Platform/andamio-t3-app-template.git
-cd andamio-t3-app-template
+git clone https://github.com/Andamio-Platform/andamio-app-v2.git
+cd andamio-app-v2
 
 # Install dependencies
 npm install
@@ -57,7 +57,7 @@ The template connects to the deployed Andamio APIs by default (no local backend 
 This is a **standalone repository** with an embedded transactions package:
 
 ```
-andamio-t3-app-template/
+andamio-app-v2/
 ├── src/                              # Next.js app source
 │   ├── app/(app)/                    # Pages with sidebar layout
 │   │   ├── dashboard/                # User dashboard

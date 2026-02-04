@@ -44,7 +44,7 @@ Sibling repos are located at `../` relative to the current project:
 | Project | Local Path | GitHub | Purpose |
 |---------|------------|--------|---------|
 | Andamio API Gateway | `../andamio-api` | `Andamio-Platform/andamio-api` | Unified API gateway (primary backend) |
-| T3 App Template | `.` or `../andamio-t3-app-template` | `Andamio-Platform/andamio-t3-app-template` | Frontend reference implementation |
+| T3 App Template | `.` or `../andamio-app-v2` | `Andamio-Platform/andamio-app-v2` | Frontend reference implementation |
 | Andamioscan | `../andamioscan` | `Andamio-Platform/andamioscan` | On-chain data indexer (internal to gateway) |
 
 **Note**: The gateway consolidates what was previously 3 separate APIs (DB API, TX API, Andamioscan). Issues should generally be routed to the gateway team first.

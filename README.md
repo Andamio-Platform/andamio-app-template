@@ -86,8 +86,8 @@ cd /path/to/andamio-app-template
 
 ```bash
 # Clone the repository
-git clone https://github.com/Andamio-Platform/andamio-app-v2.git
-cd andamio-app-v2
+git clone https://github.com/Andamio-Platform/andamio-app-template.git
+cd andamio-app-template
 
 # Install dependencies
 npm install
@@ -110,7 +110,7 @@ The template connects to the deployed Andamio APIs by default (no local backend 
 This is a **standalone repository** with an embedded transactions package:
 
 ```
-andamio-app-v2/
+andamio-app-template/
 ├── src/                              # Next.js app source
 │   ├── app/(app)/                    # Pages with sidebar layout
 │   │   ├── dashboard/                # User dashboard

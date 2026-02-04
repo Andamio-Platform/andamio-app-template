@@ -15,9 +15,9 @@ Extract a forkable template (`andamio-app-template`) from the production app (`a
 - [x] Step 1: Update local remote URL
 - [x] Step 1: Rename local directory
 - [x] Step 2: Update internal references in `andamio-app-v2`
-- [ ] Step 3: Create `andamio-app-template` repo
-- [ ] Step 4: Single divergence commit on template
-- [ ] Step 5: Document rebase workflow
+- [x] Step 3: Create `andamio-app-template` repo
+- [x] Step 4: Single divergence commit on template
+- [x] Step 5: Document rebase workflow
 
 ---
 

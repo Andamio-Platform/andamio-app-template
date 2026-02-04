@@ -11,13 +11,9 @@ import {
   CourseIcon,
   ProjectIcon,
   EditIcon,
-  SitemapIcon,
-  ThemeIcon,
-  KeyIcon,
   CredentialIcon,
 } from "~/components/icons";
 import type { NavSection } from "~/types/ui";
-import { BRANDING } from "./branding";
 
 /**
  * Main sidebar navigation structure.
@@ -26,7 +22,6 @@ import { BRANDING } from "./branding";
  * - Overview: Personal hub (Dashboard)
  * - Discover: Public browsing for Learners & Contributors
  * - Studio: Creator tools for managing owned courses & projects
- * - Dev Tools: Development utilities (muted styling)
  */
 export const SIDEBAR_NAVIGATION: NavSection[] = [
   {
@@ -78,30 +73,6 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
         href: "/studio/project",
         icon: EditIcon,
         description: "Manage your projects",
-      },
-    ],
-  },
-  {
-    title: "Dev Tools",
-    muted: true,
-    items: [
-      {
-        name: "API Setup",
-        href: "/api-setup",
-        icon: KeyIcon,
-        description: "Gateway registration",
-      },
-      {
-        name: "Component Library",
-        href: "/components",
-        icon: ThemeIcon,
-        description: `${BRANDING.name} UI reference`,
-      },
-      {
-        name: "Sitemap",
-        href: "/sitemap",
-        icon: SitemapIcon,
-        description: "All routes",
       },
     ],
   },

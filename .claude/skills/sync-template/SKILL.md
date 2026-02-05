@@ -21,22 +21,23 @@ andamio-app-v2                    andamio-app-template
       └──── rebase ─────────────────────►│
                                          │
                                     [divergence commits]
-                                    ├── "template: remove dev routes"
-                                    ├── "template: remove Dev Tools nav"
-                                    ├── "template: remove dev auth functions"
-                                    ├── "template: remove workflows"
-                                    ├── "template: remove Dockerfile"
-                                    └── "template: rename package"
+                                    ├── "template: initial divergence"
+                                    │     (dev routes, nav, auth, package, README)
+                                    ├── "template: remove deployment workflows"
+                                    └── "template: remove Dockerfile"
 ```
 
-### Why Atomic Commits?
+### Hybrid Approach
 
-Using separate commits for each removal type prevents "compound conflicts":
+The template uses a hybrid divergence strategy:
 
-- If app changes `navigation.ts`, you only conflict with the nav commit
-- If app changes `Dockerfile`, you only conflict with the Dockerfile commit
-- Each conflict is small and focused, easy to resolve
-- Adding new removals = adding new commits (not editing existing ones)
+1. **Initial divergence commit** — One commit from template extraction that removes core app-specific items (dev routes, Dev Tools nav, dev auth functions, package name, README)
+2. **Atomic commits on top** — Additional removals added as separate, focused commits
+
+This prevents "compound conflicts":
+- If app changes `Dockerfile`, only the Dockerfile commit conflicts
+- If app changes `navigation.ts`, only the initial divergence commit conflicts
+- Adding new removals = adding new atomic commits (not editing existing ones)
 
 ## Prerequisites
 
@@ -181,14 +182,12 @@ Confirm:
 
 Example of correct structure:
 ```
-abc1234 template: rename package
-def5678 template: remove Dockerfile
-ghi9012 template: remove workflows
-jkl3456 template: remove dev auth functions
-mno7890 template: remove Dev Tools nav
-pqr1234 template: remove dev routes
-stu5678 feat: latest app feature        ← app commits below
-vwx9012 fix: app bug fix
+abc1234 template: remove Dockerfile           ← atomic commit
+def5678 template: remove deployment workflows ← atomic commit
+ghi9012 template: initial divergence          ← original divergence
+jkl3456 feat: add /sync-template skill        ← app commits below
+mno7890 feat: latest app feature
+pqr1234 fix: app bug fix
 ```
 
 ## Conflict Resolution Reference

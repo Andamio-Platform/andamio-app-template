@@ -48,64 +48,78 @@ git push template main
 
 Then clone `andamio-app-template` separately for template work.
 
-## Step 4: Atomic Divergence Commits on Template
+## Step 4: Divergence Commits on Template
 
-In the `andamio-app-template` repo, create **separate commits** for each removal type. This prevents "compound conflicts" — when the app changes any file, you only conflict with the specific commit that touches that file.
+The template maintains divergence commits that remove app-specific features. We use a hybrid approach:
 
-### Commit Structure
+1. **Initial divergence commit** — Created during template extraction, removes core app-specific items
+2. **Atomic commits on top** — Additional removals added as separate, focused commits
 
-Each commit should:
-- Do ONE thing (remove one route, one file, one nav section)
-- Use the `template:` prefix for easy identification
-- Be as small as possible to minimize conflict surface
+This prevents "compound conflicts" — when the app changes any file, you only conflict with the specific commit that touches that file.
 
-### Recommended Commit Sequence
+### Current Divergence Commit Structure
+
+```
+template main:
+  │
+  ├── [app commits from rebase...]
+  │
+  ├── template: initial divergence        ← Original commit (keeps existing)
+  │     • Removes dev routes (api-setup/, components/, editor/, sitemap/)
+  │     • Removes Dev Tools nav section
+  │     • Removes dev auth functions
+  │     • Updates package.json name
+  │     • Updates README
+  │
+  ├── template: remove deployment workflows  ← Atomic commit
+  │
+  └── template: remove Dockerfile            ← Atomic commit
+```
+
+### What the Initial Divergence Commit Contains
+
+| Removal | Files Affected |
+|---------|----------------|
+| Dev routes | `src/app/(app)/api-setup/`, `components/`, `editor/`, `sitemap/` |
+| Dev Tools nav | `src/config/navigation.ts` |
+| Dev auth functions | `src/lib/andamio-auth.ts` |
+| Package name | `package.json` (name field only) |
+| README | `README.md` (template-specific instructions) |
+
+### Atomic Commits Added On Top
+
+These were added after the initial divergence to keep conflicts isolated:
 
 ```bash
-# Commit 1: Remove dev routes
-git rm -r src/app/(app)/api-setup src/app/(app)/components src/app/(app)/editor src/app/(app)/sitemap
-git commit -m "template: remove dev-only routes"
-
-# Commit 2: Remove Dev Tools from navigation
-# (edit src/config/navigation.ts to remove Dev Tools section)
-git add src/config/navigation.ts
-git commit -m "template: remove Dev Tools nav section"
-
-# Commit 3: Remove dev auth functions
-# (edit src/lib/andamio-auth.ts to remove dev registration functions)
-git add src/lib/andamio-auth.ts
-git commit -m "template: remove dev registration functions"
-
-# Commit 4: Remove workflows
+# Already added:
 git rm -r .github/workflows
 git commit -m "template: remove deployment workflows"
 
-# Commit 5: Remove Dockerfile
 git rm Dockerfile
 git commit -m "template: remove Dockerfile"
-
-# Commit 6: Update package.json name
-# (edit package.json to change name to andamio-app-template)
-git add package.json
-git commit -m "template: rename to andamio-app-template"
-
-# Commit 7: Update README
-# (edit README.md with template-specific setup instructions)
-git add README.md
-git commit -m "template: update README for template usage"
 ```
-
-### What Each Commit Removes
 
 | Commit | Removes | Conflict Trigger |
 |--------|---------|------------------|
-| 1 | Dev routes (`api-setup/`, `components/`, `editor/`, `sitemap/`) | App adds files to these dirs |
-| 2 | Dev Tools nav section | App modifies `navigation.ts` |
-| 3 | Dev auth functions | App modifies `andamio-auth.ts` |
-| 4 | Workflows (`.github/workflows/`) | App adds/modifies workflows |
-| 5 | Dockerfile | App modifies Dockerfile |
-| 6 | Package name | App modifies `package.json` name |
-| 7 | README content | App modifies README |
+| `template: remove deployment workflows` | `.github/workflows/` | App adds/modifies workflows |
+| `template: remove Dockerfile` | `Dockerfile` | App modifies Dockerfile |
+
+### Adding Future Removals
+
+When new app-specific features need to be excluded:
+
+1. **Create a NEW commit on top** (don't amend existing ones)
+2. **Use the `template:` prefix** for easy identification
+3. **Keep it focused** on one removal
+4. **Update this document** to track what's removed
+
+Example:
+```bash
+# In andamio-app-template
+git rm -r src/app/(app)/some-new-app-feature/
+git commit -m "template: remove some-new-app-feature"
+git push
+```
 
 ### Keep Everything Else
 
@@ -116,15 +130,6 @@ These should NOT be in divergence commits (they sync automatically):
 - Auth system, gateway proxy, design system, TX hooks
 - Type generation pipeline
 - Dependencies in package.json (except name field)
-
-### Adding Future Removals
-
-When new app-specific features need to be excluded:
-
-1. **Create a NEW commit** (don't amend existing ones)
-2. **Use the `template:` prefix**
-3. **Keep it focused** on one removal
-4. **Update this document** to track what's removed
 
 ## Step 5: Document Rebase Workflow
 

@@ -24,7 +24,8 @@ andamio-app-v2                    andamio-app-template
                                     ├── "template: initial divergence"
                                     │     (dev routes, nav, auth, package, README)
                                     ├── "template: remove deployment workflows"
-                                    └── "template: remove Dockerfile"
+                                    ├── "template: remove Dockerfile"
+                                    └── "template: remove NOT_SYNCED_WITH_TEMPLATE.md"
 ```
 
 ### Hybrid Approach
@@ -183,12 +184,12 @@ Confirm:
 
 Example of correct structure:
 ```
-abc1234 template: remove Dockerfile           ← atomic commit
-def5678 template: remove deployment workflows ← atomic commit
-ghi9012 template: initial divergence          ← original divergence
-jkl3456 feat: add /sync-template skill        ← app commits below
-mno7890 feat: latest app feature
-pqr1234 fix: app bug fix
+abc1234 template: remove NOT_SYNCED_WITH_TEMPLATE.md ← atomic commit
+def5678 template: remove Dockerfile                  ← atomic commit
+ghi9012 template: remove deployment workflows        ← atomic commit
+jkl3456 template: initial divergence                 ← original divergence
+mno7890 feat: add /sync-template skill               ← app commits below
+pqr1234 feat: latest app feature
 ```
 
 ## Conflict Resolution Reference

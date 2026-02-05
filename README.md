@@ -1,4 +1,4 @@
-# Andamio T3 App Template
+# Andamio App V2
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -6,9 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-0.5.0-green.svg)](./CHANGELOG.md)
 
-A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
+Production Cardano dApp for [app.andamio.io](https://app.andamio.io), built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
 
-**Version**: 0.5.0 | **Last Updated**: January 14, 2026 | [CHANGELOG](./CHANGELOG.md)
+**Version**: 0.5.0 | **Last Updated**: February 5, 2026 | [CHANGELOG](./CHANGELOG.md)
 
 ## Current Status
 
@@ -19,6 +19,59 @@ A full-featured Cardano dApp template built on the T3 Stack with Mesh SDK, shadc
 | **Project System** | 🚧 In Progress | Treasury, tasks, commitments (9 tx components) |
 
 📊 **Detailed Status**: [STATUS.md](./.claude/skills/project-manager/STATUS.md) | [ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md)
+
+## App vs Template
+
+This repository (`andamio-app-v2`) is the **production app** for app.andamio.io. A separate **forkable template** exists for external developers:
+
+| Repository | Purpose | URL |
+|------------|---------|-----|
+| `andamio-app-v2` | Production app (this repo) | [GitHub](https://github.com/Andamio-Platform/andamio-app-v2) |
+| `andamio-app-template` | Forkable template | [GitHub](https://github.com/Andamio-Platform/andamio-app-template) |
+
+### How They Stay in Sync
+
+The template tracks this app via **git rebase**. When we ship improvements here, the template rebases to incorporate them while preserving its divergence commits (removals of app-specific features).
+
+```
+andamio-app-v2                    andamio-app-template
+      │                                  │
+ [new feature]                           │
+ [bug fix]                               │
+      │                                  │
+      └──── rebase ─────────────────────►│
+                                         │
+                                    [divergence commits]
+                                    (removes app-specific features)
+```
+
+### What's NOT in the Template
+
+The template excludes app-specific features:
+- Dev-only routes (API Setup, Component Showcase, Editor Demo, Sitemap)
+- "Dev Tools" sidebar navigation section
+- Developer registration auth functions
+- GitHub deployment workflows
+- Dockerfile
+
+📋 **Full list**: [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md)
+
+### Syncing Changes
+
+Use the `/sync-template` Claude skill to sync changes:
+
+```bash
+# From the template repo (not this repo)
+cd /path/to/andamio-app-template
+
+# Run the skill - it will:
+# 1. Fetch latest from andamio-app-v2
+# 2. Rebase divergence commits on top
+# 3. Help resolve any conflicts
+# 4. Push the rebased history
+```
+
+📖 **Full workflow**: [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md)
 
 ## Tech Stack
 
@@ -270,6 +323,11 @@ Add to sidebar in `src/components/layout/app-sidebar.tsx`.
 - [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
 - [packages/andamio-transactions/README.md](./packages/andamio-transactions/README.md) - Transaction package docs
 - [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
+
+### Template Sync
+- [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md) - Features excluded from template
+- [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md) - Sync workflow details
+- [/sync-template skill](./.claude/skills/sync-template/SKILL.md) - Claude skill for syncing
 
 ## Resources
 

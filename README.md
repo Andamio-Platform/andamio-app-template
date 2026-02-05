@@ -1,373 +1,216 @@
-# Andamio App V2
+# Andamio App Template
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![Cardano](https://img.shields.io/badge/Cardano-Mesh_SDK-0033AD?logo=cardano)](https://meshjs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0--rc6-green.svg)](./CHANGELOG.md)
 
-Production Cardano dApp for [app.andamio.io](https://app.andamio.io), built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
-
-**Version**: 2.0.0-rc6 | **Last Updated**: February 5, 2026 | [CHANGELOG](./CHANGELOG.md)
-
-## Current Status
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **Course & Learning** | ✅ Complete | 16 transactions, full learner/instructor lifecycle |
-| **Creator Studio** | ✅ Complete | Course/module editing, on-chain sync, rich text |
-| **Project System** | 🚧 In Progress | Treasury, tasks, commitments (9 tx components) |
-
-📊 **Detailed Status**: [STATUS.md](./.claude/skills/project-manager/STATUS.md) | [ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md)
-
-## App vs Template
-
-This repository (`andamio-app-v2`) is the **production app** for app.andamio.io. A separate **forkable template** exists for external developers:
-
-| Repository | Purpose | URL |
-|------------|---------|-----|
-| `andamio-app-v2` | Production app (this repo) | [GitHub](https://github.com/Andamio-Platform/andamio-app-v2) |
-| `andamio-app-template` | Forkable template | [GitHub](https://github.com/Andamio-Platform/andamio-app-template) |
-
-### How They Stay in Sync
-
-The template tracks this app via **git rebase**. When we ship improvements here, the template rebases to incorporate them while preserving its divergence commits (removals of app-specific features).
-
-```
-andamio-app-v2                    andamio-app-template
-      │                                  │
- [new feature]                           │
- [bug fix]                               │
-      │                                  │
-      └──── rebase ─────────────────────►│
-                                         │
-                                    [divergence commits]
-                                    (removes app-specific features)
-```
-
-### What's NOT in the Template
-
-The template excludes app-specific features:
-- Dev-only routes (API Setup, Component Showcase, Editor Demo, Sitemap)
-- "Dev Tools" sidebar navigation section
-- Developer registration auth functions
-- GitHub deployment workflows
-- Dockerfile
-
-📋 **Full list**: [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md)
-
-### Syncing Changes
-
-Use the `/sync-template` Claude skill to sync changes:
-
-```bash
-# From the template repo (not this repo)
-cd /path/to/andamio-app-template
-
-# Run the skill - it will:
-# 1. Fetch latest from andamio-app-v2
-# 2. Rebase divergence commits on top
-# 3. Help resolve any conflicts
-# 4. Push the rebased history
-```
-
-📖 **Full workflow**: [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md)
-
-## Tech Stack
-
-- **Framework**: Next.js 15 (App Router) + TypeScript
-- **API**: tRPC v11 + Unified Andamio API Gateway
-- **Styling**: Tailwind CSS v4 + shadcn/ui
-- **Blockchain**: Cardano via Mesh SDK
-- **Editor**: Tiptap with custom extensions
-- **Transactions**: `@andamio/transactions` (embedded local package)
+Build Cardano dApps with the Andamio Platform. This template gives you a production-ready foundation with wallet authentication, on-chain transactions, and a complete UI system.
 
 ## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/Andamio-Platform/andamio-app-template.git
-cd andamio-app-template
+# Clone the template
+git clone https://github.com/Andamio-Platform/andamio-app-template.git my-app
+cd my-app
 
 # Install dependencies
 npm install
 
-# Configure environment
+# Set up environment
 cp .env.example .env
+# Edit .env with your API key (see below)
 
-# Start development server
+# Start development
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
-**Prerequisites**: Node.js 20+
+## Get Your API Key
 
-The template connects to the deployed Andamio APIs by default (no local backend required).
+The template connects to Andamio's hosted APIs. You need an API key to build and submit transactions.
 
-## Repository Structure
+1. Go to [dev.api.andamio.io](https://dev.api.andamio.io) (preprod) or [api.andamio.io](https://api.andamio.io) (mainnet)
+2. Connect your wallet and register
+3. Generate an API key
+4. Add it to your `.env` file:
 
-This is a **standalone repository** with an embedded transactions package:
-
-```
-andamio-app-template/
-├── src/                              # Next.js app source
-│   ├── app/(app)/                    # Pages with sidebar layout
-│   │   ├── dashboard/                # User dashboard
-│   │   ├── course/[coursenft]/       # Learner course views
-│   │   ├── studio/                   # Creator Studio
-│   │   │   ├── course/[coursenft]/   # Course editor (tabbed)
-│   │   │   └── project/[projectid]/  # Project editor (tabbed)
-│   │   └── project/[projectid]/      # Public project views
-│   │
-│   ├── components/
-│   │   ├── andamio/                  # UI wrappers (68+ components)
-│   │   ├── auth/                     # Auth components + RequireAuth
-│   │   ├── editor/                   # Tiptap editor (see editor/README.md)
-│   │   ├── studio/                   # Studio components (StudioTabs)
-│   │   └── transactions/             # Transaction components (16+)
-│   │
-│   ├── hooks/
-│   │   ├── use-andamio-auth.ts       # Auth state + authenticatedFetch
-│   │   ├── use-andamio-fetch.ts      # Standardized data fetching
-│   │   └── use-pending-tx-watcher.ts # Transaction monitoring
-│   │
-│   └── lib/
-│       ├── cardano-utils.ts          # ADA/Lovelace utilities
-│       └── constants.ts              # UI timeouts, explorer URLs
-│
-├── packages/
-│   └── andamio-transactions/         # Transaction definitions (deprecated)
-│       ├── src/definitions/          # V1 transaction definitions
-│       └── README.md                 # Package docs
-│
-└── .claude/skills/                   # AI-assisted development skills
+```bash
+ANDAMIO_API_KEY="your-api-key-here"
 ```
 
-**Hash Utilities**: Local implementations at `src/lib/utils/`:
-- `slt-hash.ts` - Module token name computation
-- `assignment-info-hash.ts` - Evidence hashing
-- `task-hash.ts` - Project task ID computation
+## What's Included
 
-> The `@andamio/transactions` package is embedded but deprecated. V2 transactions use `useSimpleTransaction` with gateway auto-confirmation.
+### Routes
 
-## Key Features
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page with wallet connect |
+| `/dashboard` | User dashboard after login |
+| `/course` | Browse and enroll in courses |
+| `/course/[id]` | Course detail with modules |
+| `/project` | Browse and join projects |
+| `/project/[id]` | Project detail with tasks |
+| `/studio` | Creator dashboard |
+| `/studio/course/*` | Course creation and management |
+| `/studio/project/*` | Project creation and management |
+| `/credentials` | View earned credentials |
+
+### Features
+
+- **Wallet Authentication** — Connect wallet, sign a message, get a JWT. One hook: `useAndamioAuth()`
+- **Protected Routes** — Wrap any page with `<RequireAuth>` for auth-gated content
+- **On-Chain Transactions** — Build, sign, and submit Cardano transactions with real-time status
+- **Type-Safe API** — Auto-generated TypeScript types from the Andamio API spec
+- **Rich Text Editor** — Tiptap-based editor with markdown support
+- **Design System** — shadcn/ui components with semantic color tokens
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript 5.8 |
+| Styling | Tailwind CSS 4 + shadcn/ui |
+| Blockchain | Cardano via Mesh SDK |
+| API | tRPC v11 + React Query |
+| Editor | Tiptap with extensions |
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── (app)/              # Authenticated routes (sidebar layout)
+│   │   ├── dashboard/      # User dashboard
+│   │   ├── course/         # Course views (learner)
+│   │   ├── project/        # Project views (contributor)
+│   │   ├── studio/         # Creator tools
+│   │   └── credentials/    # Credential display
+│   └── migrate/            # Access token migration
+│
+├── components/
+│   ├── andamio/            # Andamio design system (68+ components)
+│   ├── auth/               # Auth components + RequireAuth wrapper
+│   ├── editor/             # Tiptap rich text editor
+│   ├── transactions/       # Transaction UI components
+│   └── ui/                 # shadcn/ui base components
+│
+├── hooks/
+│   ├── api/                # Data fetching hooks (courses, projects)
+│   └── tx/                 # Transaction hooks
+│
+├── lib/                    # Utilities (auth, API clients, helpers)
+└── types/generated/        # Auto-generated API types
+```
+
+## Common Patterns
 
 ### Authentication
-Wallet connection + JWT-based auth in a single flow:
 
 ```typescript
-const { isAuthenticated, authenticatedFetch, logout } = useAndamioAuth();
+import { useAndamioAuth } from "~/hooks/use-andamio-auth";
 
-// Auto-authenticates when wallet connects
-// logout() clears JWT AND disconnects wallet
+function MyComponent() {
+  const { isAuthenticated, user, logout } = useAndamioAuth();
+
+  if (!isAuthenticated) return <p>Please connect your wallet</p>;
+
+  return <p>Welcome, {user.alias}</p>;
+}
 ```
 
 ### Protected Pages
-Use the `RequireAuth` wrapper for auth-gated content:
 
 ```typescript
 import { RequireAuth } from "~/components/auth/require-auth";
 
-<RequireAuth title="Studio" description="Connect to access">
-  <StudioContent />
-</RequireAuth>
-```
-
-### Type-Safe API Calls
-Types are generated from the gateway OpenAPI spec:
-
-```typescript
-import { type CourseResponse } from "~/types/generated";
-
-const { data, isLoading, error } = useAndamioFetch<CourseResponse[]>({
-  endpoint: "/course/owner/courses/list",
-  authenticated: true,
-});
-```
-
-Regenerate types when the API changes: `npm run generate:types`
-
-### Rich Text Editor
-Two components for all content needs:
-
-```typescript
-import { ContentEditor, ContentViewer } from "~/components/editor";
-
-<ContentEditor content={content} onContentChange={setContent} showWordCount />
-<ContentViewer content={content} />
-```
-
-See [`src/components/editor/README.md`](./src/components/editor/README.md) for full documentation.
-
-### Cardano Utilities
-
-```typescript
-import { formatLovelace, adaToLovelace, LOVELACE_PER_ADA } from "~/lib/cardano-utils";
-
-formatLovelace(1000000);  // "1 ADA"
-adaToLovelace(5);         // 5000000
-```
-
-### Success Notifications
-
-```typescript
-import { useSuccessNotification, useCopyFeedback } from "~/hooks/use-success-notification";
-
-const { isSuccess, showSuccess } = useSuccessNotification();
-const { isCopied, copy } = useCopyFeedback();
-```
-
-### Explorer URLs
-
-Network-aware Cardano explorer URLs (supports mainnet, preprod, preview):
-
-```typescript
-import { getTransactionExplorerUrl, getTokenExplorerUrl } from "~/lib/constants";
-
-getTransactionExplorerUrl(txHash, "preprod");  // https://preprod.cardanoscan.io/transaction/...
-getTokenExplorerUrl(policyId, "mainnet");      // https://cardanoscan.io/token/...
-```
-
-### Debug Logging
-
-Conditional logging that's suppressed in production:
-
-```typescript
-import { authLogger, pendingTxLogger, learnerLogger } from "~/lib/debug-logger";
-
-authLogger.info("User authenticated");     // Only logs in development
-authLogger.error("Auth failed:", error);   // Errors always logged
-```
-
-## Data Sources
-
-The app uses the **Unified Andamio API Gateway** which combines all backend services:
-
-| Endpoint Category | Purpose |
-|-------------------|---------|
-| **Merged** (`/api/v2/*`) | Combined off-chain + on-chain data |
-| **On-chain** (`/v2/*`) | Indexed blockchain data (passthrough to Andamioscan) |
-| **Transactions** (`/v2/tx/*`) | Build unsigned transactions |
-| **Auth** (`/auth/*`) | User authentication |
-
-A legacy DB API is also available for some endpoints during migration.
-
-All APIs are deployed and accessible via environment variables - no local backend required.
-
-## Styling
-
-Use semantic colors only - never hardcoded Tailwind colors:
-
-```typescript
-// ✅ Correct
-<CheckCircle className="text-success" />
-<span className="text-destructive">Error</span>
-<p className="text-muted-foreground">Helper text</p>
-
-// ❌ Never
-<CheckCircle className="text-green-600" />
-```
-
-**Available**: `success`, `warning`, `info`, `destructive`, `primary`, `secondary`, `muted`
-
-See [docs/styling/SEMANTIC-COLORS.md](./docs/styling/SEMANTIC-COLORS.md) for complete guide.
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Start development server with Turbopack hot reload |
-| `npm run build` | Create optimized production build |
-| `npm run start` | Run production server (after build) |
-| `npm run check` | Run lint + typecheck together (use before commits) |
-| `npm run typecheck` | TypeScript type checking only |
-| `npm run lint` | ESLint code quality check |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format:write` | Format code with Prettier |
-| `npm run format:check` | Check formatting without changes |
-| `npm run preview` | Build and start production locally |
-
-## Adding a New Page
-
-```typescript
-// src/app/(app)/my-page/page.tsx
-"use client";
-
-import { RequireAuth } from "~/components/auth/require-auth";
-
-export default function MyPage() {
+export default function ProtectedPage() {
   return (
-    <RequireAuth title="My Page" description="Connect to view">
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">My Page</h1>
-        {/* Content */}
-      </div>
+    <RequireAuth title="My Page" description="Connect wallet to view">
+      <MyContent />
     </RequireAuth>
   );
 }
 ```
 
-Add to sidebar in `src/components/layout/app-sidebar.tsx`.
+### Fetching Data
 
-## Documentation
+```typescript
+import { useCourse } from "~/hooks/api/use-course";
 
-### Getting Started
-- [.claude/skills/project-manager/GETTING-STARTED.md](./.claude/skills/project-manager/GETTING-STARTED.md) - **New? Start here**
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [CHANGELOG.md](./CHANGELOG.md) - Version history
+function CourseDetail({ courseId }: { courseId: string }) {
+  const { data: course, isLoading } = useCourse(courseId);
 
-### Reference
-- [.claude/skills/project-manager/STATUS.md](./.claude/skills/project-manager/STATUS.md) - Implementation status
-- [.claude/skills/project-manager/ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md) - Development roadmap
-- [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
-- [packages/andamio-transactions/README.md](./packages/andamio-transactions/README.md) - Transaction package docs
-- [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
-
-## Syncing with Upstream
-
-This template tracks [`andamio-app-v2`](https://github.com/Andamio-Platform/andamio-app-v2) (the production Andamio app). Both repos share git history, so upstream changes can be pulled in via rebase.
-
-### One-time setup
-
-```bash
-git remote add upstream git@github.com:Andamio-Platform/andamio-app-v2.git
+  if (isLoading) return <Skeleton />;
+  return <h1>{course.title}</h1>;
+}
 ```
 
-### Periodic sync
+### Submitting Transactions
 
-```bash
-git fetch upstream
-git rebase upstream/main
-# Resolve conflicts in divergence commit(s) if any
-git push --force-with-lease
+```typescript
+import { useTransaction } from "~/hooks/tx/use-transaction";
+
+function EnrollButton({ courseId }: { courseId: string }) {
+  const { submit, isPending } = useTransaction({
+    txType: "COURSE_ENROLLMENT",
+    onSuccess: () => toast.success("Enrolled!"),
+  });
+
+  return (
+    <Button onClick={() => submit({ courseId })} disabled={isPending}>
+      {isPending ? "Processing..." : "Enroll"}
+    </Button>
+  );
+}
 ```
 
-### What syncs automatically
+## Scripts
 
-- Access token, Course V2, Project V2 changes
-- Design system and component updates
-- Auth system improvements
-- Type generation pipeline changes
-- Dependency updates
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (Turbopack) |
+| `npm run build` | Production build |
+| `npm run check` | Lint + typecheck |
+| `npm run generate:types` | Regenerate API types |
 
-### What may cause conflicts
+## Environment Variables
 
-- `src/config/navigation.ts` — sidebar config (template removed Dev Tools section)
-- `src/lib/andamio-auth.ts` — auth functions (template removed developer auth)
-- New routes added in the production app that the template doesn't include
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANDAMIO_API_KEY` | Yes | Your Andamio API key |
+| `NEXT_PUBLIC_ANDAMIO_GATEWAY_URL` | Yes | API gateway URL |
+| `NEXT_PUBLIC_CARDANO_NETWORK` | Yes | `preprod` or `mainnet` |
+| `NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID` | Yes | Access token policy ID |
 
-### When to stop rebasing
+See `.env.example` for all options and default values.
 
-- When conflicts become frequent and tedious
-- When you start building template-specific features that diverge significantly
-- This is the success signal — the repos are mature enough to be independent
+## Styling Guidelines
 
-## Resources
+Use semantic colors from the design system:
 
-- [Andamio Platform](https://andamio.io) | [Andamio Docs](https://docs.andamio.io)
-- [T3 Stack](https://create.t3.gg/) | [Next.js](https://nextjs.org/docs)
-- [Mesh SDK](https://meshjs.dev) | [shadcn/ui](https://ui.shadcn.com)
+```typescript
+// Good
+<span className="text-success">Approved</span>
+<span className="text-destructive">Error</span>
+<span className="text-muted-foreground">Helper text</span>
+
+// Avoid
+<span className="text-green-500">Approved</span>
+```
+
+Available semantic colors: `success`, `warning`, `info`, `destructive`, `primary`, `secondary`, `muted`
+
+## Learn More
+
+- [Andamio Platform](https://andamio.io) — Platform overview
+- [Andamio Docs](https://docs.andamio.io) — Full documentation
+- [API Reference](https://dev.api.andamio.io/api/v1/docs/index.html) — Gateway API docs
+- [Mesh SDK](https://meshjs.dev) — Cardano wallet integration
+- [shadcn/ui](https://ui.shadcn.com) — UI components
 
 ## License
 

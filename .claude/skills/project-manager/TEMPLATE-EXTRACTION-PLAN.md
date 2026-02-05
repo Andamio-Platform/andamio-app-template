@@ -73,7 +73,9 @@ template main:
   │
   ├── template: remove deployment workflows  ← Atomic commit
   │
-  └── template: remove Dockerfile            ← Atomic commit
+  ├── template: remove Dockerfile            ← Atomic commit
+  │
+  └── template: remove NOT_SYNCED_WITH_TEMPLATE.md  ← Atomic commit
 ```
 
 ### What the Initial Divergence Commit Contains
@@ -97,12 +99,16 @@ git commit -m "template: remove deployment workflows"
 
 git rm Dockerfile
 git commit -m "template: remove Dockerfile"
+
+git rm NOT_SYNCED_WITH_TEMPLATE.md
+git commit -m "template: remove NOT_SYNCED_WITH_TEMPLATE.md"
 ```
 
 | Commit | Removes | Conflict Trigger |
 |--------|---------|------------------|
 | `template: remove deployment workflows` | `.github/workflows/` | App adds/modifies workflows |
 | `template: remove Dockerfile` | `Dockerfile` | App modifies Dockerfile |
+| `template: remove NOT_SYNCED_WITH_TEMPLATE.md` | `NOT_SYNCED_WITH_TEMPLATE.md` | App modifies exclusion docs |
 
 ### Adding Future Removals
 

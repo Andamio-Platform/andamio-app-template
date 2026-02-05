@@ -142,6 +142,7 @@ If conflicts occur, they will typically be in:
 | `README.md` | Template has different setup instructions | Keep template's version |
 | `.github/workflows/*` | Template has no workflows | Keep files deleted |
 | `Dockerfile` | Template has no Dockerfile | Keep file deleted |
+| `NOT_SYNCED_WITH_TEMPLATE.md` | Template has no exclusion docs | Keep file deleted |
 
 For each conflicted file:
 
@@ -228,6 +229,14 @@ The template removes the root `Dockerfile`:
 - Template users will create their own containerization setup
 
 If the app modifies the Dockerfile, keep it deleted in template.
+
+### NOT_SYNCED_WITH_TEMPLATE.md
+
+The template removes this documentation file:
+
+- Documents what's excluded from the template (meta/self-referential)
+- Template users don't need to know what was removed
+- Keeps template focused on what's included, not what's missing
 
 ### New Routes
 

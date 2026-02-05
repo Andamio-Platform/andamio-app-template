@@ -71,6 +71,12 @@ Template users will create their own deployment pipelines.
 
 ---
 
+## Excluded Documentation
+
+| File | Purpose | Why Excluded |
+|------|---------|--------------|
+| `NOT_SYNCED_WITH_TEMPLATE.md` | This file - documents exclusions | Meta: template users don't need exclusion docs |
+
 ## Modified Files
 
 These files exist in both repos but have different content:

@@ -29,7 +29,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 // =============================================================================
 
 interface OnChainSltsViewerProps {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleHash?: string;
   /** If true, shows compact inline view */
   compact?: boolean;
@@ -155,11 +155,11 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
  * Can display all modules or a specific module by hash.
  */
 export function OnChainSltsViewer({
-  courseNftPolicyId,
+  courseId,
   moduleHash,
   compact = false,
 }: OnChainSltsViewerProps) {
-  const { data: course, isLoading, error } = useCourse(courseNftPolicyId);
+  const { data: course, isLoading, error } = useCourse(courseId);
 
   // Loading state
   if (isLoading) {
@@ -242,11 +242,11 @@ export function OnChainSltsViewer({
  * Summary badge showing on-chain SLT count for a course
  */
 export function OnChainSltsBadge({
-  courseNftPolicyId,
+  courseId,
 }: {
-  courseNftPolicyId: string;
+  courseId: string;
 }) {
-  const { data: course, isLoading } = useCourse(courseNftPolicyId);
+  const { data: course, isLoading } = useCourse(courseId);
 
   if (isLoading) {
     return <AndamioSkeleton className="h-5 w-24" />;

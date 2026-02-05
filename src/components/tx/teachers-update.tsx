@@ -35,7 +35,7 @@ export interface TeachersUpdateProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Current teachers (for display)
@@ -54,14 +54,14 @@ export interface TeachersUpdateProps {
  * @example
  * ```tsx
  * <TeachersUpdate
- *   courseNftPolicyId="abc123..."
+ *   courseId="abc123..."
  *   currentTeachers={["alice", "bob"]}
  *   onSuccess={() => refetchCourse()}
  * />
  * ```
  */
 export function TeachersUpdate({
-  courseNftPolicyId,
+  courseId,
   currentTeachers = [],
   onSuccess,
 }: TeachersUpdateProps) {
@@ -114,7 +114,7 @@ export function TeachersUpdate({
       txType: "COURSE_OWNER_TEACHERS_MANAGE",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         teachers_to_add,
         teachers_to_remove,
       },

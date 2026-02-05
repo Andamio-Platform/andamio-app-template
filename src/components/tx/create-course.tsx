@@ -43,9 +43,9 @@ import { TRANSACTION_UI } from "~/config/transaction-ui";
 export interface CreateCourseProps {
   /**
    * Callback fired when course is successfully created
-   * @param courseNftPolicyId - The course NFT policy ID returned by the API
+   * @param courseId - The course NFT policy ID returned by the API
    */
-  onSuccess?: (courseNftPolicyId: string) => void | Promise<void>;
+  onSuccess?: (courseId: string) => void | Promise<void>;
 }
 
 /**

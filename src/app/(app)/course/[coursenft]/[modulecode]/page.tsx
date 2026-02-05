@@ -35,23 +35,23 @@ import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt
  */
 
 export default function ModuleLessonsPage() {
-  const { courseNftPolicyId, moduleCode: moduleCodeParam } = useCourseParams();
+  const { courseId, moduleCode: moduleCodeParam } = useCourseParams();
   const moduleCode = moduleCodeParam!;
   const { isAuthenticated } = useAndamioAuth();
 
   // React Query hooks - data is cached and shared across components
   // useCourse returns merged data with both on-chain and off-chain content
-  const { data: course } = useCourse(courseNftPolicyId);
+  const { data: course } = useCourse(courseId);
   const {
     data: courseModule,
     isLoading: moduleLoading,
     error: moduleError,
-  } = useCourseModule(courseNftPolicyId, moduleCode);
-  const { data: slts, isLoading: sltsLoading } = useSLTs(courseNftPolicyId, moduleCode);
+  } = useCourseModule(courseId, moduleCode);
+  const { data: slts, isLoading: sltsLoading } = useSLTs(courseId, moduleCode);
 
   // Fetch student commitments for this course (cache hit if already fetched on detail page)
   const { data: studentCommitments } = useStudentAssignmentCommitments(
-    isAuthenticated ? courseNftPolicyId : undefined,
+    isAuthenticated ? courseId : undefined,
   );
 
   // Derive commitment status for this specific module
@@ -134,7 +134,7 @@ export default function ModuleLessonsPage() {
       {course && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+          course={{ nftPolicyId: courseId, title: course.title ?? "Course" }}
           courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
           currentPage="module"
         />
@@ -145,7 +145,7 @@ export default function ModuleLessonsPage() {
         description={typeof courseModule.description === "string" ? courseModule.description : undefined}
         action={
           isAuthenticated ? (
-            <Link href={`/studio/course/${courseNftPolicyId}/${moduleCode}/slts`}>
+            <Link href={`/studio/course/${courseId}/${moduleCode}/slts`}>
               <AndamioButton variant="outline">
                 <SettingsIcon className="h-4 w-4 mr-2" />
                 Manage SLTs
@@ -174,7 +174,7 @@ export default function ModuleLessonsPage() {
         </AndamioText>
         <SLTLessonTable
           data={combinedData}
-          courseNftPolicyId={courseNftPolicyId}
+          courseId={courseId}
           moduleCode={moduleCode}
           onChainModule={onChainModule}
         />
@@ -182,7 +182,7 @@ export default function ModuleLessonsPage() {
 
       {/* Assignment CTA - context-aware based on commitment status */}
       <AssignmentCTA
-        courseNftPolicyId={courseNftPolicyId}
+        courseId={courseId}
         moduleCode={moduleCode}
         commitmentStatus={moduleCommitmentStatus}
       />
@@ -195,13 +195,13 @@ export default function ModuleLessonsPage() {
 // =============================================================================
 
 interface AssignmentCTAProps {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   commitmentStatus: string | null;
 }
 
 function AssignmentCTA({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   commitmentStatus,
 }: AssignmentCTAProps) {
@@ -226,7 +226,7 @@ function AssignmentCTA({
             <AndamioText variant="muted">{ctaConfig.description}</AndamioText>
           </div>
           <div className="flex-shrink-0">
-            <Link href={`/course/${courseNftPolicyId}/${moduleCode}/assignment`}>
+            <Link href={`/course/${courseId}/${moduleCode}/assignment`}>
               <AndamioButton size="lg">
                 {ctaConfig.buttonLabel}
                 <NextIcon className="h-4 w-4 ml-2" />

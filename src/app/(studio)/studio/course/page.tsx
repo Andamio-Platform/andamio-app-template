@@ -464,7 +464,7 @@ function CoursePreviewPanel({ course, onImportSuccess }: CoursePreviewPanelProps
 
           {/* Course Team Card */}
           <CourseTeachersCard
-            courseNftPolicyId={course.courseId}
+            courseId={course.courseId}
             className="mt-8 max-w-sm mx-auto text-left"
           />
         </div>

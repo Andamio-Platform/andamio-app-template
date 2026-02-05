@@ -71,7 +71,7 @@ export default function ProjectDetailPage() {
 
   const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
 
-  const prerequisites = project?.prerequisites ?? [];
+  const prerequisites = React.useMemo(() => project?.prerequisites ?? [], [project?.prerequisites]);
   const eligibility = React.useMemo(() => {
     if (!isAuthenticated || prerequisites.length === 0) return null;
     return checkProjectEligibility(prerequisites, completions);

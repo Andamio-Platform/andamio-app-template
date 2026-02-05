@@ -36,7 +36,7 @@ export interface CourseModuleCardProps {
   /** Whether module has been verified on-chain */
   isOnChain?: boolean;
   /** Course NFT policy ID for link generation */
-  courseNftPolicyId: string;
+  courseId: string;
   /** Student's commitment status for this module (derived from commitments list) */
   commitmentStatus?: string | null;
 }
@@ -55,7 +55,7 @@ export function CourseModuleCard({
   slts,
   onChainSlts = new Set(),
   isOnChain = false,
-  courseNftPolicyId,
+  courseId,
   commitmentStatus,
 }: CourseModuleCardProps) {
   // Display: moduleCode > shortened sltHash > index
@@ -63,8 +63,8 @@ export function CourseModuleCard({
 
   // Link destination: use moduleCode if available, otherwise sltHash for chain_only modules
   const linkPath = moduleCode
-    ? `/course/${courseNftPolicyId}/${moduleCode}`
-    : `/course/${courseNftPolicyId}/${sltHash}`;
+    ? `/course/${courseId}/${moduleCode}`
+    : `/course/${courseId}/${sltHash}`;
 
   return (
     <AndamioCard className="overflow-hidden">

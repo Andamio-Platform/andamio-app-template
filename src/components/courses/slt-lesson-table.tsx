@@ -34,7 +34,7 @@ export interface SLTLessonTableProps {
   /** Combined SLT and lesson data */
   data: CombinedSLTLesson[];
   /** Course NFT policy ID for links */
-  courseNftPolicyId: string;
+  courseId: string;
   /** Module code for links */
   moduleCode: string;
   /** On-chain module data for verification badges (flattened format) */
@@ -49,7 +49,7 @@ export interface SLTLessonTableProps {
  */
 export function SLTLessonTable({
   data,
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   onChainModule,
 }: SLTLessonTableProps) {
@@ -100,7 +100,7 @@ export function SLTLessonTable({
                 <AndamioTableCell className="font-medium">
                   {item.lesson ? (
                     <Link
-                      href={`/course/${courseNftPolicyId}/${moduleCode}/${item.module_index}`}
+                      href={`/course/${courseId}/${moduleCode}/${item.module_index}`}
                       className="hover:underline text-primary"
                     >
                       {item.lesson.title ?? `Lesson ${item.module_index}`}

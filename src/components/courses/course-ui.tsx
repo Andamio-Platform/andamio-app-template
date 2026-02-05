@@ -123,13 +123,13 @@ export function CourseModuleCount({
  * @example
  * ```tsx
  * <CourseManageButton
- *   courseNftPolicyId={course.course_nft_policy_id}
+ *   courseId={course.course_nft_policy_id}
  *   variant="outline"
  * />
  * ```
  */
 export interface CourseManageButtonProps {
-  courseNftPolicyId: string | null;
+  courseId: string | null;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg";
   showLabel?: boolean;
@@ -138,19 +138,19 @@ export interface CourseManageButtonProps {
 }
 
 export function CourseManageButton({
-  courseNftPolicyId,
+  courseId,
   variant = "outline",
   size = "sm",
   showLabel = true,
   label = "Manage",
   className,
 }: CourseManageButtonProps) {
-  if (!courseNftPolicyId) {
+  if (!courseId) {
     return null;
   }
 
   return (
-    <Link href={`/studio/course/${courseNftPolicyId}`}>
+    <Link href={`/studio/course/${courseId}`}>
       <AndamioButton variant={variant} size={size} className={className}>
         <SettingsIcon className={`h-4 w-4 ${showLabel ? "mr-2" : ""}`} />
         {showLabel && label}

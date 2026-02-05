@@ -92,9 +92,9 @@ const refetchOnChain = async () => { /* No-op */ };
 // After (enabled)
 const [onChainStudent, setOnChainStudent] = useState<AndamioscanStudent | null>(null);
 const refetchOnChain = useCallback(async () => {
-  const studentState = await getCourseStudent(courseNftPolicyId, user.accessTokenAlias);
+  const studentState = await getCourseStudent(courseId, user.accessTokenAlias);
   setOnChainStudent(studentState);
-}, [courseNftPolicyId, user?.accessTokenAlias]);
+}, [courseId, user?.accessTokenAlias]);
 
 const hasOnChainCommitment = onChainStudent?.current === sltHash;
 const hasCompletedOnChain = onChainStudent?.completed.includes(sltHash);

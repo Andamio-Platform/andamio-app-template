@@ -440,7 +440,7 @@ export function createTestWalletSetup(
   alias: string,
   options: {
     accessTokenPolicyId?: string;
-    courseNftPolicyId?: string;
+    courseId?: string;
   } = {}
 ): TestWalletSetup {
   const ledger = new MockLedger();
@@ -485,7 +485,7 @@ export function createTestWalletSetup(
         address,
         options.accessTokenPolicyId ?? "mock_policy",
         alias,
-        options.courseNftPolicyId ?? "mock_course_policy"
+        options.courseId ?? "mock_course_policy"
       );
       break;
   }

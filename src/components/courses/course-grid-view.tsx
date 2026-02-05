@@ -55,7 +55,7 @@ export function CourseGridView({ courses, moduleCounts }: CourseGridViewProps) {
 
             <AndamioCardFooter className="mt-auto">
               <CourseManageButton
-                courseNftPolicyId={courseId || null}
+                courseId={courseId || null}
                 label="Manage Course"
                 className="w-full"
               />

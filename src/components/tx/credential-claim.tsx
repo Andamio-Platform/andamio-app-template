@@ -36,7 +36,7 @@ export interface CredentialClaimProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Module code for the credential being claimed
@@ -71,7 +71,7 @@ export interface CredentialClaimProps {
  * @example
  * ```tsx
  * <CredentialClaim
- *   courseNftPolicyId="abc123..."
+ *   courseId="abc123..."
  *   moduleCode="MODULE_1"
  *   moduleTitle="Introduction to Cardano"
  *   courseTitle="Cardano Developer Course"
@@ -80,7 +80,7 @@ export interface CredentialClaimProps {
  * ```
  */
 export function CredentialClaim({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   moduleTitle,
   courseTitle,
@@ -123,7 +123,7 @@ export function CredentialClaim({
       txType: "COURSE_STUDENT_CREDENTIAL_CLAIM",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
       },
       onSuccess: async (txResult) => {
         console.log("[CredentialClaim] TX submitted successfully!", txResult);

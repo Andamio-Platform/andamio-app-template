@@ -243,7 +243,7 @@ interface UpdateEvidenceActionsProps {
   txConfirmed: boolean;
   localEvidenceContent: JSONContent | null;
   accessTokenAlias: string | null;
-  courseNftPolicyId: string;
+  courseId: string;
   sltHash: string;
   onExecuteTx: (evidenceHash: string) => Promise<void>;
   onRefresh?: () => void;

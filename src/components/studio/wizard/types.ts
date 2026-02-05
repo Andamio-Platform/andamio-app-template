@@ -95,7 +95,7 @@ export interface WizardContextValue {
   updateSlts: (slts: WizardData["slts"]) => void;
 
   // Course identifiers
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
 
   // Creation mode

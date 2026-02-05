@@ -29,18 +29,18 @@ import { useCourse, useCourseModule, useLesson } from "~/hooks/api";
  */
 
 export default function LessonDetailPage() {
-  const { courseNftPolicyId, moduleCode: moduleCodeParam, moduleIndex: moduleIndexParam } = useCourseParams();
+  const { courseId, moduleCode: moduleCodeParam, moduleIndex: moduleIndexParam } = useCourseParams();
   const moduleCode = moduleCodeParam!;
   const moduleIndex = moduleIndexParam!;
 
   // React Query hooks - data is cached and shared across components
-  const { data: course } = useCourse(courseNftPolicyId);
-  const { data: courseModule } = useCourseModule(courseNftPolicyId, moduleCode);
+  const { data: course } = useCourse(courseId);
+  const { data: courseModule } = useCourseModule(courseId, moduleCode);
   const {
     data: lesson,
     isLoading,
     error: lessonError,
-  } = useLesson(courseNftPolicyId, moduleCode, moduleIndex);
+  } = useLesson(courseId, moduleCode, moduleIndex);
 
   const error = lessonError?.message ?? null;
 
@@ -57,7 +57,7 @@ export default function LessonDetailPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+            course={{ nftPolicyId: courseId, title: course.title ?? "Course" }}
             courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
             lesson={{ index: moduleIndex }}
             currentPage="lesson"
@@ -90,7 +90,7 @@ export default function LessonDetailPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+          course={{ nftPolicyId: courseId, title: course.title ?? "Course" }}
           courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
           lesson={{ index: moduleIndex, title: typeof lesson.title === "string" ? lesson.title : undefined }}
           currentPage="lesson"

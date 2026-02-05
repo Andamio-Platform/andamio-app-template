@@ -36,23 +36,23 @@ import {
  */
 
 interface UserCourseStatusProps {
-  courseNftPolicyId: string;
+  courseId: string;
 }
 
-export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
+export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
   const { isAuthenticated } = useAndamioAuth();
 
   // Fetch merged course data
-  const { data: course, isLoading: courseLoading } = useCourse(courseNftPolicyId);
+  const { data: course, isLoading: courseLoading } = useCourse(courseId);
 
   // Fetch database modules for count
-  const { data: dbModules } = useCourseModules(courseNftPolicyId);
+  const { data: dbModules } = useCourseModules(courseId);
 
   // Fetch user's enrolled/completed courses
   const { data: studentCourses, isLoading: studentLoading, refetch: refetchStudent } = useStudentCourses();
 
   // Fetch student commitments for progress summary
-  const { data: studentCommitments } = useStudentAssignmentCommitments(courseNftPolicyId);
+  const { data: studentCommitments } = useStudentAssignmentCommitments(courseId);
 
   // Derive commitment progress stats
   const commitmentStats = useMemo(() => {
@@ -72,15 +72,15 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 
   // Group commitments by module code for the checklist
   const commitmentsByModule = useMemo(
-    () => groupCommitmentsByModule(studentCommitments ?? [], courseNftPolicyId),
-    [studentCommitments, courseNftPolicyId],
+    () => groupCommitmentsByModule(studentCommitments ?? [], courseId),
+    [studentCommitments, courseId],
   );
 
   // Find this course in student's courses
   const studentCourseStatus = useMemo(() => {
     if (!studentCourses) return null;
-    return studentCourses.find((c) => c.courseId === courseNftPolicyId);
-  }, [studentCourses, courseNftPolicyId]);
+    return studentCourses.find((c) => c.courseId === courseId);
+  }, [studentCourses, courseId]);
 
   if (!isAuthenticated) {
     return null;
@@ -220,7 +220,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
         {/* Summary + CTA */}
         {totalModules > 0 && (
           <CredentialClaimCTA
-            courseNftPolicyId={courseNftPolicyId}
+            courseId={courseId}
             courseTitle={courseTitle}
             accepted={accepted}
             totalModules={totalModules}
@@ -240,7 +240,7 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
 // =============================================================================
 
 interface CredentialClaimCTAProps {
-  courseNftPolicyId: string;
+  courseId: string;
   courseTitle: string;
   accepted: number;
   totalModules: number;
@@ -250,7 +250,7 @@ interface CredentialClaimCTAProps {
 }
 
 function CredentialClaimCTA({
-  courseNftPolicyId,
+  courseId,
   courseTitle,
   accepted,
   totalModules,
@@ -298,7 +298,7 @@ function CredentialClaimCTA({
       txType: "COURSE_STUDENT_CREDENTIAL_CLAIM",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
       },
       onSuccess: async (txResult) => {
         console.log("[CredentialClaimCTA] TX submitted!", txResult);
@@ -388,7 +388,7 @@ function CredentialClaimCTA({
               className="w-full"
             />
           ) : nextModuleCode ? (
-            <Link href={`/course/${courseNftPolicyId}/${nextModuleCode}`}>
+            <Link href={`/course/${courseId}/${nextModuleCode}`}>
               <AndamioButton variant="outline" className="w-full">
                 Continue with next module
                 <NextIcon className="h-4 w-4 ml-2" />

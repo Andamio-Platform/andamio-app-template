@@ -26,8 +26,8 @@ import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
  * Wrapped in Suspense for useSearchParams (NX-4 compliance).
  *
  * API Endpoints (via React Query):
- * - POST /course/get - Course details (cached by courseNftPolicyId)
- * - POST /course-module/list - Modules with SLTs (cached by courseNftPolicyId)
+ * - POST /course/get - Course details (cached by courseId)
+ * - POST /course-module/list - Modules with SLTs (cached by courseId)
  */
 
 export default function CourseDetailPage() {
@@ -39,7 +39,7 @@ export default function CourseDetailPage() {
 }
 
 function CourseDetailContent() {
-  const { courseNftPolicyId } = useCourseParams();
+  const { courseId } = useCourseParams();
   const searchParams = useSearchParams();
   const isTeacherPreview = searchParams.get("preview") === "teacher";
 
@@ -49,30 +49,30 @@ function CourseDetailContent() {
     data: course,
     isLoading: courseLoading,
     error: courseError,
-  } = useCourse(courseNftPolicyId);
+  } = useCourse(courseId);
 
   const {
     data: modules,
     isLoading: modulesLoading,
     error: modulesError,
-  } = useCourseModules(courseNftPolicyId);
+  } = useCourseModules(courseId);
 
   const {
     data: teacherModules,
     isLoading: teacherModulesLoading,
     error: teacherModulesError,
-  } = useTeacherCourseModules(isTeacherPreview ? courseNftPolicyId : undefined);
+  } = useTeacherCourseModules(isTeacherPreview ? courseId : undefined);
 
   // Fetch student commitments for per-module status badges
   const { isAuthenticated } = useAndamioAuth();
   const { data: studentCommitments } = useStudentAssignmentCommitments(
-    isAuthenticated ? courseNftPolicyId : undefined,
+    isAuthenticated ? courseId : undefined,
   );
 
   // Group commitments by module code for quick lookup
   const commitmentsByModule = useMemo(
-    () => groupCommitmentsByModule(studentCommitments ?? [], courseNftPolicyId),
-    [studentCommitments, courseNftPolicyId],
+    () => groupCommitmentsByModule(studentCommitments ?? [], courseId),
+    [studentCommitments, courseId],
   );
 
   const resolvedModules = isTeacherPreview
@@ -142,7 +142,7 @@ function CourseDetailContent() {
       {/* Breadcrumb Navigation */}
       <CourseBreadcrumb
         mode="public"
-        course={{ nftPolicyId: courseNftPolicyId, title: courseTitle }}
+        course={{ nftPolicyId: courseId, title: courseTitle }}
         currentPage="course"
       />
 
@@ -150,7 +150,7 @@ function CourseDetailContent() {
       <div>
         <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 mb-2">
           <h1 className="text-2xl sm:text-3xl font-bold">{courseTitle}</h1>
-          <OnChainSltsBadge courseNftPolicyId={courseNftPolicyId} />
+          <OnChainSltsBadge courseId={courseId} />
         </div>
         {courseDescription && (
           <AndamioText variant="lead">{courseDescription}</AndamioText>
@@ -170,7 +170,7 @@ function CourseDetailContent() {
       {/* Your Learning Journey - enrollment status + progress */}
       <div className="space-y-3">
         <AndamioSectionHeader title="Your Learning Journey" />
-        <UserCourseStatus courseNftPolicyId={courseNftPolicyId} />
+        <UserCourseStatus courseId={courseId} />
       </div>
 
       {/* Course Outline - Module cards with SLTs */}
@@ -216,7 +216,7 @@ function CourseDetailContent() {
                 slts={displaySlts}
                 onChainSlts={onChainSltsSet}
                 isOnChain={hasOnChain}
-                courseNftPolicyId={courseNftPolicyId}
+                courseId={courseId}
                 commitmentStatus={moduleCommitmentStatus}
               />
             );
@@ -225,7 +225,7 @@ function CourseDetailContent() {
       </div>
 
       {/* Course Team */}
-      <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
+      <CourseTeachersCard courseId={courseId} />
 
     </div>
   );

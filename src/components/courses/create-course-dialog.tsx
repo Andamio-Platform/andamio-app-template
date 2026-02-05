@@ -230,12 +230,12 @@ export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogPr
         title: title.trim(),
       },
       onSuccess: async (txResult) => {
-        const courseNftPolicyId = txResult.apiResponse?.course_id as string | undefined;
+        const courseId = txResult.apiResponse?.course_id as string | undefined;
 
-        if (courseNftPolicyId) {
+        if (courseId) {
           // Store metadata for registration after TX confirms
           setCourseMetadata({
-            policyId: courseNftPolicyId,
+            policyId: courseId,
             title: title.trim(),
           });
         }

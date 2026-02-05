@@ -10,7 +10,7 @@ import { useOwnerCourses } from "~/hooks/api";
 
 interface RequireCourseAccessProps {
   /** Course NFT Policy ID to check access for */
-  courseNftPolicyId: string;
+  courseId: string;
   /** Title shown when not authenticated */
   title?: string;
   /** Description shown when not authenticated */
@@ -32,7 +32,7 @@ interface RequireCourseAccessProps {
  * @example
  * ```tsx
  * <RequireCourseAccess
- *   courseNftPolicyId={courseId}
+ *   courseId={courseId}
  *   title="Edit Module"
  *   description="You need access to this course to edit modules"
  * >
@@ -41,7 +41,7 @@ interface RequireCourseAccessProps {
  * ```
  */
 export function RequireCourseAccess({
-  courseNftPolicyId,
+  courseId,
   title = "Course Access Required",
   description = "Connect your wallet to access this course",
   loadingVariant = "page",
@@ -59,7 +59,7 @@ export function RequireCourseAccess({
 
   // Derive access check from hook data
   const hasAccess = ownedCourses?.some(
-    (course) => course.courseId === courseNftPolicyId
+    (course) => course.courseId === courseId
   ) ?? false;
   const error = queryError?.message ?? null;
 
@@ -130,7 +130,7 @@ export function RequireCourseAccess({
           </AndamioButton>
           <AndamioButton
             variant="secondary"
-            onClick={() => router.push(`/course/${courseNftPolicyId}`)}
+            onClick={() => router.push(`/course/${courseId}`)}
           >
             View Course
           </AndamioButton>

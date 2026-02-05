@@ -34,7 +34,7 @@ interface StepCredentialProps {
 }
 
 export function StepCredential({ config, direction }: StepCredentialProps) {
-  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseNftPolicyId, moduleCode, isNewModule, onModuleCreated } = useWizard();
+  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseId, moduleCode, isNewModule, onModuleCreated } = useWizard();
   const { isAuthenticated } = useAndamioAuth();
 
   const [title, setTitle] = useState(
@@ -57,7 +57,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const router = useRouter();
 
   // For new modules, fetch existing modules to generate a unique code (use teacher endpoint to see drafts)
-  const { data: existingModules = [] } = useTeacherCourseModules(courseNftPolicyId);
+  const { data: existingModules = [] } = useTeacherCourseModules(courseId);
 
   /**
    * Generate a unique module code based on existing modules
@@ -117,7 +117,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
     try {
       await createModule.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode: editableModuleCode.trim(),
         title,
         description,
@@ -141,7 +141,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
     try {
       await updateModule.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode,
         data: { title, description },
       });
@@ -170,7 +170,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
       // 1. Create new module with DRAFT status
       await createModule.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode: newCode,
         title: `${title} (Copy)`,
         description,
@@ -178,7 +178,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
       // 2. Use aggregate-update to copy all content in a single request
       const draft: ModuleDraft = {
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode: newCode,
         title: `${title} (Copy)`,
         description,
@@ -191,7 +191,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         assignment: data.assignment ? {
           title: data.assignment.title ?? "",
           description: data.assignment.description,
-          contentJson: data.assignment.contentJson as JSONContent | null | undefined,
+          contentJson: data.assignment.contentJson,
           imageUrl: data.assignment.imageUrl,
           videoUrl: data.assignment.videoUrl,
           _isNew: true,
@@ -199,7 +199,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         introduction: data.introduction ? {
           title: data.introduction.title ?? "",
           description: data.introduction.description,
-          contentJson: data.introduction.contentJson as JSONContent | null | undefined,
+          contentJson: data.introduction.contentJson,
           imageUrl: data.introduction.imageUrl,
           videoUrl: data.introduction.videoUrl,
           _isNew: true,
@@ -210,7 +210,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
             {
               title: lesson.title ?? "",
               description: lesson.description,
-              contentJson: lesson.contentJson as JSONContent | null | undefined,
+              contentJson: lesson.contentJson,
               sltIndex: lesson.sltIndex ?? 1,
               imageUrl: lesson.imageUrl,
               videoUrl: lesson.videoUrl,
@@ -228,7 +228,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       // Close dialog and navigate to new module
       setShowDuplicateDialog(false);
       setDuplicateModuleCode("");
-      router.push(`/studio/course/${courseNftPolicyId}/${newCode}`);
+      router.push(`/studio/course/${courseId}/${newCode}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to duplicate module");
     } finally {

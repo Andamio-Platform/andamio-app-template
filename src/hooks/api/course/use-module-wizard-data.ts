@@ -11,7 +11,7 @@ import {
 import type { WizardData, StepCompletion } from "~/components/studio/wizard/types";
 
 interface UseModuleWizardDataProps {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   isNewModule: boolean;
   onDataLoaded?: (course: Course | null, courseModule: CourseModule | null) => void;
@@ -37,7 +37,7 @@ interface UseModuleWizardDataReturn {
  * For the teacher studio, we use /course/teacher/* endpoints instead.
  */
 export function useModuleWizardData({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   isNewModule,
   onDataLoaded,
@@ -65,7 +65,7 @@ export function useModuleWizardData({
     data: course,
     isLoading: courseLoading,
     error: courseError,
-  } = useCourse(courseNftPolicyId);
+  } = useCourse(courseId);
 
   // Teacher modules - returns ALL data including SLTs, assignments, introductions
   // This endpoint works for both draft and published modules
@@ -74,7 +74,7 @@ export function useModuleWizardData({
     isLoading: modulesLoading,
     error: modulesError,
     refetch: refetchModules,
-  } = useTeacherCourseModules(courseNftPolicyId);
+  } = useTeacherCourseModules(courseId);
 
   // ==========================================================================
   // Derived data

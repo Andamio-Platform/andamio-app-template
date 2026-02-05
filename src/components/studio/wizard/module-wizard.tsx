@@ -61,7 +61,7 @@ const STEP_ORDER: WizardStepId[] = [
 ];
 
 interface ModuleWizardProps {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   course: Course | null;
   courseModule: CourseModule | null;
@@ -76,7 +76,7 @@ interface ModuleWizardProps {
  * Credential → SLTs → Assignment → Lessons → Introduction → Review
  */
 export function ModuleWizard({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   course,
   courseModule,
@@ -124,7 +124,7 @@ export function ModuleWizard({
     try {
       // Fetch SLTs - Go API: GET /course/user/slts/{course_id}/{course_module_code}
       const sltsResponse = await fetch(
-        `${GATEWAY_API_BASE}/course/user/slts/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/slts/${courseId}/${moduleCode}`
       );
       let slts: SLT[] = [];
       if (sltsResponse.ok) {
@@ -136,7 +136,7 @@ export function ModuleWizard({
 
       // Fetch assignment - Go API: GET /course/user/assignment/{course_id}/{course_module_code}
       const assignmentResponse = await fetch(
-        `${GATEWAY_API_BASE}/course/user/assignment/${courseNftPolicyId}/${moduleCode}`
+        `${GATEWAY_API_BASE}/course/user/assignment/${courseId}/${moduleCode}`
       );
       let assignment: Assignment | null = null;
       if (assignmentResponse.ok) {
@@ -161,7 +161,7 @@ export function ModuleWizard({
           const sltIndex = slt.moduleIndex ?? index + 1;
           try {
             const lessonResponse = await fetch(
-              `${GATEWAY_API_BASE}/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}`
+              `${GATEWAY_API_BASE}/course/user/lesson/${courseId}/${moduleCode}/${sltIndex}`
             );
 
             if (lessonResponse.status === 404) {
@@ -210,7 +210,7 @@ export function ModuleWizard({
 
       // Refetch module for latest status via list+filter (single-module GET was removed in V2)
       const moduleResponse = await fetch(
-        `${GATEWAY_API_BASE}/course/user/modules/${courseNftPolicyId}`
+        `${GATEWAY_API_BASE}/course/user/modules/${courseId}`
       );
       let updatedModule: CourseModule | null = courseModule;
       if (moduleResponse.ok) {
@@ -246,7 +246,7 @@ export function ModuleWizard({
         error: err instanceof Error ? err.message : "Failed to load data",
       }));
     }
-  }, [courseNftPolicyId, moduleCode, course, courseModule, isNewModule]);
+  }, [courseId, moduleCode, course, courseModule, isNewModule]);
 
   // Initial data fetch
   useEffect(() => {
@@ -388,7 +388,7 @@ export function ModuleWizard({
       data,
       refetchData: fetchWizardData,
       updateSlts,
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       isNewModule,
       createdModuleCode: null,
@@ -410,7 +410,7 @@ export function ModuleWizard({
       data,
       fetchWizardData,
       updateSlts,
-      courseNftPolicyId,
+      courseId,
       moduleCode,
       isNewModule,
     ]

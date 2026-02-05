@@ -34,7 +34,7 @@ export interface AssessAssignmentProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Student's access token alias
@@ -63,7 +63,7 @@ export interface AssessAssignmentProps {
  * @example
  * ```tsx
  * <AssessAssignment
- *   courseNftPolicyId="abc123..."
+ *   courseId="abc123..."
  *   studentAlias="alice"
  *   moduleCode="MODULE_1"
  *   onSuccess={(result) => refetchCommitments()}
@@ -71,7 +71,7 @@ export interface AssessAssignmentProps {
  * ```
  */
 export function AssessAssignment({
-  courseNftPolicyId,
+  courseId,
   studentAlias,
   moduleCode,
   moduleTitle,
@@ -119,7 +119,7 @@ export function AssessAssignment({
       txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         assignment_decisions: [
           { alias: studentAlias, outcome: decision },
         ],

@@ -104,7 +104,7 @@ export function OwnedCoursesList() {
                 </AndamioTableCell>
                 <AndamioTableCell className="text-right">
                   <CourseManageButton
-                    courseNftPolicyId={courseId || null}
+                    courseId={courseId || null}
                     variant="ghost"
                   />
                 </AndamioTableCell>

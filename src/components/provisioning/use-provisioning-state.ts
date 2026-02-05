@@ -38,10 +38,10 @@ export interface UseProvisioningStateReturn {
  * ```tsx
  * const { currentStep, navigateToEntity, isProvisioning } = useProvisioningState({
  *   entityType: "course",
- *   entityId: courseNftPolicyId,
+ *   entityId: courseId,
  *   txHash: result.txHash,
  *   title: "My New Course",
- *   successRedirectPath: `/studio/course/${courseNftPolicyId}`,
+ *   successRedirectPath: `/studio/course/${courseId}`,
  *   onReady: () => console.log("Course is ready!"),
  * });
  * ```
@@ -103,7 +103,7 @@ export function useProvisioningState(
       entityId,
       context: {
         // Course-specific context
-        courseNftPolicyId: entityType === "course" ? entityId : undefined,
+        courseId: entityType === "course" ? entityId : undefined,
         // Project-specific context
         treasuryNftPolicyId: entityType === "project" ? entityId : undefined,
         // Title for display

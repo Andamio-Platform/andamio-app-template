@@ -177,7 +177,7 @@ function VideoPreview({ url }: { url: string }) {
 // Main Component
 // =============================================================================
 
-function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string }) {
+function CourseEditorContent({ courseId }: { courseId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -191,11 +191,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
   const { setBreadcrumbs, setTitle, setActions } = useStudioHeader();
 
   // React Query hooks - Database
-  const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseNftPolicyId);
-  const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseNftPolicyId);
+  const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseId);
+  const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseId);
 
   // Fetch assignment commitments for this course, filter to pending review only
-  const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseNftPolicyId);
+  const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
     [allCommitmentsForCourse]
@@ -338,14 +338,14 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
           className="h-7 text-xs"
           asChild
         >
-          <Link href={`/course/${courseNftPolicyId}?preview=teacher`}>
+          <Link href={`/course/${courseId}?preview=teacher`}>
             <PreviewIcon className="h-3.5 w-3.5 mr-1" />
             Preview
           </Link>
         </AndamioButton>
       </div>
     );
-  }, [setActions, courseNftPolicyId]);
+  }, [setActions, courseId]);
 
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -358,7 +358,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
     try {
       await updateCourseMutation.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         data: {
           title: formTitle || undefined,
           description: formDescription || undefined,
@@ -376,7 +376,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
 
   const handleDelete = async () => {
     try {
-      await deleteCourseMutation.mutateAsync(courseNftPolicyId);
+      await deleteCourseMutation.mutateAsync(courseId);
       toast.success("Course deleted");
       router.push("/studio/course");
     } catch (err) {
@@ -390,7 +390,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     if (!course) return;
     try {
       await updateCourseMutation.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         data: { isPublic },
       });
       toast.success(isPublic ? "Course is now public" : "Course is now private");
@@ -407,7 +407,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     }
     try {
       await deleteModuleMutation.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode,
       });
       toast.success(`Module "${moduleCode}" deleted`);
@@ -425,7 +425,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
     }
     try {
       const result = await registerModuleMutation.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode: registerModuleCode.trim(),
         sltHash,
       });
@@ -486,7 +486,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-mono text-muted-foreground">
-                      {courseNftPolicyId.slice(0, 12) + "..."}
+                      {courseId.slice(0, 12) + "..."}
                     </span>
                     {course.courseId && (
                       <AndamioBadge variant="default" className="text-[10px]">
@@ -524,7 +524,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   {allCommitmentsForCourse.length > 0 && (
                     <>
                       <div className="w-px h-8 bg-border" />
-                      <Link href={`/studio/course/${courseNftPolicyId}/teacher`} className="text-center hover:opacity-80 transition-opacity">
+                      <Link href={`/studio/course/${courseId}/teacher`} className="text-center hover:opacity-80 transition-opacity">
                         <div className="flex items-center justify-center gap-1">
                           <DiplomaIcon className="h-5 w-5 text-primary" />
                           <span className="text-2xl font-bold text-primary">{acceptedCommitmentsCount}</span>
@@ -551,7 +551,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <div className="text-center mb-10">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    {courseNftPolicyId.slice(0, 12) + "..."}
+                    {courseId.slice(0, 12) + "..."}
                   </span>
                   {course.courseId && (
                     <AndamioBadge variant="default" className="text-[10px]">
@@ -589,7 +589,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 {/* Guided Path */}
                 <button
                   type="button"
-                  onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential&mode=wizard`)}
+                  onClick={() => router.push(`/studio/course/${courseId}/new?step=credential&mode=wizard`)}
                   className="group relative text-left p-6 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-background hover:border-primary hover:shadow-xl hover:shadow-primary/20 transition-all duration-300"
                 >
                   <div className="absolute top-4 right-4">
@@ -613,7 +613,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                 {/* Pro Path */}
                 <button
                   type="button"
-                  onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential&mode=pro`)}
+                  onClick={() => router.push(`/studio/course/${courseId}/new?step=credential&mode=pro`)}
                   className="group text-left p-6 rounded-2xl border-2 border-border bg-gradient-to-br from-muted/50 via-muted/20 to-background hover:border-border/80 hover:shadow-lg transition-all duration-300"
                 >
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4 group-hover:scale-110 group-hover:bg-muted/80 transition-all">
@@ -730,7 +730,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       className="flex-shrink-0 border-secondary text-secondary hover:bg-secondary/10 hover:text-secondary dark:hover:bg-secondary/10"
                       asChild
                     >
-                      <Link href={`/studio/course/${courseNftPolicyId}/teacher`}>
+                      <Link href={`/studio/course/${courseId}/teacher`}>
                         Review Submissions
                       </Link>
                     </AndamioButton>
@@ -747,7 +747,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       <StudioModuleCard
                         key={courseModule.sltHash || courseModule.moduleCode || `module-${index}`}
                         courseModule={courseModule}
-                        courseNftPolicyId={courseNftPolicyId}
+                        courseId={courseId}
                         onDelete={() => handleDeleteModule(courseModule.moduleCode ?? "", courseModule.title ?? null)}
                         isDeleting={deleteModuleMutation.isPending}
                       />
@@ -758,7 +758,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <div className="flex justify-center pt-4">
                     <AndamioButton
                       variant="outline"
-                      onClick={() => router.push(`/studio/course/${courseNftPolicyId}/new?step=credential`)}
+                      onClick={() => router.push(`/studio/course/${courseId}/new?step=credential`)}
                     >
                       <AddIcon className="h-4 w-4 mr-2" />
                       Add Credential
@@ -865,11 +865,11 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               </StudioFormSection>
 
               {/* Course Team */}
-              <CourseTeachersCard courseNftPolicyId={courseNftPolicyId} />
+              <CourseTeachersCard courseId={courseId} />
 
               {/* Manage Teachers (On-Chain Transaction) */}
               <TeachersUpdate
-                courseNftPolicyId={courseNftPolicyId}
+                courseId={courseId}
                 currentTeachers={course.teachers ?? []}
                 onSuccess={() => {
                   void refetchCourse();
@@ -893,7 +893,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </div>
                     <AndamioButton variant="outline" size="sm" asChild>
                       <a
-                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseNftPolicyId}`}
+                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center"
@@ -903,7 +903,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                       </a>
                     </AndamioButton>
                   </div>
-                  <CopyableAddress address={courseNftPolicyId} />
+                  <CopyableAddress address={courseId} />
                 </div>
               </StudioFormSection>
 
@@ -1066,7 +1066,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               {/* Mint Modules - Show when there are modules ready to mint (APPROVED but not yet on-chain) */}
               {moduleStats.readyToMint > 0 && (
                 <MintModuleTokens
-                  courseNftPolicyId={courseNftPolicyId}
+                  courseId={courseId}
                   courseModules={modulesReadyToMint}
                   onSuccess={async () => {
                     await refetchModules();
@@ -1078,7 +1078,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               {/* Burn Modules - Show when modules are selected for removal */}
               {modulesToBurn.length > 0 && (
                 <BurnModuleTokens
-                  courseNftPolicyId={courseNftPolicyId}
+                  courseId={courseId}
                   modulesToBurn={modulesToBurn}
                   onClearSelection={clearBurnSelection}
                   onSuccess={async () => {
@@ -1221,7 +1221,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                   <div className="flex flex-wrap gap-3">
                     <AndamioButton variant="outline" asChild>
                       <a
-                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseNftPolicyId}`}
+                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center"
@@ -1232,7 +1232,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
                     </AndamioButton>
                     <AndamioButton variant="outline" asChild>
                       <a
-                        href={`https://preprod.cexplorer.io/policy/${courseNftPolicyId}`}
+                        href={`https://preprod.cexplorer.io/policy/${courseId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center"
@@ -1251,7 +1251,7 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
               <StudioFormSection title="Course ID">
                 <div className="space-y-2">
                   <AndamioInput
-                    value={course.courseId ?? courseNftPolicyId}
+                    value={course.courseId ?? courseId}
                     disabled
                     className="font-mono"
                   />
@@ -1335,16 +1335,16 @@ function CourseEditorContent({ courseNftPolicyId }: { courseNftPolicyId: string 
  */
 export default function StudioCourseEditPage() {
   const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
+  const courseId = params.coursenft as string;
 
   return (
     <RequireCourseAccess
-      courseNftPolicyId={courseNftPolicyId}
+      courseId={courseId}
       title="Edit Course"
       description="Connect your wallet to edit this course"
       loadingVariant="studio-centered"
     >
-      <CourseEditorContent courseNftPolicyId={courseNftPolicyId} />
+      <CourseEditorContent courseId={courseId} />
     </RequireCourseAccess>
   );
 }

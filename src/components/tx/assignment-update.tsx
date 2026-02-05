@@ -40,7 +40,7 @@ export interface AssignmentUpdateProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Target module code
@@ -84,7 +84,7 @@ export interface AssignmentUpdateProps {
  * @example
  * ```tsx
  * <AssignmentUpdate
- *   courseNftPolicyId="abc123..."
+ *   courseId="abc123..."
  *   moduleCode="MODULE_1"
  *   evidence={editorContent}
  *   isNewCommitment={false}
@@ -93,7 +93,7 @@ export interface AssignmentUpdateProps {
  * ```
  */
 export function AssignmentUpdate({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   moduleTitle,
   isNewCommitment = false,
@@ -169,13 +169,13 @@ export function AssignmentUpdate({
     const txParams = isNewCommitment
       ? {
           alias: user.accessTokenAlias,
-          course_id: courseNftPolicyId,
+          course_id: courseId,
           slt_hash: sltHash!, // Required for COMMIT
           assignment_info: hash,
         }
       : {
           alias: user.accessTokenAlias,
-          course_id: courseNftPolicyId,
+          course_id: courseId,
           assignment_info: hash,
         };
 
@@ -198,7 +198,7 @@ export function AssignmentUpdate({
         // Save evidence content to database via hook
         // The hash is on-chain, but the actual JSON content needs to be stored for teacher review
         submitEvidence.mutate({
-          courseId: courseNftPolicyId,
+          courseId: courseId,
           sltHash: sltHash ?? "",
           evidence: evidence,
           evidenceHash: hash,

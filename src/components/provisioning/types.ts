@@ -25,7 +25,7 @@ export type ProvisioningStep =
 export interface ProvisioningState {
   /** Type of entity being provisioned */
   entityType: ProvisioningEntityType;
-  /** On-chain identifier (courseNftPolicyId or treasuryNftPolicyId) */
+  /** On-chain identifier (courseId or treasuryNftPolicyId) */
   entityId: string;
   /** Transaction hash for tracking */
   txHash: string;

@@ -36,7 +36,7 @@ export function StudioSidebar() {
   // Parse the current route to determine context
   const segments = pathname.split("/").filter(Boolean);
   const studioType = segments[1]; // "course" or "project"
-  const entityId = segments[2]; // courseNftPolicyId or projectId
+  const entityId = segments[2]; // courseId or projectId
 
   // Determine navigation based on context
   const getNavigation = (): {

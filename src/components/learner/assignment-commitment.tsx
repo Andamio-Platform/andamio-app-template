@@ -48,14 +48,14 @@ import {
 
 interface AssignmentCommitmentProps {
   assignmentTitle?: string;
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   sltHash: string | null;
 }
 
 export function AssignmentCommitment({
   assignmentTitle,
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   sltHash,
 }: AssignmentCommitmentProps) {
@@ -72,7 +72,7 @@ export function AssignmentCommitment({
     isLoading,
     error: commitmentError,
     refetch: refetchCommitment,
-  } = useAssignmentCommitment(courseNftPolicyId, moduleCode, sltHash);
+  } = useAssignmentCommitment(courseId, moduleCode, sltHash);
 
   // Evidence submission mutation
   const submitEvidence = useSubmitEvidence();
@@ -111,7 +111,7 @@ export function AssignmentCommitment({
   );
 
   // Course data for completion check
-  const { data: courseData, refetch: refetchCourse } = useCourse(courseNftPolicyId);
+  const { data: courseData, refetch: refetchCourse } = useCourse(courseId);
 
   const hasCompletedOnChain = !!(
     user?.accessTokenAlias &&
@@ -177,14 +177,14 @@ export function AssignmentCommitment({
       txType: "COURSE_STUDENT_ASSIGNMENT_UPDATE",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         assignment_info: newEvidenceHash,
       },
       onSuccess: async (result) => {
         setHasUnsavedChanges(false);
         try {
           await submitEvidence.mutateAsync({
-            courseId: courseNftPolicyId,
+            courseId: courseId,
             sltHash: sltHash!,
             evidence: localEvidenceContent,
             evidenceHash: newEvidenceHash,
@@ -317,7 +317,7 @@ export function AssignmentCommitment({
             )}
             <AndamioSeparator />
             <CredentialClaim
-              courseNftPolicyId={courseNftPolicyId}
+              courseId={courseId}
               moduleCode={moduleCode}
               moduleTitle={assignmentTitle}
               onSuccess={() => {
@@ -370,7 +370,7 @@ export function AssignmentCommitment({
               txConfirmed={updateTxConfirmed}
               localEvidenceContent={localEvidenceContent}
               accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseNftPolicyId={courseNftPolicyId}
+              courseId={courseId}
               sltHash={sltHash}
               onExecuteTx={handleUpdateTxExecute}
               onRefresh={() => void refetchCommitment()}
@@ -423,7 +423,7 @@ export function AssignmentCommitment({
               txConfirmed={updateTxConfirmed}
               localEvidenceContent={localEvidenceContent}
               accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseNftPolicyId={courseNftPolicyId}
+              courseId={courseId}
               sltHash={sltHash}
               onExecuteTx={handleUpdateTxExecute}
               onRefresh={() => void refetchCommitment()}
@@ -477,14 +477,14 @@ export function AssignmentCommitment({
                           txConfirmed={commitTxConfirmed}
                           localEvidenceContent={evidenceContent}
                           accessTokenAlias={user.accessTokenAlias}
-                          courseNftPolicyId={courseNftPolicyId}
+                          courseId={courseId}
                           sltHash={sltHash}
                           onExecuteTx={async (hash) => {
                             await commitTx.execute({
                               txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
                               params: {
                                 alias: user.accessTokenAlias!,
-                                course_id: courseNftPolicyId,
+                                course_id: courseId,
                                 slt_hash: sltHash,
                                 assignment_info: hash,
                               },
@@ -493,7 +493,7 @@ export function AssignmentCommitment({
                                 if (evidenceContent) {
                                   try {
                                     await submitEvidence.mutateAsync({
-                                      courseId: courseNftPolicyId,
+                                      courseId: courseId,
                                       sltHash: sltHash,
                                       evidence: evidenceContent,
                                       evidenceHash: hash,

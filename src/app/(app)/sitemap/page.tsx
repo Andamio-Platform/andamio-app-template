@@ -136,36 +136,36 @@ const dynamicRouteTemplates: RouteCategory[] = [
     icon: LearnerIcon,
     routes: [
       {
-        path: "/course/[courseNftPolicyId]",
+        path: "/course/[courseId]",
         label: "Course Detail",
         description: "View course overview and modules (Learner view)",
         requiresAuth: false,
         dynamic: true,
-        params: ["courseNftPolicyId"],
+        params: ["courseId"],
       },
       {
-        path: "/course/[courseNftPolicyId]/[moduleCode]",
+        path: "/course/[courseId]/[moduleCode]",
         label: "Module Detail",
         description: "View module content and assignments (Learner view)",
         requiresAuth: false,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
       {
-        path: "/course/[courseNftPolicyId]/[moduleCode]/[moduleIndex]",
+        path: "/course/[courseId]/[moduleCode]/[moduleIndex]",
         label: "Module Index",
         description: "Alternative module view with index parameter",
         requiresAuth: false,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode", "moduleIndex"],
+        params: ["courseId", "moduleCode", "moduleIndex"],
       },
       {
-        path: "/course/[courseNftPolicyId]/[moduleCode]/assignment",
+        path: "/course/[courseId]/[moduleCode]/assignment",
         label: "Module Assignment",
         description: "View and complete module assignment (Learner view)",
         requiresAuth: false,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
     ],
   },
@@ -174,60 +174,60 @@ const dynamicRouteTemplates: RouteCategory[] = [
     icon: DraftIcon,
     routes: [
       {
-        path: "/studio/course/[courseNftPolicyId]",
+        path: "/studio/course/[courseId]",
         label: "Edit Course",
         description: "Course editor overview (Creator view)",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId"],
+        params: ["courseId"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/teacher",
+        path: "/studio/course/[courseId]/teacher",
         label: "Teacher Dashboard",
         description: "Manage learners and review submissions",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId"],
+        params: ["courseId"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/[moduleCode]",
+        path: "/studio/course/[courseId]/[moduleCode]",
         label: "Edit Module",
         description: "Module editor (Creator view)",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/[moduleCode]/[moduleIndex]",
+        path: "/studio/course/[courseId]/[moduleCode]/[moduleIndex]",
         label: "Edit Module by Index",
         description: "Alternative module editor with index parameter",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode", "moduleIndex"],
+        params: ["courseId", "moduleCode", "moduleIndex"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/[moduleCode]/introduction",
+        path: "/studio/course/[courseId]/[moduleCode]/introduction",
         label: "Edit Module Introduction",
         description: "Edit module introduction content",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/[moduleCode]/slts",
+        path: "/studio/course/[courseId]/[moduleCode]/slts",
         label: "Edit Module SLTs",
         description: "Edit Student Learning Targets for module",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
       {
-        path: "/studio/course/[courseNftPolicyId]/[moduleCode]/assignment",
+        path: "/studio/course/[courseId]/[moduleCode]/assignment",
         label: "Edit Module Assignment",
         description: "Edit module assignment (Creator view)",
         requiresAuth: true,
         dynamic: true,
-        params: ["courseNftPolicyId", "moduleCode"],
+        params: ["courseId", "moduleCode"],
       },
     ],
   },
@@ -491,14 +491,14 @@ export default function SitemapPage() {
                   let canNavigate = false;
 
                   if (category.category === "Learner Course Pages" && examplePublishedCourse) {
-                    const courseNftPolicyId = examplePublishedCourse.course_id;
-                    if (courseNftPolicyId) {
-                      if (route.path === "/course/[courseNftPolicyId]") {
-                        exampleUrl = `/course/${courseNftPolicyId}`;
+                    const courseId = examplePublishedCourse.course_id;
+                    if (courseId) {
+                      if (route.path === "/course/[courseId]") {
+                        exampleUrl = `/course/${courseId}`;
                         canNavigate = true;
                       } else if (route.path.includes("[moduleCode]")) {
                         exampleUrl = route.path
-                          .replace("[courseNftPolicyId]", courseNftPolicyId)
+                          .replace("[courseId]", courseId)
                           .replace("[moduleCode]", "example-module")
                           .replace("[moduleIndex]", "0");
                         canNavigate = false; // Module might not exist
@@ -508,13 +508,13 @@ export default function SitemapPage() {
                     category.category === "Creator Studio Course Pages" &&
                     exampleOwnedCourse
                   ) {
-                    const courseNftPolicyId = exampleOwnedCourse.course_id ?? "";
-                    if (route.path === "/studio/course/[courseNftPolicyId]") {
-                      exampleUrl = `/studio/course/${courseNftPolicyId}`;
+                    const courseId = exampleOwnedCourse.course_id ?? "";
+                    if (route.path === "/studio/course/[courseId]") {
+                      exampleUrl = `/studio/course/${courseId}`;
                       canNavigate = true;
                     } else if (route.path.includes("[moduleCode]")) {
                       exampleUrl = route.path
-                        .replace("[courseNftPolicyId]", courseNftPolicyId)
+                        .replace("[courseId]", courseId)
                         .replace("[moduleCode]", "example-module")
                         .replace("[moduleIndex]", "0");
                       canNavigate = false; // Module might not exist

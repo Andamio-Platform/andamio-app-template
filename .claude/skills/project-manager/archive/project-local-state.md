@@ -603,7 +603,7 @@ These are potential project-related routes that could be added:
 |--------|------------|-------------|
 | HTTP Methods | REST-style (GET, POST, PATCH, DELETE) | All POST with body parameters |
 | Path Parameters | URL path params (`/courses/{id}`) | Body params (`{ treasury_nft_policy_id }`) |
-| Identifiers | `courseNftPolicyId`, `moduleCode`, `moduleIndex` | `treasury_nft_policy_id`, `task_hash`, `task_index` |
+| Identifiers | `courseId`, `moduleCode`, `moduleIndex` | `treasury_nft_policy_id`, `task_hash`, `task_index` |
 | Role Verification | JWT claims | Andamioscan on-chain queries |
 | Content Editor | Tiptap (`contentJson`) | Tiptap (`content_json`) |
 | Status Protection | N/A | PENDING_TX protection |

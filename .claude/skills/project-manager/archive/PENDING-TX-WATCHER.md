@@ -219,7 +219,7 @@ addPendingTx({
   txHash: "abc123...",
   entityType: "module",
   entityId: moduleCode,
-  context: { courseNftPolicyId, moduleCode },
+  context: { courseId, moduleCode },
   submittedAt: new Date(),
 });
 ```
@@ -276,7 +276,7 @@ function MintModuleTokens() {
       entityType: "module",
       entityId: moduleCode,
       context: {
-        courseNftPolicyId,
+        courseId,
         moduleCode,
       },
     });
@@ -477,7 +477,7 @@ Pending transactions are automatically saved to localStorage and restored on pag
     "entityType": "module",
     "entityId": "MODULE_1",
     "context": {
-      "courseNftPolicyId": "policy123...",
+      "courseId": "policy123...",
       "moduleCode": "MODULE_1"
     },
     "submittedAt": "2024-01-15T10:30:00.000Z"

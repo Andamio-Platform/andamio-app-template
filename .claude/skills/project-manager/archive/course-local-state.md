@@ -525,7 +525,7 @@ These routes are for course creators to manage their courses and require authent
 
 ## Notes
 
-1. **On-Chain Identifiers**: All routes use `courseNftPolicyId` and `moduleCode` instead of internal database IDs
+1. **On-Chain Identifiers**: All routes use `courseId` and `moduleCode` instead of internal database IDs
 2. **Type Safety**: All routes import types from `andamio-db-api` package via npm workspace
 3. **Loading States**: All routes implement skeleton loaders (AndamioSkeleton) during data fetching
 4. **Error Handling**: All routes have error states with user-friendly messages using AndamioAlert

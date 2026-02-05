@@ -32,18 +32,18 @@ import { AlertIcon, SuccessIcon } from "~/components/icons";
  */
 
 export default function LearnerAssignmentPage() {
-  const { courseNftPolicyId, moduleCode: moduleCodeParam } = useCourseParams();
+  const { courseId, moduleCode: moduleCodeParam } = useCourseParams();
   const moduleCode = moduleCodeParam!;
 
   // React Query hooks - data is cached and shared across components
-  const { data: course } = useCourse(courseNftPolicyId);
-  const { data: courseModule } = useCourseModule(courseNftPolicyId, moduleCode);
-  const { data: slts } = useSLTs(courseNftPolicyId, moduleCode);
+  const { data: course } = useCourse(courseId);
+  const { data: courseModule } = useCourseModule(courseId, moduleCode);
+  const { data: slts } = useSLTs(courseId, moduleCode);
   const {
     data: assignment,
     isLoading,
     error: assignmentError,
-  } = useAssignment(courseNftPolicyId, moduleCode);
+  } = useAssignment(courseId, moduleCode);
 
   const error = assignmentError?.message ?? null;
 
@@ -101,7 +101,7 @@ export default function LearnerAssignmentPage() {
         {course && courseModule && (
           <CourseBreadcrumb
             mode="public"
-            course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+            course={{ nftPolicyId: courseId, title: course.title ?? "Course" }}
             courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
             currentPage="assignment"
           />
@@ -121,7 +121,7 @@ export default function LearnerAssignmentPage() {
       {course && courseModule && (
         <CourseBreadcrumb
           mode="public"
-          course={{ nftPolicyId: courseNftPolicyId, title: course.title ?? "Course" }}
+          course={{ nftPolicyId: courseId, title: course.title ?? "Course" }}
           courseModule={{ code: courseModule.moduleCode ?? "", title: courseModule.title ?? "Module" }}
           currentPage="assignment"
         />
@@ -213,7 +213,7 @@ export default function LearnerAssignmentPage() {
       {/* Assignment Commitment Component */}
       <AssignmentCommitment
         assignmentTitle={assignment.title}
-        courseNftPolicyId={courseNftPolicyId}
+        courseId={courseId}
         moduleCode={moduleCode}
         sltHash={sltHash}
       />

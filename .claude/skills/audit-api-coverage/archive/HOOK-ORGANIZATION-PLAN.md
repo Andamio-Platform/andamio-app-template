@@ -230,7 +230,7 @@ src/hooks/api/project/
 
 ### Phase 5: Apply cleanup tasks
 - [ ] Apply Task 1-6 from cleanup plan to all files
-- [ ] Rename `courseNftPolicyId` → `courseId` in all files
+- [ ] Rename `courseId` → `courseId` in all files
 
 ### Phase 6: Update exports
 - [ ] Update `src/hooks/api/course/index.ts`

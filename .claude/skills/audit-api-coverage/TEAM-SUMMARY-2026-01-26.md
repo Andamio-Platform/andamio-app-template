@@ -95,7 +95,7 @@ For complex entities (CourseModule), we combine `source` with `module_status` to
 |------------|---------|
 | camelCase fields | `courseId`, `moduleCode`, `sltText` |
 | Flatten nested content | `title` not `content.title` |
-| Use `courseId` not `courseNftPolicyId` | Hide Cardano implementation details |
+| Use `courseId` not `courseId` | Hide Cardano implementation details |
 | Semantic status names | `"active"` not `"merged"` |
 
 ### 5. Hook File Structure

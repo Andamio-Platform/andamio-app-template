@@ -88,7 +88,7 @@ export function TasksAssess({
   contributorStateId,
   contributorAlias,
   taskHash: _taskHash,
-  taskTitle,
+  taskTitle: _taskTitle,
   onSuccess,
 }: TasksAssessProps) {
   const { user, isAuthenticated } = useAndamioAuth();

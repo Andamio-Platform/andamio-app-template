@@ -41,7 +41,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
     completion,
     goToStep,
     refetchData,
-    courseNftPolicyId,
+    courseId,
     moduleCode,
     saveAndSync,
     isDirty,
@@ -145,7 +145,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
       // Step 3: Approve module via dedicated update-status endpoint
       await updateModuleStatus.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode,
         status: "APPROVED",
         sltHash,
@@ -172,7 +172,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
 
     try {
       await updateModuleStatus.mutateAsync({
-        courseId: courseNftPolicyId,
+        courseId: courseId,
         moduleCode,
         status: "DRAFT",
         // slt_hash not required for APPROVED → DRAFT
@@ -228,7 +228,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                   </div>
                 )}
                 <Link
-                  href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
+                  href={`/studio/course/${courseId}?tab=on-chain`}
                   className="hover:opacity-80 transition-opacity"
                 >
                   <AndamioBadge variant="outline" className="cursor-pointer hover:bg-accent">
@@ -240,7 +240,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
               <AndamioText variant="small" className="text-center max-w-md">
                 Head to the{" "}
                 <Link
-                  href={`/studio/course/${courseNftPolicyId}?tab=on-chain`}
+                  href={`/studio/course/${courseId}?tab=on-chain`}
                   className="font-semibold text-primary hover:underline"
                 >
                   On-Chain tab

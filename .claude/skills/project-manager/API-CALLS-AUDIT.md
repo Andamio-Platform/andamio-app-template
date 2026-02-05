@@ -80,7 +80,7 @@
 ### 5. `/src/app/(app)/studio/course/[coursenft]/teacher/page.tsx`
 | Line | Pattern | Endpoint |
 |------|---------|----------|
-| 163 | `fetch()` | `/api/gateway/api/v2/course/user/course/get/${courseNftPolicyId}` |
+| 163 | `fetch()` | `/api/gateway/api/v2/course/user/course/get/${courseId}` |
 | 180 | `authenticatedFetch()` | `/api/gateway/api/v2/course/teacher/assignment-commitments/list` |
 | 251 | `authenticatedFetch()` | `/api/gateway/api/v2/course/student/assignment-commitment/get` |
 
@@ -141,10 +141,10 @@
 ### 3. `/src/components/studio/wizard/module-wizard.tsx`
 | Line | Pattern | Endpoint |
 |------|---------|----------|
-| 125 | `fetch()` | `/api/gateway/api/v2/course/user/slts/${courseNftPolicyId}/${moduleCode}` |
-| 137 | `fetch()` | `/api/gateway/api/v2/course/user/assignment/${courseNftPolicyId}/${moduleCode}` |
-| 162 | `fetch()` (loop) | `/api/gateway/api/v2/course/user/lesson/${courseNftPolicyId}/${moduleCode}/${sltIndex}` |
-| 211 | `fetch()` | `/api/gateway/api/v2/course/user/course-module/get/${courseNftPolicyId}/${moduleCode}` |
+| 125 | `fetch()` | `/api/gateway/api/v2/course/user/slts/${courseId}/${moduleCode}` |
+| 137 | `fetch()` | `/api/gateway/api/v2/course/user/assignment/${courseId}/${moduleCode}` |
+| 162 | `fetch()` (loop) | `/api/gateway/api/v2/course/user/lesson/${courseId}/${moduleCode}/${sltIndex}` |
+| 211 | `fetch()` | `/api/gateway/api/v2/course/user/course-module/get/${courseId}/${moduleCode}` |
 
 ### 4. `/src/components/tx/burn-module-tokens.tsx` ✅ MIGRATED
 | Hook | Replaces |

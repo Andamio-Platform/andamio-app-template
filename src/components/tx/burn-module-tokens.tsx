@@ -45,7 +45,7 @@ export interface BurnModuleTokensProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Array of modules selected for burning
@@ -75,7 +75,7 @@ export interface BurnModuleTokensProps {
  * This is a destructive operation and cannot be undone.
  */
 export function BurnModuleTokens({
-  courseNftPolicyId,
+  courseId,
   modulesToBurn,
   onClearSelection,
   onSuccess,
@@ -124,7 +124,7 @@ export function BurnModuleTokens({
     const results = await Promise.allSettled(
       modules.map((m) =>
         updateModuleStatus.mutateAsync({
-          courseId: courseNftPolicyId,
+          courseId: courseId,
           moduleCode: m.moduleCode,
           status: "DRAFT",
         })
@@ -151,7 +151,7 @@ export function BurnModuleTokens({
       txType: "COURSE_TEACHER_MODULES_MANAGE",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         modules_to_add: [],
         modules_to_update: [],
         modules_to_remove: hashesToBurn,

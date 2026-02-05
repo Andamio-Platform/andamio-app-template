@@ -135,7 +135,7 @@ export interface EnrollInCourseParams {
  * Submit Assignment transaction parameters
  */
 export interface SubmitAssignmentParams {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   walletAddress: string;
   accessTokenAlias: string;

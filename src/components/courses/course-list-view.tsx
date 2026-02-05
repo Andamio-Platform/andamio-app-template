@@ -59,7 +59,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
               {/* Action Button */}
               <div className="flex-shrink-0 w-full sm:w-auto">
                 <CourseManageButton
-                  courseNftPolicyId={courseId || null}
+                  courseId={courseId || null}
                   className="w-full sm:w-auto"
                 />
               </div>

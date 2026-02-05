@@ -15,7 +15,7 @@ import { TeacherIcon, OwnerIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 
 interface CourseTeachersCardProps {
-  courseNftPolicyId: string;
+  courseId: string;
   className?: string;
 }
 
@@ -26,14 +26,14 @@ interface CourseTeachersCardProps {
  * This component displays the combined on-chain + database team data.
  */
 export function CourseTeachersCard({
-  courseNftPolicyId,
+  courseId,
   className,
 }: CourseTeachersCardProps) {
   const {
     data: course,
     isLoading: isLoadingCourse,
     error: courseError,
-  } = useCourse(courseNftPolicyId);
+  } = useCourse(courseId);
 
   // Get owner and teachers from merged course data
   const owner = course?.owner;

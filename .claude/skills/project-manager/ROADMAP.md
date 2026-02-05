@@ -419,7 +419,7 @@ Package extraction and community release.
 
 **On-Chain Identifiers Only**
 - Never expose internal database IDs
-- Use `courseNftPolicyId`, `moduleCode`, `treasuryNftPolicyId`
+- Use `courseId`, `moduleCode`, `treasuryNftPolicyId`
 
 ---
 

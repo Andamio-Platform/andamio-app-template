@@ -330,7 +330,7 @@ const combinedData: CombinedSLTLesson[] = [
 
 <SLTLessonTable
   data={combinedData}
-  courseNftPolicyId={courseNftPolicyId}
+  courseId={courseId}
   moduleCode={moduleCode}
   onChainModule={onChainModule}  // Optional - for on-chain status badges
 />
@@ -340,7 +340,7 @@ const combinedData: CombinedSLTLesson[] = [
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `data` | `CombinedSLTLesson[]` | required | Array of SLT and lesson data |
-| `courseNftPolicyId` | `string` | required | Course NFT policy ID for links |
+| `courseId` | `string` | required | Course NFT policy ID for links |
 | `moduleCode` | `string` | required | Module code for links |
 | `onChainModule` | `OnChainModule \| null` | - | On-chain module data for verification badges |
 
@@ -370,7 +370,7 @@ import { CourseModuleCard } from "~/components/courses/course-module-card";
   ]}
   onChainSlts={new Set(["Understand blockchain basics"])}
   isOnChain={true}
-  courseNftPolicyId={courseNftPolicyId}
+  courseId={courseId}
 />
 ```
 
@@ -383,7 +383,7 @@ import { CourseModuleCard } from "~/components/courses/course-module-card";
 | `slts` | `Array<{ slt_text: string }>` | required | Student Learning Targets |
 | `onChainSlts` | `Set<string>` | required | Set of SLT texts verified on-chain |
 | `isOnChain` | `boolean` | required | Whether module has on-chain verification |
-| `courseNftPolicyId` | `string` | required | Course NFT policy ID for links |
+| `courseId` | `string` | required | Course NFT policy ID for links |
 
 ---
 
@@ -522,7 +522,7 @@ const course: HybridCourseStatus = {
 import { useModuleWizardData } from "~/hooks/api/course/use-module-wizard-data";
 
 const { data, completion, refetchData } = useModuleWizardData({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   isNewModule,
   onDataLoaded: (course, courseModule) => {
@@ -595,7 +595,7 @@ const {
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 
 <RequireCourseAccess
-  courseNftPolicyId={courseId}
+  courseId={courseId}
   title="Edit Module"
   description="You need access to this course to edit modules"
 >
@@ -606,7 +606,7 @@ import { RequireCourseAccess } from "~/components/auth/require-course-access";
 **Props**:
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `courseNftPolicyId` | `string` | required | Course NFT Policy ID to check access for |
+| `courseId` | `string` | required | Course NFT Policy ID to check access for |
 | `title` | `string` | "Course Access Required" | Title shown when not authenticated |
 | `description` | `string` | "Connect your wallet..." | Description shown when not authenticated |
 | `loadingVariant` | `"page" \| "studio-centered" \| "studio-split"` | `"page"` | Loading skeleton style to match page layout |
@@ -642,7 +642,7 @@ import { StudioModuleCard } from "~/components/studio/studio-module-card";
 
 <StudioModuleCard
   courseModule={courseModule}
-  courseNftPolicyId={courseNftPolicyId}
+  courseId={courseId}
   showProgress={true}
   showDescription={true}
   showSltCount={true}
@@ -653,7 +653,7 @@ import { StudioModuleCard } from "~/components/studio/studio-module-card";
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `courseModule` | `CourseModuleOutput` | required | Module data from API |
-| `courseNftPolicyId` | `string` | required | Course identifier for link building |
+| `courseId` | `string` | required | Course identifier for link building |
 | `showProgress` | `boolean` | `true` | Show 6-step wizard progress indicator |
 | `showDescription` | `boolean` | `true` | Show module description |
 | `showSltCount` | `boolean` | `true` | Show SLT count badge |

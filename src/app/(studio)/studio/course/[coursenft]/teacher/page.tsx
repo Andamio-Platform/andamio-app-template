@@ -124,12 +124,12 @@ const formatNetworkStatus = (status: string | undefined | null): string => {
 
 export default function TeacherDashboardPage() {
   const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
+  const courseId = params.coursenft as string;
   const { user } = useAndamioAuth();
 
   // Data hooks
-  const { data: courseData, isLoading: courseLoading, error: courseError } = useCourse(courseNftPolicyId);
-  const { data: rawCommitments, isLoading: commitmentsLoading, error: commitmentsError, refetch: refetchCommitments } = useTeacherAssignmentCommitments(courseNftPolicyId);
+  const { data: courseData, isLoading: courseLoading, error: courseError } = useCourse(courseId);
+  const { data: rawCommitments, isLoading: commitmentsLoading, error: commitmentsError, refetch: refetchCommitments } = useTeacherAssignmentCommitments(courseId);
   const commitments = useMemo(() => (Array.isArray(rawCommitments) ? rawCommitments : []), [rawCommitments]);
   const invalidateTeacher = useInvalidateTeacherCourses();
 
@@ -250,7 +250,7 @@ export default function TeacherDashboardPage() {
           txType: "COURSE_TEACHER_ASSIGNMENTS_ASSESS",
           params: {
             alias: alias,
-            course_id: courseNftPolicyId,
+            course_id: courseId,
             assignment_decisions: group.decisions,
           },
           onSuccess: (txResult) => {
@@ -301,7 +301,7 @@ export default function TeacherDashboardPage() {
         return next;
       });
     }
-  }, [user?.accessTokenAlias, moduleGroups, courseNftPolicyId, assessTx]);
+  }, [user?.accessTokenAlias, moduleGroups, courseId, assessTx]);
 
   // Reset batch state
   const resetBatch = useCallback(() => {

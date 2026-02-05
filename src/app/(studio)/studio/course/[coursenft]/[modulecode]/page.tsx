@@ -58,11 +58,11 @@ import { useState } from "react";
  * verifies the user has owner or teacher access to the course.
  */
 function ModuleWizardContent({
-  courseNftPolicyId,
+  courseId,
   moduleCode,
   isNewModule,
 }: {
-  courseNftPolicyId: string;
+  courseId: string;
   moduleCode: string;
   isNewModule: boolean;
 }) {
@@ -86,14 +86,14 @@ function ModuleWizardContent({
       if (isNewModule) {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
-          { label: courseTitle, href: `/studio/course/${courseNftPolicyId}` },
+          { label: courseTitle, href: `/studio/course/${courseId}` },
           { label: "New Module" },
         ]);
         setTitle("New Module");
       } else {
         setBreadcrumbs([
           { label: "Course Studio", href: "/studio/course" },
-          { label: courseTitle, href: `/studio/course/${courseNftPolicyId}` },
+          { label: courseTitle, href: `/studio/course/${courseId}` },
           { label: courseModule?.title ?? moduleCode },
         ]);
         setTitle(courseModule?.title ?? "Module");
@@ -103,12 +103,12 @@ function ModuleWizardContent({
         }
       }
     },
-    [courseNftPolicyId, isNewModule, moduleCode, setBreadcrumbs, setTitle, setStatus]
+    [courseId, isNewModule, moduleCode, setBreadcrumbs, setTitle, setStatus]
   );
 
   // Data fetching hook
   const { data, completion, refetchData, updateSlts } = useModuleWizardData({
-    courseNftPolicyId,
+    courseId,
     moduleCode: effectiveModuleCode,
     isNewModule: effectiveIsNewModule,
     onDataLoaded: handleDataLoaded,
@@ -129,7 +129,7 @@ function ModuleWizardContent({
 
   // Module-scoped draft store (clean architecture)
   const moduleDraft = useModuleDraft(
-    courseNftPolicyId,
+    courseId,
     effectiveModuleCode,
     effectiveIsNewModule,
     draftCallbacks
@@ -226,12 +226,12 @@ function ModuleWizardContent({
   const onModuleCreated = useCallback(
     async (newModuleCode: string) => {
       setCreatedModuleCode(newModuleCode);
-      const newUrl = `/studio/course/${courseNftPolicyId}/${newModuleCode}?step=slts`;
+      const newUrl = `/studio/course/${courseId}/${newModuleCode}?step=slts`;
       window.history.replaceState(null, "", newUrl);
       await refetchData(newModuleCode);
       void goToStep("slts");
     },
-    [courseNftPolicyId, refetchData, goToStep]
+    [courseId, refetchData, goToStep]
   );
 
   // Build outline steps for the panel
@@ -271,7 +271,7 @@ function ModuleWizardContent({
       updateSlts,
 
       // Course identifiers
-      courseNftPolicyId,
+      courseId,
       moduleCode: effectiveModuleCode,
       isNewModule: effectiveIsNewModule,
       createdModuleCode,
@@ -316,7 +316,7 @@ function ModuleWizardContent({
       data,
       refetchData,
       updateSlts,
-      courseNftPolicyId,
+      courseId,
       effectiveModuleCode,
       effectiveIsNewModule,
       createdModuleCode,
@@ -488,19 +488,19 @@ function ModuleWizardContent({
  */
 export default function StudioModuleEditPage() {
   const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
+  const courseId = params.coursenft as string;
   const moduleCode = params.modulecode as string;
   const isNewModule = moduleCode === "new";
 
   return (
     <RequireCourseAccess
-      courseNftPolicyId={courseNftPolicyId}
+      courseId={courseId}
       title="Edit Module"
       description="Connect your wallet to edit this course module"
       loadingVariant="studio-split"
     >
       <ModuleWizardContent
-        courseNftPolicyId={courseNftPolicyId}
+        courseId={courseId}
         moduleCode={moduleCode}
         isNewModule={isNewModule}
       />

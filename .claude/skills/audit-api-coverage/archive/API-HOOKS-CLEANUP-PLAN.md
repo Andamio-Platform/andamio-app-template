@@ -184,7 +184,7 @@ Created mutations for Introduction CRUD (no dedicated query endpoint exists):
 - Removed raw type imports (`LessonResponse`, `LessonListResponse`)
 - `useLesson` now returns `Lesson | null` with camelCase fields
 - `useCreateLesson` returns `Lesson` (transformed)
-- Renamed `courseNftPolicyId` → `courseId` and `moduleIndex` → `sltIndex`
+- Renamed `courseId` → `courseId` and `moduleIndex` → `sltIndex`
 - Changed "Go API:" → "Endpoint:" in comments
 - Added `staleTime: 30 * 1000` to queries
 - Removed debug console.logs
@@ -207,7 +207,7 @@ Created mutations for Introduction CRUD (no dedicated query endpoint exists):
 - Removed raw type imports (`SLTListResponse`, `SLTResponse`)
 - `useSLTs` now returns `SLT[]` with camelCase fields
 - All mutations return `SLT` or `Promise<void>` (transformed)
-- Renamed `courseNftPolicyId` → `courseId` throughout (query keys, hooks, mutations)
+- Renamed `courseId` → `courseId` throughout (query keys, hooks, mutations)
 - Changed "Go API:" → "Endpoint:" in comments
 - Added `staleTime: 30 * 1000` to query
 - Removed debug console.logs
@@ -333,7 +333,7 @@ Removed backward compatibility exports that were marked deprecated:
 
 ### Previous Session: use-course-module.ts Task 6
 
-**Task 6 Complete**: Renamed `courseNftPolicyId` → `courseId` throughout:
+**Task 6 Complete**: Renamed `courseId` → `courseId` throughout:
 - Query key functions (list, teacherList, detail, map)
 - All hook parameters (useCourseModules, useTeacherCourseModules, useCourseModule, useCourseModuleMap)
 - All mutation inputs (useCreateCourseModule, useUpdateCourseModule, useUpdateCourseModuleStatus, useDeleteCourseModule)
@@ -428,7 +428,7 @@ We work through each hook one at a time. For every hook:
 | **Task 3** | Export query keys object |
 | **Task 4** | Ensure hooks return transformed types |
 | **Task 5** | Update index.ts exports |
-| **Task 6** | Rename `courseNftPolicyId` → `courseId` (hide Cardano implementation details) |
+| **Task 6** | Rename `courseId` → `courseId` (hide Cardano implementation details) |
 
 ---
 
@@ -543,7 +543,7 @@ These hooks need app-level types and transformers.
 **Changes Made**:
 - [x] Import `SLT`, `transformSLT` from use-course-module
 - [x] Update `useSLTs` to return `SLT[]` with transformation
-- [x] Update all mutations to use `courseId` instead of `courseNftPolicyId`
+- [x] Update all mutations to use `courseId` instead of `courseId`
 - [x] Add `staleTime: 30 * 1000`
 - [x] Remove debug console.logs
 - [x] Update "Go API:" → "Endpoint:" comments
@@ -560,7 +560,7 @@ These hooks need app-level types and transformers.
 - [x] Import `Lesson`, `transformLesson` from use-course-module
 - [x] Update `useLesson` to return `Lesson | null` with transformation
 - [x] Update `useCreateLesson` to return `Lesson`
-- [x] Rename `courseNftPolicyId` → `courseId` and `moduleIndex` → `sltIndex`
+- [x] Rename `courseId` → `courseId` and `moduleIndex` → `sltIndex`
 - [x] Add `staleTime: 30 * 1000`
 - [x] Remove debug console.logs
 - [x] Update "Go API:" → "Endpoint:" comments
@@ -629,7 +629,7 @@ export interface ManagerProject {
 
 ### Phase 3: Variable Naming (Task 6)
 
-#### Task 3.1: Rename courseNftPolicyId → courseId
+#### Task 3.1: Rename courseId → courseId
 
 **Files requiring Task 6**:
 - `use-course-module.ts` - 50+ occurrences
@@ -684,7 +684,7 @@ Recommended order based on dependencies and impact:
 3. **Task 1.3** (use-course-student.ts) - Needed for my-learning
 4. **Task 2.1** (use-project-manager.ts) - Needed for project studio
 5. **Task 2.2** (use-project-contributor.ts) - Needed for contributions view
-6. **Task 3.1** (courseNftPolicyId → courseId) - API taxonomy alignment
+6. **Task 3.1** (courseId → courseId) - API taxonomy alignment
 
 ---
 
@@ -797,7 +797,7 @@ The api-taxonomy mandates hiding Cardano implementation details from app code:
 > **Must transform backend `course_nft_policy_id` → `course_id`**
 > Use `course_id` and `project_id` (not `course_policy_id`, `project_policy_id`)
 
-**Variable Naming Rule**: Use `courseId` not `courseNftPolicyId` in all hook code.
+**Variable Naming Rule**: Use `courseId` not `courseId` in all hook code.
 
 ### When to Archive This Document
 

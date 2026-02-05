@@ -404,7 +404,7 @@ export interface Course {
 // ✅ CORRECT
 export interface Course {
   courseId: string;
-  courseNftPolicyId: string;
+  courseId: string;
 }
 ```
 

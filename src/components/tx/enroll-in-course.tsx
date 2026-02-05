@@ -41,7 +41,7 @@ export interface EnrollInCourseProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Course title for display
@@ -60,7 +60,7 @@ export interface EnrollInCourseProps {
 
   /**
    * Module SLT hash (64-char Blake2b-256 hash) - required for on-chain commitment
-   * Use computeSltHashDefinite() from @andamio/transactions to compute this
+   * Use computeSltHashDefinite() from @andamio/core to compute this
    */
   sltHash?: string;
 
@@ -86,7 +86,7 @@ export interface EnrollInCourseProps {
  *
  * @example
  * <EnrollInCourse
- *   courseNftPolicyId="abc123..."
+ *   courseId="abc123..."
  *   courseTitle="Introduction to Blockchain"
  *   moduleCode="MODULE_1"
  *   moduleTitle="Getting Started"
@@ -96,7 +96,7 @@ export interface EnrollInCourseProps {
  * />
  */
 export function EnrollInCourse({
-  courseNftPolicyId,
+  courseId,
   courseTitle,
   moduleCode,
   moduleTitle,
@@ -166,7 +166,7 @@ export function EnrollInCourse({
       txType: "COURSE_STUDENT_ASSIGNMENT_COMMIT",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         slt_hash: sltHash,
         assignment_info: hash,
       },

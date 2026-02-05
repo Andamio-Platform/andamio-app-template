@@ -10,7 +10,7 @@ export function useCourseParams() {
   const params = useParams();
 
   return {
-    courseNftPolicyId: params.coursenft as string,
+    courseId: params.coursenft as string,
     moduleCode: params.modulecode as string | undefined,
     moduleIndex: params.moduleindex
       ? parseInt(params.moduleindex as string)

@@ -39,7 +39,7 @@ export interface MintModuleTokensProps {
   /**
    * Course NFT Policy ID
    */
-  courseNftPolicyId: string;
+  courseId: string;
 
   /**
    * Array of modules with SLT data (app-level type with camelCase fields)
@@ -75,7 +75,7 @@ export interface MintModuleTokensProps {
  *
  *   return (
  *     <MintModuleTokens
- *       courseNftPolicyId={courseId}
+ *       courseId={courseId}
  *       courseModules={readyToMint}
  *       onSuccess={() => void queryClient.invalidateQueries()}
  *     />
@@ -84,7 +84,7 @@ export interface MintModuleTokensProps {
  * ```
  */
 export function MintModuleTokens({
-  courseNftPolicyId,
+  courseId,
   courseModules,
   onSuccess,
   onError,
@@ -181,7 +181,7 @@ export function MintModuleTokens({
       txType: "COURSE_TEACHER_MODULES_MANAGE",
       params: {
         alias: user.accessTokenAlias,
-        course_id: courseNftPolicyId,
+        course_id: courseId,
         modules_to_add: modules_to_mint,
         modules_to_update: [],
         modules_to_remove: [],

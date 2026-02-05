@@ -94,7 +94,7 @@ function ModuleStatusText({ status }: { status: string }) {
 export interface StudioModuleCardProps {
   /** Course module data (app-level type with camelCase fields) */
   courseModule: CourseModule;
-  courseNftPolicyId: string;
+  courseId: string;
   /** Show the module status text */
   showStatus?: boolean;
   /** Show the module description */
@@ -109,7 +109,7 @@ export interface StudioModuleCardProps {
 
 export function StudioModuleCard({
   courseModule,
-  courseNftPolicyId,
+  courseId,
   showStatus = true,
   showDescription = true,
   showSltCount = true,
@@ -185,7 +185,7 @@ export function StudioModuleCard({
 
   return (
     <Link
-      href={`/studio/course/${courseNftPolicyId}/${moduleCode}`}
+      href={`/studio/course/${courseId}/${moduleCode}`}
       className="group block"
     >
       <AndamioCard className="p-5 transition-all duration-200 hover:shadow-md">

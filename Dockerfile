@@ -23,9 +23,8 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files and local packages (for file: dependencies)
+# Copy package files
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-COPY packages/andamio-transactions ./packages/andamio-transactions  
 
 # Install dependencies based on lockfile present
 RUN \

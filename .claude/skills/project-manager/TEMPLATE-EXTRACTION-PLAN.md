@@ -16,7 +16,7 @@ Extract a forkable template (`andamio-app-template`) from the production app (`a
 - [x] Step 1: Rename local directory
 - [x] Step 2: Update internal references in `andamio-app-v2`
 - [x] Step 3: Create `andamio-app-template` repo
-- [x] Step 4: Single divergence commit on template
+- [x] Step 4: Atomic divergence commits on template
 - [x] Step 5: Document rebase workflow
 
 ---
@@ -48,33 +48,83 @@ git push template main
 
 Then clone `andamio-app-template` separately for template work.
 
-## Step 4: Single Divergence Commit on Template
+## Step 4: Atomic Divergence Commits on Template
 
-In the `andamio-app-template` repo, make **one commit** that removes app-only features:
+In the `andamio-app-template` repo, create **separate commits** for each removal type. This prevents "compound conflicts" — when the app changes any file, you only conflict with the specific commit that touches that file.
 
-### Delete these routes:
-- `src/app/(app)/api-setup/` — Dev API key registration wizard
-- `src/app/(app)/components/` — Component showcase page
-- `src/app/(app)/editor/` — Editor demo page
-- `src/app/(app)/sitemap/` — Navigation index page
+### Commit Structure
 
-### Edit these files:
-- `src/config/navigation.ts` — Remove "Dev Tools" sidebar section
-- `src/lib/andamio-auth.ts` — Remove dev registration functions (`createDevRegisterSession`, `completeDevRegistration`, dev JWT helpers). Keep all end-user auth intact.
-- `package.json` — Set name to `andamio-app-template`
-- `README.md` — Template-specific setup instructions
+Each commit should:
+- Do ONE thing (remove one route, one file, one nav section)
+- Use the `template:` prefix for easy identification
+- Be as small as possible to minimize conflict surface
 
-### Keep everything else:
+### Recommended Commit Sequence
+
+```bash
+# Commit 1: Remove dev routes
+git rm -r src/app/(app)/api-setup src/app/(app)/components src/app/(app)/editor src/app/(app)/sitemap
+git commit -m "template: remove dev-only routes"
+
+# Commit 2: Remove Dev Tools from navigation
+# (edit src/config/navigation.ts to remove Dev Tools section)
+git add src/config/navigation.ts
+git commit -m "template: remove Dev Tools nav section"
+
+# Commit 3: Remove dev auth functions
+# (edit src/lib/andamio-auth.ts to remove dev registration functions)
+git add src/lib/andamio-auth.ts
+git commit -m "template: remove dev registration functions"
+
+# Commit 4: Remove workflows
+git rm -r .github/workflows
+git commit -m "template: remove deployment workflows"
+
+# Commit 5: Remove Dockerfile
+git rm Dockerfile
+git commit -m "template: remove Dockerfile"
+
+# Commit 6: Update package.json name
+# (edit package.json to change name to andamio-app-template)
+git add package.json
+git commit -m "template: rename to andamio-app-template"
+
+# Commit 7: Update README
+# (edit README.md with template-specific setup instructions)
+git add README.md
+git commit -m "template: update README for template usage"
+```
+
+### What Each Commit Removes
+
+| Commit | Removes | Conflict Trigger |
+|--------|---------|------------------|
+| 1 | Dev routes (`api-setup/`, `components/`, `editor/`, `sitemap/`) | App adds files to these dirs |
+| 2 | Dev Tools nav section | App modifies `navigation.ts` |
+| 3 | Dev auth functions | App modifies `andamio-auth.ts` |
+| 4 | Workflows (`.github/workflows/`) | App adds/modifies workflows |
+| 5 | Dockerfile | App modifies Dockerfile |
+| 6 | Package name | App modifies `package.json` name |
+| 7 | README content | App modifies README |
+
+### Keep Everything Else
+
+These should NOT be in divergence commits (they sync automatically):
 - All access token minting (mint, burn, migrate)
 - All Course V2 routes (13 learner + studio routes)
 - All Project V2 routes (10 contributor + studio routes)
 - Auth system, gateway proxy, design system, TX hooks
 - Type generation pipeline
-- GitHub workflows (they use variables, not hardcoded names)
+- Dependencies in package.json (except name field)
 
-### Additional removals (TBD):
-- "Finer tuned features" to be discussed and enumerated later
-- Each removal should be its own commit on top of the initial divergence commit
+### Adding Future Removals
+
+When new app-specific features need to be excluded:
+
+1. **Create a NEW commit** (don't amend existing ones)
+2. **Use the `template:` prefix**
+3. **Keep it focused** on one removal
+4. **Update this document** to track what's removed
 
 ## Step 5: Document Rebase Workflow
 
@@ -102,6 +152,8 @@ git push --force-with-lease
 - Changes to `navigation.ts` (sidebar config)
 - Changes to `andamio-auth.ts` (auth functions)
 - New routes added in app that template doesn't want
+- New or modified GitHub workflows (template has none)
+- Changes to Dockerfile (template has none)
 
 ### When to stop rebasing:
 - When conflicts become frequent and tedious
@@ -110,8 +162,36 @@ git push --force-with-lease
 
 ## GitHub Workflows
 
-**No changes needed.** Both `deploy-dev.yml` and `deploy-staging.yml` use repository variables (`${{ vars.* }}`), not hardcoded repo names. The template repo will need its own GCP variables configured if it gets its own deployment pipeline.
+The template removes all deployment workflows (`.github/workflows/`). While the workflows use repository variables (`${{ vars.* }}`), they are app-specific:
 
-## Key Principle
+- Template users will create their own deployment pipelines
+- Workflow secrets/variables are repo-specific
+- Prevents confusion about unconfigured deployments
 
-Keep the divergence commit(s) as small and surgical as possible. Every edited line is a potential rebase conflict. Deleting whole files is clean. Editing shared files is where conflicts live.
+## Key Principles
+
+### 1. Atomic Commits
+
+Each divergence commit should do ONE thing. This isolates conflicts:
+- If app changes `navigation.ts`, only the nav commit conflicts
+- If app changes `Dockerfile`, only the Dockerfile commit conflicts
+
+### 2. Prefer Deletions Over Edits
+
+- **Deleting files**: Clean, rarely conflicts
+- **Editing files**: Every changed line is a potential conflict
+
+### 3. Never Amend Divergence Commits
+
+When adding new removals:
+- Create a NEW commit on top
+- Don't amend existing commits (changes their hash, complicates rebases)
+
+### 4. Use Consistent Naming
+
+All divergence commits use the `template:` prefix:
+```
+template: remove dev-only routes
+template: remove Dev Tools nav section
+template: remove deployment workflows
+```

@@ -29,11 +29,12 @@ These skill ideas emerged from codebase pattern analysis during documentation ru
 | `api-type-generator` | Regenerate and verify API types from gateway OpenAPI spec | Medium | New type generation system uses `npm run generate:types`. Skill would: run generation, check for breaking changes in generated types, update strict type re-exports in `index.ts`, verify all imports use generated types. |
 | ~~`tx-migration-guide`~~ | ~~Guide migration of transaction components from V1 to V2~~ | ~~**High**~~ | **COMPLETED 2026-01-18**. All 16 transaction components migrated to V2. Migration guide: `.claude/skills/project-manager/TX-MIGRATION-GUIDE.md`. |
 | `package-deprecation-guide` | Guide deprecation and removal of local packages | Low | Pattern from @andamio/transactions deprecation. Skill would: identify unused exports, migrate utilities to local lib, update imports across codebase, clean up package.json scripts. |
+| ~~`sync-template`~~ | ~~Sync app changes to template repo via rebase~~ | ~~**High**~~ | **IMPLEMENTED** 2026-02-05. Skill created at `.claude/skills/sync-template/SKILL.md`. Manages rebase workflow between `andamio-app-v2` and `andamio-app-template`, handles divergence commits, conflict resolution. |
 
 | ~~`nullable-type-validator`~~ | ~~Validate NullableString handling across components~~ | ~~Low~~ | **ADDRESSED** by `typescript-types-expert` skill (2026-01-24). Skill handles: NullableString auditing, getString() pattern enforcement, type guard validation, generated type imports. |
 
 **Added**: 2025-12-19 (first documentarian run)
-**Updated**: 2026-02-03 (react-query-auditor implemented)
+**Updated**: 2026-02-05 (sync-template implemented)
 
 ---
 

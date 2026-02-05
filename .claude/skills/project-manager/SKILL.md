@@ -22,6 +22,7 @@ When invoked, ask the developer what they're working on:
 | **Types** | "I have TypeScript type issues" | `/typescript-types-expert` |
 | **TX Schemas** | "I need to sync with API changes" | `/transaction-auditor` |
 | **PR Review** | "I want to review a PR" | `/review-pr` |
+| **Template Sync** | "I need to sync app changes to the template" | `/sync-template` |
 | **New Here** | "I'm new and want to explore" | `/getting-started` |
 | **Other** | "Something else" | Review STATUS.md |
 
@@ -30,7 +31,7 @@ When invoked, ask the developer what they're working on:
 If the developer selects "New Here" or seems unfamiliar with the codebase:
 
 > "Welcome! For comprehensive onboarding, run `/getting-started`. It will:
-> - Help you discover all 12 Claude skills
+> - Help you discover all available Claude skills
 > - Recommend skills based on your intent (explore, build, fix, review, test)
 > - Offer curated learning paths for your role
 >
@@ -105,6 +106,16 @@ Based on their answer, guide them to the right skill:
 >
 > Just provide the PR number or let it detect from the current branch."
 
+#### Template Sync
+
+> "For syncing changes to the template repo, use `/sync-template`. It helps you:
+> - Rebase `andamio-app-template` with latest changes from `andamio-app-v2`
+> - Resolve conflicts in divergence commits
+> - Add new removals as atomic commits
+>
+> Run this from the template repo after shipping significant app changes.
+> If run from the app repo, it will show what commits would sync."
+
 ## Reference Documentation
 
 ### Key Files in This Directory
@@ -124,6 +135,7 @@ Based on their answer, guide them to the right skill:
 | `PENDING-TX-WATCHER.md` | TX State Machine integration |
 | `TRANSACTION-COMPONENTS.md` | Transaction UI components |
 | `API-CALLS-AUDIT.md` | Direct API calls needing extraction |
+| `TEMPLATE-EXTRACTION-PLAN.md` | Template repo sync workflow and divergence commits |
 
 ## Available Skills
 
@@ -141,6 +153,7 @@ Based on their answer, guide them to the right skill:
 | `/audit-api-coverage` | Check which API endpoints are implemented |
 | `/getting-started` | Onboard new developers, skill discovery |
 | `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
+| `/sync-template` | Sync app changes to template repo via rebase |
 
 ## Current Priority
 
@@ -174,6 +187,7 @@ When a conversation becomes focused on a specific domain:
 - Styling issues → `/design-system`
 - Type issues → `/typescript-types-expert`
 - TX schema sync → `/transaction-auditor`
+- Template sync → `/sync-template`
 
 ## Output Format
 
@@ -181,4 +195,4 @@ Start with the interactive question, then guide to the appropriate skill or prov
 
 ---
 
-**Last Updated**: February 1, 2026
+**Last Updated**: February 5, 2026

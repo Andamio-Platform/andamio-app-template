@@ -44,6 +44,7 @@ When changes involve specific domains, delegate documentation updates to the app
 | Styling/components | `/design-system reference` | Component patterns, color system |
 | Project status | `/project-manager` | STATUS.md, ROADMAP.md, feature tracking |
 | Type system issues | `/typescript-types-expert audit` | Type imports, NullableString, generated types |
+| Template sync | `/sync-template` | Sync changes from app to template repo via rebase workflow |
 
 ### 6. Suggest New Claude Skills
 

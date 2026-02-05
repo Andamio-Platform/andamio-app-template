@@ -11,6 +11,7 @@ These exclusions are managed via divergence commits in the template repo. See [T
 | Category | Excluded From Template | Reason |
 |----------|----------------------|--------|
 | Routes | 4 dev-only routes | Internal tooling, not needed by template users |
+| Routes | V1→V2 migration route | Only app.andamio.io has V1 users to migrate |
 | Navigation | "Dev Tools" sidebar section | References excluded routes |
 | Auth | Dev registration functions | API key registration is app-specific |
 | Deployment | GitHub workflows | App-specific CI/CD configuration |
@@ -30,6 +31,22 @@ These routes exist in `andamio-app-v2` but are removed from the template:
 | **Components** | `src/app/(app)/components/` | Component showcase/demo page | Internal dev tool for reviewing components |
 | **Editor** | `src/app/(app)/editor/` | Tiptap editor demo/testing page | Internal dev tool |
 | **Sitemap** | `src/app/(app)/sitemap/` | Navigation index/debug page | Internal dev tool for reviewing routes |
+
+---
+
+## V1→V2 Migration (Excluded)
+
+The V1 access token migration functionality is excluded from the template. Only `app.andamio.io` has existing V1 users who need to migrate—new apps built from the template won't have V1 access tokens.
+
+| File | Purpose | Why Excluded |
+|------|---------|--------------|
+| `src/app/migrate/page.tsx` | Standalone V1→V2 migration page | App-specific migration flow |
+| `src/components/landing/v1-migrate-card.tsx` | V1 migration card component | References V1 policy ID |
+| `src/components/landing/landing-hero.tsx` | V1 token detection logic | Scans for V1 tokens to show migration flow |
+
+**V1 Policy ID**: `c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305` (specific to original Andamio deployment)
+
+**Template commit**: `dc39c0c template: remove V1→V2 migration route`
 
 ---
 

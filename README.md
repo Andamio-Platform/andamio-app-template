@@ -4,11 +4,11 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.0-green.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.0--rc6-green.svg)](./CHANGELOG.md)
 
 Production Cardano dApp for [app.andamio.io](https://app.andamio.io), built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
 
-**Version**: 0.5.0 | **Last Updated**: February 5, 2026 | [CHANGELOG](./CHANGELOG.md)
+**Version**: 2.0.0-rc6 | **Last Updated**: February 5, 2026 | [CHANGELOG](./CHANGELOG.md)
 
 ## Current Status
 

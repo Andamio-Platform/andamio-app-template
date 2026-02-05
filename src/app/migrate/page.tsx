@@ -123,18 +123,20 @@ export default function MigratePage() {
   return (
     <div className="flex min-h-screen items-center justify-center overflow-auto bg-background p-4">
       <div className="w-full max-w-lg space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <AccessTokenIcon className="h-6 w-6 text-primary" />
+        {/* Header - hidden on success since the card has its own celebratory header */}
+        {migrateState !== "success" && (
+          <div className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <AccessTokenIcon className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Migrate to V2
+            </h1>
+            <AndamioText variant="muted">
+              Claim your V2 access token using your existing V1 token
+            </AndamioText>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Migrate to V2
-          </h1>
-          <AndamioText variant="muted">
-            Claim your V2 access token using your existing V1 token
-          </AndamioText>
-        </div>
+        )}
 
         {/* State: No wallet connected */}
         {migrateState === "no-wallet" && (
@@ -232,34 +234,66 @@ export default function MigratePage() {
         {migrateState === "success" && (
           <AndamioCard>
             <AndamioCardHeader className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <SuccessIcon className="h-6 w-6 text-primary" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <SuccessIcon className="h-8 w-8 text-primary" />
               </div>
-              <AndamioCardTitle>Migration Complete!</AndamioCardTitle>
-              <AndamioCardDescription>
-                Your V2 access token has been claimed. Check your wallet to see the transaction complete.
+              <AndamioCardTitle className="text-2xl">
+                Welcome to Andamio V2!
+              </AndamioCardTitle>
+              <AndamioCardDescription className="text-base">
+                Your migration is complete. Your V2 access token is now in your wallet.
               </AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
+              {/* Alias confirmation */}
+              {detectedAlias && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    Your alias
+                  </AndamioText>
+                  <p className="mt-1 font-mono text-lg font-semibold text-primary">
+                    {detectedAlias}
+                  </p>
+                </div>
+              )}
+
+              {/* Transaction status */}
+              {streamSuccess ? (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
+                  <AndamioText variant="small" className="font-medium text-primary">
+                    Transaction confirmed on-chain
+                  </AndamioText>
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-muted/30 p-3 text-center">
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    Waiting for on-chain confirmation...
+                  </AndamioText>
+                </div>
+              )}
+
+              {/* Explorer link */}
               {explorerUrl && (
                 <a
                   href={explorerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+                  className="flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   View transaction on explorer
                   <ExternalLinkIcon className="h-4 w-4" />
                 </a>
               )}
 
-              {streamSuccess && (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
-                  <AndamioText variant="small" className="font-medium text-foreground">
-                    Transaction confirmed on-chain
-                  </AndamioText>
-                </div>
-              )}
+              {/* Next steps */}
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <AndamioText variant="small" className="font-medium">
+                  Next step
+                </AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Log in with your wallet to start using Andamio V2. Your alias and credentials will be available once you sign in.
+                </AndamioText>
+              </div>
 
               <AndamioButton
                 className="w-full"

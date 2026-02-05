@@ -14,6 +14,8 @@ yarn.lock
 /e2e/test-results/
 /e2e/reports/
 /e2e/screenshots/
+/test-results/
+/screenshots/
 /playwright-report/
 /blob-report/
 /playwright/.cache/

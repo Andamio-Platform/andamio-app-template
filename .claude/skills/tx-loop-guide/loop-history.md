@@ -2,12 +2,12 @@
 
 Track the validation status of each transaction loop.
 
-## Current Phase Summary (2026-01-24)
+## Current Phase Summary (2026-02-05)
 
 | Domain | Phase | Status | Next Steps |
 |--------|-------|--------|------------|
 | **Course Owner/Teacher** | Initial Validation | Ready for UX Testing | Loops 1, 3, 6 validated functionally; proceed to UX refinement |
-| **Course Student** | Not Yet Tested | Blocked | Need to implement and test Loops 2, 4, 5 |
+| **Course Student** | Initial Validation | Loop 2 Validated | Loop 2 complete with real wallets; proceed to Loops 4, 5 |
 | **Project** | Not Implemented | Blocked | UI components not yet built; need full implementation |
 
 ### What This Means
@@ -45,7 +45,7 @@ A loop is **Validated** when:
 | 1: Onboarding | Ready for UX | 2026-01-24 | @james | - | Access Token minting works, UI issues resolved |
 | 3: Create & Publish Course | Ready for UX | 2026-01-24 | @james | - | Full owner/teacher flow validated |
 | 6: Team Teaching Setup | Ready for UX | 2026-01-24 | @james | - | Teacher management working |
-| 2: Earn Credential | Issues Found | 2026-02-04 | @claude | #165 | UI validated, needs wallet testing for TX |
+| 2: Earn Credential | **Validated** | 2026-02-05 | @claude | - | Full TX flow with real wallets: commit → assess → claim |
 | 4: Assignment Revision | Untested | - | - | - | Depends on Loop 2 validation |
 | 5: Multi-Module Path | Untested | - | - | - | Depends on Loop 2 validation |
 
@@ -280,6 +280,221 @@ Comprehensive UI exploration using Playwright automation:
 - `e2e/tests/tx-loop-enrollment.spec.ts`
 - `e2e/tests/tx-loop-full-enrollment.spec.ts`
 - `e2e/screenshots/loop2/` - UI screenshots
+
+---
+
+### 2026-02-04 — Loop 2: Earn Credential (Playwright Full Suite)
+
+**Tester:** Claude (AI-assisted via Playwright)
+**Result:** Issues Found
+
+**Transactions:**
+- [ ] COURSE_STUDENT_ASSIGNMENT_COMMIT — Not tested (requires wallet)
+- [ ] COURSE_TEACHER_ASSIGNMENTS_ASSESS — Not tested
+- [ ] COURSE_STUDENT_CREDENTIAL_CLAIM — Not tested
+
+**Issues Created:**
+- #174 — Tx Loop Feedback: Loop 2 - Playwright Testing (full test suite results)
+
+**Notes:**
+Comprehensive Playwright testing session using enhanced wallet testing infrastructure:
+
+**Tests Run:** 36 total
+- tx-flow-credential.spec.ts: 18 tests (17 passed, 1 flaky)
+- tx-loop-enrollment.spec.ts: 8 tests (all passed)
+- tx-loop-exploration.spec.ts: 6 tests (all passed)
+- tx-loop-full-enrollment.spec.ts: 4 tests (all passed)
+
+**Navigation Flow Validated:**
+```
+Course Catalog → Course Detail → Module Accordion → Module Page → Assignment Page ✅
+```
+
+**What Works:**
+- Course catalog loads courses correctly
+- Course detail page displays modules, SLTs, team
+- Module accordion navigation works
+- Assignment page shows on-chain verification hash
+- Evidence editor component present
+- "Connect wallet" prompt appears
+- MockLedger infrastructure tracks balances
+- Multi-role fixtures (Student/Teacher) maintain isolation
+
+**Issues Found:**
+- No explicit "Enroll" CTA on course detail page
+- Module shows "Draft" badge (unclear if blocking)
+
+**Blocker:**
+Cannot test actual transactions without manual wallet connection. The UI navigation is validated up to transaction initiation point.
+
+**Infrastructure Validated:**
+- MockLedger (UTXO state tracking)
+- CBOR transaction validation
+- Multi-role browser context isolation
+- JWT authentication injection
+
+---
+
+### 2026-02-04 — Loop 1: Access Token Minting (Real Wallets)
+
+**Tester:** Claude (AI-assisted script)
+**Result:** Validated
+
+**Transactions:**
+- [x] GLOBAL_GENERAL_ACCESS_TOKEN_MINT (Student) — Success
+- [x] GLOBAL_GENERAL_ACCESS_TOKEN_MINT (Teacher) — Success
+
+**Issues Created:**
+- None
+
+**Notes:**
+Successfully minted Access Tokens for E2E test wallets using `mint-access-tokens.ts` script.
+
+| Role | Alias | TX Hash |
+|------|-------|---------|
+| student | e2e_student_01 | `becba9d3bffb8fc1e54814145093d3eb18573404a8a66bb2807dfcd4c6883fce` |
+| teacher | e2e_teacher_01 | `22e7c4a49848481f8ba5e6f007a83717f1becb07bc78a2ed7173416c9cbc9fb8` |
+
+**Cost:** ~8 ADA per mint (includes minUTXO for token storage)
+
+**What's Validated:**
+- Gateway API `/api/v2/tx/global/user/access-token/mint` endpoint works
+- Real wallet signing and submission via MeshWallet
+- Transaction confirmation on preprod (block 4391694-4391695)
+
+---
+
+### 2026-02-05 — Real Wallet Authentication Validated
+
+**Tester:** Claude (AI-assisted via Playwright with real wallets)
+**Result:** Validated
+
+**What Works:**
+- [x] User Auth flow with nonce signing (CIP-30 signData)
+- [x] JWT authentication for API calls
+- [x] Multi-role authentication (student + teacher)
+- [x] Authenticated page access (dashboard, course, assignment)
+- [x] localStorage JWT injection for browser tests
+
+**Authentication Flow Validated:**
+```
+1. POST /api/v2/auth/login/session → get nonce
+2. Sign nonce with MeshWallet.signData(hex-encoded-nonce)
+3. POST /api/v2/auth/login/validate → get JWT
+```
+
+**Tests Created:**
+- `e2e/tests/real-wallet-auth.spec.ts` - 8 tests, all passing
+
+**Infrastructure Updates:**
+- `e2e/mocks/real-wallet.ts` - Added `authenticateWalletWithGateway()` function
+- `e2e/playwright.config.ts` - Added `real-wallet` project for isolated test runs
+
+**Note:** Access Token aliases not detected during auth because User Auth flow requires passing `andamio_access_token_unit` parameter (future enhancement).
+
+---
+
+### 2026-02-04 — Loop 2: Real Wallet Infrastructure Setup
+
+**Tester:** Claude (AI-assisted via Playwright with real wallets)
+**Result:** Infrastructure Validated
+
+**Transactions:**
+- [ ] COURSE_STUDENT_ASSIGNMENT_COMMIT — Not tested (requires manual wallet connection)
+- [ ] COURSE_TEACHER_ASSIGNMENTS_ASSESS — Not tested
+- [ ] COURSE_STUDENT_CREDENTIAL_CLAIM — Not tested
+
+**Issues Created:**
+- None (setup session)
+
+**Notes:**
+Set up real wallet testing infrastructure with funded preprod wallets:
+
+**Wallet Status:**
+| Role | Balance | Address |
+|------|---------|---------|
+| student | 8,999.64 ADA | addr_test1qqzrp5k0llmc0jsm7k5x3... |
+| teacher | 250.00 ADA | addr_test1qp48qhzx4w4529dkfspxx... |
+| owner | 250.00 ADA | addr_test1qz86ee3v3jkkftmwpg36w... |
+| contributor | 250.00 ADA | addr_test1qrlqvc3gwfy6rvvw8zh8j... |
+| manager | 250.00 ADA | addr_test1qpllrahcngrefsum4seln... |
+
+**What's Validated:**
+- Real wallet creation from mnemonics
+- Blockfrost API integration for balance/UTXO queries
+- Role-based wallet isolation (separate wallets per role)
+- CIP-30 wallet injection into browser
+- Navigation path: Catalog → Course → Module → Assignment
+
+**Blocker for Full Loop:**
+- Test wallets need Access Tokens (Loop 1: Onboarding must run first)
+- Wallet connection requires user interaction (click "Connect Wallet")
+- Current test infrastructure can't trigger wallet connection dialog
+
+**Test Course Identified:**
+- "Intro to Drawing" (Kenny) - has assignment content
+- Module 101: "Introduction to Circles"
+- Assignment: "Draw a Circle"
+
+**Next Steps:**
+1. Manual test: Connect wallet, mint Access Token for student/teacher
+2. Then re-run Loop 2 tests with authenticated wallets
+3. Consider adding auto-connect capability to test infrastructure
+
+**Files Created:**
+- `e2e/tests/real-wallet-loop2.spec.ts` - Real wallet E2E tests
+- `.claude/skills/test-wallet-setup/SKILL.md` - Developer wallet setup guide
+
+---
+
+### 2026-02-05 — Loop 2: Earn Credential (Full TX Validation)
+
+**Tester:** Claude (AI-assisted with real Cardano wallets)
+**Result:** **Validated** 🎉
+
+**Transactions:**
+- [x] COURSE_STUDENT_ASSIGNMENT_COMMIT — Success (`5e3aabb4abc52737e884bdb38600cff5ce509e4adc803dcf253cd76f048c3429`)
+- [x] COURSE_TEACHER_ASSIGNMENTS_ASSESS — Success (`4e734e57e290dc65d4ce3f35b6d53ee8a44e860c83cda63e71d71fa6fca490fc`)
+- [x] COURSE_STUDENT_CREDENTIAL_CLAIM — Success (`9ca1c3d7f9548aa86d338faa2b4baf5ce814359e54545189c112ae37a5e97f71`)
+
+**Issues Created:**
+- None (all tests passing)
+
+**Notes:**
+This is the first complete end-to-end validation of Loop 2 using real Cardano wallets on preprod.
+
+**Key Accomplishments:**
+1. **E2E Test Course Created** - Dedicated test course with proper permissions:
+   - Course ID: `7f2c62d009890a957b15ba93f71dd6c09f53956e2338b4a716a273dc`
+   - Owner: `e2e_student_01`
+   - Teacher: `e2e_teacher_01`
+   - Module: `E2E101`
+
+2. **Access Token Detection** - Auth flow now detects and passes `andamio_access_token_unit` to validate endpoint, returning proper alias
+
+3. **Full Transaction Flow Validated:**
+   - Student commits to assignment with SLT hash
+   - Teacher accepts submission
+   - Student claims credential
+
+**Test Infrastructure:**
+- `e2e/scripts/setup-e2e-course.ts` - Creates test courses with proper permissions
+- `e2e/tests/real-wallet-loop2-transactions.spec.ts` - Full Loop 2 test suite
+- `e2e/mocks/real-wallet.ts` - Updated with access token detection
+
+**Cost:** Total ~250 ADA (course creation, teacher add, module mint, all Loop 2 transactions)
+
+**What's Validated:**
+- [x] Gateway V2 transaction build endpoints
+- [x] MeshWallet headless signing
+- [x] Blockfrost transaction submission
+- [x] User Auth with access token alias
+- [x] Course/student/teacher permission model
+- [x] Full credential earning flow
+
+**Next Steps:**
+- Loops 4 and 5 can now be tested (Assignment Revision, Multi-Module Path)
+- Consider adding DB side effect validation tests
 
 ---
 

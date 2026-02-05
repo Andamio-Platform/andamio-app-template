@@ -77,12 +77,14 @@ export default defineConfig({
 
   /* Configure projects for major browsers and viewports */
   projects: [
-    /* Desktop Chromium */
+    /* Desktop Chromium - Mock wallet tests (default, fast) */
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
       },
+      /* Exclude real-wallet tests from default run */
+      testIgnore: /.*real-wallet.*\.spec\.ts/,
     },
 
     /* Mobile Chrome (Pixel 5) - with longer timeouts for slower mobile rendering */
@@ -94,6 +96,8 @@ export default defineConfig({
         navigationTimeout: 45000,
         actionTimeout: 20000,
       },
+      /* Exclude real-wallet tests from mobile run */
+      testIgnore: /.*real-wallet.*\.spec\.ts/,
     },
 
     /* Accessibility testing project */
@@ -103,6 +107,29 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
       },
       testMatch: /.*accessibility.*\.spec\.ts/,
+    },
+
+    /* Real Wallet tests - requires BLOCKFROST_PREPROD_API_KEY and funded wallets
+     *
+     * Run with: npx playwright test --project=real-wallet
+     *
+     * Prerequisites:
+     * 1. Generate wallets: npx ts-node e2e/scripts/generate-test-wallets.ts --save
+     * 2. Fund wallets from faucet: https://docs.cardano.org/cardano-testnets/tools/faucet/
+     * 3. Mint Access Tokens: npx ts-node e2e/scripts/mint-access-tokens.ts
+     * 4. Set BLOCKFROST_PREPROD_API_KEY in environment
+     */
+    {
+      name: "real-wallet",
+      use: {
+        ...devices["Desktop Chrome"],
+        /* Longer timeouts for real blockchain operations */
+        navigationTimeout: 45000,
+        actionTimeout: 30000,
+      },
+      testMatch: /.*real-wallet.*\.spec\.ts/,
+      /* Run serially to avoid wallet conflicts */
+      fullyParallel: false,
     },
   ],
 

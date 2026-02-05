@@ -28,8 +28,27 @@ import type {
   MergedHandlersRegisterModuleResponse,
 } from "~/types/generated/gateway";
 
+import type { JSONContent } from "@tiptap/core";
 import { courseKeys } from "./use-course";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+
+// =============================================================================
+// Type Guard
+// =============================================================================
+
+/**
+ * Type guard for Tiptap JSONContent.
+ * Validates that the value is an object with a string `type` field,
+ * which is the minimum shape for valid Tiptap content.
+ */
+export function isJSONContent(value: unknown): value is JSONContent {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    typeof (value as Record<string, unknown>).type === "string"
+  );
+}
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -69,40 +88,26 @@ function getModuleStatus(
   source: string | undefined,
   moduleStatus: string | undefined
 ): CourseModuleStatus {
-  // Log status derivation for debugging
-  console.log("[getModuleStatus] Deriving status:", {
-    source,
-    moduleStatus,
-  });
-
   // Chain-only modules need DB registration
   if (source === "chain_only") {
-    console.log("[getModuleStatus] Result: unregistered (chain_only)");
     return "unregistered";
   }
 
   // Merged modules are fully active
   if (source === "merged") {
-    console.log("[getModuleStatus] Result: active (merged)");
     return "active";
   }
 
   // DB-only modules: derive from module_status
-  let result: CourseModuleStatus;
   switch (moduleStatus?.toUpperCase()) {
     case "APPROVED":
-      result = "approved";
-      break;
+      return "approved";
     case "PENDING_TX":
-      result = "pending_tx";
-      break;
+      return "pending_tx";
     case "DRAFT":
     default:
-      result = "draft";
-      break;
+      return "draft";
   }
-  console.log("[getModuleStatus] Result:", result, "(db_only)");
-  return result;
 }
 
 /**
@@ -128,7 +133,7 @@ export interface SLT {
  */
 export interface Lesson {
   id?: number;
-  contentJson?: unknown;
+  contentJson?: JSONContent | null;
   sltId?: string;
   sltIndex?: number;
   moduleCode?: string;
@@ -151,7 +156,7 @@ export interface Assignment {
   id?: number;
   title?: string;
   description?: string;
-  contentJson?: unknown;
+  contentJson?: JSONContent | null;
   moduleCode?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -171,7 +176,7 @@ export interface Introduction {
   id?: number;
   title?: string;
   description?: string;
-  contentJson?: unknown;
+  contentJson?: JSONContent | null;
   moduleCode?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -270,7 +275,8 @@ export function transformLesson(raw: Record<string, unknown>): Lesson {
   const description = (content?.description ?? raw.description) as string | undefined;
   const imageUrl = (content?.image_url ?? raw.image_url) as string | undefined;
   const videoUrl = (content?.video_url ?? raw.video_url) as string | undefined;
-  const contentJson = content?.content_json ?? raw.lesson_content ?? raw.content_json;
+  const rawContentJson = content?.content_json ?? raw.lesson_content ?? raw.content_json;
+  const contentJson = isJSONContent(rawContentJson) ? rawContentJson : null;
 
   return {
     id: raw.id as number | undefined,
@@ -312,7 +318,8 @@ export function transformAssignment(raw: Record<string, unknown>): Assignment {
   const description = getStringField(content?.description ?? raw.description);
   const imageUrl = getStringField(content?.image_url ?? raw.image_url);
   const videoUrl = getStringField(content?.video_url ?? raw.video_url);
-  const contentJson = content?.content_json ?? raw.assignment_content ?? raw.content_json;
+  const rawContentJson = content?.content_json ?? raw.assignment_content ?? raw.content_json;
+  const contentJson = isJSONContent(rawContentJson) ? rawContentJson : null;
 
   // V2 API has created_by at top level (on-chain creator alias)
   const createdByAlias = (raw.created_by ?? raw.created_by_alias) as string | undefined;
@@ -347,7 +354,8 @@ export function transformIntroduction(raw: Record<string, unknown>): Introductio
   const description = (content?.description ?? raw.description) as string | undefined;
   const imageUrl = (content?.image_url ?? raw.image_url) as string | undefined;
   const videoUrl = (content?.video_url ?? raw.video_url) as string | undefined;
-  const contentJson = content?.content_json ?? raw.introduction_content ?? raw.content_json;
+  const rawContentJson = content?.content_json ?? raw.introduction_content ?? raw.content_json;
+  const contentJson = isJSONContent(rawContentJson) ? rawContentJson : null;
 
   // V2 API has created_by at top level (on-chain creator alias)
   const createdByAlias = (raw.created_by ?? raw.created_by_alias) as string | undefined;
@@ -523,6 +531,7 @@ export function useCourseModules(courseId: string | undefined) {
       return sortModulesByCode(modules);
     },
     enabled: !!courseId,
+    staleTime: 30_000,
   });
 }
 
@@ -581,21 +590,6 @@ export function useTeacherCourseModules(courseId: string | undefined) {
 
       const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
 
-      // Log raw API response for debugging merge issues
-      console.log("[useTeacherCourseModules] Raw API response:", {
-        courseId,
-        dataCount: result.data?.length ?? 0,
-        warning: result.warning,
-        modules: result.data?.map((m) => ({
-          slt_hash: m.slt_hash,
-          source: m.source,
-          module_status: m.content?.module_status,
-          course_module_code: m.content?.course_module_code,
-          has_content: !!m.content,
-          on_chain_slts_count: m.on_chain_slts?.length ?? 0,
-        })),
-      });
-
       // Log warning if partial data returned
       if (result.warning) {
         console.warn("[useTeacherCourseModules] API warning:", result.warning);
@@ -604,21 +598,10 @@ export function useTeacherCourseModules(courseId: string | undefined) {
       // Transform to app-level types and sort by moduleCode alphabetically
       const modules = (result.data ?? []).map(transformCourseModule);
 
-      // Log transformed modules for debugging
-      console.log("[useTeacherCourseModules] Transformed modules:", {
-        count: modules.length,
-        modules: modules.map((m) => ({
-          sltHash: m.sltHash,
-          moduleCode: m.moduleCode,
-          status: m.status,
-          hasSlts: (m.slts?.length ?? 0) > 0,
-          onChainSltsCount: m.onChainSlts?.length ?? 0,
-        })),
-      });
-
       return sortModulesByCode(modules);
     },
     enabled: !!courseId && isAuthenticated,
+    staleTime: 30_000,
     // Keep previous data visible during refetch to prevent UI flicker
     placeholderData: keepPreviousData,
   });

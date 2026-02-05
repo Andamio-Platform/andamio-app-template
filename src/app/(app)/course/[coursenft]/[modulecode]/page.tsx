@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useCourseParams } from "~/hooks/use-course-params";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -35,9 +35,8 @@ import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt
  */
 
 export default function ModuleLessonsPage() {
-  const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
-  const moduleCode = params.modulecode as string;
+  const { courseNftPolicyId, moduleCode: moduleCodeParam } = useCourseParams();
+  const moduleCode = moduleCodeParam!;
   const { isAuthenticated } = useAndamioAuth();
 
   // React Query hooks - data is cached and shared across components

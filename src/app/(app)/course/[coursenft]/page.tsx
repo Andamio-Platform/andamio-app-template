@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import React, { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AndamioSectionHeader,
   AndamioPageLoading,
@@ -11,6 +11,7 @@ import {
 import { CourseIcon, SLTIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useCourseParams } from "~/hooks/use-course-params";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
 import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
@@ -22,10 +23,7 @@ import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 /**
  * Public page displaying course details and module list with SLT counts
  *
- * REFACTORED to use React Query hooks for:
- * - Automatic caching (data shared across child pages)
- * - Request deduplication (multiple components = 1 request)
- * - Background refetching (stale data refreshed automatically)
+ * Wrapped in Suspense for useSearchParams (NX-4 compliance).
  *
  * API Endpoints (via React Query):
  * - POST /course/get - Course details (cached by courseNftPolicyId)
@@ -33,9 +31,16 @@ import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
  */
 
 export default function CourseDetailPage() {
-  const params = useParams();
+  return (
+    <Suspense fallback={<AndamioPageLoading variant="detail" />}>
+      <CourseDetailContent />
+    </Suspense>
+  );
+}
+
+function CourseDetailContent() {
+  const { courseNftPolicyId } = useCourseParams();
   const searchParams = useSearchParams();
-  const courseNftPolicyId = params.coursenft as string;
   const isTeacherPreview = searchParams.get("preview") === "teacher";
 
   // React Query hooks - automatically cached and deduplicated
@@ -114,8 +119,7 @@ export default function CourseDetailPage() {
   const courseDescription = course.description;
 
   // Empty modules state
-  const moduleList = resolvedModules;
-  if (moduleList.length === 0) {
+  if (resolvedModules.length === 0) {
     return (
       <div className="space-y-6">
         <div>
@@ -134,7 +138,7 @@ export default function CourseDetailPage() {
   }
 
   // Calculate total SLT count (prefer DB SLTs, fall back to on-chain)
-  const totalSlts = moduleList.reduce((sum, m) => {
+  const totalSlts = resolvedModules.reduce((sum, m) => {
     const dbCount = m.slts?.length ?? 0;
     const chainCount = m.onChainSlts?.length ?? 0;
     return sum + (dbCount > 0 ? dbCount : chainCount);
@@ -162,7 +166,7 @@ export default function CourseDetailPage() {
         <div className="flex flex-wrap gap-3 sm:gap-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CourseIcon className="h-4 w-4 shrink-0" />
-            <span>{moduleList.length} {moduleList.length === 1 ? "Module" : "Modules"}</span>
+            <span>{resolvedModules.length} {resolvedModules.length === 1 ? "Module" : "Modules"}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <SLTIcon className="h-4 w-4 shrink-0" />
@@ -188,7 +192,7 @@ export default function CourseDetailPage() {
 
         {/* Module Cards with SLTs */}
         <div className="space-y-4">
-          {moduleList.map((courseModule, moduleIndex) => {
+          {resolvedModules.map((courseModule, moduleIndex) => {
             // DB SLTs (if populated from content.slts)
             const dbSlts = (courseModule.slts ?? [])
               .filter((s) => !!s.sltText)

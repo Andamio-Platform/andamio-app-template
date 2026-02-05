@@ -102,7 +102,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
               </AndamioBadge>
             </AndamioTooltipTrigger>
             <AndamioTooltipContent>
-              <p>Module Hash: {assignmentId}</p>
+              <AndamioText variant="small">Module Hash: {assignmentId}</AndamioText>
             </AndamioTooltipContent>
           </AndamioTooltip>
         </div>
@@ -271,9 +271,9 @@ export function OnChainSltsBadge({
         </AndamioBadge>
       </AndamioTooltipTrigger>
       <AndamioTooltipContent>
-        <p>
+        <AndamioText variant="small">
           {onChainModules.length} modules with {totalSlts} SLTs verified on Cardano
-        </p>
+        </AndamioText>
       </AndamioTooltipContent>
     </AndamioTooltip>
   );

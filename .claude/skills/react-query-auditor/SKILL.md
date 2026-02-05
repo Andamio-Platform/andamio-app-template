@@ -72,19 +72,26 @@ onSuccess: (_, variables) => {
 
 ### Symptom: UI doesn't update after blockchain transaction
 
+**Important**: TX invalidation happens in **transaction components** (using hooks from `src/hooks/tx/`), NOT in API hooks (`src/hooks/api/`). Look for the invalidation in the component that renders the TX UI.
+
 **Check 1: Is there a TX confirmation handler?**
 ```typescript
-// TX flow should have: submit -> watch -> confirm -> invalidate
-onTxConfirmed: (txHash) => {
-  queryClient.invalidateQueries({ queryKey: affectedKeys });
+// TX components use useTxStream() or useTxWatcher() for confirmation
+// Then invalidate API caches in the callback:
+const { invalidateAll } = useInvalidateStudentCourses();
+
+// After TX confirms via SSE/polling:
+onTxConfirmed: () => {
+  invalidateAll(); // Refreshes API data to reflect on-chain change
 };
 ```
 
-**Check 2: Are on-chain AND off-chain queries invalidated?**
+**Check 2: Are all affected role queries invalidated?**
 ```typescript
-// Blockchain TX may affect both:
-queryClient.invalidateQueries({ queryKey: studentCourseKeys.all }); // Off-chain
-queryClient.invalidateQueries({ queryKey: ["onchain", "courses"] }); // On-chain
+// Blockchain TX may affect multiple roles:
+void queryClient.invalidateQueries({ queryKey: courseStudentKeys.all }); // Student's view
+void queryClient.invalidateQueries({ queryKey: courseTeacherKeys.all }); // Teacher's view
+void queryClient.invalidateQueries({ queryKey: courseKeys.detail(courseId) }); // Public view
 ```
 
 ### Symptom: Other user's view doesn't update
@@ -241,4 +248,4 @@ Current hooks:
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 5, 2026

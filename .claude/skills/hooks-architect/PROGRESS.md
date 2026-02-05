@@ -20,9 +20,10 @@
 | `use-course-teacher.ts` | Yes | Yes | APPROVED |
 | `use-module-wizard-data.ts` | (composition) | N/A | APPROVED |
 | `use-save-module-draft.ts` | (mutation) | Yes | APPROVED |
-| `use-project.ts` | Yes (in types/project.ts) | Yes | NEEDS WORK |
-| `use-project-manager.ts` | No (snake_case) | Inline only | NEEDS WORK |
-| `use-project-contributor.ts` | No (snake_case) | None | NEEDS WORK |
+| `use-project.ts` | Yes | Yes | APPROVED |
+| `use-project-owner.ts` | (imports) | (imports) | APPROVED |
+| `use-project-manager.ts` | Yes | Yes | APPROVED |
+| `use-project-contributor.ts` | Yes | Yes | APPROVED |
 
 ### Course System Audit Complete (8 hook files)
 
@@ -34,47 +35,14 @@ All course system hooks follow the colocated types pattern correctly:
 
 **Consolidation (2026-01-28):** Combined `use-slt.ts`, `use-lesson.ts`, `use-assignment.ts`, `use-introduction.ts` into single `use-course-content.ts` for public read-only content queries.
 
-### Remaining Work
+### Project System Migration Complete
 
-#### 1. Migrate `use-project.ts`
+All project hooks now follow the colocated types pattern:
 
-**Current state**: Types defined in separate `src/types/project.ts` file.
-
-**Action needed**:
-- [ ] Move `Project`, `ProjectDetail`, `Task`, `TaskCommitment` types INTO hook file
-- [ ] Move `transformProjectDetail`, `transformMergedTask`, `transformApiCommitment` INTO hook file
-- [ ] Delete `src/types/project.ts`
-- [ ] Update imports in consumer files
-
-#### 2. Migrate `use-project-manager.ts`
-
-**Current state**: Returns snake_case types directly from API.
-
-**Action needed**:
-- [ ] Define `ManagerProject` type with camelCase fields
-- [ ] Define `ManagerCommitment` type with camelCase fields
-- [ ] Create `transformManagerProject()` function
-- [ ] Create `transformManagerCommitment()` function
-- [ ] Update hooks to use transformers
-- [ ] Update consumer components to use camelCase
-
-**Consumer components to update**:
-- `src/app/(app)/studio/project/[projectid]/page.tsx`
-- `src/app/(app)/studio/project/[projectid]/manager/page.tsx`
-- `src/app/(app)/studio/project/[projectid]/draft-tasks/page.tsx`
-
-#### 3. Migrate `use-project-contributor.ts`
-
-**Current state**: Returns snake_case types directly from API.
-
-**Action needed**:
-- [ ] Define `ContributorProject` type with camelCase fields
-- [ ] Create `transformContributorProject()` function
-- [ ] Update hooks to use transformer
-- [ ] Update consumer components
-
-**Consumer components to update**:
-- `src/app/(app)/project/[projectid]/contributor/page.tsx`
+- **`use-project.ts`** — Types colocated (`Project`, `ProjectDetail`, `Task`, `TaskCommitment`), camelCase fields, transform functions (`transformProjectDetail`, `transformMergedTask`, `transformApiCommitment`)
+- **`use-project-owner.ts`** — Imports from `use-project.ts`, owner mutations with cache invalidation
+- **`use-project-manager.ts`** — Types colocated (`ManagerProject`, `ManagerCommitment`, `PendingAssessment`), camelCase fields, transform functions, batch status mutation
+- **`use-project-contributor.ts`** — Types colocated (`ContributorProject`, `ContributorCommitment`, `MyCommitmentSummary`), status normalization, evidence submission mutation
 
 ---
 
@@ -273,7 +241,7 @@ All course system hooks follow the colocated types pattern correctly:
   - `use-course-content.ts` - Consolidated public content queries (SLTs, Lessons, Assignments, Introductions)
   - `use-module-wizard-data.ts` - Composition hook
   - `use-save-module-draft.ts` - Aggregate mutation hook
-- [ ] Phase 3.9 Project System migration pending (0/3 hooks)
+- [x] Phase 3.9 Project System migration COMPLETE (4/4 hooks approved)
 - [x] Phase 3.10 public project pages migrated (2/2 pages, 6 of 7 direct calls extracted)
 - [ ] Phase 3.10 studio project pages pending (6 files, 18 calls)
 
@@ -283,4 +251,4 @@ All course system hooks follow the colocated types pattern correctly:
 
 ---
 
-**Last Updated**: February 3, 2026
+**Last Updated**: February 5, 2026

@@ -231,9 +231,33 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 | Export | Type | Description |
 |--------|------|-------------|
 | `AssignmentCommitment` | Type | Student assignment commitment (full detail) |
+| `assignmentCommitmentKeys` | Object | Query key factory |
 | `useAssignmentCommitment(courseId, moduleCode, sltHash)` | Hook | Get student's commitment for a specific SLT |
 
 **Status normalization**: Same STATUS_MAP as `use-student-assignment-commitments.ts`.
+
+### use-student-credentials.ts
+
+**Owner of**: `StudentCourseCredential`, `CredentialModuleInfo`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `StudentCourseCredential` | Type | Student's credential record for a course (enrolled/completed status, claimed credentials) |
+| `CredentialModuleInfo` | Type | Module info within a credential record (sltHash, courseModuleCode, title) |
+| `studentCredentialKeys` | Object | Query key factory |
+| `useStudentCredentials()` | Hook | List all credential records for authenticated student |
+
+**Endpoint**: POST `/api/v2/course/student/credentials/list`
+
+### use-student-completions-for-prereqs.ts
+
+**Derived Hook** — Transforms `useStudentCredentials()` data for project eligibility checks.
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `useStudentCompletionsForPrereqs(courseIds)` | Hook | Map prerequisite course IDs to `StudentCompletionInput[]` for `checkProjectEligibility()` |
+
+**Note**: Uses the credentials endpoint internally — one network call instead of N+1 parallel queries.
 
 ---
 
@@ -315,6 +339,12 @@ sltKeys.list(courseId, moduleCode)      // ["slts", "list", courseId, moduleCode
 lessonKeys.all                          // ["lessons"]
 lessonKeys.list(courseId, moduleCode)   // ["lessons", "list", courseId, moduleCode]
 lessonKeys.detail(courseId, code, idx)  // ["lessons", "detail", courseId, code, idx]
+
+assignmentCommitmentKeys.all            // ["assignmentCommitments"]
+assignmentCommitmentKeys.detail(cid, h) // ["assignmentCommitments", "detail", courseId, sltHash]
+
+studentCredentialKeys.all               // ["studentCredentials"]
+studentCredentialKeys.list()            // ["studentCredentials", "list"]
 ```
 
 ### Project Keys
@@ -421,4 +451,4 @@ function TransactionComponent() {
 
 ---
 
-**Last Updated**: January 30, 2026
+**Last Updated**: February 5, 2026

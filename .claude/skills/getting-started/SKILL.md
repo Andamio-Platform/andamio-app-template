@@ -71,13 +71,14 @@ Recommended skills:
 "I want to review code/PRs"
 
 Recommended skills:
-1. `/review-pr` - Comprehensive PR review (delegates automatically)
-2. `/hooks-architect audit` - Audit hook patterns
-3. `/design-system review` - Audit styling compliance
-4. `/typescript-types-expert audit` - Check type safety
-5. `/react-query-auditor` - Audit cache patterns
+1. `/qa` - Route-level QA audit (hooks, types, components, performance)
+2. `/review-pr` - Comprehensive PR review (delegates automatically)
+3. `/hooks-architect audit` - Audit hook patterns
+4. `/design-system review` - Audit styling compliance
+5. `/typescript-types-expert audit` - Check type safety
+6. `/react-query-auditor` - Audit cache patterns
 
-**Suggested starting point**: "Run `/review-pr` for a full review - it automatically delegates to specialized skills."
+**Suggested starting point**: "Run `/qa` to audit a specific route for production readiness, or `/review-pr` for PR-focused review."
 
 #### Test Mode
 "I want to test transaction flows"
@@ -143,6 +144,7 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 | `/tx-loop-guide` | Transaction flow testing |
 | `/react-query-auditor` | React Query patterns and cache |
 | `/issue-handler` | Error routing across repos |
+| `/qa` | Route-level QA audit for production readiness |
 | `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
 
 ## Key Files

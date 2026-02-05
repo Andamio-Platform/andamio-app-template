@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useCourseParams } from "~/hooks/use-course-params";
 import { ContentViewer } from "~/components/editor";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -18,7 +18,6 @@ import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { useCourse, useCourseModule, useSLTs, useAssignment, type SLT } from "~/hooks/api";
 import { computeSltHash } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
-import type { JSONContent } from "@tiptap/core";
 
 /**
  * Learner-facing assignment view page
@@ -33,9 +32,8 @@ import type { JSONContent } from "@tiptap/core";
  */
 
 export default function LearnerAssignmentPage() {
-  const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
-  const moduleCode = params.modulecode as string;
+  const { courseNftPolicyId, moduleCode: moduleCodeParam } = useCourseParams();
+  const moduleCode = moduleCodeParam!;
 
   // React Query hooks - data is cached and shared across components
   const { data: course } = useCourse(courseNftPolicyId);
@@ -176,7 +174,7 @@ export default function LearnerAssignmentPage() {
             <AndamioCardDescription>Read the full assignment below</AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
-            <ContentViewer content={assignment.contentJson as JSONContent} />
+            <ContentViewer content={assignment.contentJson} />
           </AndamioCardContent>
         </AndamioCard>
       )}

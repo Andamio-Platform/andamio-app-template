@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useParams } from "next/navigation";
+import { useCourseParams } from "~/hooks/use-course-params";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import {
@@ -15,7 +15,6 @@ import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { LessonMediaSection } from "~/components/courses/lesson-media-section";
 import { useCourse, useCourseModule, useLesson } from "~/hooks/api";
-import type { JSONContent } from "@tiptap/core";
 
 /**
  * Public page displaying lesson content
@@ -30,10 +29,9 @@ import type { JSONContent } from "@tiptap/core";
  */
 
 export default function LessonDetailPage() {
-  const params = useParams();
-  const courseNftPolicyId = params.coursenft as string;
-  const moduleCode = params.modulecode as string;
-  const moduleIndex = parseInt(params.moduleindex as string);
+  const { courseNftPolicyId, moduleCode: moduleCodeParam, moduleIndex: moduleIndexParam } = useCourseParams();
+  const moduleCode = moduleCodeParam!;
+  const moduleIndex = moduleIndexParam!;
 
   // React Query hooks - data is cached and shared across components
   const { data: course } = useCourse(courseNftPolicyId);
@@ -149,7 +147,7 @@ export default function LessonDetailPage() {
           </AndamioCardHeader>
           <AndamioCardContent>
             <ContentViewer
-              content={lesson.contentJson as JSONContent}
+              content={lesson.contentJson}
               emptyContent={
                 <AndamioText variant="muted" className="italic">Unable to parse lesson content</AndamioText>
               }

@@ -14,48 +14,67 @@ React Query solves this through cache invalidation, background refetching, and o
 
 ## Key Concepts
 
-### staleTime vs gcTime
+### Andamio QueryClient Configuration
 
-| Setting | Default | Purpose |
-|---------|---------|---------|
-| `staleTime` | 0 (instant) | How long until data is considered stale and eligible for background refetch |
-| `gcTime` | 5 minutes | How long inactive query data stays in cache before garbage collection |
-
-**Rule**: Adjust `staleTime` based on how often data changes. `gcTime` rarely needs changing.
+The app configures global defaults in `src/trpc/query-client.ts`:
 
 ```typescript
-// Data that changes frequently (transactions, assignments)
-useQuery({
-  queryKey: ["assignments"],
-  staleTime: 0, // Always refetch when needed (default)
-});
-
-// Data that changes rarely (course structure)
-useQuery({
-  queryKey: ["course", courseId],
-  staleTime: 5 * 60 * 1000, // 5 minutes - reduce unnecessary refetches
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,      // 5 minutes — data stays fresh
+      gcTime: 1000 * 60 * 30,         // 30 minutes — cache retention
+      refetchOnWindowFocus: false,     // Disabled — rely on explicit invalidation
+      retry: 1,                        // Single retry on failure
+    },
+  },
 });
 ```
+
+**Why `refetchOnWindowFocus: false`**: Andamio relies on explicit cache invalidation after mutations and transactions rather than automatic background refetching. This reduces API load and prevents unexpected refetches that could conflict with optimistic local state (e.g., unsaved draft edits in the module wizard).
+
+**Why `staleTime: 5 minutes`**: With 30+ queries across a typical session, the default `0` would trigger refetches on every navigation. The 5-minute window balances freshness with performance.
+
+### staleTime vs gcTime
+
+| Setting | Andamio Default | Purpose |
+|---------|-----------------|---------|
+| `staleTime` | 5 minutes | How long until data is considered stale and eligible for background refetch |
+| `gcTime` | 30 minutes | How long inactive query data stays in cache before garbage collection |
+
+**When to override per-query**: Set a per-query `staleTime` when the data profile differs from the default:
+
+| Data Type | staleTime | Example |
+|-----------|-----------|---------|
+| Real-time (TX status) | `0` | Pending transaction list |
+| User-mutable | `5 min` (default) | Courses, modules, assignments |
+| Reference/config | `30 min` | Category lists, feature flags |
+| Immutable | `Infinity` | Confirmed blockchain TX history |
 
 ### Background Refetching Triggers
 
-React Query automatically refetches stale data when:
+| Trigger | Andamio Setting | Why |
+|---------|-----------------|-----|
+| `refetchOnWindowFocus` | **`false`** | Explicit invalidation preferred |
+| `refetchOnReconnect` | `true` (default) | Restore data after network loss |
+| `refetchOnMount` | `true` (default) | Fetch on first mount if stale |
+| `refetchInterval` | Not used | No polling — use SSE for real-time |
 
-| Trigger | Default | Use Case |
-|---------|---------|----------|
-| `refetchOnWindowFocus` | `true` | User returns to tab after checking blockchain explorer |
-| `refetchOnReconnect` | `true` | User's connection was temporarily lost |
-| `refetchOnMount` | `true` | Component mounts and data is stale |
-| `refetchInterval` | `false` | Polling for real-time updates (use sparingly) |
+### React Query v5 Features in Use
+
+**`keepPreviousData`**: Used in `use-course-module.ts` to maintain previous data while switching between modules, preventing layout flash:
 
 ```typescript
-// For blockchain data that may update externally
+import { keepPreviousData } from "@tanstack/react-query";
+
 useQuery({
-  queryKey: ["onchain", "course", courseId],
-  refetchInterval: 30000, // Poll every 30 seconds
-  refetchIntervalInBackground: false, // Don't poll when tab is hidden
+  queryKey: courseModuleKeys.detail(courseId, moduleCode),
+  queryFn: () => fetchModule(courseId, moduleCode),
+  placeholderData: keepPreviousData, // v5 syntax
 });
 ```
+
+**SuperJSON serialization**: Used for SSR hydration/dehydration in `query-client.ts` to handle Date objects and other non-JSON-safe types across the server/client boundary.
 
 ## Cache Invalidation Patterns
 
@@ -86,7 +105,9 @@ const updateCourse = useMutation({
 2. If query is currently rendered, it refetches in background
 3. If query is inactive, it refetches on next use
 
-### Pattern 2: Optimistic Updates (Instant Feedback)
+### Pattern 2: Optimistic Updates (Advanced — Not Currently Used)
+
+> **Note**: The Andamio codebase uses **invalidation-only** (Pattern 1) for all mutations. Optimistic updates are documented here as a reference for future use when instant UI feedback becomes necessary (e.g., toggle switches, drag-and-drop reordering).
 
 Update the cache immediately, before the server responds. Roll back on error.
 
@@ -127,7 +148,9 @@ const toggleComplete = useMutation({
 });
 ```
 
-### Pattern 3: Invalidate + Optimistic (Best of Both)
+### Pattern 3: Invalidate + Optimistic (Advanced — Not Currently Used)
+
+> **Note**: Same status as Pattern 2 — documented for reference, not currently implemented.
 
 Combine optimistic updates with invalidation for instant feedback AND data accuracy.
 
@@ -318,41 +341,86 @@ onSuccess: () => {
 
 ## Andamio-Specific Patterns
 
-### Transaction Confirmation Flow
+### Role-Based Query Key Namespaces
 
-Blockchain transactions have delayed confirmation. Use this pattern:
+Andamio uses separate query key namespaces per user role. This enables precise cache management — a student action invalidates student views, and optionally cross-invalidates teacher views.
 
 ```typescript
-// 1. Optimistic update for immediate feedback
-onMutate: () => {
-  // Show "pending" state in UI
-};
+// Course domain — 4 role-based key factories
+courseKeys.all               // ["courses"] — public/shared
+courseOwnerKeys.all           // ["courses", "owner"]
+courseTeacherKeys.all         // ["courses", "teacher"]
+courseStudentKeys.all         // ["courses", "student"]
 
-// 2. On TX submission success
-onSuccess: (txHash) => {
-  // Add to pending transactions list
-  // Start watching for confirmation
-};
-
-// 3. On TX confirmation (via polling or websocket)
-onTxConfirmed: () => {
-  // Invalidate all affected queries
-  queryClient.invalidateQueries({ queryKey: courseKeys.all });
-};
+// Project domain — 3 role-based key factories
+projectKeys.all              // ["projects"] — public/shared
+projectManagerKeys.all       // ["projects", "manager"]
+projectContributorKeys.all   // ["projects", "contributor"]
 ```
 
-### Role-Based Query Invalidation
-
-Different user roles see different data. Invalidate all relevant role queries:
+**Cross-role invalidation**: When a student action affects what a teacher sees:
 
 ```typescript
 // Student completes assignment
 onSuccess: () => {
   // Invalidate student's view
-  queryClient.invalidateQueries({ queryKey: studentCourseKeys.all });
+  void queryClient.invalidateQueries({ queryKey: courseStudentKeys.all });
   // Invalidate teacher's view (they see student progress)
-  queryClient.invalidateQueries({ queryKey: teacherCourseKeys.commitments() });
+  void queryClient.invalidateQueries({ queryKey: courseTeacherKeys.commitments() });
 };
+```
+
+### Transaction Confirmation Flow
+
+Blockchain transactions have delayed confirmation. The TX lifecycle uses dedicated hooks in `src/hooks/tx/` (NOT the API hooks in `src/hooks/api/`):
+
+1. **`useTransaction()`** — Builds, signs, and submits the TX
+2. **`useTxStream()`** / **`useTxWatcher()`** — Watches for on-chain confirmation via SSE or polling
+3. **On confirmation** — Components invalidate affected API queries
+
+```typescript
+// In a transaction component (e.g., MintAccessToken)
+const { invalidateAll: invalidateStudentCourses } = useInvalidateStudentCourses();
+
+// After TX confirms (in the useTxStream callback)
+onTxConfirmed: () => {
+  invalidateStudentCourses(); // Refresh API data to reflect on-chain change
+};
+```
+
+**Key distinction**: API hooks handle database state (CRUD). TX hooks handle blockchain state. After a TX confirms, the TX component explicitly invalidates the relevant API query caches.
+
+### Error Handling Strategy
+
+The codebase currently uses **`onSuccess`** callbacks for cache invalidation. Mutations do NOT use `onError` or `onSettled` handlers.
+
+**Current approach**:
+- Gateway errors throw and are caught by component-level error handling
+- 404 responses return `null` or `[]` (don't throw)
+- Network errors are distinguishable from API errors via `isGatewayError()` utility
+
+**Recommended improvement** (not yet implemented):
+```typescript
+// Add global error handler for background refetch failures
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      if (query.state.data !== undefined) {
+        toast.error(`Background update failed: ${error.message}`);
+      }
+    },
+  }),
+});
+```
+
+### DevTools
+
+React Query DevTools are **not currently configured**. To add for debugging:
+
+```typescript
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// Add inside TRPCReactProvider
+<ReactQueryDevtools initialIsOpen={false} />
 ```
 
 ## Sources

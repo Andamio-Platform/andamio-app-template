@@ -21,9 +21,10 @@
 | `product-iteration` | ✅ Active | Medium | 4 files | Full product feedback cycle (Test → Design → Ship) |
 | `bootstrap-skill` | ✅ Active | Medium | 1 file | Meta-skill: scaffold and register new skills |
 | `ship` | ✅ Active | Medium | 1 file | Full shipping workflow (version, docs, commit, PR, merge, cleanup) |
+| `qa` | ✅ Active | Medium | 3 files | Route-level QA audit (hooks, types, components, Next.js patterns) |
 | `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
 
-**Total**: 15 Andamio skills + 1 external skill
+**Total**: 16 Andamio skills + 1 external skill
 
 ---
 
@@ -210,7 +211,19 @@
 
 ---
 
-### 16. `mesh-expert` 📦 (External)
+### 16. `qa` ✅
+
+**Purpose**: Route-level QA auditing — systematically check individual routes for production readiness
+
+**Process**: Choose route → Collect component tree → Run checklist (6 categories, 30 rules) → Report with severity → Fix
+
+**Delegates to**: `design-system review`, `hooks-architect audit`, `react-query-auditor`, `typescript-types-expert audit`
+
+**Files** (3): `SKILL.md`, `checklist.md`, `best-practices.md`
+
+---
+
+### 17. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
@@ -252,10 +265,14 @@
 │  ship ────────────────► documentarian (docs check)             │
 │      └──────────► (commit, PR, merge workflow)                │
 │                                                               │
+│  qa ─────────────────► design-system (review mode)             │
+│      ├──────────► hooks-architect (audit mode)               │
+│      ├──────────► react-query-auditor                        │
+│      └──────────► typescript-types-expert (audit mode)       │
+│                                                               │
 │  Standalone skills:                                           │
-│    transaction-auditor    react-query-auditor                │
-│    tx-loop-guide          issue-handler                      │
-│    mesh-expert (external)                                     │
+│    transaction-auditor    issue-handler                      │
+│    tx-loop-guide          mesh-expert (external)             │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -266,6 +283,7 @@
 
 | Date | Action |
 |------|--------|
+| 2026-02-05 | Added `qa` skill (route-level QA auditing). 3 files: SKILL.md, checklist.md, best-practices.md. Registered in getting-started. Count: 16. |
 | 2026-02-01 | Full audit: Added hooks-architect, product-iteration, mesh-expert. Fixed stale refs (andamioscan-events, use-event-confirmation, old file paths). Updated skill count to 14. |
 | 2026-01-24 | Added getting-started, typescript-types-expert skills. Count was 11. |
 | 2026-01-14 | Added transaction-auditor, issue-handler, react-query-auditor. |

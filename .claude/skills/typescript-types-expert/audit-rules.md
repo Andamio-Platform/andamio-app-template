@@ -28,15 +28,34 @@ npm run typecheck
 
 | Rule | Pass | Fail |
 |------|------|------|
-| API types from `~/types/generated` | All API type imports use barrel export | Direct imports from `gateway.ts` |
+| API types from `~/types/generated` | All API type imports use barrel export OR are in `src/hooks/api/` (see exception below) | Direct imports from `gateway.ts` in components/pages |
 | UI types from `~/types/ui` | Shared patterns imported from `ui.ts` | Duplicate NavItem, IconComponent definitions |
 | Type helpers from `~/lib/type-helpers` | getString/getOptionalString used | Direct NullableString field access |
+
+**Known Exception — Hook files import directly from `gateway.ts`**:
+
+Hook files in `src/hooks/api/` intentionally import from `~/types/generated/gateway` instead of the barrel export to **avoid circular dependencies**. The barrel `index.ts` re-exports hook types alongside generated types, so hooks importing from it would create a circular import chain. This is documented and acceptable:
+
+```typescript
+// ✅ PASS — Hook file importing directly (avoids circular dep)
+// src/hooks/api/course/use-course.ts
+import type { OrchestrationMergedCourseDetail } from "~/types/generated/gateway";
+
+// ❌ FAIL — Component/page importing directly (should use barrel)
+// src/components/courses/course-card.tsx
+import type { OrchestrationMergedCourseDetail } from "~/types/generated/gateway";
+```
+
+**8 hook files** have this intentional pattern. Components and pages must always import from `~/types/generated`.
 
 **How to check**:
 
 ```bash
-# Should return 0 results (except index.ts itself)
-grep -r "from \"~/types/generated/gateway\"" src/ | grep -v "index.ts"
+# Check for direct gateway imports OUTSIDE of hooks (should be 0)
+grep -r "from \"~/types/generated/gateway\"" src/ --include="*.ts" --include="*.tsx" | grep -v "index.ts" | grep -v "src/hooks/api/"
+
+# Check hooks (these are expected/acceptable)
+grep -r "from \"~/types/generated/gateway\"" src/hooks/api/ --include="*.ts" | wc -l  # ~8 files, acceptable
 
 # Should return 0 results (types imported, not duplicated)
 grep -r "interface NavItem" src/ | wc -l  # Should be 1 (in ui.ts)
@@ -155,7 +174,7 @@ grep -c "aliasSchema\|policyIdSchema\|walletDataSchema" src/config/transaction-s
 
 | Violation | Deduction |
 |-----------|-----------|
-| Direct gateway.ts import | -5 per occurrence |
+| Direct gateway.ts import (outside hooks) | -5 per occurrence |
 | `as any` usage | -3 per occurrence |
 | `@ts-ignore` without explanation | -3 per occurrence |
 | Duplicate interface (2+ files) | -2 per duplicate |
@@ -237,9 +256,9 @@ set -e
 
 echo "Running type audit..."
 
-# Check for direct gateway imports
-if grep -r "from \"~/types/generated/gateway\"" src/ --include="*.ts" --include="*.tsx" | grep -v "index.ts"; then
-  echo "ERROR: Direct imports from gateway.ts found"
+# Check for direct gateway imports outside hooks (hooks are allowed)
+if grep -r "from \"~/types/generated/gateway\"" src/ --include="*.ts" --include="*.tsx" | grep -v "index.ts" | grep -v "src/hooks/api/"; then
+  echo "ERROR: Direct imports from gateway.ts found outside hooks"
   exit 1
 fi
 
@@ -271,7 +290,7 @@ echo "Type audit passed!"
 - Page state (single-use)
 
 **Never Do**:
-- Import from `~/types/generated/gateway`
+- Import from `~/types/generated/gateway` in components/pages (hooks are the exception)
 - Use `as any`
 - Access NullableString fields directly
 - Use `@ts-ignore` without explanation

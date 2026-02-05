@@ -6,15 +6,11 @@ import { useRouter } from "next/navigation";
 import { CardanoWallet, useWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { RegistrationFlow } from "~/components/landing/registration-flow";
-import { V1MigrateCard } from "~/components/landing/v1-migrate-card";
 import { CourseIcon, ProjectIcon, ForwardIcon, LoadingIcon, BackIcon } from "~/components/icons";
 import { MARKETING } from "~/config/marketing";
-
-const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
 
 const WEB3_SERVICES_CONFIG = {
   networkId: 0,
@@ -36,11 +32,9 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   const [mounted, setMounted] = React.useState(false);
   const [showGetStarted, setShowGetStarted] = React.useState(false);
   const [showSignIn, setShowSignIn] = React.useState(false);
-  const [v1Alias, setV1Alias] = React.useState<string | null>(null);
-  const [v1Scanning, setV1Scanning] = React.useState(false);
   const { resolvedTheme } = useTheme();
   const router = useRouter();
-  const { wallet } = useWallet();
+  useWallet(); // Required for CardanoWallet component
   const {
     isAuthenticated,
     user,
@@ -53,50 +47,6 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   React.useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Scan for V1 token when authenticated but no V2 token
-  React.useEffect(() => {
-    if (!isAuthenticated || user?.accessTokenAlias || !isWalletConnected || !wallet) {
-      setV1Alias(null);
-      setV1Scanning(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function scanForV1Token() {
-      setV1Scanning(true);
-      try {
-        const assets = await wallet.getAssets();
-        const v1Asset = assets.find((asset: { unit: string }) =>
-          asset.unit.startsWith(V1_POLICY_ID)
-        );
-
-        if (cancelled) return;
-
-        if (v1Asset) {
-          const alias = extractAliasFromUnit(v1Asset.unit, V1_POLICY_ID, 3);
-          setV1Alias(alias);
-        } else {
-          setV1Alias(null);
-        }
-      } catch (err) {
-        console.error("[LandingHero] Failed to scan for V1 token:", err);
-        if (!cancelled) {
-          setV1Alias(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setV1Scanning(false);
-        }
-      }
-    }
-
-    void scanForV1Token();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, user?.accessTokenAlias, isWalletConnected, wallet]);
 
   // Auto-redirect authenticated users with access token to dashboard
   React.useEffect(() => {
@@ -136,32 +86,6 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
           <AndamioText variant="muted">Please sign the message in your wallet</AndamioText>
         </div>
       </div>
-    );
-  }
-
-  // Scanning for V1 token
-  if (v1Scanning) {
-    return (
-      <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-          Checking Your Wallet...
-        </h1>
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
-          <AndamioText variant="muted">Scanning for existing access tokens</AndamioText>
-        </div>
-      </div>
-    );
-  }
-
-  // V1 token detected — show migrate card
-  if (v1Alias) {
-    return (
-      <V1MigrateCard
-        detectedAlias={v1Alias}
-        onMinted={onMinted}
-        onBack={() => setV1Alias(null)}
-      />
     );
   }
 

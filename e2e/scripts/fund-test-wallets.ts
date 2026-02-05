@@ -24,7 +24,8 @@ const DEFAULT_AMOUNT_ADA = 20; // Amount to send to each wallet
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const amountIndex = args.indexOf("--amount");
-const amountAda = amountIndex !== -1 ? parseInt(args[amountIndex + 1]) : DEFAULT_AMOUNT_ADA;
+const amountArg = amountIndex !== -1 ? args[amountIndex + 1] : undefined;
+const amountAda = amountArg ? parseInt(amountArg) : DEFAULT_AMOUNT_ADA;
 
 // Wallet mnemonics from environment
 const WALLETS = {

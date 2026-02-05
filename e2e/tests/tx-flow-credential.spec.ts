@@ -328,11 +328,12 @@ test.describe("Loop 2: Earn a Credential - Transaction Flow", () => {
 
     // Simulate a commit transaction
     // In reality, this would be triggered by the UI
+    const firstUtxo = initialUtxos[0]!;
     const commitTx = {
       inputs: [
         {
-          txHash: initialUtxos[0].input.txHash,
-          outputIndex: initialUtxos[0].input.outputIndex,
+          txHash: firstUtxo.input.txHash,
+          outputIndex: firstUtxo.input.outputIndex,
         },
       ],
       outputs: [
@@ -342,7 +343,7 @@ test.describe("Loop 2: Earn a Credential - Transaction Flow", () => {
           amount: [
             {
               unit: "lovelace",
-              quantity: (BigInt(initialUtxos[0].output.amount[0].quantity) - BigInt(2000000)).toString(),
+              quantity: (BigInt(firstUtxo.output.amount[0]!.quantity) - BigInt(2000000)).toString(),
             },
           ],
         },
@@ -373,7 +374,7 @@ test.describe("Loop 2: Earn a Credential - Transaction Flow", () => {
     // Transaction should be in history
     const txHistory = ledger.getTransactionHistory();
     expect(txHistory.length).toBe(1);
-    expect(txHistory[0].txHash).toBe(result.txHash);
+    expect(txHistory[0]!.txHash).toBe(result.txHash);
   });
 
   test("parallel role pages maintain isolated state", async ({

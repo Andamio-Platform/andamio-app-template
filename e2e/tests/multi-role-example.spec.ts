@@ -187,11 +187,12 @@ test.describe("Multi-Role: Credential Earning Flow", () => {
     console.log(`Initial UTXO count: ${initialUtxos.length}`);
 
     // Simulate a transaction (e.g., sending ADA)
+    const firstUtxo = initialUtxos[0]!;
     const result = mockLedger.submitTransaction({
       inputs: [
         {
-          txHash: initialUtxos[0].input.txHash,
-          outputIndex: initialUtxos[0].input.outputIndex,
+          txHash: firstUtxo.input.txHash,
+          outputIndex: firstUtxo.input.outputIndex,
         },
       ],
       outputs: [

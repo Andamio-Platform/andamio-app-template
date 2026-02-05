@@ -17,7 +17,7 @@ import { OnChainSltsBadge } from "~/components/courses/on-chain-slts-viewer";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { CourseModuleCard } from "~/components/courses/course-module-card";
 import { useCourse, useCourseModules, useTeacherCourseModules } from "~/hooks/api";
-import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
+import { useStudentAssignmentCommitments, getModuleCommitmentStatus, groupCommitmentsByModule } from "~/hooks/api/course/use-student-assignment-commitments";
 import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 
 /**
@@ -61,7 +61,7 @@ function CourseDetailContent() {
     data: teacherModules,
     isLoading: teacherModulesLoading,
     error: teacherModulesError,
-  } = useTeacherCourseModules(courseNftPolicyId);
+  } = useTeacherCourseModules(isTeacherPreview ? courseNftPolicyId : undefined);
 
   // Fetch student commitments for per-module status badges
   const { isAuthenticated } = useAndamioAuth();
@@ -70,18 +70,10 @@ function CourseDetailContent() {
   );
 
   // Group commitments by module code for quick lookup
-  // Filter by courseId to prevent cross-course contamination (see #116)
-  const commitmentsByModule = useMemo(() => {
-    if (!studentCommitments) return new Map<string, typeof studentCommitments>();
-    const map = new Map<string, typeof studentCommitments>();
-    for (const c of studentCommitments) {
-      if (c.courseId !== courseNftPolicyId) continue;
-      const existing = map.get(c.moduleCode) ?? [];
-      existing.push(c);
-      map.set(c.moduleCode, existing);
-    }
-    return map;
-  }, [studentCommitments, courseNftPolicyId]);
+  const commitmentsByModule = useMemo(
+    () => groupCommitmentsByModule(studentCommitments ?? [], courseNftPolicyId),
+    [studentCommitments, courseNftPolicyId],
+  );
 
   const resolvedModules = isTeacherPreview
     ? (teacherModules?.length ? teacherModules : modules ?? [])

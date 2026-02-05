@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Course Detail QA Fixes** (February 5, 2026): QA audit of `/course/[coursenft]` route
+  - Guard `useTeacherCourseModules` with `isTeacherPreview` to avoid unnecessary API calls for non-preview users
+  - Extract shared `groupCommitmentsByModule()` utility to eliminate duplicate logic between `page.tsx` and `user-course-status.tsx`
+
 ### Changed
 - **Manager Commitments Page UX Overhaul** (February 4, 2026): Rewrote `/studio/project/[projectid]/commitments` with resizable list/detail panels
   - Left panel: searchable commitment list with status badges and evidence indicators

@@ -131,6 +131,24 @@ export function getModuleCommitmentStatus(
   return best;
 }
 
+/**
+ * Group commitments by module code, filtering to a specific course.
+ * Prevents cross-course contamination (see #116).
+ */
+export function groupCommitmentsByModule(
+  commitments: StudentCommitmentSummary[],
+  courseId: string,
+): Map<string, StudentCommitmentSummary[]> {
+  const map = new Map<string, StudentCommitmentSummary[]>();
+  for (const c of commitments) {
+    if (c.courseId !== courseId) continue;
+    const existing = map.get(c.moduleCode) ?? [];
+    existing.push(c);
+    map.set(c.moduleCode, existing);
+  }
+  return map;
+}
+
 // =============================================================================
 // Shared Query Key + Fetch (reusable by useStudentCompletionsForPrereqs)
 // =============================================================================

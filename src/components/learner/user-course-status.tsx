@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCourse, useCourseModules, useStudentCourses, type CourseModule } from "~/hooks/api";
-import { useStudentAssignmentCommitments, getModuleCommitmentStatus, type StudentCommitmentSummary } from "~/hooks/api/course/use-student-assignment-commitments";
+import { useStudentAssignmentCommitments, getModuleCommitmentStatus, groupCommitmentsByModule, type StudentCommitmentSummary } from "~/hooks/api/course/use-student-assignment-commitments";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
@@ -71,18 +71,10 @@ export function UserCourseStatus({ courseNftPolicyId }: UserCourseStatusProps) {
   }, [studentCommitments]);
 
   // Group commitments by module code for the checklist
-  // Filter by courseId to prevent cross-course contamination (see #116)
-  const commitmentsByModule = useMemo(() => {
-    if (!studentCommitments) return new Map<string, StudentCommitmentSummary[]>();
-    const map = new Map<string, StudentCommitmentSummary[]>();
-    for (const c of studentCommitments) {
-      if (c.courseId !== courseNftPolicyId) continue;
-      const existing = map.get(c.moduleCode) ?? [];
-      existing.push(c);
-      map.set(c.moduleCode, existing);
-    }
-    return map;
-  }, [studentCommitments, courseNftPolicyId]);
+  const commitmentsByModule = useMemo(
+    () => groupCommitmentsByModule(studentCommitments ?? [], courseNftPolicyId),
+    [studentCommitments, courseNftPolicyId],
+  );
 
   // Find this course in student's courses
   const studentCourseStatus = useMemo(() => {

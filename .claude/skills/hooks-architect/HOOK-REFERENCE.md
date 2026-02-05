@@ -221,6 +221,7 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 | `StudentCommitmentSummary` | Type | Lightweight commitment with normalized status |
 | `useStudentAssignmentCommitments(courseId)` | Hook | List all commitments for a course |
 | `getModuleCommitmentStatus(commitments)` | Function | Derive single status from module's commitments |
+| `groupCommitmentsByModule(commitments, courseId)` | Function | Group commitments by module code, filtering by course (#116) |
 
 **Status normalization**: Maps DB values (SUBMITTED→PENDING_APPROVAL, ACCEPTED→ASSIGNMENT_ACCEPTED, REFUSED→ASSIGNMENT_REFUSED) with APPROVED/REJECTED as legacy aliases.
 

@@ -15,6 +15,7 @@ import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icon
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { TaskCommit } from "~/components/tx";
+import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import { useProjectTask } from "~/hooks/api/project/use-project";
 import { useContributorCommitment, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
 import { useQueryClient } from "@tanstack/react-query";
@@ -209,6 +210,7 @@ export default function TaskDetailPage() {
           {!isAuthenticated ? (
             <div className="text-center py-6">
               <AndamioText variant="muted" className="mb-4">Connect your wallet to commit to this task</AndamioText>
+              <ConnectWalletPrompt />
             </div>
           ) : isCommitmentLoading ? (
             <div className="text-center py-6">

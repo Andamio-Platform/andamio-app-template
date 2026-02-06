@@ -27,6 +27,7 @@ import {
   PendingIcon,
   LoadingIcon,
 } from "~/components/icons";
+import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import {
   TxConfirmationProgress,
   TxConfirmationSuccess,
@@ -209,6 +210,9 @@ export function AssignmentCommitment({
           <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
           <AndamioCardDescription>Connect your wallet to write and submit your work for this module</AndamioCardDescription>
         </AndamioCardHeader>
+        <AndamioCardContent>
+          <ConnectWalletPrompt />
+        </AndamioCardContent>
       </AndamioCard>
     );
   }

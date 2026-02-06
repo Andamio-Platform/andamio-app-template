@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
+import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import {
   AndamioResizablePanelGroup,
   AndamioResizablePanel,
@@ -127,6 +128,9 @@ export default function StudioCourseListPage() {
           <AndamioText variant="small" className="mt-1">
             Sign in to access Course Studio
           </AndamioText>
+          <div className="mt-6 w-full max-w-sm">
+            <ConnectWalletPrompt />
+          </div>
         </div>
       </StudioEditorPane>
     );

@@ -21,6 +21,7 @@ import {
   SignatureIcon,
 } from "~/components/icons";
 import { env } from "~/env";
+import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import {
   createDevRegisterSession,
@@ -290,8 +291,9 @@ export default function ApiSetupPage() {
                 <WalletIcon className="h-4 w-4" />
                 <AlertTitle>Wallet Required</AlertTitle>
                 <AlertDescription>
-                  Please connect your wallet using the button in the sidebar.
+                  Connect your wallet to get started.
                 </AlertDescription>
+                <ConnectWalletPrompt className="mt-3" />
               </Alert>
             ) : !isAuthenticated ? (
               <Alert>

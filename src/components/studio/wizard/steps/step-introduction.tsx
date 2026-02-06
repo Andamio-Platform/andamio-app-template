@@ -49,7 +49,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
   const defaultTitle = `Welcome to ${moduleTitle}`;
   const [title, setTitle] = useState(introduction?.title ?? defaultTitle);
   const [content, setContent] = useState<JSONContent | null>(
-    introduction?.contentJson ? (introduction.contentJson as JSONContent) : null
+    introduction?.contentJson ? introduction.contentJson : null
   );
 
   // Track if we've synced from introduction data
@@ -60,7 +60,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
     if (introduction?.title && !hasInitializedFromIntro) {
       setTitle(introduction.title);
       if (introduction.contentJson) {
-        setContent(introduction.contentJson as JSONContent);
+        setContent(introduction.contentJson);
       }
       setHasInitializedFromIntro(true);
     }

@@ -47,7 +47,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
   // Local UI state for editing
   const [title, setTitle] = useState(assignment?.title ?? "Module Assignment");
   const [content, setContent] = useState<JSONContent | null>(
-    assignment?.contentJson ? (assignment.contentJson as JSONContent) : null
+    assignment?.contentJson ? assignment.contentJson : null
   );
 
   // Track if we've synced from assignment data
@@ -58,7 +58,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
     if (assignment?.title && !hasInitializedFromAssignment) {
       setTitle(assignment.title);
       if (assignment.contentJson) {
-        setContent(assignment.contentJson as JSONContent);
+        setContent(assignment.contentJson);
       }
       setHasInitializedFromAssignment(true);
     }

@@ -26,7 +26,6 @@
 
 import { createStore } from "zustand";
 import type { StoreApi } from "zustand";
-import type { JSONContent } from "@tiptap/core";
 import type {
   ModuleDraft,
   SLTDraft,
@@ -135,7 +134,7 @@ function serverLessonToDraft(lesson: Lesson): LessonDraft {
     id: lesson.id,
     title: lesson.title ?? "",
     description: lesson.description,
-    contentJson: lesson.contentJson as JSONContent | null | undefined,
+    contentJson: lesson.contentJson,
     sltIndex: lesson.sltIndex ?? 1,
     imageUrl: lesson.imageUrl,
     videoUrl: lesson.videoUrl,
@@ -149,7 +148,7 @@ function serverAssignmentToDraft(assignment: Assignment): AssignmentDraft {
     id: assignment.id,
     title: assignment.title ?? "",
     description: assignment.description,
-    contentJson: assignment.contentJson as JSONContent | null | undefined,
+    contentJson: assignment.contentJson,
     imageUrl: assignment.imageUrl,
     videoUrl: assignment.videoUrl,
     _isModified: false,
@@ -162,7 +161,7 @@ function serverIntroToDraft(intro: Introduction): IntroDraft {
     id: intro.id,
     title: intro.title ?? "",
     description: intro.description,
-    contentJson: intro.contentJson as JSONContent | null | undefined,
+    contentJson: intro.contentJson,
     imageUrl: intro.imageUrl,
     videoUrl: intro.videoUrl,
     _isModified: false,

@@ -26,7 +26,7 @@ import { useCreateCourseModule, useUpdateCourseModule, useTeacherCourseModules }
 import { useSaveModuleDraft } from "~/hooks/api/course/use-save-module-draft";
 import type { WizardStepConfig } from "../types";
 import type { ModuleDraft } from "~/stores/module-draft-store";
-import type { JSONContent } from "@tiptap/core";
+
 
 interface StepCredentialProps {
   config: WizardStepConfig;

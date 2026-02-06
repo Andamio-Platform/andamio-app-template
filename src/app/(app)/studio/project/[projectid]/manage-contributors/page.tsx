@@ -25,6 +25,7 @@ import {
   AndamioDashboardStat,
 } from "~/components/andamio";
 import { TeacherIcon, SuccessIcon, OnChainIcon } from "~/components/icons";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 
 /**
  * Manage Contributors Page
@@ -46,13 +47,10 @@ export default function ManageContributorsPage() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
-        <AndamioErrorAlert
-          title="Authentication Required"
-          error="Please connect your wallet to view contributors."
-        />
-      </div>
+      <ConnectWalletGate
+        title="Manage Contributors"
+        description="Connect your wallet to view contributors"
+      />
     );
   }
 

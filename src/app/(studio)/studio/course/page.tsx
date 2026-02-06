@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudioHeader } from "~/components/layout/studio-header";
 import { StudioEditorPane } from "~/components/studio/studio-editor-pane";
-import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import {
   AndamioResizablePanelGroup,
   AndamioResizablePanel,
@@ -121,17 +121,11 @@ export default function StudioCourseListPage() {
   // Auth gate
   if (!isAuthenticated) {
     return (
-      <StudioEditorPane padding="normal">
-        <div className="flex flex-col items-center justify-center h-full text-center">
-          <OnChainIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <AndamioText className="text-lg font-medium">Connect your wallet</AndamioText>
-          <AndamioText variant="small" className="mt-1">
-            Sign in to access Course Studio
-          </AndamioText>
-          <div className="mt-6 w-full max-w-sm">
-            <ConnectWalletPrompt />
-          </div>
-        </div>
+      <StudioEditorPane padding="normal" className="min-h-[calc(100vh-40px-44px)]">
+        <ConnectWalletGate
+          title="Connect your wallet"
+          description="Sign in to access Course Studio"
+        />
       </StudioEditorPane>
     );
   }

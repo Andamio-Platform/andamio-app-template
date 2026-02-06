@@ -32,6 +32,7 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
@@ -145,13 +146,10 @@ export default function ProjectDashboardPage() {
   // Not authenticated state
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href="/studio/project" label="Back to Projects" />
-        <AndamioErrorAlert
-          error="Please connect your wallet to access the project dashboard."
-          title="Authentication Required"
-        />
-      </div>
+      <ConnectWalletGate
+        title="Connect your wallet"
+        description="Sign in to access the project dashboard"
+      />
     );
   }
 

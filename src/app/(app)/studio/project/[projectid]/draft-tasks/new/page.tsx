@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import {
   AndamioBadge,
   AndamioButton,
@@ -76,16 +76,10 @@ export default function NewTaskPage() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href={backHref} label="Back to Tasks" />
-        <AndamioPageHeader
-          title="Create Task"
-          description="Connect your wallet to create tasks"
-        />
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
+      <ConnectWalletGate
+        title="Create Task"
+        description="Connect your wallet to create tasks"
+      />
     );
   }
 

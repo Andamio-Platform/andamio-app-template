@@ -26,6 +26,7 @@ import {
   AndamioCheckbox,
 } from "~/components/andamio";
 import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
 import { TasksManage, TreasuryAddFunds } from "~/components/tx";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -165,13 +166,10 @@ export default function ManageTreasuryPage() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
-        <AndamioErrorAlert
-          title="Authentication Required"
-          error="Please connect your wallet to manage the treasury."
-        />
-      </div>
+      <ConnectWalletGate
+        title="Manage Treasury"
+        description="Connect your wallet to manage the treasury"
+      />
     );
   }
 

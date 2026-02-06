@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
 import { AlertIcon, BackIcon, SecurityAlertIcon } from "~/components/icons";
 import { useOwnerCourses } from "~/hooks/api";
@@ -65,16 +65,7 @@ export function RequireCourseAccess({
 
   // Not authenticated - show login prompt
   if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-        <SecurityAlertIcon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <h1>{title}</h1>
-        <AndamioText variant="muted" className="text-center mb-6 max-w-md">
-          {description}
-        </AndamioText>
-        <AndamioAuthButton />
-      </div>
-    );
+    return <ConnectWalletGate title={title} description={description} />;
   }
 
   // Loading - show skeleton matching the page type

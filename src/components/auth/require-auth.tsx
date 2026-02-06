@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
-import { AndamioText } from "~/components/andamio";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 
 interface RequireAuthProps {
   /** Page title shown when not authenticated */
@@ -31,18 +30,7 @@ export function RequireAuth({ title, description, children }: RequireAuthProps) 
   const { isAuthenticated } = useAndamioAuth();
 
   if (!isAuthenticated) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{title}</h1>
-          <AndamioText variant="muted">{description}</AndamioText>
-        </div>
-
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
-    );
+    return <ConnectWalletGate title={title} description={description} />;
   }
 
   return <>{children}</>;

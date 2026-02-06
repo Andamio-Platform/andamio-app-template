@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudentCourses } from "~/hooks/api";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import {
   AndamioPageHeader,
   AndamioPageLoading,
@@ -48,16 +48,10 @@ export default function CredentialsPage() {
   // Not authenticated state
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
-        <AndamioPageHeader
-          title="My Credentials"
-          description="Connect your wallet to view your on-chain credentials"
-          centered
-        />
-        <div className="w-full max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
+      <ConnectWalletGate
+        title="My Credentials"
+        description="Connect your wallet to view your on-chain credentials"
+      />
     );
   }
 

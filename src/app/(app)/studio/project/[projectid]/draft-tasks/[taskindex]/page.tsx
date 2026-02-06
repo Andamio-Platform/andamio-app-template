@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import {
   AndamioAlert,
   AndamioAlertTitle,
@@ -81,16 +81,10 @@ export default function EditTaskPage() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href={backHref} label="Back to Tasks" />
-        <AndamioPageHeader
-          title="Edit Task"
-          description="Connect your wallet to edit tasks"
-        />
-        <div className="max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
+      <ConnectWalletGate
+        title="Edit Task"
+        description="Connect your wallet to edit tasks"
+      />
     );
   }
 

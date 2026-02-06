@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { AndamioAuthButton } from "~/components/auth/andamio-auth-button";
+import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { MyLearning } from "~/components/learner/my-learning";
 import { MintAccessTokenSimple } from "~/components/tx";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
@@ -16,7 +16,6 @@ import { StudentAccomplishments } from "~/components/dashboard/student-accomplis
 import { ContributingProjectsSummary } from "~/components/dashboard/contributing-projects-summary";
 import { ManagingProjectsSummary } from "~/components/dashboard/managing-projects-summary";
 import { OwnedCoursesSummary } from "~/components/dashboard/owned-courses-summary";
-import { AndamioPageHeader } from "~/components/andamio";
 import {
   PostMintAuthPrompt,
   checkAndClearJustMintedFlag,
@@ -54,16 +53,10 @@ export default function DashboardPage() {
 
     // Default: Standard auth prompt
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
-        <AndamioPageHeader
-          title="Your Learning Journey Starts Here"
-          description="Connect your Cardano wallet to see your courses, credentials, and project opportunities."
-          centered
-        />
-        <div className="w-full max-w-md">
-          <AndamioAuthButton />
-        </div>
-      </div>
+      <ConnectWalletGate
+        title="Your Learning Journey Starts Here"
+        description="Connect your Cardano wallet to see your courses, credentials, and project opportunities."
+      />
     );
   }
 

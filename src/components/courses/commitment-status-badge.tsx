@@ -32,7 +32,7 @@ export function CommitmentStatusBadge({ status }: CommitmentStatusBadgeProps) {
       return (
         <AndamioBadge status="success" className="text-xs gap-1">
           <SuccessIcon className="h-3 w-3" />
-          Accepted
+          Completed
         </AndamioBadge>
       );
     case "ASSIGNMENT_REFUSED":
@@ -46,7 +46,7 @@ export function CommitmentStatusBadge({ status }: CommitmentStatusBadgeProps) {
       return (
         <AndamioBadge variant="secondary" className="text-xs gap-1">
           <LoadingIcon className="h-3 w-3 animate-spin" />
-          Confirming...
+          Submitting
         </AndamioBadge>
       );
     default:

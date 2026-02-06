@@ -47,6 +47,9 @@ export function TxConfirmationProgress({
             {txStatus?.state === "confirmed" && "Processing database updates"}
             {!txStatus && "Registering transaction..."}
           </AndamioText>
+          <AndamioText variant="small" className="text-xs text-muted-foreground">
+            This usually takes 20–60 seconds.
+          </AndamioText>
         </div>
       </div>
       {txHash && (
@@ -176,7 +179,7 @@ export function EvidenceEditorSection({
         <div className="flex justify-end pt-2">
           <AndamioButton onClick={onLock} disabled={lockDisabled}>
             <SuccessIcon className="h-4 w-4 mr-2" />
-            Lock Evidence
+            Finalize
           </AndamioButton>
         </div>
       )}

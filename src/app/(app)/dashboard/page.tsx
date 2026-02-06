@@ -56,8 +56,8 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
         <AndamioPageHeader
-          title="Welcome to Andamio"
-          description="Connect your Cardano wallet to access your personalized learning dashboard"
+          title="Your Learning Journey Starts Here"
+          description="Connect your Cardano wallet to see your courses, credentials, and project opportunities."
           centered
         />
         <div className="w-full max-w-md">

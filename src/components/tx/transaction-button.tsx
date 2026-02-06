@@ -31,13 +31,13 @@ export interface TransactionButtonProps extends Omit<AndamioButtonProps, "isLoad
 }
 
 const DEFAULT_STATE_TEXT: Record<TransactionState, string> = {
-  idle: "Execute Transaction",
-  fetching: "Preparing Transaction...",
-  signing: "Sign in Wallet",
-  submitting: "Submitting to Blockchain...",
-  confirming: "Awaiting Confirmation...",
-  success: "Transaction Successful",
-  error: "Transaction Failed",
+  idle: "Confirm",
+  fetching: "Preparing...",
+  signing: "Sign in Your Wallet",
+  submitting: "Submitting...",
+  confirming: "Confirming...",
+  success: "Done",
+  error: "Something Went Wrong",
 };
 
 /**

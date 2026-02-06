@@ -169,7 +169,7 @@ function CourseDetailContent() {
 
       {/* Your Learning Journey - enrollment status + progress */}
       <div className="space-y-3">
-        <AndamioSectionHeader title="Your Learning Journey" />
+        <AndamioSectionHeader title="Your Progress" />
         <UserCourseStatus courseId={courseId} />
       </div>
 
@@ -178,7 +178,7 @@ function CourseDetailContent() {
         <div>
           <AndamioSectionHeader title="Course Outline" />
           <AndamioText variant="muted" className="mt-2">
-            This course is structured around specific learning targets. Complete each module to master these skills.
+            Each module covers a set of learning goals. Complete modules to earn credentials toward project access.
           </AndamioText>
         </div>
 

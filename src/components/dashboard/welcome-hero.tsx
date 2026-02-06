@@ -60,11 +60,11 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                   ) : (
                     <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3">
                       <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight text-muted-foreground">
-                        New Member
+                        Welcome
                       </h1>
-                      <div className="flex items-center gap-1.5 rounded-full bg-muted/10 px-3 py-1 w-fit shrink-0">
-                        <SparkleIcon className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium text-muted-foreground">Setup Required</span>
+                      <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 w-fit shrink-0">
+                        <SparkleIcon className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-primary">Mint Your Token</span>
                       </div>
                     </div>
                   )}
@@ -105,8 +105,8 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                 {isPendingMint
                   ? `Your access token is being minted on the Cardano blockchain. This usually takes about 30 seconds to confirm. Once confirmed, you'll have full access to all ${BRANDING.name} features.`
                   : hasAccessToken
-                    ? "Your on-chain identity is active. Track your learning progress, manage your courses, and explore new opportunities."
-                    : `Complete your setup by minting an Access Token to unlock the full ${BRANDING.name} experience.`
+                    ? "Everything you learn and build is recorded on Cardano. Pick up where you left off."
+                    : `Create your Access Token to unlock the full ${BRANDING.name} experience. It only takes a moment.`
                 }
               </AndamioText>
 
@@ -135,7 +135,7 @@ export function WelcomeHero({ accessTokenAlias, isPendingMint, pendingAlias }: W
                 ) : (
                   <AndamioBadge variant="secondary" className="text-sm px-4 py-2">
                     <AccessTokenIcon className="mr-2 h-4 w-4" />
-                    Mint your Access Token below to get started
+                    Create your Access Token below to get started
                   </AndamioBadge>
                 )}
               </div>

@@ -150,7 +150,7 @@ export function CredentialClaim({
           <div className="flex-1">
             <AndamioCardTitle>{ui.title}</AndamioCardTitle>
             <AndamioCardDescription>
-              Mint your credential token for completing this module
+              Claim your proof of achievement for this module
             </AndamioCardDescription>
           </div>
         </div>
@@ -174,10 +174,10 @@ export function CredentialClaim({
         <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <ShieldIcon className="h-4 w-4 text-primary" />
-            <AndamioText className="font-medium">On-Chain Credential</AndamioText>
+            <AndamioText className="font-medium">Permanent Credential</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs">
-            A native Cardano token that serves as permanent, verifiable proof of your achievement.
+            A permanent, verifiable proof of your achievement stored on the blockchain.
           </AndamioText>
         </div>
 
@@ -206,6 +206,9 @@ export function CredentialClaim({
                   {txStatus?.state === "confirmed" && "Processing database updates"}
                   {!txStatus && "Registering transaction..."}
                 </AndamioText>
+                <AndamioText variant="small" className="text-xs text-muted-foreground">
+                  This usually takes 20–60 seconds.
+                </AndamioText>
               </div>
             </div>
           </div>
@@ -221,7 +224,7 @@ export function CredentialClaim({
                   Credential Claimed!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
-                  Your credential has been minted to your wallet!
+                  Your credential has been added to your wallet!
                 </AndamioText>
               </div>
             </div>
@@ -238,7 +241,7 @@ export function CredentialClaim({
               idle: ui.buttonText,
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
-              submitting: "Minting Credential...",
+              submitting: "Claiming Credential...",
             }}
             className="w-full"
           />

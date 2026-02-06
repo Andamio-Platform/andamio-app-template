@@ -73,7 +73,7 @@ export function MyLearning() {
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Your enrolled courses on-chain</AndamioCardDescription>
+          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="space-y-2">
@@ -92,7 +92,7 @@ export function MyLearning() {
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Your enrolled courses on-chain</AndamioCardDescription>
+          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
           <AndamioAlert variant="destructive">
@@ -111,16 +111,16 @@ export function MyLearning() {
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Your enrolled courses on-chain</AndamioCardDescription>
+          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
             <AndamioText variant="small" className="mb-2">
-              You haven&apos;t enrolled in any courses yet.
+              You are not enrolled in any courses yet.
             </AndamioText>
             <AndamioText variant="small" className="text-xs mb-4">
-              Browse courses and submit an assignment to enroll.
+              Browse courses, pick a module, and submit your first assignment to get started.
             </AndamioText>
             <Link href="/course">
               <AndamioButton>Browse Courses</AndamioButton>
@@ -139,7 +139,7 @@ export function MyLearning() {
           <div>
             <AndamioCardTitle>My Learning</AndamioCardTitle>
             <AndamioCardDescription>
-              {enrolledCourses.length} {enrolledCourses.length === 1 ? "course" : "courses"} enrolled on-chain
+              {enrolledCourses.length} {enrolledCourses.length === 1 ? "course" : "courses"} enrolled
             </AndamioCardDescription>
           </div>
           <Link href="/course">

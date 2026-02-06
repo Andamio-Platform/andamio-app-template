@@ -24,13 +24,13 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
     },
     {
       id: "token",
-      title: "Mint Access Token",
+      title: "Choose Your Alias",
       completed: hasAccessToken,
       icon: AccessTokenIcon,
     },
     {
       id: "explore",
-      title: "Start Learning",
+      title: "Explore Courses",
       completed: false,
       icon: CourseIcon,
       link: "/course",

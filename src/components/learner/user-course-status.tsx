@@ -100,9 +100,9 @@ export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
           <div className="flex items-center gap-2">
             <CourseIcon className="h-5 w-5 text-muted-foreground" />
             <div>
-              <AndamioCardTitle>Get Started</AndamioCardTitle>
+              <AndamioCardTitle>Ready to Begin?</AndamioCardTitle>
               <AndamioCardDescription>
-                Begin your learning journey in {course?.title ?? "this course"}
+                Start your first module in {course?.title ?? "this course"}
               </AndamioCardDescription>
             </div>
           </div>
@@ -111,7 +111,7 @@ export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
           <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
             <ModuleIcon className="h-4 w-4 text-muted-foreground" />
             <AndamioText variant="small">
-              Commit to a module assignment to start tracking your progress.
+              Choose a module below, write your assignment, and submit it to enroll.
             </AndamioText>
           </div>
         </AndamioCardContent>
@@ -318,7 +318,7 @@ function CredentialClaimCTA({
             All assignments complete!
           </AndamioText>
           <AndamioText variant="small">
-            Claim your {accepted === 1 ? "credential" : "credentials"} to mint a permanent, verifiable proof of achievement to your wallet.
+            You earned it. Claim your {accepted === 1 ? "credential" : "credentials"} to add {accepted === 1 ? "it" : "them"} permanently to your wallet.
           </AndamioText>
         </div>
       ) : (
@@ -354,6 +354,9 @@ function CredentialClaimCTA({
                 {txStatus?.state === "confirmed" && "Processing database updates"}
                 {!txStatus && "Registering transaction..."}
               </AndamioText>
+              <AndamioText variant="small" className="text-xs text-muted-foreground">
+                This usually takes 20–60 seconds.
+              </AndamioText>
             </div>
           </div>
         </div>
@@ -365,7 +368,7 @@ function CredentialClaimCTA({
           <div className="flex items-center gap-3">
             <SuccessIcon className="h-4 w-4 text-success" />
             <AndamioText variant="small" className="font-medium text-success">
-              Credentials claimed! Your credential tokens have been minted to your wallet.
+              Credentials claimed! Your credentials have been added to your wallet.
             </AndamioText>
           </div>
         </div>
@@ -383,14 +386,14 @@ function CredentialClaimCTA({
                 idle: `Claim ${accepted} ${accepted === 1 ? "Credential" : "Credentials"}`,
                 fetching: "Preparing Claim...",
                 signing: "Sign in Wallet",
-                submitting: "Minting Credentials...",
+                submitting: "Claiming Credentials...",
               }}
               className="w-full"
             />
           ) : nextModuleCode ? (
             <Link href={`/course/${courseId}/${nextModuleCode}`}>
               <AndamioButton variant="outline" className="w-full">
-                Continue with next module
+                Continue to next module
                 <NextIcon className="h-4 w-4 ml-2" />
               </AndamioButton>
             </Link>

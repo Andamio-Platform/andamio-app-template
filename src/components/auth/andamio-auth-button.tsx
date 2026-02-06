@@ -56,8 +56,8 @@ export function AndamioAuthButton() {
     return (
       <AndamioCard>
         <AndamioCardHeader>
-          <AndamioCardTitle>Authenticated</AndamioCardTitle>
-          <AndamioCardDescription>Connected to Andamio APIs</AndamioCardDescription>
+          <AndamioCardTitle>Connected</AndamioCardTitle>
+          <AndamioCardDescription>Your wallet is linked to Andamio</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
           <div className="space-y-2">
@@ -75,7 +75,7 @@ export function AndamioAuthButton() {
             )}
           </div>
           <AndamioButton onClick={handleLogout} variant="destructive" className="w-full">
-            Disconnect from Andamio
+            Sign Out
           </AndamioButton>
         </AndamioCardContent>
       </AndamioCard>

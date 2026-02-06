@@ -117,8 +117,8 @@ export function RequireCourseAccess({
         <SecurityAlertIcon className="h-12 w-12 text-destructive/70 mb-4" />
         <h1>Access Denied</h1>
         <AndamioText variant="muted" className="text-center mb-6 max-w-md">
-          You don&apos;t have permission to edit this course. Only course owners
-          and teachers can access this page.
+          Only course owners and instructors can access this page. If you believe
+          you should have access, check that you are connected with the correct wallet.
         </AndamioText>
         <div className="flex gap-3">
           <AndamioButton

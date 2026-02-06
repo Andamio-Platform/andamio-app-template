@@ -59,12 +59,12 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
             <div className="flex items-center gap-1.5">
               <AndamioBadge variant="outline" className="text-secondary border-secondary/30 bg-secondary/10">
                 <OnChainIcon className="h-3 w-3 mr-1" />
-                Unregistered
+                Coming Soon
               </AndamioBadge>
             </div>
           </AndamioTooltipTrigger>
           <AndamioTooltipContent>
-            On-chain but needs DB registration
+            This course is being set up by the instructor
           </AndamioTooltipContent>
         </AndamioTooltip>
       );

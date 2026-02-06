@@ -140,7 +140,7 @@ export function TransactionStatus({
         <div>
           <AndamioText variant="small" className="font-medium text-foreground">{text[state]}</AndamioText>
           {state === "signing" && (
-            <AndamioText variant="small" className="text-xs">Check your wallet</AndamioText>
+            <AndamioText variant="small" className="text-xs">A signing request is waiting in your wallet</AndamioText>
           )}
         </div>
       </div>

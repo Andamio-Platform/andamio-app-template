@@ -135,7 +135,7 @@ export function AssignmentCommitment({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges && !commitment) {
         e.preventDefault();
-        const message = "You have unsaved evidence. Are you sure you want to leave?";
+        const message = "You have unsaved work. Are you sure you want to leave?";
         e.returnValue = message;
         return message;
       }
@@ -162,7 +162,7 @@ export function AssignmentCommitment({
     setEvidenceContent(localEvidenceContent);
     setIsLocked(true);
     setHasUnsavedChanges(false);
-    triggerSuccess("Evidence locked! You can now submit to the blockchain.");
+    triggerSuccess("Your work is ready to submit. Review it below, then confirm.");
   };
 
   const handleUnlockEvidence = () => {
@@ -207,7 +207,7 @@ export function AssignmentCommitment({
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
-          <AndamioCardDescription>Connect your wallet to start this assignment</AndamioCardDescription>
+          <AndamioCardDescription>Connect your wallet to write and submit your work for this module</AndamioCardDescription>
         </AndamioCardHeader>
       </AndamioCard>
     );
@@ -224,7 +224,7 @@ export function AssignmentCommitment({
           <AndamioAlert>
             <AlertIcon className="h-4 w-4" />
             <AndamioAlertDescription>
-              The instructor needs to mint this module on-chain before you can submit your assignment.
+              This module is being prepared by the instructor. You will be able to submit your work once setup is complete.
             </AndamioAlertDescription>
           </AndamioAlert>
         </AndamioCardContent>
@@ -311,7 +311,7 @@ export function AssignmentCommitment({
             </div>
             {commitment.networkEvidence && (
               <div className="space-y-2">
-                <AndamioLabel>Your Approved Evidence</AndamioLabel>
+                <AndamioLabel>Your Approved Work</AndamioLabel>
                 <ContentDisplay content={commitment.networkEvidence} variant="muted" />
               </div>
             )}
@@ -335,13 +335,13 @@ export function AssignmentCommitment({
               <div>
                 <AndamioText className="font-medium">Needs Revision</AndamioText>
                 <AndamioText variant="small" className="text-muted-foreground">
-                  Your teacher has reviewed your work and requested revisions. Please update your evidence and resubmit.
+                  Your instructor reviewed your submission and requested changes. Update your work below and resubmit.
                 </AndamioText>
               </div>
             </div>
             {commitment.networkEvidence && (
               <div className="space-y-2">
-                <AndamioLabel>Previous Evidence (Refused)</AndamioLabel>
+                <AndamioLabel>Previous Submission (Refused)</AndamioLabel>
                 <ContentDisplay content={commitment.networkEvidence} variant="muted" />
                 {commitment.networkEvidenceHash && (
                   <EvidenceHashDisplay label="Previous Hash:" hash={commitment.networkEvidenceHash} />
@@ -350,9 +350,9 @@ export function AssignmentCommitment({
             )}
             <AndamioSeparator />
             <EvidenceEditorSection
-              label="Revised Evidence"
-              description="Edit your evidence below and resubmit. The on-chain record and database will both be updated."
-              placeholder="Revise your assignment evidence..."
+              label="Revised Work"
+              description="Edit your work below and resubmit."
+              placeholder="Revise your assignment work..."
               content={localEvidenceContent}
               onContentChange={handleEvidenceContentChange}
             />
@@ -363,7 +363,7 @@ export function AssignmentCommitment({
               txStatus={updateTxStatus}
               txConfirmed={updateTxConfirmed}
               onRetry={() => updateTx.reset()}
-              successMessage="Revised evidence submitted successfully!"
+              successMessage="Revised work submitted successfully!"
             />
             <UpdateEvidenceActions
               txState={updateTx.state}
@@ -374,7 +374,7 @@ export function AssignmentCommitment({
               sltHash={sltHash}
               onExecuteTx={handleUpdateTxExecute}
               onRefresh={() => void refetchCommitment()}
-              submitLabel="Resubmit Evidence"
+              submitLabel="Resubmit Work"
             />
           </div>
 
@@ -384,28 +384,28 @@ export function AssignmentCommitment({
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
               <AlertIcon className="h-8 w-8 text-secondary shrink-0" />
               <div>
-                <AndamioText className="font-medium">Evidence Update Required</AndamioText>
+                <AndamioText className="font-medium">Update Required</AndamioText>
                 <AndamioText variant="small" className="text-muted-foreground">
-                  Your assignment commitment is on-chain but evidence is missing from the database. Update your evidence to enable teacher review.
+                  Your assignment was submitted but the details need to be updated. Please re-enter your work below so your instructor can review it.
                 </AndamioText>
               </div>
             </div>
             {commitment.onChainContent && (
               <div className="p-3 border rounded-lg bg-muted/30">
-                <AndamioLabel className="text-xs">Current On-Chain Evidence Hash</AndamioLabel>
+                <AndamioLabel className="text-xs">Current Submission Hash</AndamioLabel>
                 <code className="block mt-1 text-xs font-mono break-all text-muted-foreground">
                   {commitment.onChainContent}
                 </code>
                 <AndamioText variant="small" className="mt-2 text-xs">
-                  This will be updated with your new evidence hash.
+                  This will be updated with your new submission.
                 </AndamioText>
               </div>
             )}
             <AndamioSeparator />
             <EvidenceEditorSection
-              label="Your Evidence"
-              description="Enter your assignment evidence. This will update both the on-chain record and the database."
-              placeholder="Enter your assignment evidence..."
+              label="Your Work"
+              description="Enter your assignment work below. This will update your submission."
+              placeholder="Enter your assignment work..."
               content={localEvidenceContent}
               onContentChange={handleEvidenceContentChange}
             />
@@ -416,7 +416,7 @@ export function AssignmentCommitment({
               txStatus={updateTxStatus}
               txConfirmed={updateTxConfirmed}
               onRetry={() => updateTx.reset()}
-              successMessage="Evidence updated successfully!"
+              successMessage="Work updated successfully!"
             />
             <UpdateEvidenceActions
               txState={updateTx.state}
@@ -427,7 +427,7 @@ export function AssignmentCommitment({
               sltHash={sltHash}
               onExecuteTx={handleUpdateTxExecute}
               onRefresh={() => void refetchCommitment()}
-              submitLabel="Update Evidence"
+              submitLabel="Update Work"
             />
           </div>
 
@@ -436,9 +436,9 @@ export function AssignmentCommitment({
           <div className="space-y-4">
             {!isLocked ? (
               <EvidenceEditorSection
-                label="Your Evidence"
-                description="Write your evidence below. When finished, lock it to generate a hash for blockchain submission."
-                placeholder="Write your assignment evidence..."
+                label="Your Work"
+                description="Write your assignment work below. When you are ready, click Finalize to prepare it for submission."
+                placeholder="Write your assignment work..."
                 content={localEvidenceContent}
                 onContentChange={handleEvidenceContentChange}
                 onLock={handleLockEvidence}
@@ -447,12 +447,12 @@ export function AssignmentCommitment({
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <AndamioLabel>Locked Evidence</AndamioLabel>
+                  <AndamioLabel>Finalized Work</AndamioLabel>
                   {evidenceContent && (
                     <ContentDisplay content={evidenceContent} variant="muted" />
                   )}
                   {evidenceHash && (
-                    <EvidenceHashDisplay label="Evidence Hash:" hash={evidenceHash} truncate={false} />
+                    <EvidenceHashDisplay label="Submission Hash:" hash={evidenceHash} truncate={false} />
                   )}
                 </div>
                 <AndamioSeparator />
@@ -469,7 +469,7 @@ export function AssignmentCommitment({
                   {commitTx.state === "idle" && !commitTxConfirmed && (
                     <div className="flex justify-end gap-2">
                       <AndamioButton variant="outline" onClick={handleUnlockEvidence}>
-                        Edit Evidence
+                        Edit Work
                       </AndamioButton>
                       {user?.accessTokenAlias && sltHash && evidenceHash && (
                         <UpdateEvidenceActions
@@ -522,18 +522,18 @@ export function AssignmentCommitment({
           <div className="space-y-4">
             <CommitmentStatusBanner networkStatus={commitment.networkStatus} />
             <div className="space-y-2">
-              <AndamioLabel>Your Submitted Evidence</AndamioLabel>
+              <AndamioLabel>Your Submitted Work</AndamioLabel>
               {commitment.networkEvidence ? (
                 <>
                   <ContentDisplay content={commitment.networkEvidence} variant="muted" />
                   {commitment.networkEvidenceHash && (
-                    <EvidenceHashDisplay label="Evidence Hash:" hash={commitment.networkEvidenceHash} />
+                    <EvidenceHashDisplay label="Submission Hash:" hash={commitment.networkEvidenceHash} />
                   )}
                 </>
               ) : (
                 <AndamioAlert>
                   <AlertIcon className="h-4 w-4" />
-                  <AndamioAlertDescription>No evidence content available.</AndamioAlertDescription>
+                  <AndamioAlertDescription>No submission content available.</AndamioAlertDescription>
                 </AndamioAlert>
               )}
             </div>
@@ -589,7 +589,7 @@ function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
           <div>
             <AndamioText className="font-medium">Assignment Submitted</AndamioText>
             <AndamioText variant="small" className="text-xs">
-              Your assignment has been recorded. Current status: {networkStatus}
+              Your assignment has been recorded and is being processed.
             </AndamioText>
           </div>
         </div>

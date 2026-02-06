@@ -1,10 +1,14 @@
 {
-  "currentPhase": null,
-  "iteration": null,
+  "currentPhase": "ship",
+  "iteration": "2026-02-06",
   "artifacts": {
-    "feedback": null,
-    "proposal": null,
+    "feedback": "artifacts/e2e-feature-report-2026-02-06.md",
+    "proposal": "artifacts/design-copy-improvements-2026-02-06.md",
     "issues": []
   },
-  "history": []
+  "history": [
+    {"phase": "test", "completed": "2026-02-06T10:00:00Z", "artifact": "artifacts/e2e-feature-report-2026-02-06.md"},
+    {"phase": "design", "completed": "2026-02-06T10:30:00Z", "artifact": "artifacts/design-copy-improvements-2026-02-06.md"},
+    {"phase": "triage", "completed": "2026-02-06T11:00:00Z", "artifact": "artifacts/product-package-2026-02-06.md"}
+  ]
 }

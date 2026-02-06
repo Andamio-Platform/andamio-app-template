@@ -207,7 +207,7 @@ export function EnrollInCourse({
               <AndamioCardTitle>Enroll in Course</AndamioCardTitle>
             </div>
             <AndamioCardDescription>
-              You need an access token to enroll in courses. Please mint one first.
+              You need an access token to enroll. Create one below — it only takes a moment.
             </AndamioCardDescription>
           </AndamioCardHeader>
         </AndamioCard>
@@ -248,7 +248,7 @@ export function EnrollInCourse({
             <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
               <AndamioText className="font-medium">What happens:</AndamioText>
               <AndamioText variant="small" className="text-xs">
-                A course state token is minted to your wallet and your first submission is recorded on-chain.
+                You will be enrolled in this course and your first assignment will be submitted.
               </AndamioText>
               {computedHash && (
                 <div className="flex items-center gap-2 pt-2 border-t text-xs text-muted-foreground">
@@ -283,6 +283,9 @@ export function EnrollInCourse({
                       {txStatus?.state === "confirmed" && "Processing database updates"}
                       {!txStatus && "Registering transaction..."}
                     </AndamioText>
+                    <AndamioText variant="small" className="text-xs text-muted-foreground">
+                      This usually takes 20–60 seconds.
+                    </AndamioText>
                   </div>
                 </div>
               </div>
@@ -316,7 +319,7 @@ export function EnrollInCourse({
                   idle: ui.buttonText,
                   fetching: "Preparing Transaction...",
                   signing: "Sign in Wallet",
-                  submitting: "Enrolling on Blockchain...",
+                  submitting: "Enrolling...",
                 }}
                 className="w-full"
               />
@@ -327,8 +330,8 @@ export function EnrollInCourse({
           <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
             <AndamioText className="font-medium">Select a Module to Begin</AndamioText>
             <AndamioText variant="small" className="text-xs">
-              To enroll in this course, select a module and provide your initial evidence submission.
-              This creates your course state token and records your first assignment on-chain.
+              To enroll in this course, select a module and write your first assignment.
+              This enrolls you and submits your work.
             </AndamioText>
           </div>
         )}

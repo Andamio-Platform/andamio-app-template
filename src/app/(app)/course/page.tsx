@@ -75,12 +75,12 @@ export default function CoursePage() {
       <div className="space-y-6">
         <AndamioPageHeader
           title="Courses"
-          description="Explore published courses on the Andamio platform"
+          description="Browse available courses and start building your skills"
         />
         <AndamioEmptyState
           icon={CourseIcon}
-          title="No Published Courses"
-          description="There are currently no published courses available. Check back later or create your own course."
+          title="No Courses Available Yet"
+          description="Courses are being prepared. In the meantime, explore projects or set up your access token."
         />
       </div>
     );
@@ -92,7 +92,7 @@ export default function CoursePage() {
       {/* Header with stats */}
       <AndamioPageHeader
         title="Courses"
-        description="Explore published courses on the Andamio platform"
+        description="Browse available courses and start building your skills"
       />
 
       {/* Stats bar */}
@@ -116,7 +116,7 @@ export default function CoursePage() {
         {unregisteredCourses > 0 && (
           <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-secondary border-secondary/30">
             <InfoIcon className="h-4 w-4 mr-1.5" />
-            {unregisteredCourses} unregistered
+            {unregisteredCourses} coming soon
           </AndamioBadge>
         )}
       </div>

@@ -106,13 +106,13 @@ export const MARKETING = {
    * Landing page hero section
    */
   landingHero: {
-    headline: "Learn. Build. Earn On-Chain Credentials.",
+    headline: "Turn Learning Into Proof That Opens Doors",
     subtext:
-      "Andamio connects learning with real project contributions. Complete courses, earn credentials, join funded projects.",
-    primaryCta: "Get Started",
+      "Complete courses to earn verifiable credentials on Cardano. Use those credentials to unlock funded project opportunities.",
+    primaryCta: "Create Your Identity",
     browseCourses: "Browse Courses",
     browseProjects: "Browse Projects",
-    signInText: "Already have an account?",
+    signInText: "Already have an access token?",
     signInLink: "Sign In",
   },
 
@@ -120,9 +120,9 @@ export const MARKETING = {
    * Landing page builder section
    */
   landingBuilder: {
-    headline: "Want to build on Andamio?",
+    headline: "Build courses and projects that pay contributors",
     subtext:
-      "Create courses or launch projects with on-chain credentials.",
+      "Create courses or launch projects with verifiable credentials.",
     createCourse: "Create a Course",
     launchProject: "Launch a Project",
   },
@@ -144,7 +144,7 @@ export const MARKETING = {
     getStarted: {
       title: "Get Started",
       description:
-        "New here? Connect a wallet and mint your access token to begin.",
+        "New here? Connect a wallet and create your access token to begin.",
     },
   },
 
@@ -168,7 +168,7 @@ export const MARKETING = {
    * LLM disclaimer alert
    */
   disclaimer: {
-    text: "An LLM wrote all the copy on this page, but the sentiments are true. Thank you for being here and please pardon any confusion.",
+    text: "This is a preview build. Some text may change before launch.",
   },
 } as const;
 

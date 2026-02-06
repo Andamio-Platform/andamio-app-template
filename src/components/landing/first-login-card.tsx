@@ -99,7 +99,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
             <SuccessIcon className="h-8 w-8 text-primary" />
           </div>
           <AndamioCardTitle className="text-2xl">Welcome to Andamio!</AndamioCardTitle>
-          <AndamioCardDescription>
+          <AndamioCardDescription className="mx-auto max-w-sm text-center">
             Signed in as <span className="font-mono font-semibold text-foreground">{user.accessTokenAlias}</span>. Redirecting to your dashboard...
           </AndamioCardDescription>
         </AndamioCardHeader>
@@ -121,7 +121,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
             <AccessTokenIcon className="h-8 w-8 text-primary" />
           </div>
           <AndamioCardTitle className="text-2xl">Signing In...</AndamioCardTitle>
-          <AndamioCardDescription>
+          <AndamioCardDescription className="mx-auto max-w-sm text-center">
             Authenticating with your new access token
           </AndamioCardDescription>
         </AndamioCardHeader>
@@ -143,7 +143,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
             <AccessTokenIcon className="h-8 w-8 text-primary" />
           </div>
           <AndamioCardTitle className="text-2xl">Almost There</AndamioCardTitle>
-          <AndamioCardDescription>
+          <AndamioCardDescription className="mx-auto max-w-sm text-center">
             There was a problem signing in. Your token may still be confirming on-chain.
           </AndamioCardDescription>
         </AndamioCardHeader>
@@ -171,7 +171,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           <AndamioCardTitle className="text-2xl">
             Sign In as {alias}
           </AndamioCardTitle>
-          <AndamioCardDescription>
+          <AndamioCardDescription className="mx-auto max-w-sm text-center">
             Connect your wallet to authenticate with your new access token.
           </AndamioCardDescription>
         </AndamioCardHeader>
@@ -202,7 +202,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
         <AndamioCardTitle className="text-2xl">
           {txConfirmed ? "Access Token Confirmed!" : "Access Token Submitted!"}
         </AndamioCardTitle>
-        <AndamioCardDescription className="text-base">
+        <AndamioCardDescription className="mx-auto max-w-sm text-center text-base">
           {txConfirmed ? (
             <>Your alias <span className="font-mono font-semibold text-foreground">{alias}</span> is now live on-chain.</>
           ) : (

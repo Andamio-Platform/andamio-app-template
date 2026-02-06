@@ -1,7 +1,7 @@
 # Application Sitemap
 
 > **Complete route and page mapping for Andamio T3 App Template**
-> Last Updated: January 14, 2026
+> Last Updated: February 6, 2026
 
 This document provides a comprehensive overview of all routes, their purpose, authentication requirements, and API dependencies.
 
@@ -14,7 +14,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | Group | Path Prefix | Layout | Purpose |
 |-------|-------------|--------|---------|
 | (app) | `/` | AppLayout with Sidebar | Main application pages |
-| (studio) | `/studio` | StudioLayout with Header | Studio/creator pages |
+| (studio) | `/studio` | StudioLayout with Sidebar + Header | Studio/creator pages (unified split-pane) |
 | Root | `/` | None | Redirects to /dashboard |
 
 ---
@@ -40,9 +40,9 @@ This document provides a comprehensive overview of all routes, their purpose, au
 
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
-| `/studio` | `app/(studio)/studio/page.tsx` | Yes | Studio hub |
-| `/studio/course` | `app/(studio)/studio/course/page.tsx` | Yes | Course Studio - split-pane layout |
-| `/studio/project` | `app/(studio)/studio/project/page.tsx` | Yes | Project Studio - manage owned projects |
+| `/studio` | `app/(studio)/studio/page.tsx` | Yes | Unified studio with persistent sidebar (courses + projects) |
+| `/studio/course` | `app/(studio)/studio/course/page.tsx` | Yes | Redirects to `/studio` |
+| `/studio/project` | `app/(app)/studio/project/page.tsx` | Yes | Redirects to `/studio` |
 
 ---
 
@@ -83,12 +83,12 @@ This document provides a comprehensive overview of all routes, their purpose, au
 
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
-| `/studio/project/[projectid]` | `app/(app)/studio/project/[projectid]/page.tsx` | Yes | Project dashboard |
-| `/studio/project/[projectid]/manager` | `app/(app)/studio/project/[projectid]/manager/page.tsx` | Yes | Manager dashboard - review task submissions, accept/deny |
-| `/studio/project/[projectid]/draft-tasks` | `app/(app)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
-| `/studio/project/[projectid]/draft-tasks/new` | `app/(app)/studio/project/.../new/page.tsx` | Yes | Create new task |
-| `/studio/project/[projectid]/draft-tasks/[taskindex]` | `app/(app)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
-| `/studio/project/[projectid]/commitments` | `app/(app)/studio/project/.../commitments/page.tsx` | Yes | Manager view - list/detail resizable panels, assess submissions with ContentDisplay evidence rendering |
+| `/studio/project/[projectid]` | `app/(studio)/studio/project/[projectid]/page.tsx` | Yes | Project dashboard (in studio layout with sidebar) |
+| `/studio/project/[projectid]/manager` | `app/(studio)/studio/project/[projectid]/manager/page.tsx` | Yes | Manager dashboard - review task submissions, accept/deny |
+| `/studio/project/[projectid]/draft-tasks` | `app/(studio)/studio/project/.../draft-tasks/page.tsx` | Yes | Task list management |
+| `/studio/project/[projectid]/draft-tasks/new` | `app/(studio)/studio/project/.../new/page.tsx` | Yes | Create new task |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | `app/(studio)/studio/project/.../[taskindex]/page.tsx` | Yes | Edit existing task |
+| `/studio/project/[projectid]/commitments` | `app/(studio)/studio/project/.../commitments/page.tsx` | Yes | Manager view - list/detail resizable panels, assess submissions with ContentDisplay evidence rendering |
 
 ---
 
@@ -357,5 +357,5 @@ Studio → Projects → Project Title → Tasks
 
 ---
 
-**Last Updated**: January 8, 2026
+**Last Updated**: February 6, 2026
 **Maintained By**: Andamio Platform Team

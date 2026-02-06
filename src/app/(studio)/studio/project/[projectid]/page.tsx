@@ -19,7 +19,6 @@ import {
   AndamioCardDescription,
   AndamioCardHeader,
   AndamioCardTitle,
-  AndamioPageHeader,
   AndamioPageLoading,
   AndamioSaveButton,
   AndamioTabs,
@@ -27,7 +26,6 @@ import {
   AndamioTabsList,
   AndamioTabsTrigger,
   AndamioText,
-  AndamioBackButton,
   AndamioErrorAlert,
   AndamioActionFooter,
 } from "~/components/andamio";
@@ -162,8 +160,7 @@ export default function ProjectDashboardPage() {
   const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
   if (errorMessage || !projectDetail) {
     return (
-      <div className="space-y-6">
-        <AndamioBackButton href="/studio/project" label="Back to Projects" />
+      <div className="max-w-4xl mx-auto px-6 py-6">
         <AndamioErrorAlert error={errorMessage ?? "Project not found"} />
       </div>
     );
@@ -176,39 +173,20 @@ export default function ProjectDashboardPage() {
   const hasChanges = title !== projectDetail.title;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <AndamioBackButton href="/studio/project" label="Back to Projects" />
-        <div className="flex items-center gap-2">
-          <AndamioBadge variant="outline" className="font-mono text-xs">
-            {projectId.slice(0, 16)}...
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+      {/* Project Header */}
+      <div className="mb-2">
+        <h1 className="text-2xl font-bold mb-2">{projectDetail.title || "Untitled Project"}</h1>
+        <div className="flex items-center gap-3">
+          <AndamioBadge variant="default" className="text-[10px]">
+            <OnChainIcon className="h-2.5 w-2.5 mr-1" />
+            Published
           </AndamioBadge>
-          {userRole === "owner" && (
-            <AndamioBadge variant="secondary">Owner</AndamioBadge>
-          )}
-          {userRole === "manager" && (
-            <AndamioBadge variant="default">Manager</AndamioBadge>
-          )}
-          <AndamioBadge variant="default">Published</AndamioBadge>
+          <span className="text-sm text-muted-foreground">
+            {draftTasks} draft · {liveTasks} active
+          </span>
         </div>
       </div>
-
-      {/* Role Notice */}
-      {userRole === "owner" && (
-        <AndamioAlert>
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertTitle>Owner View</AndamioAlertTitle>
-          <AndamioAlertDescription>
-            As owner, you can add and remove managers. As manager, you can create tasks and review commitments.
-          </AndamioAlertDescription>
-        </AndamioAlert>
-      )}
-
-      <AndamioPageHeader
-        title="Project Dashboard"
-        description={projectDetail.title || "Manage project details and tasks"}
-      />
 
       {/* Success/Error Messages */}
       {saveSuccess && (

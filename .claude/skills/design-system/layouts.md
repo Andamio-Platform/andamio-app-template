@@ -103,35 +103,48 @@ Standard layout for app pages with sidebar navigation.
 ## 2. Studio Layout
 
 **Route Group**: `(studio)/*`
-**Components**: `StudioLayout`, `StudioSidebar`, `StudioHeader`
+**Components**: `StudioLayout`, `StudioSidebar`, `StudioHeader`, `StudioProvider`
 
-Dense layout for content creation and editing.
+Dense layout for content creation and editing with persistent sidebar.
 
 ```
-┌─────────────────────────────────────────────┐
-│  AuthStatusBar (fixed)                       │
-├─────────┬───────────────────────────────────┤
-│         │  StudioHeader (fixed)              │
-│ Sidebar │  - Breadcrumbs, title, actions     │
-│  256px  ├───────────────────────────────────┤
-│ (fixed) │                                    │
-│         │  Workspace (scrollable OR panels)  │
-│         │  - Full height available           │
-│         │  - Pages control own scroll        │
-└─────────┴───────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  AuthStatusBar (fixed)                                       │
+├─────────┬───────────────────────────────────────────────────┤
+│         │  StudioHeader (fixed)                              │
+│ Sidebar │  - Breadcrumbs, title, actions                     │
+│  256px  ├──────────────────┬────────────────────────────────┤
+│ (fixed) │                  │                                 │
+│         │  Studio Sidebar  │   Workspace (scrollable)        │
+│         │  (15-20%)        │   (80-85%)                      │
+│         │  - Courses list  │   - Page content                │
+│         │  - Projects list │   - Or resizable panels         │
+│         │  - Search filter │                                 │
+│         │  - Create CTAs   │                                 │
+└─────────┴──────────────────┴────────────────────────────────┘
 ```
 
-**Usage**: Course Studio, Module Editor, Assignment Editor
+**Usage**: Studio hub, Course Editor, Project Dashboard
 
 **Key Components**:
 - `StudioHeader` - Breadcrumbs, title, status badge, contextual actions
 - `StudioEditorPane` - Content wrapper with consistent padding
+- `StudioProvider` - Context for create mode state sharing
+- `studio/layout.tsx` - Persistent sidebar with courses/projects list
 
 **StudioHeader Features**:
-- Breadcrumb navigation
+- Breadcrumb navigation (links to unified `/studio`)
 - Page title (from route or data)
 - Status badge (optional)
 - Contextual action buttons (right side)
+
+**Studio Sidebar (Persistent)**:
+- Courses section with count badge and "Create" button
+- Projects section with count badge and "Create" button
+- Selection highlights current course/project from URL
+- Search bar to filter both lists
+- Prerequisites tooltip on project hover
+- Hidden in wizard mode (module editing)
 
 ---
 
@@ -155,7 +168,7 @@ Split-pane layout for browsing and previewing items.
 └──────────────────┴─────────────────────────────┘
 ```
 
-**Usage**: Course Studio (course list + course preview)
+**Usage**: Studio hub (welcome + create forms), Course/Project editors
 
 **Key Features**:
 - Resizable divider with drag handle
@@ -163,7 +176,7 @@ Split-pane layout for browsing and previewing items.
 - Full-height divider (no gaps)
 - Selection state in list syncs to preview
 
-**Example**: `src/app/(studio)/studio/course/page.tsx`
+**Example**: `src/app/(studio)/studio/layout.tsx` (sidebar), `src/app/(studio)/studio/page.tsx` (content)
 
 ```tsx
 <ResizablePanelGroup direction="horizontal" className="h-full">

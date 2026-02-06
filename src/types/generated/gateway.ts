@@ -36,11 +36,11 @@ export enum AndamioDbClientAggregateUpdateErrorResponseFailedOperationOperation 
 }
 
 export enum AndamioDbClientAggregateUpdateErrorResponseFailedOperationEntity {
-  AggregateUpdateErrorResponseFailedOperationEntityAssignment = "assignment",
-  AggregateUpdateErrorResponseFailedOperationEntityIntroduction = "introduction",
-  AggregateUpdateErrorResponseFailedOperationEntityLesson = "lesson",
-  AggregateUpdateErrorResponseFailedOperationEntityModule = "module",
-  AggregateUpdateErrorResponseFailedOperationEntitySlt = "slt",
+  Assignment = "assignment",
+  Introduction = "introduction",
+  Lesson = "lesson",
+  Module = "module",
+  Slt = "slt",
 }
 
 export enum AndamioDbClientAggregateUpdateErrorResponseCode {
@@ -565,11 +565,11 @@ export interface AndamioDbClientAggregateUpdateModuleV2Response {
   data?: AndamioApiInternalInternalApiAndamioDbClientCourseModuleV2;
 }
 
-export interface AndamioDbClientProjectManagerTaskDeletePostRequest {
+export interface AndamioDbClientPostProjectContributorCommitmentDeleteJSONRequestBody {
   task_hash?: string;
 }
 
-export interface AndamioDbClientUserAccessTokenAliasPostRequest {
+export interface AndamioDbClientPostUserAccessTokenAliasJSONRequestBody {
   access_token_alias?: string;
 }
 

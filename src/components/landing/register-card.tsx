@@ -130,12 +130,12 @@ export function MintCard({ onMinted }: MintCardProps) {
           <AccessTokenIcon className="h-6 w-6 text-primary" />
         </div>
         <AndamioCardTitle className="text-2xl">Mint Your Access Token</AndamioCardTitle>
-        <AndamioCardDescription>
+        <AndamioCardDescription className="mx-auto max-w-sm text-center">
           Choose an alias and mint your on-chain access token to get started.
         </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <MintAccessTokenSimple onSubmitted={onMinted} />
+        <MintAccessTokenSimple onSubmitted={onMinted} skipCeremony />
       </AndamioCardContent>
     </AndamioCard>
   );

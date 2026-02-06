@@ -43,7 +43,6 @@ import {
   CredentialIcon,
   VerifiedIcon,
   TeacherIcon,
-  DiplomaIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -51,7 +50,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
-import { useTeacherAssignmentCommitments } from "~/hooks/api/course/use-course-teacher";
+import { useTeacherCourses, useTeacherAssignmentCommitments } from "~/hooks/api/course/use-course-teacher";
 import { TeachersUpdate } from "~/components/tx/teachers-update";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
@@ -193,15 +192,18 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   // React Query hooks - Database
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseId);
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseId);
+  const { data: teacherCourses = [] } = useTeacherCourses();
+
+  // Get course title - prefer teacher courses list (has DB title) over course detail
+  const courseTitle = useMemo(() => {
+    const teacherCourse = teacherCourses.find(c => c.courseId === courseId);
+    return teacherCourse?.title || course?.title || "Untitled Course";
+  }, [teacherCourses, courseId, course?.title]);
 
   // Fetch assignment commitments for this course, filter to pending review only
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
-    [allCommitmentsForCourse]
-  );
-  const acceptedCommitmentsCount = useMemo(
-    () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "ACCEPTED").length,
     [allCommitmentsForCourse]
   );
 
@@ -320,13 +322,13 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   // Update header when course loads
   useEffect(() => {
     if (course) {
-      setTitle(course.title ?? "Untitled Course");
+      setTitle(courseTitle);
       setBreadcrumbs([
-        { label: "Course Studio", href: "/studio/course" },
-        { label: course.title ?? "Course" },
+        { label: "Studio", href: "/studio" },
+        { label: courseTitle },
       ]);
     }
-  }, [course, setBreadcrumbs, setTitle]);
+  }, [course, courseTitle, setBreadcrumbs, setTitle]);
 
   // Update header actions
   useEffect(() => {
@@ -378,7 +380,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
     try {
       await deleteCourseMutation.mutateAsync(courseId);
       toast.success("Course deleted");
-      router.push("/studio/course");
+      router.push("/studio");
     } catch (err) {
       toast.error("Failed to delete", {
         description: err instanceof Error ? err.message : "Unknown error",
@@ -476,100 +478,30 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   return (
     <AndamioScrollArea className="h-full">
-      <div className="min-h-full bg-gradient-to-b from-background via-background to-muted/20">
-        {/* Course Header - Contextual based on module count */}
-        {!isEmpty ? (
-          <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-            <div className="max-w-4xl mx-auto px-6 py-6">
-              <div className="flex items-start justify-between gap-6">
-                {/* Left: Course Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-mono text-muted-foreground">
-                      {courseId.slice(0, 12) + "..."}
-                    </span>
-                    {course.courseId && (
-                      <AndamioBadge variant="default" className="text-[10px]">
-                        <OnChainIcon className="h-2.5 w-2.5 mr-1" />
-                        Published
-                      </AndamioBadge>
-                    )}
-                  </div>
-                  <h1 className="text-2xl font-bold text-foreground mb-1">
-                    {course.title ?? "Untitled Course"}
-                  </h1>
-                  {course.description && (
-                    <AndamioText variant="muted" className="line-clamp-2">
-                      {course.description}
-                    </AndamioText>
-                  )}
-                </div>
-
-                {/* Right: Stats - Module Status */}
-                <div className="flex items-center gap-4 text-center flex-shrink-0">
-                  <div>
-                    <div className="text-2xl font-bold text-primary">{moduleStats.active}</div>
-                    <AndamioText variant="small" className="text-[10px]">Active</AndamioText>
-                  </div>
-                  <div className="w-px h-8 bg-border" />
-                  <div>
-                    <div className="text-2xl font-bold text-muted-foreground">{moduleStats.unregistered}</div>
-                    <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
-                  </div>
-                  <div className="w-px h-8 bg-border" />
-                  <div>
-                    <div className="text-2xl font-bold text-secondary">{moduleStats.draft + moduleStats.approved}</div>
-                    <AndamioText variant="small" className="text-[10px]">Draft</AndamioText>
-                  </div>
-                  {allCommitmentsForCourse.length > 0 && (
-                    <>
-                      <div className="w-px h-8 bg-border" />
-                      <Link href={`/studio/course/${courseId}/teacher`} className="text-center hover:opacity-80 transition-opacity">
-                        <div className="flex items-center justify-center gap-1">
-                          <DiplomaIcon className="h-5 w-5 text-primary" />
-                          <span className="text-2xl font-bold text-primary">{acceptedCommitmentsCount}</span>
-                        </div>
-                        <AndamioText variant="small" className="text-[10px]">Assignments Complete</AndamioText>
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
+      <div className="min-h-full">
         {/* Content Area */}
         <div className={cn(
           "mx-auto px-6",
-          isEmpty ? "max-w-5xl py-12" : "max-w-4xl py-6"
+          isEmpty ? "max-w-5xl py-8" : "max-w-4xl py-6"
         )}>
+          {/* Course Header - Always visible */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold mb-2">{courseTitle}</h1>
+            {!isEmpty && (
+              <div className="flex items-center gap-3">
+                <AndamioBadge variant="default" className="text-[10px]">
+                  <OnChainIcon className="h-2.5 w-2.5 mr-1" />
+                  Published
+                </AndamioBadge>
+                <span className="text-sm text-muted-foreground">
+                  {moduleStats.active} active · {moduleStats.draft + moduleStats.approved} draft
+                </span>
+              </div>
+            )}
+          </div>
           {isEmpty ? (
             /* Empty State - Full Welcome Experience (No Tabs) */
             <div className="flex flex-col items-center">
-              {/* Course Title Banner */}
-              <div className="text-center mb-10">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                    {courseId.slice(0, 12) + "..."}
-                  </span>
-                  {course.courseId && (
-                    <AndamioBadge variant="default" className="text-[10px]">
-                      <OnChainIcon className="h-2.5 w-2.5 mr-1" />
-                      Published
-                    </AndamioBadge>
-                  )}
-                </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-                  {course.title ?? "Untitled Course"}
-                </h1>
-                {course.description && (
-                  <AndamioText variant="muted" className="mt-2 max-w-lg mx-auto">
-                    {course.description}
-                  </AndamioText>
-                )}
-              </div>
-
               {/* Hero Section */}
               <div className="text-center max-w-2xl mb-12">
                 <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 mx-auto mb-6 shadow-xl shadow-primary/30">

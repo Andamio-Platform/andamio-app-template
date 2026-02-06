@@ -181,7 +181,7 @@ export default function MigratePage() {
               <AndamioCardTitle className="text-center">
                 No V1 Token Found
               </AndamioCardTitle>
-              <AndamioCardDescription className="text-center">
+              <AndamioCardDescription className="mx-auto max-w-sm text-center">
                 No V1 access token was detected in this wallet.
                 Make sure you connected the correct wallet.
               </AndamioCardDescription>
@@ -240,7 +240,7 @@ export default function MigratePage() {
               <AndamioCardTitle className="text-2xl">
                 Welcome to Andamio V2!
               </AndamioCardTitle>
-              <AndamioCardDescription className="text-base">
+              <AndamioCardDescription className="mx-auto max-w-sm text-center text-base">
                 Your migration is complete. Your V2 access token is now in your wallet.
               </AndamioCardDescription>
             </AndamioCardHeader>

@@ -112,15 +112,15 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   if (segments[0] === "studio") {
     if (segments[1] === "course") {
       if (segments.length === 2) {
-        // /studio/course
-        breadcrumbs.push({ label: "Course Studio" });
+        // /studio/course - redirects to /studio
+        breadcrumbs.push({ label: "Studio" });
       } else if (segments.length === 3) {
         // /studio/course/[coursenft]
-        breadcrumbs.push({ label: "Course Studio", href: "/studio/course" });
+        breadcrumbs.push({ label: "Studio", href: "/studio" });
         breadcrumbs.push({ label: "Course" });
       } else if (segments.length >= 4) {
         // /studio/course/[coursenft]/[something] or deeper
-        breadcrumbs.push({ label: "Course Studio", href: "/studio/course" });
+        breadcrumbs.push({ label: "Studio", href: "/studio" });
         breadcrumbs.push({
           label: "Course",
           href: `/studio/course/${segments[2]}`,
@@ -130,18 +130,22 @@ function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
         if (subRoute === "teacher") {
           breadcrumbs.push({ label: "Teacher" });
         } else if (subRoute === "new") {
-          breadcrumbs.push({ label: "New Module" });
+          breadcrumbs.push({ label: "New Credential" });
         } else {
-          breadcrumbs.push({ label: "Module" });
+          breadcrumbs.push({ label: "Credential" });
         }
       }
     } else if (segments[1] === "project") {
       if (segments.length === 2) {
-        breadcrumbs.push({ label: "Project Studio" });
+        // /studio/project - redirects to /studio
+        breadcrumbs.push({ label: "Studio" });
       } else {
-        breadcrumbs.push({ label: "Project Studio", href: "/studio/project" });
+        breadcrumbs.push({ label: "Studio", href: "/studio" });
         breadcrumbs.push({ label: "Project" });
       }
+    } else if (segments.length === 1) {
+      // /studio root
+      breadcrumbs.push({ label: "Studio" });
     }
   }
 

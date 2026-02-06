@@ -92,13 +92,24 @@ Run `npx tsx .claude/skills/audit-api-coverage/scripts/audit-coverage.ts` for li
 
 ```bash
 # Unified API Gateway (combines all services)
-NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://andamio-api-gateway-666713068234.us-central1.run.app"
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev.api.andamio.io"
 ANDAMIO_API_KEY="your-api-key-here"
 
 # Cardano Network
 NEXT_PUBLIC_CARDANO_NETWORK="preprod"
-NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="4758613867a8a7aa500b5d57a0e877f01a8e63c1365469589b12063c"
+NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID="29aa6a65f5c890cfa428d59b15dec6293bf4ff0a94305c957508dc78"
 ```
+
+### Access Token Policy IDs by Environment
+
+| Environment | Policy ID | App URL |
+|-------------|-----------|---------|
+| Dev | `29aa6a65f5c890cfa428d59b15dec6293bf4ff0a94305c957508dc78` | dev.app.andamio.io |
+| Staging | `aa1cbea2524d369768283d7c8300755880fd071194a347cf0a4e274f` | preprod.app.andamio.io |
+
+Both environments use **Cardano Preprod** network.
+
+These are set via GitHub repo variables (`DEV_ACCESS_TOKEN_POLICY_ID`, `STAGING_ACCESS_TOKEN_POLICY_ID`) and baked into the Docker image at build time.
 
 ---
 

@@ -27,6 +27,7 @@ import {
   AndamioDrawerHeader,
   AndamioDrawerTitle,
   AndamioDrawerTrigger,
+  CopyId,
 } from "~/components/andamio";
 import { toast } from "sonner";
 import { CreateCourseDialog } from "~/components/courses/create-course-dialog";
@@ -262,9 +263,7 @@ function CourseListItem({ course, isSelected, onClick }: CourseListItemProps) {
           </span>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[10px] text-muted-foreground font-mono truncate">
-            {course.courseId.slice(0, 8)}…{course.courseId.slice(-6)}
-          </span>
+          <CopyId id={course.courseId} label="Course ID" className="text-[10px] text-muted-foreground" />
           {isOnChain && (
             <AndamioBadge variant="outline" className="text-[9px] h-4 px-1 bg-background/50">
               <OnChainIcon className="h-2.5 w-2.5" />
@@ -654,8 +653,6 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
     }
   };
 
-  const truncatedId = `${courseId.slice(0, 12)}...${courseId.slice(-12)}`;
-
   return (
     <AndamioDrawer open={open} onOpenChange={setOpen}>
       <AndamioDrawerTrigger asChild>
@@ -679,9 +676,7 @@ function RegisterCourseDrawer({ courseId, onSuccess }: RegisterCourseDrawerProps
             <div className="rounded-lg border bg-muted/50 p-3">
               <AndamioText variant="small" className="text-xs mb-1">Course NFT Policy ID</AndamioText>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-mono flex-1 truncate">
-                  {truncatedId}
-                </span>
+                <CopyId id={courseId} label="Course ID" className="flex-1" />
                 <a
                   href={getTokenExplorerUrl(courseId, env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod")}
                   target="_blank"

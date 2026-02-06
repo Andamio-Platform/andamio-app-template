@@ -150,9 +150,9 @@ export function OwnedCoursesSummary({ accessTokenAlias }: OwnedCoursesSummaryPro
             >
               <div className="flex items-center gap-2 min-w-0">
                 <CourseIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {course.courseId.slice(0, 16)}...
-                </code>
+                <span className="text-xs truncate">
+                  {course.title || "Unregistered Course"}
+                </span>
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Link>

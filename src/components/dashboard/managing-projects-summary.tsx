@@ -115,9 +115,9 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
             >
               <div className="flex items-center gap-2 min-w-0">
                 <ProjectIcon className="h-3.5 w-3.5 text-secondary shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {project.projectId.slice(0, 16)}...
-                </code>
+                <span className="text-xs truncate">
+                  {project.title || "Unregistered Project"}
+                </span>
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Link>

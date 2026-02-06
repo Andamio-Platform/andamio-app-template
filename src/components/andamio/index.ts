@@ -51,6 +51,7 @@ export * from "./andamio-dashboard-stat";
 export * from "./andamio-status-icon";
 export * from "./andamio-card-icon-header";
 export * from "./andamio-action-footer";
+export * from "./copy-id";
 
 // Loading components (unified loading system)
 export * from "./andamio-loading";

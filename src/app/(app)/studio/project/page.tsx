@@ -35,6 +35,7 @@ import {
   AndamioDrawerTitle,
   AndamioDrawerTrigger,
   AndamioText,
+  CopyId,
 } from "~/components/andamio";
 import {
   AlertIcon,
@@ -288,7 +289,6 @@ function ProjectRow({
   project: ProjectRowData;
   onImportSuccess: () => void;
 }) {
-  const truncatedId = `${project.projectId.slice(0, 8)}...${project.projectId.slice(-8)}`;
   const isRegistered = project.status !== "unregistered";
   const isOnChain = project.status === "active" || project.status === "unregistered";
 
@@ -344,8 +344,8 @@ function ProjectRow({
           <span className="text-muted-foreground italic">Untitled Project</span>
         )}
       </AndamioTableCell>
-      <AndamioTableCell className="font-mono text-xs">
-        <span title={project.projectId}>{truncatedId}</span>
+      <AndamioTableCell>
+        <CopyId id={project.projectId} label="Project ID" />
       </AndamioTableCell>
       <AndamioTableCell className="text-right">
         {isRegistered ? (
@@ -406,8 +406,6 @@ function RegisterProjectDrawer({
     }
   };
 
-  const truncatedId = `${projectId.slice(0, 12)}...${projectId.slice(-12)}`;
-
   return (
     <AndamioDrawer open={open} onOpenChange={setOpen}>
       <AndamioDrawerTrigger asChild>
@@ -431,9 +429,7 @@ function RegisterProjectDrawer({
             <div className="rounded-lg border bg-muted/50 p-3">
               <AndamioText variant="small" className="text-xs mb-1">Project ID</AndamioText>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-mono flex-1 truncate">
-                  {truncatedId}
-                </span>
+                <CopyId id={projectId} label="Project ID" className="flex-1" />
                 <a
                   href={getTokenExplorerUrl(projectId, env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod")}
                   target="_blank"

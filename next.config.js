@@ -5,6 +5,8 @@
 import "./src/env.js";
 import { readFileSync } from "fs";
 import { execSync } from "child_process";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 // Read version from VERSION file (single source of truth)
 const appVersion = readFileSync("VERSION", "utf-8").trim();
@@ -24,6 +26,9 @@ const config = {
       NEXT_PUBLIC_APP_VERSION: appVersion,
       NEXT_PUBLIC_BUILD_COMMIT: gitCommit,
       NEXT_PUBLIC_BUILD_ID: `${appVersion}+${gitCommit}`,
+    },
+    turbopack: {
+      root: dirname(fileURLToPath(import.meta.url)),
     },
     transpilePackages: ["@andamio/core"],
     images: {

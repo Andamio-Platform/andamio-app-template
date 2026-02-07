@@ -202,6 +202,9 @@ export function AssessAssignment({
                   {txStatus?.state === "confirmed" && "Processing database updates"}
                   {!txStatus && "Registering transaction..."}
                 </AndamioText>
+                <AndamioText variant="small" className="text-xs text-muted-foreground">
+                  This usually takes 20–60 seconds.
+                </AndamioText>
               </div>
             </div>
           </div>

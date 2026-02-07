@@ -142,6 +142,9 @@ export function TransactionStatus({
           {state === "signing" && (
             <AndamioText variant="small" className="text-xs">A signing request is waiting in your wallet</AndamioText>
           )}
+          {state === "confirming" && (
+            <AndamioText variant="small" className="text-xs text-muted-foreground">This usually takes 20–60 seconds.</AndamioText>
+          )}
         </div>
       </div>
     </div>

@@ -34,7 +34,6 @@ import {
   ExternalLinkIcon,
   ImagePlaceholderIcon,
   VideoIcon,
-  CopyIcon,
   CompletedIcon,
   PreviewIcon,
   SparkleIcon,
@@ -47,6 +46,7 @@ import {
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { CopyId } from "~/components/andamio/copy-id";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
@@ -72,37 +72,6 @@ import { toast } from "sonner";
 // Helper Components
 // =============================================================================
 
-function CopyableAddress({ address, label }: { address: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    toast.success("Copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {label && <AndamioText as="span" variant="small">{label}</AndamioText>}
-      <span className="text-[10px] text-muted-foreground font-mono flex-1 truncate">
-        {address}
-      </span>
-      <AndamioButton
-        variant="ghost"
-        size="sm"
-        className="h-6 w-6 p-0 flex-shrink-0"
-        onClick={handleCopy}
-      >
-        {copied ? (
-          <CompletedIcon className="h-3 w-3 text-primary" />
-        ) : (
-          <CopyIcon className="h-3 w-3" />
-        )}
-      </AndamioButton>
-    </div>
-  );
-}
 
 function ImagePreview({ url, alt }: { url: string; alt: string }) {
   const [error, setError] = useState(false);
@@ -835,7 +804,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                       </a>
                     </AndamioButton>
                   </div>
-                  <CopyableAddress address={courseId} />
+                  <CopyId id={courseId} label="Course Policy ID" />
                 </div>
               </StudioFormSection>
 
@@ -1182,11 +1151,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
             <AndamioTabsContent value="settings" className="mt-0 space-y-6">
               <StudioFormSection title="Course ID">
                 <div className="space-y-2">
-                  <AndamioInput
-                    value={course.courseId ?? courseId}
-                    disabled
-                    className="font-mono"
-                  />
+                  <CopyId id={course.courseId ?? courseId} label="Course ID" />
                   <AndamioText variant="small">
                     Course ID cannot be changed after creation
                   </AndamioText>

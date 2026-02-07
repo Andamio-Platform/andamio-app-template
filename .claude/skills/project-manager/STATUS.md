@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: February 3, 2026
+> **Last Updated**: February 7, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -20,26 +20,36 @@ Current implementation status of the Andamio T3 App Template.
 | Andamioscan Removal | **✅ Complete** | `andamioscan-events.ts` deleted, 0 imports remain |
 | Project Workflows | **Complete** | Owner/manager UX merged via PR #133 |
 | Gateway API Sync | **Complete** | Types regenerated, SSE fix, Andamioscan regen (#139/#140) |
+| **Unified Studio** | **✅ Complete** | Persistent sidebar, split-pane layout (PR #193) |
+| **Wallet Switch Detection** | **✅ Complete** | Auto-logout on wallet change (PR #194) |
+| **Migration Testing Fixes** | **✅ Complete** | PRs #189–#192: titles, UX copy, auth gates, wallet reconnect |
 | **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---
 
 ## 📌 NEXT SESSION PROMPT
 
-> **What shipped this session (Feb 3, session 4)** — Contributor TX State Machine Cleanup:
+> **What shipped Feb 4–7 (migration testing + unified studio)**:
 >
-> **All 3 Project Contributor TXs fully wired end-to-end** (commit `3a6ac31`):
-> - **TaskCommit**: Removed undocumented `tasks` array and `evidence` from txParams — now only sends schema-defined fields. Removed leftover `contributorStatePolicyId` prop.
-> - **TaskAction**: Added `contributor_state_id` and `task_hash` to schema + component. Added `useSubmitTaskEvidence` for evidence saving after TX success (same pattern as TaskCommit).
-> - **TX_TYPE_MAP**: `PROJECT_CONTRIBUTOR_TASK_COMMIT` → `"project_join"` (was `"task_submit"`, causing ambiguity with TaskAction). Distinct tracking: commits = `project_join`, actions = `task_submit`.
-> - **ProjectCredentialClaim**: Already complete — no changes needed.
+> **PR #189** — `fix: display titles instead of asset hashes on dashboard`
+> **PR #190** — `fix: normalize UX copy — replace jargon with user-friendly language`
+> **PR #191** — `fix: add inline ConnectWalletPrompt for wallet reconnect`
+> **PR #192** — `fix: standardize connect-wallet auth gate across all pages`
+> **PR #193** — `feat: unified studio with persistent sidebar layout`
+> **PR #194** — `feat(EUS-47): Detect when wallet changes`
 >
-> **Contributor TX Summary**:
-> | TX Type | Gateway Type | Evidence | Status |
-> |---------|-------------|----------|--------|
-> | `TASK_COMMIT` | `project_join` | Yes (`task_info`) | ✅ Ready |
-> | `TASK_ACTION` | `task_submit` | Yes (`project_info`) | ✅ Ready |
-> | `CREDENTIAL_CLAIM` | `project_credential_claim` | N/A | ✅ Ready |
+> **Unified Studio (PR #193)** — Major UX consolidation:
+> - Persistent sidebar listing all courses and projects in split-pane layout
+> - Studio routes moved from `(app)` to `(studio)` group with dedicated layout
+> - Context-based state management for create flows (no URL params)
+> - Prerequisites tooltip on project hover in sidebar
+> - Sidebar hides in module wizard mode
+> - Reusable `CopyId` component created (`src/components/andamio/copy-id.tsx`) — not yet wired into detail pages
+>
+> **Wallet Switch Detection (PR #194)** — Closes #47:
+> - Auth context polls wallet address every 2s
+> - Auto-logout when wallet changes during active session
+> - Prevents session hijacking / data leakage
 >
 > ---
 >
@@ -48,13 +58,21 @@ Current implementation status of the Andamio T3 App Template.
 > | Issue | Priority | Notes |
 > |-------|----------|-------|
 > | #118 - Cannot mint access token from preprod | 🔴 High | Bug report |
-> | #103 - Project hooks upgrade | 🟡 Medium | Structural compliance ✅, **3 missing hooks**: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment` |
-> | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync failures |
-> | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed in PR #111 |
-> | #32 - Extra signature after mint | 🟡 Medium | Auth flow improvement |
-> | andamioscan#28 - Blacklist naming + data exposure | 🟡 Medium | Discuss renaming and API inclusion |
-> | #47 - Auto-logout on wallet change | 🟢 Low | UX improvement |
+> | #182 - Teacher assessment fires multiple TXs | 🟡 Medium | Related: #144, #153 |
+> | #103 - Project hooks upgrade | 🟡 Medium | 3 missing hooks |
+> | #159 - Pass task evidence in tx/register metadata | 🟡 Medium | API improvement |
+> | #158 - content_json in tasks/list response | 🟡 Medium | API feature |
+> | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync |
+> | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed |
+> | #32 - Extra signature after mint | 🟡 Medium | Auth flow |
 > | #34 - Teacher assessment UX | 🟢 Low | Accept/Refuse button UX |
+>
+> ---
+>
+> **Issues resolved by recent work**:
+> - **#47** — Auto-logout on wallet change → ✅ Closed by PR #194
+> - **#187** — Studio projects: sortable lists, full policy ID, copy button → **Partially resolved** by unified studio (PR #193). CopyId component exists but not wired. Sorting not yet implemented.
+> - **#188** — Studio courses: full course_id + unified studio UX → **Partially resolved**. Unified studio UX is done (the main discussion point). CopyId not yet wired.
 >
 > ---
 >
@@ -64,7 +82,7 @@ Current implementation status of the Andamio T3 App Template.
 >
 > ---
 >
-> **Next Work**: TX UX audit remaining (#1 Access Token Mint, #13 Tasks Assess) → E2E test contributor flow on preprod → #103 implement 3 missing project hooks → #118 access token mint bug
+> **Next Work**: Wire `CopyId` into studio detail pages → Finish #187/#188 remaining items → #118 access token mint bug → #103 project hooks
 
 ---
 
@@ -123,139 +141,17 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Recent Completions
 
-**February 3, 2026** (Contributor TX State Machine Cleanup):
-- ✅ **All 3 Project Contributor TXs production-ready** — TaskCommit, TaskAction, ProjectCredentialClaim fully wired end-to-end
-- ✅ **TaskCommit cleaned** — Removed undocumented `tasks` array, `evidence` field, and `contributorStatePolicyId` prop from params
-- ✅ **TaskAction completed** — Added `contributor_state_id` + `task_hash` to schema and component, added `useSubmitTaskEvidence` for evidence saving
-- ✅ **TX_TYPE_MAP fixed** — `PROJECT_CONTRIBUTOR_TASK_COMMIT` → `"project_join"` (was `"task_submit"`, conflicting with TaskAction)
-- ✅ **Page props updated** — Task detail page and contributor dashboard pass correct props, removed dead `getOnChainContributorStatePolicyId` helper
+**February 7, 2026** (Unified Studio + Migration Testing Fixes):
+- ✅ **Unified Studio** (PR #193) — Persistent sidebar with split-pane layout, courses + projects in single view, context-based create flows, prerequisites tooltip, wizard mode detection
+- ✅ **Wallet Switch Detection** (PR #194) — Auth context polls wallet address every 2s, auto-logout on change. Closes #47.
+- ✅ **Auth gates standardized** (PR #192) — `ConnectWalletGate` component used across all pages
+- ✅ **Wallet reconnect prompt** (PR #191) — Inline `ConnectWalletPrompt` for wallet reconnection
+- ✅ **UX copy normalized** (PR #190) — Replaced jargon with user-friendly language
+- ✅ **Dashboard titles** (PR #189) — Display course/project titles instead of asset hashes
+- ✅ **CopyId component** created (`src/components/andamio/copy-id.tsx`) — Reusable copy-to-clipboard with responsive truncation + checkmark feedback
+- ✅ **Studio routes relocated** — Project routes moved from `(app)` to `(studio)` group
 
-**February 3, 2026** (TX UX Audit session 3):
-- ✅ **TX #8** COURSE_STUDENT_ASSIGNMENT_UPDATE — all 4 checks pass
-- ✅ **TX #11** PROJECT_OWNER_BLACKLIST_MANAGE — TX works e2e (Q3 n/a). Filed andamioscan#28 for blacklist naming + API inclusion.
-- ✅ **TX #12** PROJECT_MANAGER_TASKS_MANAGE — all 4 checks pass
-- ✅ **TX UX audit score: 14/17 passing** — Up from 10. Remaining: #1, #13, #14, #15, #16.
-
-**February 3, 2026** (Prerequisites + Treasury TX — PR #152):
-- ✅ **TX #17 `PROJECT_USER_TREASURY_ADD_FUNDS`** — New `treasury-add-funds.tsx` component. All 4 audit checks pass. 17/17 TX types now have UI components.
-- ✅ **Shared `PrerequisiteList` component** — Resolves course titles and module names. Used on studio, public, and contributor project pages.
-- ✅ **Studio project dashboard redesign** — Prerequisites + stats side-by-side, consolidated stats column, treasury balance inline.
-
-**February 3, 2026** (Draft Task Delete Fix + TX UX Audit):
-- ✅ **Draft task delete fixed** — Root cause: silent guard clauses + API didn't support deleting tasks without `task_hash`. Issue #148 simplified contract to `{ contributor_state_id, index }`. `useDeleteTask` rewritten, `handleDeleteTask` now shows explicit error messages.
-- ✅ **`transformMergedTask` updated** — Uses top-level `task_index` field (per #147 API changes).
-- ✅ **`transformAssets` typed** — Now uses `ApiTypesAsset { policy_id, name, amount }` instead of untyped `any`.
-- ✅ **Generated types regenerated** — `v2.0.0-dev-20260203-g` with `ApiTypesAsset`, top-level `task_index`, updated `DeleteTaskRequest`.
-- ✅ **TX #7 ALL PASS** — Backend 404 "Module not found" resolved. Full flow working.
-- ✅ **TX #10 ALL PASS** — Backend `managers_manage` handler resolved by ops.
-- ✅ **TX #6 regression fixed** — Decision cart kept visible during batch state (was unmounting on success after `e8d76ec` refactor).
-- ✅ **TX UX audit score: 9/16 passing** — Up from 7. 0 backend-blocked. 7 untested.
-
-**February 3, 2026** (Gateway API Sync + Issue Cleanup):
-- ✅ **Gateway API sync** (#139, #140) — Regenerated types from latest gateway spec. `managers` field, SSE fix, `slt_hashes` in modules/manage response all integrated.
-- ✅ **`slt_hashes` validation** in `mint-module-tokens.tsx` — Extracts hashes from API response, compares with client-computed Blake2b-256 hashes, logs match/mismatch to console.
-- ✅ **`UnsignedTxResponse` typed** — Added `slt_hashes?: string[]` field to `use-transaction.ts`.
-- ✅ **Issue #114 closed** — Managers list now reflects on-chain changes (Andamioscan regen).
-- ✅ **Issue #129 closed** — Tasks disappear after edit bug already fixed (`useManagerTasks` sends `projectId` correctly).
-- ✅ **Issue #130 closed** — `useManagerTasks` already uses `POST /tasks/list` with `projectId` in body.
-- ✅ **Issue #103 status updated** — Structural compliance confirmed. 3 missing hooks identified: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment`.
-- ✅ **TX UX audit** — TX #10 (PROJECT_OWNER_MANAGERS_MANAGE) audited: submits OK, gateway confirmation stuck. Dispatched to ops.
-
-**February 2, 2026** (TX UX Audit Continuation):
-- ✅ **TX #6** COURSE_TEACHER_ASSIGNMENTS_ASSESS — all pass (simple: single accept)
-- ✅ **TX #7** COURSE_STUDENT_ASSIGNMENT_COMMIT — Q1 pass (backend 500 resolved), Q3 fail (gateway 404 "Module not found")
-- ✅ **TX #9** COURSE_STUDENT_CREDENTIAL_CLAIM — all pass. Relocated to course home page.
-- ✅ **Assignments Complete indicator** — `c1301e0` Added to studio course header
-- ✅ **Pending review filter** — `33f7890` Filter to only PENDING_APPROVAL commitments
-
-**February 1, 2026** (Enum Normalization Sweep + Student Assignment Checklist):
-- ✅ **STATUS_MAP fix** (closes #115) — Student hooks mapped APPROVED/REJECTED but DB sends ACCEPTED/REFUSED. Fixed in both `use-student-assignment-commitments.ts` and `use-assignment-commitment.ts`.
-- ✅ **Cross-course contamination fix** (closes #116) — Gateway ignores course_id filter, returns all commitments. Added courseId filtering to `commitmentsByModule` grouping in course detail page and UserCourseStatus.
-- ✅ **Teacher mapToDisplayStatus fix** — Same enum mismatch on teacher side. Added TEACHER_STATUS_MAP with ACCEPTED/REFUSED mappings.
-- ✅ **Project contributor normalization** — Added `normalizeProjectCommitmentStatus()` to handle casing inconsistency (OpenAPI says lowercase, components expect uppercase) plus legacy aliases.
-- ✅ **Dead code cleanup** — Removed `|| status === "SUBMITTED"` fallback in assignment-commitment.tsx (was workaround for #115).
-- ✅ **Assignment checklist** — New per-module checklist in UserCourseStatus enrolled card showing each module with its commitment status badge.
-- ✅ **TX UX audit updated** — #6 COURSE_TEACHER_ASSIGNMENTS_ASSESS all pass, #7 COURSE_STUDENT_ASSIGNMENT_COMMIT fails at Atlas TX API (backend issue).
-
-**February 1, 2026** (Project Workflows — PR #111 merged + `feat/project-tx-state-machines`):
-- ✅ **PR #111 merged**: Studio redesign (own vs manage project lists), step-based project creation, prereqs selector overhaul, deposit field removed
-- ✅ **TX polling reduced to 5s** — Gateway confirms in ~5s now (closes #112)
-- ✅ **Single teacher/manager on create** — Aligned with gateway PR #46 to prevent TX_TOO_BIG errors
-- ✅ **TeachersUpdate component** added to course owner detail page for post-create teacher management
-- ✅ **ManagersManage** now receives `currentManagers` for proper alias display in project owner view
-- ✅ **Owner alias always included** in project managers list (was being excluded when additional managers added)
-- ✅ **tx_type mapping fixed** — `PROJECT_OWNER_MANAGERS_MANAGE` → `managers_manage` (was incorrectly `project_join`, causing SSE freeze)
-- ✅ **Issue #114 filed** — Tracking managers list stale data, blocked by Andamioscan#24
-- **Blocker**: Managers list doesn't update after TX because Andamioscan doesn't return `managers` in project details (unlike courses which include `teachers`)
-
-**January 31, 2026** (Andamioscan Removal — `fix/course-txs`):
-- ✅ **Removed ALL direct Andamioscan calls** — `src/lib/andamioscan-events.ts` deleted entirely
-- ✅ **Deleted `use-event-confirmation.ts`** — TX confirmation handled by TX State Machine (`useTxStream`)
-- ✅ **Alias validation** uses new `GET /api/v2/user/exists/{alias}` endpoint (issue #106)
-- ✅ **`project-eligibility.ts`** rewritten as pure function — accepts `PrerequisiteInput[]` + `StudentCompletionInput[]` instead of fetching
-- ✅ **Contributor page** (`contributor/page.tsx`) — Complete rewrite: derives status from `useProject()` data (submissions, assessments, contributors, credentials)
-- ✅ **Assignment page** (`assignment/page.tsx`) — On-chain module hash matching via `useCourse()` hook instead of `getCourse()`
-- ✅ **Assignment commitment** (`assignment-commitment.tsx`) — Completion check via `useCourse().pastStudents` instead of `getCourseStudent()`
-- ✅ **3 studio pages** — Replaced `getProject()`/`getManagingProjects()` with `useProject()` hook data
-- ✅ **Project catalog** (`/project`) — Eligibility simplified to synchronous computation from project prerequisites
-- ✅ **Andamioscan type re-exports removed** from `types/generated/index.ts`
-- ✅ Verification: `grep -r "andamioscan-events" src/` → 0 results | typecheck: 0 errors | lint: 0 errors
-- **Future**: Wire up `StudentCompletionInput[]` on catalog + contributor pages (currently `[]`), update CLAUDE.md references
-
-**January 31, 2026** (PR #105 - `fix/course-txs`):
-- ✅ **Landing Page Redesign**: Replaced single "Enter App" button with 3-card layout (Explore / Sign In / Get Started)
-  - `src/components/landing/explore-card.tsx` — Browse courses/projects without wallet
-  - `src/components/landing/login-card.tsx` — Returning users: connect → auto-auth → redirect
-  - `src/components/landing/register-card.tsx` — New users: connect → mint access token → redirect
-  - `src/components/landing/first-login-card.tsx` — First-login ceremony with real-time TX tracking
-- ✅ **TX Stream for Access Token Mint** (#101): Added `requiresOnChainConfirmation` flag to `TransactionUIConfig`. Access token mint now registers with gateway and streams `pending → confirmed → updated` via SSE.
-- ✅ **JWT Guards Removed** (#104): Made JWT optional in `registerTransaction()`, removed JWT bail-out from `useTxStream`, and removed `if (jwt)` gate in `useTransaction`. Fixes pre-auth TX registration for access token mint.
-- ✅ **Module Wizard Fix** (#68): Replaced removed `course-module/get` endpoint with list+filter pattern in `module-wizard.tsx`. Uses `useCourseModule` hook's approach (fetch all modules, filter by `moduleCode`).
-- ✅ **Redundant Course Registration Removed** (#102): Eliminated manual `course_registration` call that duplicated gateway auto-confirmation.
-- ✅ **Reward Claim Lifecycle Documented** (#103): Documented in `use-project-contributor.ts` and `use-project-manager.ts`. Path A: next-task commit auto-claims previous rewards. Path B: project exit claims final rewards.
-- ✅ Issues closed: #68, #98, #101, #102, #104
-
-**January 30, 2026**:
-- ✅ **Teacher Dashboard Blocker Resolved** ([andamio-api#23](https://github.com/Andamio-Platform/andamio-api/issues/23)): API now returns full commitment history. Added client-side filter in `PendingReviewsList` to show only `PENDING_APPROVAL` items in the pending assessments card.
-- ✅ **Phase 3.10 (Component Extraction)**: Extracted all direct `authenticatedFetch` calls from components into React Query hooks
-  - `assignment-update.tsx` → `useSubmitEvidence()` hook
-  - `burn-module-tokens.tsx` → `useUpdateCourseModuleStatus()` hook
-  - `pending-reviews-summary.tsx` → `useTeacherCommitmentsQueries()` (new fan-out hook)
-  - `task-commit.tsx` → `useSubmitTaskEvidence()` (new mutation hook)
-  - `contributor/page.tsx` → `useContributorCommitment()` (reactive refactor)
-  - `mint-access-token-simple.tsx` → `useUpdateAccessTokenAlias()` (new mutation hook)
-- ✅ New hooks created:
-  - `useTeacherCommitmentsQueries()` in `use-course-teacher.ts` — `useQueries` fan-out for batch commitment fetching
-  - `useSubmitTaskEvidence()` in `use-project-contributor.ts` — mutation for project task evidence submission
-  - `useUpdateAccessTokenAlias()` in `use-user.ts` (new file) — mutation for access token alias updates
-- ✅ Only `sitemap/page.tsx` and `pending-tx-list.tsx` still use direct `authenticatedFetch` (deferred, low priority)
-
-**January 29, 2026**:
-- ✅ **Phase 3.10**: Migrated all 7 studio project pages to React Query hooks
-  - `studio/project/page.tsx` — `useRegisterProject()` replaces direct `authenticatedFetch`
-  - `studio/project/[projectid]/page.tsx` — `useProject`, `useManagerTasks`, `useUpdateProject`
-  - `studio/project/[projectid]/draft-tasks/page.tsx` — `useProject`, `useManagerTasks`, `useDeleteTask`
-  - `studio/project/[projectid]/draft-tasks/new/page.tsx` — `useProject`, `useCreateTask`
-  - `studio/project/[projectid]/draft-tasks/[taskindex]/page.tsx` — `useProject`, `useManagerTasks`, `useUpdateTask`
-  - `studio/project/[projectid]/manage-treasury/page.tsx` — `useProject`, `useManagerTasks` + orchestration
-- ✅ Fixed mutation hook parameters (`useDeleteTask`, `useUpdateTask`, `useCreateTask`) to match actual API parameters (`project_state_policy_id` + `index`)
-- ✅ Cleaned up NullableString workarounds across all migrated pages
-
-**January 28, 2026**:
-- ✅ Completed full audit of all 11 course system hooks
-- ✅ Consolidated 4 content hooks → `use-course-content.ts` (useSLTs, useLesson, useAssignment, useIntroduction)
-- ✅ Approved `use-course-teacher.ts` (updated for API evidence field)
-- ✅ All course hooks now follow colocated types pattern
-
-**January 25, 2026**:
-- ✅ Refactored module wizard to use hook types (camelCase)
-- ✅ Approved 6 hooks (use-course, use-course-owner, use-course-module, use-slt, use-lesson, use-course-student)
-- ✅ Created hook reorganization with subdirectories
-
-**January 24, 2026**:
-- Fixed module wizard infinite API polling
-- Created HOOK-ARCHITECTURE-GUIDE.md
-- Established colocated types pattern
+*Older completions (Jan 24 – Feb 3) were archived during the Feb 7 skills cleanup. See git history for details.*
 
 ---
 
@@ -264,20 +160,11 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 | Blocker | Priority | Status | Notes |
 |---------|----------|--------|-------|
 | **Access token mint fails on preprod** (#118) | 🔴 High | Open | Bug report from preprod.app.andamio.io |
-| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | Structural compliance ✅. 3 missing hooks: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment`. |
-| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses. |
-| **Student completions for eligibility** | 🟡 Medium | Future | Project catalog + contributor pages pass `[]` for student completions. Need `useStudentCourses()` hook. |
+| **Teacher assessment fires multiple TXs** (#182) | 🟡 Medium | PR #195 | Batched into single TX |
+| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | 3 missing hooks: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment` |
+| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses |
 | **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
 | **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
-| **Draft task delete** (#147, #148) | ✅ Done | Closed | Simplified to `{ contributor_state_id, index }`. Working. |
-| **Assignment commit gateway 404** (TX #7) | ✅ Done | Resolved | Backend 404 "Module not found" fixed. All 4 checks pass. |
-| **Managers manage stuck spinner** (TX #10) | ✅ Done | Resolved | Backend `managers_manage` handler fixed by ops. All 4 checks pass. |
-| **Managers list stale after TX** (#114) | ✅ Done | Closed | Resolved by Andamioscan regen in #140 |
-| **useManagerTasks wrong method** (#130) | ✅ Done | Closed | Now uses POST /tasks/list with projectId |
-| **Tasks disappear after edit** (#129) | ✅ Done | Closed | project_id and cache invalidation fixed |
-| **Gateway API sync** (#139, #140) | ✅ Done | Closed | Types regenerated, managers field, SSE fix |
-| **STATUS_MAP enum mismatch** (#115) | ✅ Done | Closed | ACCEPTED/REFUSED mapped in student, teacher, and project hooks |
-| **Cross-course contamination** (#116) | ✅ Done | Closed | courseId filter added to commitment grouping |
 
 ---
 
@@ -372,16 +259,8 @@ All transaction components are complete. See `TRANSACTION-COMPONENTS.md` for det
 | 2026-02-03 | **Gateway API Sync + TX UX Audit** — 6 issues closed, types regen | Complete |
 | 2026-02-03 | **Draft Task Delete Fix** — #147/#148, typed assets, TX audit 9/16 | Complete |
 | 2026-02-03 | **Contributor TX Cleanup** — All 3 contributor TXs production-ready | Complete |
+| 2026-02-04–06 | **Migration Testing Fixes** — PRs #189–#192: titles, UX copy, auth gates | Complete |
+| 2026-02-06 | **Unified Studio** (PR #193) — Persistent sidebar, split-pane layout | Complete |
+| 2026-02-07 | **Wallet Switch Detection** (PR #194) — Auto-logout on wallet change, closes #47 | Complete |
 | **2026-02-06** | **Andamio V2 Mainnet Launch** | Upcoming |
 
----
-
-## Session Archives
-
-Detailed session notes are archived by week:
-
-| Archive | Sessions | Period |
-|---------|----------|--------|
-| [2026-01-05-to-2026-01-11.md](./archived-sessions/2026-01-05-to-2026-01-11.md) | 1-4 | Go API migration, type packages, wallet auth |
-| [2026-01-12-to-2026-01-18.md](./archived-sessions/2026-01-12-to-2026-01-18.md) | 5-20 | Pioneers launch, V2 Gateway, TX migration |
-| [2026-01-19-to-2026-01-25.md](./archived-sessions/2026-01-19-to-2026-01-25.md) | 21-28 | TX Watcher fixes, L1 Core, taxonomy compliance, colocated types |

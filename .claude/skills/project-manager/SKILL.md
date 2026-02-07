@@ -118,7 +118,7 @@ Based on their answer, guide them to the right skill:
 
 ## Reference Documentation
 
-### Key Files in This Directory
+### Files in This Directory
 
 | File | Purpose |
 |------|---------|
@@ -126,16 +126,7 @@ Based on their answer, guide them to the right skill:
 | `ROADMAP.md` | Planned features and timeline |
 | `SITEMAP.md` | App route structure |
 | `ROLES-AND-ROUTES.md` | Course/Project role-based route structure |
-
-### Other Useful References
-
-| File | Purpose |
-|------|---------|
-| `TX-MIGRATION-GUIDE.md` | V2 transaction patterns |
-| `PENDING-TX-WATCHER.md` | TX State Machine integration |
-| `TRANSACTION-COMPONENTS.md` | Transaction UI components |
-| `API-CALLS-AUDIT.md` | Direct API calls needing extraction |
-| `TEMPLATE-EXTRACTION-PLAN.md` | Template repo sync workflow and divergence commits |
+| `TRANSACTION-COMPONENTS.md` | Transaction component architecture and 18 TX types |
 
 ## Available Skills
 
@@ -157,37 +148,11 @@ Based on their answer, guide them to the right skill:
 
 ## Current Priority
 
-Check `STATUS.md` for the latest, but the current focus areas are:
+Check `STATUS.md` for the latest. Current focus:
 
-1. **Mainnet Launch Prep** (Feb 6) - Bug fixes, project workflows
-2. **Project Owner/Manager UX** - Post-create management (teachers, managers)
-3. **Hook Architecture** (Phase 3.9) - Project hooks colocated types
-
-## Maintenance Tasks
-
-### Keep Docs Updated
-
-After significant changes:
-1. Update `STATUS.md` with session notes
-2. Update `ROADMAP.md` if milestones change
-3. Run `/documentarian` to sync related docs
-
-### Clean Up Stale Docs
-
-Remove docs that reference:
-- `andamioscan-events.ts` (deleted)
-- `use-event-confirmation.ts` (deleted)
-- `use-simple-transaction.ts` (renamed to `tx/use-transaction.ts`)
-- Old hook paths without `tx/` subdirectory
-
-### Delegate to Skills
-
-When a conversation becomes focused on a specific domain:
-- Hook work → `/hooks-architect`
-- Styling issues → `/design-system`
-- Type issues → `/typescript-types-expert`
-- TX schema sync → `/transaction-auditor`
-- Template sync → `/sync-template`
+1. **Open issues** — #118 (access token mint), #182 (teacher batch TX), #103 (project hooks)
+2. **Project hooks migration** — 3 missing hooks for colocated types pattern
+3. **Post-mainnet polish** — Feature backlog after launch
 
 ## Output Format
 
@@ -195,4 +160,4 @@ Start with the interactive question, then guide to the appropriate skill or prov
 
 ---
 
-**Last Updated**: February 5, 2026
+**Last Updated**: February 7, 2026

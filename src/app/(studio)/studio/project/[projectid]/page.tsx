@@ -30,6 +30,7 @@ import {
   AndamioActionFooter,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
+import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
 import { ProjectManagersCard } from "~/components/studio/project-managers-card";
@@ -436,8 +437,8 @@ export default function ProjectDashboardPage() {
             <AndamioCardContent className="space-y-4">
               {/* Treasury NFT Policy ID (Read-only) */}
               <div className="space-y-2">
-                <AndamioLabel htmlFor="treasuryNft">Treasury NFT Policy ID</AndamioLabel>
-                <AndamioInput id="treasuryNft" value={projectId} disabled />
+                <AndamioLabel>Treasury NFT Policy ID</AndamioLabel>
+                <CopyId id={projectId} label="Project ID" />
                 <AndamioText variant="small">Policy ID cannot be changed</AndamioText>
               </div>
 

@@ -11,7 +11,7 @@
 | `design-system` | ✅ Active | High | 11 files | 3 modes (review, diagnose, reference) |
 | `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints, 63% coverage) |
 | `typescript-types-expert` | ✅ Active | High | 8 files | 3 modes (audit, fix, design) |
-| `project-manager` | ✅ Active | High | 16+ files | Project tracking, status, roadmap |
+| `project-manager` | ✅ Active | High | 6 files | Project tracking, status, roadmap |
 | `review-pr` | ✅ Active | High | 3 files | Orchestrates other skills |
 | `documentarian` | ✅ Active | High | 2 files | Active backlog with 190+ completed items |
 | `transaction-auditor` | ✅ Active | Medium | 1 file | Sync TX schemas with Gateway API |
@@ -99,14 +99,9 @@
 
 **Purpose**: Track project status, coordinate skills
 
-**Files** (16+):
-- Core: `STATUS.md`, `ROADMAP.md`, `SKILL.md`, `SITEMAP.md`, `ROLES-AND-ROUTES.md`
-- Transaction: `TX-MIGRATION-GUIDE.md`, `TRANSACTION-COMPONENTS.md`, `PENDING-TX-WATCHER.md`
-- State: `course-local-state.md`, `project-local-state.md`
-- Reference: `ANDAMIOSCAN-EVENTS-CONFIRMATION.md` (historical), `API-CALLS-AUDIT.md`
-- Architecture: `layered-proposal-review.md`, `better-fork-readiness.md`
-- Onboarding: `GETTING-STARTED.md`, `HOOK-ARCHITECTURE-GUIDE.md`, `README.md`
-- Archive: `archived-sessions/`, `archived-bugs/`
+**Files** (6): `SKILL.md`, `STATUS.md`, `ROADMAP.md`, `SITEMAP.md`, `ROLES-AND-ROUTES.md`, `TRANSACTION-COMPONENTS.md`
+
+*17 historical files (archived sessions, migration guides, completed plans) removed in Feb 7 cleanup.*
 
 ---
 

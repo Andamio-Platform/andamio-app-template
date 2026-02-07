@@ -1,7 +1,7 @@
 # Roles and Routes Reference
 
 > **Consolidated mapping of user roles to frontend routes and API endpoints**
-> Last Updated: January 27, 2026
+> Last Updated: February 7, 2026
 
 This document provides a single reference for all user roles in the Andamio platform and the routes/endpoints each role requires.
 
@@ -252,7 +252,7 @@ Project creators who own projects and manage treasury/managers.
 |-------|---------|-------|
 | `/dashboard` | User dashboard with wallet info, learning progress | All |
 | `/credentials` | On-chain credentials display | All |
-| `/studio` | Studio hub - links to Course/Project Studio | Owners, Teachers, Managers |
+| `/studio` | Unified studio — persistent sidebar with courses + projects, create flows | Owners, Teachers, Managers |
 
 **Global API Endpoints**:
 - `GET /api/v1/user/me` - Get user profile
@@ -363,6 +363,8 @@ Course System                    Project System
 | `/studio/project/[projectid]/draft-tasks` | ✅ Implemented | Task list |
 | `/studio/project/[projectid]/draft-tasks/new` | ✅ Implemented | Create task |
 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | ✅ Implemented | Edit task |
+| `/studio/project/[projectid]/commitments` | ✅ Implemented | List/detail resizable panels, assess submissions |
+| `/studio/project/[projectid]/manage-contributors` | ✅ Implemented | Contributor management |
 | `/studio/project/[projectid]/transaction-history` | 🚧 Planned | TX history |
 
 ---

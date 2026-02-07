@@ -9,10 +9,10 @@ Bi-directional reference mapping all routes to their layouts and vice versa.
 | Layout | Route Group | Routes | Description |
 |--------|-------------|--------|-------------|
 | Landing | `/` (root) | 1 | Marketing page, no sidebar |
-| App Shell | `(app)/*` | 17 | Sidebar + content area |
-| Studio Shell | `(studio)/*` | 3 | Sidebar + StudioHeader + workspace |
+| App Shell | `(app)/*` | 12 | Sidebar + content area |
+| Studio Shell | `(studio)/*` | 16 | Persistent sidebar + StudioHeader + split-pane workspace |
 
-**Total Routes**: 21
+**Total Routes**: 29
 
 ---
 
@@ -34,7 +34,7 @@ No sidebar, marketing-style full-page layout.
 
 ---
 
-### 2. App Shell Layout (17 routes)
+### 2. App Shell Layout (12 routes)
 
 Sidebar navigation with scrollable content area.
 
@@ -52,6 +52,7 @@ Sidebar navigation with scrollable content area.
 | Route | Purpose | Page Pattern |
 |-------|---------|--------------|
 | `/dashboard` | User overview | Standard |
+| `/credentials` | On-chain credentials display | Standard |
 | `/sitemap` | Route documentation | Standard |
 | `/components` | Component showcase | Standard |
 | `/editor` | Editor demo | Standard |
@@ -72,39 +73,59 @@ Sidebar navigation with scrollable content area.
 | `/project/[projectid]` | Project detail | Detail page |
 | `/project/[projectid]/[taskhash]` | Task detail | Detail page |
 
-#### Studio Hub (App Layout)
+---
+
+### 3. Studio Shell Layout (16 routes)
+
+Persistent sidebar (courses + projects list) + StudioHeader + split-pane workspace.
+
+**Components**: `StudioSidebarLayout`, `StudioHeader`, `StudioProvider`
+
+```
+┌─────────────────┬────────────────────────┐
+│ Studio Sidebar   │ StudioHeader           │
+│ (resizable 20%) ├────────────────────────┤
+│                  │  Workspace             │
+│ Courses          │  (full height)         │
+│ - Course 1       │                        │
+│ - Course 2       │                        │
+│                  │                        │
+│ Projects         │                        │
+│ - Project 1      │                        │
+│                  │                        │
+│ [Search...]      │                        │
+└─────────────────┴────────────────────────┘
+```
+
+#### Studio Home
 | Route | Purpose | Page Pattern |
 |-------|---------|--------------|
-| `/studio` | Studio hub | Card grid |
-| `/studio/course/[coursenft]/teacher` | Instructor management | Standard |
-| `/studio/project` | Project studio list | Standard |
-| `/studio/project/[projectid]` | Project studio detail | Standard |
+| `/studio` | Studio welcome + create flows | Welcome / Create forms |
+
+#### Course Studio
+| Route | Purpose | Page Pattern |
+|-------|---------|--------------|
+| `/studio/course` | Course studio landing | Redirect to `/studio` |
+| `/studio/course/[coursenft]` | Course editor (tabs: modules, teachers, settings) | Editor |
+| `/studio/course/[coursenft]/teacher` | Instructor dashboard — review submissions | Standard |
+| `/studio/course/[coursenft]/new` | New module wizard | **Wizard** (sidebar hides) |
+| `/studio/course/[coursenft]/[modulecode]` | Module wizard editor | **Wizard** (sidebar hides) |
+| `/studio/course/[coursenft]/[modulecode]/introduction` | Introduction editor | **Wizard** (sidebar hides) |
+| `/studio/course/[coursenft]/[modulecode]/slts` | SLT management | **Wizard** (sidebar hides) |
+| `/studio/course/[coursenft]/[modulecode]/assignment` | Assignment editor | **Wizard** (sidebar hides) |
+| `/studio/course/[coursenft]/[modulecode]/[moduleindex]` | Lesson editor | **Wizard** (sidebar hides) |
+
+#### Project Studio
+| Route | Purpose | Page Pattern |
+|-------|---------|--------------|
+| `/studio/project/[projectid]` | Project dashboard (tabs: settings, treasury, blacklist) | Editor |
+| `/studio/project/[projectid]/commitments` | Commitment review (list + detail panels) | Master-Detail |
 | `/studio/project/[projectid]/draft-tasks` | Draft tasks list | Standard |
 | `/studio/project/[projectid]/draft-tasks/new` | New draft task | Form |
 | `/studio/project/[projectid]/draft-tasks/[taskindex]` | Edit draft task | Form |
+| `/studio/project/[projectid]/manage-contributors` | Contributor management | Standard |
 
----
-
-### 3. Studio Shell Layout (3 routes)
-
-Sidebar + StudioHeader with dense workspace for content creation.
-
-**Components**: `StudioLayout`, `StudioHeader`
-
-```
-┌─────────┬────────────────────────┐
-│ Sidebar │ StudioHeader           │
-│         ├────────────────────────┤
-│         │  Workspace             │
-│         │  (full height)         │
-└─────────┴────────────────────────┘
-```
-
-| Route | Purpose | Page Pattern |
-|-------|---------|--------------|
-| `/studio/course` | Course Studio | **Master-Detail** |
-| `/studio/course/[coursenft]` | Course Editor | Editor |
-| `/studio/course/[coursenft]/[modulecode]` | Module Editor | **Wizard** |
+**Note**: The studio sidebar hides automatically when in wizard mode (module editing routes).
 
 ---
 
@@ -121,22 +142,29 @@ Sidebar + StudioHeader with dense workspace for content creation.
 | `/course/[coursenft]/[modulecode]` | App Shell | Detail |
 | `/course/[coursenft]/[modulecode]/[moduleindex]` | App Shell | Detail |
 | `/course/[coursenft]/[modulecode]/assignment` | App Shell | Detail |
+| `/credentials` | App Shell | Standard |
 | `/dashboard` | App Shell | Standard |
 | `/editor` | App Shell | Standard |
 | `/project` | App Shell | Standard |
 | `/project/[projectid]` | App Shell | Detail |
 | `/project/[projectid]/[taskhash]` | App Shell | Detail |
 | `/sitemap` | App Shell | Standard |
-| `/studio` | App Shell | Card Grid |
-| `/studio/course` | **Studio Shell** | Master-Detail |
+| `/studio` | **Studio Shell** | Welcome / Create |
+| `/studio/course` | **Studio Shell** | Redirect |
 | `/studio/course/[coursenft]` | **Studio Shell** | Editor |
+| `/studio/course/[coursenft]/teacher` | **Studio Shell** | Standard |
+| `/studio/course/[coursenft]/new` | **Studio Shell** | Wizard |
 | `/studio/course/[coursenft]/[modulecode]` | **Studio Shell** | Wizard |
-| `/studio/course/[coursenft]/teacher` | App Shell | Standard |
-| `/studio/project` | App Shell | Standard |
-| `/studio/project/[projectid]` | App Shell | Standard |
-| `/studio/project/[projectid]/draft-tasks` | App Shell | Standard |
-| `/studio/project/[projectid]/draft-tasks/[taskindex]` | App Shell | Form |
-| `/studio/project/[projectid]/draft-tasks/new` | App Shell | Form |
+| `/studio/course/[coursenft]/[modulecode]/introduction` | **Studio Shell** | Wizard |
+| `/studio/course/[coursenft]/[modulecode]/slts` | **Studio Shell** | Wizard |
+| `/studio/course/[coursenft]/[modulecode]/assignment` | **Studio Shell** | Wizard |
+| `/studio/course/[coursenft]/[modulecode]/[moduleindex]` | **Studio Shell** | Wizard |
+| `/studio/project/[projectid]` | **Studio Shell** | Editor |
+| `/studio/project/[projectid]/commitments` | **Studio Shell** | Master-Detail |
+| `/studio/project/[projectid]/draft-tasks` | **Studio Shell** | Standard |
+| `/studio/project/[projectid]/draft-tasks/[taskindex]` | **Studio Shell** | Form |
+| `/studio/project/[projectid]/draft-tasks/new` | **Studio Shell** | Form |
+| `/studio/project/[projectid]/manage-contributors` | **Studio Shell** | Standard |
 
 ---
 
@@ -144,22 +172,31 @@ Sidebar + StudioHeader with dense workspace for content creation.
 
 Some pages use additional patterns within their layout:
 
+### Split-Pane Pattern (Studio)
+- **Route**: All `/studio/*` routes
+- **Left Panel**: Persistent sidebar with courses + projects (resizable, 20% default)
+- **Right Panel**: Page content
+- **Components**: `AndamioResizablePanelGroup`, `CourseListItem`, `ProjectListItem`, `SectionHeader`
+- **Search**: Bottom-docked search input filters both lists
+- **Create**: Context-based create forms via `StudioProvider` / `useStudioContext`
+
 ### Master-Detail Pattern
-- **Route**: `/studio/course`
-- **Left Panel**: Course list (selectable items)
-- **Right Panel**: Course preview OR welcome state
-- **Components**: `ResizablePanelGroup`, `CourseListItem`, `CoursePreviewPanel`
+- **Route**: `/studio/project/[projectid]/commitments`
+- **Left Panel**: Commitment list (selectable items)
+- **Right Panel**: Commitment detail with evidence rendering
+- **Components**: `ResizablePanelGroup`, `ContentDisplay`
 
 ### Wizard Pattern
-- **Route**: `/studio/course/[coursenft]/[modulecode]`
+- **Routes**: `/studio/course/[coursenft]/[modulecode]`, `/new`, `/introduction`, `/slts`, `/assignment`, `/[moduleindex]`
 - **Left Panel**: Step outline with progress
 - **Right Panel**: Current step content
 - **Components**: `StudioOutlinePanel`, step components, `WizardContext`
+- **Note**: Studio sidebar hides automatically in wizard mode
 
 ### Card Grid Pattern
-- **Routes**: `/studio`, `/course`, `/project`
+- **Routes**: `/course`, `/project`
 - **Layout**: Responsive grid of cards
-- **Components**: `StudioHubCard`, course/project cards
+- **Components**: Course/project cards
 
 ### Detail Page Pattern
 - **Routes**: `/course/[id]`, `/project/[id]`, etc.
@@ -186,24 +223,23 @@ src/app/(studio)/layout.tsx     # Studio Shell
 ```
 src/components/layout/app-layout.tsx      # App Shell wrapper
 src/components/layout/app-sidebar.tsx     # Sidebar navigation
-src/components/layout/studio-layout.tsx   # Studio Shell wrapper
 src/components/layout/studio-header.tsx   # Studio header with breadcrumbs
+src/app/(studio)/studio/layout.tsx        # Studio persistent sidebar layout
+src/app/(studio)/studio/studio-context.tsx # Studio create mode context
 ```
 
 ---
 
-## Migration Notes
-
-**Legacy Routes**: Some `/studio/*` routes are still under the `(app)` group:
-- `/studio` (hub page)
-- `/studio/course/[coursenft]/teacher`
-- `/studio/project/*`
-
-These use App Shell layout with `AndamioPageHeader`. Consider migrating to Studio Shell if they need the dense creation-focused layout.
+## Architecture Notes
 
 **Route Group Meaning**:
-- `(app)` = Standard app pages for browsing/viewing
-- `(studio)` = Dense creation/editing workspace
+- `(app)` = Standard app pages for browsing/viewing (sidebar nav)
+- `(studio)` = Dense creation/editing workspace (persistent sidebar + StudioHeader)
+
+**Studio Sidebar Behavior**:
+- Persistent sidebar shows all courses + projects with search
+- Sidebar hides automatically in wizard mode (module editing routes)
+- Create flows triggered via context (`StudioProvider`) — no URL params needed
 
 ---
 

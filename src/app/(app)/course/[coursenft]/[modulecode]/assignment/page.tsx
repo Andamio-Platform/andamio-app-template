@@ -16,8 +16,11 @@ import {
 import { AssignmentCommitment } from "~/components/learner/assignment-commitment";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { useCourse, useCourseModule, useSLTs, useAssignment, type SLT } from "~/hooks/api";
+import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
+import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
 import { computeSltHash } from "@andamio/core/hashing";
 import { AlertIcon, SuccessIcon } from "~/components/icons";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 
 /**
  * Learner-facing assignment view page
@@ -46,6 +49,21 @@ export default function LearnerAssignmentPage() {
   } = useAssignment(courseId, moduleCode);
 
   const error = assignmentError?.message ?? null;
+
+  // Fetch student's commitment status for this module
+  const { isAuthenticated } = useAndamioAuth();
+  const { data: studentCommitments } = useStudentAssignmentCommitments(
+    isAuthenticated ? courseId : undefined
+  );
+
+  // Derive commitment status for this specific module
+  const commitmentStatus = useMemo(() => {
+    if (!studentCommitments) return null;
+    const moduleCommitments = studentCommitments.filter(
+      (c) => c.moduleCode === moduleCode && c.courseId === courseId
+    );
+    return getModuleCommitmentStatus(moduleCommitments);
+  }, [studentCommitments, moduleCode, courseId]);
 
   // Compute sltHash from fetched SLTs
   const computedSltHash = useMemo(() => {
@@ -136,11 +154,7 @@ export default function LearnerAssignmentPage() {
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {moduleCode}
         </AndamioBadge>
-        {assignment.isLive ? (
-          <AndamioBadge>Live</AndamioBadge>
-        ) : (
-          <AndamioBadge variant="secondary">Draft</AndamioBadge>
-        )}
+        {commitmentStatus && <CommitmentStatusBadge status={commitmentStatus} />}
       </div>
 
       {sortedSlts.length > 0 && (

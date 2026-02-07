@@ -34,7 +34,6 @@ import { SendIcon, EditIcon, ShieldIcon, TransactionIcon, LoadingIcon, SuccessIc
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import type { JSONContent } from "@tiptap/core";
-import { useSubmitEvidence } from "~/hooks/api/course/use-assignment-commitment";
 
 export interface AssignmentUpdateProps {
   /**
@@ -104,7 +103,6 @@ export function AssignmentUpdate({
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
-  const submitEvidence = useSubmitEvidence();
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
@@ -192,18 +190,15 @@ export function AssignmentUpdate({
         ...txParams,
         ...sideEffectParams,
       },
-      onSuccess: async (txResult) => {
+      metadata: {
+        slt_hash: sltHash ?? "",
+        course_module_code: moduleCode,
+        evidence: JSON.stringify(evidence),
+        evidence_hash: hash,
+      },
+      onSuccess: (txResult) => {
         console.log("[AssignmentUpdate] TX submitted successfully!", txResult);
-
-        // Save evidence content to database via hook
-        // The hash is on-chain, but the actual JSON content needs to be stored for teacher review
-        submitEvidence.mutate({
-          courseId: courseId,
-          sltHash: sltHash ?? "",
-          evidence: evidence,
-          evidenceHash: hash,
-          pendingTxHash: txResult.txHash,
-        });
+        // Evidence is now passed via metadata and saved by gateway on TX confirmation
       },
       onError: (txError) => {
         console.error("[AssignmentUpdate] Error:", txError);

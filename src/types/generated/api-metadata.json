@@ -1,8 +1,8 @@
 {
-  "api_version": "v2.0.0-dev-20260206-b",
+  "api_version": "v2.0.0-dev-20260207-b",
   "api_title": "Andamio API Gateway",
-  "x_api_revision": "v2.0.0-dev-20260206-b",
+  "x_api_revision": "v2.0.0-dev-20260207-b",
   "x_build_commit": "unknown",
-  "fetched_at": "2026-02-06T20:57:10.751Z",
+  "fetched_at": "2026-02-07T17:17:44.807Z",
   "spec_url": "https://dev.api.andamio.io/api/v1/docs/doc.json"
 }

@@ -97,15 +97,6 @@ export default function LessonDetailPage() {
         />
       )}
 
-      {/* Header with status badge */}
-      <div className="flex items-center justify-end">
-        {lesson.isLive !== undefined && (
-          <AndamioBadge variant={lesson.isLive ? "default" : "secondary"}>
-            {lesson.isLive ? "Live" : "Draft"}
-          </AndamioBadge>
-        )}
-      </div>
-
       {/* Student Learning Target */}
       <AndamioCard>
         <AndamioCardHeader>

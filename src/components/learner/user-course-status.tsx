@@ -37,9 +37,11 @@ import {
 
 interface UserCourseStatusProps {
   courseId: string;
+  /** First module code for direct navigation */
+  firstModuleCode?: string;
 }
 
-export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
+export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatusProps) {
   const { isAuthenticated } = useAndamioAuth();
 
   // Fetch merged course data
@@ -83,7 +85,31 @@ export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
   }, [studentCourses, courseId]);
 
   if (!isAuthenticated) {
-    return null;
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <div className="flex items-center gap-2">
+            <CourseIcon className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <AndamioCardTitle>Start Learning</AndamioCardTitle>
+              <AndamioCardDescription>
+                Connect your wallet to track progress and earn credentials
+              </AndamioCardDescription>
+            </div>
+          </div>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          {firstModuleCode && (
+            <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
+              <AndamioButton variant="outline" className="w-full">
+                Preview First Module
+                <NextIcon className="h-4 w-4 ml-2" />
+              </AndamioButton>
+            </Link>
+          )}
+        </AndamioCardContent>
+      </AndamioCard>
+    );
   }
 
   const isLoading = courseLoading || studentLoading;
@@ -92,7 +118,7 @@ export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
     return <AndamioCardLoading title="Your Progress" lines={3} />;
   }
 
-  // If not enrolled, show enrollment prompt
+  // If not enrolled, show enrollment prompt with CTA
   if (!studentCourseStatus) {
     return (
       <AndamioCard>
@@ -107,13 +133,21 @@ export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
             </div>
           </div>
         </AndamioCardHeader>
-        <AndamioCardContent>
+        <AndamioCardContent className="space-y-4">
           <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
             <ModuleIcon className="h-4 w-4 text-muted-foreground" />
             <AndamioText variant="small">
               Choose a module below, write your assignment, and submit it to enroll.
             </AndamioText>
           </div>
+          {firstModuleCode && (
+            <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
+              <AndamioButton className="w-full">
+                Start First Module
+                <NextIcon className="h-4 w-4 ml-2" />
+              </AndamioButton>
+            </Link>
+          )}
         </AndamioCardContent>
       </AndamioCard>
     );

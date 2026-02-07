@@ -5,10 +5,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
-import {
-  useAssignmentCommitment,
-  useSubmitEvidence,
-} from "~/hooks/api/course";
+import { useAssignmentCommitment } from "~/hooks/api/course";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { isJSONContent } from "~/hooks/api/course/use-course-module";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -74,9 +71,6 @@ export function AssignmentCommitment({
     error: commitmentError,
     refetch: refetchCommitment,
   } = useAssignmentCommitment(courseId, moduleCode, sltHash);
-
-  // Evidence submission mutation
-  const submitEvidence = useSubmitEvidence();
 
   // TX error state
   const [txError, setTxError] = useState<string | null>(null);
@@ -181,19 +175,14 @@ export function AssignmentCommitment({
         course_id: courseId,
         assignment_info: newEvidenceHash,
       },
-      onSuccess: async (result) => {
+      metadata: {
+        slt_hash: sltHash!,
+        course_module_code: moduleCode,
+        evidence: JSON.stringify(localEvidenceContent),
+        evidence_hash: newEvidenceHash,
+      },
+      onSuccess: () => {
         setHasUnsavedChanges(false);
-        try {
-          await submitEvidence.mutateAsync({
-            courseId: courseId,
-            sltHash: sltHash!,
-            evidence: localEvidenceContent,
-            evidenceHash: newEvidenceHash,
-            pendingTxHash: result.txHash,
-          });
-        } catch (err) {
-          console.error("[AssignmentCommitment] Error saving evidence to DB:", err);
-        }
       },
       onError: (err) => setTxError(err.message),
     });
@@ -492,21 +481,14 @@ export function AssignmentCommitment({
                                 slt_hash: sltHash,
                                 assignment_info: hash,
                               },
-                              onSuccess: async (result) => {
+                              metadata: {
+                                slt_hash: sltHash,
+                                course_module_code: moduleCode,
+                                evidence: JSON.stringify(evidenceContent),
+                                evidence_hash: hash,
+                              },
+                              onSuccess: () => {
                                 setHasUnsavedChanges(false);
-                                if (evidenceContent) {
-                                  try {
-                                    await submitEvidence.mutateAsync({
-                                      courseId: courseId,
-                                      sltHash: sltHash,
-                                      evidence: evidenceContent,
-                                      evidenceHash: hash,
-                                      pendingTxHash: result.txHash,
-                                    });
-                                  } catch (err) {
-                                    console.error("[AssignmentCommitment] Error saving evidence to DB:", err);
-                                  }
-                                }
                               },
                               onError: (err) => setTxError(err.message),
                             });

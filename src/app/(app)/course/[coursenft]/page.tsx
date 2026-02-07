@@ -170,7 +170,10 @@ function CourseDetailContent() {
       {/* Your Learning Journey - enrollment status + progress */}
       <div className="space-y-3">
         <AndamioSectionHeader title="Your Progress" />
-        <UserCourseStatus courseId={courseId} />
+        <UserCourseStatus
+          courseId={courseId}
+          firstModuleCode={resolvedModules[0]?.moduleCode ?? undefined}
+        />
       </div>
 
       {/* Course Outline - Module cards with SLTs */}

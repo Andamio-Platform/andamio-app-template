@@ -108,7 +108,7 @@ export function CourseBreadcrumb({
                 <AndamioBreadcrumbLink asChild>
                   <Link
                     href={`${basePath}/${course.nftPolicyId}`}
-                    className="max-w-[200px] truncate inline-block"
+                    className="max-w-[200px] truncate"
                   >
                     {truncate(course.title, 40)}
                   </Link>
@@ -131,7 +131,7 @@ export function CourseBreadcrumb({
                 <AndamioBreadcrumbLink asChild>
                   <Link
                     href={`${basePath}/${course.nftPolicyId}/${courseModule.code}`}
-                    className="max-w-[200px] truncate inline-block"
+                    className="max-w-[200px] truncate"
                   >
                     {truncate(courseModule.title, 30)}
                   </Link>
@@ -141,13 +141,13 @@ export function CourseBreadcrumb({
           </>
         )}
 
-        {/* Lesson (current page indicator) */}
+        {/* Lesson / SLT (current page indicator) */}
         {course && courseModule && lesson && currentPage === "lesson" && (
           <>
             <AndamioBreadcrumbSeparator />
             <AndamioBreadcrumbItem>
               <AndamioBreadcrumbPage className="max-w-[200px] truncate">
-                {lesson.title ? truncate(lesson.title, 30) : `Lesson ${lesson.index}`}
+                {lesson.title ? truncate(lesson.title, 30) : `SLT ${lesson.index}`}
               </AndamioBreadcrumbPage>
             </AndamioBreadcrumbItem>
           </>

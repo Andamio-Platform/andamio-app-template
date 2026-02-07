@@ -114,15 +114,13 @@ export function MyLearning() {
           <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <CourseIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <AndamioText variant="small" className="mb-2">
-              You are not enrolled in any courses yet.
+          <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
+            <CourseIcon className="h-12 w-12 text-muted-foreground" />
+            <h3 className="font-semibold">No courses yet</h3>
+            <AndamioText variant="muted" className="text-sm">
+              Enroll in a course to start your learning journey on-chain
             </AndamioText>
-            <AndamioText variant="small" className="text-xs mb-4">
-              Browse courses, pick a module, and submit your first assignment to get started.
-            </AndamioText>
-            <Link href="/course">
+            <Link href="/course" className="pt-2">
               <AndamioButton>Browse Courses</AndamioButton>
             </Link>
           </div>

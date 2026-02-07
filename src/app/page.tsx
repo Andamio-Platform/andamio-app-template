@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { OnChainIcon } from "~/components/icons";
-import { Badge } from "~/components/ui/badge";
+import Image from "next/image";
 import { env } from "~/env";
 import { LandingHero } from "~/components/landing/landing-hero";
-import { BuilderSection } from "~/components/landing/builder-section";
 import { FirstLoginCard } from "~/components/landing/first-login-card";
 
 interface MintedInfo {
@@ -25,15 +23,17 @@ export default function Home() {
   const showFirstLogin = !!mintedInfo;
 
   return (
-    <main className="bg-background text-foreground">
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
-        {/* Network Badge */}
-        <div className="mb-8">
-          <Badge variant="outline" className="px-3 py-1 text-sm">
-            <OnChainIcon className="mr-2 h-4 w-4" />
-            <span className="capitalize">{network}</span>
-          </Badge>
-        </div>
+    <main className="bg-background text-foreground min-h-screen flex flex-col">
+      <section className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Logo */}
+        <Image
+          src="/logos/logo-with-typography-stacked.svg"
+          alt="Andamio"
+          width={300}
+          height={300}
+          className="mb-8"
+          priority
+        />
 
         {/* Landing page states */}
         {showFirstLogin ? (
@@ -45,14 +45,18 @@ export default function Home() {
             />
           </div>
         ) : (
-          // Default: show hero + builder section
-          // LandingHero handles the full registration flow via RegistrationFlow
-          <>
-            <LandingHero onMinted={handleMinted} />
-            <BuilderSection />
-          </>
+          <LandingHero onMinted={handleMinted} />
         )}
       </section>
+
+      {/* Footer */}
+      <footer className="py-4 px-6 border-t border-border/50">
+        <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground font-mono">
+          <span className="uppercase tracking-wider">{network}</span>
+          <span className="text-border">•</span>
+          <span>v2.0.0</span>
+        </div>
+      </footer>
     </main>
   );
 }

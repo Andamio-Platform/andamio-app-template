@@ -106,25 +106,11 @@ export const MARKETING = {
    * Landing page hero section
    */
   landingHero: {
-    headline: "Turn Learning Into Proof That Opens Doors",
-    subtext:
-      "Complete courses to earn verifiable credentials on Cardano. Use those credentials to unlock funded project opportunities.",
-    primaryCta: "Create Your Identity",
-    browseCourses: "Browse Courses",
-    browseProjects: "Browse Projects",
-    signInText: "Already have an access token?",
-    signInLink: "Sign In",
-  },
-
-  /**
-   * Landing page builder section
-   */
-  landingBuilder: {
-    headline: "Build courses and projects that pay contributors",
-    subtext:
-      "Create courses or launch projects with verifiable credentials.",
-    createCourse: "Create a Course",
-    launchProject: "Launch a Project",
+    headline: "📚 → ✅ → 🚪",
+    subtext: "Complete courses. Earn credentials. Unlock funded projects.",
+    enterCta: "Enter",
+    browseCta: "Browse",
+    launchCta: "Launch a Project",
   },
 
   /**

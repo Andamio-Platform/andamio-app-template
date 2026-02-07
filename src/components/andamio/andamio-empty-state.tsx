@@ -81,12 +81,13 @@ export function AndamioEmptyState({
 }: AndamioEmptyStateProps) {
   return (
     <div
+      data-slot="empty-state"
       className={cn(
-        "flex flex-col items-center justify-center py-12 px-4 text-center",
+        "flex flex-col items-center justify-center gap-3 py-12 px-4 text-center",
         className
       )}
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <Icon
           className={cn(
             "text-muted-foreground",
@@ -94,13 +95,13 @@ export function AndamioEmptyState({
           )}
         />
       </div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold">{title}</h3>
       {description && (
-        <AndamioText variant="muted" className="max-w-sm mb-6">
+        <AndamioText variant="muted" className="max-w-sm">
           {description}
         </AndamioText>
       )}
-      {action}
+      {action && <div className="pt-2">{action}</div>}
     </div>
   );
 }

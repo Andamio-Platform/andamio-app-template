@@ -3,42 +3,26 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CardanoWallet, useWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { RegistrationFlow } from "~/components/landing/registration-flow";
 import { V1MigrateCard } from "~/components/landing/v1-migrate-card";
-import { CourseIcon, ProjectIcon, ForwardIcon, LoadingIcon, BackIcon } from "~/components/icons";
+import { LoadingIcon } from "~/components/icons";
 import { MARKETING } from "~/config/marketing";
 
 const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
 
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
-
 interface LandingHeroProps {
-  /** Called when user completes minting flow */
   onMinted?: (info: { alias: string; txHash: string }) => void;
 }
 
-/**
- * Landing page hero section with value proposition and CTAs.
- *
- * "Get Started" opens wallet connect. After auth, page.tsx logic
- * handles showing MintCard if user has no access token.
- */
 export function LandingHero({ onMinted }: LandingHeroProps) {
-  const [mounted, setMounted] = React.useState(false);
-  const [showGetStarted, setShowGetStarted] = React.useState(false);
-  const [showSignIn, setShowSignIn] = React.useState(false);
+  const [showEnter, setShowEnter] = React.useState(false);
   const [v1Alias, setV1Alias] = React.useState<string | null>(null);
   const [v1Scanning, setV1Scanning] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const { wallet } = useWallet();
   const {
@@ -49,10 +33,6 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   } = useAndamioAuth();
 
   const copy = MARKETING.landingHero;
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Scan for V1 token when authenticated but no V2 token
   React.useEffect(() => {
@@ -105,32 +85,21 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     }
   }, [isAuthenticated, user?.accessTokenAlias, router]);
 
-  const isDark = mounted && resolvedTheme === "dark";
-
-  const handleGetStarted = () => {
+  const handleEnter = () => {
     if (isAuthenticated && user?.accessTokenAlias) {
       router.push("/dashboard");
     } else {
-      setShowGetStarted(true);
+      setShowEnter(true);
     }
   };
 
-  const handleSignIn = () => {
-    if (isAuthenticated && user?.accessTokenAlias) {
-      router.push("/dashboard");
-    } else {
-      setShowSignIn(true);
-    }
-  };
-
-  // Authenticating state (after wallet connect)
+  // Authenticating state
   if (isWalletConnected && isAuthenticating) {
     return (
       <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
           Signing In...
         </h1>
-
         <div className="mt-10 flex flex-col items-center gap-4">
           <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
           <AndamioText variant="muted">Please sign the message in your wallet</AndamioText>
@@ -165,88 +134,70 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     );
   }
 
-  // Show registration flow for "Get Started" (new users)
-  // Shows alias input first, then wallet connect
-  if (showGetStarted) {
+  // Show registration flow (handles wallet connect + minting)
+  if (showEnter) {
     return (
-      <RegistrationFlow onMinted={onMinted} onBack={() => setShowGetStarted(false)} />
+      <RegistrationFlow onMinted={onMinted} onBack={() => setShowEnter(false)} />
     );
   }
 
-  // Show wallet connect for "Sign In" (returning users)
-  if (showSignIn && !isWalletConnected) {
-    return (
-      <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-          Welcome Back
-        </h1>
-        <AndamioText className="mt-6 text-lg text-muted-foreground max-w-2xl">
-          Connect your wallet to sign in with your access token.
-        </AndamioText>
-
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
-          <AndamioButton
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSignIn(false)}
-          >
-            <BackIcon className="mr-2 h-4 w-4" />
-            Back
-          </AndamioButton>
-        </div>
-      </div>
-    );
-  }
-
-  // Default hero view
+  // Default hero view - clean vertical CTAs
   return (
     <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-      {/* Headline - with more breathing room */}
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-        {copy.headline}
-      </h1>
-
-      {/* Subtext */}
-      <AndamioText className="mt-6 text-lg text-muted-foreground max-w-2xl">
-        {copy.subtext}
-      </AndamioText>
-
-      {/* Primary CTA */}
-      <div className="mt-10">
-        <AndamioButton size="lg" onClick={handleGetStarted}>
-          {copy.primaryCta}
-          <ForwardIcon className="ml-2 h-5 w-5" />
-        </AndamioButton>
+      {/* Value prop: icon + text pairs with arrows */}
+      <div className="flex items-start gap-4 sm:gap-8">
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-4xl sm:text-5xl">📚</span>
+          <span className="text-muted-foreground">Complete courses.</span>
+        </div>
+        <span className="text-2xl text-muted-foreground pt-2">→</span>
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-4xl sm:text-5xl">✅</span>
+          <span className="text-muted-foreground">Earn credentials.</span>
+        </div>
+        <span className="text-2xl text-muted-foreground pt-2">→</span>
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-4xl sm:text-5xl">🚪</span>
+          <span className="text-muted-foreground">Join projects.</span>
+        </div>
       </div>
 
-      {/* Browse Links */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-4">
-        <AndamioButton asChild variant="outline">
-          <Link href="/course">
-            <CourseIcon className="mr-2 h-4 w-4" />
-            {copy.browseCourses}
-          </Link>
-        </AndamioButton>
-        <AndamioButton asChild variant="outline">
-          <Link href="/project">
-            <ProjectIcon className="mr-2 h-4 w-4" />
-            {copy.browseProjects}
-          </Link>
-        </AndamioButton>
+      {/* CTA Cards */}
+      <div className="pt-16 w-full max-w-4xl">
+        <hr style={{ borderColor: 'color-mix(in oklch, var(--foreground) 30%, transparent)' }} />
       </div>
+      <div className="pt-6 w-full max-w-4xl">
+        <div className="grid gap-6 sm:grid-cols-3">
+          <div className="flex flex-col items-center text-center p-6 gap-4">
+            <h3 className="font-semibold">Get Started</h3>
+            <p className="text-sm text-muted-foreground">
+              Connect your wallet and create your on-chain identity
+            </p>
+            <AndamioButton onClick={handleEnter} className="w-full mt-auto">
+              Enter
+            </AndamioButton>
+          </div>
 
-      {/* Sign In Link */}
-      <div className="mt-8">
-        <AndamioText variant="small" className="text-muted-foreground">
-          {copy.signInText}{" "}
-          <button
-            onClick={handleSignIn}
-            className="text-primary hover:underline font-medium"
-          >
-            {copy.signInLink}
-          </button>
-        </AndamioText>
+          <div className="flex flex-col items-center text-center p-6 gap-4">
+            <h3 className="font-semibold">Explore</h3>
+            <p className="text-sm text-muted-foreground">
+              Browse courses and projects to see what&apos;s available
+            </p>
+            <AndamioButton asChild variant="outline" className="w-full mt-auto">
+              <Link href="/course">Browse</Link>
+            </AndamioButton>
+          </div>
+
+          <div className="flex flex-col items-center text-center p-6 gap-4">
+            <h3 className="font-semibold">Build</h3>
+            <p className="text-sm text-muted-foreground">
+              Launch a project and onboard contributors
+            </p>
+            <AndamioButton asChild variant="outline" className="w-full mt-auto">
+              <Link href="/studio">Launch</Link>
+            </AndamioButton>
+          </div>
+        </div>
       </div>
     </div>
   );

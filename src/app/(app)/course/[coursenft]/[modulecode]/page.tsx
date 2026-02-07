@@ -17,6 +17,7 @@ import {
 import { SettingsIcon, OnChainIcon, AssignmentIcon, NextIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
+import { useTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
 import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
@@ -38,6 +39,13 @@ export default function ModuleLessonsPage() {
   const { courseId, moduleCode: moduleCodeParam } = useCourseParams();
   const moduleCode = moduleCodeParam!;
   const { isAuthenticated } = useAndamioAuth();
+
+  // Check if user is a teacher for this course (cache hit if already fetched)
+  const { data: teacherCourses } = useTeacherCourses();
+  const isTeacher = useMemo(
+    () => teacherCourses?.some((c) => c.courseId === courseId) ?? false,
+    [teacherCourses, courseId],
+  );
 
   // React Query hooks - data is cached and shared across components
   // useCourse returns merged data with both on-chain and off-chain content
@@ -144,7 +152,7 @@ export default function ModuleLessonsPage() {
         title={courseModule.title ?? "Module"}
         description={typeof courseModule.description === "string" ? courseModule.description : undefined}
         action={
-          isAuthenticated ? (
+          isTeacher ? (
             <Link href={`/studio/course/${courseId}/${moduleCode}/slts`}>
               <AndamioButton variant="outline">
                 <SettingsIcon className="h-4 w-4 mr-2" />
@@ -159,26 +167,28 @@ export default function ModuleLessonsPage() {
       </AndamioBadge>
 
       {/* Student Learning Targets & Lessons Combined */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <AndamioSectionHeader title="Student Learning Targets & Lessons" />
-          {onChainModule && (
-            <AndamioBadge variant="outline" className="text-primary border-primary">
-              <OnChainIcon className="h-3 w-3 mr-1" />
-              On-chain
-            </AndamioBadge>
-          )}
-        </div>
-        <AndamioText variant="muted">
-          The learning targets below define what you will learn in this module. Each target is paired with a lesson to guide your learning journey.
-        </AndamioText>
-        <SLTLessonTable
-          data={combinedData}
-          courseId={courseId}
-          moduleCode={moduleCode}
-          onChainModule={onChainModule}
-        />
-      </div>
+      <AndamioCard>
+        <AndamioCardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <AndamioSectionHeader title="Student Learning Targets & Lessons" />
+            {onChainModule && (
+              <AndamioBadge variant="outline" className="text-primary border-primary">
+                <OnChainIcon className="h-3 w-3 mr-1" />
+                On-chain
+              </AndamioBadge>
+            )}
+          </div>
+          <AndamioText variant="muted">
+            The learning targets below define what you will learn in this module. Each target is paired with a lesson to guide your learning journey.
+          </AndamioText>
+          <SLTLessonTable
+            data={combinedData}
+            courseId={courseId}
+            moduleCode={moduleCode}
+            onChainModule={onChainModule}
+          />
+        </AndamioCardContent>
+      </AndamioCard>
 
       {/* Assignment CTA - context-aware based on commitment status */}
       <AssignmentCTA

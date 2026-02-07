@@ -14,7 +14,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioCardLoading } from "~/components/andamio/andamio-loading";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
+import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { toast } from "sonner";
 import {
   SuccessIcon,
@@ -199,57 +199,29 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
 
   // Enrolled (in progress) state
   const accepted = commitmentStats?.accepted ?? 0;
+  const progressPercent = totalModules > 0 ? Math.round((accepted / totalModules) * 100) : 0;
 
   return (
     <AndamioCard>
-      <AndamioCardContent className="p-4 space-y-3">
-        {/* Module checklist */}
-        {dbModules && dbModules.length > 0 && (
-          <ul className="space-y-1">
-            {dbModules.map((courseModule) => {
-              const code = courseModule.moduleCode ?? "";
-              const moduleCommitments = commitmentsByModule.get(code) ?? [];
-              const status = getModuleCommitmentStatus(moduleCommitments);
-              const isAccepted = status === "ASSIGNMENT_ACCEPTED";
-
-              return (
-                <li
-                  key={code || courseModule.sltHash}
-                  className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${
-                        isAccepted
-                          ? "bg-success border-success text-success-foreground"
-                          : status
-                            ? "border-secondary bg-secondary/10"
-                            : "border-border bg-background"
-                      }`}
-                    >
-                      {isAccepted && <SuccessIcon className="h-3 w-3" />}
-                    </div>
-                    <span className="text-sm truncate">
-                      <span className="font-mono text-xs text-muted-foreground mr-1.5">
-                        {code}
-                      </span>
-                      {courseModule.title ?? "Untitled"}
-                    </span>
-                  </div>
-                  <div className="shrink-0">
-                    {status ? (
-                      <CommitmentStatusBadge status={status} />
-                    ) : (
-                      <AndamioText variant="small" className="text-muted-foreground text-xs">
-                        Not started
-                      </AndamioText>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <AndamioCardContent className="p-4 space-y-4">
+        {/* Progress bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <AndamioText variant="small" className="font-medium">
+              {accepted} of {totalModules} {totalModules === 1 ? "module" : "modules"} complete
+            </AndamioText>
+            <AndamioText variant="small" className="text-muted-foreground">
+              {progressPercent}%
+            </AndamioText>
+          </div>
+          <AndamioProgress
+            value={progressPercent}
+            aria-label={`Course progress: ${accepted} of ${totalModules} modules complete`}
+            aria-valuenow={accepted}
+            aria-valuemin={0}
+            aria-valuemax={totalModules}
+          />
+        </div>
 
         {/* Summary + CTA */}
         {totalModules > 0 && (
@@ -316,14 +288,25 @@ function CredentialClaimCTA({
   const allAccepted = accepted === totalModules;
 
   // Find the first module without an accepted assignment for the "continue" link
-  const nextModuleCode = !allAccepted
+  const nextModule = !allAccepted
     ? dbModules.find((m) => {
         const code = m.moduleCode ?? "";
         const commitments = commitmentsByModule.get(code) ?? [];
         const status = getModuleCommitmentStatus(commitments);
         return status !== "ASSIGNMENT_ACCEPTED";
-      })?.moduleCode
+      })
     : null;
+  const nextModuleCode = nextModule?.moduleCode;
+
+  // Determine how many modules still need completion
+  const remainingModules = !allAccepted
+    ? dbModules.filter((m) => {
+        const code = m.moduleCode ?? "";
+        const commitments = commitmentsByModule.get(code) ?? [];
+        const status = getModuleCommitmentStatus(commitments);
+        return status !== "ASSIGNMENT_ACCEPTED";
+      }).length
+    : 0;
 
   const handleClaim = async () => {
     if (!user?.accessTokenAlias) return;
@@ -424,10 +407,17 @@ function CredentialClaimCTA({
               }}
               className="w-full"
             />
-          ) : nextModuleCode ? (
+          ) : nextModuleCode && remainingModules > 1 ? (
             <Link href={`/course/${courseId}/${nextModuleCode}`}>
               <AndamioButton variant="outline" className="w-full">
                 Continue to next module
+                <NextIcon className="h-4 w-4 ml-2" />
+              </AndamioButton>
+            </Link>
+          ) : nextModuleCode ? (
+            <Link href={`/course/${courseId}/${nextModuleCode}/assignment`}>
+              <AndamioButton variant="outline" className="w-full">
+                Go to assignment
                 <NextIcon className="h-4 w-4 ml-2" />
               </AndamioButton>
             </Link>

@@ -176,59 +176,64 @@ function CourseDetailContent() {
         />
       </div>
 
-      {/* Course Outline - Module cards with SLTs */}
-      <div className="space-y-6">
-        <div>
-          <AndamioSectionHeader title="Course Outline" />
-          <AndamioText variant="muted" className="mt-2">
-            Each module covers a set of learning goals. Complete modules to earn credentials toward project access.
-          </AndamioText>
+      {/* Course Outline + Course Team — 2-column layout on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 lg:gap-8">
+        {/* Main column: Course Outline */}
+        <div className="space-y-6">
+          <div>
+            <AndamioSectionHeader title="Course Outline" />
+            <AndamioText variant="muted" className="mt-2">
+              Each module covers a set of learning goals. Complete modules to earn credentials toward project access.
+            </AndamioText>
+          </div>
+
+          {/* Module Cards with SLTs */}
+          <div className="space-y-4">
+            {resolvedModules.map((courseModule, moduleIndex) => {
+              // DB SLTs (if populated from content.slts)
+              const dbSlts = (courseModule.slts ?? [])
+                .filter((s) => !!s.sltText)
+                .map((s) => ({ sltText: s.sltText! }));
+
+              // On-chain SLTs (from merged endpoint - array of SLT text strings)
+              // Use as fallback if DB SLTs aren't populated
+              const chainSlts = (courseModule.onChainSlts ?? [])
+                .map((text) => ({ sltText: text }));
+
+              // Prefer DB SLTs, fall back to on-chain SLTs
+              const displaySlts = dbSlts.length > 0 ? dbSlts : chainSlts;
+
+              // Module is on-chain if it has onChainSlts data
+              const hasOnChain = (courseModule.onChainSlts ?? []).length > 0;
+              const onChainSltsSet = new Set(courseModule.onChainSlts ?? []);
+
+              // Derive per-module commitment status
+              const moduleCommitments = commitmentsByModule.get(courseModule.moduleCode ?? "") ?? [];
+              const moduleCommitmentStatus = getModuleCommitmentStatus(moduleCommitments);
+
+              return (
+                <CourseModuleCard
+                  key={courseModule.moduleCode ?? courseModule.sltHash}
+                  moduleCode={courseModule.moduleCode ?? ""}
+                  title={courseModule.title ?? "Untitled Module"}
+                  index={moduleIndex + 1}
+                  sltHash={courseModule.sltHash}
+                  slts={displaySlts}
+                  onChainSlts={onChainSltsSet}
+                  isOnChain={hasOnChain}
+                  courseId={courseId}
+                  commitmentStatus={moduleCommitmentStatus}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        {/* Module Cards with SLTs */}
-        <div className="space-y-4">
-          {resolvedModules.map((courseModule, moduleIndex) => {
-            // DB SLTs (if populated from content.slts)
-            const dbSlts = (courseModule.slts ?? [])
-              .filter((s) => !!s.sltText)
-              .map((s) => ({ sltText: s.sltText! }));
-
-            // On-chain SLTs (from merged endpoint - array of SLT text strings)
-            // Use as fallback if DB SLTs aren't populated
-            const chainSlts = (courseModule.onChainSlts ?? [])
-              .map((text) => ({ sltText: text }));
-
-            // Prefer DB SLTs, fall back to on-chain SLTs
-            const displaySlts = dbSlts.length > 0 ? dbSlts : chainSlts;
-
-            // Module is on-chain if it has onChainSlts data
-            const hasOnChain = (courseModule.onChainSlts ?? []).length > 0;
-            const onChainSltsSet = new Set(courseModule.onChainSlts ?? []);
-
-            // Derive per-module commitment status
-            const moduleCommitments = commitmentsByModule.get(courseModule.moduleCode ?? "") ?? [];
-            const moduleCommitmentStatus = getModuleCommitmentStatus(moduleCommitments);
-
-            return (
-              <CourseModuleCard
-                key={courseModule.moduleCode ?? courseModule.sltHash}
-                moduleCode={courseModule.moduleCode ?? ""}
-                title={courseModule.title ?? "Untitled Module"}
-                index={moduleIndex + 1}
-                sltHash={courseModule.sltHash}
-                slts={displaySlts}
-                onChainSlts={onChainSltsSet}
-                isOnChain={hasOnChain}
-                courseId={courseId}
-                commitmentStatus={moduleCommitmentStatus}
-              />
-            );
-          })}
+        {/* Sidebar column: Course Team (sticky on desktop) */}
+        <div className="lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          <CourseTeachersCard courseId={courseId} />
         </div>
       </div>
-
-      {/* Course Team */}
-      <CourseTeachersCard courseId={courseId} />
 
     </div>
   );

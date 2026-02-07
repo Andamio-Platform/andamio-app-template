@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { MyLearning } from "~/components/learner/my-learning";
+import { ProjectUnlockProgress } from "~/components/learner/project-unlock-progress";
 import { MintAccessTokenSimple } from "~/components/tx";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
@@ -109,6 +110,9 @@ export default function DashboardPage() {
 
       {/* My Learning Section */}
       <MyLearning />
+
+      {/* Project Unlock Progress - Shows prerequisites progress or aspirational empty state */}
+      <ProjectUnlockProgress />
 
       {/* Account Details Section */}
       <div className="grid gap-6 md:grid-cols-2">

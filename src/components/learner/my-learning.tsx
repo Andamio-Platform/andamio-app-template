@@ -9,6 +9,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import { AlertIcon, CourseIcon, OnChainIcon } from "~/components/icons";
 
 /**
@@ -114,16 +115,16 @@ export function MyLearning() {
           <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
-            <CourseIcon className="h-12 w-12 text-muted-foreground" />
-            <h3 className="font-semibold">No courses yet</h3>
-            <AndamioText variant="muted" className="text-sm">
-              Enroll in a course to start your learning journey on-chain
-            </AndamioText>
-            <Link href="/course" className="pt-2">
-              <AndamioButton>Browse Courses</AndamioButton>
-            </Link>
-          </div>
+          <AndamioEmptyState
+            icon={CourseIcon}
+            title="No Courses Yet"
+            description="Browse courses and submit your first assignment to get started."
+            action={
+              <Link href="/course">
+                <AndamioButton>Browse Courses</AndamioButton>
+              </Link>
+            }
+          />
         </AndamioCardContent>
       </AndamioCard>
     );

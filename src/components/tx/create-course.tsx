@@ -18,7 +18,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -67,6 +67,13 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   const [title, setTitle] = useState("");
   const [courseId, setCourseId] = useState<string | null>(null);
 
+  // Use ref to avoid stale closure in onComplete callback
+  // (matches pattern from create-course-dialog.tsx)
+  const courseIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    courseIdRef.current = courseId;
+  }, [courseId]);
+
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
@@ -78,8 +85,8 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
             description: `"${title.trim()}" is now live on-chain`,
           });
 
-          if (courseId) {
-            void onSuccess?.(courseId);
+          if (courseIdRef.current) {
+            void onSuccess?.(courseIdRef.current);
           }
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Course Creation Failed", {

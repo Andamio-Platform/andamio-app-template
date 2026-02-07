@@ -108,24 +108,26 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
           </AndamioText>
 
           {/* Quick Actions - Stacked */}
-          <div className="flex flex-col gap-2 mb-8 max-w-xs mx-auto">
-            <AndamioButton size="lg" className="w-full" onClick={onCreateCourse}>
-              <CourseIcon className="mr-2 h-5 w-5" />
-              Create a Course
-            </AndamioButton>
-            <AndamioText variant="small" className="text-muted-foreground text-center">
-              Build learning content with modules and SLTs
-            </AndamioText>
+          <div className="flex flex-col gap-6 mb-8 max-w-xs mx-auto">
+            <div className="space-y-2 text-center">
+              <AndamioButton size="lg" className="w-full" onClick={onCreateCourse}>
+                <CourseIcon className="mr-2 h-5 w-5" />
+                Create a Course
+              </AndamioButton>
+              <AndamioText variant="small" className="text-muted-foreground">
+                Build learning content with modules and SLTs
+              </AndamioText>
+            </div>
 
-            <div className="h-4" />
-
-            <AndamioButton size="lg" variant="outline" className="w-full" onClick={onCreateProject}>
-              <ProjectIcon className="mr-2 h-5 w-5" />
-              Create a Project
-            </AndamioButton>
-            <AndamioText variant="small" className="text-muted-foreground text-center">
-              Manage contributors and issue credentials
-            </AndamioText>
+            <div className="space-y-2 text-center">
+              <AndamioButton size="lg" variant="outline" className="w-full" onClick={onCreateProject}>
+                <ProjectIcon className="mr-2 h-5 w-5" />
+                Create a Project
+              </AndamioButton>
+              <AndamioText variant="small" className="text-muted-foreground">
+                Manage contributors and issue credentials
+              </AndamioText>
+            </div>
           </div>
 
           {/* Stats */}

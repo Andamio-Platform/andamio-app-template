@@ -214,9 +214,9 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
         {/* TX confirmation status */}
         {!txConfirmed && !txFailed && (
           <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
-              <div className="flex-1">
+              <div>
                 <AndamioText className="font-medium">
                   {txStatus?.state === "confirmed" ? "Confirmed on blockchain" : "Waiting for block confirmation"}
                 </AndamioText>

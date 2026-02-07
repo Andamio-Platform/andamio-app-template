@@ -208,7 +208,7 @@
   }
 
   /* Lists - Clean and organized */
-  ul, ol {
+  ul:not([data-slot="breadcrumb-list"]), ol:not([data-slot="breadcrumb-list"]) {
     @apply mb-4 ml-6 space-y-1.5;
   }
 

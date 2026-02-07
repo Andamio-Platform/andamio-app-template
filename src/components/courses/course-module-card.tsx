@@ -11,7 +11,7 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
+import { AssignmentStatusBadge } from "~/components/learner/assignment-status-badge";
 
 /**
  * SLT data for display in module card
@@ -91,7 +91,7 @@ export function CourseModuleCard({
                 {slts.length} {slts.length === 1 ? "target" : "targets"}
               </AndamioBadge>
               {commitmentStatus && (
-                <CommitmentStatusBadge status={commitmentStatus} />
+                <AssignmentStatusBadge status={commitmentStatus} />
               )}
               <NextIcon className="h-5 w-5 text-muted-foreground" />
             </div>

@@ -15,9 +15,8 @@ interface CommitmentStatusBadgeProps {
 }
 
 /**
- * Small badge showing assignment commitment status.
- *
- * Maps normalized `networkStatus` values to visual indicators.
+ * @deprecated Use `AssignmentStatusBadge` from `~/components/learner/assignment-status-badge` instead.
+ * This component is kept for backwards compatibility only.
  */
 export function CommitmentStatusBadge({ status }: CommitmentStatusBadgeProps) {
   switch (status) {

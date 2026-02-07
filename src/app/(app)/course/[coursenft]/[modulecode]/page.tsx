@@ -19,7 +19,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { useTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
-import { CommitmentStatusBadge } from "~/components/courses/commitment-status-badge";
+import { AssignmentStatusBadge } from "~/components/learner/assignment-status-badge";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
 
@@ -230,7 +230,7 @@ function AssignmentCTA({
             <div className="flex items-center gap-2 justify-center sm:justify-start">
               <h3 className="text-xl font-semibold">{ctaConfig.heading}</h3>
               {commitmentStatus && (
-                <CommitmentStatusBadge status={commitmentStatus} />
+                <AssignmentStatusBadge status={commitmentStatus} />
               )}
             </div>
             <AndamioText variant="muted">{ctaConfig.description}</AndamioText>

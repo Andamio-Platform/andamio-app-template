@@ -503,6 +503,73 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     disconnectWallet();
   }, [disconnectWallet]);
 
+  // Detect wallet switch during active session and logout
+  // If user switches to a different wallet while authenticated, we need to log them out
+  // to prevent session hijacking or data leakage
+  // NOTE: This effect must be defined AFTER logout callback to avoid scope issues
+  useEffect(() => {
+    authLogger.debug("[Effect: detectWalletSwitch] Running");
+
+    // Only check if user is authenticated and wallet is connected
+    if (!isAuthenticated || !connected || !wallet || !user?.cardanoBech32Addr) {
+      return;
+    }
+
+    const checkWalletMatch = async () => {
+      try {
+        // Get current wallet address
+        const rawAddress = await wallet.getChangeAddress();
+
+        // Convert to bech32 if needed (same logic as authenticate function)
+        let currentWalletAddress: string;
+        if (rawAddress.startsWith("addr")) {
+          currentWalletAddress = rawAddress;
+        } else {
+          try {
+            const addressObj = core.Address.fromString(rawAddress);
+            if (!addressObj) {
+              authLogger.warn("Failed to parse wallet address during switch detection");
+              return;
+            }
+            currentWalletAddress = addressObj.toBech32();
+          } catch (conversionError) {
+            authLogger.warn("Failed to convert wallet address during switch detection:", conversionError);
+            return;
+          }
+        }
+
+        // Compare with authenticated user's address
+        if (currentWalletAddress !== user.cardanoBech32Addr) {
+          authLogger.warn("Wallet address mismatch detected - user switched wallets during active session", {
+            authenticatedAddress: user.cardanoBech32Addr,
+            currentWalletAddress,
+          });
+          authLogger.info("Logging out user due to wallet switch");
+
+          // Log out the user to prevent session issues
+          logout();
+        }
+      } catch (error) {
+        authLogger.error("Error checking wallet address during switch detection:", error);
+        // Don't logout on errors - might be a temporary wallet API issue
+      }
+    };
+
+    // Check immediately on mount and whenever dependencies change
+    void checkWalletMatch();
+
+    // Also set up polling to detect switches that happen without React re-renders
+    // Some wallet extensions don't trigger re-renders when switching accounts
+    const intervalId = setInterval(() => {
+      void checkWalletMatch();
+    }, 2000); // Check every 2 seconds
+
+    return () => {
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, connected, user?.cardanoBech32Addr, logout]);
+
   /**
    * Refresh auth state from stored JWT
    * Useful after operations that update the JWT (e.g., minting access token)

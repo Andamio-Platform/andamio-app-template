@@ -76,6 +76,10 @@ const data = await gatewayAuth<CourseResponse[]>("/api/v2/course/owner/courses/l
 
 Wallet addresses: Convert hex to bech32 using `core.Address.fromString().toBech32()`
 
+### Security Features
+
+**Wallet Switch Detection**: The auth context monitors the connected wallet address during active sessions. If a user switches to a different wallet while authenticated, they are automatically logged out to prevent session hijacking or data leakage. This check runs every 2 seconds via polling (in addition to reactive checks on wallet state changes) to catch switches that don't trigger React re-renders. See `contexts/andamio-auth-context.tsx:507` for implementation.
+
 ## Key Files
 
 | Category | Files |

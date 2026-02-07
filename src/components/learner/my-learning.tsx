@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudentCourses, type StudentCourse } from "~/hooks/api";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
-import { AlertIcon, CourseIcon, OnChainIcon } from "~/components/icons";
+import { AlertIcon, CourseIcon, NextIcon, SuccessIcon } from "~/components/icons";
+import { cn } from "~/lib/utils";
 
 /**
  * My Learning component - Shows learner's enrolled courses
@@ -21,38 +21,44 @@ import { AlertIcon, CourseIcon, OnChainIcon } from "~/components/icons";
  * Returns courses with both on-chain enrollment status and DB content (title, description).
  */
 
-/**
- * Individual course card - title comes from merged API response
- */
 function EnrolledCourseCard({ course }: { course: StudentCourse }) {
   const courseId = course.courseId ?? "";
   const title = course.title ?? `Course ${courseId.slice(0, 8)}...`;
-  const description = course.description;
+  const isCompleted = course.enrollmentStatus === "completed";
 
   return (
     <Link
       href={`/course/${courseId}`}
-      className="block border rounded-lg p-4 hover:bg-accent transition-colors"
+      className="group flex items-center gap-3 rounded-md border px-3 py-2.5 hover:bg-accent transition-colors"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <OnChainIcon className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold truncate">{title}</h3>
-          </div>
-          {description && (
-            <AndamioText variant="small" className="line-clamp-2 mb-2">
-              {description}
-            </AndamioText>
-          )}
-          <span className="font-mono text-xs text-muted-foreground">
-            {courseId.slice(0, 16)}...
-          </span>
-        </div>
-        <AndamioButton size="sm" variant="secondary">
-          Continue
-        </AndamioButton>
+      <div
+        className={cn(
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+          isCompleted ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+        )}
+      >
+        {isCompleted ? (
+          <SuccessIcon className="h-3.5 w-3.5" />
+        ) : (
+          <CourseIcon className="h-3.5 w-3.5" />
+        )}
       </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium truncate">{title}</span>
+          {isCompleted && (
+            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+              Completed
+            </span>
+          )}
+        </div>
+        {course.description && (
+          <AndamioText variant="small" className="line-clamp-1 text-xs">
+            {course.description}
+          </AndamioText>
+        )}
+      </div>
+      <NextIcon className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
     </Link>
   );
 }
@@ -72,14 +78,13 @@ export function MyLearning() {
   if (isLoading) {
     return (
       <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
+        <AndamioCardHeader className="pb-3">
+          <AndamioCardTitle className="text-base">My Learning</AndamioCardTitle>
         </AndamioCardHeader>
         <AndamioCardContent>
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <AndamioSkeleton key={i} className="h-20 w-full" />
+              <AndamioSkeleton key={i} className="h-12 w-full" />
             ))}
           </div>
         </AndamioCardContent>
@@ -91,9 +96,8 @@ export function MyLearning() {
   if (error) {
     return (
       <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
+        <AndamioCardHeader className="pb-3">
+          <AndamioCardTitle className="text-base">My Learning</AndamioCardTitle>
         </AndamioCardHeader>
         <AndamioCardContent>
           <AndamioAlert variant="destructive">
@@ -110,9 +114,8 @@ export function MyLearning() {
   if (!enrolledCourses || enrolledCourses.length === 0) {
     return (
       <AndamioCard>
-        <AndamioCardHeader>
-          <AndamioCardTitle>My Learning</AndamioCardTitle>
-          <AndamioCardDescription>Courses you are enrolled in</AndamioCardDescription>
+        <AndamioCardHeader className="pb-3">
+          <AndamioCardTitle className="text-base">My Learning</AndamioCardTitle>
         </AndamioCardHeader>
         <AndamioCardContent>
           <AndamioEmptyState
@@ -130,26 +133,35 @@ export function MyLearning() {
     );
   }
 
-  // Courses list
+  const enrolledCount = enrolledCourses.filter((c) => c.enrollmentStatus !== "completed").length;
+  const completedCount = enrolledCourses.filter((c) => c.enrollmentStatus === "completed").length;
+
   return (
     <AndamioCard>
-      <AndamioCardHeader>
+      <AndamioCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <AndamioCardTitle>My Learning</AndamioCardTitle>
-            <AndamioCardDescription>
-              {enrolledCourses.length} {enrolledCourses.length === 1 ? "course" : "courses"} enrolled
-            </AndamioCardDescription>
+            <AndamioCardTitle className="text-base">My Learning</AndamioCardTitle>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xs text-muted-foreground">
+                {enrolledCount} active
+              </span>
+              {completedCount > 0 && (
+                <span className="text-xs text-primary">
+                  {completedCount} completed
+                </span>
+              )}
+            </div>
           </div>
           <Link href="/course">
-            <AndamioButton variant="outline" size="sm">
+            <AndamioButton variant="outline" size="sm" className="text-xs h-7">
               Browse More
             </AndamioButton>
           </Link>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {enrolledCourses.map((course) => (
             <EnrolledCourseCard key={course.courseId} course={course} />
           ))}

@@ -6,6 +6,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { LogOutIcon } from "~/components/icons";
+import { PendingTxIndicator } from "~/components/tx/pending-tx-indicator";
 import { truncateWalletAddress } from "~/config";
 import { cn } from "~/lib/utils";
 
@@ -86,6 +87,9 @@ export function SidebarUserSection({
   return (
     <div className={cn("border-t border-sidebar-border p-2", className)}>
       <div className={isExpanded ? "space-y-3" : "space-y-2"}>
+        {/* Pending Transactions */}
+        <PendingTxIndicator variant={variant} />
+
         {/* Wallet Info */}
         <div
           className={cn(

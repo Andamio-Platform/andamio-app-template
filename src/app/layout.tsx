@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { TRPCReactProvider } from "~/trpc/react";
 import { MeshProvider } from "~/components/providers/mesh-provider";
 import { AuthProvider } from "~/components/providers/auth-provider";
+import { TxWatcherBridge } from "~/components/providers/tx-watcher-provider";
 import { Toaster } from "~/components/ui/sonner";
 import { BRANDING } from "~/config";
 
@@ -59,7 +60,9 @@ export default function RootLayout({
           <MeshProvider>
             <AuthProvider>
               <TRPCReactProvider>
-                {children}
+                <TxWatcherBridge>
+                  {children}
+                </TxWatcherBridge>
               </TRPCReactProvider>
               <Toaster position="top-right" richColors closeButton />
             </AuthProvider>

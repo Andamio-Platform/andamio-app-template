@@ -53,21 +53,3 @@ export interface TxCompleteEvent {
   last_error?: string;
 }
 
-// =============================================================================
-// Callback Types
-// =============================================================================
-
-/**
- * Callbacks for SSE stream events.
- * Each callback is optional - consumers subscribe to events they care about.
- */
-export interface TxStreamCallbacks {
-  /** Called with initial state snapshot when connection opens */
-  onState?: (event: TxStateEvent) => void;
-  /** Called on each state transition */
-  onStateChange?: (event: TxStateChangeEvent) => void;
-  /** Called when transaction reaches terminal state */
-  onComplete?: (event: TxCompleteEvent) => void;
-  /** Called on stream errors (network, parse, etc.) */
-  onError?: (error: Error) => void;
-}

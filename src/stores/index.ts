@@ -11,6 +11,14 @@
 // UI Stores (global singletons)
 export { useWizardUIStore } from "./wizard-ui-store";
 
+// Transaction Watcher Store (vanilla Zustand — module-level singleton)
+export {
+  txWatcherStore,
+  type TxToastConfig,
+  type WatchedTransaction,
+  type TxWatcherStore,
+} from "./tx-watcher-store";
+
 // Data Stores (scoped per entity)
 export {
   useModuleDraftStore,

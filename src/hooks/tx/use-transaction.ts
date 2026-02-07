@@ -58,9 +58,10 @@
  * @see ~/config/transaction-schemas.ts - Zod validation schemas
  */
 
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
 import { getTransactionExplorerUrl } from "~/lib/constants";
@@ -73,6 +74,10 @@ import { validateTxParams, type TxParams } from "~/config/transaction-schemas";
 import { registerTransaction, getGatewayTxType } from "~/hooks/tx/use-tx-watcher";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { PROXY_BASE } from "~/lib/gateway";
+import { txWatcherStore } from "~/stores/tx-watcher-store";
+
+/** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
+const loadingSpinner = React.createElement(Loader2, { className: "size-4 animate-spin" });
 
 // =============================================================================
 // Types
@@ -232,6 +237,14 @@ export function useTransaction() {
             // Registration failure is non-critical - gateway may still pick it up
             console.warn(`[${txType}] Failed to register TX:`, regError);
           }
+
+          // Step 5b: Register with global TX watcher store for persistent monitoring.
+          // The store opens an SSE connection that survives page navigation.
+          txWatcherStore.getState().register(txHash, txType, {
+            successTitle: ui.successInfo,
+            successDescription: "Transaction confirmed and database updated.",
+            errorTitle: "Transaction Failed",
+          });
         } else {
           console.log(`[${txType}] Pure on-chain TX - skipping registration`);
         }
@@ -249,18 +262,30 @@ export function useTransaction() {
         };
         setResult(txResult);
 
-        // Show success toast (different message based on whether DB updates are needed)
-        toast.success(ui.successInfo, {
-          description: ui.requiresDBUpdate
-            ? "Transaction submitted. Waiting for confirmation..."
-            : "Transaction submitted to blockchain!",
-          action: explorerUrl
-            ? {
-                label: "View Transaction",
-                onClick: () => window.open(explorerUrl, "_blank"),
-              }
-            : undefined,
-        });
+        // Show persistent toast with txHash ID — the global watcher store will
+        // replace this with success/error when the terminal state is reached.
+        // Uses toast() with a custom icon instead of toast.loading() because
+        // Sonner loading toasts don't support the close button (known issue).
+        if (shouldRegister) {
+          toast(ui.successInfo, {
+            id: txHash,
+            icon: loadingSpinner,
+            duration: Infinity,
+            description: ui.requiresDBUpdate
+              ? "Transaction submitted. Waiting for confirmation..."
+              : "Transaction submitted to blockchain!",
+          });
+        } else {
+          toast.success(ui.successInfo, {
+            description: "Transaction submitted to blockchain!",
+            action: explorerUrl
+              ? {
+                  label: "View Transaction",
+                  onClick: () => window.open(explorerUrl, "_blank"),
+                }
+              : undefined,
+          });
+        }
 
         // Call success callback
         await onSuccess?.(txResult);

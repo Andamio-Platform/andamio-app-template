@@ -23,15 +23,15 @@ export default function Home() {
   const showFirstLogin = !!mintedInfo;
 
   return (
-    <main className="bg-background text-foreground min-h-screen flex flex-col">
-      <section className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+    <main className="bg-background text-foreground h-dvh flex flex-col overflow-y-auto">
+      <section className="flex flex-1 flex-col items-center justify-center px-6 py-8">
         {/* Logo */}
         <Image
           src="/logos/logo-with-typography-stacked.svg"
           alt="Andamio"
-          width={300}
-          height={300}
-          className="mb-8"
+          width={200}
+          height={200}
+          className="mb-6"
           priority
         />
 

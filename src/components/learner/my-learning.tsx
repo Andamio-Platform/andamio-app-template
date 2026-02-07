@@ -45,9 +45,9 @@ function EnrolledCourseCard({ course }: { course: StudentCourse }) {
               {description}
             </AndamioText>
           )}
-          <code className="text-xs text-muted-foreground font-mono">
+          <span className="font-mono text-xs text-muted-foreground">
             {courseId.slice(0, 16)}...
-          </code>
+          </span>
         </div>
         <AndamioButton size="sm" variant="secondary">
           Continue

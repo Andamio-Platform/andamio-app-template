@@ -42,6 +42,7 @@ import {
   VerifiedIcon,
   TeacherIcon,
   OwnerIcon,
+  NeutralIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -175,10 +176,21 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   // Owner check - compare current user alias to course owner
   const isOwner = Boolean(user?.accessTokenAlias && course?.owner && user.accessTokenAlias === course.owner);
 
-  // Fetch assignment commitments for this course, filter to pending review only
+  // Fetch assignment commitments for this course, split into categories
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
+  const RESOLVED_STATUSES = ["ACCEPTED", "DENIED"];
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
+    [allCommitmentsForCourse]
+  );
+  const inProgressCommitments = useMemo(
+    () => allCommitmentsForCourse.filter((c) =>
+      c.commitmentStatus !== "PENDING_APPROVAL" && !RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")
+    ),
+    [allCommitmentsForCourse]
+  );
+  const resolvedCommitments = useMemo(
+    () => allCommitmentsForCourse.filter((c) => RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")),
     [allCommitmentsForCourse]
   );
 
@@ -1074,44 +1086,73 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                 </div>
               )}
 
-              {/* Resolved Commitments */}
-              {allCommitmentsForCourse.filter(c => c.commitmentStatus !== "PENDING_APPROVAL").length > 0 && (
+              {/* In Progress Commitments (COMMITTED, DRAFT, LEFT, etc.) */}
+              {inProgressCommitments.length > 0 && (
+                <StudioFormSection title={`In Progress (${inProgressCommitments.length})`}>
+                  <div className="space-y-3">
+                    {inProgressCommitments.map((commitment, i) => (
+                      <div key={`${commitment.studentAlias}-${commitment.sltHash}-progress-${i}`} className="rounded-xl border p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                              <NeutralIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
+                              {commitment.moduleCode && (
+                                <AndamioText variant="small" className="truncate">
+                                  Module {commitment.moduleCode}
+                                </AndamioText>
+                              )}
+                            </div>
+                          </div>
+                          <AndamioBadge variant="outline" className="text-[10px]">
+                            {commitment.commitmentStatus === "LEFT" ? "Left" :
+                             commitment.commitmentStatus === "DRAFT" ? "Draft" : "Committed"}
+                          </AndamioBadge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </StudioFormSection>
+              )}
+
+              {/* Resolved Commitments (ACCEPTED / DENIED only) */}
+              {resolvedCommitments.length > 0 && (
                 <StudioFormSection title="Resolved">
                   <div className="space-y-3">
-                    {allCommitmentsForCourse
-                      .filter(c => c.commitmentStatus !== "PENDING_APPROVAL")
-                      .map((commitment, i) => (
-                        <div key={`${commitment.studentAlias}-${commitment.sltHash}-resolved-${i}`} className="rounded-xl border p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={cn(
-                                "flex h-8 w-8 items-center justify-center rounded-full",
-                                commitment.commitmentStatus === "ACCEPTED" ? "bg-primary/20" : "bg-destructive/20"
-                              )}>
-                                {commitment.commitmentStatus === "ACCEPTED" ? (
-                                  <CompletedIcon className="h-4 w-4 text-primary" />
-                                ) : (
-                                  <CloseIcon className="h-4 w-4 text-destructive" />
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
-                                {commitment.moduleCode && (
-                                  <AndamioText variant="small" className="truncate">
-                                    Module {commitment.moduleCode}
-                                  </AndamioText>
-                                )}
-                              </div>
+                    {resolvedCommitments.map((commitment, i) => (
+                      <div key={`${commitment.studentAlias}-${commitment.sltHash}-resolved-${i}`} className="rounded-xl border p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={cn(
+                              "flex h-8 w-8 items-center justify-center rounded-full",
+                              commitment.commitmentStatus === "ACCEPTED" ? "bg-primary/20" : "bg-destructive/20"
+                            )}>
+                              {commitment.commitmentStatus === "ACCEPTED" ? (
+                                <CompletedIcon className="h-4 w-4 text-primary" />
+                              ) : (
+                                <CloseIcon className="h-4 w-4 text-destructive" />
+                              )}
                             </div>
-                            <AndamioBadge
-                              variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
-                              className="text-[10px]"
-                            >
-                              {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Denied"}
-                            </AndamioBadge>
+                            <div className="min-w-0">
+                              <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
+                              {commitment.moduleCode && (
+                                <AndamioText variant="small" className="truncate">
+                                  Module {commitment.moduleCode}
+                                </AndamioText>
+                              )}
+                            </div>
                           </div>
+                          <AndamioBadge
+                            variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
+                            className="text-[10px]"
+                          >
+                            {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Denied"}
+                          </AndamioBadge>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                   </div>
                 </StudioFormSection>
               )}

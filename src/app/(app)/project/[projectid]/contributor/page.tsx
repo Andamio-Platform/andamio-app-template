@@ -717,7 +717,7 @@ function ContributorDashboardContent() {
                       </AndamioText>
                       {isAcceptedTask && (
                         <AndamioText variant="small" className="text-primary/70">
-                          Your reward of {formatLovelace(task.lovelaceAmount ?? "0")} will be claimed with your next commitment
+                          Your reward of {formatLovelace(task.lovelaceAmount ?? "0")} will be claimed when you commit to a new task or leave the project
                         </AndamioText>
                       )}
                     </div>
@@ -768,10 +768,9 @@ function ContributorDashboardContent() {
         </AndamioCard>
       )}
 
-      {/* TaskCommit - Used for both enrollment AND subsequent commits */}
-      {eligibility?.eligible && (contributorStatus === "not_enrolled" || contributorStatus === "enrolled" || contributorStatus === "task_accepted") && selectedTask && (() => {
+      {/* TaskCommit - Used for enrollment AND subsequent commits (not_enrolled / enrolled only) */}
+      {eligibility?.eligible && (contributorStatus === "not_enrolled" || contributorStatus === "enrolled") && selectedTask && (() => {
         const isFirstCommit = contributorStatus === "not_enrolled";
-        const hasApprovedTask = contributorStatus === "task_accepted";
         return (
           <TaskCommit
             projectNftPolicyId={projectId}
@@ -782,7 +781,7 @@ function ContributorDashboardContent() {
             taskTitle={selectedTask.title ?? undefined}
             taskEvidence={taskEvidence}
             isFirstCommit={isFirstCommit}
-            willClaimRewards={hasApprovedTask}
+            willClaimRewards={false}
             onSuccess={async () => {
               setContributorStatus("task_pending");
               await refreshData();
@@ -791,7 +790,50 @@ function ContributorDashboardContent() {
         );
       })()}
 
-      {/* When contributor has approved task - show BOTH options */}
+      {/* When contributor has an accepted task - show BOTH options: commit to new task OR leave & claim */}
+      {eligibility?.eligible && contributorStatus === "task_accepted" && (() => {
+        // Derive reward amount from the accepted task
+        const acceptedAssessment = myAssessments.find(a => a.decision === "accept");
+        const acceptedTaskHash = acceptedAssessment?.taskHash;
+        const acceptedTask = acceptedTaskHash
+          ? tasks.find(t => getString(t.taskHash) === acceptedTaskHash)
+          : undefined;
+        const acceptedTaskReward = acceptedTask?.lovelaceAmount ?? "0";
+
+        return (
+          <div className="space-y-4">
+            {selectedTask && (
+              <TaskCommit
+                projectNftPolicyId={projectId}
+                contributorStateId={contributorStateId ?? "0".repeat(56)}
+                projectTitle={projectDetail.title || undefined}
+                taskHash={getOnChainTaskId(selectedTask)}
+                taskCode={`TASK_${selectedTask.index}`}
+                taskTitle={selectedTask.title ?? undefined}
+                taskEvidence={taskEvidence}
+                isFirstCommit={false}
+                willClaimRewards={true}
+                onSuccess={async () => {
+                  setContributorStatus("task_pending");
+                  await refreshData();
+                }}
+              />
+            )}
+
+            <ProjectCredentialClaim
+              projectNftPolicyId={projectId}
+              contributorStateId={contributorStateId ?? "0".repeat(56)}
+              projectTitle={projectDetail.title || undefined}
+              pendingRewardLovelace={acceptedTaskReward}
+              onSuccess={async () => {
+                await refreshData();
+              }}
+            />
+          </div>
+        );
+      })()}
+
+      {/* When contributor can claim credentials (post-unenroll state) */}
       {eligibility?.eligible && contributorStatus === "can_claim" && (
         <div className="space-y-4">
           {selectedTask && (
@@ -871,8 +913,8 @@ function ContributorDashboardContent() {
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
             <div>
-              <AndamioText className="font-medium">Earn Rewards & Keep Going</AndamioText>
-              <AndamioText variant="small">When approved, your rewards become available. Commit to another task to claim them and continue, or claim your project credential to leave with your rewards.</AndamioText>
+              <AndamioText className="font-medium">Earn Rewards</AndamioText>
+              <AndamioText variant="small">When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you enrolled), or leave the project to claim your credential and rewards together.</AndamioText>
             </div>
           </div>
         </AndamioCardContent>

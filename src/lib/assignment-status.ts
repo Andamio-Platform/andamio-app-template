@@ -20,6 +20,14 @@ const STATUS_ALIASES: Record<string, AssignmentStatus> = {
   ASSIGNMENT_REFUSED: "ASSIGNMENT_DENIED",
   CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
   ASSIGNMENT_LEFT: "NOT_STARTED",
+  // DB API statuses (from andamio-db-api-go enums)
+  COMMITTED: "IN_PROGRESS",
+  AWAITING_SUBMISSION: "IN_PROGRESS",
+  LEFT: "NOT_STARTED",
+  // Andamioscan on-chain status values (lowercase originals, uppercased by normalizeAssignmentStatus)
+  COMPLETED: "CREDENTIAL_CLAIMED",
+  CURRENT: "IN_PROGRESS",
+  PENDING: "IN_PROGRESS",
 };
 
 export function normalizeAssignmentStatus(

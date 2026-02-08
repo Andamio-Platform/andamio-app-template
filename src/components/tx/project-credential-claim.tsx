@@ -32,7 +32,8 @@ import {
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialIcon, ShieldIcon, ProjectIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { CredentialIcon, ShieldIcon, ProjectIcon, LoadingIcon, SuccessIcon, TreasuryIcon } from "~/components/icons";
+import { formatLovelace } from "~/lib/cardano-utils";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 
@@ -51,6 +52,13 @@ export interface ProjectCredentialClaimProps {
    * Project title for display
    */
   projectTitle?: string;
+
+  /**
+   * Pending reward amount in lovelace. When provided, the component
+   * shows "Leave Project & Claim Rewards" messaging instead of the
+   * default "Claim Project Credentials" messaging.
+   */
+  pendingRewardLovelace?: string;
 
   /**
    * Callback fired when claim is successful
@@ -78,8 +86,10 @@ export function ProjectCredentialClaim({
   projectNftPolicyId,
   contributorStateId,
   projectTitle,
+  pendingRewardLovelace,
   onSuccess,
 }: ProjectCredentialClaimProps) {
+  const hasRewards = !!pendingRewardLovelace && pendingRewardLovelace !== "0";
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
 
@@ -92,10 +102,12 @@ export function ProjectCredentialClaim({
         if (status.state === "updated") {
           console.log("[ProjectCredentialClaim] TX confirmed and tracked by gateway");
 
-          toast.success("Credentials Claimed!", {
-            description: projectTitle
-              ? `You've earned your credentials from ${projectTitle}`
-              : "Your project credentials have been minted",
+          toast.success(hasRewards ? "Rewards Claimed!" : "Credentials Claimed!", {
+            description: hasRewards
+              ? `You've left the project and claimed ${formatLovelace(pendingRewardLovelace!)} + your credential`
+              : projectTitle
+                ? `You've earned your credentials from ${projectTitle}`
+                : "Your project credentials have been minted",
           });
 
           void onSuccess?.();
@@ -149,9 +161,13 @@ export function ProjectCredentialClaim({
             <CredentialIcon className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>Claim Project Credentials</AndamioCardTitle>
+            <AndamioCardTitle>
+              {hasRewards ? "Leave Project & Claim Rewards" : "Claim Project Credentials"}
+            </AndamioCardTitle>
             <AndamioCardDescription>
-              Mint your credential tokens for completed tasks
+              {hasRewards
+                ? "Unenroll from the project, claim your pending rewards, and mint your credential"
+                : "Mint your credential tokens for completed tasks"}
             </AndamioCardDescription>
           </div>
         </div>
@@ -164,6 +180,22 @@ export function ProjectCredentialClaim({
               <ProjectIcon className="h-3 w-3 mr-1" />
               {projectTitle}
             </AndamioBadge>
+          </div>
+        )}
+
+        {/* Reward Amount (when claiming with rewards) */}
+        {hasRewards && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <TreasuryIcon className="h-4 w-4 text-primary" />
+              <AndamioText className="font-medium">Pending Rewards</AndamioText>
+              <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
+                {formatLovelace(pendingRewardLovelace!)}
+              </AndamioBadge>
+            </div>
+            <AndamioText variant="small" className="text-xs">
+              Your completed task rewards will be sent to your wallet along with your project credential.
+            </AndamioText>
           </div>
         )}
 
@@ -219,10 +251,12 @@ export function ProjectCredentialClaim({
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <AndamioText className="font-medium text-primary">
-                  Credentials Claimed Successfully!
+                  {hasRewards ? "Rewards & Credentials Claimed!" : "Credentials Claimed Successfully!"}
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
-                  Your credential tokens have been minted to your wallet
+                  {hasRewards
+                    ? `${formatLovelace(pendingRewardLovelace!)} and your credential tokens have been sent to your wallet`
+                    : "Your credential tokens have been minted to your wallet"}
                 </AndamioText>
               </div>
             </div>
@@ -236,10 +270,10 @@ export function ProjectCredentialClaim({
             onClick={handleClaim}
             disabled={!hasAccessToken}
             stateText={{
-              idle: ui.buttonText,
+              idle: hasRewards ? "Leave & Claim Rewards" : ui.buttonText,
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
-              submitting: "Minting Credentials...",
+              submitting: hasRewards ? "Claiming Rewards..." : "Minting Credentials...",
             }}
             className="w-full"
           />

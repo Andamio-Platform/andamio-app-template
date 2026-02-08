@@ -60,6 +60,11 @@ const STATUS_MAP: Record<string, string> = {
   // Legacy aliases (gateway may still send these)
   APPROVED: "ASSIGNMENT_ACCEPTED",
   REJECTED: "ASSIGNMENT_REFUSED",
+  // DB API statuses that should pass through with app-level names
+  COMMITTED: "COMMITTED",
+  AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
+  CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
+  LEFT: "LEFT",
 };
 
 function normalizeStatus(raw: RawStudentCommitment): string {

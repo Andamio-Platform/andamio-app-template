@@ -18,7 +18,8 @@
  *
  * **Path B — Leave project**: When a contributor un-enrolls from a project,
  * they claim rewards from their latest completed task as part of exiting.
- * (Hook: TODO — pending `useLeaveProject` implementation)
+ * This is handled by the `ProjectCredentialClaim` TX component using
+ * `PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM` — no separate hook needed.
  *
  * This means there is no `useClaimReward` hook — reward distribution is
  * built into the commit and leave operations at the protocol level.
@@ -712,8 +713,8 @@ export function useUpdateCommitment() {
  * **Note:** This abandons a single task commitment. It does NOT claim
  * rewards and does NOT un-enroll the contributor from the project.
  *
- * To un-enroll from a project AND claim pending rewards, use `useLeaveProject`
- * (TODO — see Reward Claim Lifecycle in file header).
+ * To un-enroll from a project AND claim pending rewards, use the
+ * `ProjectCredentialClaim` TX component (`PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM`).
  *
  * @example
  * ```tsx

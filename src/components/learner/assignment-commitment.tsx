@@ -424,6 +424,48 @@ export function AssignmentCommitment({
             />
           </div>
 
+        ) : commitment?.networkStatus === "COMMITTED" && !commitment.networkEvidence ? (
+          /* Branch: Committed but no evidence — student needs to submit work */
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
+              <PendingIcon className="h-8 w-8 text-secondary shrink-0" />
+              <div>
+                <AndamioText className="font-medium">Submit Your Work</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  You&apos;ve committed to this assignment. Enter your work below and submit it for review.
+                </AndamioText>
+              </div>
+            </div>
+            <AndamioSeparator />
+            <EvidenceEditorSection
+              label="Your Work"
+              description="Enter your assignment work below and submit it for your instructor to review."
+              placeholder="Enter your assignment work..."
+              content={localEvidenceContent}
+              onContentChange={handleEvidenceContentChange}
+            />
+            <UpdateTxStatusSection
+              txState={updateTx.state}
+              txResult={updateTx.result}
+              txError={updateTx.error?.message ?? null}
+              txStatus={updateTxStatus}
+              txConfirmed={updateTxConfirmed}
+              onRetry={() => updateTx.reset()}
+              successMessage="Work submitted successfully!"
+            />
+            <UpdateEvidenceActions
+              txState={updateTx.state}
+              txConfirmed={updateTxConfirmed}
+              localEvidenceContent={localEvidenceContent}
+              accessTokenAlias={user?.accessTokenAlias ?? null}
+              courseId={courseId}
+              sltHash={sltHash}
+              onExecuteTx={handleUpdateTxExecute}
+              onRefresh={() => void refetchCommitment()}
+              submitLabel="Submit Work"
+            />
+          </div>
+
         ) : !commitment ? (
           /* Branch: No commitment — new evidence flow */
           <div className="space-y-4">

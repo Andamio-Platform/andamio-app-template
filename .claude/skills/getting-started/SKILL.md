@@ -146,6 +146,7 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 | `/issue-handler` | Error routing across repos |
 | `/qa` | Route-level QA audit for production readiness |
 | `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
+| `/ux-readiness` | Assess app flow readiness for documentation guides |
 
 ## Key Files
 

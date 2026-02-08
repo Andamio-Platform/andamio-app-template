@@ -116,5 +116,6 @@ For detailed documentation, invoke the relevant skill:
 | Project status, roadmap | `/project-manager` |
 | TypeScript types | `/typescript-types-expert` |
 | Transaction flows | `/tx-loop-guide` |
+| Guide UX readiness | `/ux-readiness` |
 
 Full skill list: `.claude/skills/*/SKILL.md`

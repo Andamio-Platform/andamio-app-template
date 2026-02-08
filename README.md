@@ -6,165 +6,147 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-2.0.0--rc6-green.svg)](./CHANGELOG.md)
 
-Production Cardano dApp for [app.andamio.io](https://app.andamio.io), built on the T3 Stack with Mesh SDK, shadcn/ui, and type-safe Andamio API integration.
+Production Cardano dApp for [app.andamio.io](https://app.andamio.io). Course creation, credential issuance, project management, and treasury operations — all on-chain via the Andamio Protocol.
 
-**Version**: 2.0.0-rc6 | **Last Updated**: February 5, 2026 | [CHANGELOG](./CHANGELOG.md)
-
-## Current Status
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| **Course & Learning** | ✅ Complete | 16 transactions, full learner/instructor lifecycle |
-| **Creator Studio** | ✅ Complete | Course/module editing, on-chain sync, rich text |
-| **Project System** | 🚧 In Progress | Treasury, tasks, commitments (9 tx components) |
-
-📊 **Detailed Status**: [STATUS.md](./.claude/skills/project-manager/STATUS.md) | [ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md)
-
-## App vs Template
-
-This repository (`andamio-app-v2`) is the **production app** for app.andamio.io. A separate **forkable template** exists for external developers:
-
-| Repository | Purpose | URL |
-|------------|---------|-----|
-| `andamio-app-v2` | Production app (this repo) | [GitHub](https://github.com/Andamio-Platform/andamio-app-v2) |
-| `andamio-app-template` | Forkable template | [GitHub](https://github.com/Andamio-Platform/andamio-app-template) |
-
-### How They Stay in Sync
-
-The template tracks this app via **git rebase**. When we ship improvements here, the template rebases to incorporate them while preserving its divergence commits (removals of app-specific features).
-
-```
-andamio-app-v2                    andamio-app-template
-      │                                  │
- [new feature]                           │
- [bug fix]                               │
-      │                                  │
-      └──── rebase ─────────────────────►│
-                                         │
-                                    [divergence commits]
-                                    (removes app-specific features)
-```
-
-### What's NOT in the Template
-
-The template excludes app-specific features:
-- Dev-only routes (API Setup, Component Showcase, Editor Demo, Sitemap)
-- "Dev Tools" sidebar navigation section
-- Developer registration auth functions
-- GitHub deployment workflows
-- Dockerfile
-
-📋 **Full list**: [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md)
-
-### Syncing Changes
-
-Use the `/sync-template` Claude skill to sync changes:
+## Get Running
 
 ```bash
-# From the template repo (not this repo)
-cd /path/to/andamio-app-template
-
-# Run the skill - it will:
-# 1. Fetch latest from andamio-app-v2
-# 2. Rebase divergence commits on top
-# 3. Help resolve any conflicts
-# 4. Push the rebased history
-```
-
-📖 **Full workflow**: [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md)
-
-## Tech Stack
-
-- **Framework**: Next.js 15 (App Router) + TypeScript
-- **API**: tRPC v11 + Unified Andamio API Gateway
-- **Styling**: Tailwind CSS v4 + shadcn/ui
-- **Blockchain**: Cardano via Mesh SDK
-- **Editor**: Tiptap with custom extensions
-- **Transactions**: `@andamio/transactions` (embedded local package)
-
-## Quick Start
-
-```bash
-# Clone the repository
 git clone https://github.com/Andamio-Platform/andamio-app-v2.git
 cd andamio-app-v2
-
-# Install dependencies
 npm install
-
-# Configure environment
 cp .env.example .env
-
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000). That's it — the app connects to deployed Andamio APIs by default, no local backend needed.
 
-**Prerequisites**: Node.js 20+
+**Requires**: Node.js 20+
 
-The template connects to the deployed Andamio APIs by default (no local backend required).
+### Environment
 
-## Repository Structure
+```bash
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://dev.api.andamio.io"
+ANDAMIO_API_KEY="your-api-key"
+NEXT_PUBLIC_CARDANO_NETWORK="preprod"
+```
 
-This is a **standalone repository** with an embedded transactions package:
+### Scripts
+
+| Script | What it does |
+|--------|-------------|
+| `npm run dev` | Dev server with Turbopack |
+| `npm run build` | Production build |
+| `npm run check` | Lint + typecheck (run before commits) |
+| `npm run generate:types` | Regenerate API types from gateway spec |
+| `npm run test:e2e` | Playwright end-to-end tests |
+| `npm run preview` | Build + start locally |
+
+## Claude Skills
+
+This repo ships with 17 specialized Claude Code skills that codify how we build, test, review, and ship. They live in `.claude/skills/` and are invoked as slash commands.
+
+### Start Here
+
+| Skill | What it does |
+|-------|-------------|
+| `/getting-started` | Interactive onboarding — tells you which skills to use based on what you're trying to do |
+| `/project-manager` | Current status, roadmap, sitemap, role-route mapping |
+
+### Build
+
+| Skill | What it does |
+|-------|-------------|
+| `/hooks-architect` | Create, audit, and reference API hooks (5 modes: learn, implement, audit, extract, reference) |
+| `/design-system` | UI patterns, semantic colors, component reference (3 modes: review, diagnose, reference) |
+| `/audit-api-coverage` | Gateway endpoint coverage — 108 endpoints tracked |
+| `/typescript-types-expert` | Type safety auditing and design (3 modes: audit, fix, design) |
+| `/tx-loop-guide` | Walk through the 6 documented transaction test loops |
+| `/mesh-expert` | Mesh SDK reference (external, from MeshJS) |
+
+### Quality
+
+| Skill | What it does |
+|-------|-------------|
+| `/qa` | Route-level production readiness audit (30 rules across 6 categories) |
+| `/review-pr` | PR review that auto-delegates to design-system, hooks-architect, types-expert |
+| `/react-query-auditor` | Cache patterns, stale data, query key issues |
+| `/transaction-auditor` | Keep TX schemas in sync with gateway API spec |
+| `/ux-readiness` | Assess app flows for documentation readiness, file issues cross-repo |
+
+### Ship
+
+| Skill | What it does |
+|-------|-------------|
+| `/ship` | Version bump, docs check, commit, PR, merge, cleanup |
+| `/product-iteration` | Full feedback cycle: Test, Design, Triage, Ship |
+| `/issue-handler` | Route errors to the right repo/subsystem |
+| `/documentarian` | Keep docs current after code changes (190+ items completed) |
+| `/bootstrap-skill` | Scaffold a new skill with consistent structure and registration |
+
+### How Skills Work
+
+Skills are markdown files that give Claude structured instructions for specific tasks. Each skill folder contains a `SKILL.md` (the instructions) plus supporting reference docs. When you invoke `/design-system review`, Claude reads that skill's files and follows its process.
+
+Skills compose: `/review-pr` delegates to `/design-system`, `/hooks-architect`, and `/typescript-types-expert`. `/ship` calls `/documentarian`. `/qa` orchestrates four other skills.
+
+Full audit: [`.claude/skills/SKILLS-AUDIT.md`](./.claude/skills/SKILLS-AUDIT.md)
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) + TypeScript |
+| API | Unified Andamio Gateway (`/api/v2/*`) + tRPC v11 |
+| Styling | Tailwind CSS v4 + shadcn/ui + semantic color system |
+| Blockchain | Cardano via Mesh SDK |
+| Editor | Tiptap with custom extensions |
+| Types | Auto-generated from gateway OpenAPI spec |
+| Testing | Playwright E2E |
+
+## Project Structure
 
 ```
 andamio-app-v2/
-├── src/                              # Next.js app source
-│   ├── app/(app)/                    # Pages with sidebar layout
-│   │   ├── dashboard/                # User dashboard
-│   │   ├── course/[coursenft]/       # Learner course views
-│   │   ├── studio/                   # Creator Studio
-│   │   │   ├── course/[coursenft]/   # Course editor (tabbed)
-│   │   │   └── project/[projectid]/  # Project editor (tabbed)
-│   │   └── project/[projectid]/      # Public project views
+├── src/
+│   ├── app/
+│   │   ├── (app)/              # Sidebar layout routes
+│   │   │   ├── dashboard/      # User dashboard
+│   │   │   ├── course/         # Learner course views
+│   │   │   ├── studio/         # Creator Studio (courses + projects)
+│   │   │   └── project/        # Public project views
+│   │   └── migrate/            # V1→V2 token migration
 │   │
 │   ├── components/
-│   │   ├── andamio/                  # UI wrappers (68+ components)
-│   │   ├── auth/                     # Auth components + RequireAuth
-│   │   ├── editor/                   # Tiptap editor (see editor/README.md)
-│   │   ├── studio/                   # Studio components (StudioTabs)
-│   │   └── transactions/             # Transaction components (16+)
+│   │   ├── andamio/            # Design system (68+ components)
+│   │   ├── auth/               # Auth + RequireAuth wrapper
+│   │   ├── editor/             # Tiptap rich text editor
+│   │   ├── studio/             # Studio components
+│   │   └── transactions/       # TX components (16+)
 │   │
-│   ├── hooks/
-│   │   ├── use-andamio-auth.ts       # Auth state + authenticatedFetch
-│   │   ├── use-andamio-fetch.ts      # Standardized data fetching
-│   │   └── use-pending-tx-watcher.ts # Transaction monitoring
-│   │
-│   └── lib/
-│       ├── cardano-utils.ts          # ADA/Lovelace utilities
-│       └── constants.ts              # UI timeouts, explorer URLs
+│   ├── hooks/                  # Auth, data fetching, TX hooks
+│   ├── types/generated/        # Auto-generated API types
+│   ├── lib/                    # Gateway client, utilities
+│   └── config/                 # TX schemas, UI config
 │
-├── packages/
-│   └── andamio-transactions/         # Transaction definitions (deprecated)
-│       ├── src/definitions/          # V1 transaction definitions
-│       └── README.md                 # Package docs
+├── e2e/                        # Playwright test suite
+├── packages/andamio-transactions/  # TX definitions (deprecated)
 │
-└── .claude/skills/                   # AI-assisted development skills
+└── .claude/
+    ├── CLAUDE.md               # AI development rules
+    └── skills/                 # 17 Claude skills
+        ├── SKILLS-AUDIT.md     # Full skill inventory
+        ├── getting-started/
+        ├── hooks-architect/
+        ├── design-system/
+        ├── project-manager/
+        └── ...
 ```
 
-**Hash Utilities**: Local implementations at `src/lib/utils/`:
-- `slt-hash.ts` - Module token name computation
-- `assignment-info-hash.ts` - Evidence hashing
-- `task-hash.ts` - Project task ID computation
-
-> The `@andamio/transactions` package is embedded but deprecated. V2 transactions use `useSimpleTransaction` with gateway auto-confirmation.
-
-## Key Features
+## Key Patterns
 
 ### Authentication
-Wallet connection + JWT-based auth in a single flow:
 
-```typescript
-const { isAuthenticated, authenticatedFetch, logout } = useAndamioAuth();
-
-// Auto-authenticates when wallet connects
-// logout() clears JWT AND disconnects wallet
-```
-
-### Protected Pages
-Use the `RequireAuth` wrapper for auth-gated content:
+Wallet connect triggers JWT auth automatically. Use `RequireAuth` to gate pages:
 
 ```typescript
 import { RequireAuth } from "~/components/auth/require-auth";
@@ -174,8 +156,9 @@ import { RequireAuth } from "~/components/auth/require-auth";
 </RequireAuth>
 ```
 
-### Type-Safe API Calls
-Types are generated from the gateway OpenAPI spec:
+### API Calls
+
+Types are generated from the gateway spec — never define API types locally:
 
 ```typescript
 import { type CourseResponse } from "~/types/generated";
@@ -186,154 +169,49 @@ const { data, isLoading, error } = useAndamioFetch<CourseResponse[]>({
 });
 ```
 
-Regenerate types when the API changes: `npm run generate:types`
+### Styling
 
-### Rich Text Editor
-Two components for all content needs:
-
-```typescript
-import { ContentEditor, ContentViewer } from "~/components/editor";
-
-<ContentEditor content={content} onContentChange={setContent} showWordCount />
-<ContentViewer content={content} />
-```
-
-See [`src/components/editor/README.md`](./src/components/editor/README.md) for full documentation.
-
-### Cardano Utilities
+Semantic colors only. Never hardcoded Tailwind colors:
 
 ```typescript
-import { formatLovelace, adaToLovelace, LOVELACE_PER_ADA } from "~/lib/cardano-utils";
-
-formatLovelace(1000000);  // "1 ADA"
-adaToLovelace(5);         // 5000000
-```
-
-### Success Notifications
-
-```typescript
-import { useSuccessNotification, useCopyFeedback } from "~/hooks/use-success-notification";
-
-const { isSuccess, showSuccess } = useSuccessNotification();
-const { isCopied, copy } = useCopyFeedback();
-```
-
-### Explorer URLs
-
-Network-aware Cardano explorer URLs (supports mainnet, preprod, preview):
-
-```typescript
-import { getTransactionExplorerUrl, getTokenExplorerUrl } from "~/lib/constants";
-
-getTransactionExplorerUrl(txHash, "preprod");  // https://preprod.cardanoscan.io/transaction/...
-getTokenExplorerUrl(policyId, "mainnet");      // https://cardanoscan.io/token/...
-```
-
-### Debug Logging
-
-Conditional logging that's suppressed in production:
-
-```typescript
-import { authLogger, pendingTxLogger, learnerLogger } from "~/lib/debug-logger";
-
-authLogger.info("User authenticated");     // Only logs in development
-authLogger.error("Auth failed:", error);   // Errors always logged
-```
-
-## Data Sources
-
-The app uses the **Unified Andamio API Gateway** which combines all backend services:
-
-| Endpoint Category | Purpose |
-|-------------------|---------|
-| **Merged** (`/api/v2/*`) | Combined off-chain + on-chain data |
-| **On-chain** (`/v2/*`) | Indexed blockchain data (passthrough to Andamioscan) |
-| **Transactions** (`/v2/tx/*`) | Build unsigned transactions |
-| **Auth** (`/auth/*`) | User authentication |
-
-A legacy DB API is also available for some endpoints during migration.
-
-All APIs are deployed and accessible via environment variables - no local backend required.
-
-## Styling
-
-Use semantic colors only - never hardcoded Tailwind colors:
-
-```typescript
-// ✅ Correct
-<CheckCircle className="text-success" />
+// correct
+<span className="text-success">Done</span>
 <span className="text-destructive">Error</span>
-<p className="text-muted-foreground">Helper text</p>
 
-// ❌ Never
-<CheckCircle className="text-green-600" />
+// never
+<span className="text-green-600">Done</span>
 ```
 
-**Available**: `success`, `warning`, `info`, `destructive`, `primary`, `secondary`, `muted`
+### Icons
 
-See [docs/styling/SEMANTIC-COLORS.md](./docs/styling/SEMANTIC-COLORS.md) for complete guide.
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Start development server with Turbopack hot reload |
-| `npm run build` | Create optimized production build |
-| `npm run start` | Run production server (after build) |
-| `npm run check` | Run lint + typecheck together (use before commits) |
-| `npm run typecheck` | TypeScript type checking only |
-| `npm run lint` | ESLint code quality check |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format:write` | Format code with Prettier |
-| `npm run format:check` | Check formatting without changes |
-| `npm run preview` | Build and start production locally |
-
-## Adding a New Page
+Always import from the centralized icon system:
 
 ```typescript
-// src/app/(app)/my-page/page.tsx
-"use client";
-
-import { RequireAuth } from "~/components/auth/require-auth";
-
-export default function MyPage() {
-  return (
-    <RequireAuth title="My Page" description="Connect to view">
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">My Page</h1>
-        {/* Content */}
-      </div>
-    </RequireAuth>
-  );
-}
+import { CredentialIcon, CourseIcon } from "~/components/icons";
 ```
 
-Add to sidebar in `src/components/layout/app-sidebar.tsx`.
+## Current Status
 
-## Documentation
+| Phase | Status |
+|-------|--------|
+| Course & Learning | Complete — 16 transactions, full learner/instructor lifecycle |
+| Creator Studio | Complete — course/module editing, on-chain sync, rich text |
+| Project System | In progress — treasury, tasks, commitments (9 TX components) |
 
-### Getting Started
-- [.claude/skills/project-manager/GETTING-STARTED.md](./.claude/skills/project-manager/GETTING-STARTED.md) - **New? Start here**
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [CHANGELOG.md](./CHANGELOG.md) - Version history
+Detailed tracking: [STATUS.md](./.claude/skills/project-manager/STATUS.md) | [ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md)
 
-### Reference
-- [.claude/skills/project-manager/STATUS.md](./.claude/skills/project-manager/STATUS.md) - Implementation status
-- [.claude/skills/project-manager/ROADMAP.md](./.claude/skills/project-manager/ROADMAP.md) - Development roadmap
-- [src/components/editor/README.md](./src/components/editor/README.md) - Editor docs
-- [packages/andamio-transactions/README.md](./packages/andamio-transactions/README.md) - Transaction package docs
-- [.claude/CLAUDE.md](./.claude/CLAUDE.md) - AI development guidelines
+## App vs Template
 
-### Template Sync
-- [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md) - Features excluded from template
-- [TEMPLATE-EXTRACTION-PLAN.md](./.claude/skills/project-manager/TEMPLATE-EXTRACTION-PLAN.md) - Sync workflow details
-- [/sync-template skill](./.claude/skills/sync-template/SKILL.md) - Claude skill for syncing
+This is the **production app**. A separate **forkable template** exists at [andamio-app-template](https://github.com/Andamio-Platform/andamio-app-template) for external developers. The template tracks this repo via git rebase — use `/sync-template` from the template repo to pull in updates.
+
+What's excluded from the template: dev-only routes, deployment workflows, Dockerfile, developer registration. Full list: [NOT_SYNCED_WITH_TEMPLATE.md](./NOT_SYNCED_WITH_TEMPLATE.md)
 
 ## Resources
 
 - [Andamio Platform](https://andamio.io) | [Andamio Docs](https://docs.andamio.io)
-- [T3 Stack](https://create.t3.gg/) | [Next.js](https://nextjs.org/docs)
-- [Mesh SDK](https://meshjs.dev) | [shadcn/ui](https://ui.shadcn.com)
+- [API Docs](https://dev.api.andamio.io/api/v1/docs/index.html)
+- [CHANGELOG](./CHANGELOG.md) | [CONTRIBUTING](./CONTRIBUTING.md)
+- [T3 Stack](https://create.t3.gg/) | [Next.js](https://nextjs.org/docs) | [Mesh SDK](https://meshjs.dev) | [shadcn/ui](https://ui.shadcn.com)
 
 ## License
 

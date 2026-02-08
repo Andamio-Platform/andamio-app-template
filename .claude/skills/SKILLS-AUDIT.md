@@ -1,6 +1,6 @@
 # Skills Audit Report
 
-> **Last Updated**: February 1, 2026
+> **Last Updated**: February 8, 2026
 
 ## Summary
 
@@ -22,9 +22,10 @@
 | `bootstrap-skill` | ✅ Active | Medium | 1 file | Meta-skill: scaffold and register new skills |
 | `ship` | ✅ Active | Medium | 1 file | Full shipping workflow (version, docs, commit, PR, merge, cleanup) |
 | `qa` | ✅ Active | Medium | 3 files | Route-level QA audit (hooks, types, components, Next.js patterns) |
+| `ux-readiness` | ✅ Active | Medium | 2 files | Cross-repo UX readiness assessment for guide pipeline |
 | `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
 
-**Total**: 16 Andamio skills + 1 external skill
+**Total**: 17 Andamio skills + 1 external skill
 
 ---
 
@@ -218,7 +219,19 @@
 
 ---
 
-### 17. `mesh-expert` 📦 (External)
+### 17. `ux-readiness` ✅
+
+**Purpose**: Assess whether app flows are ready to document in user-facing guides. Works cross-repo with `guide-pipeline` in the docs repo.
+
+**Commands**: `status`, `assess <id>`, `sync`, `signal <id> ready|blocked`
+
+**Cross-Repo**: Reads/writes `guide-tracker.json` in `~/projects/01-projects/andamio-docs/.claude/skills/guide-pipeline/`
+
+**Files** (2): `SKILL.md`, `assessment-criteria.md`
+
+---
+
+### 18. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
@@ -265,6 +278,9 @@
 │      ├──────────► react-query-auditor                        │
 │      └──────────► typescript-types-expert (audit mode)       │
 │                                                               │
+│  ux-readiness ──────────► guide-tracker.json (docs repo)       │
+│      └──────────► gh issues (blocker/friction tracking)       │
+│                                                               │
 │  Standalone skills:                                           │
 │    transaction-auditor    issue-handler                      │
 │    tx-loop-guide          mesh-expert (external)             │
@@ -278,6 +294,7 @@
 
 | Date | Action |
 |------|--------|
+| 2026-02-08 | Added `ux-readiness` skill (cross-repo UX readiness for guide pipeline). 2 files: SKILL.md, assessment-criteria.md. Partner: `guide-pipeline` in docs repo. Count: 17. |
 | 2026-02-05 | Added `qa` skill (route-level QA auditing). 3 files: SKILL.md, checklist.md, best-practices.md. Registered in getting-started. Count: 16. |
 | 2026-02-01 | Full audit: Added hooks-architect, product-iteration, mesh-expert. Fixed stale refs (andamioscan-events, use-event-confirmation, old file paths). Updated skill count to 14. |
 | 2026-01-24 | Added getting-started, typescript-types-expert skills. Count was 11. |

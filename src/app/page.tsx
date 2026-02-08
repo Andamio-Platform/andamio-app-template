@@ -24,29 +24,28 @@ export default function Home() {
 
   return (
     <main className="bg-background text-foreground h-dvh flex flex-col overflow-y-auto">
-      <section className="flex flex-1 flex-col items-center justify-center px-6 py-8">
-        {/* Logo */}
+      <section className="flex flex-1 flex-col items-center px-6 pt-[6vh]">
+        {/* Logo — pinned near top so it doesn't shift between states */}
         <Image
           src="/logos/logo-with-typography-stacked.svg"
           alt="Andamio"
-          width={200}
-          height={200}
-          className="mb-6"
+          width={160}
+          height={160}
+          className="shrink-0"
           priority
         />
 
-        {/* Landing page states */}
-        {showFirstLogin ? (
-          // After minting: show first-login ceremony
-          <div className="flex w-full justify-center">
+        {/* Card area — centered in remaining space */}
+        <div className="flex flex-1 w-full items-center justify-center">
+          {showFirstLogin ? (
             <FirstLoginCard
               alias={mintedInfo.alias}
               txHash={mintedInfo.txHash}
             />
-          </div>
-        ) : (
-          <LandingHero onMinted={handleMinted} />
-        )}
+          ) : (
+            <LandingHero onMinted={handleMinted} />
+          )}
+        </div>
       </section>
 
       {/* Footer */}

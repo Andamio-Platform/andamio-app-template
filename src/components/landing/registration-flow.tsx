@@ -225,8 +225,8 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
         <AndamioCard>
           <AndamioCardHeader className="text-center pb-2">
             <div className="flex justify-center mb-2">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <AccessTokenIcon className="h-7 w-7 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <AccessTokenIcon className="h-6 w-6 text-primary" />
               </div>
             </div>
             <AndamioCardTitle className="text-xl">Connect Your Wallet</AndamioCardTitle>
@@ -235,9 +235,9 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
             </AndamioCardDescription>
           </AndamioCardHeader>
 
-          <AndamioCardContent className="space-y-4">
+          <AndamioCardContent className="space-y-3">
             {/* What you're getting */}
-            <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
               <div className="flex items-center gap-2">
                 <ShieldIcon className="h-4 w-4 text-primary" />
                 <AndamioText className="font-medium text-sm">Your Access Token</AndamioText>

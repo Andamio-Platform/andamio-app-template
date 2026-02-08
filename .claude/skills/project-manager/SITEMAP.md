@@ -70,7 +70,7 @@ This document provides a comprehensive overview of all routes, their purpose, au
 | Route | Page | Auth | Description |
 |-------|------|------|-------------|
 | `/studio/course` | `app/(studio)/studio/course/page.tsx` | Yes | Course studio landing with split-pane layout |
-| `/studio/course/[coursenft]` | `app/(studio)/studio/course/[coursenft]/page.tsx` | Yes | Course editor with credential tabs |
+| `/studio/course/[coursenft]` | `app/(studio)/studio/course/[coursenft]/page.tsx` | Yes | Course editor (tabs: Course, Credentials, Commitments, Settings) |
 | `/studio/course/[coursenft]/new` | `app/(studio)/studio/course/[coursenft]/new/page.tsx` | Yes | New module wizard |
 | `/studio/course/[coursenft]/teacher` | `app/(studio)/studio/course/[coursenft]/teacher/page.tsx` | Yes | Instructor view - student submissions |
 | `/studio/course/[coursenft]/[modulecode]` | `app/(studio)/studio/course/[coursenft]/[modulecode]/page.tsx` | Yes | Module wizard editor |

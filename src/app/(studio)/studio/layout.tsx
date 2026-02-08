@@ -198,8 +198,8 @@ function StudioSidebarLayoutInner({
     <AndamioResizablePanelGroup direction="horizontal" className="h-full">
       {/* Left Panel: Courses + Projects List */}
       <AndamioResizablePanel defaultSize={20} minSize={15} maxSize={35}>
-        <div className="flex h-full flex-col">
-          <AndamioScrollArea className="flex-1">
+        <div className="flex h-full flex-col overflow-hidden">
+          <AndamioScrollArea className="flex-1 min-h-0">
             <div className="flex flex-col gap-1 p-3">
               {/* Courses Section */}
               <SectionHeader

@@ -106,7 +106,7 @@ Persistent sidebar (courses + projects list) + StudioHeader + split-pane workspa
 | Route | Purpose | Page Pattern |
 |-------|---------|--------------|
 | `/studio/course` | Course studio landing | Redirect to `/studio` |
-| `/studio/course/[coursenft]` | Course editor (tabs: modules, teachers, settings) | Editor |
+| `/studio/course/[coursenft]` | Course editor (tabs: Course, Credentials, Commitments, Settings) | Editor |
 | `/studio/course/[coursenft]/teacher` | Instructor dashboard — review submissions | Standard |
 | `/studio/course/[coursenft]/new` | New module wizard | **Wizard** (sidebar hides) |
 | `/studio/course/[coursenft]/[modulecode]` | Module wizard editor | **Wizard** (sidebar hides) |

@@ -87,8 +87,8 @@ Instructors who manage course content and review student submissions.
 | Route | Purpose |
 |-------|---------|
 | `/studio/course` | Course studio - list courses where user is teacher |
-| `/studio/course/[coursenft]` | Course editor - edit course metadata, view modules |
-| `/studio/course/[coursenft]/teacher` | Instructor dashboard - review student submissions |
+| `/studio/course/[coursenft]` | Course editor (tabs: Course, Credentials, Commitments, Settings) |
+| `/studio/course/[coursenft]/teacher` | Instructor dashboard - review student submissions (deep-linked from Commitments tab) |
 | `/studio/course/[coursenft]/new` | New module wizard |
 | `/studio/course/[coursenft]/[modulecode]` | Module wizard - edit module |
 | `/studio/course/[coursenft]/[modulecode]/introduction` | Introduction editor |
@@ -135,6 +135,11 @@ Course creators who own courses and manage teacher access.
 | `/studio/course` | Course studio - list owned courses |
 | `/studio/course/[coursenft]` | Course editor - full access |
 | All Teacher routes | Owners have full teacher access |
+
+**Owner-Only UI Features** (Settings tab):
+- Visibility toggle (public/private)
+- Teacher management (add/remove teachers)
+- Danger zone (delete course)
 
 **API Endpoints** (in addition to Teacher endpoints):
 - `POST /api/v2/course/owner/courses/list` - List owned courses

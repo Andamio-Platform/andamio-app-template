@@ -6,7 +6,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
 import { AlertIcon, BackIcon, SecurityAlertIcon } from "~/components/icons";
-import { useOwnerCourses } from "~/hooks/api";
+import { useOwnerCourses, useTeacherCourses } from "~/hooks/api";
 
 interface RequireCourseAccessProps {
   /** Course NFT Policy ID to check access for */
@@ -26,8 +26,8 @@ interface RequireCourseAccessProps {
  *
  * Authorization logic:
  * - First checks if user is authenticated
- * - Then calls /api/v2/course/owner/courses/list to get courses owned by the user
- * - Checks if the specified course_id is in the owned courses list
+ * - Calls both /api/v2/course/owner/courses/list and /api/v2/course/teacher/courses/list
+ * - Grants access if the course appears in either list (owner OR teacher)
  *
  * @example
  * ```tsx
@@ -50,18 +50,31 @@ export function RequireCourseAccess({
   const router = useRouter();
   const { isAuthenticated } = useAndamioAuth();
 
-  // Use React Query hook for owned courses
+  // Check both owner and teacher access
   const {
     data: ownedCourses,
-    isLoading,
-    error: queryError,
+    isLoading: isOwnerLoading,
+    error: ownerError,
   } = useOwnerCourses();
 
-  // Derive access check from hook data
-  const hasAccess = ownedCourses?.some(
+  const {
+    data: teacherCourses,
+    isLoading: isTeacherLoading,
+    error: teacherError,
+  } = useTeacherCourses();
+
+  const isLoading = isOwnerLoading || isTeacherLoading;
+
+  // Grant access if user owns OR teaches this course
+  const isOwner = ownedCourses?.some(
     (course) => course.courseId === courseId
   ) ?? false;
-  const error = queryError?.message ?? null;
+  const isTeacher = teacherCourses?.some(
+    (course) => course.courseId === courseId
+  ) ?? false;
+  const hasAccess = isOwner || isTeacher;
+
+  const error = ownerError?.message ?? teacherError?.message ?? null;
 
   // Not authenticated - show login prompt
   if (!isAuthenticated) {

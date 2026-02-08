@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -119,6 +119,7 @@ const formatNetworkStatus = (status: string | undefined | null): string => {
 
 export default function TeacherDashboardPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const courseId = params.coursenft as string;
   const { user } = useAndamioAuth();
 
@@ -306,6 +307,22 @@ export default function TeacherDashboardPage() {
       hasInvalidatedRef.current = false;
     }
   }, [allConfirmed, batchState, invalidateTeacher, refetchCommitments]);
+
+  // Auto-select commitment from URL query params (deep-link from commitments tab)
+  const hasAutoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoSelectedRef.current || commitments.length === 0) return;
+    const studentParam = searchParams.get("student");
+    const sltHashParam = searchParams.get("sltHash");
+    if (!studentParam) return;
+    const match = commitments.find(
+      (c) => c.studentAlias === studentParam && (!sltHashParam || c.sltHash === sltHashParam)
+    );
+    if (match) {
+      setSelectedCommitment(match);
+      hasAutoSelectedRef.current = true;
+    }
+  }, [commitments, searchParams]);
 
   // Get unique assignments for filter (by moduleCode)
   const uniqueModuleCodes = Array.from(

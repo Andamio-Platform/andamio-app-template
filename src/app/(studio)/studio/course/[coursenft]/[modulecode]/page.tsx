@@ -437,7 +437,7 @@ function ModuleWizardContent({
         <ResizablePanel defaultSize={80}>
           <div className="flex flex-col h-full">
             <AndamioScrollArea className="flex-1">
-              <div className="p-4">
+              <div className="px-6 py-4">
                 <AnimatePresence mode="wait" custom={direction}>
                 {currentStep === "credential" && (
                   <StepCredential key="credential" config={currentConfig} direction={direction} />

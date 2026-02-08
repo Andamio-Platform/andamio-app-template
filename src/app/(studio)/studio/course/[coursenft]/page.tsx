@@ -8,7 +8,6 @@ import { useStudioHeader } from "~/components/layout/studio-header";
 import { RequireCourseAccess } from "~/components/auth/require-course-access";
 import { StudioFormSection } from "~/components/studio/studio-editor-pane";
 import { StudioModuleCard } from "~/components/studio/studio-module-card";
-import { CourseTeachersCard } from "~/components/studio/course-teachers-card";
 import {
   AndamioButton,
   AndamioBadge,
@@ -28,7 +27,7 @@ import {
   SettingsIcon,
   CourseIcon,
   OnChainIcon,
-  LessonIcon,
+  CloseIcon,
   DeleteIcon,
   PendingIcon,
   ExternalLinkIcon,
@@ -42,11 +41,13 @@ import {
   CredentialIcon,
   VerifiedIcon,
   TeacherIcon,
+  OwnerIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { CopyId } from "~/components/andamio/copy-id";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useUpdateCourse, useDeleteCourse } from "~/hooks/api/course/use-course-owner";
 import { useTeacherCourseModules, useDeleteCourseModule, useRegisterCourseModule } from "~/hooks/api/course/use-course-module";
@@ -55,7 +56,6 @@ import { TeachersUpdate } from "~/components/tx/teachers-update";
 import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
-import { AndamioSwitch } from "~/components/andamio/andamio-switch";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
 // Note: computeSltHashDefinite removed - no longer needed with hook-based data
@@ -152,11 +152,14 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
-  const validTabs = ["modules", "details", "on-chain", "settings"];
+  const validTabs = ["modules", "credentials", "commitments", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "modules";
 
   // Update studio header
   const { setBreadcrumbs, setTitle, setActions } = useStudioHeader();
+
+  // Auth - determine if current user is the course owner
+  const { user } = useAndamioAuth();
 
   // React Query hooks - Database
   const { data: course, isLoading: isLoadingCourse, error: courseError, refetch: refetchCourse } = useCourse(courseId);
@@ -168,6 +171,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
     const teacherCourse = teacherCourses.find(c => c.courseId === courseId);
     return teacherCourse?.title || course?.title || "Untitled Course";
   }, [teacherCourses, courseId, course?.title]);
+
+  // Owner check - compare current user alias to course owner
+  const isOwner = Boolean(user?.accessTokenAlias && course?.owner && user.accessTokenAlias === course.owner);
 
   // Fetch assignment commitments for this course, filter to pending review only
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
@@ -597,47 +603,27 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
               )}
               <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
                 <AndamioTabsTrigger value="modules" className="text-sm gap-1.5 px-4">
+                  <CourseIcon className="h-4 w-4" />
+                  Course
+                </AndamioTabsTrigger>
+                <AndamioTabsTrigger value="credentials" className="text-sm gap-1.5 px-4">
                   <CredentialIcon className="h-4 w-4" />
                   Credentials
                 </AndamioTabsTrigger>
-                <AndamioTabsTrigger value="details" className="text-sm gap-1.5 px-4">
-                  <LessonIcon className="h-4 w-4" />
-                  Details
-                </AndamioTabsTrigger>
-                <AndamioTabsTrigger value="on-chain" className="text-sm gap-1.5 px-4">
-                  <OnChainIcon className="h-4 w-4" />
-                  On-Chain
+                <AndamioTabsTrigger value="commitments" className="text-sm gap-1.5 px-4">
+                  <TeacherIcon className="h-4 w-4" />
+                  Commitments
+                  {pendingCommitmentsForCourse.length > 0 && (
+                    <AndamioBadge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px]">
+                      {pendingCommitmentsForCourse.length}
+                    </AndamioBadge>
+                  )}
                 </AndamioTabsTrigger>
                 <AndamioTabsTrigger value="settings" className="text-sm gap-1.5 px-4">
                   <SettingsIcon className="h-4 w-4" />
                   Settings
                 </AndamioTabsTrigger>
               </AndamioTabsList>
-
-              {/* Pending Reviews CTA - Show when there are commitments awaiting teacher review */}
-              {pendingCommitmentsForCourse.length > 0 && (
-                <AndamioAlert className="mb-6 border-secondary/30 bg-secondary/5">
-                  <TeacherIcon className="h-4 w-4 text-secondary" />
-                  <AndamioAlertTitle className="text-secondary">
-                    {pendingCommitmentsForCourse.length} Assignment{pendingCommitmentsForCourse.length !== 1 ? "s" : ""} Pending Review
-                  </AndamioAlertTitle>
-                  <AndamioAlertDescription className="flex items-center justify-between gap-4">
-                    <span>
-                      Student{pendingCommitmentsForCourse.length !== 1 ? "s have" : " has"} submitted work that needs your assessment.
-                    </span>
-                    <AndamioButton
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-secondary text-secondary hover:bg-secondary/10 hover:text-secondary dark:hover:bg-secondary/10"
-                      asChild
-                    >
-                      <Link href={`/studio/course/${courseId}/teacher`}>
-                        Review Submissions
-                      </Link>
-                    </AndamioButton>
-                  </AndamioAlertDescription>
-                </AndamioAlert>
-              )}
 
               {/* Credentials Tab */}
               <AndamioTabsContent value="modules" className="mt-0">
@@ -688,9 +674,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                           size="sm"
                           variant="outline"
                           className="flex-shrink-0 border-secondary/30 text-secondary hover:bg-secondary/10"
-                          onClick={() => handleTabChange("on-chain")}
+                          onClick={() => handleTabChange("credentials")}
                         >
-                          Go to On-Chain Tab
+                          Go to Credentials Tab
                         </AndamioButton>
                       </AndamioAlertDescription>
                     </AndamioAlert>
@@ -698,155 +684,61 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                 </div>
               </AndamioTabsContent>
 
-            {/* Details Tab */}
-            <AndamioTabsContent value="details" className="mt-0 space-y-6">
-              <div className="flex justify-end">
-                <AndamioSaveButton
-                  onClick={handleSave}
-                  isSaving={updateCourseMutation.isPending}
-                  disabled={!hasChanges}
-                />
-              </div>
-
-              <StudioFormSection title="Course Information">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <AndamioLabel htmlFor="title">Title</AndamioLabel>
-                    <AndamioInput
-                      id="title"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      placeholder="Course title"
-                    />
+            {/* Credentials Tab (On-Chain data) */}
+            <AndamioTabsContent value="credentials" className="mt-0 space-y-6">
+              <div className="rounded-xl border p-3 bg-muted/30 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
+                    <OnChainIcon className="h-4 w-4 text-primary" />
                   </div>
-
-                  <div className="space-y-2">
-                    <AndamioLabel htmlFor="description">Description</AndamioLabel>
-                    <AndamioTextarea
-                      id="description"
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      placeholder="Course description"
-                      rows={4}
-                    />
+                  <div className="min-w-0 flex-1">
+                    <CopyId id={courseId} label="Policy ID" />
                   </div>
+                  <AndamioButton variant="outline" size="sm" asChild className="flex-shrink-0">
+                    <a
+                      href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center"
+                    >
+                      <ExternalLinkIcon className="h-4 w-4 mr-1" />
+                      View
+                    </a>
+                  </AndamioButton>
                 </div>
-              </StudioFormSection>
-
-              <StudioFormSection title="Media">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <AndamioLabel htmlFor="imageUrl" className="flex items-center gap-2">
-                      <ImagePlaceholderIcon className="h-4 w-4" />
-                      Cover Image
-                    </AndamioLabel>
-                    <ImagePreview url={formImageUrl} alt={formTitle || "Course cover"} />
-                    <AndamioInput
-                      id="imageUrl"
-                      value={formImageUrl}
-                      onChange={(e) => setFormImageUrl(e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <AndamioLabel htmlFor="videoUrl" className="flex items-center gap-2">
-                      <VideoIcon className="h-4 w-4" />
-                      Intro Video
-                    </AndamioLabel>
-                    <VideoPreview url={formVideoUrl} />
-                    <AndamioInput
-                      id="videoUrl"
-                      value={formVideoUrl}
-                      onChange={(e) => setFormVideoUrl(e.target.value)}
-                      placeholder="https://youtube.com/..."
-                    />
-                  </div>
-                </div>
-              </StudioFormSection>
-
-              {/* Course Team */}
-              <CourseTeachersCard courseId={courseId} />
-
-              {/* Manage Teachers (On-Chain Transaction) */}
-              <TeachersUpdate
-                courseId={courseId}
-                currentTeachers={course.teachers ?? []}
-                onSuccess={() => {
-                  void refetchCourse();
-                }}
-              />
-            </AndamioTabsContent>
-
-            {/* On-Chain Tab */}
-            <AndamioTabsContent value="on-chain" className="mt-0 space-y-6">
-              <StudioFormSection title="Course NFT">
-                <div className="rounded-xl border p-4 bg-muted/30 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <OnChainIcon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <AndamioText className="font-medium">Policy ID</AndamioText>
-                        <AndamioText variant="small">Unique on-chain identifier</AndamioText>
-                      </div>
-                    </div>
-                    <AndamioButton variant="outline" size="sm" asChild>
-                      <a
-                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center"
-                      >
-                        <ExternalLinkIcon className="h-4 w-4 mr-1" />
-                        View
-                      </a>
-                    </AndamioButton>
-                  </div>
-                  <CopyId id={courseId} label="Course Policy ID" />
-                </div>
-              </StudioFormSection>
-
-              <StudioFormSection title="Module Verification">
-                {/* Summary stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                  <div className="rounded-xl border p-3 text-center">
-                    <div className="text-2xl font-bold">{moduleStats.total}</div>
-                    <AndamioText variant="small" className="text-[10px]">Total Modules</AndamioText>
-                  </div>
-                  <div className="rounded-xl border p-3 text-center bg-primary/5 border-primary/20">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <VerifiedIcon className="h-4 w-4 text-primary" />
-                      <span className="text-2xl font-bold text-primary">{moduleStats.active}</span>
-                    </div>
-                    <AndamioText variant="small" className="text-[10px]">Verified</AndamioText>
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap text-xs pl-11">
+                  <span className="flex items-center gap-1 text-primary">
+                    <VerifiedIcon className="h-3 w-3" />
+                    {moduleStats.active} verified
+                  </span>
                   {moduleStats.pending > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-secondary/5 border-secondary/20">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <PendingIcon className="h-4 w-4 text-secondary animate-pulse" />
-                        <span className="text-2xl font-bold text-secondary">{moduleStats.pending}</span>
-                      </div>
-                      <AndamioText variant="small" className="text-[10px]">Pending</AndamioText>
-                    </div>
+                    <>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="flex items-center gap-1 text-secondary">
+                        <PendingIcon className="h-3 w-3 animate-pulse" />
+                        {moduleStats.pending} pending
+                      </span>
+                    </>
                   )}
                   {moduleStats.readyToMint > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-muted/5 border-muted-foreground/20">
-                      <span className="text-2xl font-bold text-muted-foreground">{moduleStats.readyToMint}</span>
-                      <AndamioText variant="small" className="text-[10px]">Ready to Mint</AndamioText>
-                    </div>
+                    <>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="text-muted-foreground">{moduleStats.readyToMint} ready to mint</span>
+                    </>
                   )}
                   {moduleStats.unregistered > 0 && (
-                    <div className="rounded-xl border p-3 text-center bg-secondary/5 border-secondary/20">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <OnChainIcon className="h-4 w-4 text-secondary" />
-                        <span className="text-2xl font-bold text-secondary">{moduleStats.unregistered}</span>
-                      </div>
-                      <AndamioText variant="small" className="text-[10px]">Unregistered</AndamioText>
-                    </div>
+                    <>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="flex items-center gap-1 text-secondary">
+                        <OnChainIcon className="h-3 w-3" />
+                        {moduleStats.unregistered} unregistered
+                      </span>
+                    </>
                   )}
+                  <span className="text-muted-foreground/30">·</span>
+                  <span className="text-muted-foreground">{moduleStats.total} total</span>
                 </div>
+              </div>
 
                 {/* Module verification list - show registered modules by status */}
                 <div className="space-y-3">
@@ -962,7 +854,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                     );
                   })}
                 </div>
-              </StudioFormSection>
 
               {/* Mint Modules - Show when there are modules ready to mint (APPROVED but not yet on-chain) */}
               {moduleStats.readyToMint > 0 && (
@@ -1118,103 +1009,281 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
               {/* Only show blockchain links after modules are minted */}
               {activeModules.length > 0 && (
-                <StudioFormSection title="Blockchain Links">
-                  <div className="flex flex-wrap gap-3">
-                    <AndamioButton variant="outline" asChild>
-                      <a
-                        href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center"
+                <div className="flex items-center gap-4 text-sm">
+                  <a
+                    href={`https://preprod.cardanoscan.io/tokenPolicy/${courseId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ExternalLinkIcon className="h-3.5 w-3.5" />
+                    CardanoScan
+                  </a>
+                  <a
+                    href={`https://preprod.cexplorer.io/policy/${courseId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ExternalLinkIcon className="h-3.5 w-3.5" />
+                    Cexplorer
+                  </a>
+                </div>
+              )}
+            </AndamioTabsContent>
+
+            {/* Commitments Tab */}
+            <AndamioTabsContent value="commitments" className="mt-0 space-y-6">
+              {/* Pending Review */}
+              {pendingCommitmentsForCourse.length > 0 ? (
+                <StudioFormSection title={`Pending Review (${pendingCommitmentsForCourse.length})`}>
+                  <div className="space-y-3">
+                    {pendingCommitmentsForCourse.map((commitment, i) => (
+                      <Link
+                        key={`${commitment.studentAlias}-${commitment.sltHash}-${i}`}
+                        href={`/studio/course/${courseId}/teacher?student=${encodeURIComponent(commitment.studentAlias)}&sltHash=${encodeURIComponent(commitment.sltHash ?? "")}`}
+                        className="block rounded-xl border p-4 bg-secondary/5 border-secondary/20 hover:bg-secondary/10 transition-colors"
                       >
-                        <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                        CardanoScan
-                      </a>
-                    </AndamioButton>
-                    <AndamioButton variant="outline" asChild>
-                      <a
-                        href={`https://preprod.cexplorer.io/policy/${courseId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center"
-                      >
-                        <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                        Cexplorer
-                      </a>
-                    </AndamioButton>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
+                              <PendingIcon className="h-4 w-4 text-secondary" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
+                              {commitment.moduleCode && (
+                                <AndamioText variant="small" className="truncate">
+                                  Module {commitment.moduleCode}
+                                </AndamioText>
+                              )}
+                            </div>
+                          </div>
+                          <NextIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </StudioFormSection>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <TeacherIcon className="h-10 w-10 text-muted-foreground/40 mb-4" />
+                  <h3 className="text-lg font-semibold mb-1">No Pending Reviews</h3>
+                  <AndamioText variant="muted" className="text-center max-w-sm">
+                    All caught up! When students submit assignment work, pending reviews will appear here.
+                  </AndamioText>
+                </div>
+              )}
+
+              {/* Resolved Commitments */}
+              {allCommitmentsForCourse.filter(c => c.commitmentStatus !== "PENDING_APPROVAL").length > 0 && (
+                <StudioFormSection title="Resolved">
+                  <div className="space-y-3">
+                    {allCommitmentsForCourse
+                      .filter(c => c.commitmentStatus !== "PENDING_APPROVAL")
+                      .map((commitment, i) => (
+                        <div key={`${commitment.studentAlias}-${commitment.sltHash}-resolved-${i}`} className="rounded-xl border p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-full",
+                                commitment.commitmentStatus === "ACCEPTED" ? "bg-primary/20" : "bg-destructive/20"
+                              )}>
+                                {commitment.commitmentStatus === "ACCEPTED" ? (
+                                  <CompletedIcon className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <CloseIcon className="h-4 w-4 text-destructive" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
+                                {commitment.moduleCode && (
+                                  <AndamioText variant="small" className="truncate">
+                                    Module {commitment.moduleCode}
+                                  </AndamioText>
+                                )}
+                              </div>
+                            </div>
+                            <AndamioBadge
+                              variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
+                              className="text-[10px]"
+                            >
+                              {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Denied"}
+                            </AndamioBadge>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </StudioFormSection>
               )}
             </AndamioTabsContent>
 
             {/* Settings Tab */}
-            <AndamioTabsContent value="settings" className="mt-0 space-y-6">
-              <StudioFormSection title="Course ID">
-                <div className="space-y-2">
-                  <CopyId id={course.courseId ?? courseId} label="Course ID" />
-                  <AndamioText variant="small">
-                    Course ID cannot be changed after creation
-                  </AndamioText>
+            <AndamioTabsContent value="settings" className="mt-0 space-y-8">
+              {/* General */}
+              <StudioFormSection title="General" description="Course title, description, and media">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <AndamioLabel htmlFor="title">Title</AndamioLabel>
+                    <AndamioInput
+                      id="title"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      placeholder="Course title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <AndamioLabel htmlFor="description">Description</AndamioLabel>
+                    <AndamioTextarea
+                      id="description"
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Course description"
+                      rows={4}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <AndamioLabel htmlFor="imageUrl">Cover Image</AndamioLabel>
+                      <ImagePreview url={formImageUrl} alt={formTitle || "Course cover"} />
+                      <AndamioInput
+                        id="imageUrl"
+                        value={formImageUrl}
+                        onChange={(e) => setFormImageUrl(e.target.value)}
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <AndamioLabel htmlFor="videoUrl">Intro Video</AndamioLabel>
+                      <VideoPreview url={formVideoUrl} />
+                      <AndamioInput
+                        id="videoUrl"
+                        value={formVideoUrl}
+                        onChange={(e) => setFormVideoUrl(e.target.value)}
+                        placeholder="https://youtube.com/..."
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      {hasChanges ? "You have unsaved changes" : "All changes saved"}
+                    </AndamioText>
+                    <AndamioSaveButton
+                      onClick={handleSave}
+                      isSaving={updateCourseMutation.isPending}
+                      disabled={!hasChanges}
+                    />
+                  </div>
                 </div>
               </StudioFormSection>
 
-              <StudioFormSection title="Visibility">
-                <div className="rounded-xl border p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <AndamioLabel htmlFor="visibility-toggle" className="text-base font-medium">
-                        Public Course
-                      </AndamioLabel>
-                      <AndamioText variant="small">
-                        Public courses appear in the course catalog and can be discovered by learners.
-                        Private courses are only visible to owners and teachers.
-                      </AndamioText>
-                    </div>
-                    <AndamioSwitch
-                      id="visibility-toggle"
-                      checked={course.isPublic ?? false}
-                      onCheckedChange={handleToggleVisibility}
-                      disabled={updateCourseMutation.isPending}
-                    />
+              {/* Visibility */}
+              <StudioFormSection title="Visibility" description="Control who can discover this course">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <AndamioBadge variant={course.isPublic ? "default" : "outline"} className="text-xs">
+                      {course.isPublic ? "Public" : "Private"}
+                    </AndamioBadge>
+                    <AndamioText variant="small">
+                      {course.isPublic
+                        ? "Anyone can find this course in the catalog"
+                        : "Only owners and teachers can see this course"}
+                    </AndamioText>
                   </div>
-                  {course.isPublic ? (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <CompletedIcon className="h-4 w-4" />
-                      This course is visible in Browse Courses
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <AlertIcon className="h-4 w-4" />
-                      This course is hidden from Browse Courses
-                    </div>
+                  {isOwner && (
+                    <AndamioButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleVisibility(!course.isPublic)}
+                      disabled={updateCourseMutation.isPending}
+                    >
+                      {updateCourseMutation.isPending
+                        ? "Updating..."
+                        : course.isPublic
+                          ? "Make Private"
+                          : "Make Public"}
+                    </AndamioButton>
                   )}
                 </div>
               </StudioFormSection>
 
-              <StudioFormSection title="Danger Zone">
-                <div className="rounded-xl border border-destructive/50 p-4 space-y-3">
-                  <AndamioText variant="muted">
-                    Permanently delete this course and all its content. This action cannot be undone.
-                  </AndamioText>
-                  <AndamioConfirmDialog
-                    trigger={
-                      <AndamioButton
-                        variant="destructive"
-                        disabled={deleteCourseMutation.isPending}
-                      >
-                        <DeleteIcon className="h-4 w-4 mr-2" />
-                        Delete Course
-                      </AndamioButton>
-                    }
-                    title="Delete Course"
-                    description={`Are you sure you want to delete "${course.title ?? "this course"}"? This will remove all modules, lessons, and assignments.`}
-                    confirmText="Delete Course"
-                    variant="destructive"
-                    onConfirm={handleDelete}
-                    isLoading={deleteCourseMutation.isPending}
-                  />
+              {/* Team */}
+              <StudioFormSection title="Team" description="Course owner and teachers">
+                <div className="space-y-3">
+                  {course.owner && (
+                    <div className="flex items-center justify-between">
+                      <AndamioLabel className="flex items-center gap-1.5">
+                        <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                        Owner
+                      </AndamioLabel>
+                      <AndamioBadge variant="default" className="font-mono text-xs">
+                        {course.owner}
+                      </AndamioBadge>
+                    </div>
+                  )}
+                  {(course.teachers ?? []).length > 0 && (
+                    <div className="flex items-center justify-between gap-4">
+                      <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                        <TeacherIcon className="h-3.5 w-3.5" />
+                        Teachers
+                      </AndamioLabel>
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        {(course.teachers ?? []).map((teacher: string) => (
+                          <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
+                            {teacher}
+                          </AndamioBadge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </StudioFormSection>
+              {isOwner && (
+                <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
+                  <TeachersUpdate
+                    courseId={courseId}
+                    currentTeachers={course.teachers ?? []}
+                    onSuccess={() => {
+                      void refetchCourse();
+                    }}
+                  />
+                </StudioFormSection>
+              )}
+
+              {/* Course ID */}
+              <StudioFormSection title="Course ID" description="Unique identifier for this course">
+                <CopyId id={course.courseId ?? courseId} label="Course ID" />
+              </StudioFormSection>
+
+              {/* Danger Zone - Owner only */}
+              {isOwner && (
+                <div className="border-t pt-8">
+                  <StudioFormSection title="Danger Zone" description="Irreversible actions">
+                    <div className="flex items-center justify-between">
+                      <AndamioText variant="small">
+                        Permanently delete this course and all its content.
+                      </AndamioText>
+                      <AndamioConfirmDialog
+                        trigger={
+                          <AndamioButton
+                            variant="destructive"
+                            size="sm"
+                            disabled={deleteCourseMutation.isPending}
+                          >
+                            <DeleteIcon className="h-4 w-4 mr-2" />
+                            Delete Course
+                          </AndamioButton>
+                        }
+                        title="Delete Course"
+                        description={`Are you sure you want to delete "${course.title ?? "this course"}"? This will remove all modules, lessons, and assignments.`}
+                        confirmText="Delete Course"
+                        variant="destructive"
+                        onConfirm={handleDelete}
+                        isLoading={deleteCourseMutation.isPending}
+                      />
+                    </div>
+                  </StudioFormSection>
+                </div>
+              )}
             </AndamioTabsContent>
             </AndamioTabs>
           )}

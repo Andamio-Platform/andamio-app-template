@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Studio Course Editor UX Overhaul** (February 7, 2026): Major cleanup of `/studio/course/[coursenft]` tabs and settings
+  - Tabs renamed: Course, Credentials, Commitments, Settings (was: Course Outline, Credentials, Commitments, Settings)
+  - Combined Course NFT + Module Verification into compact single-row header with inline stats
+  - Commitments tab: badge shows pending count only; pending items deep-link to teacher page via query params (`?student=...&sltHash=...`)
+  - Commitments tab: resolved section shows accepted/denied items below pending
+  - Teacher page: auto-selects commitment from query params on mount
+  - Settings tab: standardized all sections with `StudioFormSection` title + description pattern
+  - Settings tab: combined "Course Team" and "Manage Course Teachers" into single "Team" section
+  - Settings tab: owner-only gates on visibility toggle, teacher management, and danger zone
+  - Credentials tab: blockchain links simplified to plain text links
+  - Removed `CourseTeachersCard` component usage (replaced by inline team display)
+- **Studio Sidebar Scroll Fix** (February 7, 2026): Fixed sidebar not scrolling when many courses/projects exist
+  - Added `overflow-hidden` + `min-h-0` to fix flexbox scroll containment
+
 ### Fixed
 - **Course Detail QA Fixes** (February 5, 2026): QA audit of `/course/[coursenft]` route
   - Guard `useTeacherCourseModules` with `isTeacherPreview` to avoid unnecessary API calls for non-preview users

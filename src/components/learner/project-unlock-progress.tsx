@@ -160,6 +160,11 @@ export function ProjectUnlockProgress() {
             iconSize="md"
             title="Project Opportunities"
             description="As you complete course modules, you will unlock real project opportunities here."
+            action={
+              <Link href="/project">
+                <AndamioButton size="sm"><ProjectIcon className="mr-2 h-3 w-3" />Browse Projects</AndamioButton>
+              </Link>
+            }
           />
         </AndamioCardContent>
       </AndamioCard>

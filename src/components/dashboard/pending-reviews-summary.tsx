@@ -12,6 +12,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import {
   TeacherIcon,
   RefreshIcon,
@@ -57,17 +58,23 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
   // useTeacherCommitmentsQueries returns arrays (same shape as useTeacherAssignmentCommitments)
   // Results are in the same order as courseIds input
   const courseGroups = React.useMemo(() => {
-    const groups: { courseId: string; count: number }[] = [];
+    const groups: { courseId: string; title: string; count: number }[] = [];
     commitmentQueries.forEach((query, index) => {
       const commitments = Array.isArray(query.data) ? query.data : [];
       if (commitments.length > 0) {
-        groups.push({ courseId: courseIds[index]!, count: commitments.length });
+        const id = courseIds[index]!;
+        const course = teacherCourses?.find((c) => c.courseId === id);
+        groups.push({
+          courseId: id,
+          title: course?.title ?? `${id.slice(0, 16)}...`,
+          count: commitments.length,
+        });
       }
     });
     // Sort by count descending
     groups.sort((a, b) => b.count - a.count);
     return groups;
-  }, [commitmentQueries, courseIds]);
+  }, [commitmentQueries, courseIds, teacherCourses]);
 
   const totalPending = courseGroups.reduce((sum, g) => sum + g.count, 0);
 
@@ -157,17 +164,11 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
           </div>
         </AndamioCardHeader>
         <AndamioCardContent>
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 mb-2">
-              <SuccessIcon className="h-5 w-5 text-primary" />
-            </div>
-            <AndamioText variant="small" className="font-medium">
-              All caught up!
-            </AndamioText>
-            <AndamioText variant="small" className="text-xs mt-1 text-muted-foreground">
-              No pending assignment reviews at this time
-            </AndamioText>
-          </div>
+          <AndamioEmptyState
+            icon={SuccessIcon}
+            title="All Caught Up!"
+            description="No pending assignment reviews at this time."
+          />
         </AndamioCardContent>
       </AndamioCard>
     );
@@ -210,9 +211,9 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
             >
               <div className="flex items-center gap-2 min-w-0">
                 <TeacherIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {group.courseId.slice(0, 16)}...
-                </code>
+                <span className="text-xs truncate">
+                  {group.title}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <AndamioBadge variant="secondary" className="text-xs">

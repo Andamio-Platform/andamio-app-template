@@ -562,7 +562,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     // Some wallet extensions don't trigger re-renders when switching accounts
     const intervalId = setInterval(() => {
       void checkWalletMatch();
-    }, 2000); // Check every 2 seconds
+    }, 10_000); // Check every 10 seconds
 
     return () => {
       clearInterval(intervalId);

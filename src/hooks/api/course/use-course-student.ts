@@ -169,7 +169,7 @@ export function useStudentCourses() {
       );
     },
     enabled: isAuthenticated,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 

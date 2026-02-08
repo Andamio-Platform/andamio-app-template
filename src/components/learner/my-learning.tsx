@@ -124,7 +124,7 @@ export function MyLearning() {
             description="Browse courses and submit your first assignment to get started."
             action={
               <Link href="/course">
-                <AndamioButton>Browse Courses</AndamioButton>
+                <AndamioButton size="sm"><CourseIcon className="mr-2 h-3 w-3" />Browse Courses</AndamioButton>
               </Link>
             }
           />

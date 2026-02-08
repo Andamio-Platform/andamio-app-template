@@ -146,6 +146,6 @@ export function useStudentCredentials() {
       return (result.data ?? []).map(transformStudentCredential);
     },
     enabled: isAuthenticated,
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 }

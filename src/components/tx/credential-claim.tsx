@@ -27,7 +27,9 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { CredentialIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
@@ -231,8 +233,22 @@ export function CredentialClaim({
           </div>
         )}
 
-        {/* Claim Button */}
-        {state !== "success" && !txConfirmed && (
+        {/* Claim Button - with confirmation since it's an irreversible on-chain action */}
+        {state !== "success" && !txConfirmed && state === "idle" && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton className="w-full" disabled={!hasAccessToken}>
+                <CredentialIcon className="h-4 w-4 mr-2" />
+                {ui.buttonText}
+              </AndamioButton>
+            }
+            title="Claim Your Credential?"
+            description="This adds a permanent credential to your wallet. This action is recorded on-chain and cannot be undone."
+            confirmText="Claim Credential"
+            onConfirm={handleClaim}
+          />
+        )}
+        {state !== "success" && !txConfirmed && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleClaim}

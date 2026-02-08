@@ -109,7 +109,7 @@ export function useOwnerProjects() {
       return items.map(transformProjectListItem);
     },
     enabled: isAuthenticated,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 

@@ -235,7 +235,7 @@ export function AuthStatusBar() {
               className="hidden sm:flex h-6 px-2 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
             >
               <LogOutIcon className="mr-1.5 h-3 w-3" />
-              Logout
+              Sign Out
             </AndamioButton>
           )}
         </div>

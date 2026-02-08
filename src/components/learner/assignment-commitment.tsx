@@ -558,6 +558,13 @@ export function AssignmentCommitment({
                     <EvidenceHashDisplay label="Submission Hash:" hash={commitment.networkEvidenceHash} />
                   )}
                 </>
+              ) : (localEvidenceContent ?? evidenceContent) ? (
+                <>
+                  <ContentDisplay content={(localEvidenceContent ?? evidenceContent)!} variant="muted" />
+                  <AndamioText variant="small" className="text-xs text-muted-foreground">
+                    Your work is being processed by the network. It may take a moment to appear.
+                  </AndamioText>
+                </>
               ) : (
                 <AndamioAlert>
                   <AlertIcon className="h-4 w-4" />

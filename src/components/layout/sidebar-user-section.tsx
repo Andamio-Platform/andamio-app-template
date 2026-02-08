@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { LogOutIcon } from "~/components/icons";
 import { PendingTxIndicator } from "~/components/tx/pending-tx-indicator";
 import { truncateWalletAddress } from "~/config";
@@ -128,25 +129,33 @@ export function SidebarUserSection({
           </div>
         </div>
 
-        {/* Disconnect Button */}
+        {/* Sign Out Button */}
         {showDisconnect && (
-          <AndamioButton
-            variant="ghost"
-            size="sm"
-            onClick={handleDisconnect}
-            className={cn(
-              "w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-              isExpanded ? "text-sm h-9 px-3" : "text-[11px] h-7 px-2"
-            )}
-          >
-            <LogOutIcon
-              className={cn(
-                "flex-shrink-0",
-                isExpanded ? "mr-2 h-4 w-4" : "mr-1.5 h-3 w-3"
-              )}
-            />
-            Disconnect
-          </AndamioButton>
+          <ConfirmDialog
+            trigger={
+              <AndamioButton
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+                  isExpanded ? "text-sm h-9 px-3" : "text-[11px] h-7 px-2"
+                )}
+              >
+                <LogOutIcon
+                  className={cn(
+                    "flex-shrink-0",
+                    isExpanded ? "mr-2 h-4 w-4" : "mr-1.5 h-3 w-3"
+                  )}
+                />
+                Sign Out
+              </AndamioButton>
+            }
+            title="Sign Out?"
+            description="You will need to reconnect your wallet and sign in again to continue."
+            confirmText="Sign Out"
+            variant="destructive"
+            onConfirm={handleDisconnect}
+          />
         )}
       </div>
     </div>

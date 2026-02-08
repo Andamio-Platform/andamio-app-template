@@ -193,7 +193,7 @@ export function useAssignmentCommitment(
       return transformAssignmentCommitment(data, courseId, moduleCode);
     },
     enabled: isAuthenticated && !!courseId && !!sltHash,
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 }
 

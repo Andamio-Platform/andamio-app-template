@@ -199,8 +199,8 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
           if (skipCeremony) {
             // Parent handles ceremony - just refresh and callback
             refreshAuth();
-            toast.success("Access Token Confirmed!", {
-              description: `Your alias "${alias}" is now live on-chain!`,
+            toast.success("Access Token Created!", {
+              description: `Your alias ${alias} is now live on Cardano`,
             });
             void onSuccess?.();
           } else {
@@ -445,12 +445,12 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
             <CelebrateIcon className="h-10 w-10 text-primary" />
           </div>
           <AndamioCardTitle className="text-2xl">
-            Access Token Confirmed!
+            Access Token Created!
           </AndamioCardTitle>
           <AndamioCardDescription className="mx-auto max-w-sm text-center text-base">
             Your alias{" "}
             <span className="font-mono font-semibold text-foreground">{confirmedAlias}</span>{" "}
-            is now live on-chain.
+            is now live on Cardano.
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-5">
@@ -614,7 +614,7 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
               idle: !walletAddress ? "Loading wallet..." : ui.buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
-              submitting: "Minting on Blockchain...",
+              submitting: "Creating...",
             }}
             leftIcon={state === "idle" ? <AccessTokenIcon className="h-5 w-5" /> : undefined}
             size="lg"

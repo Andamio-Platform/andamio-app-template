@@ -14,6 +14,7 @@ import {
   SitemapIcon,
   ThemeIcon,
   KeyIcon,
+  CredentialIcon,
 } from "~/components/icons";
 import type { NavSection } from "~/types/ui";
 import { BRANDING } from "./branding";
@@ -36,6 +37,12 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
         href: "/dashboard",
         icon: DashboardIcon,
         description: "Your personal hub",
+      },
+      {
+        name: "Credentials",
+        href: "/credentials",
+        icon: CredentialIcon,
+        description: "Your achievements",
       },
     ],
   },

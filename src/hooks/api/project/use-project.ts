@@ -616,7 +616,7 @@ export function useProject(projectId: string | undefined) {
       return transformProjectDetail(result.data);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 
@@ -649,7 +649,7 @@ export function useProjectRaw(projectId: string | undefined) {
       return result.data ?? null;
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 
@@ -781,7 +781,7 @@ export function useProjectTasks(projectId: string | undefined) {
       return items.map(transformMergedTask);
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 
@@ -831,7 +831,7 @@ export function useProjectTask(projectId: string | undefined, taskHash: string |
     },
     select: (tasks) => tasks.find((t) => t.taskHash === taskHash) ?? null,
     enabled: !!projectId && !!taskHash,
-    staleTime: 30 * 1000,
+    staleTime: 60_000,
   });
 }
 

@@ -12,6 +12,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
+import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import {
   AchievementIcon,
   RefreshIcon,
@@ -89,23 +90,19 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
           </div>
         </AndamioCardHeader>
         <AndamioCardContent>
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted mb-2">
-              <CourseIcon className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <AndamioText variant="small" className="font-medium">
-              No courses yet
-            </AndamioText>
-            <AndamioText variant="small" className="text-xs mt-1 text-muted-foreground max-w-[200px]">
-              Enroll in a course to start your learning journey on-chain
-            </AndamioText>
-            <Link href="/course" className="mt-3">
-              <AndamioButton size="sm">
-                <CourseIcon className="mr-2 h-3 w-3" />
-                Browse Courses
-              </AndamioButton>
-            </Link>
-          </div>
+          <AndamioEmptyState
+            icon={CourseIcon}
+            title="No Courses Yet"
+            description="Enroll in a course to start your learning journey on-chain."
+            action={
+              <Link href="/course">
+                <AndamioButton size="sm">
+                  <CourseIcon className="mr-2 h-3 w-3" />
+                  Browse Courses
+                </AndamioButton>
+              </Link>
+            }
+          />
         </AndamioCardContent>
       </AndamioCard>
     );

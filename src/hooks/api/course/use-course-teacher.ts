@@ -330,7 +330,7 @@ export function useTeacherCourses() {
       return (result.data ?? []).map(transformTeacherCourse);
     },
     enabled: isAuthenticated,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 60_000,
   });
 }
 
@@ -401,7 +401,7 @@ export function useTeacherAssignmentCommitments(courseId: string | undefined) {
       return rawCommitments.map(transformTeacherCommitment);
     },
     enabled: isAuthenticated && !!courseId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 60_000,
   });
 }
 
@@ -607,7 +607,7 @@ export function useTeacherCommitmentsQueries(courseIds: string[]) {
         return rawCommitments.map(transformTeacherCommitment);
       },
       enabled: isAuthenticated && courseIds.length > 0,
-      staleTime: 30 * 1000,
+      staleTime: 60_000,
     })),
   });
 }

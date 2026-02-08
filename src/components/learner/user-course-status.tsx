@@ -142,7 +142,7 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
           </div>
           {firstModuleCode && (
             <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
-              <AndamioButton className="w-full">
+              <AndamioButton>
                 Start First Module
                 <NextIcon className="h-4 w-4 ml-2" />
               </AndamioButton>
@@ -410,7 +410,7 @@ function CredentialClaimCTA({
           ) : nextModuleCode && remainingModules > 1 ? (
             <Link href={`/course/${courseId}/${nextModuleCode}`}>
               <AndamioButton variant="outline" className="w-full">
-                Continue to next module
+                Continue to {nextModule?.title ?? nextModule?.moduleCode ?? "next module"}
                 <NextIcon className="h-4 w-4 ml-2" />
               </AndamioButton>
             </Link>

@@ -121,7 +121,7 @@ export function EnrollInCourse({
           // Invalidate student courses cache so dashboard updates automatically
           void invalidateStudentCourses();
 
-          toast.success("Successfully Enrolled!", {
+          toast.success("You are Enrolled!", {
             description: `You're now enrolled in ${courseTitle ?? "this course"}`,
           });
 
@@ -298,7 +298,7 @@ export function EnrollInCourse({
                   <SuccessIcon className="h-5 w-5 text-primary" />
                   <div className="flex-1">
                     <AndamioText className="font-medium text-primary">
-                      Successfully Enrolled!
+                      You are Enrolled!
                     </AndamioText>
                     <AndamioText variant="small" className="text-xs">
                       {evidenceHash

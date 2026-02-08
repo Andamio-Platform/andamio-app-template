@@ -109,14 +109,14 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
   // ===========================================================================
 
   GLOBAL_GENERAL_ACCESS_TOKEN_MINT: {
-    buttonText: "Mint Access Token",
-    title: "Mint Access Token",
+    buttonText: "Create Access Token",
+    title: "Create Access Token",
     description: [
       "Mint your access token to participate in the Andamio protocol. This is required before you can enroll in courses or perform any other actions.",
     ],
     footerLink: getDocsUrl("accessTokenMint"),
     footerLinkText: "Tx Documentation",
-    successInfo: "Access token minted successfully!",
+    successInfo: "Access Token Created!",
     requiresDBUpdate: false, // No DB state to update after confirmation
     requiresOnChainConfirmation: true, // Track on-chain confirmation via gateway
   },
@@ -203,7 +203,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     ],
     footerLink: getDocsUrl("assignmentsAssess"),
     footerLinkText: "Tx Documentation",
-    successInfo: "Assignment assessment submitted successfully!",
+    successInfo: "Assessment Submitted!",
     requiresDBUpdate: true,
   },
 
@@ -212,20 +212,20 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
   // ===========================================================================
 
   COURSE_STUDENT_ASSIGNMENT_COMMIT: {
-    buttonText: "Commit to Assignment",
-    title: "Commit to Assignment",
+    buttonText: "Submit Assignment",
+    title: "Submit Assignment",
     description: [
-      "Commit to an assignment in this course. This creates an on-chain record of your commitment.",
+      "Submit an assignment in this course. This creates an on-chain record of your submission.",
       "You must select a module and provide assignment evidence.",
     ],
     footerLink: getDocsUrl("assignmentCommit"),
     footerLinkText: "Tx Documentation",
-    successInfo: "Successfully committed to assignment!",
+    successInfo: "Assignment Submitted!",
     requiresDBUpdate: true,
   },
 
   COURSE_STUDENT_ASSIGNMENT_UPDATE: {
-    buttonText: "Update Assignment",
+    buttonText: "Resubmit Assignment",
     title: "Update Assignment",
     description: [
       "Update your assignment evidence while keeping the same module commitment.",
@@ -233,7 +233,7 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
     ],
     footerLink: getDocsUrl("assignmentUpdate"),
     footerLinkText: "Tx Documentation",
-    successInfo: "Assignment updated successfully!",
+    successInfo: "Assignment Updated!",
     requiresDBUpdate: true,
   },
 

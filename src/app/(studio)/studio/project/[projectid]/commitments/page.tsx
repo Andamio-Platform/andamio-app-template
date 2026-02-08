@@ -93,18 +93,22 @@ const formatStatus = (status: string | undefined | null): string => {
 
 const getManagerStatusHint = (status: string | undefined | null): string | null => {
   switch (status) {
-    case "COMMITTED":
-      return "Contributor joined. You can assess now or wait for them to submit evidence.";
+    case "AWAITING_SUBMISSION":
+      return "Contributor joined. Waiting for them to submit evidence.";
     case "SUBMITTED":
       return "Evidence submitted. Ready for your review.";
+    case "PENDING_TX_COMMIT":
     case "PENDING_TX_ASSESS":
-      return "Your assessment transaction is in progress.";
+      return "A transaction is in progress.";
     case "ACCEPTED":
       return "You accepted this work. Reward is available to the contributor.";
     case "REFUSED":
       return "You refused this work. The contributor can resubmit with updated evidence.";
     case "DENIED":
       return "Permanently rejected. The contributor's deposit is forfeited.";
+    // Legacy (remove after migration confirmed)
+    case "COMMITTED":
+      return "Contributor joined. Waiting for them to submit evidence.";
     default:
       return null;
   }

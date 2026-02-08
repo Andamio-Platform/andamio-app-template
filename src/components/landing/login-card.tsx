@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { WalletIcon, SuccessIcon, LoadingIcon, ForwardIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -17,18 +16,11 @@ import {
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { MARKETING } from "~/config/marketing";
 
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
-
 /**
  * Landing page card for returning users.
  * Connect wallet -> auto-auth -> redirect to dashboard.
  */
 export function LoginCard() {
-  const [mounted, setMounted] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const {
     isAuthenticated,
@@ -42,18 +34,12 @@ export function LoginCard() {
 
   const copy = MARKETING.landingCards.signIn;
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Auto-redirect when authenticated with an access token
   React.useEffect(() => {
     if (isAuthenticated && user?.accessTokenAlias) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, user?.accessTokenAlias, router]);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   // Authenticated with access token — redirecting
   if (isAuthenticated && user?.accessTokenAlias) {
@@ -156,7 +142,7 @@ export function LoginCard() {
         <AndamioCardDescription>{copy.description}</AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent className="mt-auto">
-        <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+        <ConnectWalletButton />
       </AndamioCardContent>
     </AndamioCard>
   );

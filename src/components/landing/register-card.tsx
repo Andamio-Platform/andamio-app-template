@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AccessTokenIcon, SuccessIcon, LoadingIcon, ForwardIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -16,18 +15,11 @@ import {
 import { MintAccessTokenSimple } from "~/components/tx/mint-access-token-simple";
 import { MARKETING } from "~/config/marketing";
 
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
-
 /**
  * Landing page card for new users (grid column version).
  * Shows wallet connect or status indicators.
  */
 export function RegisterCard() {
-  const [mounted, setMounted] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const {
     isAuthenticated,
     user,
@@ -36,12 +28,6 @@ export function RegisterCard() {
   } = useAndamioAuth();
 
   const copy = MARKETING.landingCards.getStarted;
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   // Already has an access token
   if (isAuthenticated && user?.accessTokenAlias) {
@@ -99,7 +85,7 @@ export function RegisterCard() {
         <AndamioCardDescription>{copy.description}</AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent className="mt-auto">
-        <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+        <ConnectWalletButton />
       </AndamioCardContent>
     </AndamioCard>
   );

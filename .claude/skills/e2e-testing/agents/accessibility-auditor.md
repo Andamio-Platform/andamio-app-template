@@ -252,17 +252,17 @@ Add `role="status"` and `aria-live="polite"` to the status container:
 **Elements:** 1 affected
 
 **Description:**
-The wallet connect button (from CardanoWallet component) doesn't have an accessible name when showing only an icon.
+The wallet connect button (`ConnectWalletButton`) should have an accessible name when showing only an icon.
 
 **Affected Elements:**
-- `CardanoWallet` connect button
+- `ConnectWalletButton` connect trigger
 
 **Fix:**
-This may require coordination with Mesh SDK. As a workaround, wrap in a container with `aria-label`:
+`ConnectWalletButton` is a custom component using shadcn Button. Ensure the trigger has an `aria-label`:
 ```tsx
-<div aria-label="Connect Cardano wallet">
-  <CardanoWallet />
-</div>
+<Button aria-label="Connect Cardano wallet">
+  <WalletIcon />
+</Button>
 ```
 
 ### Moderate

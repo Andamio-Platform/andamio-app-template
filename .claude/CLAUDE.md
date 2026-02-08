@@ -26,6 +26,24 @@ Cardano dApp starter: Next.js 15, tRPC v11, Tailwind CSS v4, Mesh SDK, shadcn/ui
 - **Only** use semantic colors: `primary`, `secondary`, `muted`, `destructive`
 - **Never** use hardcoded colors like `text-green-600` or `bg-blue-500`
 - Use `AndamioText` for paragraphs, not raw `<p>` tags
+- Headings (h1-h6) have base defaults in `@layer base` — override freely with Tailwind utilities
+- For content-heavy sections (paragraphs, lists, blockquotes), wrap in `className="prose-content"`
+
+### CSS Architecture (Tailwind v4 Cascade Layers)
+- Layer order: `@layer base` < `@layer components` < `@layer utilities` < unlayered
+- **Base**: heading defaults (h1-h6), body/html reset — NO `!important`, freely overridable
+- **Components**: `.prose-content`, card augmentation, table augmentation
+- **Utilities**: `.focus-ring`, `.hover-lift`, etc.
+- **Unlayered**: brand overrides (tabs, checkbox) — highest priority without needing `!important`
+- `.prose-content` scopes paragraph spacing, list markers, blockquote, code styles to descendants only
+- No global form/input/button styles — shadcn components own their own styling
+- shadcn Card uses `py-6` on card + `px-6` on children — don't add `p-6` to card (double horizontal padding)
+
+### Wallet UI
+- **Never** import `@meshsdk/react/styles.css` — it bundles a full TW3 preflight that destroys our design system at any layer priority
+- **Never** import `CardanoWallet` from `@meshsdk/react` — use `ConnectWalletButton` from `~/components/auth/connect-wallet-button`
+- `ConnectWalletButton` uses Mesh hooks (`useWallet`, `useWalletList`) with our shadcn Dialog/Button/DropdownMenu/Tooltip
+- No `isDark`/`mounted`/`useTheme`/`WEB3_SERVICES_CONFIG` boilerplate needed — component handles its own theming via semantic colors
 
 ### Text Components
 ```typescript
@@ -85,6 +103,7 @@ Wallet addresses: Convert hex to bech32 using `core.Address.fromString().toBech3
 | Category | Files |
 |----------|-------|
 | Auth | `hooks/auth/use-andamio-auth.ts`, `lib/andamio-auth.ts` |
+| Wallet | `components/auth/connect-wallet-button.tsx` |
 | API | `lib/gateway.ts`, `types/generated/` |
 | TX | `hooks/tx/use-transaction.ts`, `hooks/tx/use-tx-stream.ts` |
 | Layout | `components/layout/app-layout.tsx`, `app-sidebar.tsx` |

@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Custom ConnectWalletButton** (February 8, 2026): Replaced Mesh SDK `CardanoWallet` with custom `ConnectWalletButton` component
+  - New `src/components/auth/connect-wallet-button.tsx` — uses Mesh hooks (`useWallet`, `useWalletList`) with shadcn Dialog/Button/DropdownMenu/Tooltip
+  - Eliminates `@meshsdk/react/styles.css` import that bundled a full TW3 preflight conflicting with our design system
+  - Removed `isDark`/`mounted`/`useTheme`/`WEB3_SERVICES_CONFIG` boilerplate from all wallet-consuming components
+  - Updated all landing cards, auth components, migrate page, and TX components to use new component
+  - Removed `import "@meshsdk/react/styles.css"` from root layout
+- **Simplified Assignment Commitment Lifecycle** (February 8, 2026): Updated frontend for simplified commitment status model
+  - `getStatusFromCommitment()` simplified: COMMITTED is now the base state (replaces ASSIGNED/REQUESTED)
+  - Studio commitments page and module card updated for new status flow
+  - `useStudentAssignmentCommitments` hook updated for simplified API response
+  - Removed legacy status branches that mapped to obsolete states
+- **CSS Cleanup** (February 8, 2026): Major cleanup of `globals.css`
+  - Removed obsolete wallet-related styles (Mesh CardanoWallet overrides no longer needed)
+  - Consolidated cascade layer structure
+
+### Changed
 - **Studio Course Editor UX Overhaul** (February 7, 2026): Major cleanup of `/studio/course/[coursenft]` tabs and settings
   - Tabs renamed: Course, Credentials, Commitments, Settings (was: Course Outline, Credentials, Commitments, Settings)
   - Combined Course NFT + Module Verification into compact single-row header with inline stats

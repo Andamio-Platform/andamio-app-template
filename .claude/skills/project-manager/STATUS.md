@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: February 7, 2026
+> **Last Updated**: February 8, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -23,6 +23,8 @@ Current implementation status of the Andamio T3 App Template.
 | **Unified Studio** | **✅ Complete** | Persistent sidebar, split-pane layout (PR #193) |
 | **Wallet Switch Detection** | **✅ Complete** | Auto-logout on wallet change (PR #194) |
 | **Migration Testing Fixes** | **✅ Complete** | PRs #189–#192: titles, UX copy, auth gates, wallet reconnect |
+| **Custom Wallet UI** | **✅ Complete** | Replaced Mesh CardanoWallet with custom ConnectWalletButton |
+| **Simplified Assignment Lifecycle** | **✅ Complete** | Frontend updated for simplified commitment status model |
 | **API Hooks Cleanup** | **🔄 In Progress** | Course ✅ / Project Studio ✅ / Component Extraction ✅ / Project Hooks ⬜ |
 
 ---

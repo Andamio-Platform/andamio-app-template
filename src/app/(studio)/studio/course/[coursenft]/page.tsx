@@ -178,7 +178,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // Fetch assignment commitments for this course, split into categories
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
-  const RESOLVED_STATUSES = ["ACCEPTED", "DENIED"];
+  const RESOLVED_STATUSES = ["ACCEPTED", "DENIED", "REFUSED"];
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
     [allCommitmentsForCourse]
@@ -391,9 +391,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   };
 
   const handleDeleteModule = async (moduleCode: string, moduleTitle: string | null) => {
-    if (!confirm(`Delete module "${moduleTitle ?? moduleCode}"? This cannot be undone.`)) {
-      return;
-    }
     try {
       await deleteModuleMutation.mutateAsync({
         courseId: courseId,
@@ -1108,7 +1105,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                           </div>
                           <AndamioBadge variant="outline" className="text-[10px]">
                             {commitment.commitmentStatus === "LEFT" ? "Left" :
-                             commitment.commitmentStatus === "DRAFT" ? "Draft" : "Committed"}
+                             commitment.commitmentStatus === "DRAFT" ? "Draft" :
+                             commitment.commitmentStatus === "AWAITING_SUBMISSION" ? "Awaiting Submission" :
+                             commitment.commitmentStatus === "SUBMITTED" ? "Submitted" : "In Progress"}
                           </AndamioBadge>
                         </div>
                       </div>
@@ -1148,7 +1147,8 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                             variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
                             className="text-[10px]"
                           >
-                            {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Denied"}
+                            {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" :
+                             commitment.commitmentStatus === "REFUSED" ? "Refused" : "Denied"}
                           </AndamioBadge>
                         </div>
                       </div>

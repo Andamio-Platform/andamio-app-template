@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import {
@@ -26,11 +25,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { getTransactionExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
 
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
-
 interface FirstLoginCardProps {
   alias: string;
   txHash: string | null;
@@ -47,8 +41,6 @@ interface FirstLoginCardProps {
  * 5. Wallet connects → auto-auth picks up the new token → redirect to dashboard
  */
 export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
-  const [mounted, setMounted] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const {
     isAuthenticated,
@@ -64,12 +56,6 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
   const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     txHash,
   );
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   const explorerUrl = txHash
     ? getTransactionExplorerUrl(txHash, env.NEXT_PUBLIC_CARDANO_NETWORK)
@@ -154,7 +140,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           <AndamioText variant="small" className="text-center">
             Wait a moment for the transaction to confirm, then reconnect your wallet.
           </AndamioText>
-          <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+          <ConnectWalletButton />
         </AndamioCardContent>
       </AndamioCard>
     );
@@ -176,7 +162,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
-          <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+          <ConnectWalletButton />
           <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
             <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <AndamioText variant="small" className="text-muted-foreground">

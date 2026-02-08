@@ -1,5 +1,4 @@
 import "~/styles/globals.css";
-import "@meshsdk/react/styles.css";
 
 import { type Metadata, type Viewport } from "next";
 import { Inter } from "next/font/google";

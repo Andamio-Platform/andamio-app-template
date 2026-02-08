@@ -95,23 +95,25 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
   return (
     <div className="flex h-full flex-col bg-gradient-to-br from-background via-background to-primary/5">
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-lg text-center">
+        <div className="max-w-lg text-center space-y-6">
           {/* Icon */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto mb-6 shadow-lg shadow-primary/10">
-            <CourseIcon className="h-10 w-10 text-primary" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto shadow-lg shadow-primary/10">
+            <CourseIcon className="h-8 w-8 text-primary" />
           </div>
 
           {/* Title */}
-          <h1>Studio</h1>
-          <AndamioText variant="muted" className="text-base mb-8">
-            Create, manage, and publish courses and projects on Cardano
-          </AndamioText>
+          <div>
+            <h1 className="mb-2">Studio</h1>
+            <AndamioText variant="muted" as="span" className="text-base">
+              Create, manage, and publish courses and projects on Cardano
+            </AndamioText>
+          </div>
 
           {/* Quick Actions - Stacked */}
-          <div className="flex flex-col gap-6 mb-8 max-w-xs mx-auto">
-            <div className="space-y-2 text-center">
-              <AndamioButton size="lg" className="w-full" onClick={onCreateCourse}>
-                <CourseIcon className="mr-2 h-5 w-5" />
+          <div className="flex flex-col gap-4 max-w-xs mx-auto">
+            <div className="space-y-1.5 text-center">
+              <AndamioButton onClick={onCreateCourse}>
+                <CourseIcon className="mr-2 h-4 w-4" />
                 Create a Course
               </AndamioButton>
               <AndamioText variant="small" className="text-muted-foreground">
@@ -119,9 +121,9 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
               </AndamioText>
             </div>
 
-            <div className="space-y-2 text-center">
-              <AndamioButton size="lg" variant="outline" className="w-full" onClick={onCreateProject}>
-                <ProjectIcon className="mr-2 h-5 w-5" />
+            <div className="space-y-1.5 text-center">
+              <AndamioButton variant="outline" onClick={onCreateProject}>
+                <ProjectIcon className="mr-2 h-4 w-4" />
                 Create a Project
               </AndamioButton>
               <AndamioText variant="small" className="text-muted-foreground">

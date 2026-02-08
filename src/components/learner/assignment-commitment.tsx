@@ -424,15 +424,15 @@ export function AssignmentCommitment({
             />
           </div>
 
-        ) : commitment?.networkStatus === "COMMITTED" && !commitment.networkEvidence ? (
-          /* Branch: Committed but no evidence — student needs to submit work */
+        ) : commitment?.networkStatus === "IN_PROGRESS" && !commitment.networkEvidence ? (
+          /* Branch: Awaiting submission — student needs to submit work */
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
               <PendingIcon className="h-8 w-8 text-secondary shrink-0" />
               <div>
                 <AndamioText className="font-medium">Submit Your Work</AndamioText>
                 <AndamioText variant="small" className="text-muted-foreground">
-                  You&apos;ve committed to this assignment. Enter your work below and submit it for review.
+                  Enter your work below and submit it for your instructor to review.
                 </AndamioText>
               </div>
             </div>
@@ -593,15 +593,15 @@ function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
     );
   }
 
-  if (networkStatus === "PENDING_TX_COMMITMENT_MADE") {
+  if (networkStatus === "CREDENTIAL_CLAIMED") {
     return (
-      <div className="rounded-lg border bg-muted/30 p-4">
+      <div className="rounded-lg border bg-primary/10 border-primary/20 p-4">
         <div className="flex items-center gap-3">
-          <LoadingIcon className="h-5 w-5 animate-spin text-secondary shrink-0" />
+          <SuccessIcon className="h-5 w-5 text-primary shrink-0" />
           <div>
-            <AndamioText className="font-medium">Submitting to blockchain...</AndamioText>
+            <AndamioText className="font-medium">Credential Claimed</AndamioText>
             <AndamioText variant="small" className="text-xs">
-              Your commitment transaction is being processed.
+              You have claimed your credential for this assignment.
             </AndamioText>
           </div>
         </div>
@@ -609,15 +609,33 @@ function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
     );
   }
 
-  if (networkStatus && networkStatus !== "ASSIGNMENT_ACCEPTED" && networkStatus !== "ASSIGNMENT_REFUSED") {
+  // Any PENDING_TX_* state — transaction is being processed
+  if (networkStatus.startsWith("PENDING_TX")) {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-4">
+        <div className="flex items-center gap-3">
+          <LoadingIcon className="h-5 w-5 animate-spin text-secondary shrink-0" />
+          <div>
+            <AndamioText className="font-medium">Processing transaction...</AndamioText>
+            <AndamioText variant="small" className="text-xs">
+              Your transaction is being confirmed on the blockchain.
+            </AndamioText>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // IN_PROGRESS — waiting for student to submit
+  if (networkStatus === "IN_PROGRESS") {
     return (
       <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
         <div className="flex items-center gap-3">
           <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
           <div>
-            <AndamioText className="font-medium">Assignment Submitted</AndamioText>
+            <AndamioText className="font-medium">In Progress</AndamioText>
             <AndamioText variant="small" className="text-xs">
-              Your assignment has been recorded and is being processed.
+              Your assignment is in progress. Submit your work when ready.
             </AndamioText>
           </div>
         </div>

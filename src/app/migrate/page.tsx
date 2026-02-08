@@ -3,8 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
-import { CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
@@ -34,16 +33,9 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 // V1 access token policy ID
 const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
 
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
-
 type MigrateState = "no-wallet" | "scanning" | "no-token" | "ready" | "success";
 
 export default function MigratePage() {
-  const [mounted, setMounted] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const router = useRouter();
   const { wallet, connected } = useWallet();
 
@@ -52,12 +44,6 @@ export default function MigratePage() {
 
   const { execute, state: txState, result, error, reset } = useTransaction();
   const { isSuccess: streamSuccess } = useTxStream(result?.txHash ?? null);
-
-  const isDark = mounted && resolvedTheme === "dark";
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Scan wallet for V1 token when connected
   React.useEffect(() => {
@@ -149,9 +135,7 @@ export default function MigratePage() {
             </AndamioCardHeader>
             <AndamioCardContent>
               <div className="flex justify-center">
-                {mounted && (
-                  <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
-                )}
+                <ConnectWalletButton />
               </div>
             </AndamioCardContent>
           </AndamioCard>

@@ -57,14 +57,14 @@ const STATUS_MAP: Record<string, string> = {
   SUBMITTED: "PENDING_APPROVAL",
   ACCEPTED: "ASSIGNMENT_ACCEPTED",
   REFUSED: "ASSIGNMENT_REFUSED",
+  CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
+  LEFT: "NOT_STARTED",
+  AWAITING_SUBMISSION: "IN_PROGRESS",
   // Legacy aliases (gateway may still send these)
   APPROVED: "ASSIGNMENT_ACCEPTED",
   REJECTED: "ASSIGNMENT_REFUSED",
-  // DB API statuses that should pass through with app-level names
-  COMMITTED: "COMMITTED",
-  AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
-  CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
-  LEFT: "LEFT",
+  // Legacy (backwards compat during rollout — remove after migration confirmed)
+  COMMITTED: "PENDING_APPROVAL",
 };
 
 function normalizeStatus(raw: RawStudentCommitment): string {
@@ -105,9 +105,10 @@ function transformStudentCommitment(
 /** Status priority: higher index = higher priority */
 const STATUS_PRIORITY: string[] = [
   "ASSIGNMENT_REFUSED",
-  "PENDING_TX_COMMITMENT_MADE",
+  "IN_PROGRESS",
   "PENDING_APPROVAL",
   "ASSIGNMENT_ACCEPTED",
+  "CREDENTIAL_CLAIMED",
 ];
 
 /**

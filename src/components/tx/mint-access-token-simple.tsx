@@ -29,8 +29,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet, CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { useWallet } from "@meshsdk/react";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { core } from "@meshsdk/core";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -63,12 +63,6 @@ import { TRANSACTION_UI } from "~/config/transaction-ui";
 import { useUpdateAccessTokenAlias } from "~/hooks/api/use-user";
 import { getTransactionExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
-
-// Web3 Services config for CardanoWallet component
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
 
 export interface MintAccessTokenSimpleProps {
   /**
@@ -118,8 +112,6 @@ function isValidAlias(alias: string): boolean {
  */
 export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = false }: MintAccessTokenSimpleProps) {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const { resolvedTheme } = useTheme();
   const { wallet, connected } = useWallet();
   const {
     user,
@@ -138,13 +130,6 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
   const [ceremonyState, setCeremonyState] = useState<CeremonyState>("minting");
   const [confirmedAlias, setConfirmedAlias] = useState<string>("");
   const [confirmedTxHash, setConfirmedTxHash] = useState<string | null>(null);
-
-  // Handle theme for CardanoWallet component
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   // Check for pending alias from registration flow (stored in localStorage)
   useEffect(() => {
@@ -431,7 +416,7 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
               </AndamioText>
             </div>
           )}
-          <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+          <ConnectWalletButton />
           <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
             <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <AndamioText variant="small" className="text-muted-foreground">

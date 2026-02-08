@@ -6,6 +6,17 @@ import { type CourseModule, type CourseModuleStatus } from "~/hooks/api/course/u
 import { AndamioCard } from "~/components/andamio/andamio-card";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/components/ui/alert-dialog";
 import { cn } from "~/lib/utils";
 
 // =============================================================================
@@ -129,7 +140,12 @@ export function StudioModuleCard({
   // Only allow delete for draft modules (not minted or pending)
   const canDelete = onDelete && status === "draft";
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDeleteConfirm = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onDelete?.();
@@ -234,15 +250,36 @@ export function StudioModuleCard({
 
             {/* Delete Button - Only for DRAFT modules */}
             {canDelete && (
-              <AndamioButton
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <DeleteIcon className="h-4 w-4" />
-              </AndamioButton>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <AndamioButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteClick}
+                    disabled={isDeleting}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <DeleteIcon className="h-4 w-4" />
+                  </AndamioButton>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete module</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Delete &ldquo;{courseModule.title ?? moduleCode}&rdquo;? This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteConfirm}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
 
             {/* Arrow */}

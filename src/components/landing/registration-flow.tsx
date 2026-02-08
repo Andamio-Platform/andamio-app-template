@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CardanoWallet, useWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { useWallet } from "@meshsdk/react";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { core } from "@meshsdk/core";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -23,11 +23,6 @@ import {
   LoadingIcon,
   ShieldIcon,
 } from "~/components/icons";
-
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
 
 // Alias must contain only alphanumeric characters and underscores
 const ALIAS_PATTERN = /^[a-zA-Z0-9_]+$/;
@@ -52,10 +47,8 @@ interface RegistrationFlowProps {
  * 3. Sign transaction
  */
 export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
-  const [mounted, setMounted] = React.useState(false);
   const [alias, setAlias] = useState("");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const { resolvedTheme } = useTheme();
   const { wallet, connected } = useWallet();
   const {
     isAuthenticated,
@@ -65,12 +58,6 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
     logout,
   } = useAndamioAuth();
   const { state: txState, execute, reset } = useTransaction();
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   // Get wallet address when connected (with bech32 conversion)
   useEffect(() => {
@@ -248,7 +235,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
             </div>
 
             <div className="flex justify-center">
-              <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+              <ConnectWalletButton />
             </div>
 
             {onBack && (

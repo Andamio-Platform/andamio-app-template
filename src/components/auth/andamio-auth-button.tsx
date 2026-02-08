@@ -2,20 +2,13 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { CardanoWallet } from "@meshsdk/react";
-import { useTheme } from "next-themes";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { LoadingIcon } from "~/components/icons";
-
-// Memoize web3Services config to prevent creating new object on every render
-const WEB3_SERVICES_CONFIG = {
-  networkId: 0,
-  projectId: "13ff4981-bdca-4aad-ba9a-41fe1018fdb0",
-} as const;
 
 /**
  * Complete authentication interface for Andamio
@@ -28,8 +21,6 @@ const WEB3_SERVICES_CONFIG = {
  */
 export function AndamioAuthButton() {
   const router = useRouter();
-  const [mounted, setMounted] = React.useState(false);
-  const { resolvedTheme } = useTheme();
   const {
     isAuthenticated,
     user,
@@ -40,11 +31,6 @@ export function AndamioAuthButton() {
     authenticate,
     logout,
   } = useAndamioAuth();
-
-  // Prevent hydration mismatch - resolvedTheme is undefined during SSR
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLogout = React.useCallback(() => {
     logout();
@@ -133,9 +119,6 @@ export function AndamioAuthButton() {
     );
   }
 
-  // Determine theme only after mounting to prevent hydration mismatch
-  const isDark = mounted && resolvedTheme === "dark";
-
   // No wallet connected
   return (
     <AndamioCard>
@@ -146,7 +129,7 @@ export function AndamioAuthButton() {
         </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <CardanoWallet isDark={isDark} web3Services={WEB3_SERVICES_CONFIG} />
+        <ConnectWalletButton />
       </AndamioCardContent>
     </AndamioCard>
   );

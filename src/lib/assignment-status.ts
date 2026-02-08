@@ -9,25 +9,25 @@ export type AssignmentStatus =
 
 const STATUS_ALIASES: Record<string, AssignmentStatus> = {
   NOT_STARTED: "NOT_STARTED",
-  SAVE_FOR_LATER: "IN_PROGRESS",
   IN_PROGRESS: "IN_PROGRESS",
+  AWAITING_SUBMISSION: "IN_PROGRESS",
   DRAFT: "IN_PROGRESS",
-  COMMITMENT: "IN_PROGRESS",
-  NETWORK_READY: "IN_PROGRESS",
   PENDING_APPROVAL: "PENDING_APPROVAL",
   ASSIGNMENT_ACCEPTED: "ASSIGNMENT_ACCEPTED",
   ASSIGNMENT_DENIED: "ASSIGNMENT_DENIED",
   ASSIGNMENT_REFUSED: "ASSIGNMENT_DENIED",
   CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
   ASSIGNMENT_LEFT: "NOT_STARTED",
-  // DB API statuses (from andamio-db-api-go enums)
-  COMMITTED: "IN_PROGRESS",
-  AWAITING_SUBMISSION: "IN_PROGRESS",
   LEFT: "NOT_STARTED",
-  // Andamioscan on-chain status values (lowercase originals, uppercased by normalizeAssignmentStatus)
+  // Andamioscan on-chain status values (for source: "chain_only" responses)
   COMPLETED: "CREDENTIAL_CLAIMED",
   CURRENT: "IN_PROGRESS",
-  PENDING: "IN_PROGRESS",
+  PENDING: "PENDING_APPROVAL",
+  // Legacy (remove after migration confirmed)
+  COMMITTED: "PENDING_APPROVAL",
+  SAVE_FOR_LATER: "IN_PROGRESS",
+  COMMITMENT: "IN_PROGRESS",
+  NETWORK_READY: "IN_PROGRESS",
 };
 
 export function normalizeAssignmentStatus(

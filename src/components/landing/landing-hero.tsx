@@ -164,7 +164,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
 
       {/* CTA Cards */}
       <div className="pt-16 w-full max-w-4xl">
-        <hr style={{ borderColor: 'color-mix(in oklch, var(--foreground) 30%, transparent)' }} />
+        <hr className="border-border" />
       </div>
       <div className="pt-6 w-full max-w-4xl">
         <div className="grid gap-6 sm:grid-cols-3">

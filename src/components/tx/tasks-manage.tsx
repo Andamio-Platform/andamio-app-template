@@ -590,11 +590,11 @@ export function TasksManage({
 
         {/* Stalled — TX confirmed on-chain but gateway DB sync failed */}
         {isStalled && (
-          <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4">
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
             <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-yellow-600" />
+              <SuccessIcon className="h-5 w-5 text-warning" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-yellow-600">
+                <AndamioText className="font-medium text-warning">
                   Transaction Confirmed
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">

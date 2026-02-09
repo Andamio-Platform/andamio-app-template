@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -28,8 +28,13 @@ import {
   completeDevRegistration,
   loginWithGateway,
   requestApiKey,
+  getDeveloperProfile,
+  rotateApiKey,
+  deleteApiKey,
+  getStoredDevJWT,
   storeDevJWT,
   type ApiKeyResponse,
+  type DeveloperProfile,
   type DevRegisterSession,
   type WalletSignature,
 } from "~/lib/andamio-auth";
@@ -59,11 +64,17 @@ export default function ApiSetupPage() {
 
   const [apiKey, setApiKey] = useState<ApiKeyResponse | null>(null);
   const [apiKeyName, setApiKeyName] = useState("andamio-app");
+  const [developerProfile, setDeveloperProfile] = useState<DeveloperProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [activeKeyAction, setActiveKeyAction] = useState<string | null>(null);
+  const [devJwt, setDevJwt] = useState<string | null>(null);
 
   useEffect(() => {
     if (gatewayJwt) {
       storeDevJWT(gatewayJwt);
     }
+    setDevJwt(gatewayJwt ?? getStoredDevJWT());
   }, [gatewayJwt]);
 
   // Detect wallet and access token
@@ -226,12 +237,89 @@ export default function ApiSetupPage() {
     try {
       const response = await requestApiKey(gatewayJwt, apiKeyName.trim());
       setApiKey(response);
+      await loadDeveloperProfile();
       setCurrentStep("complete");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate API key");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadDeveloperProfile = useCallback(async () => {
+    const token = devJwt ?? getStoredDevJWT();
+    if (!token) return;
+
+    setIsProfileLoading(true);
+    setProfileError(null);
+
+    try {
+      const profile = await getDeveloperProfile(token);
+      setDeveloperProfile(profile);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Failed to load API keys");
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [devJwt]);
+
+  async function handleRotateKey(keyName: string) {
+    const token = devJwt ?? getStoredDevJWT();
+    if (!token) return;
+
+    const confirmed = window.confirm(`Rotate API key \"${keyName}\"?`);
+    if (!confirmed) return;
+
+    setActiveKeyAction(`rotate:${keyName}`);
+    setProfileError(null);
+
+    try {
+      await rotateApiKey(token, keyName);
+      await loadDeveloperProfile();
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Failed to rotate API key");
+    } finally {
+      setActiveKeyAction(null);
+    }
+  }
+
+  async function handleDeleteKey(keyName: string) {
+    const token = devJwt ?? getStoredDevJWT();
+    if (!token) return;
+
+    const confirmed = window.confirm(`Delete API key \"${keyName}\"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setActiveKeyAction(`delete:${keyName}`);
+    setProfileError(null);
+
+    try {
+      await deleteApiKey(token, keyName);
+      await loadDeveloperProfile();
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Failed to delete API key");
+    } finally {
+      setActiveKeyAction(null);
+    }
+  }
+
+  useEffect(() => {
+    if (devJwt || getStoredDevJWT()) {
+      void loadDeveloperProfile();
+    }
+  }, [devJwt, loadDeveloperProfile]);
+
+  const maskApiKey = (rawKey?: string) => {
+    if (!rawKey) return "Hidden";
+    if (rawKey.length <= 8) return `${rawKey[0]}••••${rawKey[rawKey.length - 1]}`;
+    return `${rawKey.slice(0, 4)}••••${rawKey.slice(-4)}`;
+  };
+
+  const formatDateTime = (value: string) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleString();
   };
 
   return (
@@ -604,6 +692,97 @@ export default function ApiSetupPage() {
                 X-API-Key: {apiKey.apiKey}
               </pre>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {devJwt && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyIcon className="h-5 w-5" />
+              Your API Keys
+            </CardTitle>
+            <CardDescription>
+              View and manage your existing API keys (keys are hidden after creation)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profileError && (
+              <Alert variant="destructive">
+                <ErrorIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{profileError}</AlertDescription>
+              </Alert>
+            )}
+
+            {isProfileLoading ? (
+              <div className="text-sm text-muted-foreground">Loading API keys...</div>
+            ) : developerProfile?.activeKeys?.length ? (
+              <div className="space-y-3">
+                {developerProfile.activeKeys.map((key) => (
+                  <div key={key.name} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{key.name}</span>
+                          <Badge variant={key.isActive ? "secondary" : "outline"}>
+                            {key.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Created {formatDateTime(key.createdAt)} • Expires {formatDateTime(key.expiresAt)}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRotateKey(key.name)}
+                          disabled={activeKeyAction !== null}
+                        >
+                          {activeKeyAction === `rotate:${key.name}` && (
+                            <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          )}
+                          Rotate
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteKey(key.name)}
+                          disabled={activeKeyAction !== null}
+                        >
+                          {activeKeyAction === `delete:${key.name}` && (
+                            <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          )}
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-muted px-3 py-2 text-xs font-mono">
+                      {maskApiKey(key.apiKey)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Alert>
+                <KeyIcon className="h-4 w-4" />
+                <AlertTitle>No API keys yet</AlertTitle>
+                <AlertDescription>
+                  Generate your first API key above to get started.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              variant="outline"
+              onClick={() => void loadDeveloperProfile()}
+              disabled={isProfileLoading}
+            >
+              {isProfileLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+              Refresh Keys
+            </Button>
           </CardContent>
         </Card>
       )}

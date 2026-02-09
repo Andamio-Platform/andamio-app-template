@@ -19,6 +19,9 @@ import {
   WalletIcon,
   UserIcon,
   SignatureIcon,
+  MailIcon,
+  AlertIcon,
+  SendIcon,
 } from "~/components/icons";
 import { env } from "~/env";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
@@ -33,10 +36,13 @@ import {
   deleteApiKey,
   getStoredDevJWT,
   storeDevJWT,
+  getEmailVerificationStatus,
+  resendVerificationEmail,
   type ApiKeyResponse,
   type DeveloperProfile,
   type DevRegisterSession,
   type WalletSignature,
+  type EmailVerificationStatus,
 } from "~/lib/andamio-auth";
 import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -69,6 +75,12 @@ export default function ApiSetupPage() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [activeKeyAction, setActiveKeyAction] = useState<string | null>(null);
   const [devJwt, setDevJwt] = useState<string | null>(null);
+
+  // Email verification state
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<EmailVerificationStatus | null>(null);
+  const [isVerificationLoading, setIsVerificationLoading] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (gatewayJwt) {
@@ -309,6 +321,55 @@ export default function ApiSetupPage() {
     }
   }, [devJwt, loadDeveloperProfile]);
 
+  // Load email verification status when devJwt is available
+  const loadEmailVerificationStatus = useCallback(async () => {
+    const token = devJwt ?? getStoredDevJWT();
+    if (!token) return;
+
+    setIsVerificationLoading(true);
+    setVerificationError(null);
+
+    try {
+      const status = await getEmailVerificationStatus(token);
+      setEmailVerificationStatus(status);
+    } catch (err) {
+      // Only set error if it's not a 404 (endpoint might not exist yet)
+      const errorMessage = err instanceof Error ? err.message : "Failed to check verification status";
+      if (!errorMessage.includes("404")) {
+        setVerificationError(errorMessage);
+      }
+    } finally {
+      setIsVerificationLoading(false);
+    }
+  }, [devJwt]);
+
+  useEffect(() => {
+    if (devJwt || getStoredDevJWT()) {
+      void loadEmailVerificationStatus();
+    }
+  }, [devJwt, loadEmailVerificationStatus]);
+
+  // Handle resend verification email
+  async function handleResendVerification() {
+    const token = devJwt ?? getStoredDevJWT();
+    if (!token) return;
+
+    setIsVerificationLoading(true);
+    setVerificationError(null);
+    setResendSuccess(null);
+
+    try {
+      const result = await resendVerificationEmail(token);
+      setResendSuccess(result.message);
+      // Refresh status after resending
+      await loadEmailVerificationStatus();
+    } catch (err) {
+      setVerificationError(err instanceof Error ? err.message : "Failed to resend verification email");
+    } finally {
+      setIsVerificationLoading(false);
+    }
+  }
+
   const maskApiKey = (rawKey?: string) => {
     if (!rawKey) return "Hidden";
     if (rawKey.length <= 8) return `${rawKey[0]}••••${rawKey[rawKey.length - 1]}`;
@@ -366,6 +427,76 @@ export default function ApiSetupPage() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Email Verification Required - shown when logged in but email not verified */}
+      {devJwt && emailVerificationStatus && !emailVerificationStatus.emailVerified && (
+        <Card className="border-warning">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertIcon className="h-5 w-5 text-warning" />
+              Email Verification Required
+            </CardTitle>
+            <CardDescription>
+              Please verify your email address to unlock all features
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {verificationError && (
+              <Alert variant="destructive">
+                <ErrorIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{verificationError}</AlertDescription>
+              </Alert>
+            )}
+
+            {resendSuccess && (
+              <Alert>
+                <SuccessIcon className="h-4 w-4" />
+                <AlertTitle>Email Sent</AlertTitle>
+                <AlertDescription>{resendSuccess}</AlertDescription>
+              </Alert>
+            )}
+
+            <Alert>
+              <MailIcon className="h-4 w-4" />
+              <AlertTitle>Check Your Inbox</AlertTitle>
+              <AlertDescription>
+                We sent a verification link to your email address. Click the link to verify your account.
+                {emailVerificationStatus.verificationEmailSentAt && (
+                  <span className="block mt-1 text-xs text-muted-foreground">
+                    Last sent: {new Date(emailVerificationStatus.verificationEmailSentAt).toLocaleString()}
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleResendVerification}
+                disabled={isVerificationLoading || !emailVerificationStatus.canResend}
+                variant="outline"
+                className="w-full"
+              >
+                {isVerificationLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                <SendIcon className="mr-2 h-4 w-4" />
+                Resend Verification Email
+              </Button>
+
+              {!emailVerificationStatus.canResend && emailVerificationStatus.waitDurationSeconds > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  You can resend in {emailVerificationStatus.waitDurationSeconds} seconds
+                </p>
+              )}
+
+              {emailVerificationStatus.remainingAttempts > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {emailVerificationStatus.remainingAttempts} resend attempts remaining today
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Step 1: Connect Wallet */}

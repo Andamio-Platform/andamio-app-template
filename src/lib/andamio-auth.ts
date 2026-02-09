@@ -900,3 +900,113 @@ export async function deleteDeveloperAccount(jwt: string): Promise<{ confirmatio
     confirmation: data.message ?? "Developer account deleted successfully",
   };
 }
+
+// =============================================================================
+// EMAIL VERIFICATION (requires Developer JWT)
+// =============================================================================
+
+/**
+ * Email verification status response
+ */
+export interface EmailVerificationStatus {
+  emailVerified: boolean;
+  canResend: boolean;
+  remainingAttempts: number;
+  verificationEmailSentAt: string | null;
+  waitDurationSeconds: number;
+}
+
+/**
+ * Resend verification email response
+ */
+export interface ResendVerificationResponse {
+  message: string;
+  nextResendAvailableAt: string | null;
+  remainingAttempts: number;
+}
+
+/**
+ * Get email verification status for the current developer
+ *
+ * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @returns Email verification status
+ */
+export async function getEmailVerificationStatus(jwt: string): Promise<EmailVerificationStatus> {
+  authLogger.info("Fetching email verification status");
+
+  const response = await fetch(`${API_PROXY}/api/v2/auth/developer/email-status`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string };
+    authLogger.error("Failed to get email verification status:", {
+      status: response.status,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to get email verification status");
+  }
+
+  const data = (await response.json()) as {
+    email_verified?: boolean;
+    can_resend?: boolean;
+    remaining_attempts?: number;
+    verification_email_sent_at?: string;
+    wait_duration_seconds?: number;
+  };
+
+  authLogger.info("Email verification status fetched:", { verified: data.email_verified });
+
+  return {
+    emailVerified: data.email_verified ?? false,
+    canResend: data.can_resend ?? false,
+    remainingAttempts: data.remaining_attempts ?? 0,
+    verificationEmailSentAt: data.verification_email_sent_at ?? null,
+    waitDurationSeconds: data.wait_duration_seconds ?? 0,
+  };
+}
+
+/**
+ * Resend verification email
+ *
+ * @param jwt - Developer JWT from gateway auth (use getStoredDevJWT())
+ * @returns Confirmation with next available resend time
+ */
+export async function resendVerificationEmail(jwt: string): Promise<ResendVerificationResponse> {
+  authLogger.info("Requesting verification email resend");
+
+  const response = await fetch(`${API_PROXY}/api/v2/auth/developer/resend-verification`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwt}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    const error = (await response.json()) as { message?: string; error?: string };
+    authLogger.error("Failed to resend verification email:", {
+      status: response.status,
+      error,
+    });
+    throw new Error(error.message ?? error.error ?? "Failed to resend verification email");
+  }
+
+  const data = (await response.json()) as {
+    message?: string;
+    next_resend_available_at?: string;
+    remaining_attempts?: number;
+  };
+
+  authLogger.info("Verification email resend requested successfully");
+
+  return {
+    message: data.message ?? "Verification email sent",
+    nextResendAvailableAt: data.next_resend_available_at ?? null,
+    remainingAttempts: data.remaining_attempts ?? 0,
+  };
+}

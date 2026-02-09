@@ -28,6 +28,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { computeSltHashDefinite } from "@andamio/core/hashing";
 import { useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import type { WizardStepConfig } from "../types";
+import { CopyId } from "~/components/andamio";
 
 interface StepReviewProps {
   config: WizardStepConfig;
@@ -196,36 +197,35 @@ export function StepReview({ config, direction }: StepReviewProps) {
           transition={{ type: "spring", damping: 15 }}
         >
           <WizardStepHighlight>
-            <div className="flex flex-col items-center gap-4 py-4">
+            <div className="flex flex-col items-center gap-8 py-4">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
               >
-                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-                  <CelebrateIcon className="h-10 w-10 text-primary" />
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <CelebrateIcon className="h-6 w-6 text-primary" />
                 </div>
               </motion.div>
 
               <div className="flex flex-col items-center">
-                <AndamioHeading level={3} size="xl">Module Approved!</AndamioHeading>
-                <AndamioText variant="muted" className="mt-1 text-center">
-                  &quot;{moduleTitle}&quot; is ready for the blockchain.
-                </AndamioText>
+                <AndamioHeading level={3} size="3xl">{moduleTitle}</AndamioHeading>
               </div>
+              <AndamioText variant="small" className="text-center text-muted-foreground/60 max-w-sm">
+                Once approved, SLTs are locked. You can still edit the lessons, assignment, and introduction any time.
+              </AndamioText>
 
-              <div className="flex flex-col items-center gap-2 text-sm">
+
+              <div className="flex flex-col items-center gap-4 text-sm">
                 <AndamioBadge className="bg-primary text-primary-foreground">
                   APPROVED
                 </AndamioBadge>
                 {data.courseModule?.sltHash && (
                   <div className="flex flex-col items-center gap-1">
-                    <AndamioText variant="small" className="text-muted-foreground">
+                    <AndamioText className="text-muted-foreground">
                       SLT Hash
                     </AndamioText>
-                    <code className="text-xs font-mono bg-muted px-2 py-1 rounded max-w-[280px] truncate">
-                      {data.courseModule.sltHash}
-                    </code>
+                    <CopyId id={data.courseModule.sltHash} label={data.courseModule.sltHash} />
                   </div>
                 )}
                 <Link
@@ -237,21 +237,6 @@ export function StepReview({ config, direction }: StepReviewProps) {
                   </AndamioBadge>
                 </Link>
               </div>
-
-              <AndamioText variant="small" className="text-center max-w-md">
-                Head to the{" "}
-                <Link
-                  href={`/studio/course/${courseId}?tab=on-chain`}
-                  className="font-semibold text-primary hover:underline"
-                >
-                  On-Chain tab
-                </Link>{" "}
-                to mint your module tokens on Cardano.
-              </AndamioText>
-
-              <AndamioText variant="small" className="text-center text-muted-foreground/60 max-w-sm">
-                Once approved, SLTs are locked. You can still edit lessons, assignment, and introduction.
-              </AndamioText>
 
               <AndamioButton
                 variant="outline"
@@ -311,9 +296,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
                     >
                       <div className="flex items-center gap-3">
                         <StatusIcon
-                          className={`h-5 w-5 ${
-                            item.completed ? "text-primary" : "text-muted-foreground"
-                          }`}
+                          className={`h-5 w-5 ${item.completed ? "text-primary" : "text-muted-foreground"
+                            }`}
                         />
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4 text-muted-foreground" />
@@ -359,9 +343,8 @@ export function StepReview({ config, direction }: StepReviewProps) {
                     >
                       <div className="flex items-center gap-3">
                         <StatusIcon
-                          className={`h-5 w-5 ${
-                            item.completed ? "text-primary" : "text-muted-foreground"
-                          }`}
+                          className={`h-5 w-5 ${item.completed ? "text-primary" : "text-muted-foreground"
+                            }`}
                         />
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4 text-muted-foreground" />

@@ -174,9 +174,9 @@ function ModuleWizardContent({
       lessons: true, // Optional step
       introduction: hasIntroduction || completion.introduction,
       review: (hasTitle || completion.credential) &&
-              (hasSLTs || completion.slts) &&
-              (hasAssignment || completion.assignment) &&
-              (hasIntroduction || completion.introduction),
+        (hasSLTs || completion.slts) &&
+        (hasAssignment || completion.assignment) &&
+        (hasIntroduction || completion.introduction),
     };
   }, [draft, draftSlts, draftAssignment, draftIntroduction, completion]);
 
@@ -437,26 +437,26 @@ function ModuleWizardContent({
         <ResizablePanel defaultSize={80}>
           <div className="flex flex-col h-full">
             <AndamioScrollArea className="flex-1 min-h-0">
-              <div className="px-6 py-4">
+              <div className="px-6 py-4 w-full md:w-11/12 mx-auto">
                 <AnimatePresence mode="wait" custom={direction}>
-                {currentStep === "credential" && (
-                  <StepCredential key="credential" config={currentConfig} direction={direction} />
-                )}
-                {currentStep === "slts" && (
-                  <StepSLTs key="slts" config={currentConfig} direction={direction} />
-                )}
-                {currentStep === "assignment" && (
-                  <StepAssignment key="assignment" config={currentConfig} direction={direction} />
-                )}
-                {currentStep === "lessons" && (
-                  <StepLessons key="lessons" config={currentConfig} direction={direction} />
-                )}
-                {currentStep === "introduction" && (
-                  <StepIntroduction key="introduction" config={currentConfig} direction={direction} />
-                )}
-                {currentStep === "review" && (
-                  <StepReview key="review" config={currentConfig} direction={direction} />
-                )}
+                  {currentStep === "credential" && (
+                    <StepCredential key="credential" config={currentConfig} direction={direction} />
+                  )}
+                  {currentStep === "slts" && (
+                    <StepSLTs key="slts" config={currentConfig} direction={direction} />
+                  )}
+                  {currentStep === "assignment" && (
+                    <StepAssignment key="assignment" config={currentConfig} direction={direction} />
+                  )}
+                  {currentStep === "lessons" && (
+                    <StepLessons key="lessons" config={currentConfig} direction={direction} />
+                  )}
+                  {currentStep === "introduction" && (
+                    <StepIntroduction key="introduction" config={currentConfig} direction={direction} />
+                  )}
+                  {currentStep === "review" && (
+                    <StepReview key="review" config={currentConfig} direction={direction} />
+                  )}
                 </AnimatePresence>
               </div>
             </AndamioScrollArea>

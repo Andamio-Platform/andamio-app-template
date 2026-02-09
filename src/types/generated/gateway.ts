@@ -77,13 +77,6 @@ export interface AdminViewmodelsSetUserRoleResponse {
   user_id?: string;
 }
 
-export interface AndamioApiInternalInternalApiAndamioDbClientRegisterProjectRequest {
-  description?: string;
-  image_url?: string;
-  project_id?: string;
-  title?: string;
-}
-
 export interface AndamioDbClientAddTeachersV2Request {
   aliases?: string[];
   course_id?: string;
@@ -279,6 +272,13 @@ export interface AndamioDbClientRegisterCourseV2Request {
   title?: string;
   tx_hash?: string;
   video_url?: string;
+}
+
+export interface AndamioDbClientRegisterProjectRequest {
+  description?: string;
+  image_url?: string;
+  project_id?: string;
+  title?: string;
 }
 
 export interface AndamioDbClientRemoveTeachersV2Request {

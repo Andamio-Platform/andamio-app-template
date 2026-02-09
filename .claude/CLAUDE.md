@@ -126,6 +126,8 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 
 ## Notion Integration (Soft Launch)
 
+If the user doesn't have Notion MCP installed, fail gracefully on this step. Just ignore Notion for that user, and we'll get them up speed in the coming days.
+
 Claude Code now has access to the Andamio Notion workspace via MCP. This enables:
 - Reading/writing to the Dev Sprint Board and Epics
 - Syncing technical context with Product and Ecosystem circles

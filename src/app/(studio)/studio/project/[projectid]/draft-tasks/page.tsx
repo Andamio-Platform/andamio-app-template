@@ -24,6 +24,7 @@ import {
   AndamioAddButton,
   AndamioRowActions,
   AndamioErrorAlert,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -137,7 +138,9 @@ export default function DraftTasksPage() {
   const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.taskStatus ?? ""));
 
   return (
-    <div className="space-y-6">
+    <AndamioScrollArea className="h-full">
+    <div className="min-h-full">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <AndamioBackButton
@@ -146,7 +149,7 @@ export default function DraftTasksPage() {
         />
 
         <Link href={`/studio/project/${projectId}/draft-tasks/new`}>
-          <AndamioAddButton label="New Task" />
+          <AndamioAddButton label="Create Task" />
         </Link>
       </div>
 
@@ -162,7 +165,7 @@ export default function DraftTasksPage() {
         </AndamioBadge>
         <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
           <OnChainIcon className="h-3 w-3 mr-1" />
-          {liveTasks.length} Live (DB)
+          {liveTasks.length} Published
         </AndamioBadge>
         {onChainTaskCount > 0 && (
           <AndamioBadge variant="outline">
@@ -231,7 +234,7 @@ export default function DraftTasksPage() {
       {liveTasks.length > 0 && (
         <div className="space-y-3">
           <AndamioSectionHeader title="Live Tasks" />
-          <AndamioText variant="small">These tasks are published on-chain and cannot be edited</AndamioText>
+          <AndamioText variant="small">These tasks are published on-chain and cannot be edited. To modify a live task, remove it from the chain first in Manage Treasury.</AndamioText>
           <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
@@ -282,6 +285,7 @@ export default function DraftTasksPage() {
       {otherTasks.length > 0 && (
         <div className="space-y-3">
           <AndamioSectionHeader title="Other Tasks" />
+          <AndamioText variant="small">Tasks with expired, cancelled, or other non-active statuses</AndamioText>
           <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
@@ -328,5 +332,7 @@ export default function DraftTasksPage() {
         />
       )}
     </div>
+    </div>
+    </AndamioScrollArea>
   );
 }

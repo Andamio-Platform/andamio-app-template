@@ -14,7 +14,7 @@ import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AddIcon, CloseIcon, LoadingIcon, ErrorIcon } from "~/components/icons";
+import { AddIcon, CloseIcon, LoadingIcon, ErrorIcon, SuccessIcon } from "~/components/icons";
 
 export interface AliasListInputProps {
   /** Current list of validated aliases */
@@ -29,8 +29,12 @@ export interface AliasListInputProps {
   disabled?: boolean;
   /** Aliases to exclude (e.g. current user, already in list from another source) */
   excludeAliases?: string[];
+  /** Context-aware message for excluded aliases. Returns a message string or null if not excluded. Takes priority over the default excludeAliases message. */
+  getExcludeReason?: (alias: string) => string | null;
   /** Helper text shown below the input */
   helperText?: string;
+  /** Hide the inline badge list (when parent manages its own display) */
+  hideBadges?: boolean;
 }
 
 /**
@@ -55,15 +59,19 @@ export function AliasListInput({
   placeholder = "Enter alias",
   disabled = false,
   excludeAliases = [],
+  getExcludeReason,
   helperText,
+  hideBadges = false,
 }: AliasListInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [lastVerified, setLastVerified] = useState<string | null>(null);
 
   const addAlias = useCallback(async () => {
     const alias = inputValue.trim();
     setValidationError(null);
+    setLastVerified(null);
 
     // Format check: 1-31 chars
     if (alias.length === 0) return;
@@ -74,13 +82,19 @@ export function AliasListInput({
 
     // Duplicate check
     if (value.includes(alias)) {
-      setValidationError("Alias already in list");
+      setValidationError(`"${alias}" is already queued to be added.`);
       return;
     }
 
-    // Excluded alias check
-    if (excludeAliases.includes(alias)) {
-      setValidationError("This alias is already included automatically");
+    // Excluded alias check (context-aware if callback provided)
+    if (getExcludeReason) {
+      const reason = getExcludeReason(alias);
+      if (reason) {
+        setValidationError(reason);
+        return;
+      }
+    } else if (excludeAliases.includes(alias)) {
+      setValidationError("This alias is already included.");
       return;
     }
 
@@ -89,16 +103,18 @@ export function AliasListInput({
     try {
       const response = await fetch(`/api/gateway/api/v2/user/exists/${encodeURIComponent(alias)}`);
       if (response.ok) {
-        // 200 = alias exists
+        // 200 = alias exists on-chain
         onChange([...value, alias]);
         setInputValue("");
+        setLastVerified(alias);
+        setTimeout(() => setLastVerified(null), 3000);
       } else if (response.status === 404) {
-        setValidationError("Alias not found on-chain");
+        setValidationError(`"${alias}" was not found. Make sure the alias has an Access Token on-chain.`);
       } else {
-        setValidationError("Failed to verify alias");
+        setValidationError("Failed to verify alias. Please try again.");
       }
     } catch {
-      setValidationError("Failed to verify alias");
+      setValidationError("Failed to verify alias. Please try again.");
     } finally {
       setIsValidating(false);
     }
@@ -123,10 +139,11 @@ export function AliasListInput({
       <AndamioLabel>{label}</AndamioLabel>
 
       {/* Badge list of validated aliases */}
-      {value.length > 0 && (
+      {value.length > 0 && !hideBadges && (
         <div className="flex flex-wrap gap-2">
           {value.map((alias) => (
             <AndamioBadge key={alias} variant="secondary" className="gap-1 pr-1 font-mono text-xs">
+              <SuccessIcon className="h-3 w-3 text-primary shrink-0" />
               {alias}
               {!disabled && (
                 <button
@@ -166,13 +183,28 @@ export function AliasListInput({
           disabled={disabled || isValidating || inputValue.trim().length === 0}
         >
           {isValidating ? (
-            <LoadingIcon className="h-4 w-4 animate-spin" />
+            <>
+              <LoadingIcon className="h-4 w-4 animate-spin" />
+              <span className="ml-1">Verifying...</span>
+            </>
           ) : (
-            <AddIcon className="h-4 w-4" />
+            <>
+              <AddIcon className="h-4 w-4" />
+              <span className="ml-1">Verify & Add</span>
+            </>
           )}
-          <span className="ml-1">Add</span>
         </AndamioButton>
       </div>
+
+      {/* Validation success */}
+      {lastVerified && (
+        <div className="flex items-center gap-1.5 text-primary">
+          <SuccessIcon className="h-3.5 w-3.5 shrink-0" />
+          <AndamioText variant="small" className="text-xs text-primary">
+            &ldquo;{lastVerified}&rdquo; verified and added
+          </AndamioText>
+        </div>
+      )}
 
       {/* Validation error */}
       {validationError && (
@@ -185,7 +217,7 @@ export function AliasListInput({
       )}
 
       {/* Helper text */}
-      {helperText && !validationError && (
+      {helperText && !validationError && !lastVerified && (
         <AndamioText variant="small" className="text-xs">
           {helperText}
         </AndamioText>

@@ -75,7 +75,7 @@ export function TaskForm({
   // ---------------------------------------------------------------------------
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [lovelace, setLovelace] = useState("1000000");
+  const [lovelace, setLovelace] = useState("");
   const [expirationTime, setExpirationTime] = useState("");
   const [contentJson, setContentJson] = useState<JSONContent | null>(null);
   const [formInitialized, setFormInitialized] = useState(!initialTask);
@@ -94,7 +94,7 @@ export function TaskForm({
   // ---------------------------------------------------------------------------
   // Derived values
   // ---------------------------------------------------------------------------
-  const adaValue = (parseInt(lovelace) || 0) / 1_000_000;
+  const adaValue = lovelace ? (parseInt(lovelace) || 0) / 1_000_000 : "";
 
   const isValid =
     title.trim().length > 0 &&
@@ -105,7 +105,14 @@ export function TaskForm({
   // Handlers
   // ---------------------------------------------------------------------------
   const handleAdaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const ada = parseFloat(e.target.value) || 0;
+    const raw = e.target.value;
+    if (raw === "") {
+      setLovelace("");
+      return;
+    }
+    // Allow only digits and a single decimal point
+    if (!/^\d*\.?\d*$/.test(raw)) return;
+    const ada = parseFloat(raw) || 0;
     setLovelace(Math.floor(ada * 1_000_000).toString());
   };
 
@@ -157,16 +164,17 @@ export function TaskForm({
             <div className="flex items-center gap-2">
               <AndamioInput
                 id="lovelace"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={adaValue}
                 onChange={handleAdaChange}
-                min={1}
-                step={0.1}
+                onFocus={(e) => e.target.select()}
+                placeholder="1"
               />
               <AndamioText variant="small">ADA</AndamioText>
             </div>
             <AndamioText variant="small" className="text-xs">
-              Minimum 1 ADA ({lovelace} lovelace)
+              Minimum 1 ADA ({lovelace || "0"} lovelace)
             </AndamioText>
           </div>
 

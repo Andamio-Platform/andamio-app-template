@@ -29,12 +29,13 @@ import {
   AndamioErrorAlert,
   AndamioActionFooter,
   AndamioHeading,
+  AndamioAddButton,
+  AndamioScrollArea,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { ManagersManage, BlacklistManage } from "~/components/tx";
-import { ProjectManagersCard } from "~/components/studio/project-managers-card";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
@@ -172,9 +173,14 @@ export default function ProjectDashboardPage() {
   const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT").length;
   const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN").length;
 
-  const hasChanges = title !== projectDetail.title;
+  const hasChanges =
+    title !== projectDetail.title ||
+    description !== (projectDetail.description ?? "") ||
+    imageUrl !== (projectDetail.imageUrl ?? "");
 
   return (
+    <AndamioScrollArea className="h-full">
+    <div className="min-h-full">
     <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Project Header */}
       <div className="mb-2">
@@ -265,15 +271,11 @@ export default function ProjectDashboardPage() {
                   <span className="text-sm font-bold">{draftTasks}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Active Tasks</span>
-                  <span className="text-sm font-bold text-primary">{liveTasks}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
                     <OnChainIcon className="h-3.5 w-3.5" />
-                    On-Chain Tasks
+                    Published Tasks
                   </span>
-                  <span className="text-sm font-bold">{onChainTaskCount}</span>
+                  <span className="text-sm font-bold text-primary">{onChainTaskCount}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -337,17 +339,31 @@ export default function ProjectDashboardPage() {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href={`/studio/project/${projectId}/draft-tasks`}>
-                  <AndamioButton className="w-full sm:w-auto">
-                    <TaskIcon className="h-4 w-4 mr-2" />
-                    {draftTasks === 0 && liveTasks === 0 ? "Create Your First Task" : "Manage Draft Tasks"}
-                  </AndamioButton>
-                </Link>
+                {draftTasks === 0 && liveTasks === 0 ? (
+                  <Link href={`/studio/project/${projectId}/draft-tasks/new`}>
+                    <AndamioButton className="w-full sm:w-auto">
+                      <TaskIcon className="h-4 w-4 mr-2" />
+                      Create Your First Task
+                    </AndamioButton>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href={`/studio/project/${projectId}/draft-tasks/new`}>
+                      <AndamioAddButton label="Create Task" />
+                    </Link>
+                    <Link href={`/studio/project/${projectId}/draft-tasks`}>
+                      <AndamioButton variant="outline" className="w-full sm:w-auto">
+                        <TaskIcon className="h-4 w-4 mr-2" />
+                        Manage Tasks
+                      </AndamioButton>
+                    </Link>
+                  </>
+                )}
                 {draftTasks > 0 && (
                   <Link href={`/studio/project/${projectId}/manage-treasury`}>
                     <AndamioButton variant="outline" className="w-full sm:w-auto">
                       <OnChainIcon className="h-4 w-4 mr-2" />
-                      Publish to Chain
+                      Manage Treasury
                     </AndamioButton>
                   </Link>
                 )}
@@ -387,30 +403,20 @@ export default function ProjectDashboardPage() {
             </AndamioCardHeader>
             <AndamioCardContent>
               <Link href={`/studio/project/${projectId}/manage-contributors`}>
-                <AndamioButton variant="outline" className="w-full justify-start h-auto py-4">
-                  <TeacherIcon className="h-5 w-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-medium">View Contributors</div>
-                    <div className="text-sm text-muted-foreground">
-                      View and manage enrolled contributors
-                    </div>
-                  </div>
+                <AndamioButton variant="outline">
+                  <TeacherIcon className="h-4 w-4 mr-2" />
+                  View Contributors
                 </AndamioButton>
               </Link>
             </AndamioCardContent>
           </AndamioCard>
 
-          {/* Project Team Display */}
-          <ProjectManagersCard projectId={projectId} />
-
-          {/* Managers Management (On-Chain Transaction) */}
+          {/* Unified Team Management */}
           <ManagersManage
             projectNftPolicyId={projectId}
             currentManagers={projectDetail.managers ?? []}
-            onSuccess={() => {
-              // Refresh project data
-              void refreshData();
-            }}
+            projectOwner={projectDetail.owner ?? null}
+            onSuccess={refreshData}
           />
         </AndamioTabsContent>
 
@@ -430,7 +436,7 @@ export default function ProjectDashboardPage() {
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle className="flex items-center gap-2">
-                <LessonIcon className="h-5 w-5" />
+                <SettingsIcon className="h-5 w-5" />
                 Project Details
               </AndamioCardTitle>
               <AndamioCardDescription>Edit project information</AndamioCardDescription>
@@ -491,7 +497,7 @@ export default function ProjectDashboardPage() {
 
               {/* Save Button */}
               <AndamioActionFooter>
-                <AndamioButton variant="outline" onClick={() => router.push("/studio/project")}>
+                <AndamioButton variant="outline" onClick={() => router.push("/studio")}>
                   Cancel
                 </AndamioButton>
                 <AndamioSaveButton
@@ -505,5 +511,7 @@ export default function ProjectDashboardPage() {
         </AndamioTabsContent>
       </AndamioTabs>
     </div>
+    </div>
+    </AndamioScrollArea>
   );
 }

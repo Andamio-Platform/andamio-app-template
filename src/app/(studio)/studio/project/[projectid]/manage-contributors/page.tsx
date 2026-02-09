@@ -119,8 +119,8 @@ export default function ManageContributorsPage() {
                 <TeacherIcon className="h-6 w-6 text-muted-foreground" />
               </div>
               <AndamioText className="font-medium">No contributors yet</AndamioText>
-              <AndamioText variant="muted" className="mt-1 max-w-[280px]">
-                Contributors will appear here once they register on-chain for this project
+              <AndamioText variant="muted" className="mt-1 max-w-[320px]">
+                Share your project link with potential contributors. They can join by connecting their wallet and committing to tasks.
               </AndamioText>
             </div>
           )}

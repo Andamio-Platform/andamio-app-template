@@ -21,7 +21,12 @@ import { LoadingIcon } from "~/components/icons";
  */
 
 interface ConfirmDialogProps {
-  trigger: React.ReactNode;
+  /** Trigger element — required for uncontrolled mode, omit for controlled mode */
+  trigger?: React.ReactNode;
+  /** Controlled open state — when provided, dialog is controlled externally */
+  open?: boolean;
+  /** Callback when open state changes — required for controlled mode */
+  onOpenChange?: (open: boolean) => void;
   title: string;
   description: string;
   confirmText?: string;
@@ -34,6 +39,8 @@ interface ConfirmDialogProps {
 
 export function ConfirmDialog({
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   title,
   description,
   confirmText = "Continue",
@@ -43,7 +50,10 @@ export function ConfirmDialog({
   isLoading = false,
   disabled = false,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
 
   const handleConfirm = async () => {
     await onConfirm();
@@ -52,9 +62,11 @@ export function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild disabled={disabled}>
-        {trigger}
-      </AlertDialogTrigger>
+      {trigger && (
+        <AlertDialogTrigger asChild disabled={disabled}>
+          {trigger}
+        </AlertDialogTrigger>
+      )}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

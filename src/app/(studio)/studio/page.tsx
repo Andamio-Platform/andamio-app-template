@@ -187,7 +187,7 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
                 Create a Course
               </AndamioButton>
               <AndamioText variant="small" className="text-muted-foreground">
-                Build learning content with modules and SLTs
+                Build learning content with modules and learning targets
               </AndamioText>
             </div>
 
@@ -388,7 +388,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
       },
       onError: (txError) => {
         console.error("[CreateCourse] Error:", txError);
-        toast.error("Minting Failed", {
+        toast.error("Course Creation Failed", {
           description: txError.message || "Failed to create course NFT",
         });
       },
@@ -433,7 +433,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
                     <div className="flex items-center gap-2">
                       <AlertIcon className="h-4 w-4 text-destructive" />
                       <AndamioText className="text-sm text-destructive">
-                        You need an Access Token to create a course. Mint one first!
+                        You need an Access Token to create a course. Go to the Dashboard to create one.
                       </AndamioText>
                     </div>
                   </div>

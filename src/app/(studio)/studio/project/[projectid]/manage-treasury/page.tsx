@@ -25,7 +25,7 @@ import {
   AndamioText,
   AndamioCheckbox,
 } from "~/components/andamio";
-import { TaskIcon, TreasuryIcon, OnChainIcon } from "~/components/icons";
+import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
 import { TasksManage, TreasuryAddFunds } from "~/components/tx";
@@ -286,11 +286,7 @@ export default function ManageTreasuryPage() {
         </AndamioBadge>
         <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
           <OnChainIcon className="h-3 w-3 mr-1" />
-          {liveTasks.length} Live Task{liveTasks.length !== 1 ? "s" : ""}
-        </AndamioBadge>
-        <AndamioBadge variant="outline">
-          <OnChainIcon className="h-3 w-3 mr-1" />
-          {onChainTaskCount} On-Chain
+          {onChainTaskCount} Published
         </AndamioBadge>
         {selectedTasks.length > 0 && (
           <AndamioBadge variant="outline" className="bg-primary/10">
@@ -324,7 +320,7 @@ export default function ManageTreasuryPage() {
                   Draft Tasks Ready to Publish
                 </AndamioCardTitle>
                 <AndamioCardDescription>
-                  Select tasks to publish on-chain. Tasks must have a valid hash.
+                  Select draft tasks to publish on the Cardano blockchain.
                 </AndamioCardDescription>
               </div>
               <AndamioCheckbox
@@ -397,21 +393,19 @@ export default function ManageTreasuryPage() {
               <>
                 {/* Transaction preview */}
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
-                  <div><strong>Transaction Preview:</strong></div>
+                  <div><strong>Transaction Summary</strong></div>
                   {tasksToAdd.length > 0 && (
-                    <div className="text-primary">+ Adding: {tasksToAdd.length} task(s) ({addLovelace / 1_000_000} ADA)</div>
+                    <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
                   )}
                   {tasksToRemove.length > 0 && (
-                    <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
+                    <div className="text-destructive">Removing {tasksToRemove.length} task{tasksToRemove.length !== 1 ? "s" : ""} ({removeLovelace / 1_000_000} ADA returned)</div>
                   )}
-                  <div>Treasury: {treasuryBalance / 1_000_000} ADA (committed: {onChainCommitted / 1_000_000}, available: {availableFunds / 1_000_000})</div>
-                  <div>Net requirement: {netRequired / 1_000_000} ADA</div>
+                  <div>Treasury balance: {availableFunds / 1_000_000} ADA available</div>
                   <div className={depositAmount > 0 ? "" : "text-primary"}>
                     {depositAmount > 0
-                      ? `Deposit: ${depositAmount / 1_000_000} ADA`
-                      : "No additional deposit needed (treasury covers it)"}
+                      ? `Wallet deposit required: ${depositAmount / 1_000_000} ADA`
+                      : "No additional deposit needed — treasury covers it"}
                   </div>
-                  <div>Contributor State ID: {contributorStateId}</div>
                 </div>
 
                 <TasksManage
@@ -553,60 +547,6 @@ export default function ManageTreasuryPage() {
         </AndamioCard>
       )}
 
-      {/* DB Live Tasks (read-only info) */}
-      {liveTasks.length > 0 && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2">
-              <TreasuryIcon className="h-5 w-5" />
-              Database Status
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              Tasks marked as ON_CHAIN in the database
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <AndamioTableContainer>
-              <AndamioTable>
-                <AndamioTableHeader>
-                  <AndamioTableRow>
-                    <AndamioTableHead className="w-16">#</AndamioTableHead>
-                    <AndamioTableHead>Title</AndamioTableHead>
-                    <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
-                    <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
-                    <AndamioTableHead className="w-24 text-center">Status</AndamioTableHead>
-                  </AndamioTableRow>
-                </AndamioTableHeader>
-                <AndamioTableBody>
-                  {liveTasks.map((task) => {
-                    const taskIndex = task.index ?? 0;
-                    return (
-                      <AndamioTableRow key={task.taskHash || taskIndex}>
-                        <AndamioTableCell className="font-mono text-xs">
-                          {taskIndex}
-                        </AndamioTableCell>
-                        <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
-                        <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
-                        </AndamioTableCell>
-                        <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
-                        </AndamioTableCell>
-                        <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
-                            <OnChainIcon className="h-3 w-3 mr-1" />
-                            On-Chain
-                          </AndamioBadge>
-                        </AndamioTableCell>
-                      </AndamioTableRow>
-                    );
-                  })}
-                </AndamioTableBody>
-              </AndamioTable>
-            </AndamioTableContainer>
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
     </div>
   );
 }

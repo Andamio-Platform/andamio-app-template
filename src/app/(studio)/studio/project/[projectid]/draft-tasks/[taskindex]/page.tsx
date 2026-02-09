@@ -102,7 +102,7 @@ export default function EditTaskPage() {
         : loadError;
   if (errorMessage || !taskData) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
         <AndamioBackButton href={backHref} label="Back to Tasks" />
         <AndamioErrorAlert error={errorMessage ?? "Task not found"} />
       </div>
@@ -110,7 +110,7 @@ export default function EditTaskPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <AndamioBackButton href={backHref} label="Back to Tasks" />
         <div className="flex items-center gap-2">

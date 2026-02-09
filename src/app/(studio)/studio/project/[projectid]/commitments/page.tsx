@@ -682,30 +682,39 @@ export default function ProjectCommitmentsPage() {
                         className="w-full"
                       />
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="grid gap-2">
                         <AndamioButton
                           variant="default"
-                          className="flex-1"
+                          className="w-full justify-start h-auto py-2.5 px-3"
                           onClick={() => handleDecision(selectedCommitment, "accept")}
                         >
-                          <SuccessIcon className="h-4 w-4 mr-2" />
-                          Accept
+                          <SuccessIcon className="h-4 w-4 mr-2 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-medium">Accept</div>
+                            <div className="text-xs font-normal opacity-80">Approve this work. The contributor will receive their reward.</div>
+                          </div>
                         </AndamioButton>
                         <AndamioButton
                           variant="outline"
-                          className="flex-1"
+                          className="w-full justify-start h-auto py-2.5 px-3"
                           onClick={() => handleDecision(selectedCommitment, "refuse")}
                         >
-                          <ErrorIcon className="h-4 w-4 mr-2" />
-                          Refuse
+                          <ErrorIcon className="h-4 w-4 mr-2 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-medium">Refuse</div>
+                            <div className="text-xs font-normal opacity-80">Send back for revision. The contributor can resubmit.</div>
+                          </div>
                         </AndamioButton>
                         <AndamioButton
                           variant="destructive"
-                          className="flex-1"
+                          className="w-full justify-start h-auto py-2.5 px-3"
                           onClick={() => handleDecision(selectedCommitment, "deny")}
                         >
-                          <BlockIcon className="h-4 w-4 mr-2" />
-                          Deny
+                          <BlockIcon className="h-4 w-4 mr-2 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-medium">Deny</div>
+                            <div className="text-xs font-normal opacity-80">Permanently reject. The contributor&apos;s deposit is forfeited.</div>
+                          </div>
                         </AndamioButton>
                       </div>
                     )}

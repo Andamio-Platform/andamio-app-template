@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { useCourse } from "~/hooks/api/course/use-course";
+import { useCourse, useActiveCourses } from "~/hooks/api/course/use-course";
+import { useOwnerCourses } from "~/hooks/api/course/use-course-owner";
 import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import type { ProjectPrerequisite } from "~/hooks/api/project/use-project";
 import type { StudentCompletionInput } from "~/lib/project-eligibility";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseIcon, SLTIcon, SuccessIcon, PendingIcon } from "~/components/icons";
+import { CourseIcon, SLTIcon, SuccessIcon, PendingIcon, ExternalLinkIcon } from "~/components/icons";
+import { getTokenExplorerUrl } from "~/lib/constants";
 
 /**
  * Renders a single prerequisite row, fetching course title and module names by ID.
@@ -22,7 +24,16 @@ export function PrerequisiteRow({
 }) {
   const { data: courseData, isLoading: isCourseLoading } = useCourse(prereq.courseId);
   const { data: modules = [], isLoading: isModulesLoading } = useCourseModules(prereq.courseId);
-  const courseTitle = courseData?.title;
+
+  // Fallback title sources when the detail endpoint returns no title (issue #241):
+  // 1. Public catalog (useActiveCourses) — covers public courses
+  // 2. Owner's courses (useOwnerCourses) — covers non-public courses the user owns
+  const { data: publicCourses } = useActiveCourses();
+  const { data: ownedCourses } = useOwnerCourses();
+  const fallbackTitle =
+    publicCourses?.find((c) => c.courseId === prereq.courseId)?.title ||
+    ownedCourses?.find((c) => c.courseId === prereq.courseId)?.title;
+  const courseTitle = courseData?.title || fallbackTitle;
   const isLoading = isCourseLoading || isModulesLoading;
 
   // Build lookup: sltHash → { moduleCode, title }
@@ -50,7 +61,7 @@ export function PrerequisiteRow({
             ) : courseTitle ? (
               courseTitle
             ) : (
-              <span className="font-mono truncate">{prereq.courseId}</span>
+              <span className="font-mono text-muted-foreground">{prereq.courseId.slice(0, 12)}...</span>
             )}
           </div>
           {hasCompletionData && requiredHashes.length > 0 && (
@@ -66,11 +77,15 @@ export function PrerequisiteRow({
             </AndamioBadge>
           )}
         </div>
-        {courseTitle && (
-          <div className="font-mono text-xs text-muted-foreground truncate">
-            {prereq.courseId}
-          </div>
-        )}
+        <a
+          href={getTokenExplorerUrl(prereq.courseId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          {prereq.courseId.slice(0, 8)}...{prereq.courseId.slice(-8)}
+          <ExternalLinkIcon className="h-3 w-3 shrink-0" />
+        </a>
         {requiredHashes.length > 0 && (
           <div className="mt-2 space-y-1">
             <AndamioText variant="small" className="text-muted-foreground">

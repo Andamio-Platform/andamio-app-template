@@ -1,8 +1,10 @@
 /**
- * ManagersManage Transaction Component (V2 - Gateway Auto-Confirmation)
+ * ManagersManage Transaction Component (V3 - Unified Team Card)
  *
- * UI for adding or removing managers from a project.
- * Uses PROJECT_OWNER_MANAGERS_MANAGE transaction with gateway auto-confirmation.
+ * Unified UI for viewing, adding, and removing project managers.
+ * Current managers are shown as interactive badges (click × to remove).
+ * New managers are added via verified alias input.
+ * Submits a single TX with managers_to_add + managers_to_remove.
  *
  * @see ~/hooks/use-transaction.ts
  * @see ~/hooks/use-tx-stream.ts
@@ -10,7 +12,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
@@ -24,72 +26,84 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ManagerIcon, AddIcon, DeleteIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon, CloseIcon, OnChainIcon } from "~/components/icons";
 import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
-import { TRANSACTION_UI } from "~/config/transaction-ui";
 
 export interface ManagersManageProps {
-  /**
-   * Project NFT Policy ID
-   */
   projectNftPolicyId: string;
-
-  /**
-   * Current managers (for display)
-   */
   currentManagers?: string[];
-
-  /**
-   * Callback fired when managers are successfully updated
-   */
+  projectOwner?: string | null;
   onSuccess?: () => void | Promise<void>;
 }
 
-/**
- * ManagersManage - UI for adding/removing managers from a project (V2)
- *
- * @example
- * ```tsx
- * <ManagersManage
- *   projectNftPolicyId="abc123..."
- *   currentManagers={["alice", "bob"]}
- *   onSuccess={() => refetchProject()}
- * />
- * ```
- */
 export function ManagersManage({
   projectNftPolicyId,
   currentManagers = [],
+  projectOwner = null,
   onSuccess,
 }: ManagersManageProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
 
-  const [managerAliases, setManagerAliases] = useState<string[]>([]);
-  const [action, setAction] = useState<"add" | "remove">("add");
+  const [aliasesToAdd, setAliasesToAdd] = useState<string[]>([]);
+  const [aliasesToRemove, setAliasesToRemove] = useState<string[]>([]);
+
+  // Optimistic state: track managers from successful TXs that the API hasn't reflected yet
+  const [optimisticAdds, setOptimisticAdds] = useState<string[]>([]);
+  const [optimisticRemoves, setOptimisticRemoves] = useState<string[]>([]);
+
+  // Merge API data with optimistic state for display
+  const effectiveManagers = React.useMemo(() => {
+    const fromApi = new Set(currentManagers);
+    // Remove any that were optimistically removed
+    for (const alias of optimisticRemoves) {
+      fromApi.delete(alias);
+    }
+    // Add any that were optimistically added (if API hasn't caught up)
+    for (const alias of optimisticAdds) {
+      fromApi.add(alias);
+    }
+    return Array.from(fromApi);
+  }, [currentManagers, optimisticAdds, optimisticRemoves]);
+
+  // Clear optimistic state once API catches up
+  React.useEffect(() => {
+    if (optimisticAdds.length > 0) {
+      const synced = optimisticAdds.filter((a) => currentManagers.includes(a));
+      if (synced.length > 0) {
+        setOptimisticAdds((prev) => prev.filter((a) => !currentManagers.includes(a)));
+      }
+    }
+    if (optimisticRemoves.length > 0) {
+      const synced = optimisticRemoves.filter((a) => !currentManagers.includes(a));
+      if (synced.length > 0) {
+        setOptimisticRemoves((prev) => prev.filter((a) => currentManagers.includes(a)));
+      }
+    }
+  }, [currentManagers, optimisticAdds, optimisticRemoves]);
+
+  const hasChanges = aliasesToAdd.length > 0 || aliasesToRemove.length > 0;
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
-      onComplete: (status) => {
-        // "updated" means Gateway has confirmed TX AND updated DB
+      onComplete: async (status) => {
         if (status.state === "updated") {
-          console.log("[ManagersManage] TX confirmed and DB updated by gateway");
-
-          const actionText = action === "add" ? "added to" : "removed from";
-          toast.success("Managers Updated!", {
-            description: `Managers ${actionText} project`,
+          toast.success("Team Updated!", {
+            description: "Project managers have been updated.",
           });
-
-          // Clear input
-          setManagerAliases([]);
-
-          // Call callback
+          // Apply optimistic updates immediately so the UI reflects changes
+          setOptimisticAdds((prev) => [...prev, ...aliasesToAdd]);
+          setOptimisticRemoves((prev) => [...prev, ...aliasesToRemove]);
+          // Then clear pending state
+          setAliasesToAdd([]);
+          setAliasesToRemove([]);
+          // Trigger API refresh in background (will clear optimistic state when it catches up)
           void onSuccess?.();
+          reset();
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Update Failed", {
             description: status.last_error ?? "Please try again or contact support.",
@@ -99,24 +113,36 @@ export function ManagersManage({
     }
   );
 
-  const ui = TRANSACTION_UI.PROJECT_OWNER_MANAGERS_MANAGE;
-
-  const handleUpdateManagers = async () => {
-    if (!user?.accessTokenAlias || managerAliases.length === 0) {
-      return;
+  // Context-aware exclusion messages for AliasListInput
+  const getExcludeReason = useCallback((alias: string): string | null => {
+    if (alias === projectOwner) {
+      return `"${alias}" is the project owner and already has manager access.`;
     }
+    if (effectiveManagers.includes(alias)) {
+      return `"${alias}" is already a manager on this project.`;
+    }
+    if (aliasesToAdd.includes(alias)) {
+      return `"${alias}" is already queued to be added.`;
+    }
+    return null;
+  }, [projectOwner, effectiveManagers, aliasesToAdd]);
 
-    // Build params based on action - API uses separate arrays for add/remove
-    const managers_to_add = action === "add" ? managerAliases : [];
-    const managers_to_remove = action === "remove" ? managerAliases : [];
+  const toggleRemove = useCallback((alias: string) => {
+    setAliasesToRemove((prev) =>
+      prev.includes(alias) ? prev.filter((a) => a !== alias) : [...prev, alias]
+    );
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!user?.accessTokenAlias || !hasChanges) return;
 
     await execute({
       txType: "PROJECT_OWNER_MANAGERS_MANAGE",
       params: {
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
-        managers_to_add,
-        managers_to_remove,
+        managers_to_add: aliasesToAdd,
+        managers_to_remove: aliasesToRemove,
       },
       onSuccess: async (txResult) => {
         console.log("[ManagersManage] TX submitted successfully!", txResult);
@@ -132,89 +158,166 @@ export function ManagersManage({
   }
 
   const hasAccessToken = !!user.accessTokenAlias;
-  const hasManagers = managerAliases.length > 0;
-  const canSubmit = hasAccessToken && hasManagers;
+  const canSubmit = hasAccessToken && hasChanges;
+  const isProcessing = state !== "idle" && state !== "error";
 
   return (
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <ManagerIcon className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div className="flex-1">
-            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
-            <AndamioCardDescription>
-              Add or remove managers from this project
-            </AndamioCardDescription>
-          </div>
-        </div>
+        <AndamioCardTitle className="text-base flex items-center gap-2">
+          <ManagerIcon className="h-4 w-4" />
+          Project Team
+        </AndamioCardTitle>
+        <AndamioCardDescription>
+          Manage who can administer this project
+        </AndamioCardDescription>
       </AndamioCardHeader>
-      <AndamioCardContent className="space-y-4">
-        {/* Current Managers */}
-        {currentManagers.length > 0 && (
+      <AndamioCardContent className="space-y-5">
+        {/* Owner */}
+        {projectOwner && (
           <div className="space-y-2">
-            <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
-              Current Managers
+            <div className="flex items-center gap-2">
+              <OnChainIcon className="h-3.5 w-3.5 text-primary" />
+              <AndamioText variant="small" className="font-medium">
+                Owner
+              </AndamioText>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <AndamioBadge variant="default" className="font-mono text-xs">
+                {projectOwner}
+              </AndamioBadge>
+            </div>
+          </div>
+        )}
+
+        {/* Current Managers */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <OnChainIcon className="h-3.5 w-3.5 text-primary" />
+            <AndamioText variant="small" className="font-medium">
+              Managers
             </AndamioText>
-            <div className="flex flex-wrap gap-2">
-              {currentManagers.map((manager) => (
-                <AndamioBadge key={manager} variant="secondary" className="text-xs font-mono">
-                  {manager}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {effectiveManagers.length === 0 ? (
+              <AndamioText variant="small" className="text-muted-foreground">
+                No managers assigned
+              </AndamioText>
+            ) : (
+              effectiveManagers.map((manager) => {
+                const isOwner = manager === projectOwner;
+                const isMarkedForRemoval = aliasesToRemove.includes(manager);
+                return (
+                  <AndamioBadge
+                    key={manager}
+                    variant={isMarkedForRemoval ? "destructive" : "secondary"}
+                    className={`font-mono text-xs ${isMarkedForRemoval ? "gap-1 pr-1 line-through opacity-70" : isOwner ? "" : "gap-1 pr-1"}`}
+                  >
+                    {manager}
+                    {!isOwner && !isProcessing && (
+                      <button
+                        type="button"
+                        onClick={() => toggleRemove(manager)}
+                        className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                        aria-label={isMarkedForRemoval ? `Undo remove ${manager}` : `Remove ${manager}`}
+                      >
+                        <CloseIcon className="h-3 w-3" />
+                      </button>
+                    )}
+                  </AndamioBadge>
+                );
+              })
+            )}
+          </div>
+          {effectiveManagers.length > 0 && !isProcessing && (
+            <AndamioText variant="small" className="text-xs text-muted-foreground">
+              Click &times; on a manager to mark them for removal
+            </AndamioText>
+          )}
+        </div>
+
+        {/* Pending Additions */}
+        {aliasesToAdd.length > 0 && (
+          <div className="space-y-2">
+            <AndamioText variant="small" className="font-medium">
+              Adding
+            </AndamioText>
+            <div className="flex flex-wrap gap-1.5">
+              {aliasesToAdd.map((alias) => (
+                <AndamioBadge key={alias} variant="outline" className="font-mono text-xs gap-1 pr-1 border-primary/30 bg-primary/5">
+                  <SuccessIcon className="h-3 w-3 text-primary shrink-0" />
+                  {alias}
+                  {!isProcessing && (
+                    <button
+                      type="button"
+                      onClick={() => setAliasesToAdd((prev) => prev.filter((a) => a !== alias))}
+                      className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                      aria-label={`Cancel adding ${alias}`}
+                    >
+                      <CloseIcon className="h-3 w-3" />
+                    </button>
+                  )}
                 </AndamioBadge>
               ))}
             </div>
           </div>
         )}
 
-        {/* Action Toggle */}
-        <div className="flex gap-2">
-          <AndamioButton
-            variant={action === "add" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setAction("add")}
-            disabled={state !== "idle" && state !== "error"}
-          >
-            <AddIcon className="h-4 w-4 mr-1" />
-            Add
-          </AndamioButton>
-          <AndamioButton
-            variant={action === "remove" ? "destructive" : "outline"}
-            size="sm"
-            onClick={() => setAction("remove")}
-            disabled={state !== "idle" && state !== "error"}
-          >
-            <DeleteIcon className="h-4 w-4 mr-1" />
-            Remove
-          </AndamioButton>
-        </div>
+        {/* Separator */}
+        <div className="border-t" />
 
-        {/* Manager Input */}
-        <AliasListInput
-          value={managerAliases}
-          onChange={setManagerAliases}
-          label={action === "add" ? "Managers to Add" : "Managers to Remove"}
-          placeholder="Enter manager alias"
-          disabled={state !== "idle" && state !== "error"}
-          excludeAliases={currentManagers}
-          helperText={
-            action === "add"
-              ? "Each alias is verified on-chain before being added."
-              : "Each alias is verified on-chain before being removed."
-          }
-        />
+        {/* Add Manager Input */}
+        {!isProcessing && !txConfirmed && (
+          <AliasListInput
+            value={aliasesToAdd}
+            onChange={setAliasesToAdd}
+            label="Add a Manager"
+            placeholder="Enter alias"
+            disabled={isProcessing}
+            excludeAliases={[...effectiveManagers, ...aliasesToAdd]}
+            getExcludeReason={getExcludeReason}
+            helperText="Each alias is verified on-chain before being added."
+            hideBadges
+          />
+        )}
 
-        {/* Warning for remove */}
-        {action === "remove" && (
-          <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
-            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-            <AndamioText variant="small" className="text-xs text-muted-foreground">
+        {/* Pending Changes Summary */}
+        {hasChanges && !isProcessing && (
+          <>
+            <div className="border-t" />
+            <div className="space-y-2">
+              <AndamioText variant="small" className="text-xs font-medium uppercase tracking-wide">
+                Pending Changes
+              </AndamioText>
+              <div className="space-y-1">
+                {aliasesToAdd.map((alias) => (
+                  <div key={`add-${alias}`} className="flex items-center gap-2 text-sm">
+                    <SuccessIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>Adding <span className="font-mono">{alias}</span></span>
+                  </div>
+                ))}
+                {aliasesToRemove.map((alias) => (
+                  <div key={`rm-${alias}`} className="flex items-center gap-2 text-sm text-destructive">
+                    <CloseIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>Removing <span className="font-mono">{alias}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Warning for removals */}
+        {aliasesToRemove.length > 0 && !isProcessing && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+            <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+            <AndamioText variant="small" className="text-xs">
               Removing managers will revoke their ability to manage tasks and assess submissions.
             </AndamioText>
           </div>
         )}
 
-        {/* Transaction Status - Only show during processing */}
+        {/* Transaction Status */}
         {state !== "idle" && !txConfirmed && (
           <TransactionStatus
             state={state}
@@ -247,36 +350,19 @@ export function ManagersManage({
           </div>
         )}
 
-        {/* Success */}
-        {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-            <div className="flex items-center gap-3">
-              <SuccessIcon className="h-5 w-5 text-primary" />
-              <div className="flex-1">
-                <AndamioText className="font-medium text-primary">
-                  Managers Updated!
-                </AndamioText>
-                <AndamioText variant="small" className="text-xs">
-                  {action === "add" ? "Managers added to" : "Managers removed from"} project.
-                </AndamioText>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Submit Button */}
-        {state !== "success" && !txConfirmed && (
+        {state !== "success" && !txConfirmed && hasChanges && (
           <TransactionButton
             txState={state}
-            onClick={handleUpdateManagers}
+            onClick={handleSubmit}
             disabled={!canSubmit}
             stateText={{
-              idle: action === "add" ? "Add Managers" : "Remove Managers",
+              idle: "Save Team Changes",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",
             }}
-            className="w-full"
+            className="w-full sm:w-auto"
           />
         )}
       </AndamioCardContent>

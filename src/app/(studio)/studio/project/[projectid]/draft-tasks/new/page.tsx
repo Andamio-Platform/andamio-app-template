@@ -12,6 +12,7 @@ import {
   AndamioPageLoading,
   AndamioBackButton,
   AndamioErrorAlert,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import { toast } from "sonner";
 import { useProject } from "~/hooks/api/project/use-project";
@@ -66,7 +67,6 @@ export default function NewTaskPage() {
       });
 
       router.push(backHref);
-      router.refresh();
     } catch (err) {
       console.error("Error creating task:", err);
       setError(err instanceof Error ? err.message : "Failed to create task");
@@ -100,39 +100,43 @@ export default function NewTaskPage() {
       <div className="space-y-6">
         <AndamioBackButton href={backHref} label="Back to Tasks" />
         <AndamioErrorAlert
-          error={projectError ?? "Project not ready for tasks"}
+          error={projectError ?? "This project needs to be published on-chain before tasks can be created. Go to Manage Treasury to publish."}
         />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <AndamioBackButton href={backHref} label="Back to Tasks" />
-        <AndamioBadge variant="secondary">Draft</AndamioBadge>
+    <AndamioScrollArea className="h-full">
+      <div className="min-h-full">
+        <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <AndamioBackButton href={backHref} label="Back to Tasks" />
+            <AndamioBadge variant="secondary">Draft</AndamioBadge>
+          </div>
+
+          <AndamioPageHeader
+            title="Create Task"
+            description="Define a new task for contributors"
+          />
+
+          {error && <AndamioErrorAlert error={error} />}
+
+          <TaskForm
+            onSubmit={handleCreate}
+            isSubmitting={createTask.isPending}
+            submitLabel="Create Task"
+            headerDescription="Task will be saved as a draft."
+            cancelAction={
+              <Link href={backHref}>
+                <AndamioButton variant="outline" type="button">
+                  Cancel
+                </AndamioButton>
+              </Link>
+            }
+          />
+        </div>
       </div>
-
-      <AndamioPageHeader
-        title="Create New Task"
-        description="Define a new task for contributors"
-      />
-
-      {error && <AndamioErrorAlert error={error} />}
-
-      <TaskForm
-        onSubmit={handleCreate}
-        isSubmitting={createTask.isPending}
-        submitLabel="Create Task"
-        headerDescription="Fill in the task information. Task will be saved as a draft."
-        cancelAction={
-          <Link href={backHref}>
-            <AndamioButton variant="outline" type="button">
-              Cancel
-            </AndamioButton>
-          </Link>
-        }
-      />
-    </div>
+    </AndamioScrollArea>
   );
 }

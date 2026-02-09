@@ -15,6 +15,7 @@ import {
   ThemeIcon,
   KeyIcon,
   CredentialIcon,
+  ChartIcon,
 } from "~/components/icons";
 import type { NavSection } from "~/types/ui";
 import { BRANDING } from "./branding";
@@ -90,6 +91,12 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
         href: "/api-setup",
         icon: KeyIcon,
         description: "Gateway registration",
+      },
+      {
+        name: "Usage Dashboard",
+        href: "/usage",
+        icon: ChartIcon,
+        description: "API allowance and limits",
       },
       {
         name: "Component Library",

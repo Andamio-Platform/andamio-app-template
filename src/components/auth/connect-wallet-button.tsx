@@ -4,8 +4,8 @@ import React from "react";
 import Image from "next/image";
 import { useWallet, useWalletList } from "@meshsdk/react";
 import type { Wallet } from "@meshsdk/common";
-import { Web3Wallet } from "@meshsdk/web3-sdk";
-import type { EnableWeb3WalletOptions } from "@meshsdk/web3-sdk";
+import { Web3Wallet } from "@utxos/sdk";
+import type { EnableWeb3WalletOptions } from "@utxos/sdk";
 import { WalletIcon, LoadingIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import {
@@ -227,7 +227,7 @@ function ConnectedDropdown() {
         </DropdownMenuItem>
         {isWeb3 && (
           <DropdownMenuItem
-            onClick={() => window.open("https://web3.meshjs.dev/dashboard", "_blank")}
+            onClick={() => window.open("https://utxos.dev/dashboard", "_blank")}
           >
             Open Web3 Wallet
           </DropdownMenuItem>
@@ -301,7 +301,7 @@ export function ConnectWalletButton({
       if (!web3Services) return;
       setSocialLoading(directTo);
       try {
-        const wallet = await Web3Wallet.enable({
+        const web3Wallet = await Web3Wallet.enable({
           networkId: web3Services.networkId ?? 0,
           fetcher: web3Services.fetcher,
           submitter: web3Services.submitter,
@@ -309,13 +309,14 @@ export function ConnectWalletButton({
           projectId: web3Services.projectId,
           directTo,
         });
-        const user = wallet.getUser();
-        setWeb3UserData(user);
+        const user = web3Wallet.getUser();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk UserSocialData uses camelCase avatarUrl, @meshsdk/react expects snake_case avatar_url
+        setWeb3UserData(user as any);
         setWallet(
-          wallet,
+          web3Wallet.cardano,
           "Mesh Web3 Services",
           persist
-            ? { walletAddress: await wallet.getChangeAddress(), user }
+            ? { walletAddress: await web3Wallet.cardano.getChangeAddress(), user }
             : undefined
         );
         setOpen(false);

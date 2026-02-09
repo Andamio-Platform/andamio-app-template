@@ -23,6 +23,10 @@ export const env = createEnv({
     NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: z.string().url(),
     NEXT_PUBLIC_CARDANO_NETWORK: z.enum(["mainnet", "preprod", "preview"]).default("preprod"),
     NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: z.string().length(56),
+    // Blockfrost project ID for social wallet TX submission (Web3/UTXOS wallets).
+    // Not needed for CIP-30 browser wallets (Nami, Eternl, etc.).
+    // Get a free key at https://blockfrost.io/
+    NEXT_PUBLIC_BLOCKFROST_PROJECT_ID: z.string().optional(),
   },
 
   /**
@@ -35,6 +39,7 @@ export const env = createEnv({
     NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: process.env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL,
     NEXT_PUBLIC_CARDANO_NETWORK: process.env.NEXT_PUBLIC_CARDANO_NETWORK,
     NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: process.env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID,
+    NEXT_PUBLIC_BLOCKFROST_PROJECT_ID: process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BackIcon, ForwardIcon, SkipIcon, SettingsIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { cn } from "~/lib/utils";
 
 interface WizardNavigationProps {
@@ -108,7 +109,7 @@ export function WizardHeader({
       )}
     >
       <div>
-        <h1 className="text-lg font-semibold">Module Design Wizard</h1>
+        <AndamioHeading level={1} size="lg">Module Design Wizard</AndamioHeading>
         {moduleTitle && (
           <AndamioText variant="small">{moduleTitle}</AndamioText>
         )}

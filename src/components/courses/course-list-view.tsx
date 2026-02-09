@@ -3,6 +3,7 @@
 import React from "react";
 import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { type Course } from "~/hooks/api";
 import {
   CourseStatusBadge,
@@ -40,7 +41,7 @@ export function CourseListView({ courses, moduleCounts }: CourseListViewProps) {
               <div className="flex-1 min-w-0 space-y-2">
                 {/* Title & Code */}
                 <div>
-                  <h3 className="font-semibold text-base sm:text-lg leading-tight mb-1">{title}</h3>
+                  <AndamioHeading level={3} size="base" className="mb-1">{title}</AndamioHeading>
                   <code className="text-xs font-mono text-muted-foreground">{courseId}</code>
                 </div>
 

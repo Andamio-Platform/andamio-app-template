@@ -186,7 +186,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           )}
         </div>
         <AndamioCardTitle className="text-2xl">
-          {txConfirmed ? "Access Token Confirmed!" : "Access Token Submitted!"}
+          {txConfirmed ? "Access Token Confirmed" : "Access Token Submitted!"}
         </AndamioCardTitle>
         <AndamioCardDescription className="mx-auto max-w-sm text-center text-base">
           {txConfirmed ? (
@@ -245,10 +245,12 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           <>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-2">
               <AndamioText className="font-semibold text-lg">
-                This is a special moment.
+                Welcome to Andamio!
               </AndamioText>
               <AndamioText variant="muted">
-                You are about to use your new access token to authenticate to Andamio for the first time.
+                Now you can authenticate to Andamio
+                <br />
+                with your Access Token.
               </AndamioText>
             </div>
 
@@ -268,15 +270,6 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           </>
         )}
 
-        {/* Fallback */}
-        <div className="text-center">
-          <a
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
-          >
-            Skip and go to dashboard
-          </a>
-        </div>
       </AndamioCardContent>
     </AndamioCard>
   );

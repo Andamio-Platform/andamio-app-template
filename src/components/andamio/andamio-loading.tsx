@@ -23,6 +23,7 @@
 import * as React from "react";
 import { AndamioSkeleton } from "./andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "./andamio-card";
+import { AndamioHeading } from "./andamio-heading";
 import { cn } from "~/lib/utils";
 
 // =============================================================================
@@ -323,7 +324,7 @@ export function AndamioSectionLoading({
   return (
     <div className={cn("space-y-4", className)}>
       {title ? (
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <AndamioHeading level={3} size="lg">{title}</AndamioHeading>
       ) : (
         <AndamioSkeleton className="h-6 w-32" />
       )}

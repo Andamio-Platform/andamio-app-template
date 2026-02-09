@@ -28,6 +28,7 @@ import {
   AndamioCardFooter,
 } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 // V1 access token policy ID
@@ -115,9 +116,9 @@ export default function MigratePage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <AccessTokenIcon className="h-6 w-6 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <AndamioHeading level={1} size="2xl">
               Migrate to V2
-            </h1>
+            </AndamioHeading>
             <AndamioText variant="muted">
               Claim your V2 access token using your existing V1 token
             </AndamioText>

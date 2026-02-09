@@ -18,6 +18,7 @@ import {
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import {
@@ -182,13 +183,11 @@ export function CoursePrereqsSelector({
           <ShieldIcon className="h-5 w-5 text-secondary" />
         </div>
         <div className="flex-1 space-y-1">
-          <h3 className="text-lg font-semibold">
-            Define Contributor Requirements
-          </h3>
+          <AndamioHeading level={3} size="lg">
+            Contributor Requirements
+          </AndamioHeading>
           <AndamioText variant="muted" className="text-sm">
-            Prerequisites determine which courses a contributor must have
-            completed to join this project. This is how you ensure every
-            contributor has the skills your project needs.
+            Select which course modules contributors must complete to join.
           </AndamioText>
         </div>
       </div>
@@ -250,36 +249,23 @@ export function CoursePrereqsSelector({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-warning/30 bg-warning/5 p-6 space-y-4">
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-5 space-y-4">
           <div className="flex items-start gap-3">
             <AlertIcon className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <h4 className="font-semibold text-foreground">
-                Create a Prerequisite First
-              </h4>
+            <div className="space-y-1">
+              <AndamioHeading level={4} size="base" className="text-foreground">
+                No Courses Available
+              </AndamioHeading>
               <AndamioText variant="muted" className="text-sm">
-                Projects require contributor qualifications. Before creating a
-                project, you need at least one course module that contributors
-                must complete to prove they have the skills your project needs.
+                Create a course with at least one module to set contributor requirements.
               </AndamioText>
             </div>
           </div>
 
-          <div className="border-t border-warning/20 pt-4">
-            <AndamioText variant="small" className="text-muted-foreground mb-3">
-              This ensures:
-            </AndamioText>
-            <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
-              <li>Only qualified contributors can join</li>
-              <li>Contributors understand expectations before committing</li>
-              <li>You have an auditable record of qualifications</li>
-            </ul>
-          </div>
-
-          <Link href="/studio/course?create=true">
+          <Link href="/studio?create=course">
             <AndamioButton className="w-full">
               <CourseIcon className="h-4 w-4 mr-2" />
-              Go to Course Studio
+              Create a Course
             </AndamioButton>
           </Link>
         </div>

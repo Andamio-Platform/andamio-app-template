@@ -43,6 +43,7 @@ import {
   type TeacherAssignmentCommitment,
 } from "~/hooks/api";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
@@ -434,7 +435,7 @@ export default function TeacherDashboardPage() {
           <div className="border-b px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold leading-tight">{courseData.title}</h2>
+                <AndamioHeading level={2} size="lg">{courseData.title}</AndamioHeading>
                 <AndamioText variant="small" className="text-muted-foreground mt-0.5">
                   Teacher Dashboard
                 </AndamioText>
@@ -822,12 +823,12 @@ export default function TeacherDashboardPage() {
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold">
+                    <AndamioHeading level={3} size="lg">
                       {selectedCommitment.moduleCode ??
                         (selectedCommitment.sltHash
                           ? `${selectedCommitment.sltHash.slice(0, 12)}...`
                           : "Unknown")}
-                    </h3>
+                    </AndamioHeading>
                     <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
                       {formatNetworkStatus(selectedCommitment.commitmentStatus)}
                     </AndamioBadge>

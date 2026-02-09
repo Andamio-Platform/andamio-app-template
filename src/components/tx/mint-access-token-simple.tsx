@@ -457,10 +457,12 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
           {/* The ceremony message */}
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-2">
             <AndamioText className="font-semibold text-lg">
-              This is a special moment.
+              Welcome to Andamio!
             </AndamioText>
             <AndamioText variant="muted">
-              You are about to use your new access token to authenticate to Andamio for the first time.
+              Now you can authenticate to Andamio
+              <br />
+              with your Access Token.
             </AndamioText>
           </div>
 

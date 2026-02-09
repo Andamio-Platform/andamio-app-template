@@ -24,6 +24,7 @@ export * from "./andamio-remove-button";
 export * from "./andamio-row-actions";
 export * from "./andamio-badge";
 export * from "./andamio-text";
+export * from "./andamio-heading";
 export * from "./andamio-card";
 export * from "./andamio-alert";
 export * from "./andamio-code";

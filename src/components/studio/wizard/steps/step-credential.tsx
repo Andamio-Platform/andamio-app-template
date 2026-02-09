@@ -12,6 +12,7 @@ import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioDialog,
@@ -275,9 +276,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
           {/* Explanation */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">
+            <AndamioHeading level={3} size="lg">
               One Module = One Verifiable Credential
-            </h3>
+            </AndamioHeading>
             <AndamioText variant="small" className="leading-relaxed">
               Each module you create becomes a{" "}
               <span className="font-medium text-foreground">

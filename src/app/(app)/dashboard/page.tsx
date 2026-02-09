@@ -35,9 +35,6 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // TODO: Re-enable pending tx tracking after basic API is working
-  const isPendingAccessTokenMint = false;
-
   // Not authenticated state
   if (!isAuthenticated || !user) {
     // Post-mint: Show contextual auth prompt with step tracker
@@ -76,25 +73,16 @@ export default function DashboardPage() {
 
   const hasAccessToken = !!user.accessTokenAlias;
 
-  // No access token: show only the mint prompt
+  // No access token: show mint prompt
   if (!hasAccessToken) {
     return (
       <div className="space-y-6">
-        <WelcomeHero
-          accessTokenAlias={user.accessTokenAlias}
-          isPendingMint={isPendingAccessTokenMint}
-          pendingAlias={undefined}
-        />
         <AccessTokenConfirmationAlert onComplete={() => router.refresh()} />
-        {!isPendingAccessTokenMint && (
-          <GettingStarted
-            isAuthenticated={isAuthenticated}
-            hasAccessToken={hasAccessToken}
-          />
-        )}
-        {!isPendingAccessTokenMint && (
-          <MintAccessTokenSimple onSuccess={() => router.refresh()} />
-        )}
+        <GettingStarted
+          isAuthenticated={isAuthenticated}
+          hasAccessToken={hasAccessToken}
+        />
+        <MintAccessTokenSimple onSuccess={() => router.refresh()} />
       </div>
     );
   }
@@ -102,11 +90,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Hero - Main identity display */}
-      <WelcomeHero
-        accessTokenAlias={user.accessTokenAlias}
-        isPendingMint={isPendingAccessTokenMint}
-        pendingAlias={undefined}
-      />
+      <WelcomeHero accessTokenAlias={user.accessTokenAlias!} />
 
       {/* My Learning Section */}
       <MyLearning />

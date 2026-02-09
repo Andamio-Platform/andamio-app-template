@@ -10,6 +10,7 @@ import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { ContentEditor } from "~/components/editor";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
@@ -132,7 +133,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             <TipIcon className="h-8 w-8 text-muted-foreground" />
           </motion.div>
           <div>
-            <h3 className="font-semibold mb-1">The Backwards Design Payoff</h3>
+            <AndamioHeading level={3} size="base" className="mb-1">The Backwards Design Payoff</AndamioHeading>
             <AndamioText variant="small">
               Now that you know exactly what learners will achieve ({slts.length} SLTs)
               and how they&apos;ll prove it (the assignment), writing the introduction

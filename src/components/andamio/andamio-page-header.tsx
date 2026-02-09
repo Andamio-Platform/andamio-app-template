@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
 import { AndamioText } from "./andamio-text";
+import { AndamioHeading } from "./andamio-heading";
 
 interface AndamioPageHeaderProps {
   /**
@@ -70,7 +71,7 @@ export function AndamioPageHeader({
   if (centered) {
     return (
       <div className={cn("text-center max-w-3xl mx-auto space-y-2 sm:space-y-4 px-4 sm:px-0", className)}>
-        <h1>{title}</h1>
+        <AndamioHeading level={1} size="5xl">{title}</AndamioHeading>
         {description && (
           <AndamioText variant="lead">
             {description}
@@ -91,7 +92,7 @@ export function AndamioPageHeader({
       <div className={cn("flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4", className)}>
         <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <h1>{title}</h1>
+            <AndamioHeading level={1} size="5xl">{title}</AndamioHeading>
             {badge}
           </div>
           {description && (
@@ -111,7 +112,7 @@ export function AndamioPageHeader({
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <h1>{title}</h1>
+        <AndamioHeading level={1} size="5xl">{title}</AndamioHeading>
         {badge}
       </div>
       {description && (

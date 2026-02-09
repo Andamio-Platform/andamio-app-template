@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertIcon, RefreshIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 /**
@@ -28,7 +29,7 @@ export default function Error({
       <div className="max-w-md w-full space-y-4">
         <div className="flex items-center gap-2 text-destructive">
           <AlertIcon className="h-6 w-6" />
-          <h1 className="text-xl font-bold">Something went wrong</h1>
+          <AndamioHeading level={1} size="xl">Something went wrong</AndamioHeading>
         </div>
 
         <AndamioText variant="muted">

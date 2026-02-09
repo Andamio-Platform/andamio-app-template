@@ -47,6 +47,7 @@ import {
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { CopyId } from "~/components/andamio/copy-id";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCourse } from "~/hooks/api/course/use-course";
@@ -470,7 +471,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
         )}>
           {/* Course Header - Always visible */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">{courseTitle}</h1>
+            <AndamioHeading level={1} size="2xl" className="mb-2">{courseTitle}</AndamioHeading>
             {!isEmpty && (
               <div className="flex items-center gap-3">
                 <AndamioBadge variant="default" className="text-[10px]">
@@ -491,9 +492,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                 <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 mx-auto mb-6 shadow-xl shadow-primary/30">
                   <CredentialIcon className="h-12 w-12 text-primary-foreground" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">
+                <AndamioHeading level={2} size="3xl" className="mb-4">
                   Create Your First Credential
-                </h2>
+                </AndamioHeading>
                 <AndamioText variant="muted" className="text-lg leading-relaxed">
                   Every module is a <strong className="text-foreground">verifiable credential</strong> that learners earn on-chain.
                   Design what mastery looks like, and Andamio handles the rest.
@@ -516,7 +517,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 mb-4 group-hover:scale-110 group-hover:bg-primary/30 transition-all">
                     <SparkleIcon className="h-7 w-7 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Guided Setup</h3>
+                  <AndamioHeading level={3} size="xl" className="mb-2">Guided Setup</AndamioHeading>
                   <p className="text-muted-foreground mb-4 leading-relaxed">
                     Walk through each step: define the credential, set learning targets, write lessons, and create an assignment.
                   </p>
@@ -535,7 +536,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4 group-hover:scale-110 group-hover:bg-muted/80 transition-all">
                     <OnChainIcon className="h-7 w-7 text-muted-foreground group-hover:text-foreground transition-colors" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Quick Create</h3>
+                  <AndamioHeading level={3} size="xl" className="mb-2">Quick Create</AndamioHeading>
                   <p className="text-muted-foreground mb-4 leading-relaxed">
                     Jump directly into the editor. Best for experienced builders who want full control from the start.
                   </p>
@@ -1076,7 +1077,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12">
                   <TeacherIcon className="h-10 w-10 text-muted-foreground/40 mb-4" />
-                  <h3 className="text-lg font-semibold mb-1">No Pending Reviews</h3>
+                  <AndamioHeading level={3} size="lg" className="mb-1">No Pending Reviews</AndamioHeading>
                   <AndamioText variant="muted" className="text-center max-w-sm">
                     All caught up! When students submit assignment work, pending reviews will appear here.
                   </AndamioText>

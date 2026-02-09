@@ -8,6 +8,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { RegistrationFlow } from "~/components/landing/registration-flow";
 import { V1MigrateCard } from "~/components/landing/v1-migrate-card";
 import { LoadingIcon } from "~/components/icons";
@@ -97,9 +98,9 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   if (isWalletConnected && isAuthenticating) {
     return (
       <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+        <AndamioHeading level={1} size="4xl">
           Signing In...
-        </h1>
+        </AndamioHeading>
         <div className="mt-10 flex flex-col items-center gap-4">
           <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
           <AndamioText variant="muted">Please sign the message in your wallet</AndamioText>
@@ -112,9 +113,9 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   if (v1Scanning) {
     return (
       <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+        <AndamioHeading level={1} size="4xl">
           Checking Your Wallet...
-        </h1>
+        </AndamioHeading>
         <div className="mt-10 flex flex-col items-center gap-4">
           <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
           <AndamioText variant="muted">Scanning for existing access tokens</AndamioText>
@@ -169,7 +170,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
       <div className="pt-6 w-full max-w-4xl">
         <div className="grid gap-6 sm:grid-cols-3">
           <div className="flex flex-col items-center text-center p-6 gap-4">
-            <h3 className="font-semibold">Get Started</h3>
+            <AndamioHeading level={3} size="base">Get Started</AndamioHeading>
             <p className="text-sm text-muted-foreground">
               Connect your wallet and create your on-chain identity
             </p>
@@ -179,7 +180,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
           </div>
 
           <div className="flex flex-col items-center text-center p-6 gap-4">
-            <h3 className="font-semibold">Explore</h3>
+            <AndamioHeading level={3} size="base">Explore</AndamioHeading>
             <p className="text-sm text-muted-foreground">
               Browse courses and projects to see what&apos;s available
             </p>
@@ -189,7 +190,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
           </div>
 
           <div className="flex flex-col items-center text-center p-6 gap-4">
-            <h3 className="font-semibold">Build</h3>
+            <AndamioHeading level={3} size="base">Build</AndamioHeading>
             <p className="text-sm text-muted-foreground">
               Launch a project and onboard contributors
             </p>

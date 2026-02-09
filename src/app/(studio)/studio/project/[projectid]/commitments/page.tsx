@@ -36,6 +36,7 @@ import {
   AlertIcon,
   NextIcon,
 } from "~/components/icons";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 
 // =============================================================================
 // Types
@@ -318,9 +319,9 @@ export default function ProjectCommitmentsPage() {
             <div className="border-b px-5 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold leading-tight">
+                  <AndamioHeading level={2} size="lg">
                     {project.title ?? "Project"}
-                  </h2>
+                  </AndamioHeading>
                   <AndamioText variant="small" className="text-muted-foreground mt-0.5">
                     Task Assessments
                   </AndamioText>
@@ -452,9 +453,9 @@ export default function ProjectCommitmentsPage() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold font-mono">
+                      <AndamioHeading level={3} size="lg" className="font-mono">
                         {selectedCommitment.submittedBy}
-                      </h3>
+                      </AndamioHeading>
                       <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
                         {formatStatus(selectedCommitment.commitmentStatus)}
                       </AndamioBadge>

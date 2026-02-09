@@ -11,6 +11,7 @@ import {
 } from "~/components/andamio";
 import { CourseIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { LessonMediaSection } from "~/components/courses/lesson-media-section";
@@ -112,9 +113,9 @@ export default function LessonDetailPage() {
       {/* Lesson Title and Description */}
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+          <AndamioHeading level={1} size="3xl">
             {typeof lesson.title === "string" ? lesson.title : `Lesson ${moduleIndex}`}
-          </h1>
+          </AndamioHeading>
           {typeof lesson.description === "string" && lesson.description && (
             <AndamioText variant="lead" className="mt-2">
               {lesson.description}

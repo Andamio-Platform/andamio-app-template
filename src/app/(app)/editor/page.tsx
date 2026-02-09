@@ -6,6 +6,7 @@ import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } 
 import { AndamioTabs, AndamioTabsContent, AndamioTabsList, AndamioTabsTrigger } from "~/components/andamio/andamio-tabs";
 import { AndamioPageHeader } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import type { JSONContent } from "@tiptap/core";
 
 const sampleContent: JSONContent = {
@@ -209,28 +210,28 @@ export default function EditorPage() {
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
           <div>
-            <h3 className="font-semibold mb-2">Available Extension Kits:</h3>
+            <AndamioHeading level={3} size="base" className="mb-2">Available Extension Kits:</AndamioHeading>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-1">BaseExtensionKit</h4>
+                <AndamioHeading level={4} size="base" className="font-medium mb-1">BaseExtensionKit</AndamioHeading>
                 <AndamioText variant="small">
                   Core extensions for basic text editing
                 </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-1">BasicEditorKit</h4>
+                <AndamioHeading level={4} size="base" className="font-medium mb-1">BasicEditorKit</AndamioHeading>
                 <AndamioText variant="small">
                   Text formatting with lists and links
                 </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-1">ReadOnlyExtensionKit</h4>
+                <AndamioHeading level={4} size="base" className="font-medium mb-1">ReadOnlyExtensionKit</AndamioHeading>
                 <AndamioText variant="small">
                   For displaying content without editing
                 </AndamioText>
               </div>
               <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-1">FullEditorKit</h4>
+                <AndamioHeading level={4} size="base" className="font-medium mb-1">FullEditorKit</AndamioHeading>
                 <AndamioText variant="small">
                   All features including images and menus
                 </AndamioText>

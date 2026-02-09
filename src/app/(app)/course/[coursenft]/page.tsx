@@ -10,6 +10,7 @@ import {
 } from "~/components/andamio";
 import { CourseIcon, SLTIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useCourseParams } from "~/hooks/use-course-params";
 import { UserCourseStatus } from "~/components/learner/user-course-status";
@@ -115,7 +116,7 @@ function CourseDetailContent() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{courseTitle}</h1>
+          <AndamioHeading level={1} size="2xl">{courseTitle}</AndamioHeading>
           {courseDescription && (
             <AndamioText variant="lead">{courseDescription}</AndamioText>
           )}
@@ -149,7 +150,7 @@ function CourseDetailContent() {
       {/* Course Header */}
       <div>
         <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-3 mb-2">
-          <h1 className="text-2xl sm:text-3xl font-bold">{courseTitle}</h1>
+          <AndamioHeading level={1} size="2xl">{courseTitle}</AndamioHeading>
           <OnChainSltsBadge courseId={courseId} />
         </div>
         {courseDescription && (

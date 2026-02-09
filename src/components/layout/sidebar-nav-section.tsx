@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { NextIcon } from "~/components/icons";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { SIDEBAR_DESKTOP, SIDEBAR_MOBILE } from "~/config";
 import { cn } from "~/lib/utils";
 import type { NavSection, NavItem } from "~/types/ui";
@@ -67,7 +68,9 @@ export function SidebarNavSection({
   return (
     <div className="space-y-0.5">
       {/* Section Header */}
-      <h3
+      <AndamioHeading
+        level={3}
+        size="base"
         className={cn(
           "px-2 font-medium uppercase tracking-wider mb-1",
           styles.sectionHeaderSize,
@@ -75,7 +78,7 @@ export function SidebarNavSection({
         )}
       >
         {section.title}
-      </h3>
+      </AndamioHeading>
 
       {/* Section Items */}
       {section.items.map((item) => (

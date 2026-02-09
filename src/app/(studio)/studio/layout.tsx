@@ -227,12 +227,6 @@ function StudioSidebarLayoutInner({
                 </div>
               )}
 
-              {!coursesLoading && courses.length === 0 && (
-                <div className="py-4 text-center mb-4">
-                  <span className="text-xs text-muted-foreground">No courses yet</span>
-                </div>
-              )}
-
               {filteredCourses.map((course) => (
                 <CourseListItem
                   key={course.courseId}
@@ -271,12 +265,6 @@ function StudioSidebarLayoutInner({
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {!ownedLoading && !managedLoading && allProjects.length === 0 && (
-                <div className="py-4 text-center mb-4">
-                  <span className="text-xs text-muted-foreground">No projects yet</span>
                 </div>
               )}
 

@@ -32,15 +32,12 @@ import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selec
 import {
   AndamioCard,
   AndamioCardContent,
-  AndamioCardDescription,
-  AndamioCardHeader,
-  AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { ProjectIcon, ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 
@@ -79,8 +76,8 @@ function ChecklistStep({ step, title, status, isLast = false, children }: Checkl
       </div>
 
       {/* Right: content */}
-      <div className="flex-1 pb-6 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="flex-1 pb-8 min-w-0">
+        <div className="flex items-center gap-2 mb-3">
           <span className={`text-sm font-semibold ${isComplete ? "text-success" : "text-foreground"}`}>
             {title}
           </span>
@@ -236,20 +233,7 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
 
   return (
     <AndamioCard>
-      <AndamioCardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <ProjectIcon className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
-            <AndamioCardDescription>
-              Mint a Project NFT to start managing contributors on-chain
-            </AndamioCardDescription>
-          </div>
-        </div>
-      </AndamioCardHeader>
-      <AndamioCardContent>
+      <AndamioCardContent className="py-8">
         {/* Post-Success Certificate View */}
         {txConfirmed ? (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-4">
@@ -318,23 +302,26 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
               </AndamioAlert>
             )}
 
-            {/* Project Creator Info */}
-            {hasAccessToken && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-                <ManagerIcon className="h-4 w-4" />
-                <span>Creating as</span>
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
-                  {user.accessTokenAlias}
-                </code>
-              </div>
-            )}
-
             {/* Checklist Steps */}
             {hasAccessToken && hasInitiatorData && (
               <div>
-                {/* Step 1: Project Title */}
+                {/* Step 1: Owner (locked) */}
                 <ChecklistStep
                   step={1}
+                  title="Owner"
+                  status={user.accessTokenAlias!}
+                >
+                  <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
+                    {user.accessTokenAlias}
+                  </code>
+                  <AndamioText variant="small" className="text-xs mt-1.5">
+                    The owner cannot be changed. You can add project managers after creating the project.
+                  </AndamioText>
+                </ChecklistStep>
+
+                {/* Step 2: Project Title */}
+                <ChecklistStep
+                  step={2}
                   title="Name your project"
                   status={hasTitle ? title.trim() : null}
                 >
@@ -348,13 +335,13 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
                     maxLength={200}
                   />
                   <AndamioText variant="small" className="text-xs mt-1.5">
-                    Give your project a descriptive title. You can update this later.
+                    Give your project a public title. You can update this later.
                   </AndamioText>
                 </ChecklistStep>
 
-                {/* Step 2: Course Prerequisites */}
+                {/* Step 3: Course Prerequisites */}
                 <ChecklistStep
-                  step={2}
+                  step={3}
                   title="Set contributor requirements"
                   status={
                     prereqCourseCount > 0

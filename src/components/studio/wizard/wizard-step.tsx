@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "~/lib/utils";
-import { AndamioText } from "~/components/andamio";
+import { AndamioText, AndamioHeading } from "~/components/andamio";
 import { stepVariants, stepTransition } from "./types";
 import type { WizardStepConfig } from "./types";
 
@@ -42,9 +42,9 @@ export function WizardStep({
         <div className="p-2 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <h2 className="m-0 text-xl sm:text-2xl font-bold tracking-tight">
+        <AndamioHeading level={2} size="2xl">
           {config.subtitle}
-        </h2>
+        </AndamioHeading>
       </div>
 
       {/* Step content - constrained width to prevent overflow */}

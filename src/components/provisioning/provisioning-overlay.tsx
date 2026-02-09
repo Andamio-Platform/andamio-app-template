@@ -4,6 +4,7 @@ import React from "react";
 import { ExternalLinkIcon, SparkleIcon, CelebrateIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import { AndamioText } from "~/components/andamio";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { cn } from "~/lib/utils";
 import type { ProvisioningConfig, ProvisioningStep } from "./types";
 import { PROVISIONING_DISPLAY } from "./types";
@@ -68,9 +69,9 @@ export function ProvisioningOverlay({
       </div>
 
       {/* Title */}
-      <h2 className="text-xl font-semibold text-center mb-2">
+      <AndamioHeading level={2} size="lg" className="text-center mb-2">
         {isReady ? display.successTitle : display.provisioningTitle}
-      </h2>
+      </AndamioHeading>
 
       {/* Entity title */}
       <AndamioText variant="muted" className="text-center mb-10">

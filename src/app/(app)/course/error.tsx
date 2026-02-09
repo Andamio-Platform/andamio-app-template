@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { AlertIcon, RefreshIcon, CourseIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 /**
@@ -33,7 +34,7 @@ export default function CourseError({
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-xl font-bold">Something went wrong</h1>
+          <AndamioHeading level={1} size="xl">Something went wrong</AndamioHeading>
           <AndamioText variant="muted">
             {error.message || "An unexpected error occurred while loading this course."}
           </AndamioText>

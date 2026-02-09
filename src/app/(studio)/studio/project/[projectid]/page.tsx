@@ -28,6 +28,7 @@ import {
   AndamioText,
   AndamioErrorAlert,
   AndamioActionFooter,
+  AndamioHeading,
 } from "~/components/andamio";
 import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, LessonIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
@@ -177,7 +178,7 @@ export default function ProjectDashboardPage() {
     <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Project Header */}
       <div className="mb-2">
-        <h1 className="text-2xl font-bold mb-2">{projectDetail.title || "Untitled Project"}</h1>
+        <AndamioHeading level={1} size="2xl" className="mb-2">{projectDetail.title || "Untitled Project"}</AndamioHeading>
         <div className="flex items-center gap-3">
           <AndamioBadge variant="default" className="text-[10px]">
             <OnChainIcon className="h-2.5 w-2.5 mr-1" />

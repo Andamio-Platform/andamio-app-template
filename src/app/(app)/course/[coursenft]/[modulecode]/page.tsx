@@ -16,6 +16,7 @@ import {
 } from "~/components/andamio";
 import { SettingsIcon, OnChainIcon, AssignmentIcon, NextIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { useTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
@@ -228,7 +229,7 @@ function AssignmentCTA({
           </div>
           <div className="flex-1 text-center sm:text-left space-y-2">
             <div className="flex items-center gap-2 justify-center sm:justify-start">
-              <h3 className="text-xl font-semibold">{ctaConfig.heading}</h3>
+              <AndamioHeading level={3} size="lg">{ctaConfig.heading}</AndamioHeading>
               {commitmentStatus && (
                 <AssignmentStatusBadge status={commitmentStatus} />
               )}

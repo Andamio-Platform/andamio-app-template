@@ -36,6 +36,7 @@ import * as React from "react";
 import { cn } from "~/lib/utils";
 import type { IconComponent } from "~/types/ui";
 import { AndamioText } from "./andamio-text";
+import { AndamioHeading } from "./andamio-heading";
 
 export interface AndamioEmptyStateProps {
   /**
@@ -95,7 +96,7 @@ export function AndamioEmptyState({
           )}
         />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <AndamioHeading level={3} size="lg">{title}</AndamioHeading>
       {description && (
         <AndamioText variant="muted" className="max-w-sm">
           {description}

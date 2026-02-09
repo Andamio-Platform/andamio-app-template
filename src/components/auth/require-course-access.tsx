@@ -6,6 +6,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { AndamioPageLoading, AndamioStudioLoading, AndamioAlert, AndamioAlertDescription, AndamioButton, AndamioText } from "~/components/andamio";
 import { AlertIcon, BackIcon, SecurityAlertIcon } from "~/components/icons";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useOwnerCourses, useTeacherCourses } from "~/hooks/api";
 
 interface RequireCourseAccessProps {
@@ -119,7 +120,7 @@ export function RequireCourseAccess({
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
         <SecurityAlertIcon className="h-12 w-12 text-destructive/70 mb-4" />
-        <h1>Access Denied</h1>
+        <AndamioHeading level={1} size="2xl">Access Denied</AndamioHeading>
         <AndamioText variant="muted" className="text-center mb-6 max-w-md">
           Only course owners and instructors can access this page. If you believe
           you should have access, check that you are connected with the correct wallet.

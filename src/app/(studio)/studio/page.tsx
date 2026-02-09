@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -20,7 +20,8 @@ import {
 import {
   AndamioButton,
   AndamioInput,
-  AndamioLabel,
+  AndamioCard,
+  AndamioCardContent,
 } from "~/components/andamio";
 import { toast } from "sonner";
 import { CreateProject } from "~/components/tx";
@@ -30,9 +31,64 @@ import {
   AddIcon,
   AlertIcon,
   LoadingIcon,
+  SuccessIcon,
 } from "~/components/icons";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useStudioContext } from "./studio-context";
+
+// =============================================================================
+// ChecklistStep — vertical stepper item with numbered circle / checkmark
+// =============================================================================
+
+interface ChecklistStepProps {
+  step: number;
+  title: string;
+  status: string | null; // null = incomplete, string = completion summary
+  isLast?: boolean;
+  children: React.ReactNode;
+}
+
+function ChecklistStep({ step, title, status, isLast = false, children }: ChecklistStepProps) {
+  const isComplete = status !== null;
+
+  return (
+    <div className="flex gap-4">
+      {/* Left rail: indicator + connector line */}
+      <div className="flex flex-col items-center">
+        {isComplete ? (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
+            <SuccessIcon className="h-4 w-4" />
+          </div>
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/30 text-muted-foreground">
+            <span className="text-sm font-semibold">{step}</span>
+          </div>
+        )}
+        {/* Connector line */}
+        {!isLast && (
+          <div className={`w-px flex-1 mt-1 ${isComplete ? "bg-success/40" : "bg-border"}`} />
+        )}
+      </div>
+
+      {/* Right: content */}
+      <div className="flex-1 pb-8 min-w-0">
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`text-sm font-semibold ${isComplete ? "text-success" : "text-foreground"}`}>
+            {title}
+          </span>
+          {status && (
+            <AndamioBadge className="text-xs bg-success/10 text-success border-success/20">
+              {status}
+            </AndamioBadge>
+          )}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Main Page Component
@@ -44,7 +100,21 @@ import { useStudioContext } from "./studio-context";
  */
 export default function StudioHomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { createMode, showCreateCourse, showCreateProject, cancelCreate } = useStudioContext();
+
+  // Handle ?create=course or ?create=project query param
+  useEffect(() => {
+    const createParam = searchParams.get("create");
+    if (createParam === "course") {
+      showCreateCourse();
+      // Clear the query param
+      router.replace("/studio", { scroll: false });
+    } else if (createParam === "project") {
+      showCreateProject();
+      router.replace("/studio", { scroll: false });
+    }
+  }, [searchParams, showCreateCourse, showCreateProject, router]);
 
   // Data for counts
   const { data: courses = [] } = useTeacherCourses();
@@ -95,7 +165,7 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
   return (
     <div className="flex h-full flex-col bg-gradient-to-br from-background via-background to-primary/5">
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-lg text-center space-y-6">
+        <div className="max-w-lg text-center space-y-12">
           {/* Icon */}
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto shadow-lg shadow-primary/10">
             <CourseIcon className="h-8 w-8 text-primary" />
@@ -103,15 +173,15 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
 
           {/* Title */}
           <div>
-            <h1 className="mb-2">Studio</h1>
-            <AndamioText variant="muted" as="span" className="text-base">
+            <AndamioHeading level={1} size="5xl" className="mb-6">Studio</AndamioHeading>
+            <AndamioText variant="muted" as="span" className="text-base max-w-sm">
               Create, manage, and publish courses and projects on Cardano
             </AndamioText>
           </div>
 
           {/* Quick Actions - Stacked */}
-          <div className="flex flex-col gap-4 max-w-xs mx-auto">
-            <div className="space-y-1.5 text-center">
+          <div className="flex flex-col space-y-12 max-w-xs mx-auto">
+            <div className="space-y-4 text-center">
               <AndamioButton onClick={onCreateCourse}>
                 <CourseIcon className="mr-2 h-4 w-4" />
                 Create a Course
@@ -121,7 +191,7 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
               </AndamioText>
             </div>
 
-            <div className="space-y-1.5 text-center">
+            <div className="space-y-4 text-center">
               <AndamioButton variant="outline" onClick={onCreateProject}>
                 <ProjectIcon className="mr-2 h-4 w-4" />
                 Create a Project
@@ -343,7 +413,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
                   <CourseIcon className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">Create Course</h2>
+                  <AndamioHeading level={2} size="3xl" className="mb-1">Create Course</AndamioHeading>
                   <AndamioText variant="small" className="text-muted-foreground">
                     Mint a Course NFT on Cardano
                   </AndamioText>
@@ -354,140 +424,161 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
               </AndamioButton>
             </div>
 
-            {/* Requirements Alert */}
-            {!hasAccessToken && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <AlertIcon className="h-4 w-4 text-destructive" />
-                  <AndamioText className="text-sm text-destructive">
-                    You need an Access Token to create a course. Mint one first!
-                  </AndamioText>
-                </div>
-              </div>
-            )}
+            {/* Form Card */}
+            <AndamioCard className="mt-6">
+              <AndamioCardContent className="py-8">
+                {/* Requirements Alert */}
+                {!hasAccessToken && (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <AlertIcon className="h-4 w-4 text-destructive" />
+                      <AndamioText className="text-sm text-destructive">
+                        You need an Access Token to create a course. Mint one first!
+                      </AndamioText>
+                    </div>
+                  </div>
+                )}
 
-            {hasAccessToken && !hasInitiatorData && (
-              <div className="rounded-lg border border-border bg-muted/50 p-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <LoadingIcon className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <AndamioText className="text-sm text-muted-foreground">
-                    Loading wallet data...
-                  </AndamioText>
-                </div>
-              </div>
-            )}
+                {hasAccessToken && !hasInitiatorData && (
+                  <div className="rounded-lg border border-border bg-muted/50 p-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <LoadingIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <AndamioText className="text-sm text-muted-foreground">
+                        Loading wallet data...
+                      </AndamioText>
+                    </div>
+                  </div>
+                )}
 
-            {/* Form */}
-            {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <AndamioLabel htmlFor="course-title" className="text-base">
-                    Course Title <span className="text-destructive">*</span>
-                  </AndamioLabel>
-                  <AndamioInput
-                    id="course-title"
-                    placeholder="Introduction to Cardano Development"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={state !== "idle" && state !== "error"}
-                    className="h-12 text-base"
-                    maxLength={200}
-                  />
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    The display name shown to learners. You can change this later.
-                  </AndamioText>
-                </div>
+                {/* Checklist Steps */}
+                {hasAccessToken && hasInitiatorData && !isWaitingForConfirmation && (
+                  <div>
+                    {/* Step 1: Owner (locked) */}
+                    <ChecklistStep
+                      step={1}
+                      title="Owner"
+                      status={user.accessTokenAlias!}
+                    >
+                      <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
+                        {user.accessTokenAlias}
+                      </code>
+                      <AndamioText variant="small" className="text-xs mt-1.5">
+                        The owner cannot be changed. You can add teachers after creating the course.
+                      </AndamioText>
+                    </ChecklistStep>
 
-                {/* Transaction Status */}
-                {state !== "idle" && (
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <div className="flex items-center gap-3">
-                      {state === "error" ? (
-                        <AlertIcon className="h-5 w-5 text-destructive" />
-                      ) : (
-                        <LoadingIcon className="h-5 w-5 animate-spin text-primary" />
-                      )}
-                      <div className="flex-1">
-                        <AndamioText className="font-medium">
-                          {state === "fetching" && "Preparing transaction..."}
-                          {state === "signing" && "Please sign in your wallet"}
-                          {state === "submitting" && "Submitting to blockchain..."}
-                          {state === "error" && "Transaction failed"}
-                        </AndamioText>
-                        {error && (
-                          <AndamioText variant="small" className="text-destructive">
-                            {error.message}
-                          </AndamioText>
+                    {/* Step 2: Course Title */}
+                    <ChecklistStep
+                      step={2}
+                      title="Name your course"
+                      status={hasTitle ? title.trim() : null}
+                      isLast
+                    >
+                      <AndamioInput
+                        id="course-title"
+                        placeholder="Introduction to Cardano Development"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        disabled={state !== "idle" && state !== "error"}
+                        maxLength={200}
+                      />
+                      <AndamioText variant="small" className="text-xs mt-1.5">
+                        Give your course a public title. You can update this later.
+                      </AndamioText>
+                    </ChecklistStep>
+
+                    {/* Transaction Status */}
+                    {state !== "idle" && (
+                      <div className="rounded-lg border bg-muted/30 p-4 mt-4">
+                        <div className="flex items-center gap-3">
+                          {state === "error" ? (
+                            <AlertIcon className="h-5 w-5 text-destructive" />
+                          ) : (
+                            <LoadingIcon className="h-5 w-5 animate-spin text-primary" />
+                          )}
+                          <div className="flex-1">
+                            <AndamioText className="font-medium">
+                              {state === "fetching" && "Preparing transaction..."}
+                              {state === "signing" && "Please sign in your wallet"}
+                              {state === "submitting" && "Submitting to blockchain..."}
+                              {state === "error" && "Transaction failed"}
+                            </AndamioText>
+                            {error && (
+                              <AndamioText variant="small" className="text-destructive">
+                                {error.message}
+                              </AndamioText>
+                            )}
+                          </div>
+                        </div>
+                        {state === "error" && (
+                          <AndamioButton
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => reset()}
+                          >
+                            Try Again
+                          </AndamioButton>
                         )}
                       </div>
-                    </div>
-                    {state === "error" && (
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-6">
                       <AndamioButton
                         variant="outline"
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => reset()}
+                        className="flex-1"
+                        onClick={onCancel}
+                        disabled={state !== "idle" && state !== "error"}
                       >
-                        Try Again
+                        Cancel
                       </AndamioButton>
-                    )}
+                      <AndamioButton
+                        className="flex-1"
+                        onClick={handleCreateCourse}
+                        disabled={!canCreate || (state !== "idle" && state !== "error")}
+                      >
+                        {state === "idle" || state === "error" ? (
+                          <>
+                            <AddIcon className="h-4 w-4 mr-2" />
+                            Mint Course NFT
+                          </>
+                        ) : (
+                          <>
+                            <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
+                            {state === "fetching" && "Preparing..."}
+                            {state === "signing" && "Sign in Wallet"}
+                            {state === "submitting" && "Minting..."}
+                          </>
+                        )}
+                      </AndamioButton>
+                    </div>
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-2">
-                  <AndamioButton
-                    variant="outline"
-                    className="flex-1"
-                    onClick={onCancel}
-                    disabled={state !== "idle" && state !== "error"}
-                  >
-                    Cancel
-                  </AndamioButton>
-                  <AndamioButton
-                    className="flex-1"
-                    onClick={handleCreateCourse}
-                    disabled={!canCreate || (state !== "idle" && state !== "error")}
-                  >
-                    {state === "idle" || state === "error" ? (
-                      <>
-                        <AddIcon className="h-4 w-4 mr-2" />
-                        Mint Course NFT
-                      </>
-                    ) : (
-                      <>
-                        <LoadingIcon className="h-4 w-4 mr-2 animate-spin" />
-                        {state === "fetching" && "Preparing..."}
-                        {state === "signing" && "Sign in Wallet"}
-                        {state === "submitting" && "Minting..."}
-                      </>
-                    )}
-                  </AndamioButton>
-                </div>
-              </div>
-            )}
-
-            {/* Waiting for Confirmation */}
-            {isWaitingForConfirmation && (
-              <div className="rounded-lg border bg-muted/30 p-6 text-center">
-                <LoadingIcon className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
-                <AndamioText className="font-medium mb-1">
-                  Confirming on blockchain...
-                </AndamioText>
-                <AndamioText variant="small" className="text-muted-foreground">
-                  {txStatus?.state === "pending" && "Waiting for block confirmation"}
-                  {txStatus?.state === "confirmed" && "Registering course..."}
-                  {!txStatus && "Registering transaction..."}
-                </AndamioText>
-                {courseMetadata && (
-                  <div className="mt-4 pt-4 border-t border-border/50">
-                    <AndamioText variant="small" className="text-muted-foreground">
-                      Creating &quot;{courseMetadata.title}&quot;
+                {/* Waiting for Confirmation */}
+                {isWaitingForConfirmation && (
+                  <div className="rounded-lg border bg-muted/30 p-6 text-center">
+                    <LoadingIcon className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                    <AndamioText className="font-medium mb-1">
+                      Confirming on blockchain...
                     </AndamioText>
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      {txStatus?.state === "pending" && "Waiting for block confirmation"}
+                      {txStatus?.state === "confirmed" && "Registering course..."}
+                      {!txStatus && "Registering transaction..."}
+                    </AndamioText>
+                    {courseMetadata && (
+                      <div className="mt-4 pt-4 border-t border-border/50">
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Creating &quot;{courseMetadata.title}&quot;
+                        </AndamioText>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
+              </AndamioCardContent>
+            </AndamioCard>
           </div>
         </div>
       </AndamioScrollArea>
@@ -517,7 +608,7 @@ function CreateProjectPanel({ onCancel, onSuccess }: CreateProjectPanelProps) {
                   <ProjectIcon className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">Create Project</h2>
+                  <AndamioHeading level={2} size="3xl" className="mb-1">Create Project</AndamioHeading>
                   <AndamioText variant="small" className="text-muted-foreground">
                     Mint a Project NFT on Cardano
                   </AndamioText>

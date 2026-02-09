@@ -22,6 +22,7 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 interface V1MigrateCardProps {
@@ -70,9 +71,9 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <SuccessIcon className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight">
+        <AndamioHeading level={1} size="2xl" className="mt-4">
           Migration Complete!
-        </h1>
+        </AndamioHeading>
         <AndamioText variant="muted" className="mt-2">
           Your V2 access token has been claimed. Check your wallet to see the transaction complete.
         </AndamioText>
@@ -118,9 +119,9 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
         <AccessTokenIcon className="h-6 w-6 text-primary" />
       </div>
-      <h1 className="mt-4 text-2xl font-bold tracking-tight">
+      <AndamioHeading level={1} size="2xl" className="mt-4">
         V1 Token Detected
-      </h1>
+      </AndamioHeading>
       <AndamioText variant="muted" className="mt-2">
         Claim your V2 access token using your existing V1 token
       </AndamioText>

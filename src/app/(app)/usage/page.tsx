@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AndamioPageHeader,
   AndamioCard,
@@ -17,12 +18,12 @@ import {
   AndamioButton,
 } from "~/components/andamio";
 import { ChartIcon, HistoryIcon } from "~/components/icons";
-import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { RequireAuth } from "~/components/auth/require-auth";
 import type { DeveloperUsageResponse } from "~/types/generated";
 import { getErrorMessage, parseApiError } from "~/lib/api-utils";
+import { getStoredDevJWT } from "~/lib/andamio-auth";
 
-const USAGE_ENDPOINT = "/api/gateway/api/v1/user/usage";
+const USAGE_ENDPOINT = "/api/gateway/api/v2/apikey/developer/usage/get";
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -46,19 +47,31 @@ function toPercent(consumed: number, limit: number) {
 }
 
 export default function UsageDashboardPage() {
-  const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
   const [usage, setUsage] = useState<DeveloperUsageResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasDevSession, setHasDevSession] = useState(true);
 
   const fetchUsage = useCallback(async () => {
-    if (!isAuthenticated) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await authenticatedFetch(USAGE_ENDPOINT);
+      const devJwt = getStoredDevJWT();
+      if (!devJwt) {
+        setHasDevSession(false);
+        setUsage(null);
+        return;
+      }
+
+      setHasDevSession(true);
+
+      const response = await fetch(USAGE_ENDPOINT, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${devJwt}`,
+        },
+      });
       if (!response.ok) {
         const apiError = await parseApiError(response);
         throw new Error(apiError.message ?? "Failed to load usage");
@@ -70,7 +83,7 @@ export default function UsageDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [authenticatedFetch, isAuthenticated]);
+  }, []);
 
   useEffect(() => {
     void fetchUsage();
@@ -125,112 +138,132 @@ export default function UsageDashboardPage() {
           <div className="space-y-6">
             {error && <AndamioErrorAlert error={error} />}
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <AndamioStatCard
-                icon={ChartIcon}
-                value={formatNumber(usageSummary.dailyConsumed)}
-                label="Daily usage"
-                iconColor="primary"
-              />
-              <AndamioStatCard
-                icon={ChartIcon}
-                value={formatNumber(usageSummary.dailyRemaining)}
-                label="Daily remaining"
-                iconColor="info"
-              />
-              <AndamioStatCard
-                icon={ChartIcon}
-                value={formatNumber(usageSummary.monthlyConsumed)}
-                label="Monthly usage"
-                iconColor="primary"
-              />
-              <AndamioStatCard
-                icon={ChartIcon}
-                value={formatNumber(usageSummary.monthlyRemaining)}
-                label="Monthly remaining"
-                iconColor="info"
-              />
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
+            {!hasDevSession && (
               <AndamioCard>
                 <AndamioCardHeader>
-                  <AndamioCardTitle>Daily quota</AndamioCardTitle>
+                  <AndamioCardTitle>Developer session required</AndamioCardTitle>
                   <AndamioCardDescription>
-                    {formatNumber(usageSummary.dailyConsumed)} of {formatNumber(usageSummary.dailyLimit)} requests
+                    Complete API setup to create your developer session before viewing usage.
                   </AndamioCardDescription>
                 </AndamioCardHeader>
-                <AndamioCardContent className="space-y-3">
-                  <AndamioProgress value={usageSummary.dailyPercent} />
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    {usageSummary.dailyPercent}% used today
-                  </AndamioText>
+                <AndamioCardContent>
+                  <AndamioButton asChild variant="outline">
+                    <Link href="/api-setup">Go to API setup</Link>
+                  </AndamioButton>
                 </AndamioCardContent>
               </AndamioCard>
+            )}
 
-              <AndamioCard>
-                <AndamioCardHeader>
-                  <AndamioCardTitle>Monthly quota</AndamioCardTitle>
-                  <AndamioCardDescription>
-                    {formatNumber(usageSummary.monthlyConsumed)} of {formatNumber(usageSummary.monthlyLimit)} requests
-                  </AndamioCardDescription>
-                </AndamioCardHeader>
-                <AndamioCardContent className="space-y-3">
-                  <AndamioProgress value={usageSummary.monthlyPercent} />
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    {usageSummary.monthlyPercent}% used this month
-                  </AndamioText>
-                </AndamioCardContent>
-              </AndamioCard>
-            </div>
-
-            <AndamioCard>
-              <AndamioCardHeader>
-                <AndamioCardTitle>Plan details</AndamioCardTitle>
-                <AndamioCardDescription>Subscription tier and rate limits</AndamioCardDescription>
-              </AndamioCardHeader>
-              <AndamioCardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <AndamioText variant="small" className="text-muted-foreground">
-                      Subscription tier
-                    </AndamioText>
-                    <AndamioText>{usage?.subscription_tier ?? "—"}</AndamioText>
-                  </div>
-                  <div className="space-y-1">
-                    <AndamioText variant="small" className="text-muted-foreground">
-                      Expires
-                    </AndamioText>
-                    <AndamioText>{formatDate(usage?.expiration)}</AndamioText>
-                  </div>
+            {hasDevSession && (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <AndamioStatCard
+                    icon={ChartIcon}
+                    value={formatNumber(usageSummary.dailyConsumed)}
+                    label="Daily usage"
+                    iconColor="primary"
+                  />
+                  <AndamioStatCard
+                    icon={ChartIcon}
+                    value={formatNumber(usageSummary.dailyRemaining)}
+                    label="Daily remaining"
+                    iconColor="info"
+                  />
+                  <AndamioStatCard
+                    icon={ChartIcon}
+                    value={formatNumber(usageSummary.monthlyConsumed)}
+                    label="Monthly usage"
+                    iconColor="primary"
+                  />
+                  <AndamioStatCard
+                    icon={ChartIcon}
+                    value={formatNumber(usageSummary.monthlyRemaining)}
+                    label="Monthly remaining"
+                    iconColor="info"
+                  />
                 </div>
 
-                <AndamioSeparator />
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <AndamioCard>
+                    <AndamioCardHeader>
+                      <AndamioCardTitle>Daily quota</AndamioCardTitle>
+                      <AndamioCardDescription>
+                        {formatNumber(usageSummary.dailyConsumed)} of {formatNumber(usageSummary.dailyLimit)} requests
+                      </AndamioCardDescription>
+                    </AndamioCardHeader>
+                    <AndamioCardContent className="space-y-3">
+                      <AndamioProgress value={usageSummary.dailyPercent} />
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        {usageSummary.dailyPercent}% used today
+                      </AndamioText>
+                    </AndamioCardContent>
+                  </AndamioCard>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <HistoryIcon className="h-4 w-4 text-muted-foreground" />
-                    <AndamioText className="font-medium">Rate limit windows</AndamioText>
-                  </div>
-                  {rateWindows.length === 0 ? (
-                    <AndamioText variant="small" className="text-muted-foreground">
-                      No rate limit windows available for this tier.
-                    </AndamioText>
-                  ) : (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {rateWindows.map((window) => (
-                        <div
-                          key={window}
-                          className="rounded-md border border-border/60 bg-muted/40 px-3 py-2"
-                        >
-                          <AndamioText variant="small">{window}</AndamioText>
-                        </div>
-                      ))}
+                  <AndamioCard>
+                    <AndamioCardHeader>
+                      <AndamioCardTitle>Monthly quota</AndamioCardTitle>
+                      <AndamioCardDescription>
+                        {formatNumber(usageSummary.monthlyConsumed)} of {formatNumber(usageSummary.monthlyLimit)} requests
+                      </AndamioCardDescription>
+                    </AndamioCardHeader>
+                    <AndamioCardContent className="space-y-3">
+                      <AndamioProgress value={usageSummary.monthlyPercent} />
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        {usageSummary.monthlyPercent}% used this month
+                      </AndamioText>
+                    </AndamioCardContent>
+                  </AndamioCard>
+                </div>
+
+                <AndamioCard>
+                  <AndamioCardHeader>
+                    <AndamioCardTitle>Plan details</AndamioCardTitle>
+                    <AndamioCardDescription>Subscription tier and rate limits</AndamioCardDescription>
+                  </AndamioCardHeader>
+                  <AndamioCardContent className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Subscription tier
+                        </AndamioText>
+                        <AndamioText>{usage?.subscription_tier ?? "—"}</AndamioText>
+                      </div>
+                      <div className="space-y-1">
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Expires
+                        </AndamioText>
+                        <AndamioText>{formatDate(usage?.expiration)}</AndamioText>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </AndamioCardContent>
-            </AndamioCard>
+
+                    <AndamioSeparator />
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <HistoryIcon className="h-4 w-4 text-muted-foreground" />
+                        <AndamioText className="font-medium">Rate limit windows</AndamioText>
+                      </div>
+                      {rateWindows.length === 0 ? (
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          No rate limit windows available for this tier.
+                        </AndamioText>
+                      ) : (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {rateWindows.map((window) => (
+                            <div
+                              key={window}
+                              className="rounded-md border border-border/60 bg-muted/40 px-3 py-2"
+                            >
+                              <AndamioText variant="small">{window}</AndamioText>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AndamioCardContent>
+                </AndamioCard>
+              </>
+            )}
           </div>
         )}
       </div>

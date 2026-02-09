@@ -28,6 +28,7 @@ import {
   completeDevRegistration,
   loginWithGateway,
   requestApiKey,
+  storeDevJWT,
   type ApiKeyResponse,
   type DevRegisterSession,
   type WalletSignature,
@@ -58,6 +59,12 @@ export default function ApiSetupPage() {
 
   const [apiKey, setApiKey] = useState<ApiKeyResponse | null>(null);
   const [apiKeyName, setApiKeyName] = useState("andamio-app");
+
+  useEffect(() => {
+    if (gatewayJwt) {
+      storeDevJWT(gatewayJwt);
+    }
+  }, [gatewayJwt]);
 
   // Detect wallet and access token
   useEffect(() => {

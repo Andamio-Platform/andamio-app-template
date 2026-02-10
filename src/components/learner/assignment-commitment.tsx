@@ -508,6 +508,56 @@ export function AssignmentCommitment({
             />
           </div>
 
+        ) : commitment?.networkStatus === "PENDING_APPROVAL" && !commitment.networkEvidence ? (
+          /* Branch: Pending review but no evidence — student needs to submit work */
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
+              <AlertIcon className="h-8 w-8 text-secondary shrink-0" />
+              <div>
+                <AndamioText className="font-medium">Evidence Required</AndamioText>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Your assignment is pending review, but your work is not on record. Enter your evidence below so your instructor can review it.
+                </AndamioText>
+              </div>
+            </div>
+            {commitment.onChainContent && (
+              <div className="p-3 border rounded-lg bg-muted/30">
+                <AndamioLabel className="text-xs">On-Chain Submission Hash</AndamioLabel>
+                <code className="block mt-1 text-xs font-mono break-all text-muted-foreground">
+                  {commitment.onChainContent}
+                </code>
+              </div>
+            )}
+            <AndamioSeparator />
+            <EvidenceEditorSection
+              label="Your Work"
+              description="Enter your assignment work below. This will update your submission so your instructor can review it."
+              placeholder="Enter your assignment work..."
+              content={localEvidenceContent}
+              onContentChange={handleEvidenceContentChange}
+            />
+            <UpdateTxStatusSection
+              txState={updateTx.state}
+              txResult={updateTx.result}
+              txError={updateTx.error?.message ?? null}
+              txStatus={updateTxStatus}
+              txConfirmed={updateTxConfirmed}
+              onRetry={() => updateTx.reset()}
+              successMessage="Evidence submitted successfully!"
+            />
+            <UpdateEvidenceActions
+              txState={updateTx.state}
+              txConfirmed={updateTxConfirmed}
+              localEvidenceContent={localEvidenceContent}
+              accessTokenAlias={user?.accessTokenAlias ?? null}
+              courseId={courseId}
+              sltHash={sltHash}
+              onExecuteTx={handleUpdateTxExecute}
+              onRefresh={() => void refetchCommitment()}
+              submitLabel="Submit Evidence"
+            />
+          </div>
+
         ) : !commitment ? (
           /* Branch: No commitment — new evidence flow */
           <div className="space-y-4">

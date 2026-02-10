@@ -74,7 +74,13 @@ export function VerifyEmailContent() {
   const searchParams = useSearchParams();
 
   const [state, setState] = React.useState<VerifyState>("verifying");
-  const [errorInfo, setErrorInfo] = React.useState<{ title: string; description: string } | null>(null);
+  const [errorInfo, setErrorInfo] = React.useState<{
+    title: string;
+    description: string;
+  } | null>(null);
+
+  // Prevent duplicate requests across StrictMode remounts
+  const verifyAttempted = React.useRef(false);
 
   // Extract params from URL
   const tokenId = searchParams.get("id");
@@ -86,13 +92,16 @@ export function VerifyEmailContent() {
     if (!tokenId || !token) {
       setErrorInfo({
         title: "Missing Parameters",
-        description: "The verification link is incomplete. Please check your email and use the full link.",
+        description:
+          "The verification link is incomplete. Please check your email and use the full link.",
       });
       setState("error");
       return;
     }
 
-    let cancelled = false;
+    // Only fire one request, even if the effect runs multiple times
+    if (verifyAttempted.current) return;
+    verifyAttempted.current = true;
 
     async function verifyEmail() {
       try {
@@ -101,10 +110,8 @@ export function VerifyEmailContent() {
           {
             token_id: tokenId,
             token: token,
-          }
+          },
         );
-
-        if (cancelled) return;
 
         // Store the JWT
         if (response.token) {
@@ -113,7 +120,11 @@ export function VerifyEmailContent() {
 
         setState("success");
       } catch (error) {
-        if (cancelled) return;
+        // 409 means the token was already used — verification succeeded on a prior request
+        if (error instanceof GatewayError && error.status === 409) {
+          setState("success");
+          return;
+        }
 
         console.error("[VerifyEmail] Verification failed:", error);
         setErrorInfo(getErrorMessage(error));
@@ -122,10 +133,6 @@ export function VerifyEmailContent() {
     }
 
     void verifyEmail();
-
-    return () => {
-      cancelled = true;
-    };
   }, [tokenId, token]);
 
   return (

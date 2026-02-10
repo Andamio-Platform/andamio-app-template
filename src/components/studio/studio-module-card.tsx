@@ -199,9 +199,14 @@ export function StudioModuleCard({
     );
   }
 
+  // "Ready to Mint" modules should go to Credentials tab, not back into the wizard
+  const cardHref = status === "approved"
+    ? `/studio/course/${courseId}?tab=credentials`
+    : `/studio/course/${courseId}/${moduleCode}`;
+
   return (
     <Link
-      href={`/studio/course/${courseId}/${moduleCode}`}
+      href={cardHref}
       className="group block"
     >
       <AndamioCard className="p-5 transition-all duration-200 hover:shadow-md">

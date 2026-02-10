@@ -264,6 +264,18 @@ export function TeachersUpdate({
           </div>
         )}
 
+        {/* Cost Breakdown */}
+        {hasTeachers && action === "add" && state !== "success" && !txConfirmed && (
+          <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+            <AndamioText variant="small" className="text-muted-foreground">
+              Transaction cost
+            </AndamioText>
+            <AndamioText variant="small" className="font-medium">
+              {teacherAliases.length} &times; 10 ADA = {teacherAliases.length * 10} ADA
+            </AndamioText>
+          </div>
+        )}
+
         {/* Submit Button */}
         {state !== "success" && !txConfirmed && (
           <TransactionButton

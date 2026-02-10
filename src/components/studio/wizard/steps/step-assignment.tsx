@@ -45,7 +45,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
   const assignment = draftAssignment ?? data.assignment;
 
   // Local UI state for editing
-  const [title, setTitle] = useState(assignment?.title ?? "Module Assignment");
+  const [title, setTitle] = useState(assignment?.title ?? "");
   const [content, setContent] = useState<JSONContent | null>(
     assignment?.contentJson ? assignment.contentJson : null
   );
@@ -84,7 +84,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       // Only update if there are actual changes
-      const titleChanged = title !== (assignment?.title ?? "Module Assignment");
+      const titleChanged = title !== (assignment?.title ?? "");
       const contentChanged = JSON.stringify(content) !== JSON.stringify(assignment?.contentJson ?? null);
 
       if (titleChanged || contentChanged) {

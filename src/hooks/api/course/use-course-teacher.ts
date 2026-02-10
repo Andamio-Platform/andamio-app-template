@@ -70,6 +70,7 @@ export interface TeacherCourse {
   imageUrl?: string;
   videoUrl?: string;
   isLive?: boolean;
+  isPublic?: boolean;
 
   // Metadata
   status?: TeacherCourseStatus;
@@ -123,6 +124,7 @@ interface RawTeacherCourse {
     image_url?: string;
     video_url?: string;
     live?: boolean;
+    is_public?: boolean;
   };
   title?: string;
   description?: string;
@@ -192,6 +194,7 @@ function transformTeacherCourse(raw: RawTeacherCourse): TeacherCourse {
     imageUrl: raw.content?.image_url ?? raw.image_url,
     videoUrl: raw.video_url, // video_url not in OrchestrationCourseContent
     isLive: raw.content?.live,
+    isPublic: raw.content?.is_public,
     status: mapSourceToStatus(raw.source),
   };
 }
@@ -415,6 +418,7 @@ export function useTeacherAssignmentCommitments(courseId: string | undefined) {
 export interface TeacherCourseWithModules {
   courseId: string;
   title?: string;
+  isPublic?: boolean;
   modules: Array<{
     assignmentId: string;
     moduleCode?: string;
@@ -511,6 +515,7 @@ export function useTeacherCoursesWithModules() {
               coursesWithModules.push({
                 courseId: course.courseId,
                 title: course.title,
+                isPublic: course.isPublic,
                 modules: validModules.map((m) => {
                   // SLT count: prefer DB slts array, fall back to on_chain_slts
                   const sltCount = m.content?.slts ?? m.on_chain_slts ?? [];

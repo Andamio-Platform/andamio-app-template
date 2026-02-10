@@ -31,6 +31,7 @@ import {
   InfoIcon,
   SuccessIcon,
   AlertIcon,
+  LockedIcon,
 } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import Link from "next/link";
@@ -157,6 +158,18 @@ export function CoursePrereqsSelector({
     [value, onChange],
   );
 
+  // Only public courses with modules are eligible as prerequisites
+  const availableCourses = useMemo(
+    () => courses?.filter((c) => c.modules.length > 0 && c.isPublic !== false) ?? [],
+    [courses],
+  );
+
+  // Private courses with modules — for the "make public" guidance
+  const privateCourses = useMemo(
+    () => courses?.filter((c) => c.modules.length > 0 && c.isPublic === false) ?? [],
+    [courses],
+  );
+
   if (coursesLoading) {
     return (
       <div className="space-y-4">
@@ -172,8 +185,6 @@ export function CoursePrereqsSelector({
       </div>
     );
   }
-
-  const availableCourses = courses?.filter((c) => c.modules.length > 0) ?? [];
 
   return (
     <div className="space-y-4">
@@ -247,6 +258,28 @@ export function CoursePrereqsSelector({
               />
             );
           })}
+        </div>
+      ) : privateCourses.length > 0 ? (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <LockedIcon className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <AndamioHeading level={4} size="base" className="text-foreground">
+                No Public Courses
+              </AndamioHeading>
+              <AndamioText variant="muted" className="text-sm">
+                You have {privateCourses.length} private {privateCourses.length === 1 ? "course" : "courses"} with{" "}
+                {(() => {
+                  const total = privateCourses.reduce((sum, c) => sum + c.modules.length, 0);
+                  return `${total} minted ${total === 1 ? "module" : "modules"}`;
+                })()}, but only public courses can be used as project prerequisites.
+                Contributors need to discover and enroll in prerequisite courses via Browse Courses.
+              </AndamioText>
+              <AndamioText variant="muted" className="text-sm">
+                To make a course public, go to <span className="font-medium text-foreground">Course Studio &rarr; your course &rarr; Course Settings</span> and toggle the visibility to public.
+              </AndamioText>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border border-warning/30 bg-warning/5 p-5 space-y-4">

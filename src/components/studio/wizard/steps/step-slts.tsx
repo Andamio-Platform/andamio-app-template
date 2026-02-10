@@ -159,13 +159,13 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       <div className="space-y-6">
         {/* Input Section or Locked Notice */}
         {isLocked ? (
-          <div className="rounded-lg border-2 border-muted-foreground/30 bg-muted/5 p-4">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <LockedIcon className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <AndamioText className="font-medium">Learning Targets are locked</AndamioText>
+          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <LockedIcon className="h-5 w-5 flex-shrink-0 text-primary mt-0.5" />
+              <div className="space-y-1">
+                <AndamioText className="font-medium text-primary">On-Chain Learning Targets</AndamioText>
                 <AndamioText variant="small">
-                  Learning Targets cannot be modified after a module is approved. Return the module to Draft status to make changes.
+                  This module has been minted. These Learning Targets are verified on-chain data and cannot be modified.
                 </AndamioText>
               </div>
             </div>

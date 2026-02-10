@@ -229,7 +229,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                   </div>
                 )}
                 <Link
-                  href={`/studio/course/${courseId}?tab=on-chain`}
+                  href={`/studio/course/${courseId}?tab=credentials`}
                   className="hover:opacity-80 transition-opacity"
                 >
                   <AndamioBadge variant="outline" className="cursor-pointer hover:bg-accent">

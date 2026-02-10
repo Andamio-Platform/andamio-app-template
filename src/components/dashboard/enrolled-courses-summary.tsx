@@ -166,8 +166,8 @@ export function EnrolledCoursesSummary({ accessTokenAlias }: EnrolledCoursesSumm
 
         {/* Browse more link */}
         <div className="pt-2">
-          <Link href="/course" className="block">
-            <AndamioButton variant="outline" size="sm" className="w-full">
+          <Link href="/course">
+            <AndamioButton variant="outline" size="sm">
               <CourseIcon className="mr-2 h-3 w-3" />
               Browse More Courses
             </AndamioButton>

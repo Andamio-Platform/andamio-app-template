@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
-import { AndamioPageHeader } from "~/components/andamio";
+import {
+  AndamioCard,
+  AndamioCardContent,
+  AndamioInput,
+  AndamioButton,
+  AndamioText,
+  AndamioHeading,
+} from "~/components/andamio";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import {
   SuccessIcon,
   ErrorIcon,
@@ -17,11 +23,11 @@ import {
   CopyIcon,
   KeyIcon,
   WalletIcon,
-  UserIcon,
   SignatureIcon,
   MailIcon,
   AlertIcon,
   SendIcon,
+  DeveloperIcon,
 } from "~/components/icons";
 import { env } from "~/env";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
@@ -36,6 +42,7 @@ import {
   deleteApiKey,
   getStoredDevJWT,
   storeDevJWT,
+  clearStoredDevJWT,
   getEmailVerificationStatus,
   resendVerificationEmail,
   type ApiKeyResponse,
@@ -46,13 +53,66 @@ import {
 } from "~/lib/andamio-auth";
 import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
 
-type SetupStep = "connect" | "register" | "sign" | "api-key" | "complete";
+type SetupStep = "connect" | "register" | "sign" | "verify-email" | "api-key" | "complete";
 
 interface WalletInfo {
   address: string;
   alias: string | null;
   accessTokenUnit: string | null;
+}
+
+// =============================================================================
+// ChecklistStep — vertical stepper item with numbered circle / checkmark
+// =============================================================================
+
+interface ChecklistStepProps {
+  step: number;
+  title: string;
+  status: string | null; // null = incomplete, string = completion summary
+  isLast?: boolean;
+  children: React.ReactNode;
+}
+
+function ChecklistStep({ step, title, status, isLast = false, children }: ChecklistStepProps) {
+  const isComplete = status !== null;
+
+  return (
+    <div className="flex gap-4">
+      {/* Left rail: indicator + connector line */}
+      <div className="flex flex-col items-center">
+        {isComplete ? (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
+            <SuccessIcon className="h-4 w-4" />
+          </div>
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/30 text-muted-foreground">
+            <span className="text-sm font-semibold">{step}</span>
+          </div>
+        )}
+        {/* Connector line */}
+        {!isLast && (
+          <div className={`w-px flex-1 mt-1 ${isComplete ? "bg-success/40" : "bg-border"}`} />
+        )}
+      </div>
+
+      {/* Right: content */}
+      <div className="flex-1 pb-8 min-w-0">
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`text-sm font-semibold ${isComplete ? "text-success" : "text-foreground"}`}>
+            {title}
+          </span>
+          {status && (
+            <AndamioBadge className="text-xs bg-success/10 text-success border-success/20">
+              {status}
+            </AndamioBadge>
+          )}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export default function ApiSetupPage() {
@@ -269,7 +329,14 @@ export default function ApiSetupPage() {
       const profile = await getDeveloperProfile(token);
       setDeveloperProfile(profile);
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : "Failed to load API keys");
+      const message = err instanceof Error ? err.message : "Failed to load API keys";
+      // Clear stale JWT on auth errors
+      if (message.includes("401") || message.includes("403") || message.toLowerCase().includes("unauthorized")) {
+        clearStoredDevJWT();
+        setDevJwt(null);
+        setDeveloperProfile(null);
+      }
+      setProfileError(message);
     } finally {
       setIsProfileLoading(false);
     }
@@ -383,587 +450,453 @@ export default function ApiSetupPage() {
     return parsed.toLocaleString();
   };
 
-  return (
-    <div className="space-y-6">
-      <AndamioPageHeader
-        title="Gateway API Setup"
-        description="Register with the Andamio API Gateway and generate an API key"
-      />
+  // Computed step statuses for checklist display
+  const hasEmail = email.trim().length > 0;
+  const hasSigned = !!gatewayJwt || !!devJwt;
+  const isEmailVerified = emailVerificationStatus?.emailVerified ?? false;
+  const hasApiKey = currentStep === "complete" || (developerProfile?.activeKeys?.length ?? 0) > 0;
 
-      {/* Progress indicator */}
-      <div className="flex items-center gap-2">
-        <StepIndicator
-          step={1}
-          label="Connect"
-          active={currentStep === "connect"}
-          complete={currentStep !== "connect"}
-        />
-        <Separator className="flex-1" />
-        <StepIndicator
-          step={2}
-          label="Register"
-          active={currentStep === "register"}
-          complete={currentStep === "sign" || currentStep === "api-key" || currentStep === "complete"}
-        />
-        <Separator className="flex-1" />
-        <StepIndicator
-          step={3}
-          label="Sign"
-          active={currentStep === "sign"}
-          complete={currentStep === "api-key" || currentStep === "complete"}
-        />
-        <Separator className="flex-1" />
-        <StepIndicator
-          step={4}
-          label="API Key"
-          active={currentStep === "api-key"}
-          complete={currentStep === "complete"}
-        />
-      </div>
+  // Pre-requisite check: need wallet + auth + access token
+  const canStartOnboarding = connected && isAuthenticated && walletInfo?.alias;
 
-      {error && (
-        <Alert variant="destructive">
-          <ErrorIcon className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Email Verification Required - shown when logged in but email not verified */}
-      {devJwt && emailVerificationStatus && !emailVerificationStatus.emailVerified && (
-        <Card className="border-warning">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertIcon className="h-5 w-5 text-warning" />
-              Email Verification Required
-            </CardTitle>
-            <CardDescription>
-              Please verify your email address to unlock all features
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {verificationError && (
-              <Alert variant="destructive">
-                <ErrorIcon className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{verificationError}</AlertDescription>
-              </Alert>
-            )}
-
-            {resendSuccess && (
-              <Alert>
-                <SuccessIcon className="h-4 w-4" />
-                <AlertTitle>Email Sent</AlertTitle>
-                <AlertDescription>{resendSuccess}</AlertDescription>
-              </Alert>
-            )}
-
-            <Alert>
-              <MailIcon className="h-4 w-4" />
-              <AlertTitle>Check Your Inbox</AlertTitle>
-              <AlertDescription>
-                We sent a verification link to your email address. Click the link to verify your account.
-                {emailVerificationStatus.verificationEmailSentAt && (
-                  <span className="block mt-1 text-xs text-muted-foreground">
-                    Last sent: {new Date(emailVerificationStatus.verificationEmailSentAt).toLocaleString()}
-                  </span>
-                )}
-              </AlertDescription>
-            </Alert>
-
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleResendVerification}
-                disabled={isVerificationLoading || !emailVerificationStatus.canResend}
-                variant="outline"
-                className="w-full"
-              >
-                {isVerificationLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                <SendIcon className="mr-2 h-4 w-4" />
-                Resend Verification Email
-              </Button>
-
-              {!emailVerificationStatus.canResend && emailVerificationStatus.waitDurationSeconds > 0 && (
-                <p className="text-xs text-muted-foreground text-center">
-                  You can resend in {emailVerificationStatus.waitDurationSeconds} seconds
-                </p>
-              )}
-
-              {emailVerificationStatus.remainingAttempts > 0 && (
-                <p className="text-xs text-muted-foreground text-center">
-                  {emailVerificationStatus.remainingAttempts} resend attempts remaining today
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 1: Connect Wallet */}
-      {currentStep === "connect" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <WalletIcon className="h-5 w-5" />
-              Connect Wallet
-            </CardTitle>
-            <CardDescription>
-              Connect your wallet with an Andamio Access Token to get started
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!connected ? (
-              <Alert>
-                <WalletIcon className="h-4 w-4" />
-                <AlertTitle>Wallet Required</AlertTitle>
-                <AlertDescription>
-                  Connect your wallet to get started.
-                </AlertDescription>
-                <ConnectWalletPrompt className="mt-3" />
-              </Alert>
-            ) : !isAuthenticated ? (
-              <Alert>
-                <WalletIcon className="h-4 w-4" />
-                <AlertTitle>Authentication Required</AlertTitle>
-                <AlertDescription>
-                  Your wallet is connected, but you need to sign in first.
-                  Please click &quot;Auth&quot; in the header bar to authenticate.
-                  Your wallet must contain an Andamio Access Token.
-                </AlertDescription>
-              </Alert>
-            ) : walletInfo && !walletInfo.alias ? (
-              <Alert variant="destructive">
-                <ErrorIcon className="h-4 w-4" />
-                <AlertTitle>No Access Token Found</AlertTitle>
-                <AlertDescription>
-                  Your wallet does not contain an Andamio Access Token.
-                  You need to mint an access token first before registering with the gateway.
-                </AlertDescription>
-              </Alert>
-            ) : walletInfo?.alias ? (
-              <div className="space-y-4">
-                <div className="rounded-lg border p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Wallet Address</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                      {walletInfo.address.slice(0, 20)}...{walletInfo.address.slice(-10)}
-                    </code>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Access Token Alias</span>
-                    <Badge variant="secondary">{walletInfo.alias}</Badge>
-                  </div>
+  // If not ready to start, show the connect wallet / auth prompt
+  if (!canStartOnboarding) {
+    return (
+      <div className="h-full overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
+        <AndamioScrollArea className="h-full">
+          <div className="p-8 pb-16">
+            <div className="max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl w-full mx-auto">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <DeveloperIcon className="h-5 w-5 text-primary" />
                 </div>
-                <Button
-                  onClick={handleCheckRegistration}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                  Continue to Registration
-                </Button>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 2: Register */}
-      {currentStep === "register" && walletInfo && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserIcon className="h-5 w-5" />
-              Register with Gateway
-            </CardTitle>
-            <CardDescription>
-              Create your account on the Andamio API Gateway
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg border p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Alias</span>
-                <Badge variant="secondary">{walletInfo.alias}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Wallet</span>
-                <code className="text-xs bg-muted px-2 py-1 rounded">
-                  {walletInfo.address.slice(0, 15)}...
-                </code>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Required for account recovery and notifications
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleRegister}
-                disabled={isLoading || !email}
-                className="w-full"
-              >
-                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                Register Account
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or</span>
+                <div>
+                  <AndamioHeading level={2} size="3xl" className="mb-1">Developer Onboarding</AndamioHeading>
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    Get an API key to build with Andamio
+                  </AndamioText>
                 </div>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={handleCheckRegistration}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                Already registered? Login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: Sign with Wallet */}
-      {currentStep === "sign" && registerSession && walletInfo && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SignatureIcon className="h-5 w-5" />
-              Verify Wallet Ownership
-            </CardTitle>
-            <CardDescription>
-              Sign a message with your wallet to prove you own this address
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <WalletIcon className="h-4 w-4" />
-              <AlertTitle>Wallet Signature Required</AlertTitle>
-              <AlertDescription>
-                Click the button below to sign with your wallet. This proves you own the wallet
-                address and is required to create your developer account.
-              </AlertDescription>
-            </Alert>
-
-            <div className="rounded-lg border p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Alias</span>
-                <Badge variant="secondary">{walletInfo.alias}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Email</span>
-                <span className="text-sm">{email}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Session Expires</span>
-                <span className="text-sm text-muted-foreground">
-                  {new Date(registerSession.expires_at).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleSign}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                <SignatureIcon className="mr-2 h-4 w-4" />
-                Sign with Wallet
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setRegisterSession(null);
-                  setCurrentStep("register");
-                }}
-                disabled={isLoading}
-                className="w-full"
-              >
-                Back to Registration
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 4: Generate API Key */}
-      {currentStep === "api-key" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyIcon className="h-5 w-5" />
-              Generate API Key
-            </CardTitle>
-            <CardDescription>
-              Create an API key for programmatic access to the Andamio Gateway
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <SuccessIcon className="h-4 w-4" />
-              <AlertTitle>Registration Complete</AlertTitle>
-              <AlertDescription>
-                Your account has been created. You can now generate an API key.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label htmlFor="apiKeyName">API Key Name</Label>
-              <Input
-                id="apiKeyName"
-                type="text"
-                placeholder="my-app-key"
-                value={apiKeyName}
-                onChange={(e) => setApiKeyName(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                A label to identify this API key (e.g., &quot;my-app&quot;, &quot;dev-testing&quot;)
-              </p>
-            </div>
-
-            <Button
-              onClick={handleGenerateApiKey}
-              disabled={isLoading || !apiKeyName.trim()}
-              className="w-full"
-            >
-              {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-              Generate API Key
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 4: Complete */}
-      {currentStep === "complete" && apiKey && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SuccessIcon className="h-5 w-5 text-primary" />
-              Setup Complete
-            </CardTitle>
-            <CardDescription>
-              Your API key has been generated. Store it securely - it won&apos;t be shown again.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive">
-              <ErrorIcon className="h-4 w-4" />
-              <AlertTitle>Save Your API Key</AlertTitle>
-              <AlertDescription>
-                This is the only time your API key will be displayed. Copy it now and store it securely.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label>API Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={apiKey.apiKey}
-                  className="font-mono text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copy(apiKey.apiKey)}
-                >
-                  {isCopied ? (
-                    <SuccessIcon className="h-4 w-4 text-primary" />
+              {/* Requirements Card */}
+              <AndamioCard className="mt-6">
+                <AndamioCardContent className="py-8">
+                  {!connected ? (
+                    <div className="text-center space-y-4">
+                      <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <div>
+                        <AndamioText className="font-medium mb-1">Connect Your Wallet</AndamioText>
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Connect a wallet with an Andamio Access Token to get started.
+                        </AndamioText>
+                      </div>
+                      <ConnectWalletPrompt />
+                    </div>
+                  ) : !isAuthenticated ? (
+                    <div className="text-center space-y-4">
+                      <SignatureIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <div>
+                        <AndamioText className="font-medium mb-1">Authentication Required</AndamioText>
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Your wallet is connected. Click &quot;Auth&quot; in the header to sign in.
+                        </AndamioText>
+                      </div>
+                    </div>
+                  ) : walletInfo && !walletInfo.alias ? (
+                    <div className="text-center space-y-4">
+                      <AlertIcon className="h-12 w-12 mx-auto text-destructive" />
+                      <div>
+                        <AndamioText className="font-medium mb-1 text-destructive">No Access Token Found</AndamioText>
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Your wallet does not contain an Andamio Access Token.
+                          You need to mint one first before registering as a developer.
+                        </AndamioText>
+                      </div>
+                    </div>
                   ) : (
-                    <CopyIcon className="h-4 w-4" />
+                    <div className="text-center">
+                      <LoadingIcon className="h-8 w-8 mx-auto animate-spin text-primary" />
+                      <AndamioText variant="small" className="text-muted-foreground mt-2">
+                        Loading wallet data...
+                      </AndamioText>
+                    </div>
                   )}
-                </Button>
+                </AndamioCardContent>
+              </AndamioCard>
+            </div>
+          </div>
+        </AndamioScrollArea>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
+      <AndamioScrollArea className="h-full">
+        <div className="p-8 pb-16">
+          <div className="max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-3xl w-full mx-auto">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <DeveloperIcon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <AndamioHeading level={2} size="3xl" className="mb-1">Developer Onboarding</AndamioHeading>
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Get an API key to build with Andamio
+                </AndamioText>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Expires At</Label>
-              <Input
-                readOnly
-                value={new Date(apiKey.expiresAt).toLocaleString()}
-                className="text-sm"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Usage</Label>
-              <p className="text-sm text-muted-foreground">
-                Add this key to your environment variables:
-              </p>
-              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
-                ANDAMIO_API_KEY=&quot;{apiKey.apiKey}&quot;
-              </pre>
-              <p className="text-sm text-muted-foreground">
-                Or use it in API requests as a header:
-              </p>
-              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
-                X-API-Key: {apiKey.apiKey}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {devJwt && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyIcon className="h-5 w-5" />
-              Your API Keys
-            </CardTitle>
-            <CardDescription>
-              View and manage your existing API keys (keys are hidden after creation)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profileError && (
-              <Alert variant="destructive">
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive" className="mb-6">
                 <ErrorIcon className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{profileError}</AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {isProfileLoading ? (
-              <div className="text-sm text-muted-foreground">Loading API keys...</div>
-            ) : developerProfile?.activeKeys?.length ? (
-              <div className="space-y-3">
-                {developerProfile.activeKeys.map((key) => (
-                  <div key={key.name} className="rounded-lg border p-4 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{key.name}</span>
-                          <Badge variant={key.isActive ? "secondary" : "outline"}>
-                            {key.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Created {formatDateTime(key.createdAt)} • Expires {formatDateTime(key.expiresAt)}
+            {/* Main Onboarding Card */}
+            <AndamioCard className="mt-6">
+              <AndamioCardContent className="py-8">
+                {/* Step 1: Enter Email */}
+                <ChecklistStep
+                  step={1}
+                  title="Enter your email"
+                  status={hasSigned ? email : null}
+                >
+                  {!hasSigned ? (
+                    <div className="space-y-3">
+                      <AndamioInput
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                      />
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        Required for account recovery and notifications
+                      </AndamioText>
+                    </div>
+                  ) : (
+                    <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
+                      {email || "—"}
+                    </code>
+                  )}
+                </ChecklistStep>
+
+                {/* Step 2: Sign with Wallet */}
+                <ChecklistStep
+                  step={2}
+                  title="Sign with wallet"
+                  status={hasSigned ? "verified" : null}
+                >
+                  {!hasSigned ? (
+                    <div className="space-y-3">
+                      {registerSession ? (
+                        <>
+                          <AndamioText variant="small" className="text-muted-foreground">
+                            Sign with your wallet to prove ownership. Session expires at {new Date(registerSession.expires_at).toLocaleTimeString()}.
+                          </AndamioText>
+                          <div className="flex gap-2">
+                            <AndamioButton
+                              onClick={handleSign}
+                              disabled={isLoading}
+                              className="flex-1"
+                            >
+                              {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                              <SignatureIcon className="mr-2 h-4 w-4" />
+                              Sign Now
+                            </AndamioButton>
+                            <AndamioButton
+                              variant="outline"
+                              onClick={() => {
+                                setRegisterSession(null);
+                                setCurrentStep("register");
+                              }}
+                              disabled={isLoading}
+                            >
+                              Back
+                            </AndamioButton>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <AndamioText variant="small" className="text-muted-foreground">
+                            Register your email and verify wallet ownership with a signature.
+                          </AndamioText>
+                          <div className="flex flex-col gap-2">
+                            <AndamioButton
+                              onClick={handleRegister}
+                              disabled={isLoading || !hasEmail}
+                            >
+                              {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                              Continue
+                            </AndamioButton>
+                            <AndamioButton
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCheckRegistration}
+                              disabled={isLoading}
+                            >
+                              Already registered? Sign in
+                            </AndamioButton>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <WalletIcon className="h-4 w-4 text-muted-foreground" />
+                      <code className="rounded bg-muted px-2 py-1 font-mono text-xs text-foreground">
+                        {walletInfo.alias}
+                      </code>
+                    </div>
+                  )}
+                </ChecklistStep>
+
+                {/* Step 3: Verify Email */}
+                <ChecklistStep
+                  step={3}
+                  title="Verify email"
+                  status={isEmailVerified ? "verified" : null}
+                >
+                  {!hasSigned ? (
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      Complete step 2 first
+                    </AndamioText>
+                  ) : isEmailVerified ? (
+                    <AndamioText variant="small" className="text-success">
+                      Email verified
+                    </AndamioText>
+                  ) : (
+                    <div className="space-y-3">
+                      {verificationError && (
+                        <Alert variant="destructive">
+                          <ErrorIcon className="h-4 w-4" />
+                          <AlertDescription>{verificationError}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {resendSuccess && (
+                        <Alert>
+                          <SuccessIcon className="h-4 w-4" />
+                          <AlertDescription>{resendSuccess}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+                        <div className="flex items-start gap-2">
+                          <MailIcon className="h-4 w-4 text-warning mt-0.5" />
+                          <div>
+                            <AndamioText variant="small" className="font-medium">
+                              Check your inbox
+                            </AndamioText>
+                            <AndamioText variant="small" className="text-muted-foreground">
+                              Click the verification link we sent to your email.
+                              {emailVerificationStatus?.verificationEmailSentAt && (
+                                <span className="block mt-1 text-xs">
+                                  Last sent: {new Date(emailVerificationStatus.verificationEmailSentAt).toLocaleString()}
+                                </span>
+                              )}
+                            </AndamioText>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
+
+                      <div className="flex flex-col gap-1">
+                        <AndamioButton
                           variant="outline"
                           size="sm"
-                          onClick={() => handleRotateKey(key.name)}
-                          disabled={activeKeyAction !== null}
+                          onClick={handleResendVerification}
+                          disabled={isVerificationLoading || !!(emailVerificationStatus && !emailVerificationStatus.canResend)}
                         >
-                          {activeKeyAction === `rotate:${key.name}` && (
-                            <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
-                          )}
-                          Rotate
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteKey(key.name)}
-                          disabled={activeKeyAction !== null}
-                        >
-                          {activeKeyAction === `delete:${key.name}` && (
-                            <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
-                          )}
-                          Delete
-                        </Button>
+                          {isVerificationLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                          <SendIcon className="mr-2 h-4 w-4" />
+                          Resend Email
+                        </AndamioButton>
+
+                        {emailVerificationStatus && !emailVerificationStatus.canResend && emailVerificationStatus.waitDurationSeconds > 0 && (
+                          <AndamioText variant="small" className="text-muted-foreground text-center">
+                            Wait {emailVerificationStatus.waitDurationSeconds}s before resending
+                          </AndamioText>
+                        )}
                       </div>
                     </div>
-                    <div className="rounded-md bg-muted px-3 py-2 text-xs font-mono">
-                      {maskApiKey(key.apiKey)}
+                  )}
+                </ChecklistStep>
+
+                {/* Step 4: Generate API Key */}
+                <ChecklistStep
+                  step={4}
+                  title="Generate API key"
+                  status={hasApiKey ? apiKeyName : null}
+                  isLast
+                >
+                  {!hasSigned ? (
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      Complete registration first
+                    </AndamioText>
+                  ) : currentStep === "complete" && apiKey ? (
+                    <div className="space-y-4">
+                      <Alert variant="destructive">
+                        <ErrorIcon className="h-4 w-4" />
+                        <AlertTitle>Save Your API Key</AlertTitle>
+                        <AlertDescription>
+                          This is the only time it will be displayed. Copy it now!
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="flex gap-2">
+                        <Input
+                          readOnly
+                          value={apiKey.apiKey}
+                          className="font-mono text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => copy(apiKey.apiKey)}
+                        >
+                          {isCopied ? (
+                            <SuccessIcon className="h-4 w-4 text-success" />
+                          ) : (
+                            <CopyIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          Add to your environment:
+                        </AndamioText>
+                        <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                          ANDAMIO_API_KEY=&quot;{apiKey.apiKey}&quot;
+                        </pre>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Alert>
-                <KeyIcon className="h-4 w-4" />
-                <AlertTitle>No API keys yet</AlertTitle>
-                <AlertDescription>
-                  Generate your first API key above to get started.
-                </AlertDescription>
-              </Alert>
+                  ) : (
+                    <div className="space-y-3">
+                      <AndamioInput
+                        id="apiKeyName"
+                        placeholder="my-app-key"
+                        value={apiKeyName}
+                        onChange={(e) => setApiKeyName(e.target.value)}
+                        disabled={isLoading}
+                      />
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        A label to identify this API key
+                      </AndamioText>
+                      <AndamioButton
+                        onClick={handleGenerateApiKey}
+                        disabled={isLoading || !apiKeyName.trim()}
+                      >
+                        {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                        <KeyIcon className="mr-2 h-4 w-4" />
+                        Generate Key
+                      </AndamioButton>
+                    </div>
+                  )}
+                </ChecklistStep>
+              </AndamioCardContent>
+            </AndamioCard>
+
+            {/* Existing API Keys Card - only show after successful profile load */}
+            {developerProfile && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <KeyIcon className="h-4 w-4" />
+                    Your API Keys
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your existing API keys
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {profileError && (
+                    <Alert variant="destructive">
+                      <ErrorIcon className="h-4 w-4" />
+                      <AlertDescription>{profileError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isProfileLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <LoadingIcon className="h-4 w-4 animate-spin" />
+                      Loading keys...
+                    </div>
+                  ) : developerProfile?.activeKeys?.length ? (
+                    <div className="space-y-3">
+                      {developerProfile.activeKeys.map((key) => (
+                        <div key={key.name} className="rounded-lg border p-4 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{key.name}</span>
+                                <Badge variant={key.isActive ? "secondary" : "outline"}>
+                                  {key.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Created {formatDateTime(key.createdAt)} • Expires {formatDateTime(key.expiresAt)}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRotateKey(key.name)}
+                                disabled={activeKeyAction !== null}
+                              >
+                                {activeKeyAction === `rotate:${key.name}` && (
+                                  <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                )}
+                                Rotate
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteKey(key.name)}
+                                disabled={activeKeyAction !== null}
+                              >
+                                {activeKeyAction === `delete:${key.name}` && (
+                                  <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                )}
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="rounded-md bg-muted px-3 py-2 text-xs font-mono">
+                            {maskApiKey(key.apiKey)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      No API keys yet. Generate your first key above.
+                    </AndamioText>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void loadDeveloperProfile()}
+                    disabled={isProfileLoading}
+                  >
+                    {isProfileLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                    Refresh
+                  </Button>
+                </CardContent>
+              </Card>
             )}
-
-            <Button
-              variant="outline"
-              onClick={() => void loadDeveloperProfile()}
-              disabled={isProfileLoading}
-            >
-              {isProfileLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-              Refresh Keys
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Info card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">About Gateway Registration</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>
-            The Andamio API Gateway provides unified access to all Andamio services.
-            Registration requires an on-chain Access Token to verify your identity.
-          </p>
-          <p>
-            Your API key can be used for programmatic access to the gateway APIs,
-            including transaction building, course/project data, and more.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function StepIndicator({
-  step,
-  label,
-  active,
-  complete
-}: {
-  step: number;
-  label: string;
-  active: boolean;
-  complete: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`
-          w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-          ${complete ? "bg-primary text-primary-foreground" : ""}
-          ${active ? "bg-primary text-primary-foreground" : ""}
-          ${!active && !complete ? "bg-muted text-muted-foreground" : ""}
-        `}
-      >
-        {complete ? <SuccessIcon className="h-4 w-4" /> : step}
-      </div>
-      <span className={`text-sm ${active ? "font-medium" : "text-muted-foreground"}`}>
-        {label}
-      </span>
+          </div>
+        </div>
+      </AndamioScrollArea>
     </div>
   );
 }

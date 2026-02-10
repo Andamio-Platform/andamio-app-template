@@ -372,13 +372,14 @@ export default function ApiSetupPage() {
 
   // Generate API key
   const handleGenerateApiKey = async () => {
-    if (!gatewayJwt || !apiKeyName.trim()) return;
+    const token = gatewayJwt ?? devJwt ?? getStoredDevJWT();
+    if (!token || !apiKeyName.trim()) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await requestApiKey(gatewayJwt, apiKeyName.trim());
+      const response = await requestApiKey(token, apiKeyName.trim());
       setApiKey(response);
       await loadDeveloperProfile();
       setCurrentStep("complete");

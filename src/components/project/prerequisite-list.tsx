@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCourse, useActiveCourses } from "~/hooks/api/course/use-course";
-import { useOwnerCourses } from "~/hooks/api/course/use-course-owner";
+import { useCourse } from "~/hooks/api/course/use-course";
 import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import type { ProjectPrerequisite } from "~/hooks/api/project/use-project";
 import type { StudentCompletionInput } from "~/lib/project-eligibility";
@@ -24,16 +23,6 @@ export function PrerequisiteRow({
 }) {
   const { data: courseData, isLoading: isCourseLoading } = useCourse(prereq.courseId);
   const { data: modules = [], isLoading: isModulesLoading } = useCourseModules(prereq.courseId);
-
-  // Fallback title sources when the detail endpoint returns no title (issue #241):
-  // 1. Public catalog (useActiveCourses) — covers public courses
-  // 2. Owner's courses (useOwnerCourses) — covers non-public courses the user owns
-  const { data: publicCourses } = useActiveCourses();
-  const { data: ownedCourses } = useOwnerCourses();
-  const fallbackTitle =
-    publicCourses?.find((c) => c.courseId === prereq.courseId)?.title ||
-    ownedCourses?.find((c) => c.courseId === prereq.courseId)?.title;
-  const courseTitle = courseData?.title || fallbackTitle;
   const isLoading = isCourseLoading || isModulesLoading;
 
   // Build lookup: sltHash → { moduleCode, title }
@@ -58,8 +47,8 @@ export function PrerequisiteRow({
           <div className="text-sm font-medium">
             {isLoading ? (
               <span className="text-muted-foreground">Loading...</span>
-            ) : courseTitle ? (
-              courseTitle
+            ) : courseData?.title ? (
+              courseData.title
             ) : (
               <span className="font-mono text-muted-foreground">{prereq.courseId.slice(0, 12)}...</span>
             )}

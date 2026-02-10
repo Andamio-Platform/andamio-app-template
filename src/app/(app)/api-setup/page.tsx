@@ -418,6 +418,11 @@ export default function ApiSetupPage() {
     const token = devJwt ?? getStoredDevJWT();
     if (!token) return;
 
+    if (!keyName) {
+      setProfileError("Cannot rotate key: missing key name");
+      return;
+    }
+
     const confirmed = window.confirm(`Rotate API key \"${keyName}\"?`);
     if (!confirmed) return;
 
@@ -437,6 +442,11 @@ export default function ApiSetupPage() {
   async function handleDeleteKey(keyName: string) {
     const token = devJwt ?? getStoredDevJWT();
     if (!token) return;
+
+    if (!keyName) {
+      setProfileError("Cannot delete key: missing key name");
+      return;
+    }
 
     const confirmed = window.confirm(`Delete API key \"${keyName}\"? This cannot be undone.`);
     if (!confirmed) return;

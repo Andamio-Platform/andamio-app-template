@@ -691,6 +691,10 @@ export async function rotateApiKey(
   name: string,
   expiresInDays?: number
 ): Promise<{ confirmation: string }> {
+  if (!name) {
+    throw new Error("API key name is required for rotation");
+  }
+
   authLogger.info("Rotating API key:", name);
 
   const requestBody: { api_key_name: string; expires_in_days?: number } = {
@@ -739,6 +743,10 @@ export async function deleteApiKey(
   jwt: string,
   name: string
 ): Promise<{ confirmation: string }> {
+  if (!name) {
+    throw new Error("API key name is required for deletion");
+  }
+
   authLogger.info("Deleting API key:", name);
 
   const response = await fetch(`${API_PROXY}/api/v2/apikey/developer/key/delete`, {

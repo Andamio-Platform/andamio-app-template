@@ -202,7 +202,7 @@ export default function LearnerAssignmentPage() {
           <AndamioAlertDescription>
             <div className="space-y-2">
               <AndamioText className="font-medium">SLT Hash Mismatch Detected</AndamioText>
-              <AndamioText variant="small">The on-chain module hash does not match the computed hash from database SLTs. This may indicate the SLTs were modified after minting.</AndamioText>
+              <AndamioText variant="small">The on-chain module hash does not match the computed hash from the database Learning Targets. This may indicate the Learning Targets were modified after minting.</AndamioText>
               <div className="text-xs font-mono space-y-1 mt-2">
                 <div><span className="text-muted-foreground">On-chain:</span> {hashMismatch.onChain}</div>
                 <div><span className="text-muted-foreground">Computed:</span> {hashMismatch.computed}</div>

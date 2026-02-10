@@ -104,7 +104,7 @@ export default function LessonDetailPage() {
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <AndamioCardDescription>Learning Target #{moduleIndex}</AndamioCardDescription>
-              <AndamioCardTitle>SLT {moduleIndex}</AndamioCardTitle>
+              <AndamioCardTitle>Learning Target {moduleIndex}</AndamioCardTitle>
             </div>
           </div>
         </AndamioCardHeader>

@@ -182,7 +182,7 @@ export function StudioModuleCard({
             {/* SLT Count */}
             {showSltCount && sltCount > 0 && (
               <AndamioText variant="small" className="text-muted-foreground whitespace-nowrap">
-                {sltCount} SLT{sltCount !== 1 ? "s" : ""}
+                {sltCount} Learning Target{sltCount !== 1 ? "s" : ""}
               </AndamioText>
             )}
 
@@ -236,7 +236,7 @@ export function StudioModuleCard({
             {/* SLT Count */}
             {showSltCount && sltCount > 0 && (
               <AndamioText variant="small" className="text-muted-foreground whitespace-nowrap">
-                {sltCount} SLT{sltCount !== 1 ? "s" : ""}
+                {sltCount} Learning Target{sltCount !== 1 ? "s" : ""}
               </AndamioText>
             )}
 

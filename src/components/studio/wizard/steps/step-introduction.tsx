@@ -135,7 +135,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
           <div>
             <AndamioHeading level={3} size="base" className="mb-1">The Backwards Design Payoff</AndamioHeading>
             <AndamioText variant="small">
-              Now that you know exactly what learners will achieve ({slts.length} SLTs)
+              Now that you know exactly what learners will achieve ({slts.length} Learning Target{slts.length !== 1 ? "s" : ""})
               and how they&apos;ll prove it (the assignment), writing the introduction
               is easy. You already know the whole story!
             </AndamioText>

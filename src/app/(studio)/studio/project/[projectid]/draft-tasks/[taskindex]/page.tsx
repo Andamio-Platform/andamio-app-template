@@ -16,6 +16,7 @@ import {
   AndamioPageLoading,
   AndamioBackButton,
   AndamioErrorAlert,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import { useProject } from "~/hooks/api/project/use-project";
 import {
@@ -110,6 +111,8 @@ export default function EditTaskPage() {
   }
 
   return (
+    <AndamioScrollArea className="h-full">
+    <div className="min-h-full">
     <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <AndamioBackButton href={backHref} label="Back to Tasks" />
@@ -147,5 +150,7 @@ export default function EditTaskPage() {
         }
       />
     </div>
+    </div>
+    </AndamioScrollArea>
   );
 }

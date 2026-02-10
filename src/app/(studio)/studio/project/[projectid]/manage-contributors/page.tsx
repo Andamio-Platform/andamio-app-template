@@ -23,6 +23,7 @@ import {
   AndamioErrorAlert,
   AndamioText,
   AndamioDashboardStat,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import { TeacherIcon, SuccessIcon, OnChainIcon } from "~/components/icons";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
@@ -62,7 +63,7 @@ export default function ManageContributorsPage() {
   // Error state
   if (projectError || !project) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioPageHeader title="Contributors" />
         <AndamioErrorAlert error={projectError?.message ?? "Project not found"} />
@@ -73,7 +74,9 @@ export default function ManageContributorsPage() {
   const contributors = project.contributors ?? [];
 
   return (
-    <div className="space-y-6">
+    <AndamioScrollArea className="h-full">
+    <div className="min-h-full">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Header */}
       <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
 
@@ -160,5 +163,7 @@ export default function ManageContributorsPage() {
         </AndamioCardContent>
       </AndamioCard>
     </div>
+    </div>
+    </AndamioScrollArea>
   );
 }

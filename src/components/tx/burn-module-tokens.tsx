@@ -234,7 +234,7 @@ export function BurnModuleTokens({
                     <span className="text-sm text-muted-foreground">— {m.title}</span>
                   )}
                   <AndamioBadge variant="outline" className="text-xs ml-auto">
-                    {m.sltCount} SLT{m.sltCount !== 1 ? "s" : ""}
+                    {m.sltCount} Learning Target{m.sltCount !== 1 ? "s" : ""}
                   </AndamioBadge>
                 </div>
                 <code className="block text-[10px] font-mono text-muted-foreground break-all">

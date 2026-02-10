@@ -426,7 +426,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
         moduleCode: registerModuleCode.trim(),
         sltHash,
       });
-      toast.success(`Registered module "${registerModuleCode}" with ${result?.sltCount ?? 0} SLTs`);
+      toast.success(`Registered module "${registerModuleCode}" with ${result?.sltCount ?? 0} Learning Targets`);
       setRegisteringHash(null);
       setRegisterModuleCode("");
       // Refetch to show updated data
@@ -830,9 +830,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                               )}
                             </div>
                           </div>
-                          {/* SLT count */}
+                          {/* Learning Target count */}
                           <div className="text-right flex-shrink-0">
-                            <div className="text-sm font-medium">{sltCount} SLTs</div>
+                            <div className="text-sm font-medium">{sltCount} Learning Target{sltCount !== 1 ? "s" : ""}</div>
                             <AndamioText variant="small" className="text-[10px]">
                               {isActive ? "On-Chain" : "Database"}
                             </AndamioText>
@@ -938,7 +938,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <div className="text-sm font-medium">{m.onChainSlts?.length ?? 0} SLTs</div>
+                              <div className="text-sm font-medium">{m.onChainSlts?.length ?? 0} Learning Target{(m.onChainSlts?.length ?? 0) !== 1 ? "s" : ""}</div>
                               <AndamioText variant="small" className="text-[10px]">On-Chain</AndamioText>
                             </div>
                           </div>

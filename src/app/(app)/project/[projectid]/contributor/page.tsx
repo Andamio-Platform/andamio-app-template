@@ -137,8 +137,8 @@ function ContributorDashboardContent() {
     contributorStateId ?? undefined
   );
 
-  // Derived contributor state from hook data
-  const [contributorStatus, setContributorStatus] = useState<ContributorStatus>("not_enrolled");
+  // Status override: callbacks set this optimistically, cleared when derived status catches up
+  const [statusOverride, setStatusOverride] = useState<ContributorStatus | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // DB commitment record for the current task (fetched reactively via hook)
@@ -165,9 +165,6 @@ function ContributorDashboardContent() {
   }, [projectDetail?.prerequisites]);
 
   const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
-
-  // Eligibility state (prerequisites)
-  const [eligibility, setEligibility] = useState<EligibilityResult | null>(null);
 
   // Task evidence from editor
   const [taskEvidence, setTaskEvidence] = useState<JSONContent | null>(null);
@@ -205,7 +202,6 @@ function ContributorDashboardContent() {
 
   // Orchestration trigger - increment to re-run status derivation
   const [orchestrationTrigger, setOrchestrationTrigger] = useState(0);
-  const [isOrchestrating, setIsOrchestrating] = useState(false);
 
   // Refresh all data: invalidate React Query caches + re-run orchestration
   const refreshData = useCallback(async () => {
@@ -255,40 +251,44 @@ function ContributorDashboardContent() {
     return projectDetail.contributors.some((c) => c.alias === alias);
   }, [user?.accessTokenAlias, projectDetail?.contributors]);
 
-  // Orchestration: derive contributor status from hook data
-  useEffect(() => {
-    if (isProjectLoading || isTasksLoading || !projectDetail) return;
-    const alias = user?.accessTokenAlias;
-    if (!alias) return;
-
-    setIsOrchestrating(true);
-
-    // Determine status from merged hook data
-    if (mySubmission) {
-      // Has a pending submission
-      setContributorStatus("task_pending");
-      setLookupTaskHash(mySubmission.taskHash);
-    } else if (myCredentials.length > 0) {
-      setContributorStatus("can_claim");
-    } else if (myAssessments.some(a => a.decision === "accept")) {
-      // A task was accepted
-      setContributorStatus("task_accepted");
-    } else if (isEnrolled) {
-      setContributorStatus("enrolled");
-    } else {
-      setContributorStatus("not_enrolled");
+  // Derive contributor status synchronously from hook data
+  const derivedStatus: ContributorStatus = useMemo(() => {
+    if (isProjectLoading || isTasksLoading || !projectDetail || !user?.accessTokenAlias) {
+      return "not_enrolled";
     }
+    if (mySubmission) return "task_pending";
+    if (myCredentials.length > 0) return "can_claim";
+    if (myAssessments.some(a => a.decision === "accept")) return "task_accepted";
+    if (isEnrolled) return "enrolled";
+    return "not_enrolled";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isProjectLoading, isTasksLoading, projectDetail, user?.accessTokenAlias, mySubmission, myCredentials.length, myAssessments.length, isEnrolled, orchestrationTrigger]);
 
-    // Compute eligibility from hook data (pure function, no API calls)
+  // Use override if set, otherwise use derived status
+  const contributorStatus = statusOverride ?? derivedStatus;
+
+  // Clear override when derived status catches up
+  useEffect(() => {
+    if (statusOverride !== null && derivedStatus === statusOverride) {
+      setStatusOverride(null);
+    }
+  }, [derivedStatus, statusOverride]);
+
+  // Set lookupTaskHash when status is task_pending
+  useEffect(() => {
+    if (derivedStatus === "task_pending" && mySubmission) {
+      setLookupTaskHash(mySubmission.taskHash);
+    }
+  }, [derivedStatus, mySubmission]);
+
+  // Derive eligibility synchronously — used directly, no state needed
+  const eligibility: EligibilityResult | null = useMemo(() => {
+    if (!projectDetail) return null;
     const prerequisites = projectDetail.prerequisites ?? [];
-    const eligibilityResult = checkProjectEligibility(
-      prerequisites,
-      completions,
-    );
-    setEligibility(eligibilityResult);
-
-    setIsOrchestrating(false);
-  }, [projectDetail, tasks, user?.accessTokenAlias, orchestrationTrigger, isProjectLoading, isTasksLoading, mySubmission, myCredentials, myAssessments, isEnrolled, completions]);
+    return checkProjectEligibility(prerequisites, completions);
+    // Stabilize: only recompute when the underlying data identity changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectDetail?.prerequisites, completions]);
 
   // Commitment processing effect: reacts to hook data when lookupTaskHash triggers a fetch
   useEffect(() => {
@@ -299,7 +299,7 @@ function ContributorDashboardContent() {
 
       // Check if DB says task is actually ACCEPTED
       if (commitmentData.commitmentStatus === "ACCEPTED") {
-        setContributorStatus("task_accepted");
+        setStatusOverride("task_accepted");
         setTaskEvidence(null);
 
         const acceptedTaskHash = commitmentData.taskHash;
@@ -325,7 +325,7 @@ function ContributorDashboardContent() {
   }, [commitmentData, isCommitmentLoading]);
 
   // Loading state
-  if (isProjectLoading || isTasksLoading || isOrchestrating) {
+  if (isProjectLoading || isTasksLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
@@ -783,7 +783,7 @@ function ContributorDashboardContent() {
             isFirstCommit={isFirstCommit}
             willClaimRewards={false}
             onSuccess={async () => {
-              setContributorStatus("task_pending");
+              setStatusOverride("task_pending");
               await refreshData();
             }}
           />
@@ -814,7 +814,7 @@ function ContributorDashboardContent() {
                 isFirstCommit={false}
                 willClaimRewards={true}
                 onSuccess={async () => {
-                  setContributorStatus("task_pending");
+                  setStatusOverride("task_pending");
                   await refreshData();
                 }}
               />
@@ -848,7 +848,7 @@ function ContributorDashboardContent() {
               isFirstCommit={false}
               willClaimRewards={true}
               onSuccess={async () => {
-                setContributorStatus("task_pending");
+                setStatusOverride("task_pending");
                 await refreshData();
               }}
             />

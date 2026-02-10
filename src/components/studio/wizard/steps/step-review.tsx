@@ -83,7 +83,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
       id: "slts",
       icon: SLTIcon,
       label: "Learning Targets",
-      value: `${slts.length} SLT${slts.length !== 1 ? "s" : ""} defined`,
+      value: `${slts.length} Learning Target${slts.length !== 1 ? "s" : ""} defined`,
       completed: completion.slts,
       step: "slts" as const,
     },
@@ -212,7 +212,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
                 <AndamioHeading level={3} size="3xl">{moduleTitle}</AndamioHeading>
               </div>
               <AndamioText variant="small" className="text-center text-muted-foreground/60 max-w-sm">
-                Once approved, SLTs are locked. You can still edit the lessons, assignment, and introduction any time.
+                Once approved, Learning Targets are locked. You can still edit the lessons, assignment, and introduction any time.
               </AndamioText>
 
 

@@ -175,7 +175,11 @@ export function TasksManage({
   // Store computed hashes in a ref so they're available in onComplete callback
   const computedHashesRef = useRef<ComputedTaskHash[]>([]);
 
-  const [action, setAction] = useState<"add" | "remove">("add");
+  const [action, setAction] = useState<"add" | "remove">(
+    preConfiguredTasksToRemove && preConfiguredTasksToRemove.length > 0 && (!preConfiguredTasksToAdd || preConfiguredTasksToAdd.length === 0)
+      ? "remove"
+      : "add"
+  );
 
   // Form state for adding a single task
   const [taskHash, setTaskHash] = useState("");
@@ -195,7 +199,7 @@ export function TasksManage({
         if (status.state === "updated") {
           console.log("[TasksManage] TX confirmed and DB updated by gateway");
 
-          const actionText = action === "add" ? "added" : "removed";
+          const actionText = action === "add" ? "published" : "removed";
           toast.success(`Tasks ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
             description: `Task(s) have been ${actionText} successfully`,
           });
@@ -395,6 +399,12 @@ export function TasksManage({
 
   // If pre-configured, show simplified UI
   const isBatchMode = !!(preConfiguredTasksToAdd || preConfiguredTasksToRemove);
+  // In batch mode, derive action from props (internal state is irrelevant)
+  const effectiveAction = isBatchMode
+    ? (preConfiguredTasksToRemove && preConfiguredTasksToRemove.length > 0 && (!preConfiguredTasksToAdd || preConfiguredTasksToAdd.length === 0))
+      ? "remove"
+      : "add"
+    : action;
 
   return (
     <AndamioCard>
@@ -404,9 +414,17 @@ export function TasksManage({
             <TaskIcon className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
+            <AndamioCardTitle>
+              {isBatchMode
+                ? effectiveAction === "remove" ? "Remove Tasks" : "Publish Tasks"
+                : ui.title}
+            </AndamioCardTitle>
             <AndamioCardDescription>
-              Add or remove tasks from this project
+              {isBatchMode
+                ? effectiveAction === "remove"
+                  ? "Remove selected tasks from the blockchain"
+                  : "Publish selected tasks to the blockchain"
+                : "Add or remove tasks from this project"}
             </AndamioCardDescription>
           </div>
         </div>
@@ -629,12 +647,13 @@ export function TasksManage({
             onClick={handleManageTasks}
             disabled={!canSubmit}
             stateText={{
-              idle: action === "add" ? "Add Task" : "Remove Task(s)",
+              idle: isBatchMode
+                ? effectiveAction === "remove" ? "Remove Tasks" : "Publish Tasks"
+                : action === "add" ? "Add Task" : "Remove Task(s)",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",
             }}
-            className="w-full"
           />
         )}
       </AndamioCardContent>

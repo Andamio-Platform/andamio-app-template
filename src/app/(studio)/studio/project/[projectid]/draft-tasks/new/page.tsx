@@ -97,11 +97,16 @@ export default function NewTaskPage() {
         : null;
   if (projectError || !contributorStateId) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
         <AndamioBackButton href={backHref} label="Back to Tasks" />
         <AndamioErrorAlert
-          error={projectError ?? "This project needs to be published on-chain before tasks can be created. Go to Manage Treasury to publish."}
+          error={projectError ?? "This project needs to be published on-chain before tasks can be created."}
         />
+        {!projectError && (
+          <Link href={`/studio/project/${projectId}/manage-treasury`}>
+            <AndamioButton>Go to Manage Treasury</AndamioButton>
+          </Link>
+        )}
       </div>
     );
   }

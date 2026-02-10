@@ -285,13 +285,13 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
                 blockchain-verified credential
               </span>{" "}
               that learners can earn and prove. The credential&apos;s value comes from
-              its <span className="font-medium text-foreground">Student Learning Targets (SLTs)</span> —
+              its <span className="font-medium text-foreground">Learning Targets</span> —
               the specific skills and knowledge learners will demonstrate.
             </AndamioText>
             <div className="flex items-center gap-2 text-sm">
               <SLTIcon className="h-4 w-4 text-primary" />
               <span className="text-muted-foreground">
-                We&apos;ll define SLTs in the next step
+                We&apos;ll define Learning Targets in the next step
               </span>
             </div>
           </div>
@@ -380,7 +380,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
       <WizardStepTip>
         <strong>Backwards Design:</strong> We&apos;re starting with the end in mind.
-        First, you&apos;ll define what learners will achieve (SLTs), then how they&apos;ll
+        First, you&apos;ll define what learners will achieve (Learning Targets), then how they&apos;ll
         prove it (assignment), then supporting content, and finally the introduction.
         It&apos;s not backwards — it&apos;s brilliant.
       </WizardStepTip>
@@ -405,7 +405,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
           <AndamioDialogHeader>
             <AndamioDialogTitle>Duplicate Module</AndamioDialogTitle>
             <AndamioDialogDescription>
-              Create a copy of this module with all its content (SLTs, assignment, lessons, introduction).
+              Create a copy of this module with all its content (Learning Targets, assignment, lessons, introduction).
               The new module will start as a Draft.
             </AndamioDialogDescription>
           </AndamioDialogHeader>
@@ -432,7 +432,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               <AndamioText variant="small" className="font-medium">Will be copied:</AndamioText>
               <ul className="text-sm text-muted-foreground space-y-0.5">
                 <li>• Module title: &quot;{title} (Copy)&quot;</li>
-                <li>• {data.slts.length} SLT{data.slts.length !== 1 ? "s" : ""}</li>
+                <li>• {data.slts.length} Learning Target{data.slts.length !== 1 ? "s" : ""}</li>
                 <li>• {data.assignment ? "Assignment" : "No assignment"}</li>
                 <li>• {data.lessons.length} lesson{data.lessons.length !== 1 ? "s" : ""}</li>
                 <li>• {data.introduction ? "Introduction" : "No introduction"}</li>

@@ -270,7 +270,7 @@ export function MintModuleTokens({
                     <ModuleIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">{moduleCode}</span>
                     <AndamioBadge variant="outline" className="text-xs">
-                      {sltCount} SLT{sltCount !== 1 ? "s" : ""}
+                      {sltCount} Learning Target{sltCount !== 1 ? "s" : ""}
                     </AndamioBadge>
                   </div>
                   {hash && (
@@ -294,9 +294,9 @@ export function MintModuleTokens({
           <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
             <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
             <div className="text-xs">
-              <AndamioText variant="small" className="font-medium text-muted-foreground">Some modules have no SLTs</AndamioText>
+              <AndamioText variant="small" className="font-medium text-muted-foreground">Some modules have no Learning Targets</AndamioText>
               <AndamioText variant="small">
-                {modulesWithoutSlts.map((m) => m.moduleCode).join(", ")} need Student Learning Targets before minting.
+                {modulesWithoutSlts.map((m) => m.moduleCode).join(", ")} need Learning Targets before minting.
               </AndamioText>
             </div>
           </div>
@@ -309,7 +309,7 @@ export function MintModuleTokens({
             <AndamioText className="font-medium">Token Name = On-Chain Identifier</AndamioText>
           </div>
           <AndamioText variant="small" className="text-xs leading-relaxed">
-            Each module&apos;s token name is a Blake2b-256 hash of its SLT content. This hash becomes the unique on-chain identifier for the credential — if the learning outcomes change, the hash changes, creating tamper-evident proof of what was taught.
+            Each module&apos;s token name is a Blake2b-256 hash of its Learning Target content. This hash becomes the unique on-chain identifier for the credential — if the learning outcomes change, the hash changes, creating tamper-evident proof of what was taught.
           </AndamioText>
         </div>
 

@@ -596,6 +596,8 @@ interface CreateProjectPanelProps {
 }
 
 function CreateProjectPanel({ onCancel, onSuccess }: CreateProjectPanelProps) {
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
   return (
     <div className="h-full overflow-hidden bg-gradient-to-br from-background via-background to-secondary/5">
       <AndamioScrollArea className="h-full">
@@ -608,19 +610,26 @@ function CreateProjectPanel({ onCancel, onSuccess }: CreateProjectPanelProps) {
                   <ProjectIcon className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <AndamioHeading level={2} size="3xl" className="mb-1">Create Project</AndamioHeading>
+                  <AndamioHeading level={2} size="3xl" className="mb-1">
+                    {isConfirmed ? "Project Created" : "Create Project"}
+                  </AndamioHeading>
                   <AndamioText variant="small" className="text-muted-foreground">
-                    Mint a Project NFT on Cardano
+                    {isConfirmed ? "Your project is live on-chain" : "Mint a Project NFT on Cardano"}
                   </AndamioText>
                 </div>
               </div>
-              <AndamioButton variant="ghost" size="sm" onClick={onCancel}>
-                Cancel
-              </AndamioButton>
+              {!isConfirmed && (
+                <AndamioButton variant="ghost" size="sm" onClick={onCancel}>
+                  Cancel
+                </AndamioButton>
+              )}
             </div>
 
             {/* Create Project Component */}
-            <CreateProject onSuccess={onSuccess} />
+            <CreateProject
+              onSuccess={onSuccess}
+              onConfirmed={() => setIsConfirmed(true)}
+            />
           </div>
         </div>
       </AndamioScrollArea>

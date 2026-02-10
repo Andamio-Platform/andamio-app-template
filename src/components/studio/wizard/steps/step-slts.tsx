@@ -165,7 +165,7 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
               <div>
                 <AndamioText className="font-medium">Learning Targets are locked</AndamioText>
                 <AndamioText variant="small">
-                  SLTs cannot be modified after a module is approved. Return the module to Draft status to make changes.
+                  Learning Targets cannot be modified after a module is approved. Return the module to Draft status to make changes.
                 </AndamioText>
               </div>
             </div>

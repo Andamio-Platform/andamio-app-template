@@ -24,6 +24,7 @@ import {
   AndamioEmptyState,
   AndamioText,
   AndamioCheckbox,
+  AndamioScrollArea,
 } from "~/components/andamio";
 import { TaskIcon, OnChainIcon } from "~/components/icons";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
@@ -182,15 +183,23 @@ export default function ManageTreasuryPage() {
   const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
   if (errorMessage) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
         <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
         <AndamioErrorAlert error={errorMessage} />
       </div>
     );
   }
 
-  // Filter draft tasks
-  const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT");
+  // Build set of on-chain task hashes to exclude from draft list
+  // (manager tasks API can lag behind project detail after publishing)
+  const onChainTaskHashes = new Set(
+    onChainTasks.map((t) => t.taskHash).filter(Boolean)
+  );
+
+  // Filter draft tasks, excluding any that are already on-chain
+  const draftTasks = tasks.filter(
+    (t) => t.taskStatus === "DRAFT" && (!t.taskHash || !onChainTaskHashes.has(t.taskHash))
+  );
   const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
 
   // Get selected tasks (filter for valid indices)
@@ -248,29 +257,26 @@ export default function ManageTreasuryPage() {
     };
   });
 
-  // Deposit calculation: account for available treasury funds
+  // Deposit calculation for publishing draft tasks
   const addLovelace = tasksToAdd.reduce((sum, t) => sum + t.lovelace_amount, 0);
   const removeLovelace = tasksToRemove.reduce((sum, t) => sum + t.lovelace_amount, 0);
-  const netRequired = addLovelace - removeLovelace;
   const treasuryBalance = (projectDetail?.treasuryFundings ?? []).reduce(
     (sum, f) => sum + (f.lovelaceAmount ?? 0),
     0,
   );
-  // Existing on-chain tasks already consume part of the treasury balance
   const onChainCommitted = onChainTasks.reduce(
     (sum, t) => sum + (parseInt(t.lovelaceAmount) || 0),
     0,
   );
   const availableFunds = treasuryBalance - onChainCommitted;
-  // Manager only deposits the shortfall: if available funds cover it, deposit nothing
-  const depositAmount = Math.max(0, netRequired - availableFunds);
-  const depositValue: ListValue = depositAmount > 0 ? [["lovelace", depositAmount]] : [];
-
-  // Show transaction UI if any tasks are selected (to add or remove), or if a TX is in flight
-  const hasTasksToManage = tasksToAdd.length > 0 || tasksToRemove.length > 0 || txInProgress === "add";
+  // Publishing: manager deposits the shortfall (removals handled separately, no deposit needed)
+  const publishDepositAmount = Math.max(0, addLovelace - availableFunds);
+  const publishDepositValue: ListValue = publishDepositAmount > 0 ? [["lovelace", publishDepositAmount]] : [];
 
   return (
-    <div className="space-y-6">
+    <AndamioScrollArea className="h-full">
+    <div className="min-h-full">
+    <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Header */}
       <AndamioBackButton href={`/studio/project/${projectId}`} label="Back to Project" />
 
@@ -336,7 +342,6 @@ export default function ManageTreasuryPage() {
                 <AndamioTableHeader>
                   <AndamioTableRow>
                     <AndamioTableHead className="w-12"></AndamioTableHead>
-                    <AndamioTableHead className="w-16">#</AndamioTableHead>
                     <AndamioTableHead>Title</AndamioTableHead>
                     <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
                     <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
@@ -362,9 +367,6 @@ export default function ManageTreasuryPage() {
                             aria-label={`Select task ${taskIndex}`}
                           />
                         </AndamioTableCell>
-                        <AndamioTableCell className="font-mono text-xs">
-                          {taskIndex}
-                        </AndamioTableCell>
                         <AndamioTableCell>
                           <div>
                             <AndamioText as="div" className="font-medium">{task.title || "Untitled Task"}</AndamioText>
@@ -388,22 +390,16 @@ export default function ManageTreasuryPage() {
               </AndamioTable>
             </AndamioTableContainer>
 
-            {/* TasksManage Transaction - show when any tasks are selected (add or remove) */}
-            {hasTasksToManage && contributorStateId && (
+            {/* Publish Transaction - only when draft tasks are selected */}
+            {(tasksToAdd.length > 0 || txInProgress === "add") && contributorStateId && (
               <>
-                {/* Transaction preview */}
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
-                  <div><strong>Transaction Summary</strong></div>
-                  {tasksToAdd.length > 0 && (
-                    <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
-                  )}
-                  {tasksToRemove.length > 0 && (
-                    <div className="text-destructive">Removing {tasksToRemove.length} task{tasksToRemove.length !== 1 ? "s" : ""} ({removeLovelace / 1_000_000} ADA returned)</div>
-                  )}
+                  <div><strong>Publish Summary</strong></div>
+                  <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
                   <div>Treasury balance: {availableFunds / 1_000_000} ADA available</div>
-                  <div className={depositAmount > 0 ? "" : "text-primary"}>
-                    {depositAmount > 0
-                      ? `Wallet deposit required: ${depositAmount / 1_000_000} ADA`
+                  <div className={publishDepositAmount > 0 ? "" : "text-primary"}>
+                    {publishDepositAmount > 0
+                      ? `Wallet deposit required: ${publishDepositAmount / 1_000_000} ADA`
                       : "No additional deposit needed — treasury covers it"}
                   </div>
                 </div>
@@ -411,19 +407,15 @@ export default function ManageTreasuryPage() {
                 <TasksManage
                   projectNftPolicyId={projectId}
                   contributorStateId={contributorStateId}
-
                   tasksToAdd={tasksToAdd}
-                  tasksToRemove={tasksToRemove}
-                  depositValue={depositValue}
+                  tasksToRemove={[]}
+                  depositValue={publishDepositValue}
                   taskCodes={taskCodes}
                   taskIndices={taskIndices}
                   onTxSubmit={() => setTxInProgress("add")}
                   onSuccess={async () => {
-                    // Gateway TX State Machine handles DB updates automatically
-                    // Clear selections and refresh data after confirmation
                     setTxInProgress(null);
                     setSelectedTaskIndices(new Set());
-                    setSelectedOnChainTaskIds(new Set());
                     await refreshData();
                   }}
                 />
@@ -514,13 +506,12 @@ export default function ManageTreasuryPage() {
               </AndamioTable>
             </AndamioTableContainer>
 
-            {/* Show transaction UI if tasks selected for removal (and no draft tasks selected), or remove TX in flight */}
-            {((tasksToRemove.length > 0 && tasksToAdd.length === 0) || txInProgress === "remove") && contributorStateId && (
+            {/* Remove Transaction - only when on-chain tasks are selected */}
+            {(tasksToRemove.length > 0 || txInProgress === "remove") && contributorStateId && (
               <>
                 <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1 mt-4">
                   <div><strong>Transaction Preview:</strong></div>
-                  <div className="text-destructive">- Removing: {tasksToRemove.length} task(s) ({removeLovelace / 1_000_000} ADA returned)</div>
-                  <div>Contributor State ID: {contributorStateId}</div>
+                  <div className="text-destructive">Removing {tasksToRemove.length} task{tasksToRemove.length !== 1 ? "s" : ""} ({removeLovelace / 1_000_000} ADA returned)</div>
                 </div>
 
                 <TasksManage
@@ -548,5 +539,7 @@ export default function ManageTreasuryPage() {
       )}
 
     </div>
+    </div>
+    </AndamioScrollArea>
   );
 }

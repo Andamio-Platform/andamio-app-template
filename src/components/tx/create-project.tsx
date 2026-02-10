@@ -19,6 +19,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -36,6 +37,7 @@ import {
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
@@ -99,6 +101,11 @@ export interface CreateProjectProps {
    * @param projectNftPolicyId - The project NFT policy ID returned by the API
    */
   onSuccess?: (projectNftPolicyId: string) => void | Promise<void>;
+  /**
+   * Callback fired when TX is confirmed (before onSuccess).
+   * Parent can use this to hide Cancel button and update header.
+   */
+  onConfirmed?: () => void;
 }
 
 /**
@@ -111,7 +118,7 @@ export interface CreateProjectProps {
  * <CreateProject onSuccess={(policyId) => router.push(`/studio/project/${policyId}`)} />
  * ```
  */
-export function CreateProject({ onSuccess }: CreateProjectProps) {
+export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
@@ -138,6 +145,9 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
           toast.success("Project Created!", {
             description: `"${title.trim()}" is now live on-chain`,
           });
+
+          // Notify parent that TX is confirmed (hide Cancel, update header)
+          onConfirmed?.();
 
           // Call parent callback with the project ID
           if (projectId) {
@@ -203,8 +213,8 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
         void queryClient.invalidateQueries({ queryKey: projectManagerKeys.all });
         void queryClient.invalidateQueries({ queryKey: ownerProjectKeys.all });
 
-        // Extract project_id from the API response for later use
-        const extractedProjectId = txResult.apiResponse?.projectId as string | undefined;
+        // Extract project_id from the API response (snake_case key from gateway)
+        const extractedProjectId = (txResult.apiResponse?.project_id ?? txResult.apiResponse?.projectId) as string | undefined;
         if (extractedProjectId) {
           setProjectId(extractedProjectId);
         }
@@ -279,6 +289,24 @@ export function CreateProject({ onSuccess }: CreateProjectProps) {
                     : "None"}
                 </span>
               </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              {projectId ? (
+                <>
+                  <Link href={`/studio/project/${projectId}/draft-tasks/new`} className="flex-1">
+                    <AndamioButton className="w-full">Create Your First Task</AndamioButton>
+                  </Link>
+                  <Link href={`/studio/project/${projectId}`} className="flex-1">
+                    <AndamioButton variant="outline" className="w-full">Go to Project Dashboard</AndamioButton>
+                  </Link>
+                </>
+              ) : (
+                <Link href="/studio">
+                  <AndamioButton variant="outline">Go to Studio</AndamioButton>
+                </Link>
+              )}
             </div>
           </div>
         ) : (

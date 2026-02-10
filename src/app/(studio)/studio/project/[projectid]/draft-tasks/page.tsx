@@ -132,8 +132,19 @@ export default function DraftTasksPage() {
     );
   }
 
-  // Separate tasks by status
-  const draftTasks = tasks.filter((t) => t.taskStatus === "DRAFT");
+  // Build set of on-chain task hashes from project detail (source of truth)
+  // to exclude from draft list when manager tasks API lags behind
+  const onChainTaskHashes = new Set(
+    (projectDetail?.tasks ?? [])
+      .filter((t) => t.taskStatus === "ON_CHAIN")
+      .map((t) => t.taskHash)
+      .filter(Boolean)
+  );
+
+  // Separate tasks by status, excluding drafts that are already on-chain
+  const draftTasks = tasks.filter(
+    (t) => t.taskStatus === "DRAFT" && (!t.taskHash || !onChainTaskHashes.has(t.taskHash))
+  );
   const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
   const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.taskStatus ?? ""));
 
@@ -192,7 +203,6 @@ export default function DraftTasksPage() {
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead className="w-16">#</AndamioTableHead>
                   <AndamioTableHead>Title</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Status</AndamioTableHead>
@@ -204,7 +214,7 @@ export default function DraftTasksPage() {
                   const taskIndex = task.index ?? 0;
                   return (
                     <AndamioTableRow key={task.taskHash || `draft-${taskIndex}-${index}`}>
-                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+
                       <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
@@ -239,7 +249,6 @@ export default function DraftTasksPage() {
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead className="w-16">#</AndamioTableHead>
                   <AndamioTableHead>Title</AndamioTableHead>
                   <AndamioTableHead>Task Hash</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
@@ -251,7 +260,7 @@ export default function DraftTasksPage() {
                   const taskIndex = task.index ?? 0;
                   return (
                     <AndamioTableRow key={task.taskHash || taskIndex}>
-                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+
                       <AndamioTableCell className="font-medium">
                         <Link
                           href={`/project/${projectId}/${task.taskHash}`}
@@ -290,7 +299,6 @@ export default function DraftTasksPage() {
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead className="w-16">#</AndamioTableHead>
                   <AndamioTableHead>Title</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Status</AndamioTableHead>
@@ -301,7 +309,7 @@ export default function DraftTasksPage() {
                   const taskIndex = task.index ?? 0;
                   return (
                     <AndamioTableRow key={task.taskHash || taskIndex}>
-                      <AndamioTableCell className="font-mono text-xs">{taskIndex}</AndamioTableCell>
+
                       <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>

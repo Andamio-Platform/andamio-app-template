@@ -19,6 +19,7 @@ import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { useSubmitEvidence } from "~/hooks/api/course/use-assignment-commitment";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
 import {
@@ -102,6 +103,7 @@ export function AssignmentUpdate({
 }: AssignmentUpdateProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
+  const submitEvidence = useSubmitEvidence();
   const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
@@ -158,6 +160,27 @@ export function AssignmentUpdate({
     const hash = computeAssignmentInfoHash(evidence);
     setEvidenceHash(hash);
 
+    // Save evidence to DB BEFORE on-chain TX
+    // This creates/updates the commitment record with the actual content
+    // so the gateway's confirm handler finds an existing record to update
+    try {
+      await submitEvidence.mutateAsync({
+        courseId,
+        sltHash: sltHash ?? "",
+        evidence,
+        evidenceHash: hash,
+        // pendingTxHash omitted — will be set by gateway after TX confirms
+      });
+      console.log("[AssignmentUpdate] Evidence saved to DB");
+    } catch (dbError) {
+      // Log warning but continue with TX
+      // The on-chain record is the source of truth
+      console.warn("[AssignmentUpdate] Failed to pre-save evidence:", dbError);
+      toast.warning("Evidence may not be saved", {
+        description: "Continuing with on-chain submission...",
+      });
+    }
+
     // Select transaction type based on mode
     const txType = isNewCommitment
       ? "COURSE_STUDENT_ASSIGNMENT_COMMIT"
@@ -198,7 +221,6 @@ export function AssignmentUpdate({
       },
       onSuccess: (txResult) => {
         console.log("[AssignmentUpdate] TX submitted successfully!", txResult);
-        // Evidence is now passed via metadata and saved by gateway on TX confirmation
       },
       onError: (txError) => {
         console.error("[AssignmentUpdate] Error:", txError);

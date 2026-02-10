@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
-import { useAssignmentCommitment } from "~/hooks/api/course";
+import { useAssignmentCommitment, useSubmitEvidence } from "~/hooks/api/course";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { isJSONContent } from "~/hooks/api/course/use-course-module";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -71,6 +72,9 @@ export function AssignmentCommitment({
     error: commitmentError,
     refetch: refetchCommitment,
   } = useAssignmentCommitment(courseId, moduleCode, sltHash);
+
+  // Mutation for saving evidence to DB
+  const submitEvidence = useSubmitEvidence();
 
   // TX error state
   const [txError, setTxError] = useState<string | null>(null);
@@ -150,9 +154,28 @@ export function AssignmentCommitment({
     }
   }, [commitment?.networkEvidence, localEvidenceContent]);
 
-  const handleLockEvidence = () => {
-    if (!localEvidenceContent) return;
+  const handleLockEvidence = async () => {
+    if (!localEvidenceContent || !sltHash) return;
     const hash = hashNormalizedContent(localEvidenceContent);
+
+    // Save evidence to DB at finalize time (creates draft before TX)
+    try {
+      await submitEvidence.mutateAsync({
+        courseId,
+        sltHash,
+        evidence: localEvidenceContent,
+        evidenceHash: hash,
+        // pendingTxHash omitted — will be set by gateway after TX confirms
+      });
+      console.log("[AssignmentCommitment] Evidence saved to DB at finalize");
+    } catch (dbError) {
+      // Log warning but continue — on-chain is source of truth
+      console.warn("[AssignmentCommitment] Failed to save evidence at finalize:", dbError);
+      toast.warning("Evidence may not be saved", {
+        description: "Continuing with submission flow...",
+      });
+    }
+
     setEvidenceHash(hash);
     setEvidenceContent(localEvidenceContent);
     setIsLocked(true);
@@ -167,7 +190,26 @@ export function AssignmentCommitment({
 
   // Shared handler for update TX execution (used by revision + chain_only branches)
   const handleUpdateTxExecute = async (newEvidenceHash: string) => {
-    if (!user?.accessTokenAlias || !localEvidenceContent) return;
+    if (!user?.accessTokenAlias || !localEvidenceContent || !sltHash) return;
+
+    // Save evidence to DB BEFORE on-chain TX
+    try {
+      await submitEvidence.mutateAsync({
+        courseId,
+        sltHash,
+        evidence: localEvidenceContent,
+        evidenceHash: newEvidenceHash,
+        // pendingTxHash omitted — will be set by gateway after TX confirms
+      });
+      console.log("[AssignmentCommitment] Evidence saved to DB before update TX");
+    } catch (dbError) {
+      // Log warning but continue — on-chain is source of truth
+      console.warn("[AssignmentCommitment] Failed to pre-save evidence:", dbError);
+      toast.warning("Evidence may not be saved", {
+        description: "Continuing with on-chain submission...",
+      });
+    }
+
     await updateTx.execute({
       txType: "COURSE_STUDENT_ASSIGNMENT_UPDATE",
       params: {
@@ -176,7 +218,7 @@ export function AssignmentCommitment({
         assignment_info: newEvidenceHash,
       },
       metadata: {
-        slt_hash: sltHash!,
+        slt_hash: sltHash,
         course_module_code: moduleCode,
         evidence: JSON.stringify(localEvidenceContent),
         evidence_hash: newEvidenceHash,

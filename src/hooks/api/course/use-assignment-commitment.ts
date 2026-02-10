@@ -97,11 +97,25 @@ export function transformAssignmentCommitment(
     data.commitment_status ?? data.content?.commitment_status;
   const evidenceHash =
     data.assignment_evidence_hash ?? data.content?.assignment_evidence_hash;
-  // Narrow source to valid union values
-  const source =
-    data.source === "chain_only" || data.source === "db_only"
-      ? data.source
-      : "merged";
+
+  // Determine source: prefer explicit API value, otherwise infer from data
+  let source: "merged" | "chain_only" | "db_only";
+  if (data.source === "chain_only" || data.source === "db_only") {
+    source = data.source;
+  } else if (data.source === "merged") {
+    source = "merged";
+  } else {
+    // Infer source from data structure when API doesn't provide it
+    const hasOnChainData = !!(data.on_chain_status ?? data.on_chain_content);
+    const hasDbData = !!(commitmentStatus ?? evidence);
+    if (hasOnChainData && !hasDbData) {
+      source = "chain_only";
+    } else if (!hasOnChainData && hasDbData) {
+      source = "db_only";
+    } else {
+      source = "merged";
+    }
+  }
 
   // Normalize raw DB status values to display-friendly values
   // The DB sends: SUBMITTED, ACCEPTED, REFUSED
@@ -207,7 +221,7 @@ export interface SubmitEvidenceInput {
   sltHash: string;
   evidence: JSONContent;
   evidenceHash: string;
-  pendingTxHash: string;
+  pendingTxHash?: string; // Optional for pre-TX saves
 }
 
 /**
@@ -224,18 +238,23 @@ export function useSubmitEvidence() {
 
   return useMutation({
     mutationFn: async (input: SubmitEvidenceInput): Promise<void> => {
+      // Build request body, only including pending_tx_hash if provided
+      const requestBody: Record<string, unknown> = {
+        course_id: input.courseId,
+        slt_hash: input.sltHash,
+        evidence: input.evidence,
+        evidence_hash: input.evidenceHash,
+      };
+      if (input.pendingTxHash) {
+        requestBody.pending_tx_hash = input.pendingTxHash;
+      }
+
       const response = await authenticatedFetch(
         `${GATEWAY_API_BASE}/course/student/commitment/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            course_id: input.courseId,
-            slt_hash: input.sltHash,
-            evidence: input.evidence,
-            evidence_hash: input.evidenceHash,
-            pending_tx_hash: input.pendingTxHash,
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
 

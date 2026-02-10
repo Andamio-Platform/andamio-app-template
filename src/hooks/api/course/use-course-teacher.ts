@@ -18,6 +18,7 @@
  * ```
  */
 
+import { useCallback } from "react";
 import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
@@ -626,9 +627,12 @@ export function useTeacherCommitmentsQueries(courseIds: string[]) {
 export function useInvalidateTeacherCourses() {
   const queryClient = useQueryClient();
 
-  return async () => {
-    await queryClient.invalidateQueries({
-      queryKey: courseTeacherKeys.all,
-    });
-  };
+  return useCallback(
+    async () => {
+      await queryClient.invalidateQueries({
+        queryKey: courseTeacherKeys.all,
+      });
+    },
+    [queryClient],
+  );
 }

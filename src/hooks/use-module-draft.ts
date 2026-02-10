@@ -27,7 +27,7 @@
  * ```
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import {
   useModuleDraftStore,
   useStore,
@@ -108,9 +108,12 @@ export function useModuleDraft(
   // Track initialization
   const isInitializedRef = useRef(false);
 
-  // Find the specific module from the list
-  const courseModule =
-    modules?.find((m) => m.moduleCode === moduleCode) ?? null;
+  // Find the specific module from the list — memoized to produce a stable
+  // reference so downstream useEffects don't re-fire on every render.
+  const courseModule = useMemo(
+    () => modules?.find((m) => m.moduleCode === moduleCode) ?? null,
+    [modules, moduleCode],
+  );
 
   // Initialize store when data is available
   useEffect(() => {

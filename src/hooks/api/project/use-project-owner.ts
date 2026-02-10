@@ -25,6 +25,7 @@
  * ```
  */
 
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
@@ -396,9 +397,12 @@ export function useRegisterProject() {
 export function useInvalidateOwnerProjects() {
   const queryClient = useQueryClient();
 
-  return async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ownerProjectKeys.all,
-    });
-  };
+  return useCallback(
+    async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ownerProjectKeys.all,
+      });
+    },
+    [queryClient],
+  );
 }

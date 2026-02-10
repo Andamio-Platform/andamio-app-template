@@ -12,6 +12,7 @@
  * ```
  */
 
+import { useMemo } from "react";
 import { useStudentCredentials } from "./use-student-credentials";
 import type { StudentCompletionInput } from "~/lib/project-eligibility";
 
@@ -32,14 +33,14 @@ export function useStudentCompletionsForPrereqs(
     isError,
   } = useStudentCredentials();
 
-  // Build a lookup from credentials data
-  const credentialMap = new Map(
-    (credentials ?? []).map((c) => [c.courseId, c]),
-  );
+  // Memoize to produce a stable reference — without this, .map() returns a
+  // new array every render, which triggers any useEffect that depends on it.
+  const completions: StudentCompletionInput[] = useMemo(() => {
+    const credentialMap = new Map(
+      (credentials ?? []).map((c) => [c.courseId, c]),
+    );
 
-  // Map each prerequisite course to a StudentCompletionInput
-  const completions: StudentCompletionInput[] = prerequisiteCourseIds.map(
-    (courseId) => {
+    return prerequisiteCourseIds.map((courseId) => {
       const cred = credentialMap.get(courseId);
 
       if (!cred) {
@@ -55,8 +56,8 @@ export function useStudentCompletionsForPrereqs(
         completedModuleHashes: cred.claimedCredentials,
         isEnrolled: cred.isEnrolled,
       };
-    },
-  );
+    });
+  }, [credentials, prerequisiteCourseIds]);
 
   return {
     completions,

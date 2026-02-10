@@ -72,7 +72,7 @@ export function StudioSidebar() {
     // Project Studio with specific project selected
     if (studioType === "project" && entityId) {
       return {
-        backLink: { href: "/studio/project", label: "All Projects" },
+        backLink: { href: "/studio", label: "All Projects" },
         sections: [
           {
             title: "Project Editor",

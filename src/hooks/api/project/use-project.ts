@@ -19,6 +19,7 @@
  * ```
  */
 
+import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated/index.ts
 import type {
@@ -841,16 +842,23 @@ export function useProjectTask(projectId: string | undefined, taskHash: string |
 export function useInvalidateProjects() {
   const queryClient = useQueryClient();
 
-  return {
-    project: async (projectId: string) => {
+  const project = useCallback(
+    async (projectId: string) => {
       await queryClient.invalidateQueries({
         queryKey: projectKeys.detail(projectId),
       });
     },
-    all: async () => {
+    [queryClient],
+  );
+
+  const all = useCallback(
+    async () => {
       await queryClient.invalidateQueries({
         queryKey: projectKeys.all,
       });
     },
-  };
+    [queryClient],
+  );
+
+  return useMemo(() => ({ project, all }), [project, all]);
 }

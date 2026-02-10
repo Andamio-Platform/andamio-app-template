@@ -197,8 +197,22 @@ function StudioSidebarLayoutInner({
   return (
     <AndamioResizablePanelGroup direction="horizontal" className="h-full">
       {/* Left Panel: Courses + Projects List */}
-      <AndamioResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+      <AndamioResizablePanel defaultSize={25} minSize={15} maxSize={35}>
         <div className="flex h-full flex-col overflow-hidden">
+          {/* Search - Top */}
+          <div className="border-b border-border px-3 py-2 bg-muted/30">
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <AndamioInput
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+          </div>
+
           <AndamioScrollArea className="flex-1 min-h-0">
             <div className="flex flex-col gap-1 p-3">
               {/* Courses Section */}
@@ -284,26 +298,13 @@ function StudioSidebarLayoutInner({
             </div>
           </AndamioScrollArea>
 
-          {/* Search - Bottom */}
-          <div className="border-t border-border px-3 py-2 bg-muted/30">
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <AndamioInput
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs"
-              />
-            </div>
-          </div>
         </div>
       </AndamioResizablePanel>
 
       <AndamioResizableHandle withHandle />
 
       {/* Right Panel: Page Content */}
-      <AndamioResizablePanel defaultSize={80}>
+      <AndamioResizablePanel defaultSize={75}>
         {children}
       </AndamioResizablePanel>
     </AndamioResizablePanelGroup>

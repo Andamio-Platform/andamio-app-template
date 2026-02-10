@@ -25,6 +25,7 @@
  * ```
  */
 
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
@@ -432,9 +433,12 @@ export function useRegisterCourse() {
 export function useInvalidateOwnerCourses() {
   const queryClient = useQueryClient();
 
-  return async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ownerCourseKeys.all,
-    });
-  };
+  return useCallback(
+    async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ownerCourseKeys.all,
+      });
+    },
+    [queryClient],
+  );
 }

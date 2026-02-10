@@ -1,6 +1,6 @@
 # Project Status
 
-> **Last Updated**: February 8, 2026
+> **Last Updated**: February 10, 2026
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -59,15 +59,18 @@ Current implementation status of the Andamio T3 App Template.
 >
 > | Issue | Priority | Notes |
 > |-------|----------|-------|
-> | #118 - Cannot mint access token from preprod | 🔴 High | Bug report |
-> | #182 - Teacher assessment fires multiple TXs | 🟡 Medium | Related: #144, #153 |
-> | #103 - Project hooks upgrade | 🟡 Medium | 3 missing hooks |
-> | #159 - Pass task evidence in tx/register metadata | 🟡 Medium | API improvement |
-> | #158 - content_json in tasks/list response | 🟡 Medium | API feature |
-> | #55 - ProjectTask sync errors | 🟡 Medium | Task manage TX sync |
-> | #37 - CoursePrereqsSelector improvements | 🟡 Medium | Partially addressed |
-> | #32 - Extra signature after mint | 🟡 Medium | Auth flow |
-> | #34 - Teacher assessment UX | 🟢 Low | Accept/Refuse button UX |
+> | #241 - Course detail returns content: null | 🔴 High | Missing title |
+> | #224 - Create Access Token screen flashes | 🔴 High | UX bug |
+> | #221 - Top bar disappears on course pages | 🔴 High | Layout bug |
+> | #240 - Manager/Teacher invitation flow | 🟡 Medium | Consent before on-chain TX |
+> | #239 - Project managers stale data | 🟡 Medium | Cache/sync issue |
+> | #223 - Wrong pending review count | 🟡 Medium | Dashboard bug |
+> | #222 - Processing message persists | 🟡 Medium | Assignment submission |
+> | #220 - Simplified commitment lifecycle | 🟡 Medium | Frontend update |
+> | #216 - Commitment state healing | 🟡 Medium | Gateway integration |
+> | #214 - Dashboard API waterfall | 🟡 Medium | Performance |
+> | #212 - Assignment status 'Unknown' | 🟡 Medium | Status mapping |
+> | #144 - Batch assessment bug | 🟡 Medium | Only processes one module |
 >
 > ---
 >
@@ -84,7 +87,7 @@ Current implementation status of the Andamio T3 App Template.
 >
 > ---
 >
-> **Next Work**: Wire `CopyId` into studio detail pages → Finish #187/#188 remaining items → #118 access token mint bug → #103 project hooks
+> **Next Work**: High-priority bugs (#241 content:null, #224 token flash, #221 top bar) → #220 simplified commitment lifecycle → #214 dashboard performance
 
 ---
 
@@ -142,6 +145,13 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 ---
 
 ## Recent Completions
+
+**February 10, 2026** (Dev API Security Fix):
+- ✅ **API Setup Security Fix** (PR #251) — Closes #245, #246
+  - API keys card only shows after successful profile load (not just stale JWT)
+  - Clear stale dev JWT on 401/403 responses
+  - Rotate/delete already used correct `api_key_name` field
+- ✅ **Dev Onboarding UI Refresh** — Andamio components, DeveloperIcon, vertical stepper
 
 **February 7, 2026** (Unified Studio + Migration Testing Fixes):
 - ✅ **Unified Studio** (PR #193) — Persistent sidebar with split-pane layout, courses + projects in single view, context-based create flows, prerequisites tooltip, wizard mode detection

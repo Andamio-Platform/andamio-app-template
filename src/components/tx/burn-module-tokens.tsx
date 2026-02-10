@@ -245,8 +245,8 @@ export function BurnModuleTokens({
           </div>
         </div>
 
-        {/* Transaction Status - Only show during processing */}
-        {state !== "idle" && !txConfirmed && (
+        {/* Transaction Status - Only show during processing, not when showing gateway confirmation */}
+        {state !== "idle" && !txConfirmed && !(state === "success" && result?.requiresDBUpdate) && (
           <TransactionStatus
             state={state}
             result={result}

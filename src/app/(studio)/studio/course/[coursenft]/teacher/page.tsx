@@ -105,7 +105,7 @@ const getStatusVariant = (
   if (!status) return "outline";
   if (status.includes("PENDING")) return "secondary";
   if (status.includes("ACCEPTED") || status.includes("CLAIMED") || status === "ON_CHAIN") return "default";
-  if (status.includes("DENIED")) return "destructive";
+  if (status.includes("REFUSED")) return "destructive";
   if (status === "AWAITING_EVIDENCE" || status === "DRAFT") return "outline";
   return "default";
 };
@@ -330,10 +330,24 @@ export default function TeacherDashboardPage() {
     new Set(commitments.map((c) => c.moduleCode).filter((c): c is string => !!c))
   );
 
+  // Helper to check if a commitment is assessable (has on-chain data and is not already accepted)
+  const isAssessable = useCallback((c: TeacherAssignmentCommitment) => {
+    if (!c.studentAlias) return false;
+    if (c.commitmentStatus === "ACCEPTED") return false;
+    // Pending is always assessable
+    if (c.commitmentStatus === "PENDING_APPROVAL") return true;
+    // REFUSED with on-chain data can be re-assessed (student resubmitted)
+    if (c.commitmentStatus === "REFUSED" &&
+        (c.status === "synced" || c.status === "onchain_only")) {
+      return true;
+    }
+    return false;
+  }, []);
+
   // Stats
   const stats = {
     total: commitments.length,
-    pendingReview: commitments.filter((c) => c.commitmentStatus === "PENDING_APPROVAL").length,
+    pendingReview: commitments.filter(isAssessable).length,
   };
 
   // Derived filtered commitments — uses currentTab instead of statusFilter
@@ -341,7 +355,7 @@ export default function TeacherDashboardPage() {
     let filtered = [...commitments];
 
     if (currentTab === "pending") {
-      filtered = filtered.filter((c) => c.commitmentStatus === "PENDING_APPROVAL");
+      filtered = filtered.filter(isAssessable);
     }
 
     if (assignmentFilter !== "all") {
@@ -367,30 +381,26 @@ export default function TeacherDashboardPage() {
     );
   };
 
-  // Check if a commitment is ready for assessment
-  const isReadyForAssessment = (commitment: TeacherAssignmentCommitment) => {
-    return commitment.studentAlias && commitment.commitmentStatus === "PENDING_APPROVAL";
-  };
+  // Check if a commitment is ready for assessment (alias for isAssessable for clarity)
+  const isReadyForAssessment = isAssessable;
 
-  // Find next undecided pending assignment for auto-advance
+  // Find next undecided assessable assignment for auto-advance
   const findNextPending = useCallback(
     (current: TeacherAssignmentCommitment | null) => {
-      const pendingItems = commitments.filter(
-        (c) => c.commitmentStatus === "PENDING_APPROVAL"
-      );
-      if (pendingItems.length === 0) return null;
+      const assessableItems = commitments.filter(isAssessable);
+      if (assessableItems.length === 0) return null;
 
       const currentKey = current ? getCommitmentKey(current) : null;
 
       // Find items that don't have a decision yet
-      const undecided = pendingItems.filter((c) => {
+      const undecided = assessableItems.filter((c) => {
         const key = getCommitmentKey(c);
         return key !== currentKey && !pendingDecisions.has(key);
       });
 
       return undecided[0] ?? null;
     },
-    [commitments, pendingDecisions]
+    [commitments, isAssessable, pendingDecisions]
   );
 
   // Make a decision and auto-advance

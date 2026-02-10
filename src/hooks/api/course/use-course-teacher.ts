@@ -96,7 +96,7 @@ export interface TeacherAssignmentCommitment {
   // Off-chain content (from content object)
   moduleCode?: string;  // Human-readable module code (e.g., "101")
   evidence?: unknown;  // Tiptap JSON document from content.evidence
-  commitmentStatus?: string;  // Display status: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED (mapped from DB: SUBMITTED, ACCEPTED, REFUSED)
+  commitmentStatus?: string;  // Display status: DRAFT, PENDING_APPROVAL, ACCEPTED, REFUSED (mapped from DB: SUBMITTED, ACCEPTED, REFUSED)
 
   // Metadata
   status?: TeacherCourseStatus;  // synced, onchain_only, db_only
@@ -215,16 +215,19 @@ function hexToText(hex: string): string {
  * Map raw API commitment_status + source to display-friendly status.
  *
  * DB sends: DRAFT, SUBMITTED, ACCEPTED, REFUSED
- * Display statuses: DRAFT, PENDING_APPROVAL, ACCEPTED, DENIED
+ * Display statuses: DRAFT, PENDING_APPROVAL, ACCEPTED, REFUSED
+ *
+ * Note: REFUSED is NOT a terminal state - students can resubmit evidence.
+ * If on-chain data exists (source: merged/chain_only), the commitment is assessable.
  */
 const TEACHER_STATUS_MAP: Record<string, string> = {
   SUBMITTED: "PENDING_APPROVAL",
   ACCEPTED: "ACCEPTED",
-  REFUSED: "DENIED",
+  REFUSED: "REFUSED",
   DRAFT: "DRAFT",
   // Legacy aliases (gateway may still send these)
   APPROVED: "ACCEPTED",
-  REJECTED: "DENIED",
+  REJECTED: "REFUSED",
   // DB statuses that may survive before gateway healing (andamio-api#133)
   COMMITTED: "COMMITTED",
   AWAITING_SUBMISSION: "COMMITTED",
@@ -266,7 +269,7 @@ function transformTeacherCommitment(raw: RawTeacherCommitment): TeacherAssignmen
     moduleCode: raw.course_module_code,
     // Evidence is now under content.evidence (Tiptap JSON document)
     evidence: raw.content?.evidence,
-    // Commitment status mapped to display values (PENDING_APPROVAL, ACCEPTED, DENIED, DRAFT)
+    // Commitment status mapped to display values (PENDING_APPROVAL, ACCEPTED, REFUSED, DRAFT)
     commitmentStatus: mapToDisplayStatus(raw.source, raw.content?.commitment_status),
     status: mapSourceToStatus(raw.source),
   };

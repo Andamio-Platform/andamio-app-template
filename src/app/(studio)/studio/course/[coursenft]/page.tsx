@@ -179,7 +179,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // Fetch assignment commitments for this course, split into categories
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
-  const RESOLVED_STATUSES = ["ACCEPTED", "DENIED", "REFUSED"];
+  const RESOLVED_STATUSES = ["ACCEPTED", "REFUSED"];
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
     [allCommitmentsForCourse]
@@ -1127,7 +1127,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                   </StudioFormSection>
                 )}
 
-                {/* Resolved Commitments (ACCEPTED / DENIED only) */}
+                {/* Resolved Commitments (ACCEPTED / REFUSED) */}
                 {resolvedCommitments.length > 0 && (
                   <StudioFormSection title="Resolved">
                     <div className="space-y-3">
@@ -1158,8 +1158,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                               variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
                               className="text-[10px]"
                             >
-                              {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" :
-                                commitment.commitmentStatus === "REFUSED" ? "Refused" : "Denied"}
+                              {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Refused"}
                             </AndamioBadge>
                           </div>
                         </div>

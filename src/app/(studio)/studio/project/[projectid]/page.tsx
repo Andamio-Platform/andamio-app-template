@@ -32,10 +32,12 @@ import {
   AndamioAddButton,
   AndamioScrollArea,
 } from "~/components/andamio";
-import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, BlockIcon, OnChainIcon, CourseIcon } from "~/components/icons";
+// Note: BlockIcon hidden for v2 release (used by Blacklist tab)
+import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
-import { ManagersManage, BlacklistManage } from "~/components/tx";
+// Note: BlacklistManage hidden for v2 release - will enable after user research
+import { ManagersManage } from "~/components/tx";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
@@ -62,7 +64,8 @@ export default function ProjectDashboardPage() {
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
-  const validTabs = ["overview", "tasks", "team", "blacklist", "settings"];
+  // Note: "blacklist" tab hidden for v2 release - will enable after user research
+  const validTabs = ["overview", "tasks", "team", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "overview";
 
   const handleTabChange = (value: string) => {
@@ -214,7 +217,8 @@ export default function ProjectDashboardPage() {
 
       {/* Tabbed Interface */}
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <AndamioTabsList className="grid w-full grid-cols-5">
+        {/* Note: Blacklist tab hidden for v2 release - will enable after user research */}
+        <AndamioTabsList className="grid w-full grid-cols-4">
           <AndamioTabsTrigger value="overview" className="flex items-center gap-2">
             <ChartIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -227,10 +231,12 @@ export default function ProjectDashboardPage() {
             <TeacherIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Team</span>
           </AndamioTabsTrigger>
+          {/* Blacklist tab hidden for v2 release
           <AndamioTabsTrigger value="blacklist" className="flex items-center gap-2">
             <BlockIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Blacklist</span>
           </AndamioTabsTrigger>
+          */}
           <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Settings</span>
@@ -420,7 +426,7 @@ export default function ProjectDashboardPage() {
           />
         </AndamioTabsContent>
 
-        {/* Blacklist Tab */}
+        {/* Blacklist Tab - Hidden for v2 release, will enable after user research
         <AndamioTabsContent value="blacklist" className="mt-6 space-y-4">
           <BlacklistManage
             projectNftPolicyId={projectId}
@@ -430,6 +436,7 @@ export default function ProjectDashboardPage() {
             }}
           />
         </AndamioTabsContent>
+        */}
 
         {/* Settings Tab */}
         <AndamioTabsContent value="settings" className="mt-6">

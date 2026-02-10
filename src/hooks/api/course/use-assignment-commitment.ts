@@ -244,7 +244,6 @@ export interface SubmitEvidenceInput {
  */
 export function useSubmitEvidence() {
   const { authenticatedFetch } = useAndamioAuth();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: SubmitEvidenceInput): Promise<void> => {
@@ -287,19 +286,10 @@ export function useSubmitEvidence() {
 
       console.log("[useSubmitEvidence] Evidence saved to database");
     },
-    onSuccess: (_data, variables) => {
-      // Invalidate the commitment query so it refetches with new evidence
-      void queryClient.invalidateQueries({
-        queryKey: assignmentCommitmentKeys.detail(
-          variables.courseId,
-          variables.sltHash,
-        ),
-      });
-      // Also invalidate the student commitments list so status badges refresh
-      void queryClient.invalidateQueries({
-        queryKey: courseStudentKeys.commitments(),
-      });
-    },
+    // NOTE: We intentionally do NOT invalidate queries here.
+    // Evidence is saved to DB before the TX, but we want the UI to stay in the
+    // "editing/finalizing" flow until the TX is confirmed. Query invalidation
+    // happens in useTxStream.onComplete → refetchCommitment() after TX confirmation.
   });
 }
 

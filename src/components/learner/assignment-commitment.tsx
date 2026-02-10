@@ -6,7 +6,9 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAssignmentCommitment, useSubmitEvidence } from "~/hooks/api/course";
+import { courseStudentKeys } from "~/hooks/api/course/use-course-student";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { isJSONContent } from "~/hooks/api/course/use-course-module";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -59,6 +61,7 @@ export function AssignmentCommitment({
   sltHash,
 }: AssignmentCommitmentProps) {
   const { isAuthenticated, user } = useAndamioAuth();
+  const queryClient = useQueryClient();
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
 
   // V2 Transaction hooks
@@ -87,6 +90,10 @@ export function AssignmentCommitment({
         if (status.state === "updated") {
           triggerSuccess("Assignment committed to blockchain!");
           void refetchCommitment();
+          // Invalidate student commitments list so sidebar badges refresh
+          void queryClient.invalidateQueries({
+            queryKey: courseStudentKeys.commitments(),
+          });
         } else if (status.state === "failed" || status.state === "expired") {
           setTxError(status.last_error ?? "Transaction failed. Please try again.");
         }
@@ -102,6 +109,10 @@ export function AssignmentCommitment({
         if (status.state === "updated") {
           triggerSuccess("Assignment updated on blockchain!");
           void refetchCommitment();
+          // Invalidate student commitments list so sidebar badges refresh
+          void queryClient.invalidateQueries({
+            queryKey: courseStudentKeys.commitments(),
+          });
         } else if (status.state === "failed" || status.state === "expired") {
           setTxError(status.last_error ?? "Transaction failed. Please try again.");
         }

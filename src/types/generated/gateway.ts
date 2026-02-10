@@ -1313,7 +1313,7 @@ export interface ErrorsBadRequestResponse {
 
 export interface ErrorsConflictErrorResponse {
   details?: string;
-  /** @example "Conflict - The provided alias is already taken by another user. Please choose a different alias." */
+  /** @example "Conflict" */
   message?: string;
   /** @example 409 */
   status_code?: number;

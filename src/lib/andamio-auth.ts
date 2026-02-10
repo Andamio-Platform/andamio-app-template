@@ -807,7 +807,7 @@ export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile
     created_at?: string;
     active_keys?: Array<{
       api_key?: string;
-      api_key_name?: string;
+      name?: string;
       created_at?: string;
       expires_at?: string;
       is_active?: boolean;
@@ -823,7 +823,7 @@ export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile
     createdAt: data.created_at ?? "",
     activeKeys: (data.active_keys ?? []).map((key) => ({
       apiKey: key.api_key ?? "",
-      name: key.api_key_name ?? "",
+      name: key.name ?? "",
       createdAt: key.created_at ?? "",
       expiresAt: key.expires_at ?? "",
       isActive: key.is_active ?? true,

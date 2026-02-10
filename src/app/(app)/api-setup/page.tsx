@@ -1005,9 +1005,6 @@ export default function ApiSetupPage() {
                               </Button>
                             </div>
                           </div>
-                          <div className="rounded-md bg-muted px-3 py-2 text-xs font-mono">
-                            {maskApiKey(key.apiKey)}
-                          </div>
                         </div>
                       ))}
                     </div>

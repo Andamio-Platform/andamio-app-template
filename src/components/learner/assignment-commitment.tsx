@@ -124,6 +124,10 @@ export function AssignmentCommitment({
   const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
   const [localEvidenceContent, setLocalEvidenceContent] = useState<JSONContent | null>(null);
 
+  // Revision flow state (for ASSIGNMENT_REFUSED)
+  const [isRevisionLocked, setIsRevisionLocked] = useState(false);
+  const [revisionHash, setRevisionHash] = useState<string | null>(null);
+
   const handleEvidenceContentChange = (content: JSONContent) => {
     setLocalEvidenceContent(content);
     setHasUnsavedChanges(true);
@@ -158,29 +162,32 @@ export function AssignmentCommitment({
     if (!localEvidenceContent || !sltHash) return;
     const hash = hashNormalizedContent(localEvidenceContent);
 
-    // Save evidence to DB at finalize time (creates draft before TX)
+    // Save evidence to DB at finalize time - MUST succeed before showing TX button
+    // This is a new commitment, so isUpdate=false (creates new DB record)
     try {
       await submitEvidence.mutateAsync({
         courseId,
         sltHash,
+        moduleCode,
         evidence: localEvidenceContent,
         evidenceHash: hash,
-        // pendingTxHash omitted — will be set by gateway after TX confirms
+        isUpdate: false,
       });
       console.log("[AssignmentCommitment] Evidence saved to DB at finalize");
     } catch (dbError) {
-      // Log warning but continue — on-chain is source of truth
-      console.warn("[AssignmentCommitment] Failed to save evidence at finalize:", dbError);
-      toast.warning("Evidence may not be saved", {
-        description: "Continuing with submission flow...",
+      // STOP - evidence must be saved before we allow TX
+      console.error("[AssignmentCommitment] Failed to save evidence:", dbError);
+      toast.error("Failed to save your work", {
+        description: "Please try again. Your work must be saved before submitting.",
       });
+      return; // Don't proceed - don't lock, don't show TX button
     }
 
     setEvidenceHash(hash);
     setEvidenceContent(localEvidenceContent);
     setIsLocked(true);
     setHasUnsavedChanges(false);
-    triggerSuccess("Your work is ready to submit. Review it below, then confirm.");
+    triggerSuccess("Your work is saved and ready to submit. Review it below, then confirm.");
   };
 
   const handleUnlockEvidence = () => {
@@ -188,40 +195,61 @@ export function AssignmentCommitment({
     setEvidenceHash(null);
   };
 
-  // Shared handler for update TX execution (used by revision + chain_only branches)
-  const handleUpdateTxExecute = async (newEvidenceHash: string) => {
-    if (!user?.accessTokenAlias || !localEvidenceContent || !sltHash) return;
+  // Finalize revision - save to DB first, then show TX button
+  const handleLockRevision = async () => {
+    if (!localEvidenceContent || !sltHash) return;
+    const hash = hashNormalizedContent(localEvidenceContent);
 
-    // Save evidence to DB BEFORE on-chain TX
+    // Check if there's an existing DB record
+    // If networkEvidence exists or source is not "chain_only", we have a DB record
+    const hasDbRecord = !!(commitment?.networkEvidence) || commitment?.source !== "chain_only";
+
+    // Save revised evidence to DB - MUST succeed before showing TX button
     try {
       await submitEvidence.mutateAsync({
         courseId,
         sltHash,
+        moduleCode,
         evidence: localEvidenceContent,
-        evidenceHash: newEvidenceHash,
-        // pendingTxHash omitted — will be set by gateway after TX confirms
+        evidenceHash: hash,
+        isUpdate: hasDbRecord, // Use /update if DB record exists, /submit if not
       });
-      console.log("[AssignmentCommitment] Evidence saved to DB before update TX");
+      console.log("[AssignmentCommitment] Revised evidence saved to DB (isUpdate:", hasDbRecord, ")");
     } catch (dbError) {
-      // Log warning but continue — on-chain is source of truth
-      console.warn("[AssignmentCommitment] Failed to pre-save evidence:", dbError);
-      toast.warning("Evidence may not be saved", {
-        description: "Continuing with on-chain submission...",
+      // STOP - evidence must be saved before we allow TX
+      console.error("[AssignmentCommitment] Failed to save revision:", dbError);
+      toast.error("Failed to save your revision", {
+        description: "Please try again. Your work must be saved before resubmitting.",
       });
+      return;
     }
+
+    setRevisionHash(hash);
+    setIsRevisionLocked(true);
+    setHasUnsavedChanges(false);
+    triggerSuccess("Your revision is saved and ready to submit.");
+  };
+
+  const handleUnlockRevision = () => {
+    setIsRevisionLocked(false);
+    setRevisionHash(null);
+  };
+
+  // Execute update TX (DB save already done at Finalize time)
+  const handleUpdateTxExecute = async (evidenceHashToSubmit: string) => {
+    if (!user?.accessTokenAlias || !sltHash) return;
 
     await updateTx.execute({
       txType: "COURSE_STUDENT_ASSIGNMENT_UPDATE",
       params: {
         alias: user.accessTokenAlias,
         course_id: courseId,
-        assignment_info: newEvidenceHash,
+        assignment_info: evidenceHashToSubmit,
       },
       metadata: {
         slt_hash: sltHash,
         course_module_code: moduleCode,
-        evidence: JSON.stringify(localEvidenceContent),
-        evidence_hash: newEvidenceHash,
+        evidence_hash: evidenceHashToSubmit,
       },
       onSuccess: () => {
         setHasUnsavedChanges(false);
@@ -363,7 +391,7 @@ export function AssignmentCommitment({
           </div>
 
         ) : commitment?.networkStatus === "ASSIGNMENT_REFUSED" ? (
-          /* Branch: Assignment refused — revision flow */
+          /* Branch: Assignment refused — revision flow with Finalize step */
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-destructive/10 border-destructive/30">
               <AlertIcon className="h-8 w-8 text-destructive shrink-0" />
@@ -384,178 +412,63 @@ export function AssignmentCommitment({
               </div>
             )}
             <AndamioSeparator />
-            <EvidenceEditorSection
-              label="Revised Work"
-              description="Edit your work below and resubmit."
-              placeholder="Revise your assignment work..."
-              content={localEvidenceContent}
-              onContentChange={handleEvidenceContentChange}
-            />
-            <UpdateTxStatusSection
-              txState={updateTx.state}
-              txResult={updateTx.result}
-              txError={updateTx.error?.message ?? null}
-              txStatus={updateTxStatus}
-              txConfirmed={updateTxConfirmed}
-              onRetry={() => updateTx.reset()}
-              successMessage="Revised work submitted successfully!"
-            />
-            <UpdateEvidenceActions
-              txState={updateTx.state}
-              txConfirmed={updateTxConfirmed}
-              localEvidenceContent={localEvidenceContent}
-              accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseId={courseId}
-              sltHash={sltHash}
-              onExecuteTx={handleUpdateTxExecute}
-              onRefresh={() => void refetchCommitment()}
-              submitLabel="Resubmit Work"
-            />
-          </div>
 
-        ) : commitment?.source === "chain_only" ? (
-          /* Branch: Chain-only — evidence update required */
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
-              <AlertIcon className="h-8 w-8 text-secondary shrink-0" />
-              <div>
-                <AndamioText className="font-medium">Update Required</AndamioText>
-                <AndamioText variant="small" className="text-muted-foreground">
-                  Your assignment was submitted but the details need to be updated. Please re-enter your work below so your instructor can review it.
-                </AndamioText>
-              </div>
-            </div>
-            {commitment.onChainContent && (
-              <div className="p-3 border rounded-lg bg-muted/30">
-                <AndamioLabel className="text-xs">Current Submission Hash</AndamioLabel>
-                <code className="block mt-1 text-xs font-mono break-all text-muted-foreground">
-                  {commitment.onChainContent}
-                </code>
-                <AndamioText variant="small" className="mt-2 text-xs">
-                  This will be updated with your new submission.
-                </AndamioText>
+            {!isRevisionLocked ? (
+              /* Step 1: Edit and Finalize */
+              <EvidenceEditorSection
+                label="Revised Work"
+                description="Edit your work below. When ready, click Finalize to save and prepare for resubmission."
+                placeholder="Revise your assignment work..."
+                content={localEvidenceContent}
+                onContentChange={handleEvidenceContentChange}
+                onLock={handleLockRevision}
+                lockDisabled={!localEvidenceContent}
+              />
+            ) : (
+              /* Step 2: Review and Submit TX */
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <AndamioLabel>Finalized Revision</AndamioLabel>
+                  {localEvidenceContent && (
+                    <ContentDisplay content={localEvidenceContent} variant="muted" />
+                  )}
+                  {revisionHash && (
+                    <EvidenceHashDisplay label="Revision Hash:" hash={revisionHash} truncate={false} />
+                  )}
+                </div>
+                <AndamioSeparator />
+                <UpdateTxStatusSection
+                  txState={updateTx.state}
+                  txResult={updateTx.result}
+                  txError={updateTx.error?.message ?? null}
+                  txStatus={updateTxStatus}
+                  txConfirmed={updateTxConfirmed}
+                  onRetry={() => updateTx.reset()}
+                  successMessage="Revised work submitted successfully!"
+                />
+                {updateTx.state === "idle" && !updateTxConfirmed && (
+                  <div className="flex justify-end gap-2">
+                    <AndamioButton variant="outline" onClick={handleUnlockRevision}>
+                      Edit Revision
+                    </AndamioButton>
+                    {user?.accessTokenAlias && sltHash && revisionHash && (
+                      <UpdateEvidenceActions
+                        txState={updateTx.state}
+                        txConfirmed={updateTxConfirmed}
+                        localEvidenceContent={localEvidenceContent}
+                        accessTokenAlias={user.accessTokenAlias}
+                        courseId={courseId}
+                        sltHash={sltHash}
+                        onExecuteTx={async () => {
+                          await handleUpdateTxExecute(revisionHash);
+                        }}
+                        submitLabel="Resubmit Work"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             )}
-            <AndamioSeparator />
-            <EvidenceEditorSection
-              label="Your Work"
-              description="Enter your assignment work below. This will update your submission."
-              placeholder="Enter your assignment work..."
-              content={localEvidenceContent}
-              onContentChange={handleEvidenceContentChange}
-            />
-            <UpdateTxStatusSection
-              txState={updateTx.state}
-              txResult={updateTx.result}
-              txError={updateTx.error?.message ?? null}
-              txStatus={updateTxStatus}
-              txConfirmed={updateTxConfirmed}
-              onRetry={() => updateTx.reset()}
-              successMessage="Work updated successfully!"
-            />
-            <UpdateEvidenceActions
-              txState={updateTx.state}
-              txConfirmed={updateTxConfirmed}
-              localEvidenceContent={localEvidenceContent}
-              accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseId={courseId}
-              sltHash={sltHash}
-              onExecuteTx={handleUpdateTxExecute}
-              onRefresh={() => void refetchCommitment()}
-              submitLabel="Update Work"
-            />
-          </div>
-
-        ) : commitment?.networkStatus === "IN_PROGRESS" && !commitment.networkEvidence ? (
-          /* Branch: Awaiting submission — student needs to submit work */
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
-              <PendingIcon className="h-8 w-8 text-secondary shrink-0" />
-              <div>
-                <AndamioText className="font-medium">Submit Your Work</AndamioText>
-                <AndamioText variant="small" className="text-muted-foreground">
-                  Enter your work below and submit it for your instructor to review.
-                </AndamioText>
-              </div>
-            </div>
-            <AndamioSeparator />
-            <EvidenceEditorSection
-              label="Your Work"
-              description="Enter your assignment work below and submit it for your instructor to review."
-              placeholder="Enter your assignment work..."
-              content={localEvidenceContent}
-              onContentChange={handleEvidenceContentChange}
-            />
-            <UpdateTxStatusSection
-              txState={updateTx.state}
-              txResult={updateTx.result}
-              txError={updateTx.error?.message ?? null}
-              txStatus={updateTxStatus}
-              txConfirmed={updateTxConfirmed}
-              onRetry={() => updateTx.reset()}
-              successMessage="Work submitted successfully!"
-            />
-            <UpdateEvidenceActions
-              txState={updateTx.state}
-              txConfirmed={updateTxConfirmed}
-              localEvidenceContent={localEvidenceContent}
-              accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseId={courseId}
-              sltHash={sltHash}
-              onExecuteTx={handleUpdateTxExecute}
-              onRefresh={() => void refetchCommitment()}
-              submitLabel="Submit Work"
-            />
-          </div>
-
-        ) : commitment?.networkStatus === "PENDING_APPROVAL" && !commitment.networkEvidence ? (
-          /* Branch: Pending review but no evidence — student needs to submit work */
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 border rounded-lg bg-secondary/10 border-secondary/30">
-              <AlertIcon className="h-8 w-8 text-secondary shrink-0" />
-              <div>
-                <AndamioText className="font-medium">Evidence Required</AndamioText>
-                <AndamioText variant="small" className="text-muted-foreground">
-                  Your assignment is pending review, but your work is not on record. Enter your evidence below so your instructor can review it.
-                </AndamioText>
-              </div>
-            </div>
-            {commitment.onChainContent && (
-              <div className="p-3 border rounded-lg bg-muted/30">
-                <AndamioLabel className="text-xs">On-Chain Submission Hash</AndamioLabel>
-                <code className="block mt-1 text-xs font-mono break-all text-muted-foreground">
-                  {commitment.onChainContent}
-                </code>
-              </div>
-            )}
-            <AndamioSeparator />
-            <EvidenceEditorSection
-              label="Your Work"
-              description="Enter your assignment work below. This will update your submission so your instructor can review it."
-              placeholder="Enter your assignment work..."
-              content={localEvidenceContent}
-              onContentChange={handleEvidenceContentChange}
-            />
-            <UpdateTxStatusSection
-              txState={updateTx.state}
-              txResult={updateTx.result}
-              txError={updateTx.error?.message ?? null}
-              txStatus={updateTxStatus}
-              txConfirmed={updateTxConfirmed}
-              onRetry={() => updateTx.reset()}
-              successMessage="Evidence submitted successfully!"
-            />
-            <UpdateEvidenceActions
-              txState={updateTx.state}
-              txConfirmed={updateTxConfirmed}
-              localEvidenceContent={localEvidenceContent}
-              accessTokenAlias={user?.accessTokenAlias ?? null}
-              courseId={courseId}
-              sltHash={sltHash}
-              onExecuteTx={handleUpdateTxExecute}
-              onRefresh={() => void refetchCommitment()}
-              submitLabel="Submit Evidence"
-            />
           </div>
 
         ) : !commitment ? (

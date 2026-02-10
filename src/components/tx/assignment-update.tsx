@@ -160,25 +160,25 @@ export function AssignmentUpdate({
     const hash = computeAssignmentInfoHash(evidence);
     setEvidenceHash(hash);
 
-    // Save evidence to DB BEFORE on-chain TX
-    // This creates/updates the commitment record with the actual content
-    // so the gateway's confirm handler finds an existing record to update
+    // Save evidence to DB BEFORE on-chain TX - MUST succeed
+    // isNewCommitment=true means new DB record, isNewCommitment=false means update existing
     try {
       await submitEvidence.mutateAsync({
         courseId,
         sltHash: sltHash ?? "",
+        moduleCode,
         evidence,
         evidenceHash: hash,
-        // pendingTxHash omitted — will be set by gateway after TX confirms
+        isUpdate: !isNewCommitment,
       });
-      console.log("[AssignmentUpdate] Evidence saved to DB");
+      console.log("[AssignmentUpdate] Evidence saved to DB (isUpdate:", !isNewCommitment, ")");
     } catch (dbError) {
-      // Log warning but continue with TX
-      // The on-chain record is the source of truth
-      console.warn("[AssignmentUpdate] Failed to pre-save evidence:", dbError);
-      toast.warning("Evidence may not be saved", {
-        description: "Continuing with on-chain submission...",
+      // STOP - evidence must be saved before TX
+      console.error("[AssignmentUpdate] Failed to save evidence:", dbError);
+      toast.error("Failed to save your work", {
+        description: "Please try again. Your work must be saved before submitting.",
       });
+      return;
     }
 
     // Select transaction type based on mode

@@ -216,20 +216,29 @@ export function useAssignmentCommitment(
 // Mutations
 // =============================================================================
 
-/** Input for submitting evidence to the database */
+/** Input for submitting/updating evidence in the database */
 export interface SubmitEvidenceInput {
   courseId: string;
   sltHash: string;
+  moduleCode: string;
   evidence: JSONContent;
   evidenceHash: string;
-  pendingTxHash?: string; // Optional for pre-TX saves
+  /**
+   * If true, uses /commitment/update endpoint (existing DB record).
+   * If false, uses /commitment/submit endpoint (new DB record).
+   */
+  isUpdate?: boolean;
 }
 
 /**
- * Submit evidence content to the database after a successful TX.
+ * Submit or update evidence content in the database.
  *
- * This is a fire-and-forget style mutation — the on-chain TX is the source of truth,
- * so DB save errors are logged but don't throw.
+ * Uses the appropriate endpoint based on `isUpdate`:
+ * - `/commitment/submit` for new records (uses slt_hash)
+ * - `/commitment/update` for existing records (uses course_module_code)
+ *
+ * This mutation MUST succeed before allowing the on-chain TX.
+ * Throws on error so callers can stop the flow if save fails.
  *
  * On success, invalidates the matching assignment commitment query.
  */
@@ -239,25 +248,33 @@ export function useSubmitEvidence() {
 
   return useMutation({
     mutationFn: async (input: SubmitEvidenceInput): Promise<void> => {
-      // Build request body, only including pending_tx_hash if provided
+      const isUpdate = input.isUpdate ?? false;
+
+      // Build request body based on endpoint
       const requestBody: Record<string, unknown> = {
         course_id: input.courseId,
-        slt_hash: input.sltHash,
         evidence: input.evidence,
         evidence_hash: input.evidenceHash,
       };
-      if (input.pendingTxHash) {
-        requestBody.pending_tx_hash = input.pendingTxHash;
+
+      // /submit uses slt_hash, /update uses course_module_code
+      if (isUpdate) {
+        requestBody.course_module_code = input.moduleCode;
+      } else {
+        requestBody.slt_hash = input.sltHash;
       }
 
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/course/student/commitment/submit`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        },
-      );
+      const endpoint = isUpdate
+        ? `${GATEWAY_API_BASE}/course/student/commitment/update`
+        : `${GATEWAY_API_BASE}/course/student/commitment/submit`;
+
+      console.log("[useSubmitEvidence]", isUpdate ? "Updating" : "Creating", "evidence in DB");
+
+      const response = await authenticatedFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -265,8 +282,7 @@ export function useSubmitEvidence() {
           "[useSubmitEvidence] Failed to save evidence to DB:",
           errorText,
         );
-        // Don't throw — TX succeeded, evidence save is secondary
-        return;
+        throw new Error(`Failed to save evidence: ${response.status}`);
       }
 
       console.log("[useSubmitEvidence] Evidence saved to database");

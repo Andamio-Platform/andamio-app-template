@@ -45,6 +45,7 @@ import {
   clearStoredDevJWT,
   getEmailVerificationStatus,
   resendVerificationEmail,
+  isJWTExpired,
   type ApiKeyResponse,
   type DeveloperProfile,
   type DevRegisterSession,
@@ -142,12 +143,73 @@ export default function ApiSetupPage() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
+  // Registration state detection
+  const [isRegistered, setIsRegistered] = useState<boolean | null>(null); // null = checking
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+
   useEffect(() => {
     if (gatewayJwt) {
       storeDevJWT(gatewayJwt);
     }
     setDevJwt(gatewayJwt ?? getStoredDevJWT());
   }, [gatewayJwt]);
+
+  // Check registration status when wallet connects
+  useEffect(() => {
+    // Immediately clear profile state when wallet changes to prevent showing stale data
+    setDeveloperProfile(null);
+    setEmailVerificationStatus(null);
+
+    async function checkRegistrationStatus() {
+      if (!walletInfo?.alias || !walletInfo.address) {
+        setIsRegistered(null);
+        return;
+      }
+
+      const storedJwt = getStoredDevJWT();
+
+      // First, validate stored JWT isn't expired
+      if (storedJwt && isJWTExpired(storedJwt)) {
+        clearStoredDevJWT();
+        setDevJwt(null);
+        setIsRegistered(false);
+        return;
+      }
+
+      // Try to load profile (confirms actual registration)
+      if (storedJwt) {
+        try {
+          const profile = await getDeveloperProfile(storedJwt);
+
+          // CRITICAL: Verify the JWT belongs to the CURRENT wallet
+          // If the alias doesn't match, this JWT is for a different user
+          if (profile.alias !== walletInfo.alias) {
+            console.warn("[API Setup] Stored JWT belongs to different wallet, clearing");
+            clearStoredDevJWT();
+            setDevJwt(null);
+            setIsRegistered(false);
+            setDeveloperProfile(null);
+            return;
+          }
+
+          setIsRegistered(true);
+          setRegisteredEmail(profile.alias ? `${profile.alias}@...` : null); // API doesn't return email, use alias as indicator
+          setDevJwt(storedJwt);
+          setDeveloperProfile(profile);
+          setCurrentStep("verify-email");
+        } catch {
+          // JWT invalid or not registered - clear and start fresh
+          clearStoredDevJWT();
+          setDevJwt(null);
+          setIsRegistered(false);
+        }
+      } else {
+        setIsRegistered(false);
+      }
+    }
+
+    void checkRegistrationStatus();
+  }, [walletInfo?.alias, walletInfo?.address]);
 
   // Detect wallet and access token
   useEffect(() => {
@@ -192,12 +254,16 @@ export default function ApiSetupPage() {
     void detectWallet();
   }, [connected, wallet]);
 
+  // State for showing "not registered" feedback
+  const [notRegisteredFeedback, setNotRegisteredFeedback] = useState(false);
+
   // Try to login first (in case already registered)
   const handleCheckRegistration = async () => {
     if (!walletInfo?.alias || !walletInfo.address) return;
 
     setIsLoading(true);
     setError(null);
+    setNotRegisteredFeedback(false);
 
     try {
       const response = await loginWithGateway({
@@ -205,11 +271,13 @@ export default function ApiSetupPage() {
         walletAddress: walletInfo.address,
       });
 
-      // Already registered - skip to API key step
+      // Already registered - set state and go to verify-email step
       setGatewayJwt(response.jwt);
-      setCurrentStep("api-key");
+      setIsRegistered(true);
+      setCurrentStep("verify-email");
     } catch {
-      // Not registered yet - stay on register step
+      // Not registered yet - show feedback and stay on register step
+      setNotRegisteredFeedback(true);
       setCurrentStep("register");
     } finally {
       setIsLoading(false);
@@ -243,7 +311,8 @@ export default function ApiSetupPage() {
             walletAddress: walletInfo.address,
           });
           setGatewayJwt(loginResponse.jwt);
-          setCurrentStep("api-key");
+          setIsRegistered(true);
+          setCurrentStep("verify-email");
           return;
         } catch (loginErr) {
           setError(loginErr instanceof Error ? loginErr.message : "Login failed");
@@ -284,7 +353,9 @@ export default function ApiSetupPage() {
 
       setGatewayJwt(loginResponse.jwt);
       setRegisterSession(null);
-      setCurrentStep("api-key");
+      setIsRegistered(true);
+      setRegisteredEmail(email); // Store the email used for registration
+      setCurrentStep("verify-email");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
       if (errorMessage.includes("session expired") || errorMessage.includes("expired")) {
@@ -391,7 +462,8 @@ export default function ApiSetupPage() {
   // Load email verification status when devJwt is available
   const loadEmailVerificationStatus = useCallback(async () => {
     const token = devJwt ?? getStoredDevJWT();
-    if (!token) return;
+    // Guard: don't call if not registered
+    if (!token || isRegistered !== true) return;
 
     setIsVerificationLoading(true);
     setVerificationError(null);
@@ -400,21 +472,29 @@ export default function ApiSetupPage() {
       const status = await getEmailVerificationStatus(token);
       setEmailVerificationStatus(status);
     } catch (err) {
-      // Only set error if it's not a 404 (endpoint might not exist yet)
       const errorMessage = err instanceof Error ? err.message : "Failed to check verification status";
-      if (!errorMessage.includes("404")) {
+
+      // 500/401/403 = likely not registered or bad JWT - reset flow gracefully
+      if (errorMessage.includes("500") || errorMessage.includes("401") || errorMessage.includes("403")) {
+        clearStoredDevJWT();
+        setDevJwt(null);
+        setIsRegistered(false);
+        setVerificationError(null); // Don't show error, just reset flow
+      } else if (!errorMessage.includes("404")) {
+        // Only set error if it's not a 404 (endpoint might not exist yet)
         setVerificationError(errorMessage);
       }
     } finally {
       setIsVerificationLoading(false);
     }
-  }, [devJwt]);
+  }, [devJwt, isRegistered]);
 
   useEffect(() => {
-    if (devJwt || getStoredDevJWT()) {
+    // Only check email verification if we confirmed registration
+    if (isRegistered === true && (devJwt || getStoredDevJWT())) {
       void loadEmailVerificationStatus();
     }
-  }, [devJwt, loadEmailVerificationStatus]);
+  }, [isRegistered, devJwt, loadEmailVerificationStatus]);
 
   // Handle resend verification email
   async function handleResendVerification() {
@@ -452,7 +532,8 @@ export default function ApiSetupPage() {
 
   // Computed step statuses for checklist display
   const hasEmail = email.trim().length > 0;
-  const hasSigned = !!gatewayJwt || !!devJwt;
+  // Use proper registration check instead of just JWT existence
+  const isSignedIn = isRegistered === true && !!(gatewayJwt || devJwt);
   const isEmailVerified = emailVerificationStatus?.emailVerified ?? false;
   const hasApiKey = currentStep === "complete" || (developerProfile?.activeKeys?.length ?? 0) > 0;
 
@@ -558,16 +639,69 @@ export default function ApiSetupPage() {
               </Alert>
             )}
 
-            {/* Main Onboarding Card */}
+            {/* Registered Developers - Sign In (hidden after failed attempt) */}
+            {!isSignedIn && !notRegisteredFeedback && (
+              <AndamioCard className="mt-6">
+                <AndamioCardContent className="py-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <AndamioText className="font-medium">Registered Developers</AndamioText>
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        Already have an account? Sign in to manage your API keys.
+                      </AndamioText>
+                    </div>
+                    <AndamioButton
+                      variant="outline"
+                      onClick={handleCheckRegistration}
+                      disabled={isLoading}
+                    >
+                      {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign In
+                    </AndamioButton>
+                  </div>
+                </AndamioCardContent>
+              </AndamioCard>
+            )}
+
+            {/* New Developers - Registration Flow */}
             <AndamioCard className="mt-6">
+              {!isSignedIn && (
+                <div className="px-6 pt-6 pb-2">
+                  <AndamioText className="font-medium">New Developers</AndamioText>
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    Register to get your API key.
+                  </AndamioText>
+                </div>
+              )}
               <AndamioCardContent className="py-8">
+                {/* Not registered feedback */}
+                {notRegisteredFeedback && !isSignedIn && (
+                  <div className="mb-6 rounded-lg border border-primary/50 bg-primary/10 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertIcon className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="space-y-1">
+                        <AndamioText className="font-medium">Account not found</AndamioText>
+                        <AndamioText variant="small" className="text-muted-foreground">
+                          No developer account found for this wallet. Complete the registration below to get started.
+                        </AndamioText>
+                        <button
+                          type="button"
+                          className="text-sm text-primary hover:underline"
+                          onClick={() => setNotRegisteredFeedback(false)}
+                        >
+                          ← Try sign in again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Step 1: Enter Email */}
                 <ChecklistStep
                   step={1}
                   title="Enter your email"
-                  status={hasSigned ? email : null}
+                  status={isRegistered ? (registeredEmail ?? email) || "registered" : null}
                 >
-                  {!hasSigned ? (
+                  {!isRegistered ? (
                     <div className="space-y-3">
                       <AndamioInput
                         id="email"
@@ -575,7 +709,7 @@ export default function ApiSetupPage() {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading}
+                        disabled={isLoading || registerSession !== null}
                       />
                       <AndamioText variant="small" className="text-muted-foreground">
                         Required for account recovery and notifications
@@ -583,7 +717,7 @@ export default function ApiSetupPage() {
                     </div>
                   ) : (
                     <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
-                      {email || "—"}
+                      {(registeredEmail ?? email) || "—"}
                     </code>
                   )}
                 </ChecklistStep>
@@ -592,9 +726,9 @@ export default function ApiSetupPage() {
                 <ChecklistStep
                   step={2}
                   title="Sign with wallet"
-                  status={hasSigned ? "verified" : null}
+                  status={isSignedIn ? "verified" : null}
                 >
-                  {!hasSigned ? (
+                  {!isSignedIn ? (
                     <div className="space-y-3">
                       {registerSession ? (
                         <>
@@ -626,25 +760,15 @@ export default function ApiSetupPage() {
                       ) : (
                         <>
                           <AndamioText variant="small" className="text-muted-foreground">
-                            Register your email and verify wallet ownership with a signature.
+                            Verify wallet ownership with a signature.
                           </AndamioText>
-                          <div className="flex flex-col gap-2">
-                            <AndamioButton
-                              onClick={handleRegister}
-                              disabled={isLoading || !hasEmail}
-                            >
-                              {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                              Continue
-                            </AndamioButton>
-                            <AndamioButton
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCheckRegistration}
-                              disabled={isLoading}
-                            >
-                              Already registered? Sign in
-                            </AndamioButton>
-                          </div>
+                          <AndamioButton
+                            onClick={handleRegister}
+                            disabled={isLoading || !hasEmail}
+                          >
+                            {isLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
+                            Continue
+                          </AndamioButton>
                         </>
                       )}
                     </div>
@@ -664,9 +788,9 @@ export default function ApiSetupPage() {
                   title="Verify email"
                   status={isEmailVerified ? "verified" : null}
                 >
-                  {!hasSigned ? (
+                  {!isSignedIn ? (
                     <AndamioText variant="small" className="text-muted-foreground">
-                      Complete step 2 first
+                      Complete registration first
                     </AndamioText>
                   ) : isEmailVerified ? (
                     <AndamioText variant="small" className="text-success">
@@ -736,7 +860,7 @@ export default function ApiSetupPage() {
                   status={hasApiKey ? apiKeyName : null}
                   isLast
                 >
-                  {!hasSigned ? (
+                  {!isSignedIn ? (
                     <AndamioText variant="small" className="text-muted-foreground">
                       Complete registration first
                     </AndamioText>
@@ -831,8 +955,8 @@ export default function ApiSetupPage() {
                     </div>
                   ) : developerProfile?.activeKeys?.length ? (
                     <div className="space-y-3">
-                      {developerProfile.activeKeys.map((key) => (
-                        <div key={key.name} className="rounded-lg border p-4 space-y-3">
+                      {developerProfile.activeKeys.map((key, index) => (
+                        <div key={key.name || `key-${index}`} className="rounded-lg border p-4 space-y-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">

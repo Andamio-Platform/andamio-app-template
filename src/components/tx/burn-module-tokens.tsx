@@ -95,7 +95,7 @@ export function BurnModuleTokens({
           console.log("[BurnModuleTokens] TX confirmed and DB updated by gateway");
 
           const moduleCount = modulesToBurn.length;
-          toast.success("Modules Burned Successfully!", {
+          toast.success("Modules Disabled Successfully!", {
             description: `${moduleCount} module${moduleCount > 1 ? "s" : ""} removed from blockchain`,
           });
 
@@ -106,7 +106,7 @@ export function BurnModuleTokens({
             void onSuccess?.();
           });
         } else if (status.state === "failed" || status.state === "expired") {
-          toast.error("Burn Failed", {
+          toast.error("Disable Failed", {
             description: status.last_error ?? "Transaction failed on-chain. Please try again.",
           });
           onError?.(new Error(status.last_error ?? "Transaction failed"));
@@ -161,8 +161,8 @@ export function BurnModuleTokens({
       },
       onError: (txError) => {
         console.error("[BurnModuleTokens] Error:", txError);
-        toast.error("Burn Failed", {
-          description: txError.message || "Failed to burn module tokens",
+        toast.error("Disable Failed", {
+          description: txError.message || "Failed to disable module tokens",
         });
         onError?.(txError);
       },
@@ -184,7 +184,7 @@ export function BurnModuleTokens({
               <DeleteIcon className="h-5 w-5 text-destructive" />
             </div>
             <div>
-              <AndamioCardTitle className="text-destructive">Burn Module Tokens</AndamioCardTitle>
+              <AndamioCardTitle className="text-destructive">Disable Modules</AndamioCardTitle>
               <AndamioCardDescription>
                 Permanently remove selected modules from the blockchain
               </AndamioCardDescription>
@@ -210,7 +210,7 @@ export function BurnModuleTokens({
               This action cannot be undone
             </AndamioText>
             <AndamioText variant="small">
-              Burning removes the module tokens from the blockchain permanently.
+              Disabling removes the module tokens from the blockchain permanently.
               Students who have earned these credentials will no longer be able to verify them on-chain.
             </AndamioText>
           </div>
@@ -285,7 +285,7 @@ export function BurnModuleTokens({
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <AndamioText className="font-medium text-primary">
-                  Modules Burned Successfully!
+                  Modules Disabled Successfully!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
                   {modulesToBurn.length} module{modulesToBurn.length > 1 ? "s" : ""} removed from blockchain
@@ -303,10 +303,10 @@ export function BurnModuleTokens({
             disabled={!hasAccessToken}
             variant="destructive"
             stateText={{
-              idle: `Burn ${modulesToBurn.length} Module${modulesToBurn.length > 1 ? "s" : ""}`,
+              idle: `Disable ${modulesToBurn.length} Module${modulesToBurn.length > 1 ? "s" : ""}`,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
-              submitting: "Burning on Blockchain...",
+              submitting: "Disabling on Blockchain...",
             }}
             className="w-full"
           />
@@ -315,7 +315,7 @@ export function BurnModuleTokens({
         {/* Requirement check */}
         {!hasAccessToken && (
           <AndamioText variant="small" className="text-xs text-center">
-            You need an access token to burn module tokens.
+            You need an access token to disable module tokens.
           </AndamioText>
         )}
       </AndamioCardContent>

@@ -47,6 +47,10 @@ import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
+import { toast } from "sonner";
+
+/** Maximum number of assessments allowed in a single batch transaction */
+const BATCH_LIMIT = 5;
 
 // =============================================================================
 // Batch TX Types
@@ -158,10 +162,17 @@ export default function TeacherDashboardPage() {
   const getCommitmentKey = (commitment: TeacherAssignmentCommitment) =>
     `${commitment.studentAlias}-${commitment.sltHash}`;
 
-  // Helper to set/update a decision
+  // Helper to set/update a decision (capped at BATCH_LIMIT)
   const setDecision = useCallback((commitment: TeacherAssignmentCommitment, decision: "accept" | "refuse") => {
     const key = getCommitmentKey(commitment);
     setPendingDecisions((prev) => {
+      // Allow updating an existing decision, but block new additions at capacity
+      if (!prev.has(key) && prev.size >= BATCH_LIMIT) {
+        toast.error("Batch limit reached", {
+          description: `Maximum ${BATCH_LIMIT} assessments per batch. Submit current batch first.`,
+        });
+        return prev;
+      }
       const next = new Map(prev);
       next.set(key, { commitment, decision });
       return next;
@@ -578,36 +589,49 @@ export default function TeacherDashboardPage() {
                       {/* Quick decision buttons */}
                       {canAssess ? (
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDecision(commitment, "accept");
-                            }}
-                            className={`rounded-md p-1.5 transition-all ${
-                              decision === "accept"
-                                ? "bg-success text-success-foreground"
-                                : "hover:bg-success/20 text-muted-foreground hover:text-success"
-                            }`}
-                            title="Accept"
-                          >
-                            <SuccessIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDecision(commitment, "refuse");
-                            }}
-                            className={`rounded-md p-1.5 transition-all ${
-                              decision === "refuse"
-                                ? "bg-destructive text-destructive-foreground"
-                                : "hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-                            }`}
-                            title="Refuse"
-                          >
-                            <CloseIcon className="h-3.5 w-3.5" />
-                          </button>
+                          {(() => {
+                            const atCapacity = pendingDecisions.size >= BATCH_LIMIT && !decision;
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={atCapacity}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDecision(commitment, "accept");
+                                  }}
+                                  className={`rounded-md p-1.5 transition-all ${
+                                    atCapacity
+                                      ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                                      : decision === "accept"
+                                        ? "bg-success text-success-foreground"
+                                        : "hover:bg-success/20 text-muted-foreground hover:text-success"
+                                  }`}
+                                  title={atCapacity ? `Batch limit (${BATCH_LIMIT}) reached` : "Accept"}
+                                >
+                                  <SuccessIcon className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={atCapacity}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDecision(commitment, "refuse");
+                                  }}
+                                  className={`rounded-md p-1.5 transition-all ${
+                                    atCapacity
+                                      ? "opacity-30 cursor-not-allowed text-muted-foreground"
+                                      : decision === "refuse"
+                                        ? "bg-destructive text-destructive-foreground"
+                                        : "hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                  }`}
+                                  title={atCapacity ? `Batch limit (${BATCH_LIMIT}) reached` : "Refuse"}
+                                >
+                                  <CloseIcon className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            );
+                          })()}
                         </div>
                       ) : (
                         decision && (
@@ -634,8 +658,8 @@ export default function TeacherDashboardPage() {
               {pendingDecisions.size > 0 && (
                 <div className="flex items-center justify-between px-4 py-2">
                   <div className="flex items-center gap-2">
-                    <AndamioBadge variant="secondary">
-                      {pendingDecisions.size} ready
+                    <AndamioBadge variant={pendingDecisions.size >= BATCH_LIMIT ? "destructive" : "secondary"}>
+                      {pendingDecisions.size}/{BATCH_LIMIT} ready
                     </AndamioBadge>
                     <AndamioText variant="small" className="text-muted-foreground">
                       {moduleGroups.length} module{moduleGroups.length !== 1 ? "s" : ""}
@@ -894,61 +918,76 @@ export default function TeacherDashboardPage() {
               {/* Decision buttons — sticky bottom area */}
               {isReadyForAssessment(selectedCommitment) && (
                 <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-6 px-6 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <AndamioButton
-                      size="default"
-                      variant={getDecision(selectedCommitment) === "accept" ? "default" : "outline"}
-                      onClick={() => handleDecisionAndAdvance(selectedCommitment, "accept")}
-                      className={`flex-1 ${getDecision(selectedCommitment) === "accept" ? "bg-success text-success-foreground hover:bg-success/90" : ""}`}
-                    >
-                      <SuccessIcon className="h-4 w-4 mr-2" />
-                      Accept
-                    </AndamioButton>
-                    <AndamioButton
-                      size="default"
-                      variant={getDecision(selectedCommitment) === "refuse" ? "destructive" : "outline"}
-                      onClick={() => handleDecisionAndAdvance(selectedCommitment, "refuse")}
-                      className="flex-1"
-                    >
-                      <CloseIcon className="h-4 w-4 mr-2" />
-                      Refuse
-                    </AndamioButton>
-                    {getDecision(selectedCommitment) && (
-                      <AndamioButton
-                        size="default"
-                        variant="ghost"
-                        onClick={() => removeDecision(selectedCommitment)}
-                      >
-                        Clear
-                      </AndamioButton>
-                    )}
-                  </div>
-                  {/* Current decision indicator + next pending */}
-                  <div className="flex items-center justify-between">
-                    {getDecision(selectedCommitment) ? (
-                      <AndamioText variant="small" className="text-muted-foreground">
-                        Decision:{" "}
-                        <span className={getDecision(selectedCommitment) === "accept" ? "text-success font-medium" : "text-destructive font-medium"}>
-                          {getDecision(selectedCommitment) === "accept" ? "Accept" : "Refuse"}
-                        </span>
-                      </AndamioText>
-                    ) : (
-                      <span />
-                    )}
-                    {findNextPending(selectedCommitment) && (
-                      <AndamioButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const next = findNextPending(selectedCommitment);
-                          if (next) setSelectedCommitment(next);
-                        }}
-                      >
-                        Next pending
-                        <NextIcon className="h-4 w-4 ml-1" />
-                      </AndamioButton>
-                    )}
-                  </div>
+                  {(() => {
+                    const currentDecision = getDecision(selectedCommitment);
+                    const atCapacity = pendingDecisions.size >= BATCH_LIMIT && !currentDecision;
+                    return (
+                      <>
+                        {atCapacity && (
+                          <AndamioText variant="small" className="text-xs text-center text-destructive">
+                            Batch limit ({BATCH_LIMIT}) reached — submit or clear current batch to continue
+                          </AndamioText>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <AndamioButton
+                            size="default"
+                            disabled={atCapacity}
+                            variant={currentDecision === "accept" ? "default" : "outline"}
+                            onClick={() => handleDecisionAndAdvance(selectedCommitment, "accept")}
+                            className={`flex-1 ${currentDecision === "accept" ? "bg-success text-success-foreground hover:bg-success/90" : ""}`}
+                          >
+                            <SuccessIcon className="h-4 w-4 mr-2" />
+                            Accept
+                          </AndamioButton>
+                          <AndamioButton
+                            size="default"
+                            disabled={atCapacity}
+                            variant={currentDecision === "refuse" ? "destructive" : "outline"}
+                            onClick={() => handleDecisionAndAdvance(selectedCommitment, "refuse")}
+                            className="flex-1"
+                          >
+                            <CloseIcon className="h-4 w-4 mr-2" />
+                            Refuse
+                          </AndamioButton>
+                          {currentDecision && (
+                            <AndamioButton
+                              size="default"
+                              variant="ghost"
+                              onClick={() => removeDecision(selectedCommitment)}
+                            >
+                              Clear
+                            </AndamioButton>
+                          )}
+                        </div>
+                        {/* Current decision indicator + next pending */}
+                        <div className="flex items-center justify-between">
+                          {currentDecision ? (
+                            <AndamioText variant="small" className="text-muted-foreground">
+                              Decision:{" "}
+                              <span className={currentDecision === "accept" ? "text-success font-medium" : "text-destructive font-medium"}>
+                                {currentDecision === "accept" ? "Accept" : "Refuse"}
+                              </span>
+                            </AndamioText>
+                          ) : (
+                            <span />
+                          )}
+                          {findNextPending(selectedCommitment) && (
+                            <AndamioButton
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const next = findNextPending(selectedCommitment);
+                                if (next) setSelectedCommitment(next);
+                              }}
+                            >
+                              Next pending
+                              <NextIcon className="h-4 w-4 ml-1" />
+                            </AndamioButton>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

@@ -128,6 +128,7 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
   const [title, setTitle] = useState("");
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [titleTouched, setTitleTouched] = useState(false);
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
@@ -359,12 +360,20 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
                     placeholder="Cardano Developer Bounty Program"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => setTitleTouched(true)}
                     disabled={!isFormActive}
                     maxLength={200}
+                    className={titleTouched && !hasTitle ? "border-destructive" : ""}
                   />
-                  <AndamioText variant="small" className="text-xs mt-1.5">
-                    Give your project a public title. You can update this later.
-                  </AndamioText>
+                  {titleTouched && !hasTitle ? (
+                    <AndamioText variant="small" className="text-xs mt-1.5 text-destructive">
+                      Project title is required
+                    </AndamioText>
+                  ) : (
+                    <AndamioText variant="small" className="text-xs mt-1.5">
+                      Give your project a public title. You can update this later.
+                    </AndamioText>
+                  )}
                 </ChecklistStep>
 
                 {/* Step 3: Course Prerequisites */}
@@ -422,20 +431,33 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
           </>
         )}
 
-        {/* Create Button - Hide after success */}
-        {state !== "success" && !txConfirmed && canCreate && (
-          <TransactionButton
-            txState={state}
-            onClick={handleCreateProject}
-            disabled={!canCreate}
-            stateText={{
-              idle: ui.buttonText,
-              fetching: "Preparing Transaction...",
-              signing: "Sign in Wallet",
-              submitting: "Creating on Blockchain...",
-            }}
-            className="w-full"
-          />
+        {/* Create Button - Always visible (disabled when requirements unmet) */}
+        {state !== "success" && !txConfirmed && hasAccessToken && hasInitiatorData && (
+          <div className="space-y-2">
+            <TransactionButton
+              txState={state}
+              onClick={() => {
+                if (!hasTitle) {
+                  setTitleTouched(true);
+                  return;
+                }
+                void handleCreateProject();
+              }}
+              disabled={!canCreate}
+              stateText={{
+                idle: ui.buttonText,
+                fetching: "Preparing Transaction...",
+                signing: "Sign in Wallet",
+                submitting: "Creating on Blockchain...",
+              }}
+              className="w-full"
+            />
+            {!canCreate && (hasTitle || titleTouched) && !hasPrereqs && (
+              <AndamioText variant="small" className="text-xs text-center text-muted-foreground">
+                Select at least one course prerequisite to continue
+              </AndamioText>
+            )}
+          </div>
         )}
       </AndamioCardContent>
     </AndamioCard>

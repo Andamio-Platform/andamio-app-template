@@ -3,9 +3,8 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useCourse, useProjects } from "~/hooks/api";
-// TODO: useStudentAssignmentCommitments hook needs to be implemented
-// import { useStudentAssignmentCommitments } from "~/hooks/api";
+import { useCourse } from "~/hooks/api";
+import { useDashboardData } from "~/contexts/dashboard-context";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -18,7 +17,6 @@ import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ProjectIcon } from "~/components/icons";
-import { isCompletedStatus, normalizeAssignmentStatus } from "~/lib/assignment-status";
 
 interface ProjectProgressItem {
   projectId: string;
@@ -47,36 +45,28 @@ function MissingPrereqLabel({
   );
 }
 
-// Placeholder type until useStudentAssignmentCommitments is implemented
-interface StudentCommitment {
-  status?: string | null;
-  assignmentId?: string;
-  sltHash?: string;
-}
-
 export function ProjectUnlockProgress() {
   const { isAuthenticated, user } = useAndamioAuth();
-  const { data: projects, isLoading: projectsLoading } = useProjects();
-  // TODO: Implement useStudentAssignmentCommitments hook
-  // For now, use empty array until the hook is available
-  const commitments = useMemo<StudentCommitment[]>(() => [], []);
-  const commitmentsLoading = false;
+  const { projects, student, isLoading } = useDashboardData();
 
+  // Get completed credential hashes from dashboard data
   const completedModuleHashes = useMemo(() => {
     const completed = new Set<string>();
-    for (const commitment of commitments ?? []) {
-      const status = normalizeAssignmentStatus(commitment.status ?? null);
-      if (!isCompletedStatus(status)) continue;
-      const hash = commitment.assignmentId ?? commitment.sltHash;
-      if (hash) completed.add(hash);
+    const credentialsByCourse = student?.credentialsByCourse ?? [];
+    for (const courseCreds of credentialsByCourse) {
+      for (const hash of courseCreds.credentials) {
+        completed.add(hash);
+      }
     }
     return completed;
-  }, [commitments]);
+  }, [student?.credentialsByCourse]);
 
+  // Transform projects with prerequisites into progress items
   const progressItems = useMemo<ProjectProgressItem[]>(() => {
     const items: ProjectProgressItem[] = [];
+    const projectsWithPrereqs = projects?.withPrerequisites ?? [];
 
-    for (const project of projects ?? []) {
+    for (const project of projectsWithPrereqs) {
       const prerequisites = project.prerequisites ?? [];
       if (prerequisites.length === 0) continue;
 
@@ -99,6 +89,7 @@ export function ProjectUnlockProgress() {
         }
       }
 
+      // Only show projects where user has made some progress
       if (totalRequired === 0 || completed === 0) continue;
 
       items.push({
@@ -106,20 +97,20 @@ export function ProjectUnlockProgress() {
         title: project.title || "Untitled Project",
         totalRequired,
         completed,
-        isReady: completed >= totalRequired,
+        isReady: project.qualified,
         nextMissingCourseId,
         nextMissingCount,
       });
     }
 
     return items;
-  }, [projects, completedModuleHashes]);
+  }, [projects?.withPrerequisites, completedModuleHashes]);
 
   if (!isAuthenticated || !user?.accessTokenAlias) {
     return null;
   }
 
-  if (projectsLoading || commitmentsLoading) {
+  if (isLoading) {
     return (
       <AndamioCard>
         <AndamioCardHeader>

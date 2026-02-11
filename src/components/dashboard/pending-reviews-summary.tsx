@@ -20,7 +20,7 @@ import {
   SuccessIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useTeacherCourses, useTeacherCommitmentsQueries } from "~/hooks/api";
+import { useDashboardData } from "~/contexts/dashboard-context";
 
 interface PendingReviewsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -32,8 +32,8 @@ interface PendingReviewsSummaryProps {
  * Displays a summary of assignments awaiting teacher review.
  * Shows on the dashboard for users who teach courses.
  *
- * Fetches teacher courses first, then fetches commitments per course.
- * (The assignment-commitments/list endpoint requires course_id.)
+ * Now powered by the consolidated dashboard endpoint - no more N+1 waterfall!
+ * The backend pre-aggregates pending review counts per course.
  *
  * UX States:
  * - Loading: Skeleton cards
@@ -41,49 +41,7 @@ interface PendingReviewsSummaryProps {
  * - Error: Inline alert with retry button
  */
 export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummaryProps) {
-  const { data: teacherCourses, isLoading: isLoadingCourses, error: coursesError, refetch: refetchCourses } = useTeacherCourses();
-
-  // Fetch commitments per course using shared hook
-  const courseIds = React.useMemo(
-    () => (teacherCourses ?? []).map((c) => c.courseId),
-    [teacherCourses]
-  );
-
-  const commitmentQueries = useTeacherCommitmentsQueries(courseIds);
-
-  const isLoadingCommitments = commitmentQueries.some((q) => q.isLoading);
-  const isLoading = isLoadingCourses || isLoadingCommitments;
-
-  // Aggregate results: courses with pending commitment counts
-  // useTeacherCommitmentsQueries returns arrays (same shape as useTeacherAssignmentCommitments)
-  // Results are in the same order as courseIds input
-  const courseGroups = React.useMemo(() => {
-    const groups: { courseId: string; title: string; count: number }[] = [];
-    commitmentQueries.forEach((query, index) => {
-      const commitments = Array.isArray(query.data) ? query.data : [];
-      if (commitments.length > 0) {
-        const id = courseIds[index]!;
-        const course = teacherCourses?.find((c) => c.courseId === id);
-        groups.push({
-          courseId: id,
-          title: course?.title ?? `${id.slice(0, 16)}...`,
-          count: commitments.length,
-        });
-      }
-    });
-    // Sort by count descending
-    groups.sort((a, b) => b.count - a.count);
-    return groups;
-  }, [commitmentQueries, courseIds, teacherCourses]);
-
-  const totalPending = courseGroups.reduce((sum, g) => sum + g.count, 0);
-
-  const refetch = React.useCallback(() => {
-    void refetchCourses();
-    for (const q of commitmentQueries) {
-      void q.refetch();
-    }
-  }, [refetchCourses, commitmentQueries]);
+  const { teacher, isLoading, error, refetch } = useDashboardData();
 
   // No access token - don't show this component
   if (!accessTokenAlias) {
@@ -114,13 +72,13 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
   }
 
   // Error state - inline alert with retry
-  if (coursesError) {
+  if (error) {
     return (
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={TeacherIcon} title="Pending Reviews" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -134,9 +92,9 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
               Failed to load pending reviews
             </AndamioText>
             <AndamioText variant="small" className="text-xs mt-1 max-w-[200px]">
-              {coursesError.message}
+              {error.message}
             </AndamioText>
-            <AndamioButton variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
+            <AndamioButton variant="outline" size="sm" onClick={refetch} className="mt-3">
               <RefreshIcon className="mr-2 h-3 w-3" />
               Retry
             </AndamioButton>
@@ -147,9 +105,15 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
   }
 
   // No teacher courses - don't show this component
-  if (!teacherCourses || teacherCourses.length === 0) {
+  if (!teacher?.courses || teacher.courses.length === 0) {
     return null;
   }
+
+  const totalPending = teacher.totalPendingReviews ?? 0;
+  const pendingReviews = teacher.pendingReviews ?? [];
+
+  // Sort by count descending for display
+  const sortedReviews = [...pendingReviews].sort((a, b) => b.count - a.count);
 
   // Empty state - all caught up
   if (totalPending === 0) {
@@ -158,7 +122,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={TeacherIcon} title="Pending Reviews" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -183,7 +147,7 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
             <AndamioBadge variant="secondary" className="text-xs">
               {totalPending} pending
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -203,29 +167,29 @@ export function PendingReviewsSummary({ accessTokenAlias }: PendingReviewsSummar
 
         {/* Course list */}
         <div className="space-y-1.5">
-          {courseGroups.slice(0, 3).map((group) => (
+          {sortedReviews.slice(0, 3).map((review) => (
             <Link
-              key={group.courseId}
-              href={`/studio/course/${group.courseId}/teacher`}
+              key={review.courseId}
+              href={`/studio/course/${review.courseId}/teacher`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <TeacherIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-xs truncate">
-                  {group.title}
+                  {review.courseTitle || `${review.courseId.slice(0, 16)}...`}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <AndamioBadge variant="secondary" className="text-xs">
-                  {group.count} pending
+                  {review.count} pending
                 </AndamioBadge>
                 <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </Link>
           ))}
-          {courseGroups.length > 3 && (
+          {sortedReviews.length > 3 && (
             <AndamioText variant="small" className="text-xs text-center pt-1">
-              +{courseGroups.length - 3} more courses
+              +{sortedReviews.length - 3} more courses
             </AndamioText>
           )}
         </div>

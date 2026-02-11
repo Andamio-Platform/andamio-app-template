@@ -231,3 +231,25 @@ export {
   type UpdateAccessTokenAliasInput,
   type UpdateAccessTokenAliasResponse,
 } from "./use-user";
+
+// =============================================================================
+// Dashboard Hooks
+// =============================================================================
+
+export {
+  useDashboard,
+  dashboardKeys,
+  type Dashboard,
+  type DashboardUser,
+  type DashboardCounts,
+  type DashboardStudent,
+  type DashboardTeacher,
+  type DashboardProjects,
+  type DashboardCourseSummary,
+  type DashboardCredentialSummary,
+  type DashboardCommitmentSummary,
+  type DashboardPendingReview,
+  type DashboardProjectSummary,
+  type DashboardProjectWithPrereqs,
+  type DashboardProjectPrerequisite,
+} from "./use-dashboard";

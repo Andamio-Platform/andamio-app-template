@@ -262,6 +262,57 @@ import { useCourse, type Course, courseKeys } from "~/hooks/api";
 
 ---
 
+## Dashboard Hooks
+
+### use-dashboard.ts
+
+**Owner of**: `Dashboard`, `DashboardCounts`, `DashboardStudent`, `DashboardTeacher`, `DashboardProjects`
+
+Consolidated dashboard endpoint that fetches all user summary data in a single request, eliminating the N+1 query pattern.
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `Dashboard` | Type | Complete dashboard data structure |
+| `DashboardUser` | Type | User alias and wallet address |
+| `DashboardCounts` | Type | Aggregated counts (enrolled, completed, credentials, teaching, projects) |
+| `DashboardCourseSummary` | Type | Lightweight course summary |
+| `DashboardCredentialSummary` | Type | Credentials grouped by course |
+| `DashboardCommitmentSummary` | Type | Assignment commitment status |
+| `DashboardPendingReview` | Type | Pending review with count |
+| `DashboardProjectSummary` | Type | Lightweight project summary |
+| `DashboardProjectWithPrereqs` | Type | Project with prerequisite courses and `qualified` flag |
+| `DashboardProjectPrerequisite` | Type | Prerequisite course with SLT hashes |
+| `DashboardStudent` | Type | Student-specific data (courses, credentials, commitments) |
+| `DashboardTeacher` | Type | Teacher-specific data (courses, pending reviews) |
+| `DashboardProjects` | Type | Project data (contributing, managing, with prerequisites) |
+| `dashboardKeys` | Object | Query key factory |
+| `useDashboard()` | Hook | Fetch consolidated dashboard data |
+
+**Endpoint**: POST `/api/v2/user/dashboard`
+
+**Context Provider**: Use `DashboardProvider` from `~/contexts/dashboard-context` to share dashboard data across components without prop drilling.
+
+```typescript
+// In dashboard page layout
+import { DashboardProvider } from "~/contexts/dashboard-context";
+
+<DashboardProvider>
+  <StudentAccomplishments />
+  <PendingReviewsSummary />
+  <ProjectUnlockProgress />
+</DashboardProvider>
+
+// In dashboard components
+import { useDashboardData } from "~/contexts/dashboard-context";
+
+function StudentAccomplishments() {
+  const { counts, student, isLoading } = useDashboardData();
+  // Use shared data instead of individual API calls
+}
+```
+
+---
+
 ## User Hooks
 
 ### use-user.ts
@@ -310,6 +361,13 @@ Drop-in replacement for `useTxWatcher` using Server-Sent Events.
 ---
 
 ## Query Key Reference
+
+### Dashboard Keys
+
+```typescript
+dashboardKeys.all                       // ["dashboard"]
+dashboardKeys.user()                    // ["dashboard", "user"]
+```
 
 ### Course Keys
 
@@ -452,4 +510,4 @@ function TransactionComponent() {
 
 ---
 
-**Last Updated**: February 5, 2026
+**Last Updated**: February 10, 2026

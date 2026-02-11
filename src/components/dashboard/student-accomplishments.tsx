@@ -22,10 +22,8 @@ import {
   ExternalLinkIcon,
   SuccessIcon,
 } from "~/components/icons";
-import {
-  useStudentCredentials,
-  type StudentCourseCredential,
-} from "~/hooks/api/course/use-student-credentials";
+import { useDashboardData } from "~/contexts/dashboard-context";
+import type { DashboardCredentialSummary } from "~/hooks/api";
 
 interface StudentAccomplishmentsProps {
   accessTokenAlias: string | null | undefined;
@@ -34,21 +32,12 @@ interface StudentAccomplishmentsProps {
 /**
  * Student Accomplishments Card
  *
- * Unified view of the student's learning progress using the credentials endpoint.
+ * Unified view of the student's learning progress using the consolidated dashboard endpoint.
  * Shows enrolled courses, completed courses, and total claimed credentials
- * in a single card powered by one API call.
- *
- * Replaces the separate EnrolledCoursesSummary and CredentialsSummary components.
+ * in a single card powered by the shared dashboard query.
  */
 export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishmentsProps) {
-  const { data: credentials, isLoading, error, refetch } = useStudentCredentials();
-
-  // Log errors silently
-  React.useEffect(() => {
-    if (error) {
-      console.error("[StudentAccomplishments] Failed to load credentials:", error.message);
-    }
-  }, [error]);
+  const { counts, student, isLoading, error, refetch } = useDashboardData();
 
   if (!accessTokenAlias) {
     return null;
@@ -76,14 +65,35 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
     );
   }
 
-  if (!credentials || credentials.length === 0 || error) {
+  const enrolledCount = counts?.enrolledCourses ?? 0;
+  const completedCount = counts?.completedCourses ?? 0;
+  const totalCredentials = counts?.totalCredentials ?? 0;
+  const totalCourses = enrolledCount + completedCount;
+
+  // Combine enrolled and completed courses for display
+  const allCourses = [
+    ...(student?.completedCourses ?? []).map((c) => ({
+      courseId: c.courseId,
+      courseTitle: c.title,
+      isCompleted: true,
+      credentialCount: student?.credentialsByCourse?.find((cb) => cb.courseId === c.courseId)?.credentials.length ?? 0,
+    })),
+    ...(student?.enrolledCourses ?? []).map((c) => ({
+      courseId: c.courseId,
+      courseTitle: c.title,
+      isCompleted: false,
+      credentialCount: 0,
+    })),
+  ];
+
+  if (totalCourses === 0 || error) {
     return (
       <AndamioCard className="md:col-span-2">
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={AchievementIcon} title="My Accomplishments" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -108,13 +118,6 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
     );
   }
 
-  const enrolled = credentials.filter((c) => c.enrollmentStatus === "enrolled");
-  const completed = credentials.filter((c) => c.enrollmentStatus === "completed");
-  const totalCredentials = credentials.reduce(
-    (sum, c) => sum + c.claimedCredentials.length,
-    0,
-  );
-
   return (
     <AndamioCard className="md:col-span-2">
       <AndamioCardHeader className="pb-3">
@@ -122,9 +125,9 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
           <AndamioCardIconHeader icon={AchievementIcon} title="My Accomplishments" />
           <div className="flex items-center gap-2">
             <AndamioBadge variant="secondary" className="text-xs">
-              {credentials.length} {credentials.length === 1 ? "course" : "courses"}
+              {totalCourses} {totalCourses === 1 ? "course" : "courses"}
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -136,14 +139,14 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
           <div className="flex items-center gap-2 bg-secondary/10 rounded-lg px-3 py-2">
             <LearnerIcon className="h-4 w-4 text-secondary shrink-0" />
             <div>
-              <AndamioText className="text-lg font-semibold">{enrolled.length}</AndamioText>
+              <AndamioText className="text-lg font-semibold">{enrolledCount}</AndamioText>
               <AndamioText variant="small" className="text-xs">Enrolled</AndamioText>
             </div>
           </div>
           <div className="flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-2">
             <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
             <div>
-              <AndamioText className="text-lg font-semibold">{completed.length}</AndamioText>
+              <AndamioText className="text-lg font-semibold">{completedCount}</AndamioText>
               <AndamioText variant="small" className="text-xs">Completed</AndamioText>
             </div>
           </div>
@@ -158,12 +161,18 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
 
         {/* Course list */}
         <div className="space-y-1.5">
-          {credentials.slice(0, 5).map((cred) => (
-            <CredentialRow key={cred.courseId} credential={cred} />
+          {allCourses.slice(0, 5).map((course) => (
+            <CredentialRow
+              key={course.courseId}
+              courseId={course.courseId}
+              courseTitle={course.courseTitle}
+              isCompleted={course.isCompleted}
+              credentialCount={course.credentialCount}
+            />
           ))}
-          {credentials.length > 5 && (
+          {allCourses.length > 5 && (
             <AndamioText variant="small" className="text-xs text-center pt-1">
-              +{credentials.length - 5} more courses
+              +{allCourses.length - 5} more courses
             </AndamioText>
           )}
         </div>
@@ -182,13 +191,19 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
   );
 }
 
-function CredentialRow({ credential }: { credential: StudentCourseCredential }) {
-  const isCompleted = credential.enrollmentStatus === "completed";
-  const label = credential.courseTitle || `${credential.courseId.slice(0, 16)}...`;
+interface CredentialRowProps {
+  courseId: string;
+  courseTitle: string;
+  isCompleted: boolean;
+  credentialCount: number;
+}
+
+function CredentialRow({ courseId, courseTitle, isCompleted, credentialCount }: CredentialRowProps) {
+  const label = courseTitle || `${courseId.slice(0, 16)}...`;
 
   return (
     <Link
-      href={`/course/${credential.courseId}`}
+      href={`/course/${courseId}`}
       className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -200,9 +215,9 @@ function CredentialRow({ credential }: { credential: StudentCourseCredential }) 
         <span className="text-xs truncate">{label}</span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        {isCompleted && credential.claimedCredentials.length > 0 && (
+        {isCompleted && credentialCount > 0 && (
           <AndamioBadge status="success" className="text-xs">
-            {credential.claimedCredentials.length} earned
+            {credentialCount} earned
           </AndamioBadge>
         )}
         {!isCompleted && (

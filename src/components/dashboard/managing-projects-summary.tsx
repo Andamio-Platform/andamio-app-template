@@ -18,7 +18,7 @@ import {
   ProjectIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useManagerProjects } from "~/hooks/api";
+import { useDashboardData } from "~/contexts/dashboard-context";
 
 interface ManagingProjectsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -27,23 +27,18 @@ interface ManagingProjectsSummaryProps {
 /**
  * Managing Projects Summary Card
  *
- * Displays a summary of projects the user is managing (merged on-chain + DB data).
+ * Displays a summary of projects the user is managing.
  * Shows on the dashboard for authenticated users who are project managers.
+ *
+ * Now powered by the consolidated dashboard endpoint.
  *
  * UX States:
  * - Loading: Skeleton cards
- * - Empty: Action-oriented empty state
- * - Error: Silent fail (log only, show empty state)
+ * - Empty: Don't show card (most users won't be managers)
+ * - Error: Silent fail (log only)
  */
 export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSummaryProps) {
-  const { data: managingProjects, isLoading, error, refetch } = useManagerProjects();
-
-  // Log errors silently (per user preference)
-  React.useEffect(() => {
-    if (error) {
-      console.error("[ManagingProjectsSummary] Failed to load projects:", error.message);
-    }
-  }, [error]);
+  const { projects, isLoading, error, refetch } = useDashboardData();
 
   // No access token - don't show this component
   if (!accessTokenAlias) {
@@ -72,9 +67,11 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
     );
   }
 
+  const managingProjects = projects?.managing ?? [];
+
   // Empty state or error (silent fail shows empty) - don't show card if empty
   // (Most users won't be managers, so showing an empty card is not helpful)
-  if (!managingProjects || managingProjects.length === 0 || error) {
+  if (managingProjects.length === 0 || error) {
     return null;
   }
 
@@ -87,7 +84,7 @@ export function ManagingProjectsSummary({ accessTokenAlias }: ManagingProjectsSu
             <AndamioBadge variant="secondary" className="text-xs">
               {managingProjects.length} active
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

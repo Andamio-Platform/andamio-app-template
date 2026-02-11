@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useStudentCourses, type StudentCourse } from "~/hooks/api";
+import { useOptionalDashboardData } from "~/contexts/dashboard-context";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
@@ -16,12 +16,19 @@ import { cn } from "~/lib/utils";
  * My Learning component - Shows learner's enrolled courses
  *
  * Data Source:
- * - Merged API: POST /api/v2/course/student/courses/list
+ * - Consolidated dashboard API: POST /api/v2/user/dashboard
  *
  * Returns courses with both on-chain enrollment status and DB content (title, description).
  */
 
-function EnrolledCourseCard({ course }: { course: StudentCourse }) {
+interface DisplayCourse {
+  courseId: string;
+  title: string;
+  description: string;
+  enrollmentStatus: "enrolled" | "completed";
+}
+
+function EnrolledCourseCard({ course }: { course: DisplayCourse }) {
   const courseId = course.courseId ?? "";
   const title = course.title ?? `Course ${courseId.slice(0, 8)}...`;
   const isCompleted = course.enrollmentStatus === "completed";
@@ -65,14 +72,19 @@ function EnrolledCourseCard({ course }: { course: StudentCourse }) {
 
 export function MyLearning() {
   const { isAuthenticated, user } = useAndamioAuth();
-
-  // Fetch enrolled courses from merged API
-  const { data: enrolledCourses, isLoading, error } = useStudentCourses();
+  const dashboardData = useOptionalDashboardData();
 
   // Not authenticated or no access token
   if (!isAuthenticated || !user?.accessTokenAlias) {
     return null;
   }
+
+  // Not inside DashboardProvider - don't render
+  if (!dashboardData) {
+    return null;
+  }
+
+  const { student, isLoading, error } = dashboardData;
 
   // Loading state
   if (isLoading) {
@@ -110,8 +122,25 @@ export function MyLearning() {
     );
   }
 
+  // Combine enrolled and completed courses
+  const enrolledCourses: DisplayCourse[] = (student?.enrolledCourses ?? []).map((c) => ({
+    courseId: c.courseId,
+    title: c.title,
+    description: c.description,
+    enrollmentStatus: "enrolled" as const,
+  }));
+
+  const completedCourses: DisplayCourse[] = (student?.completedCourses ?? []).map((c) => ({
+    courseId: c.courseId,
+    title: c.title,
+    description: c.description,
+    enrollmentStatus: "completed" as const,
+  }));
+
+  const allCourses = [...enrolledCourses, ...completedCourses];
+
   // Empty state
-  if (!enrolledCourses || enrolledCourses.length === 0) {
+  if (allCourses.length === 0) {
     return (
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
@@ -133,8 +162,8 @@ export function MyLearning() {
     );
   }
 
-  const enrolledCount = enrolledCourses.filter((c) => c.enrollmentStatus !== "completed").length;
-  const completedCount = enrolledCourses.filter((c) => c.enrollmentStatus === "completed").length;
+  const enrolledCount = enrolledCourses.length;
+  const completedCount = completedCourses.length;
 
   return (
     <AndamioCard>
@@ -162,7 +191,7 @@ export function MyLearning() {
       </AndamioCardHeader>
       <AndamioCardContent>
         <div className="space-y-1.5">
-          {enrolledCourses.map((course) => (
+          {allCourses.map((course) => (
             <EnrolledCourseCard key={course.courseId} course={course} />
           ))}
         </div>

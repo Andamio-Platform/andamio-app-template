@@ -19,7 +19,7 @@ import {
   LoadingIcon,
   DatabaseIcon,
 } from "~/components/icons";
-import { useStudentCourses } from "~/hooks/api";
+import { useDashboardData } from "~/contexts/dashboard-context";
 import Link from "next/link";
 
 interface OnChainStatusProps {
@@ -33,10 +33,10 @@ interface OnChainStatusProps {
  * - Enrolled courses
  * - Links to course detail pages
  *
- * Uses the merged student courses endpoint for enrolled course data.
+ * Now powered by the consolidated dashboard endpoint.
  */
 export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
-  const { data: enrolledCourses, isLoading, error, refetch } = useStudentCourses();
+  const { student, isLoading, error, refetch } = useDashboardData();
 
   // No access token - show prompt to mint
   if (!accessTokenAlias) {
@@ -88,7 +88,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -110,8 +110,11 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
     );
   }
 
-  // Calculate stats - using enrolledCourses from hook directly
-  const courseCount = enrolledCourses?.length ?? 0;
+  // Combine enrolled and completed for total count
+  const enrolledCourses = student?.enrolledCourses ?? [];
+  const completedCourses = student?.completedCourses ?? [];
+  const allCourses = [...enrolledCourses, ...completedCourses];
+  const courseCount = allCourses.length;
 
   return (
     <AndamioCard>
@@ -123,7 +126,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
               <VerifiedIcon className="mr-1 h-3 w-3 text-primary" />
               Live
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -142,13 +145,13 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         </div>
 
         {/* Enrolled Courses List */}
-        {enrolledCourses && enrolledCourses.length > 0 ? (
+        {allCourses.length > 0 ? (
           <div className="space-y-2">
             <AndamioText variant="overline">
               Active Enrollments
             </AndamioText>
             <div className="space-y-1.5">
-              {enrolledCourses.slice(0, 3).map((course, index) => (
+              {allCourses.slice(0, 3).map((course, index) => (
                 <Link
                   key={course.courseId ?? index}
                   href={`/course/${course.courseId ?? ""}`}
@@ -167,9 +170,9 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
                   <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </Link>
               ))}
-              {enrolledCourses.length > 3 && (
+              {allCourses.length > 3 && (
                 <AndamioText variant="small" className="text-xs text-center pt-1">
-                  +{enrolledCourses.length - 3} more courses
+                  +{allCourses.length - 3} more courses
                 </AndamioText>
               )}
             </div>

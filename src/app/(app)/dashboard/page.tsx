@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { DashboardProvider } from "~/contexts/dashboard-context";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { MyLearning } from "~/components/learner/my-learning";
 import { ProjectUnlockProgress } from "~/components/learner/project-unlock-progress";
@@ -88,38 +89,40 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Hero - Main identity display */}
-      <WelcomeHero accessTokenAlias={user.accessTokenAlias!} />
+    <DashboardProvider>
+      <div className="space-y-6">
+        {/* Welcome Hero - Main identity display */}
+        <WelcomeHero accessTokenAlias={user.accessTokenAlias!} />
 
-      {/* My Learning Section */}
-      <MyLearning />
+        {/* My Learning Section */}
+        <MyLearning />
 
-      {/* Project Unlock Progress - Shows prerequisites progress or aspirational empty state */}
-      <ProjectUnlockProgress />
+        {/* Project Unlock Progress - Shows prerequisites progress or aspirational empty state */}
+        <ProjectUnlockProgress />
 
-      {/* Account Details Section */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Accomplishments Card - Enrolled courses, completed courses, credentials (single API call) */}
-        <StudentAccomplishments accessTokenAlias={user.accessTokenAlias} />
-        {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}
-        <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
-        {/* Contributing Projects Card - Shows on-chain project contributions */}
-        <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
-        {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}
-        <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
-        {/* Owned Courses Card - Shows on-chain courses user owns/created */}
-        <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
-        {/* Wallet & Session Card */}
-        <AccountDetailsCard
-          cardanoBech32Addr={user.cardanoBech32Addr}
-          accessTokenAlias={user.accessTokenAlias}
-          jwtExpiration={jwtExpiration}
-        />
+        {/* Account Details Section */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Accomplishments Card - Enrolled courses, completed courses, credentials (single API call) */}
+          <StudentAccomplishments accessTokenAlias={user.accessTokenAlias} />
+          {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}
+          <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
+          {/* Contributing Projects Card - Shows on-chain project contributions */}
+          <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+          {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}
+          <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+          {/* Owned Courses Card - Shows on-chain courses user owns/created */}
+          <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
+          {/* Wallet & Session Card */}
+          <AccountDetailsCard
+            cardanoBech32Addr={user.cardanoBech32Addr}
+            accessTokenAlias={user.accessTokenAlias}
+            jwtExpiration={jwtExpiration}
+          />
 
-        {/* On-Chain Data Card - Live blockchain data from Andamioscan */}
-        <OnChainStatus accessTokenAlias={user.accessTokenAlias} />
+          {/* On-Chain Data Card - Live blockchain data from Andamioscan */}
+          <OnChainStatus accessTokenAlias={user.accessTokenAlias} />
+        </div>
       </div>
-    </div>
+    </DashboardProvider>
   );
 }

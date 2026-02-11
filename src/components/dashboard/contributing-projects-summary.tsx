@@ -19,7 +19,7 @@ import {
   ProjectIcon,
   ExternalLinkIcon,
 } from "~/components/icons";
-import { useContributorProjects } from "~/hooks/api";
+import { useDashboardData } from "~/contexts/dashboard-context";
 
 interface ContributingProjectsSummaryProps {
   accessTokenAlias: string | null | undefined;
@@ -28,8 +28,10 @@ interface ContributingProjectsSummaryProps {
 /**
  * Contributing Projects Summary Card
  *
- * Displays a summary of projects the user is contributing to (merged on-chain + DB data).
+ * Displays a summary of projects the user is contributing to.
  * Shows on the dashboard for authenticated users.
+ *
+ * Now powered by the consolidated dashboard endpoint.
  *
  * UX States:
  * - Loading: Skeleton cards
@@ -37,14 +39,7 @@ interface ContributingProjectsSummaryProps {
  * - Error: Silent fail (log only, show empty state)
  */
 export function ContributingProjectsSummary({ accessTokenAlias }: ContributingProjectsSummaryProps) {
-  const { data: contributingProjects, isLoading, error, refetch } = useContributorProjects();
-
-  // Log errors silently (per user preference)
-  React.useEffect(() => {
-    if (error) {
-      console.error("[ContributingProjectsSummary] Failed to load projects:", error.message);
-    }
-  }, [error]);
+  const { projects, isLoading, error, refetch } = useDashboardData();
 
   // No access token - don't show this component
   if (!accessTokenAlias) {
@@ -73,15 +68,17 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
     );
   }
 
+  const contributingProjects = projects?.contributing ?? [];
+
   // Empty state or error (silent fail shows empty) - action-oriented
-  if (!contributingProjects || contributingProjects.length === 0 || error) {
+  if (contributingProjects.length === 0 || error) {
     return (
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={ContributorIcon} title="My Contributions" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -115,7 +112,7 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
             <AndamioBadge variant="secondary" className="text-xs">
               {contributingProjects.length} active
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={() => refetch()}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -143,9 +140,9 @@ export function ContributingProjectsSummary({ accessTokenAlias }: ContributingPr
             >
               <div className="flex items-center gap-2 min-w-0">
                 <ProjectIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-                <code className="text-xs font-mono truncate">
-                  {project.projectId.slice(0, 16)}...
-                </code>
+                <span className="text-xs truncate">
+                  {project.title || `${project.projectId.slice(0, 16)}...`}
+                </span>
               </div>
               <ExternalLinkIcon className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Link>

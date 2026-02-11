@@ -1390,6 +1390,11 @@ export interface MergedHandlersContributorProjectsResponse {
   warning?: string;
 }
 
+export interface MergedHandlersDashboardResponseWrapper {
+  data?: OrchestrationDashboardResponse;
+  warning?: string;
+}
+
 export interface MergedHandlersErrorResponse {
   details?: string;
   error?: string;
@@ -1592,6 +1597,75 @@ export interface OrchestrationCredentialModuleInfo {
   title?: string;
 }
 
+export interface OrchestrationDashboardCommitmentSummary {
+  course_id?: string;
+  slt_hash?: string;
+  status?: string;
+}
+
+export interface OrchestrationDashboardCounts {
+  completed_courses?: number;
+  contributing_projects?: number;
+  enrolled_courses?: number;
+  managing_projects?: number;
+  pending_reviews?: number;
+  teaching_courses?: number;
+  total_credentials?: number;
+}
+
+export interface OrchestrationDashboardCourseSummary {
+  course_id?: string;
+  description?: string;
+  image_url?: string;
+  title?: string;
+}
+
+export interface OrchestrationDashboardCredentialSummary {
+  course_id?: string;
+  course_title?: string;
+  credentials?: string[];
+}
+
+export interface OrchestrationDashboardPendingReviewSummary {
+  count?: number;
+  course_id?: string;
+  course_title?: string;
+}
+
+export interface OrchestrationDashboardProjectPrerequisite {
+  course_id?: string;
+  slt_hashes?: string[];
+}
+
+export interface OrchestrationDashboardProjectSummary {
+  description?: string;
+  image_url?: string;
+  project_id?: string;
+  title?: string;
+}
+
+export interface OrchestrationDashboardProjectWithPrereqs {
+  image_url?: string;
+  prerequisites?: OrchestrationDashboardProjectPrerequisite[];
+  project_id?: string;
+  /** true if user has all required credentials */
+  qualified?: boolean;
+  title?: string;
+}
+
+export interface OrchestrationDashboardResponse {
+  counts?: OrchestrationDashboardCounts;
+  projects?: OrchestrationProjectsDashboard;
+  student?: OrchestrationStudentDashboard;
+  teacher?: OrchestrationTeacherDashboard;
+  user?: OrchestrationDashboardUser;
+}
+
+export interface OrchestrationDashboardUser {
+  alias?: string;
+  wallet_address?: string;
+}
+
 export interface OrchestrationManagerCommitmentItem {
   /** Off-chain content (nested) - contributor's evidence */
   content?: OrchestrationTaskCommitmentContent;
@@ -1768,6 +1842,8 @@ export interface OrchestrationMergedProjectDetail {
   submissions?: OrchestrationProjectSubmissionOnChain[];
   tasks?: OrchestrationProjectTaskOnChain[];
   treasury_address?: string;
+  /** Spendable lovelace (total fundings minus 5 ADA reserve) */
+  treasury_balance?: number;
   treasury_fundings?: OrchestrationProjectTreasuryFundingOnChain[];
 }
 
@@ -1918,6 +1994,12 @@ export interface OrchestrationProjectTreasuryFundingOnChain {
   tx_hash?: string;
 }
 
+export interface OrchestrationProjectsDashboard {
+  contributing?: OrchestrationDashboardProjectSummary[];
+  managing?: OrchestrationDashboardProjectSummary[];
+  with_prerequisites?: OrchestrationDashboardProjectWithPrereqs[];
+}
+
 export interface OrchestrationPublicCourseModuleItem {
   /** Off-chain content (from DB API) */
   content?: OrchestrationPublicModuleContent;
@@ -2011,6 +2093,14 @@ export interface OrchestrationStudentCourseListItem {
   teachers?: string[];
 }
 
+export interface OrchestrationStudentDashboard {
+  commitments?: OrchestrationDashboardCommitmentSummary[];
+  completed_courses?: OrchestrationDashboardCourseSummary[];
+  credentials_by_course?: OrchestrationDashboardCredentialSummary[];
+  enrolled_courses?: OrchestrationDashboardCourseSummary[];
+  total_credentials?: number;
+}
+
 export interface OrchestrationTaskCommitmentContent {
   /** Manager who assessed */
   assessed_by?: string;
@@ -2050,6 +2140,12 @@ export interface OrchestrationTeacherAssignmentCommitmentItem {
   submission_slot?: number;
   /** On-chain submission info */
   submission_tx?: string;
+}
+
+export interface OrchestrationTeacherDashboard {
+  courses?: OrchestrationDashboardCourseSummary[];
+  pending_reviews?: OrchestrationDashboardPendingReviewSummary[];
+  total_pending_reviews?: number;
 }
 
 export interface PublicScanHandlersAliasExistsResponse {

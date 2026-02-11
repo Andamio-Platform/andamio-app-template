@@ -152,7 +152,7 @@ export function TaskCommit({
               : "Task Commitment Recorded!";
 
           const successDescription = isFirstCommit
-            ? `You're now enrolled in ${projectTitle ?? "this project"}`
+            ? `You've joined ${projectTitle ?? "this project"}`
             : willClaimRewards
               ? `You've committed to ${taskTitle ?? taskCode} and claimed your rewards`
               : `You've committed to ${taskTitle ?? taskCode}`;
@@ -254,11 +254,11 @@ export function TaskCommit({
   const canCommit = hasAccessToken && hasEvidence && hasValidTaskHash;
 
   // Dynamic title and description based on context
-  const cardTitle = isFirstCommit ? "Enroll & Commit" : ui.title;
+  const cardTitle = isFirstCommit ? "Join & Commit" : ui.title;
   const cardDescription = isFirstCommit
     ? projectTitle
-      ? `Join ${projectTitle} and start contributing`
-      : "Enroll in this project and commit to your first task"
+      ? `Join ${projectTitle} and commit to your first task`
+      : "Join this project and commit to your first task"
     : willClaimRewards
       ? "Continue contributing and claim your rewards"
       : projectTitle
@@ -266,7 +266,7 @@ export function TaskCommit({
         : "Commit to your next task";
 
   const buttonText = isFirstCommit
-    ? "Enroll & Commit"
+    ? "Join & Commit"
     : willClaimRewards
       ? "Commit & Claim Rewards"
       : ui.buttonText;
@@ -308,7 +308,7 @@ export function TaskCommit({
           <AndamioText className="font-medium">What happens:</AndamioText>
           {isFirstCommit ? (
             <AndamioText variant="small" className="text-xs">
-              A contributor state token is minted to your wallet, enrolling you in the project.
+              A contributor state token is minted to your wallet, adding you to the project.
               Your task commitment is recorded on-chain.
             </AndamioText>
           ) : willClaimRewards ? (
@@ -334,7 +334,7 @@ export function TaskCommit({
           <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
           <AndamioText variant="small" className="text-xs text-muted-foreground">
             {isFirstCommit
-              ? "This transaction enrolls you in the project. Make sure your evidence is ready."
+              ? "This transaction adds you as a project contributor. Make sure your submission is ready."
               : "Task commitments are recorded on-chain. Ensure your submission is ready before committing."}
           </AndamioText>
         </div>
@@ -387,7 +387,7 @@ export function TaskCommit({
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
                   {isFirstCommit
-                    ? `You're now enrolled in ${projectTitle ?? "this project"}`
+                    ? `You've joined ${projectTitle ?? "this project"}`
                     : willClaimRewards
                       ? `Committed to ${taskTitle ?? taskCode} and claimed rewards`
                       : `You've committed to ${taskTitle ?? taskCode}`}
@@ -417,7 +417,7 @@ export function TaskCommit({
               idle: buttonText,
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
-              submitting: isFirstCommit ? "Enrolling..." : "Recording on Blockchain...",
+              submitting: isFirstCommit ? "Joining..." : "Recording on Blockchain...",
             }}
             className="w-full"
           />

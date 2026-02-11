@@ -377,8 +377,8 @@ function ContributorDashboardContent() {
           label="Your Status"
           value={
             !eligibility?.eligible ? "Prerequisites Required" :
-            contributorStatus === "not_enrolled" ? "Ready to Enroll" :
-            contributorStatus === "enrolled" ? "Enrolled" :
+            contributorStatus === "not_enrolled" ? "Ready to Join" :
+            contributorStatus === "enrolled" ? "Active Contributor" :
             contributorStatus === "task_pending" ? "Task Pending" :
             contributorStatus === "task_accepted" ? "Task Accepted" : "Can Claim"
           }
@@ -790,7 +790,7 @@ function ContributorDashboardContent() {
         );
       })()}
 
-      {/* When contributor has an accepted task - show BOTH options: commit to new task OR leave & claim */}
+      {/* When contributor has an accepted task - show acceptance banner + decision options */}
       {eligibility?.eligible && contributorStatus === "task_accepted" && (() => {
         // Derive reward amount from the accepted task
         const acceptedAssessment = myAssessments.find(a => a.decision === "accept");
@@ -799,9 +799,56 @@ function ContributorDashboardContent() {
           ? tasks.find(t => getString(t.taskHash) === acceptedTaskHash)
           : undefined;
         const acceptedTaskReward = acceptedTask?.lovelaceAmount ?? "0";
+        const acceptedTaskTitle = acceptedTask?.title ?? "Your task";
 
         return (
           <div className="space-y-4">
+            {/* Acceptance Banner */}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <AndamioText className="font-medium text-primary">
+                    {acceptedTaskTitle} was accepted!
+                  </AndamioText>
+                  <AndamioText variant="small" className="mt-1">
+                    You earned {formatLovelace(acceptedTaskReward)}. Choose your next step:
+                  </AndamioText>
+                </div>
+              </div>
+            </div>
+
+            {/* Decision Cards — side by side on desktop, stacked on mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Option A: Continue Contributing */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ContributorIcon className="h-5 w-5 text-primary" />
+                  <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                </div>
+                <AndamioText variant="small">
+                  Select a new task below and commit. Your {formatLovelace(acceptedTaskReward)} reward will be claimed automatically.
+                </AndamioText>
+                {!selectedTask && (
+                  <AndamioText variant="small" className="text-muted-foreground italic">
+                    Select a task from the list below to continue.
+                  </AndamioText>
+                )}
+              </div>
+
+              {/* Option B: Leave & Claim */}
+              <div className="rounded-lg border border-primary/20 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CredentialIcon className="h-5 w-5 text-primary" />
+                  <AndamioText className="font-medium">Claim & Leave</AndamioText>
+                </div>
+                <AndamioText variant="small">
+                  Leave the project, claim {formatLovelace(acceptedTaskReward)}, and mint your credential NFT.
+                </AndamioText>
+              </div>
+            </div>
+
+            {/* TaskCommit renders when a task is selected */}
             {selectedTask && (
               <TaskCommit
                 projectNftPolicyId={projectId}
@@ -893,7 +940,7 @@ function ContributorDashboardContent() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
             <div>
               <AndamioText className="font-medium">Commit to a Task</AndamioText>
-              <AndamioText variant="small">Select a task, describe your approach, and commit on-chain. This automatically enrolls you in the project.</AndamioText>
+              <AndamioText variant="small">Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor.</AndamioText>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -914,7 +961,7 @@ function ContributorDashboardContent() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
             <div>
               <AndamioText className="font-medium">Earn Rewards</AndamioText>
-              <AndamioText variant="small">When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you enrolled), or leave the project to claim your credential and rewards together.</AndamioText>
+              <AndamioText variant="small">When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together.</AndamioText>
             </div>
           </div>
         </AndamioCardContent>

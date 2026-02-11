@@ -259,7 +259,7 @@ export default function TaskDetailPage() {
                 onClick={() => setIsEditingEvidence(true)}
               >
                 <EditIcon className="h-4 w-4 mr-2" />
-                Start Commitment
+                Commit to This Task
               </AndamioButton>
             </div>
           )}
@@ -270,16 +270,16 @@ export default function TaskDetailPage() {
       {isAuthenticated && !commitment && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
-            title="Submit Your Evidence"
+            title="Your Work"
             icon={<EditIcon className="h-5 w-5" />}
           />
 
           {/* Evidence Editor */}
           <AndamioCard>
             <AndamioCardHeader>
-              <AndamioCardTitle>Task Evidence</AndamioCardTitle>
+              <AndamioCardTitle>Your Submission</AndamioCardTitle>
               <AndamioCardDescription>
-                Describe how you&apos;ll complete this task or provide your initial submission
+                Describe your plan or provide your work so far
               </AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent>

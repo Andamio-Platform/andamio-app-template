@@ -224,7 +224,7 @@ export function BlacklistManage({
           <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3">
             <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
             <AndamioText variant="small" className="text-xs text-destructive-foreground">
-              Blacklisted contributors cannot enroll, commit to tasks, or receive rewards from this project.
+              Blacklisted contributors cannot join, commit to tasks, or receive rewards from this project.
             </AndamioText>
           </div>
         )}

@@ -20,6 +20,10 @@ import {
   AndamioText,
   AndamioScrollArea,
   AndamioLabel,
+  AndamioTooltip,
+  AndamioTooltipContent,
+  AndamioTooltipProvider,
+  AndamioTooltipTrigger,
 } from "~/components/andamio";
 import {
   AndamioResizablePanelGroup,
@@ -489,11 +493,17 @@ export default function ProjectCommitmentsPage() {
                         </AndamioText>
                       </div>
                     )}
-                    {selectedCommitment.task.expirationTime && (
+                    {selectedCommitment.task.expirationPosix && (
                       <div>
                         <AndamioLabel>Expiration</AndamioLabel>
                         <AndamioText variant="small" className="mt-1 text-foreground">
-                          {selectedCommitment.task.expirationTime}
+                          {new Date(selectedCommitment.task.expirationPosix * 1000).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </AndamioText>
                       </div>
                     )}
@@ -694,17 +704,35 @@ export default function ProjectCommitmentsPage() {
                             <div className="text-xs font-normal opacity-80">Approve this work. The contributor will receive their reward.</div>
                           </div>
                         </AndamioButton>
-                        <AndamioButton
-                          variant="outline"
-                          className="w-full justify-start h-auto py-2.5 px-3"
-                          onClick={() => handleDecision(selectedCommitment, "refuse")}
-                        >
-                          <ErrorIcon className="h-4 w-4 mr-2 shrink-0" />
-                          <div className="text-left">
-                            <div className="font-medium">Refuse</div>
-                            <div className="text-xs font-normal opacity-80">Send back for revision. The contributor can resubmit.</div>
-                          </div>
-                        </AndamioButton>
+                        <AndamioTooltipProvider>
+                          <AndamioTooltip>
+                            <AndamioTooltipTrigger asChild>
+                              <span className="w-full">
+                                <AndamioButton
+                                  variant="outline"
+                                  className="w-full justify-start h-auto py-2.5 px-3"
+                                  onClick={() => handleDecision(selectedCommitment, "refuse")}
+                                  disabled={!!(selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000)}
+                                >
+                                  <ErrorIcon className="h-4 w-4 mr-2 shrink-0" />
+                                  <div className="text-left">
+                                    <div className="font-medium">Refuse</div>
+                                    <div className="text-xs font-normal opacity-80">
+                                      {selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000
+                                        ? `Available after ${new Date(selectedCommitment.task.expirationPosix * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                                        : "Send back for revision. The contributor can resubmit."}
+                                    </div>
+                                  </div>
+                                </AndamioButton>
+                              </span>
+                            </AndamioTooltipTrigger>
+                            {!!(selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000) && (
+                              <AndamioTooltipContent>
+                                Refuse is available after the task expiration date passes
+                              </AndamioTooltipContent>
+                            )}
+                          </AndamioTooltip>
+                        </AndamioTooltipProvider>
                         <AndamioButton
                           variant="destructive"
                           className="w-full justify-start h-auto py-2.5 px-3"

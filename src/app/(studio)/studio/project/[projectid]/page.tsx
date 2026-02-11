@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -27,21 +27,21 @@ import {
   AndamioTabsTrigger,
   AndamioText,
   AndamioErrorAlert,
-  AndamioActionFooter,
   AndamioHeading,
   AndamioAddButton,
   AndamioScrollArea,
 } from "~/components/andamio";
 // Note: BlockIcon hidden for v2 release (used by Blacklist tab)
-import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon, ManagerIcon, OwnerIcon, PendingIcon, CompletedIcon, CloseIcon, NeutralIcon, NextIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 // Note: BlacklistManage hidden for v2 release - will enable after user research
 import { ManagersManage } from "~/components/tx";
+import { StudioFormSection } from "~/components/studio/studio-editor-pane";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
-import { useManagerTasks, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
+import { useManagerTasks, useManagerCommitments, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -65,7 +65,7 @@ export default function ProjectDashboardPage() {
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
   // Note: "blacklist" tab hidden for v2 release - will enable after user research
-  const validTabs = ["overview", "tasks", "team", "settings"];
+  const validTabs = ["overview", "tasks", "commitments", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "overview";
 
   const handleTabChange = (value: string) => {
@@ -78,7 +78,28 @@ export default function ProjectDashboardPage() {
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStateId = projectDetail?.contributorStateId;
   const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
+  const { data: allCommitments = [], isLoading: isCommitmentsLoading } = useManagerCommitments(projectId);
   const updateProject = useUpdateProject();
+
+  // Commitment categorization (mirrors course studio pattern)
+  const RESOLVED_STATUSES = ["ACCEPTED", "REFUSED", "DENIED"];
+  const pendingCommitments = useMemo(
+    () => allCommitments.filter((c) => c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "COMMITTED"),
+    [allCommitments]
+  );
+  const inProgressCommitments = useMemo(
+    () => allCommitments.filter((c) =>
+      c.commitmentStatus === "AWAITING_SUBMISSION" ||
+      c.commitmentStatus === "PENDING_TX_COMMIT" ||
+      c.commitmentStatus === "PENDING_TX_ASSESS"
+    ),
+    [allCommitments]
+  );
+  const resolvedCommitments = useMemo(
+    () => allCommitments.filter((c) => RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")),
+    [allCommitments]
+  );
+  const pendingCommitmentCount = pendingCommitments.length;
 
   // Form state
   const [title, setTitle] = useState("");
@@ -158,7 +179,7 @@ export default function ProjectDashboardPage() {
   }
 
   // Loading state
-  if (isProjectLoading || isTasksLoading) {
+  if (isProjectLoading || isTasksLoading || isCommitmentsLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
@@ -218,28 +239,27 @@ export default function ProjectDashboardPage() {
       {/* Tabbed Interface */}
       <AndamioTabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         {/* Note: Blacklist tab hidden for v2 release - will enable after user research */}
-        <AndamioTabsList className="grid w-full grid-cols-4">
-          <AndamioTabsTrigger value="overview" className="flex items-center gap-2">
+        <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
+          <AndamioTabsTrigger value="overview" className="text-sm gap-1.5 px-4">
             <ChartIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
+            Overview
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="tasks" className="flex items-center gap-2">
+          <AndamioTabsTrigger value="tasks" className="text-sm gap-1.5 px-4">
             <TaskIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Tasks</span>
+            Tasks
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="team" className="flex items-center gap-2">
-            <TeacherIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Team</span>
+          <AndamioTabsTrigger value="commitments" className="text-sm gap-1.5 px-4">
+            <AssignmentIcon className="h-4 w-4" />
+            Commitments
+            {pendingCommitmentCount > 0 && (
+              <AndamioBadge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px]">
+                {pendingCommitmentCount}
+              </AndamioBadge>
+            )}
           </AndamioTabsTrigger>
-          {/* Blacklist tab hidden for v2 release
-          <AndamioTabsTrigger value="blacklist" className="flex items-center gap-2">
-            <BlockIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Blacklist</span>
-          </AndamioTabsTrigger>
-          */}
-          <AndamioTabsTrigger value="settings" className="flex items-center gap-2">
+          <AndamioTabsTrigger value="settings" className="text-sm gap-1.5 px-4">
             <SettingsIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
+            Settings
           </AndamioTabsTrigger>
         </AndamioTabsList>
 
@@ -377,53 +397,127 @@ export default function ProjectDashboardPage() {
             </AndamioCardContent>
           </AndamioCard>
 
-          {/* Task Commitments Card */}
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle className="flex items-center gap-2">
-                <AssignmentIcon className="h-5 w-5" />
-                Task Commitments
-              </AndamioCardTitle>
-              <AndamioCardDescription>Review and assess contributor submissions</AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent>
-              <Link href={`/studio/project/${projectId}/commitments`}>
-                <AndamioButton className="w-full sm:w-auto">
-                  <AssignmentIcon className="h-4 w-4 mr-2" />
-                  Review Commitments
-                </AndamioButton>
-              </Link>
-            </AndamioCardContent>
-          </AndamioCard>
         </AndamioTabsContent>
 
-        {/* Team Tab */}
-        <AndamioTabsContent value="team" className="mt-6 space-y-4">
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle className="flex items-center gap-2">
-                <TeacherIcon className="h-5 w-5" />
-                Contributors
-              </AndamioCardTitle>
-              <AndamioCardDescription>Manage project contributors</AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent>
-              <Link href={`/studio/project/${projectId}/manage-contributors`}>
+        {/* Commitments Tab */}
+        <AndamioTabsContent value="commitments" className="mt-0 space-y-6">
+          {/* Pending Review */}
+          {pendingCommitments.length > 0 ? (
+            <StudioFormSection title={`Pending Review (${pendingCommitments.length})`}>
+              <div className="space-y-3">
+                {pendingCommitments.map((commitment, i) => (
+                  <Link
+                    key={`${commitment.taskHash}-${commitment.submittedBy}-${i}`}
+                    href={`/studio/project/${projectId}/commitments`}
+                    className="block rounded-xl border p-4 bg-secondary/5 border-secondary/20 hover:bg-secondary/10 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
+                          <PendingIcon className="h-4 w-4 text-secondary" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-mono text-sm font-medium">{commitment.submittedBy}</span>
+                          <AndamioText variant="small" className="truncate">
+                            Task {commitment.taskHash.slice(0, 8)}...
+                          </AndamioText>
+                        </div>
+                      </div>
+                      <NextIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </StudioFormSection>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <AssignmentIcon className="h-10 w-10 text-muted-foreground/40 mb-4" />
+              <AndamioHeading level={3} size="lg" className="mb-1">No Pending Reviews</AndamioHeading>
+              <AndamioText variant="muted" className="text-center max-w-sm">
+                All caught up! When contributors submit task evidence, pending reviews will appear here.
+              </AndamioText>
+            </div>
+          )}
+
+          {/* In Progress Commitments */}
+          {inProgressCommitments.length > 0 && (
+            <StudioFormSection title={`In Progress (${inProgressCommitments.length})`}>
+              <div className="space-y-3">
+                {inProgressCommitments.map((commitment, i) => (
+                  <div key={`${commitment.taskHash}-${commitment.submittedBy}-progress-${i}`} className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                          <NeutralIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-mono text-sm font-medium">{commitment.submittedBy}</span>
+                          <AndamioText variant="small" className="truncate">
+                            Task {commitment.taskHash.slice(0, 8)}...
+                          </AndamioText>
+                        </div>
+                      </div>
+                      <AndamioBadge variant="outline" className="text-[10px]">
+                        {commitment.commitmentStatus === "AWAITING_SUBMISSION" ? "Awaiting Submission" :
+                          commitment.commitmentStatus === "PENDING_TX_COMMIT" ? "Pending TX" :
+                            commitment.commitmentStatus === "PENDING_TX_ASSESS" ? "Pending Assessment" : "In Progress"}
+                      </AndamioBadge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </StudioFormSection>
+          )}
+
+          {/* Resolved Commitments */}
+          {resolvedCommitments.length > 0 && (
+            <StudioFormSection title="Resolved">
+              <div className="space-y-3">
+                {resolvedCommitments.map((commitment, i) => (
+                  <div key={`${commitment.taskHash}-${commitment.submittedBy}-resolved-${i}`} className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                          commitment.commitmentStatus === "ACCEPTED" ? "bg-primary/20" : "bg-destructive/20"
+                        }`}>
+                          {commitment.commitmentStatus === "ACCEPTED" ? (
+                            <CompletedIcon className="h-4 w-4 text-primary" />
+                          ) : (
+                            <CloseIcon className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-mono text-sm font-medium">{commitment.submittedBy}</span>
+                          <AndamioText variant="small" className="truncate">
+                            Task {commitment.taskHash.slice(0, 8)}...
+                          </AndamioText>
+                        </div>
+                      </div>
+                      <AndamioBadge
+                        variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
+                        className="text-[10px]"
+                      >
+                        {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" :
+                          commitment.commitmentStatus === "REFUSED" ? "Refused" : "Denied"}
+                      </AndamioBadge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </StudioFormSection>
+          )}
+
+          {/* Full Review Page Link */}
+          {allCommitments.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <Link href={`/studio/project/${projectId}/commitments`}>
                 <AndamioButton variant="outline">
-                  <TeacherIcon className="h-4 w-4 mr-2" />
-                  View Contributors
+                  <AssignmentIcon className="h-4 w-4 mr-2" />
+                  Open Full Review Page
                 </AndamioButton>
               </Link>
-            </AndamioCardContent>
-          </AndamioCard>
-
-          {/* Unified Team Management */}
-          <ManagersManage
-            projectNftPolicyId={projectId}
-            currentManagers={projectDetail.managers ?? []}
-            projectOwner={projectDetail.owner ?? null}
-            onSuccess={refreshData}
-          />
+            </div>
+          )}
         </AndamioTabsContent>
 
         {/* Blacklist Tab - Hidden for v2 release, will enable after user research
@@ -439,23 +533,10 @@ export default function ProjectDashboardPage() {
         */}
 
         {/* Settings Tab */}
-        <AndamioTabsContent value="settings" className="mt-6">
-          <AndamioCard>
-            <AndamioCardHeader>
-              <AndamioCardTitle className="flex items-center gap-2">
-                <SettingsIcon className="h-5 w-5" />
-                Project Details
-              </AndamioCardTitle>
-              <AndamioCardDescription>Edit project information</AndamioCardDescription>
-            </AndamioCardHeader>
-            <AndamioCardContent className="space-y-4">
-              {/* Treasury NFT Policy ID (Read-only) */}
-              <div className="space-y-2">
-                <AndamioLabel>Treasury NFT Policy ID</AndamioLabel>
-                <CopyId id={projectId} label="Project ID" />
-                <AndamioText variant="small">Policy ID cannot be changed</AndamioText>
-              </div>
-
+        <AndamioTabsContent value="settings" className="mt-0 space-y-8">
+          {/* General */}
+          <StudioFormSection title="General" description="Project title, description, and media">
+            <div className="space-y-4">
               {/* Title */}
               <div className="space-y-2">
                 <AndamioLabel htmlFor="title">Title *</AndamioLabel>
@@ -503,18 +584,79 @@ export default function ProjectDashboardPage() {
               </div>
 
               {/* Save Button */}
-              <AndamioActionFooter>
-                <AndamioButton variant="outline" onClick={() => router.push("/studio")}>
-                  Cancel
-                </AndamioButton>
+              <div className="flex items-center justify-between pt-2">
+                <AndamioText variant="small" className="text-muted-foreground">
+                  {hasChanges ? "You have unsaved changes" : "All changes saved"}
+                </AndamioText>
                 <AndamioSaveButton
                   onClick={handleSave}
                   isSaving={updateProject.isPending}
                   disabled={!hasChanges}
                 />
-              </AndamioActionFooter>
-            </AndamioCardContent>
-          </AndamioCard>
+              </div>
+            </div>
+          </StudioFormSection>
+
+          {/* Team */}
+          <StudioFormSection title="Team" description="Project owner, managers, and contributors">
+            <div className="space-y-3">
+              {projectDetail.ownerAlias && (
+                <div className="flex items-center justify-between">
+                  <AndamioLabel className="flex items-center gap-1.5">
+                    <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                    Owner
+                  </AndamioLabel>
+                  <AndamioBadge variant="default" className="font-mono text-xs">
+                    {projectDetail.ownerAlias}
+                  </AndamioBadge>
+                </div>
+              )}
+              {(projectDetail.managers ?? []).length > 0 && (
+                <div className="flex items-center justify-between gap-4">
+                  <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                    <ManagerIcon className="h-3.5 w-3.5" />
+                    Managers
+                  </AndamioLabel>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    {(projectDetail.managers ?? []).map((manager: string) => (
+                      <AndamioBadge key={manager} variant="secondary" className="font-mono text-xs">
+                        {manager}
+                      </AndamioBadge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <AndamioLabel className="flex items-center gap-1.5">
+                  <TeacherIcon className="h-3.5 w-3.5" />
+                  Contributors
+                </AndamioLabel>
+                <Link href={`/studio/project/${projectId}/manage-contributors`}>
+                  <AndamioButton variant="outline" size="sm">
+                    <TeacherIcon className="h-3.5 w-3.5 mr-1.5" />
+                    View Contributors ({onChainContributorCount})
+                  </AndamioButton>
+                </Link>
+              </div>
+            </div>
+          </StudioFormSection>
+
+          {/* Manage Managers */}
+          {userRole === "owner" && (
+            <StudioFormSection title="Manage Managers" description="Add or remove managers from this project">
+              <ManagersManage
+                projectNftPolicyId={projectId}
+                currentManagers={projectDetail.managers ?? []}
+                projectOwner={projectDetail.owner ?? null}
+                onSuccess={refreshData}
+              />
+            </StudioFormSection>
+          )}
+
+          {/* On-Chain Info */}
+          <StudioFormSection title="Project ID" description="On-chain identifier for this project">
+            <CopyId id={projectId} label="Project ID" />
+          </StudioFormSection>
         </AndamioTabsContent>
       </AndamioTabs>
     </div>

@@ -166,7 +166,7 @@ export function ProjectCredentialClaim({
             </AndamioCardTitle>
             <AndamioCardDescription>
               {hasRewards
-                ? "Unenroll from the project, claim your pending rewards, and mint your credential"
+                ? "Leave the project, claim your pending rewards, and mint your credential"
                 : "Mint your credential tokens for completed tasks"}
             </AndamioCardDescription>
           </div>

@@ -12,11 +12,14 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
+import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ProjectIcon } from "~/components/icons";
+import { ProjectIcon, SuccessIcon, NextIcon } from "~/components/icons";
+
+const MAX_IN_PROGRESS_SHOWN = 3;
 
 interface ProjectProgressItem {
   projectId: string;
@@ -106,6 +109,18 @@ export function ProjectUnlockProgress() {
     return items;
   }, [projects?.withPrerequisites, completedModuleHashes]);
 
+  // In-progress projects (have some prerequisites completed but not all)
+  const inProgress = useMemo(
+    () => progressItems.filter((item) => !item.isReady),
+    [progressItems]
+  );
+
+  // Count ALL qualified projects from withPrerequisites (not just ones with user progress)
+  const qualifiedCount = useMemo(() => {
+    const projectsWithPrereqs = projects?.withPrerequisites ?? [];
+    return projectsWithPrereqs.filter((p) => p.qualified).length;
+  }, [projects?.withPrerequisites]);
+
   if (!isAuthenticated || !user?.accessTokenAlias) {
     return null;
   }
@@ -131,7 +146,7 @@ export function ProjectUnlockProgress() {
     );
   }
 
-  if (progressItems.length === 0) {
+  if (progressItems.length === 0 && qualifiedCount === 0) {
     return (
       <AndamioCard>
         <AndamioCardHeader>
@@ -162,6 +177,9 @@ export function ProjectUnlockProgress() {
     );
   }
 
+  const shownInProgress = inProgress.slice(0, MAX_IN_PROGRESS_SHOWN);
+  const hiddenInProgressCount = inProgress.length - shownInProgress.length;
+
   return (
     <AndamioCard>
       <AndamioCardHeader>
@@ -170,35 +188,60 @@ export function ProjectUnlockProgress() {
           <div>
             <AndamioCardTitle>Project Progress</AndamioCardTitle>
             <AndamioCardDescription>
-              Unlock real projects as you complete modules
+              {inProgress.length > 0
+                ? "Keep completing modules to unlock more projects"
+                : "You've met all prerequisites — start contributing"}
             </AndamioCardDescription>
           </div>
         </div>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
-        {progressItems.map((item) => {
+        {/* Qualified projects — compact summary with count */}
+        {qualifiedCount > 0 && (
+          <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center gap-2">
+              <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
+              <AndamioText variant="small" className="text-sm font-medium">
+                You qualify for {qualifiedCount} {qualifiedCount === 1 ? "project" : "projects"}
+              </AndamioText>
+            </div>
+            <Link href="/project?filter=qualified">
+              <AndamioButton size="sm" variant="outline" className="h-7 text-xs">
+                View Qualified Projects
+                <NextIcon className="ml-1 h-3 w-3" />
+              </AndamioButton>
+            </Link>
+          </div>
+        )}
+
+        {/* In-progress projects — individual cards with progress bars */}
+        {shownInProgress.map((item) => {
           const progressPercent = Math.round((item.completed / item.totalRequired) * 100);
           return (
-            <div key={item.projectId} className="rounded-md border p-4 bg-muted/30">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Link
+              key={item.projectId}
+              href={`/project/${item.projectId}`}
+              className="block rounded-md border p-4 bg-muted/30 hover:border-primary/30 hover:bg-accent/5 transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <AndamioText className="font-medium truncate">{item.title}</AndamioText>
+                  <AndamioText className="font-medium truncate group-hover:text-primary transition-colors">
+                    {item.title}
+                  </AndamioText>
                   <AndamioText variant="small" className="text-xs text-muted-foreground">
                     {item.completed}/{item.totalRequired} prerequisites complete
                   </AndamioText>
                 </div>
-                {item.isReady && (
-                  <Link href={`/project/${item.projectId}/contributor`}>
-                    <AndamioButton size="sm">Join as Contributor</AndamioButton>
-                  </Link>
-                )}
+                <AndamioBadge variant="outline" className="text-xs shrink-0">
+                  {progressPercent}%
+                </AndamioBadge>
               </div>
 
               <div className="mt-3">
                 <AndamioProgress value={progressPercent} />
               </div>
 
-              {!item.isReady && item.nextMissingCourseId && item.nextMissingCount && (
+              {item.nextMissingCourseId && item.nextMissingCount && (
                 <div className="mt-2">
                   <MissingPrereqLabel
                     courseId={item.nextMissingCourseId}
@@ -206,9 +249,17 @@ export function ProjectUnlockProgress() {
                   />
                 </div>
               )}
-            </div>
+            </Link>
           );
         })}
+
+        {/* Overflow link when more than MAX_IN_PROGRESS_SHOWN in-progress */}
+        {hiddenInProgressCount > 0 && (
+          <Link href="/project" className="flex items-center justify-center gap-1 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+            View {hiddenInProgressCount} more {hiddenInProgressCount === 1 ? "project" : "projects"}
+            <NextIcon className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </AndamioCardContent>
     </AndamioCard>
   );

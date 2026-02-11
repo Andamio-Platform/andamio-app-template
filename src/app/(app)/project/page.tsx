@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { Suspense, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useProjects } from "~/hooks/api";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -24,12 +25,26 @@ type EligibilityFilter = "all" | "qualified" | "in-progress" | "open";
  * API Endpoint: GET /api/v2/project/user/projects/list
  */
 export default function ProjectCatalogPage() {
+  return (
+    <Suspense fallback={<AndamioPageLoading variant="cards" />}>
+      <ProjectCatalogContent />
+    </Suspense>
+  );
+}
+
+function ProjectCatalogContent() {
   const { data: projects, isLoading, error } = useProjects();
   const { isAuthenticated } = useAndamioAuth();
+  const searchParams = useSearchParams();
 
-  // Filter state
+  // Filter state — initialize from URL search params if present (e.g. ?filter=qualified)
+  const initialFilter = searchParams.get("filter") as EligibilityFilter | null;
   const [searchQuery, setSearchQuery] = useState("");
-  const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilter>("all");
+  const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilter>(
+    initialFilter && ["all", "qualified", "in-progress", "open"].includes(initialFilter)
+      ? initialFilter
+      : "all"
+  );
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   // Collect all unique prerequisite course IDs across projects

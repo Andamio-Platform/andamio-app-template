@@ -1,0 +1,101 @@
+# =============================================================================
+# Andamio Frontend - Deploy to Production
+# =============================================================================
+# Triggered on stable release tags: v*.*.* (excluding release candidates)
+# Example: v1.2.3, v2.0.0
+# =============================================================================
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+env:
+  # Build-time environment variables for production (NEXT_PUBLIC_* are embedded at build)
+  NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: https://mainnet.api.andamio.io
+  NEXT_PUBLIC_CARDANO_NETWORK: mainnet
+  NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: ${{ vars.PROD_ACCESS_TOKEN_POLICY_ID }}
+  # TODO: Add TX sponsorship env vars as part of mainnet launch plan
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.PROD_WIF_PROVIDER }}
+          service_account: ${{ vars.PROD_WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.PROD_GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Stamp version
+        run: bash scripts/stamp-version.sh
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          REGISTRY="${{ vars.PROD_ARTIFACT_REGISTRY }}"
+
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "full_tag=${REGISTRY}/app:${VERSION}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${REGISTRY}/app:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.full_tag }}
+            ${{ steps.tags.outputs.latest_tag }}
+          build-args: |
+            NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL }}
+            NEXT_PUBLIC_CARDANO_NETWORK=${{ env.NEXT_PUBLIC_CARDANO_NETWORK }}
+            NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${{ env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: ${{ vars.PROD_CLOUD_RUN_SERVICE }}
+          region: ${{ vars.PROD_GCP_REGION }}
+          image: ${{ steps.tags.outputs.full_tag }}
+
+      - name: Output deployment details
+        run: |
+          echo "## Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.tags.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ steps.tags.outputs.full_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://mainnet.app.andamio.io" >> $GITHUB_STEP_SUMMARY

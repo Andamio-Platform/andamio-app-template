@@ -13,8 +13,10 @@ import { RegistrationFlow } from "~/components/landing/registration-flow";
 import { V1MigrateCard } from "~/components/landing/v1-migrate-card";
 import { LoadingIcon } from "~/components/icons";
 import { MARKETING } from "~/config/marketing";
+import { env } from "~/env";
 
 const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
+const V2_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
 
 interface LandingHeroProps {
   onMinted?: (info: { alias: string; txHash: string }) => void;
@@ -24,6 +26,8 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
   const [showEnter, setShowEnter] = React.useState(false);
   const [v1Alias, setV1Alias] = React.useState<string | null>(null);
   const [v1Scanning, setV1Scanning] = React.useState(false);
+  const [v2Scanning, setV2Scanning] = React.useState(false);
+  const [v2ScanComplete, setV2ScanComplete] = React.useState(false);
   const router = useRouter();
   const { wallet } = useWallet();
   const {
@@ -35,9 +39,51 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
 
   const copy = MARKETING.landingHero;
 
-  // Scan for V1 token when authenticated but no V2 token
+  // Scan for V2 token when authenticated but accessTokenAlias not yet set
+  // This catches the case where the auth context sync hasn't completed yet
   React.useEffect(() => {
     if (!isAuthenticated || user?.accessTokenAlias || !isWalletConnected || !wallet) {
+      setV2Scanning(false);
+      setV2ScanComplete(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function scanForV2Token() {
+      setV2Scanning(true);
+      try {
+        const assets = await wallet.getAssets();
+        const v2Asset = assets.find((asset: { unit: string }) =>
+          asset.unit.startsWith(V2_POLICY_ID)
+        );
+
+        if (cancelled) return;
+
+        if (v2Asset) {
+          // User has V2 token - redirect to dashboard
+          // The auth context will eventually sync the alias
+          router.push("/dashboard");
+        }
+      } catch (err) {
+        console.error("[LandingHero] Failed to scan for V2 token:", err);
+      } finally {
+        if (!cancelled) {
+          setV2Scanning(false);
+          setV2ScanComplete(true);
+        }
+      }
+    }
+
+    void scanForV2Token();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.accessTokenAlias, isWalletConnected, wallet, router]);
+
+  // Scan for V1 token when authenticated but no V2 token (after V2 scan completes)
+  React.useEffect(() => {
+    if (!isAuthenticated || user?.accessTokenAlias || !isWalletConnected || !wallet || !v2ScanComplete) {
       setV1Alias(null);
       setV1Scanning(false);
       return;
@@ -77,7 +123,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?.accessTokenAlias, isWalletConnected, wallet]);
+  }, [isAuthenticated, user?.accessTokenAlias, isWalletConnected, wallet, v2ScanComplete]);
 
   // Auto-redirect authenticated users with access token to dashboard
   React.useEffect(() => {
@@ -104,6 +150,21 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
         <div className="mt-10 flex flex-col items-center gap-4">
           <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
           <AndamioText variant="muted">Please sign the message in your wallet</AndamioText>
+        </div>
+      </div>
+    );
+  }
+
+  // Scanning for V2 token (to detect existing users before showing registration)
+  if (v2Scanning) {
+    return (
+      <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+        <AndamioHeading level={1} size="4xl">
+          Checking Your Wallet...
+        </AndamioHeading>
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
+          <AndamioText variant="muted">Scanning for existing access tokens</AndamioText>
         </div>
       </div>
     );

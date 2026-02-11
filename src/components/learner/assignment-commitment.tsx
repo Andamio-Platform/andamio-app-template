@@ -8,7 +8,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAssignmentCommitment, useSubmitEvidence } from "~/hooks/api/course";
-import { courseStudentKeys } from "~/hooks/api/course/use-course-student";
+import { courseStudentKeys, useStudentCourses } from "~/hooks/api/course/use-course-student";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { isJSONContent } from "~/hooks/api/course/use-course-module";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -64,6 +64,10 @@ export function AssignmentCommitment({
   const queryClient = useQueryClient();
   const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
 
+  // Check enrollment status before TX to detect first-time enrollment
+  const { data: studentCourses } = useStudentCourses();
+  const wasEnrolledBeforeTx = studentCourses?.some(c => c.courseId === courseId) ?? false;
+
   // V2 Transaction hooks
   const commitTx = useTransaction();
   const updateTx = useTransaction();
@@ -88,11 +92,17 @@ export function AssignmentCommitment({
     {
       onComplete: (status) => {
         if (status.state === "updated") {
+          // Show enrollment toast for first-time enrollment
+          if (!wasEnrolledBeforeTx) {
+            toast.success("You're enrolled!", {
+              description: "You are now enrolled in this course.",
+            });
+          }
           triggerSuccess("Assignment committed to blockchain!");
           void refetchCommitment();
-          // Invalidate student commitments list so sidebar badges refresh
+          // Invalidate student courses and commitments so sidebar badges refresh
           void queryClient.invalidateQueries({
-            queryKey: courseStudentKeys.commitments(),
+            queryKey: courseStudentKeys.all,
           });
         } else if (status.state === "failed" || status.state === "expired") {
           setTxError(status.last_error ?? "Transaction failed. Please try again.");
@@ -573,13 +583,6 @@ export function AssignmentCommitment({
                   {commitment.networkEvidenceHash && (
                     <EvidenceHashDisplay label="Submission Hash:" hash={commitment.networkEvidenceHash} />
                   )}
-                </>
-              ) : (localEvidenceContent ?? evidenceContent) ? (
-                <>
-                  <ContentDisplay content={(localEvidenceContent ?? evidenceContent)!} variant="muted" />
-                  <AndamioText variant="small" className="text-xs text-muted-foreground">
-                    Your work is being processed by the network. It may take a moment to appear.
-                  </AndamioText>
                 </>
               ) : (
                 <AndamioAlert>

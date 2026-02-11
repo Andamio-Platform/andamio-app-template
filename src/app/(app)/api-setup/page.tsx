@@ -7,6 +7,8 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -28,6 +30,8 @@ import {
   AlertIcon,
   SendIcon,
   DeveloperIcon,
+  ExpandIcon,
+  CollapseIcon,
 } from "~/components/icons";
 import { env } from "~/env";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
@@ -135,6 +139,7 @@ export default function ApiSetupPage() {
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [activeKeyAction, setActiveKeyAction] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [devJwt, setDevJwt] = useState<string | null>(null);
 
   // Email verification state
@@ -381,8 +386,10 @@ export default function ApiSetupPage() {
     try {
       const response = await requestApiKey(token, apiKeyName.trim());
       setApiKey(response);
-      await loadDeveloperProfile();
       setCurrentStep("complete");
+      // Small delay to allow backend to propagate the new key before refreshing the list
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await loadDeveloperProfile();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate API key");
     } finally {
@@ -453,10 +460,12 @@ export default function ApiSetupPage() {
 
     setActiveKeyAction(`delete:${keyName}`);
     setProfileError(null);
+    setDeleteSuccess(false);
 
     try {
       await deleteApiKey(token, keyName);
       await loadDeveloperProfile();
+      setDeleteSuccess(true);
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : "Failed to delete API key");
     } finally {
@@ -547,6 +556,22 @@ export default function ApiSetupPage() {
   const isSignedIn = isRegistered === true && !!(gatewayJwt || devJwt);
   const isEmailVerified = emailVerificationStatus?.emailVerified ?? false;
   const hasApiKey = currentStep === "complete" || (developerProfile?.activeKeys?.length ?? 0) > 0;
+
+  // All steps complete = registered + email verified + has API key
+  const allStepsComplete = isSignedIn && isEmailVerified && hasApiKey;
+
+  // Don't show checklist until email verification status is loaded (for signed-in users)
+  const isChecklistReady = !isSignedIn || emailVerificationStatus !== null;
+
+  // Checklist starts collapsed if all steps are complete
+  const [isChecklistOpen, setIsChecklistOpen] = useState(!allStepsComplete);
+
+  // Update collapse state when allStepsComplete changes
+  useEffect(() => {
+    if (allStepsComplete) {
+      setIsChecklistOpen(false);
+    }
+  }, [allStepsComplete]);
 
   // Pre-requisite check: need wallet + auth + access token
   const canStartOnboarding = connected && isAuthenticated && walletInfo?.alias;
@@ -675,16 +700,47 @@ export default function ApiSetupPage() {
             )}
 
             {/* New Developers - Registration Flow */}
-            <AndamioCard className="mt-6">
-              {!isSignedIn && (
-                <div className="px-6 pt-6 pb-2">
-                  <AndamioText className="font-medium">New Developers</AndamioText>
-                  <AndamioText variant="small" className="text-muted-foreground">
-                    Register to get your API key.
-                  </AndamioText>
-                </div>
-              )}
-              <AndamioCardContent className="py-8">
+            {!isChecklistReady ? (
+              <AndamioCard className="mt-6">
+                <AndamioCardContent className="py-8">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <LoadingIcon className="h-4 w-4 animate-spin" />
+                    <AndamioText variant="small">Loading onboarding status...</AndamioText>
+                  </div>
+                </AndamioCardContent>
+              </AndamioCard>
+            ) : (
+              <Collapsible open={isChecklistOpen} onOpenChange={setIsChecklistOpen}>
+                <AndamioCard className="mt-6">
+                  {allStepsComplete ? (
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <SuccessIcon className="h-5 w-5 text-success" />
+                          <AndamioText className="font-medium text-success">
+                            Developer onboarding complete
+                          </AndamioText>
+                        </div>
+                        {isChecklistOpen ? (
+                          <CollapseIcon className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ExpandIcon className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </CollapsibleTrigger>
+                  ) : !isSignedIn ? (
+                    <div className="px-6 pt-6 pb-2">
+                      <AndamioText className="font-medium">New Developers</AndamioText>
+                      <AndamioText variant="small" className="text-muted-foreground">
+                        Register to get your API key.
+                      </AndamioText>
+                    </div>
+                  ) : null}
+                  <CollapsibleContent>
+                    <AndamioCardContent className="py-8">
                 {/* Not registered feedback */}
                 {notRegisteredFeedback && !isSignedIn && (
                   <div className="mb-6 rounded-lg border border-primary/50 bg-primary/10 p-4">
@@ -876,43 +932,9 @@ export default function ApiSetupPage() {
                       Complete registration first
                     </AndamioText>
                   ) : currentStep === "complete" && apiKey ? (
-                    <div className="space-y-4">
-                      <Alert variant="destructive">
-                        <ErrorIcon className="h-4 w-4" />
-                        <AlertTitle>Save Your API Key</AlertTitle>
-                        <AlertDescription>
-                          This is the only time it will be displayed. Copy it now!
-                        </AlertDescription>
-                      </Alert>
-
-                      <div className="flex gap-2">
-                        <Input
-                          readOnly
-                          value={apiKey.apiKey}
-                          className="font-mono text-sm"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => copy(apiKey.apiKey)}
-                        >
-                          {isCopied ? (
-                            <SuccessIcon className="h-4 w-4 text-success" />
-                          ) : (
-                            <CopyIcon className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <AndamioText variant="small" className="text-muted-foreground">
-                          Add to your environment:
-                        </AndamioText>
-                        <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
-                          ANDAMIO_API_KEY=&quot;{apiKey.apiKey}&quot;
-                        </pre>
-                      </div>
-                    </div>
+                    <AndamioText variant="small" className="text-success">
+                      API key generated — see below to copy it
+                    </AndamioText>
                   ) : (
                     <div className="space-y-3">
                       <AndamioInput
@@ -935,9 +957,56 @@ export default function ApiSetupPage() {
                       </AndamioButton>
                     </div>
                   )}
-                </ChecklistStep>
-              </AndamioCardContent>
-            </AndamioCard>
+                  </ChecklistStep>
+                    </AndamioCardContent>
+                  </CollapsibleContent>
+                </AndamioCard>
+              </Collapsible>
+            )}
+
+            {/* Newly Generated API Key - prominent display */}
+            {currentStep === "complete" && apiKey && (
+              <Card className="mt-6 border-destructive">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                    <AlertIcon className="h-4 w-4" />
+                    Save Your API Key
+                  </CardTitle>
+                  <CardDescription>
+                    This is the only time it will be displayed. Copy it now!
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={apiKey.apiKey}
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copy(apiKey.apiKey)}
+                    >
+                      {isCopied ? (
+                        <SuccessIcon className="h-4 w-4 text-success" />
+                      ) : (
+                        <CopyIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      Add to your environment:
+                    </AndamioText>
+                    <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                      ANDAMIO_API_KEY=&quot;{apiKey.apiKey}&quot;
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Existing API Keys Card - only show after successful profile load */}
             {developerProfile && (
@@ -959,6 +1028,15 @@ export default function ApiSetupPage() {
                     </Alert>
                   )}
 
+                  {deleteSuccess && (
+                    <Alert>
+                      <SuccessIcon className="h-4 w-4" />
+                      <AlertDescription>
+                        It may take up to 1 minute for your API key to be deleted. Refresh the page to see the updated list.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {isProfileLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <LoadingIcon className="h-4 w-4 animate-spin" />
@@ -966,63 +1044,77 @@ export default function ApiSetupPage() {
                     </div>
                   ) : developerProfile?.activeKeys?.length ? (
                     <div className="space-y-3">
-                      {developerProfile.activeKeys.map((key, index) => (
-                        <div key={key.name || `key-${index}`} className="rounded-lg border p-4 space-y-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{key.name}</span>
-                                <Badge variant={key.isActive ? "secondary" : "outline"}>
-                                  {key.isActive ? "Active" : "Inactive"}
-                                </Badge>
+                      {developerProfile.activeKeys.map((key, index) => {
+                        const canRotate = key.expiresInDays <= 1;
+                        const isRotating = activeKeyAction === `rotate:${key.name}`;
+                        const isDeleting = activeKeyAction === `delete:${key.name}`;
+
+                        return (
+                          <div key={key.name || `key-${index}`} className="rounded-lg border p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{key.name}</span>
+                                  <Badge variant={key.isActive ? "secondary" : "outline"}>
+                                    {key.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                  {key.expiresInDays <= 1 && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Expires soon
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Created {formatDateTime(key.createdAt)} • Expires {formatDateTime(key.expiresAt)}
+                                  {key.expiresInDays > 0 && ` (${key.expiresInDays} day${key.expiresInDays === 1 ? "" : "s"} remaining)`}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                Created {formatDateTime(key.createdAt)} • Expires {formatDateTime(key.expiresAt)}
+                              <div className="flex flex-wrap gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleRotateKey(key.name)}
+                                        disabled={activeKeyAction !== null || !canRotate}
+                                      >
+                                        {isRotating && (
+                                          <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                        )}
+                                        Rotate
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {!canRotate && (
+                                    <TooltipContent>
+                                      Rotation available when less than 1 day remaining
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteKey(key.name)}
+                                  disabled={activeKeyAction !== null}
+                                >
+                                  {isDeleting ? (
+                                    <LoadingIcon className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    "Delete"
+                                  )}
+                                </Button>
                               </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRotateKey(key.name)}
-                                disabled={activeKeyAction !== null}
-                              >
-                                {activeKeyAction === `rotate:${key.name}` && (
-                                  <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
-                                )}
-                                Rotate
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteKey(key.name)}
-                                disabled={activeKeyAction !== null}
-                              >
-                                {activeKeyAction === `delete:${key.name}` && (
-                                  <LoadingIcon className="mr-2 h-3.5 w-3.5 animate-spin" />
-                                )}
-                                Delete
-                              </Button>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <AndamioText variant="small" className="text-muted-foreground">
                       No API keys yet. Generate your first key above.
                     </AndamioText>
                   )}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void loadDeveloperProfile()}
-                    disabled={isProfileLoading}
-                  >
-                    {isProfileLoading && <LoadingIcon className="mr-2 h-4 w-4 animate-spin" />}
-                    Refresh
-                  </Button>
                 </CardContent>
               </Card>
             )}

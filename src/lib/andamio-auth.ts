@@ -588,6 +588,7 @@ export interface ApiKeyResponse {
   name: string;
   createdAt: string;
   expiresAt: string;
+  expiresInDays: number;
   isActive: boolean;
 }
 
@@ -657,6 +658,7 @@ export async function requestApiKey(
     api_key_name?: string;
     created_at?: string;
     expires_at?: string;
+    expires_in_days?: number;
     is_active?: boolean;
   };
 
@@ -672,6 +674,7 @@ export async function requestApiKey(
     name: data.api_key_name ?? name,
     createdAt: data.created_at ?? "",
     expiresAt: data.expires_at ?? "",
+    expiresInDays: data.expires_in_days ?? 0,
     isActive: data.is_active ?? true,
   };
 }
@@ -789,6 +792,7 @@ export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile
     headers: {
       Authorization: `Bearer ${jwt}`,
     },
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -810,6 +814,7 @@ export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile
       name?: string;
       created_at?: string;
       expires_at?: string;
+      expires_in_days?: number;
       is_active?: boolean;
     }>;
   };
@@ -826,6 +831,7 @@ export async function getDeveloperProfile(jwt: string): Promise<DeveloperProfile
       name: key.name ?? "",
       createdAt: key.created_at ?? "",
       expiresAt: key.expires_at ?? "",
+      expiresInDays: key.expires_in_days ?? 0,
       isActive: key.is_active ?? true,
     })),
   };

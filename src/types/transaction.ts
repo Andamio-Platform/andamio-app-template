@@ -124,14 +124,6 @@ export interface MintAccessTokenParams {
 }
 
 /**
- * Enroll in Course (Mint Local State) transaction parameters
- */
-export interface EnrollInCourseParams {
-  user_access_token: string; // Policy ID + alias concatenated
-  policy: string; // Course NFT policy ID
-}
-
-/**
  * Submit Assignment transaction parameters
  */
 export interface SubmitAssignmentParams {

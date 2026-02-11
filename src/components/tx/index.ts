@@ -25,9 +25,6 @@ export type { MintAccessTokenSimpleProps } from "./mint-access-token-simple";
 export { MintAccessTokenSimple as MintAccessToken } from "./mint-access-token-simple";
 export type { MintAccessTokenSimpleProps as MintAccessTokenProps } from "./mint-access-token-simple";
 
-export { EnrollInCourse } from "./enroll-in-course";
-export type { EnrollInCourseProps } from "./enroll-in-course";
-
 export { MintModuleTokens } from "./mint-module-tokens";
 export type { MintModuleTokensProps } from "./mint-module-tokens";
 

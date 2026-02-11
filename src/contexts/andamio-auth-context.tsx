@@ -215,9 +215,15 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         };
         authLogger.debug("Validating stored JWT against connected wallet");
 
-        // Get wallet address and convert to bech32 if needed
-        // (Eternl returns hex, other wallets may return bech32)
-        const rawAddress = await wallet.getChangeAddress();
+        // Fetch wallet data in parallel for performance
+        // If JWT has accessTokenAlias, we need both address and assets
+        // Otherwise, just fetch the address
+        const [rawAddress, assets] = await Promise.all([
+          wallet.getChangeAddress(),
+          payload.accessTokenAlias ? wallet.getAssets() : Promise.resolve(null),
+        ]);
+
+        // Convert address to bech32 if needed (Eternl returns hex, others may return bech32)
         let walletAddress: string;
         if (rawAddress.startsWith("addr")) {
           walletAddress = rawAddress;
@@ -244,9 +250,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         }
 
         // Check access token alias match (if JWT has one)
-        if (payload.accessTokenAlias) {
+        if (payload.accessTokenAlias && assets) {
           const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
-          const assets = await wallet.getAssets();
           const walletAccessToken = assets.find((asset) =>
             asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID)
           );

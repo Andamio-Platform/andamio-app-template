@@ -42,6 +42,7 @@ import type {
   OrchestrationDashboardCredentialSummary,
   OrchestrationDashboardCommitmentSummary,
   OrchestrationDashboardPendingReviewSummary,
+  OrchestrationDashboardPendingAssessmentSummary,
   OrchestrationDashboardProjectSummary,
   OrchestrationDashboardProjectWithPrereqs,
 } from "~/types/generated/gateway";
@@ -63,6 +64,7 @@ export interface DashboardCounts {
   pendingReviews: number;
   contributingProjects: number;
   managingProjects: number;
+  pendingProjectAssessments: number;
 }
 
 export interface DashboardCourseSummary {
@@ -87,6 +89,12 @@ export interface DashboardCommitmentSummary {
 export interface DashboardPendingReview {
   courseId: string;
   courseTitle: string;
+  count: number;
+}
+
+export interface DashboardPendingAssessment {
+  projectId: string;
+  projectTitle: string;
   count: number;
 }
 
@@ -129,6 +137,8 @@ export interface DashboardProjects {
   contributing: DashboardProjectSummary[];
   managing: DashboardProjectSummary[];
   withPrerequisites: DashboardProjectWithPrereqs[];
+  pendingAssessments: DashboardPendingAssessment[];
+  totalPendingAssessments: number;
 }
 
 export interface Dashboard {
@@ -194,6 +204,16 @@ function transformPendingReview(
   };
 }
 
+function transformPendingAssessment(
+  api: OrchestrationDashboardPendingAssessmentSummary,
+): DashboardPendingAssessment {
+  return {
+    projectId: api.project_id ?? "",
+    projectTitle: api.project_title ?? "",
+    count: api.count ?? 0,
+  };
+}
+
 function transformProjectSummary(
   api: OrchestrationDashboardProjectSummary,
 ): DashboardProjectSummary {
@@ -236,6 +256,7 @@ function transformCounts(api: OrchestrationDashboardCounts | undefined): Dashboa
     pendingReviews: api?.pending_reviews ?? 0,
     contributingProjects: api?.contributing_projects ?? 0,
     managingProjects: api?.managing_projects ?? 0,
+    pendingProjectAssessments: api?.pending_project_assessments ?? 0,
   };
 }
 
@@ -262,6 +283,8 @@ function transformProjects(api: OrchestrationProjectsDashboard | undefined): Das
     contributing: (api?.contributing ?? []).map(transformProjectSummary),
     managing: (api?.managing ?? []).map(transformProjectSummary),
     withPrerequisites: (api?.with_prerequisites ?? []).map(transformProjectWithPrereqs),
+    pendingAssessments: (api?.pending_assessments ?? []).map(transformPendingAssessment),
+    totalPendingAssessments: api?.total_pending_assessments ?? 0,
   };
 }
 

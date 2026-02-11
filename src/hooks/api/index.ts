@@ -249,6 +249,7 @@ export {
   type DashboardCredentialSummary,
   type DashboardCommitmentSummary,
   type DashboardPendingReview,
+  type DashboardPendingAssessment,
   type DashboardProjectSummary,
   type DashboardProjectWithPrereqs,
   type DashboardProjectPrerequisite,

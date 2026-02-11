@@ -14,6 +14,7 @@ import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-toke
 import { OnChainStatus } from "~/components/dashboard/on-chain-status";
 import { AccountDetailsCard } from "~/components/dashboard/account-details";
 import { PendingReviewsSummary } from "~/components/dashboard/pending-reviews-summary";
+import { PendingAssessmentsSummary } from "~/components/dashboard/pending-assessments-summary";
 import { StudentAccomplishments } from "~/components/dashboard/student-accomplishments";
 import { ContributingProjectsSummary } from "~/components/dashboard/contributing-projects-summary";
 import { ManagingProjectsSummary } from "~/components/dashboard/managing-projects-summary";
@@ -110,6 +111,8 @@ export default function DashboardPage() {
           <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
           {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}
           <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+          {/* Pending Assessments Card - Shows pending task submissions for project managers */}
+          <PendingAssessmentsSummary accessTokenAlias={user.accessTokenAlias} />
           {/* Owned Courses Card - Shows on-chain courses user owns/created */}
           <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
           {/* Wallet & Session Card */}

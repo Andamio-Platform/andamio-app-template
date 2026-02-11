@@ -1608,6 +1608,7 @@ export interface OrchestrationDashboardCounts {
   contributing_projects?: number;
   enrolled_courses?: number;
   managing_projects?: number;
+  pending_project_assessments?: number;
   pending_reviews?: number;
   teaching_courses?: number;
   total_credentials?: number;
@@ -1624,6 +1625,12 @@ export interface OrchestrationDashboardCredentialSummary {
   course_id?: string;
   course_title?: string;
   credentials?: string[];
+}
+
+export interface OrchestrationDashboardPendingAssessmentSummary {
+  count?: number;
+  project_id?: string;
+  project_title?: string;
 }
 
 export interface OrchestrationDashboardPendingReviewSummary {
@@ -1997,6 +2004,8 @@ export interface OrchestrationProjectTreasuryFundingOnChain {
 export interface OrchestrationProjectsDashboard {
   contributing?: OrchestrationDashboardProjectSummary[];
   managing?: OrchestrationDashboardProjectSummary[];
+  pending_assessments?: OrchestrationDashboardPendingAssessmentSummary[];
+  total_pending_assessments?: number;
   with_prerequisites?: OrchestrationDashboardProjectWithPrereqs[];
 }
 

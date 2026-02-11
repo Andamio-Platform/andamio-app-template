@@ -492,8 +492,8 @@ export function AssignmentCommitment({
             )}
           </div>
 
-        ) : !commitment ? (
-          /* Branch: No commitment — new evidence flow */
+        ) : !commitment || commitment.networkStatus === "PENDING_TX_COMMIT" ? (
+          /* Branch: No commitment OR evidence saved but TX not yet submitted */
           <div className="space-y-4">
             {!isLocked ? (
               <EvidenceEditorSection
@@ -635,8 +635,8 @@ function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
     );
   }
 
-  // Any PENDING_TX_* state — transaction is being processed
-  if (networkStatus.startsWith("PENDING_TX")) {
+  // PENDING_TX_* states (except PENDING_TX_COMMIT which is handled in the submit flow)
+  if (networkStatus.startsWith("PENDING_TX") && networkStatus !== "PENDING_TX_COMMIT") {
     return (
       <div className="rounded-lg border bg-muted/30 p-4">
         <div className="flex items-center gap-3">

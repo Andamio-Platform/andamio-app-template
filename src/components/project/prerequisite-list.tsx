@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useCourse } from "~/hooks/api/course/use-course";
 import { useCourseModules } from "~/hooks/api/course/use-course-module";
 import type { ProjectPrerequisite } from "~/hooks/api/project/use-project";
 import type { StudentCompletionInput } from "~/lib/project-eligibility";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CourseIcon, SLTIcon, SuccessIcon, PendingIcon, ExternalLinkIcon } from "~/components/icons";
-import { getTokenExplorerUrl } from "~/lib/constants";
+import { CourseIcon, SLTIcon, SuccessIcon, PendingIcon, NextIcon } from "~/components/icons";
 
 /**
  * Renders a single prerequisite row, fetching course title and module names by ID.
@@ -40,11 +40,14 @@ export function PrerequisiteRow({
   const completedCount = requiredHashes.filter((h) => completedSet.has(h)).length;
 
   return (
-    <div className="flex items-start gap-3 p-3 border rounded-lg">
+    <Link
+      href={`/course/${prereq.courseId}`}
+      className="flex items-start gap-3 p-3 border rounded-lg hover:border-primary/30 hover:bg-accent/5 transition-colors group"
+    >
       <CourseIcon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-medium">
+          <div className="text-sm font-medium group-hover:text-primary transition-colors">
             {isLoading ? (
               <span className="text-muted-foreground">Loading...</span>
             ) : courseData?.title ? (
@@ -53,28 +56,22 @@ export function PrerequisiteRow({
               <span className="font-mono text-muted-foreground">{prereq.courseId.slice(0, 12)}...</span>
             )}
           </div>
-          {hasCompletionData && requiredHashes.length > 0 && (
-            <AndamioBadge
-              variant="outline"
-              className={
-                completedCount === requiredHashes.length
-                  ? "text-primary border-primary/30"
-                  : "text-muted-foreground"
-              }
-            >
-              {completedCount}/{requiredHashes.length} completed
-            </AndamioBadge>
-          )}
+          <div className="flex items-center gap-2">
+            {hasCompletionData && requiredHashes.length > 0 && (
+              <AndamioBadge
+                variant="outline"
+                className={
+                  completedCount === requiredHashes.length
+                    ? "text-primary border-primary/30"
+                    : "text-muted-foreground"
+                }
+              >
+                {completedCount}/{requiredHashes.length} completed
+              </AndamioBadge>
+            )}
+            <NextIcon className="h-4 w-4 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5" />
+          </div>
         </div>
-        <a
-          href={getTokenExplorerUrl(prereq.courseId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
-        >
-          {prereq.courseId.slice(0, 8)}...{prereq.courseId.slice(-8)}
-          <ExternalLinkIcon className="h-3 w-3 shrink-0" />
-        </a>
         {requiredHashes.length > 0 && (
           <div className="mt-2 space-y-1">
             <AndamioText variant="small" className="text-muted-foreground">
@@ -116,7 +113,7 @@ export function PrerequisiteRow({
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 

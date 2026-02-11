@@ -320,6 +320,20 @@ export default function TeacherDashboardPage() {
     }
   }, [allConfirmed, batchState, invalidateTeacher, refetchCommitments]);
 
+  // Sync selectedCommitment with refreshed data so the right panel reflects updated status
+  useEffect(() => {
+    if (!selectedCommitment) return;
+    const fresh = commitments.find(
+      (c) =>
+        c.studentAlias === selectedCommitment.studentAlias &&
+        c.sltHash === selectedCommitment.sltHash
+    );
+    if (fresh && fresh.commitmentStatus !== selectedCommitment.commitmentStatus) {
+      setSelectedCommitment(fresh);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commitments]);
+
   // Auto-select commitment from URL query params (deep-link from commitments tab)
   const hasAutoSelectedRef = useRef(false);
   useEffect(() => {

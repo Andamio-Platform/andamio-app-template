@@ -24,6 +24,7 @@ import {
   LoadingIcon,
   NextIcon,
 } from "~/components/icons";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 
 /**
  * User Course Status Component
@@ -99,14 +100,17 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
           </div>
         </AndamioCardHeader>
         <AndamioCardContent>
-          {firstModuleCode && (
-            <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
-              <AndamioButton variant="outline" className="w-full">
-                Preview First Module
-                <NextIcon className="h-4 w-4 ml-2" />
-              </AndamioButton>
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            <ConnectWalletButton label="Connect Wallet" />
+            {firstModuleCode && (
+              <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
+                <AndamioButton variant="outline">
+                  Preview First Module
+                  <NextIcon className="h-4 w-4 ml-2" />
+                </AndamioButton>
+              </Link>
+            )}
+          </div>
         </AndamioCardContent>
       </AndamioCard>
     );

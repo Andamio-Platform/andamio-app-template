@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useMemo } from "react";
-import Link from "next/link";
+import React, { useState, useMemo } from "react";
 import { useProjects } from "~/hooks/api";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioTable, AndamioTableBody, AndamioTableCell, AndamioTableHead, AndamioTableHeader, AndamioTableRow } from "~/components/andamio/andamio-table";
-import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioTableContainer, AndamioText } from "~/components/andamio";
-import { AndamioTooltip, AndamioTooltipContent, AndamioTooltipTrigger } from "~/components/andamio/andamio-tooltip";
-import { AlertIcon, ProjectIcon, SuccessIcon, PendingIcon, CredentialIcon } from "~/components/icons";
+import { AndamioInput } from "~/components/andamio/andamio-input";
+import { AndamioPageHeader, AndamioPageLoading, AndamioEmptyState, AndamioText } from "~/components/andamio";
+import { AlertIcon, ProjectIcon, CredentialIcon, SearchIcon, SuccessIcon } from "~/components/icons";
 import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-eligibility";
+import { ProjectCard } from "~/components/projects/project-card";
+import { Button } from "~/components/ui/button";
+
+type EligibilityFilter = "all" | "qualified" | "in-progress" | "open";
 
 /**
  * Public page displaying all published projects
@@ -22,12 +24,13 @@ import { checkProjectEligibility, type EligibilityResult } from "~/lib/project-e
  * API Endpoint: GET /api/v2/project/user/projects/list
  */
 export default function ProjectCatalogPage() {
-  // Fetch projects from gateway
   const { data: projects, isLoading, error } = useProjects();
+  const { isAuthenticated } = useAndamioAuth();
 
-  // Auth for eligibility checking
-  const { user, isAuthenticated } = useAndamioAuth();
-  const userAlias = user?.accessTokenAlias;
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   // Collect all unique prerequisite course IDs across projects
   const allPrereqCourseIds = useMemo(() => {
@@ -41,7 +44,6 @@ export default function ProjectCatalogPage() {
     return Array.from(ids);
   }, [projects]);
 
-  // Fetch student completions for all prerequisite courses (parallel queries, cached)
   const { completions } = useStudentCompletionsForPrereqs(allPrereqCourseIds);
 
   // Derive eligibility from project prerequisites + student completions
@@ -57,12 +59,67 @@ export default function ProjectCatalogPage() {
     return map;
   }, [projects, completions]);
 
-  // Loading state
+  // Extract unique categories from projects
+  const categories = useMemo(() => {
+    if (!projects?.length) return [];
+    const cats = new Set<string>();
+    for (const project of projects) {
+      if (project.category) cats.add(project.category);
+    }
+    return Array.from(cats).sort();
+  }, [projects]);
+
+  // Apply filters
+  const filteredProjects = useMemo(() => {
+    if (!projects?.length) return [];
+
+    return projects.filter((project) => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const titleMatch = project.title?.toLowerCase().includes(q);
+        const descMatch = project.description?.toLowerCase().includes(q);
+        if (!titleMatch && !descMatch) return false;
+      }
+
+      // Category filter
+      if (categoryFilter !== "all") {
+        if (project.category !== categoryFilter) return false;
+      }
+
+      // Eligibility filter (only applies when authenticated)
+      if (isAuthenticated && eligibilityFilter !== "all" && project.projectId) {
+        const eligibility = eligibilityMap.get(project.projectId);
+        if (!eligibility) return false;
+
+        switch (eligibilityFilter) {
+          case "qualified":
+            if (!eligibility.eligible) return false;
+            break;
+          case "in-progress":
+            if (eligibility.eligible || eligibility.totalCompleted === 0) return false;
+            break;
+          case "open":
+            if (eligibility.totalRequired !== 0) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  }, [projects, searchQuery, categoryFilter, eligibilityFilter, isAuthenticated, eligibilityMap]);
+
+  // Stats
+  const qualifiedCount = isAuthenticated
+    ? Array.from(eligibilityMap.values()).filter((e) => e.eligible).length
+    : 0;
+
+  const hasActiveFilters = searchQuery.trim() !== "" || eligibilityFilter !== "all" || categoryFilter !== "all";
+
   if (isLoading) {
-    return <AndamioPageLoading variant="list" />;
+    return <AndamioPageLoading variant="cards" />;
   }
 
-  // Error state
   if (error) {
     return (
       <div className="space-y-6">
@@ -79,7 +136,6 @@ export default function ProjectCatalogPage() {
     );
   }
 
-  // Empty state
   if (!projects || projects.length === 0) {
     return (
       <div className="space-y-6">
@@ -96,98 +152,9 @@ export default function ProjectCatalogPage() {
     );
   }
 
-  // Helper to render eligibility status
-  const renderEligibilityBadge = (projectId: string | undefined) => {
-    if (!isAuthenticated || !userAlias) {
-      return (
-        <AndamioText variant="small" className="text-muted-foreground">
-          Connect to check
-        </AndamioText>
-      );
-    }
-
-    if (!projectId) {
-      return (
-        <AndamioText variant="small" className="text-muted-foreground">
-          -
-        </AndamioText>
-      );
-    }
-
-    const eligibility = eligibilityMap.get(projectId);
-    if (!eligibility) {
-      return (
-        <AndamioText variant="small" className="text-muted-foreground">
-          -
-        </AndamioText>
-      );
-    }
-
-    if (eligibility.eligible) {
-      if (eligibility.totalRequired === 0) {
-        return (
-          <AndamioTooltip>
-            <AndamioTooltipTrigger asChild>
-              <div className="flex items-center gap-1.5">
-                <SuccessIcon className="h-4 w-4 text-primary" />
-                <AndamioBadge variant="outline" className="text-primary border-primary/30">
-                  Open
-                </AndamioBadge>
-              </div>
-            </AndamioTooltipTrigger>
-            <AndamioTooltipContent>
-              No prerequisites required - anyone can contribute
-            </AndamioTooltipContent>
-          </AndamioTooltip>
-        );
-      }
-      return (
-        <AndamioTooltip>
-          <AndamioTooltipTrigger asChild>
-            <div className="flex items-center gap-1.5">
-              <CredentialIcon className="h-4 w-4 text-primary" />
-              <AndamioBadge variant="outline" className="text-primary border-primary/30">
-                Qualified
-              </AndamioBadge>
-            </div>
-          </AndamioTooltipTrigger>
-          <AndamioTooltipContent>
-            You meet all {eligibility.totalRequired} prerequisite requirement{eligibility.totalRequired !== 1 ? "s" : ""}
-          </AndamioTooltipContent>
-        </AndamioTooltip>
-      );
-    }
-
-    const progress = eligibility.totalRequired > 0
-      ? Math.round((eligibility.totalCompleted / eligibility.totalRequired) * 100)
-      : 0;
-
-    return (
-      <AndamioTooltip>
-        <AndamioTooltipTrigger asChild>
-          <div className="flex items-center gap-1.5">
-            <PendingIcon className="h-4 w-4 text-muted-foreground" />
-            <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground/30">
-              {eligibility.totalCompleted}/{eligibility.totalRequired}
-            </AndamioBadge>
-          </div>
-        </AndamioTooltipTrigger>
-        <AndamioTooltipContent>
-          <div className="space-y-1">
-            <div>Prerequisites: {eligibility.totalCompleted} of {eligibility.totalRequired} completed ({progress}%)</div>
-            {eligibility.missingPrerequisites.length > 0 && (
-              <div className="text-xs">
-                Complete {eligibility.missingPrerequisites.length} more course{eligibility.missingPrerequisites.length !== 1 ? "s" : ""} to qualify
-              </div>
-            )}
-          </div>
-        </AndamioTooltipContent>
-      </AndamioTooltip>
-    );
-  };
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <AndamioPageHeader
         title="Projects"
         description={isAuthenticated
@@ -196,48 +163,149 @@ export default function ProjectCatalogPage() {
         }
       />
 
-      <AndamioTableContainer>
-        <AndamioTable>
-          <AndamioTableHeader>
-            <AndamioTableRow>
-              <AndamioTableHead>Title</AndamioTableHead>
-              <AndamioTableHead className="hidden md:table-cell">Project ID</AndamioTableHead>
-              <AndamioTableHead className="text-center">Eligibility</AndamioTableHead>
-            </AndamioTableRow>
-          </AndamioTableHeader>
-          <AndamioTableBody>
-            {projects.map((project, index) => {
-              // App-level Project type has title flattened from content
-              const title = project.title;
+      {/* Stats bar */}
+      <div className="flex flex-wrap gap-3">
+        <AndamioBadge variant="secondary" className="text-sm px-3 py-1.5">
+          <ProjectIcon className="h-4 w-4 mr-1.5" />
+          {projects.length} {projects.length === 1 ? "project" : "projects"}
+        </AndamioBadge>
+        {isAuthenticated && qualifiedCount > 0 && (
+          <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-primary border-primary/30">
+            <CredentialIcon className="h-4 w-4 mr-1.5" />
+            {qualifiedCount} qualified
+          </AndamioBadge>
+        )}
+      </div>
 
-              return (
-                <AndamioTableRow key={project.projectId ?? title ?? `project-${index}`}>
-                  <AndamioTableCell>
-                    <Link
-                      href={`/project/${project.projectId}`}
-                      className="font-medium hover:underline"
-                    >
-                      {title ?? project.projectId?.slice(0, 16) ?? "Untitled"}
-                    </Link>
-                  </AndamioTableCell>
-                  <AndamioTableCell className="hidden md:table-cell font-mono text-xs break-all max-w-xs">
-                    {project.projectId ? (
-                      <span title={project.projectId}>
-                        {project.projectId.slice(0, 16)}...
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </AndamioTableCell>
-                  <AndamioTableCell className="text-center">
-                    {renderEligibilityBadge(project.projectId)}
-                  </AndamioTableCell>
-                </AndamioTableRow>
-              );
-            })}
-          </AndamioTableBody>
-        </AndamioTable>
-      </AndamioTableContainer>
+      {/* Filters */}
+      <div className="space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <AndamioInput
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Filter buttons */}
+        <div className="flex flex-wrap gap-2">
+          {/* Eligibility filters (only when authenticated) */}
+          {isAuthenticated && (
+            <>
+              <FilterButton
+                label="All"
+                active={eligibilityFilter === "all"}
+                onClick={() => setEligibilityFilter("all")}
+              />
+              <FilterButton
+                label="Qualified"
+                active={eligibilityFilter === "qualified"}
+                onClick={() => setEligibilityFilter("qualified")}
+              />
+              <FilterButton
+                label="In Progress"
+                active={eligibilityFilter === "in-progress"}
+                onClick={() => setEligibilityFilter("in-progress")}
+              />
+              <FilterButton
+                label="Open to All"
+                active={eligibilityFilter === "open"}
+                onClick={() => setEligibilityFilter("open")}
+              />
+            </>
+          )}
+
+          {/* Category filter */}
+          {categories.length > 0 && (
+            <>
+              {isAuthenticated && <div className="w-px bg-border mx-1" />}
+              <FilterButton
+                label="All Categories"
+                active={categoryFilter === "all"}
+                onClick={() => setCategoryFilter("all")}
+              />
+              {categories.map((cat) => (
+                <FilterButton
+                  key={cat}
+                  label={cat}
+                  active={categoryFilter === cat}
+                  onClick={() => setCategoryFilter(cat)}
+                />
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Active filter count + clear */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2">
+            <AndamioText variant="small" className="text-muted-foreground">
+              Showing {filteredProjects.length} of {projects.length} projects
+            </AndamioText>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setSearchQuery("");
+                setEligibilityFilter("all");
+                setCategoryFilter("all");
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Project cards grid */}
+      {filteredProjects.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map((project) => (
+            <ProjectCard
+              key={project.projectId}
+              project={project}
+              eligibility={project.projectId ? eligibilityMap.get(project.projectId) : undefined}
+              isAuthenticated={isAuthenticated}
+            />
+          ))}
+        </div>
+      ) : (
+        <AndamioEmptyState
+          icon={ProjectIcon}
+          title="No Matching Projects"
+          description="Try adjusting your search or filters to find what you're looking for."
+        />
+      )}
     </div>
+  );
+}
+
+// =============================================================================
+// FilterButton
+// =============================================================================
+
+function FilterButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      variant={active ? "secondary" : "outline"}
+      size="sm"
+      className={`h-7 text-xs ${active ? "font-medium" : ""}`}
+      onClick={onClick}
+    >
+      {active && <SuccessIcon className="h-3 w-3 mr-1" />}
+      {label}
+    </Button>
   );
 }

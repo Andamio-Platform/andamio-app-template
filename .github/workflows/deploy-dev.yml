@@ -11,6 +11,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: dev-deploy
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     name: Build and Deploy to Dev
@@ -81,3 +85,4 @@ jobs:
           echo "**Version:** ${{ steps.tags.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** ${{ steps.tags.outputs.full_tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Service:** ${{ vars.DEV_CLOUD_RUN_SERVICE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://dev.app.andamio.io" >> $GITHUB_STEP_SUMMARY

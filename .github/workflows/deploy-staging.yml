@@ -12,6 +12,10 @@ on:
       - "v*.*.*-rc*"
   workflow_dispatch:
 
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
 env:
   # Build-time environment variables for staging (NEXT_PUBLIC_* are embedded at build)
   NEXT_PUBLIC_ANDAMIO_GATEWAY_URL: https://preprod.api.andamio.io

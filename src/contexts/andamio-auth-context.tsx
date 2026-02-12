@@ -303,6 +303,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     authLogger.debug("[Effect: walletDisconnect] Running - connected:", connected, "isAuthenticated:", isAuthenticated);
     if (!connected) {
       setPopupBlocked(false);
+      setAuthError(null); // Clear any previous auth errors so reconnecting starts fresh
       // Clear auth state but keep JWT for reconnection validation
       if (isAuthenticated) {
         authLogger.info("Wallet disconnected, clearing authenticated state (JWT kept for reconnection)");
@@ -312,6 +313,46 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       }
     }
   }, [connected, isAuthenticated]);
+
+  // Auto-authenticate when wallet connects without a valid stored JWT
+  // This triggers the sign message flow for new connections
+  useEffect(() => {
+    authLogger.debug("[Effect: autoAuth] Running - connected:", connected, "isAuthenticated:", isAuthenticated, "isAuthenticating:", isAuthenticating, "isValidatingJWT:", isValidatingJWTRef.current);
+
+    // Skip if wallet not connected
+    if (!connected || !wallet) {
+      return;
+    }
+
+    // Skip if already authenticated or authenticating
+    if (isAuthenticated || isAuthenticating) {
+      return;
+    }
+
+    // Skip if there was an auth error (user declined, etc.)
+    // Without this check, declining to sign causes an infinite loop of wallet popups
+    if (authError) {
+      return;
+    }
+
+    // Skip if we're still validating a stored JWT
+    if (isValidatingJWTRef.current) {
+      return;
+    }
+
+    // Check if there's a stored JWT that might be valid
+    const storedJWT = getStoredJWT();
+    if (storedJWT && !isJWTExpired(storedJWT)) {
+      // Let the validateJWT effect handle this
+      authLogger.debug("[Effect: autoAuth] Stored JWT exists, skipping auto-auth");
+      return;
+    }
+
+    // No valid JWT - trigger authentication
+    authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, triggering authentication");
+    void authenticate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, isAuthenticated, isAuthenticating, authError]);
 
   /**
    * Authenticate with connected wallet

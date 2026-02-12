@@ -55,6 +55,8 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
     isAuthenticating,
     isWalletConnected,
     authError,
+    popupBlocked,
+    authenticate,
     logout,
   } = useAndamioAuth();
   const { state: txState, execute, reset } = useTransaction();
@@ -296,7 +298,46 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
     );
   }
 
-  // Step 2b: Connected and authenticating (waiting for signature)
+  // Step 2b: Popup blocked (Web3Services wallets need popups for signing)
+  if (isWalletConnected && popupBlocked && !isAuthenticated) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <AndamioCard>
+          <AndamioCardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-2">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <AccessTokenIcon className="h-7 w-7 text-primary" />
+              </div>
+            </div>
+            <AndamioCardTitle className="text-xl">Popup Blocked</AndamioCardTitle>
+            <AndamioCardDescription>
+              Your browser blocked the wallet popup.
+            </AndamioCardDescription>
+          </AndamioCardHeader>
+
+          <AndamioCardContent className="space-y-4">
+            <AndamioText variant="small" className="text-center text-muted-foreground">
+              Please allow popups for this site in your browser settings, then click below to try again.
+            </AndamioText>
+            <AndamioButton
+              onClick={() => void authenticate()}
+              className="w-full"
+            >
+              Click to Retry
+            </AndamioButton>
+            {onBack && (
+              <AndamioButton variant="ghost" onClick={onBack} className="w-full" size="sm">
+                <BackIcon className="mr-2 h-4 w-4" />
+                Back
+              </AndamioButton>
+            )}
+          </AndamioCardContent>
+        </AndamioCard>
+      </div>
+    );
+  }
+
+  // Step 2c: Connected and authenticating (waiting for signature)
   if (isAuthenticating || !isAuthenticated) {
     return (
       <div className="w-full max-w-md mx-auto">

@@ -25,8 +25,15 @@ import {
   AndamioText,
   AndamioCheckbox,
   AndamioScrollArea,
+  AndamioSectionHeader,
 } from "~/components/andamio";
-import { TaskIcon, OnChainIcon } from "~/components/icons";
+import {
+  AndamioTabs,
+  AndamioTabsList,
+  AndamioTabsTrigger,
+  AndamioTabsContent,
+} from "~/components/andamio/andamio-tabs";
+import { TaskIcon, OnChainIcon, AddIcon, DeleteIcon } from "~/components/icons";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { TreasuryBalanceCard } from "~/components/studio/treasury-balance-card";
 import { TasksManage, TreasuryAddFunds } from "~/components/tx";
@@ -102,11 +109,17 @@ export default function ManageTreasuryPage() {
   // On-chain tasks for removal (derived from hook data)
   const [selectedOnChainTaskIds, setSelectedOnChainTaskIds] = useState<Set<string>>(new Set());
 
-  // On-chain tasks from hook data (tasks with ON_CHAIN status that have on-chain content)
-  const onChainTasks: Task[] = useMemo(() =>
-    (projectDetail?.tasks ?? []).filter(t => t.taskStatus === "ON_CHAIN"),
-    [projectDetail?.tasks]
-  );
+  // On-chain tasks from hook data, de-duplicated by taskHash
+  const onChainTasks: Task[] = useMemo(() => {
+    const raw = (projectDetail?.tasks ?? []).filter(t => t.taskStatus === "ON_CHAIN");
+    const seen = new Set<string>();
+    return raw.filter((t) => {
+      if (!t.taskHash) return true;
+      if (seen.has(t.taskHash)) return false;
+      seen.add(t.taskHash);
+      return true;
+    });
+  }, [projectDetail?.tasks]);
 
   // Derived: on-chain task count
   const onChainTaskCount = onChainTasks.length;
@@ -231,8 +244,8 @@ export default function ManageTreasuryPage() {
   });
 
 
-  // Task codes and indices for side effects
-  const taskCodes = selectedTasks.map((t) => `TASK_${t.index}`);
+  // Task labels for the publish summary (show title, fallback to index)
+  const taskCodes = selectedTasks.map((t) => t.title || `Task ${(t.index ?? 0) + 1}`);
   const taskIndices = selectedTasks.map((t) => t.index).filter((idx): idx is number => idx !== undefined);
 
   // Convert selected on-chain tasks to ProjectData format for removal
@@ -260,10 +273,10 @@ export default function ManageTreasuryPage() {
   // Deposit calculation for publishing draft tasks
   const addLovelace = tasksToAdd.reduce((sum, t) => sum + t.lovelace_amount, 0);
   const removeLovelace = tasksToRemove.reduce((sum, t) => sum + t.lovelace_amount, 0);
-  const treasuryBalance = (projectDetail?.treasuryFundings ?? []).reduce(
-    (sum, f) => sum + (f.lovelaceAmount ?? 0),
-    0,
-  );
+  // Use API's treasury_balance (actual on-chain balance minus min-UTxO reserve)
+  // instead of summing treasuryFundings (which only reflects historical deposits,
+  // not accounting for funds already paid out to contributors).
+  const treasuryBalance = projectDetail?.treasuryBalance ?? 0;
   const onChainCommitted = onChainTasks.reduce(
     (sum, t) => sum + (parseInt(t.lovelaceAmount) || 0),
     0,
@@ -305,6 +318,7 @@ export default function ManageTreasuryPage() {
       <TreasuryBalanceCard
         treasuryFundings={projectDetail?.treasuryFundings ?? []}
         treasuryAddress={projectDetail?.treasuryAddress}
+        treasuryBalance={projectDetail?.treasuryBalance}
       />
 
       {/* Add Funds to Treasury */}
@@ -315,228 +329,257 @@ export default function ManageTreasuryPage() {
         }}
       />
 
-      {/* Draft Tasks for Publishing */}
-      {draftTasks.length > 0 ? (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <AndamioCardTitle className="flex items-center gap-2">
-                  <TaskIcon className="h-5 w-5" />
-                  Draft Tasks Ready to Publish
-                </AndamioCardTitle>
-                <AndamioCardDescription>
-                  Select draft tasks to publish on the Cardano blockchain.
-                </AndamioCardDescription>
-              </div>
-              <AndamioCheckbox
-                checked={selectedTaskIndices.size === draftTasks.length && draftTasks.length > 0}
-                onCheckedChange={handleSelectAll}
-                aria-label="Select all draft tasks"
-              />
-            </div>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            <AndamioTableContainer>
-              <AndamioTable>
-                <AndamioTableHeader>
-                  <AndamioTableRow>
-                    <AndamioTableHead className="w-12"></AndamioTableHead>
-                    <AndamioTableHead>Title</AndamioTableHead>
-                    <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
-                    <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
-                  </AndamioTableRow>
-                </AndamioTableHeader>
-                <AndamioTableBody>
-                  {draftTasks.map((task) => {
-                    const taskIndex = task.index ?? 0;
-                    const isSelected = selectedTaskIndices.has(taskIndex);
-                    // Task is valid if it has a title (used as project_content)
-                    const isValid = task.title.length > 0 && task.title.length <= 140;
+      {/* Task Management Tabs */}
+      <AndamioTabs defaultValue="publish" className="w-full">
+        <AndamioTabsList className="w-auto inline-flex h-9 mb-6">
+          <AndamioTabsTrigger value="publish" className="text-sm gap-1.5 px-4">
+            <AddIcon className="h-4 w-4" />
+            Add to Treasury
+          </AndamioTabsTrigger>
+          <AndamioTabsTrigger value="remove" className="text-sm gap-1.5 px-4">
+            <DeleteIcon className="h-4 w-4" />
+            Remove from Treasury
+          </AndamioTabsTrigger>
+        </AndamioTabsList>
 
-                    return (
-                      <AndamioTableRow
-                        key={task.taskHash || `draft-${taskIndex}`}
-                        className={isSelected ? "bg-primary/5" : ""}
-                      >
-                        <AndamioTableCell>
-                          <AndamioCheckbox
-                            checked={isSelected}
-                            onCheckedChange={() => handleToggleTask(taskIndex)}
-                            disabled={!isValid}
-                            aria-label={`Select task ${taskIndex}`}
-                          />
-                        </AndamioTableCell>
-                        <AndamioTableCell>
-                          <div>
-                            <AndamioText as="div" className="font-medium">{task.title || "Untitled Task"}</AndamioText>
-                            {!isValid && (
-                              <AndamioText variant="small" className="text-muted-foreground">
-                                Title required (max 140 chars) for on-chain content
-                              </AndamioText>
-                            )}
-                          </div>
-                        </AndamioTableCell>
-                        <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
-                        </AndamioTableCell>
-                        <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
-                        </AndamioTableCell>
-                      </AndamioTableRow>
-                    );
-                  })}
-                </AndamioTableBody>
-              </AndamioTable>
-            </AndamioTableContainer>
-
-            {/* Publish Transaction - only when draft tasks are selected */}
-            {(tasksToAdd.length > 0 || txInProgress === "add") && contributorStateId && (
-              <>
-                <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1">
-                  <div><strong>Publish Summary</strong></div>
-                  <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
-                  <div>Treasury balance: {availableFunds / 1_000_000} ADA available</div>
-                  <div className={publishDepositAmount > 0 ? "" : "text-primary"}>
-                    {publishDepositAmount > 0
-                      ? `Wallet deposit required: ${publishDepositAmount / 1_000_000} ADA`
-                      : "No additional deposit needed — treasury covers it"}
+        {/* ============================================================= */}
+        {/* PUBLISH TAB — Add draft tasks to the treasury                  */}
+        {/* ============================================================= */}
+        <AndamioTabsContent value="publish" className="space-y-4">
+          {draftTasks.length > 0 ? (
+            <AndamioCard>
+              <AndamioCardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <AndamioCardTitle className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                        <AddIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      Add to Treasury
+                    </AndamioCardTitle>
+                    <AndamioCardDescription>
+                      Select draft tasks to publish on-chain. Each task locks its reward amount in the treasury.
+                    </AndamioCardDescription>
                   </div>
+                  <AndamioCheckbox
+                    checked={selectedTaskIndices.size === draftTasks.length && draftTasks.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all draft tasks"
+                  />
                 </div>
-
-                <TasksManage
-                  projectNftPolicyId={projectId}
-                  contributorStateId={contributorStateId}
-                  tasksToAdd={tasksToAdd}
-                  tasksToRemove={[]}
-                  depositValue={publishDepositValue}
-                  taskCodes={taskCodes}
-                  taskIndices={taskIndices}
-                  onTxSubmit={() => setTxInProgress("add")}
-                  onSuccess={async () => {
-                    setTxInProgress(null);
-                    setSelectedTaskIndices(new Set());
-                    await refreshData();
-                  }}
-                />
-              </>
-            )}
-          </AndamioCardContent>
-        </AndamioCard>
-      ) : (
-        <AndamioEmptyState
-          icon={TaskIcon}
-          title="No Draft Tasks"
-          description="All tasks have been published on-chain, or no tasks have been created yet."
-        />
-      )}
-
-      {/* On-Chain Tasks - can be selected for removal */}
-      {onChainTasks.length > 0 && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <AndamioCardTitle className="flex items-center gap-2">
-                  <OnChainIcon className="h-5 w-5" />
-                  On-Chain Tasks
-                </AndamioCardTitle>
-                <AndamioCardDescription>
-                  Select tasks to remove from the project. Removed tasks return their deposit.
-                </AndamioCardDescription>
-              </div>
-              <AndamioCheckbox
-                checked={selectedOnChainTaskIds.size === onChainTasks.length && onChainTasks.length > 0}
-                onCheckedChange={handleSelectAllOnChain}
-                aria-label="Select all on-chain tasks"
-              />
-            </div>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <AndamioTableContainer>
-              <AndamioTable>
-                <AndamioTableHeader>
-                  <AndamioTableRow>
-                    <AndamioTableHead className="w-12"></AndamioTableHead>
-                    <AndamioTableHead>Content</AndamioTableHead>
-                    <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
-                    <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
-                    <AndamioTableHead className="hidden sm:table-cell w-32 text-center">Expires</AndamioTableHead>
-                  </AndamioTableRow>
-                </AndamioTableHeader>
-                <AndamioTableBody>
-                  {onChainTasks.map((task) => {
-                    const taskHash = task.taskHash ?? "";
-                    const isSelected = selectedOnChainTaskIds.has(taskHash);
-                    const displayContent = task.title || (task.onChainContent ? hexToText(task.onChainContent) : "(empty content)");
-                    const expirationMs = parseInt(task.expirationTime ?? "0") || 0;
-                    const expirationDate = new Date(expirationMs < 946684800000 ? expirationMs * 1000 : expirationMs);
-
-                    return (
-                      <AndamioTableRow
-                        key={taskHash || task.index}
-                        className={isSelected ? "bg-destructive/5" : ""}
-                      >
-                        <AndamioTableCell>
-                          <AndamioCheckbox
-                            checked={isSelected}
-                            onCheckedChange={() => handleToggleOnChainTask(taskHash)}
-                            disabled={!taskHash}
-                            aria-label={`Select task for removal`}
-                          />
-                        </AndamioTableCell>
-                        <AndamioTableCell>
-                          <AndamioText as="div" className="font-medium">
-                            {displayContent}
-                          </AndamioText>
-                        </AndamioTableCell>
-                        <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
-                          {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
-                        </AndamioTableCell>
-                        <AndamioTableCell className="text-center">
-                          <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
-                        </AndamioTableCell>
-                        <AndamioTableCell className="hidden sm:table-cell text-center text-xs text-muted-foreground">
-                          {expirationDate.toLocaleDateString()}
-                        </AndamioTableCell>
+              </AndamioCardHeader>
+              <AndamioCardContent className="space-y-4">
+                <AndamioTableContainer>
+                  <AndamioTable>
+                    <AndamioTableHeader>
+                      <AndamioTableRow>
+                        <AndamioTableHead className="w-12"></AndamioTableHead>
+                        <AndamioTableHead>Title</AndamioTableHead>
+                        <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
+                        <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
                       </AndamioTableRow>
-                    );
-                  })}
-                </AndamioTableBody>
-              </AndamioTable>
-            </AndamioTableContainer>
+                    </AndamioTableHeader>
+                    <AndamioTableBody>
+                      {draftTasks.map((task) => {
+                        const taskIndex = task.index ?? 0;
+                        const isSelected = selectedTaskIndices.has(taskIndex);
+                        const isValid = task.title.length > 0 && task.title.length <= 140;
 
-            {/* Remove Transaction - only when on-chain tasks are selected */}
-            {(tasksToRemove.length > 0 || txInProgress === "remove") && contributorStateId && (
-              <>
-                <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono space-y-1 mt-4">
-                  <div><strong>Transaction Preview:</strong></div>
-                  <div className="text-destructive">Removing {tasksToRemove.length} task{tasksToRemove.length !== 1 ? "s" : ""} ({removeLovelace / 1_000_000} ADA returned)</div>
+                        return (
+                          <AndamioTableRow
+                            key={task.taskHash || `draft-${taskIndex}`}
+                            className={isSelected ? "bg-primary/5" : ""}
+                          >
+                            <AndamioTableCell>
+                              <AndamioCheckbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleToggleTask(taskIndex)}
+                                disabled={!isValid}
+                                aria-label={`Select task ${taskIndex}`}
+                              />
+                            </AndamioTableCell>
+                            <AndamioTableCell>
+                              <div>
+                                <AndamioText as="div" className="font-medium">{task.title || "Untitled Task"}</AndamioText>
+                                {!isValid && (
+                                  <AndamioText variant="small" className="text-muted-foreground">
+                                    Title required (max 140 chars) for on-chain content
+                                  </AndamioText>
+                                )}
+                              </div>
+                            </AndamioTableCell>
+                            <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
+                              {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
+                            </AndamioTableCell>
+                            <AndamioTableCell className="text-center">
+                              <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
+                            </AndamioTableCell>
+                          </AndamioTableRow>
+                        );
+                      })}
+                    </AndamioTableBody>
+                  </AndamioTable>
+                </AndamioTableContainer>
+
+                {/* Publish Transaction */}
+                {(tasksToAdd.length > 0 || txInProgress === "add") && contributorStateId && (
+                  <>
+                    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs space-y-1">
+                      <div className="font-medium">Publish Summary</div>
+                      <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
+                      <div className="text-muted-foreground">Treasury balance: {availableFunds / 1_000_000} ADA available</div>
+                      <div className={publishDepositAmount > 0 ? "text-muted-foreground" : "text-primary"}>
+                        {publishDepositAmount > 0
+                          ? `Wallet deposit required: ${publishDepositAmount / 1_000_000} ADA`
+                          : "No additional deposit needed — treasury covers it"}
+                      </div>
+                    </div>
+
+                    <TasksManage
+                      projectNftPolicyId={projectId}
+                      contributorStateId={contributorStateId}
+                      tasksToAdd={tasksToAdd}
+                      tasksToRemove={[]}
+                      depositValue={publishDepositValue}
+                      taskCodes={taskCodes}
+                      taskIndices={taskIndices}
+                      onTxSubmit={() => setTxInProgress("add")}
+                      onSuccess={async () => {
+                        setTxInProgress(null);
+                        setSelectedTaskIndices(new Set());
+                        await refreshData();
+                      }}
+                    />
+                  </>
+                )}
+              </AndamioCardContent>
+            </AndamioCard>
+          ) : (
+            <AndamioEmptyState
+              icon={TaskIcon}
+              title="No Draft Tasks"
+              description="All tasks have been published on-chain, or no tasks have been created yet."
+            />
+          )}
+        </AndamioTabsContent>
+
+        {/* ============================================================= */}
+        {/* REMOVE TAB — Remove on-chain tasks from the treasury           */}
+        {/* ============================================================= */}
+        <AndamioTabsContent value="remove" className="space-y-4">
+          {onChainTasks.length > 0 ? (
+            <AndamioCard className="border-destructive/20">
+              <AndamioCardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <AndamioCardTitle className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                        <DeleteIcon className="h-4 w-4 text-destructive" />
+                      </div>
+                      Remove from Treasury
+                    </AndamioCardTitle>
+                    <AndamioCardDescription>
+                      Select on-chain tasks to remove. Removed tasks return their locked reward to the treasury.
+                    </AndamioCardDescription>
+                  </div>
+                  <AndamioCheckbox
+                    checked={selectedOnChainTaskIds.size === onChainTasks.length && onChainTasks.length > 0}
+                    onCheckedChange={handleSelectAllOnChain}
+                    aria-label="Select all on-chain tasks"
+                  />
                 </div>
+              </AndamioCardHeader>
+              <AndamioCardContent className="space-y-4">
+                <AndamioTableContainer>
+                  <AndamioTable>
+                    <AndamioTableHeader>
+                      <AndamioTableRow>
+                        <AndamioTableHead className="w-12"></AndamioTableHead>
+                        <AndamioTableHead>Content</AndamioTableHead>
+                        <AndamioTableHead className="hidden md:table-cell">Hash</AndamioTableHead>
+                        <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
+                        <AndamioTableHead className="hidden sm:table-cell w-32 text-center">Expires</AndamioTableHead>
+                      </AndamioTableRow>
+                    </AndamioTableHeader>
+                    <AndamioTableBody>
+                      {onChainTasks.map((task, mapIdx) => {
+                        const taskHash = task.taskHash ?? "";
+                        const isSelected = selectedOnChainTaskIds.has(taskHash);
+                        const displayContent = task.title || (task.onChainContent ? hexToText(task.onChainContent) : "(empty content)");
+                        const expirationMs = parseInt(task.expirationTime ?? "0") || 0;
+                        const expirationDate = new Date(expirationMs < 946684800000 ? expirationMs * 1000 : expirationMs);
 
-                <TasksManage
-                  projectNftPolicyId={projectId}
-                  contributorStateId={contributorStateId}
+                        return (
+                          <AndamioTableRow
+                            key={`${taskHash || task.index}-${mapIdx}`}
+                            className={isSelected ? "bg-destructive/5" : ""}
+                          >
+                            <AndamioTableCell>
+                              <AndamioCheckbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleToggleOnChainTask(taskHash)}
+                                disabled={!taskHash}
+                                aria-label={`Select task for removal`}
+                              />
+                            </AndamioTableCell>
+                            <AndamioTableCell>
+                              <AndamioText as="div" className="font-medium">
+                                {displayContent}
+                              </AndamioText>
+                            </AndamioTableCell>
+                            <AndamioTableCell className="hidden md:table-cell font-mono text-xs">
+                              {taskHash ? `${taskHash.slice(0, 16)}...` : "-"}
+                            </AndamioTableCell>
+                            <AndamioTableCell className="text-center">
+                              <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
+                            </AndamioTableCell>
+                            <AndamioTableCell className="hidden sm:table-cell text-center text-xs text-muted-foreground">
+                              {expirationDate.toLocaleDateString()}
+                            </AndamioTableCell>
+                          </AndamioTableRow>
+                        );
+                      })}
+                    </AndamioTableBody>
+                  </AndamioTable>
+                </AndamioTableContainer>
 
-                  tasksToAdd={[]}
-                  tasksToRemove={tasksToRemove}
-                  depositValue={[]}
-                  taskCodes={[]}
-                  taskIndices={[]}
-                  onTxSubmit={() => setTxInProgress("remove")}
-                  onSuccess={async () => {
-                    // No computed hashes for removal - just refresh
-                    setTxInProgress(null);
-                    toast.success("Tasks removed successfully!");
-                    setSelectedOnChainTaskIds(new Set());
-                    await refreshData();
-                  }}
-                />
-              </>
-            )}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
+                {/* Remove Transaction */}
+                {(tasksToRemove.length > 0 || txInProgress === "remove") && contributorStateId && (
+                  <>
+                    <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-xs space-y-1">
+                      <div className="font-medium">Removal Summary</div>
+                      <div className="text-destructive">Removing {tasksToRemove.length} task{tasksToRemove.length !== 1 ? "s" : ""} ({removeLovelace / 1_000_000} ADA returned)</div>
+                    </div>
+
+                    <TasksManage
+                      projectNftPolicyId={projectId}
+                      contributorStateId={contributorStateId}
+                      tasksToAdd={[]}
+                      tasksToRemove={tasksToRemove}
+                      depositValue={[]}
+                      taskCodes={[]}
+                      taskIndices={[]}
+                      onTxSubmit={() => setTxInProgress("remove")}
+                      onSuccess={async () => {
+                        setTxInProgress(null);
+                        toast.success("Tasks removed successfully!");
+                        setSelectedOnChainTaskIds(new Set());
+                        await refreshData();
+                      }}
+                    />
+                  </>
+                )}
+              </AndamioCardContent>
+            </AndamioCard>
+          ) : (
+            <AndamioEmptyState
+              icon={OnChainIcon}
+              title="No On-Chain Tasks"
+              description="No tasks are currently published on-chain."
+            />
+          )}
+        </AndamioTabsContent>
+      </AndamioTabs>
 
     </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -26,10 +26,119 @@ import {
   AndamioErrorAlert,
   AndamioScrollArea,
 } from "~/components/andamio";
-import { TaskIcon, OnChainIcon } from "~/components/icons";
+import {
+  TaskIcon,
+  OnChainIcon,
+  SuccessIcon,
+  PendingIcon,
+  AlertIcon,
+  UserIcon,
+  NeutralIcon,
+  ErrorIcon,
+  SortIcon,
+} from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, type Task } from "~/hooks/api/project/use-project";
-import { useManagerTasks, useDeleteTask } from "~/hooks/api/project/use-project-manager";
+import { useManagerTasks, useDeleteTask, useManagerCommitments, type ManagerCommitment } from "~/hooks/api/project/use-project-manager";
+
+// =============================================================================
+// Task Lifecycle Types
+// =============================================================================
+
+type TaskLifecycle = "available" | "in_progress" | "pending_review" | "accepted" | "refused" | "denied";
+
+interface TaskLifecycleInfo {
+  lifecycle: TaskLifecycle;
+  contributor?: string;
+  commitment?: ManagerCommitment;
+}
+
+function getLifecycleFromStatus(status: string | undefined): TaskLifecycle {
+  switch (status) {
+    case "SUBMITTED":
+      return "pending_review";
+    case "ACCEPTED":
+      return "accepted";
+    case "REFUSED":
+      return "refused";
+    case "DENIED":
+      return "denied";
+    case "COMMITTED":
+    case "AWAITING_SUBMISSION":
+    case "PENDING_TX_COMMIT":
+    case "PENDING_TX_SUBMIT":
+    case "PENDING_TX_ASSESS":
+    case "DRAFT":
+      return "in_progress";
+    default:
+      return "in_progress";
+  }
+}
+
+function getLifecycleLabel(lifecycle: TaskLifecycle): string {
+  switch (lifecycle) {
+    case "available":
+      return "Available";
+    case "in_progress":
+      return "In Progress";
+    case "pending_review":
+      return "Pending Review";
+    case "accepted":
+      return "Accepted";
+    case "refused":
+      return "Refused";
+    case "denied":
+      return "Denied";
+  }
+}
+
+function getLifecycleBadgeVariant(lifecycle: TaskLifecycle): "default" | "secondary" | "outline" | "destructive" {
+  switch (lifecycle) {
+    case "available":
+      return "outline";
+    case "in_progress":
+      return "secondary";
+    case "pending_review":
+      return "secondary";
+    case "accepted":
+      return "default";
+    case "refused":
+      return "destructive";
+    case "denied":
+      return "destructive";
+  }
+}
+
+function getLifecycleIcon(lifecycle: TaskLifecycle) {
+  switch (lifecycle) {
+    case "available":
+      return <NeutralIcon className="h-3 w-3 mr-1" />;
+    case "in_progress":
+      return <PendingIcon className="h-3 w-3 mr-1" />;
+    case "pending_review":
+      return <AlertIcon className="h-3 w-3 mr-1" />;
+    case "accepted":
+      return <SuccessIcon className="h-3 w-3 mr-1" />;
+    case "refused":
+      return <ErrorIcon className="h-3 w-3 mr-1" />;
+    case "denied":
+      return <ErrorIcon className="h-3 w-3 mr-1" />;
+  }
+}
+
+/** Priority order: pending_review needs attention most, then in_progress, etc. */
+const LIFECYCLE_PRIORITY: Record<TaskLifecycle, number> = {
+  pending_review: 5,
+  in_progress: 4,
+  accepted: 3,
+  refused: 2,
+  denied: 1,
+  available: 0,
+};
+
+function shouldReplace(existing: TaskLifecycle, incoming: TaskLifecycle): boolean {
+  return LIFECYCLE_PRIORITY[incoming] > LIFECYCLE_PRIORITY[existing];
+}
 
 /**
  * Draft Tasks List - View and manage draft tasks for a project
@@ -48,13 +157,161 @@ export default function DraftTasksPage() {
   const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const contributorStateId = projectDetail?.contributorStateId;
   const { data: tasks = [], isLoading: isTasksLoading } = useManagerTasks(projectId);
+  const { data: allCommitments = [], isLoading: isCommitmentsLoading } = useManagerCommitments(projectId);
   const deleteTask = useDeleteTask();
 
   const [deletingTaskIndex, setDeletingTaskIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lifecycleFilter, setLifecycleFilter] = useState<TaskLifecycle | "all">("all");
+  const [sortField, setSortField] = useState<"title" | "reward" | "lifecycle" | "contributor">("title");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [draftSortField, setDraftSortField] = useState<"title" | "reward">("title");
+  const [draftSortDirection, setDraftSortDirection] = useState<"asc" | "desc">("asc");
 
-  // On-chain task count derived from hook data
-  const onChainTaskCount = projectDetail?.tasks?.filter(t => t.taskStatus === "ON_CHAIN").length ?? 0;
+  // Build lifecycle map: taskHash → most relevant commitment info
+  const taskLifecycleMap = useMemo(() => {
+    const map = new Map<string, TaskLifecycleInfo>();
+    for (const commitment of allCommitments) {
+      const existing = map.get(commitment.taskHash);
+      // Keep the most "advanced" commitment per taskHash
+      // Priority: pending_review > in_progress > accepted > refused > denied
+      if (!existing || shouldReplace(existing.lifecycle, getLifecycleFromStatus(commitment.commitmentStatus))) {
+        map.set(commitment.taskHash, {
+          lifecycle: getLifecycleFromStatus(commitment.commitmentStatus),
+          contributor: commitment.submittedBy,
+          commitment,
+        });
+      }
+    }
+    return map;
+  }, [allCommitments]);
+
+  // Build set of on-chain task hashes from project detail (source of truth)
+  // to exclude from draft list when manager tasks API lags behind
+  const onChainTaskHashes = useMemo(() => new Set(
+    (projectDetail?.tasks ?? [])
+      .filter((t) => t.taskStatus === "ON_CHAIN")
+      .map((t) => t.taskHash)
+      .filter(Boolean)
+  ), [projectDetail?.tasks]);
+
+  // Separate tasks by status, excluding drafts that are already on-chain
+  const draftTasksRaw = useMemo(() => tasks.filter(
+    (t) => t.taskStatus === "DRAFT" && (!t.taskHash || !onChainTaskHashes.has(t.taskHash))
+  ), [tasks, onChainTaskHashes]);
+
+  // Sorted draft tasks
+  const draftTasks = useMemo(() => {
+    const sorted = [...draftTasksRaw];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      if (draftSortField === "title") {
+        cmp = (a.title || "").localeCompare(b.title || "");
+      } else {
+        cmp = (parseInt(a.lovelaceAmount) || 0) - (parseInt(b.lovelaceAmount) || 0);
+      }
+      return draftSortDirection === "desc" ? -cmp : cmp;
+    });
+    return sorted;
+  }, [draftTasksRaw, draftSortField, draftSortDirection]);
+  // De-duplicate ON_CHAIN tasks by taskHash (API can return duplicates across data sources)
+  const liveTasks = useMemo(() => {
+    const onChainTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+    const seen = new Set<string>();
+    return onChainTasks.filter((t) => {
+      if (!t.taskHash) return true; // Keep tasks without hash (shouldn't happen for ON_CHAIN)
+      if (seen.has(t.taskHash)) return false;
+      seen.add(t.taskHash);
+      return true;
+    });
+  }, [tasks]);
+  const otherTasks = useMemo(() => tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.taskStatus ?? "")), [tasks]);
+
+  // Lifecycle summary counts for live tasks
+  const lifecycleCounts = useMemo(() => {
+    let available = 0;
+    let inProgress = 0;
+    let pendingReview = 0;
+    let accepted = 0;
+    for (const task of liveTasks) {
+      const info = taskLifecycleMap.get(task.taskHash);
+      if (!info) {
+        available++;
+      } else {
+        switch (info.lifecycle) {
+          case "in_progress":
+            inProgress++;
+            break;
+          case "pending_review":
+            pendingReview++;
+            break;
+          case "accepted":
+            accepted++;
+            break;
+          default:
+            available++;
+        }
+      }
+    }
+    return { available, inProgress, pendingReview, accepted };
+  }, [liveTasks, taskLifecycleMap]);
+
+  // Filtered and sorted live tasks
+  const filteredLiveTasks = useMemo(() => {
+    let filtered = lifecycleFilter === "all"
+      ? [...liveTasks]
+      : liveTasks.filter((task) => {
+          const info = taskLifecycleMap.get(task.taskHash);
+          const lifecycle = info?.lifecycle ?? "available";
+          return lifecycle === lifecycleFilter;
+        });
+
+    // Sort
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "title":
+          cmp = (a.title || "").localeCompare(b.title || "");
+          break;
+        case "contributor": {
+          const ca = taskLifecycleMap.get(a.taskHash)?.contributor ?? "";
+          const cb = taskLifecycleMap.get(b.taskHash)?.contributor ?? "";
+          cmp = ca.localeCompare(cb);
+          break;
+        }
+        case "reward":
+          cmp = (parseInt(a.lovelaceAmount) || 0) - (parseInt(b.lovelaceAmount) || 0);
+          break;
+        case "lifecycle": {
+          const la = taskLifecycleMap.get(a.taskHash)?.lifecycle ?? "available";
+          const lb = taskLifecycleMap.get(b.taskHash)?.lifecycle ?? "available";
+          cmp = LIFECYCLE_PRIORITY[lb] - LIFECYCLE_PRIORITY[la]; // Higher priority first
+          break;
+        }
+      }
+      return sortDirection === "desc" ? -cmp : cmp;
+    });
+
+    return filtered;
+  }, [liveTasks, taskLifecycleMap, lifecycleFilter, sortField, sortDirection]);
+
+  const toggleSort = (field: "title" | "reward" | "lifecycle" | "contributor") => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const toggleDraftSort = (field: "title" | "reward") => {
+    if (draftSortField === field) {
+      setDraftSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setDraftSortField(field);
+      setDraftSortDirection("asc");
+    }
+  };
 
   const handleDeleteTask = async (task: Task) => {
     if (!isAuthenticated) {
@@ -113,7 +370,7 @@ export default function DraftTasksPage() {
   }
 
   // Loading state
-  if (isProjectLoading || isTasksLoading) {
+  if (isProjectLoading || isTasksLoading || isCommitmentsLoading) {
     return <AndamioPageLoading variant="list" />;
   }
 
@@ -131,22 +388,6 @@ export default function DraftTasksPage() {
       </div>
     );
   }
-
-  // Build set of on-chain task hashes from project detail (source of truth)
-  // to exclude from draft list when manager tasks API lags behind
-  const onChainTaskHashes = new Set(
-    (projectDetail?.tasks ?? [])
-      .filter((t) => t.taskStatus === "ON_CHAIN")
-      .map((t) => t.taskHash)
-      .filter(Boolean)
-  );
-
-  // Separate tasks by status, excluding drafts that are already on-chain
-  const draftTasks = tasks.filter(
-    (t) => t.taskStatus === "DRAFT" && (!t.taskHash || !onChainTaskHashes.has(t.taskHash))
-  );
-  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
-  const otherTasks = tasks.filter((t) => !["DRAFT", "ON_CHAIN"].includes(t.taskStatus ?? ""));
 
   return (
     <AndamioScrollArea className="h-full">
@@ -171,17 +412,37 @@ export default function DraftTasksPage() {
 
       {/* Status Badges */}
       <div className="flex flex-wrap items-center gap-3">
-        <AndamioBadge variant="secondary">
-          {draftTasks.length} Draft
-        </AndamioBadge>
+        {draftTasks.length > 0 && (
+          <AndamioBadge variant="secondary">
+            {draftTasks.length} Draft
+          </AndamioBadge>
+        )}
         <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
           <OnChainIcon className="h-3 w-3 mr-1" />
           {liveTasks.length} Published
         </AndamioBadge>
-        {onChainTaskCount > 0 && (
+        {lifecycleCounts.available > 0 && (
           <AndamioBadge variant="outline">
-            <OnChainIcon className="h-3 w-3 mr-1" />
-            {onChainTaskCount} On-Chain
+            <NeutralIcon className="h-3 w-3 mr-1" />
+            {lifecycleCounts.available} Available
+          </AndamioBadge>
+        )}
+        {lifecycleCounts.inProgress > 0 && (
+          <AndamioBadge variant="outline">
+            <PendingIcon className="h-3 w-3 mr-1" />
+            {lifecycleCounts.inProgress} In Progress
+          </AndamioBadge>
+        )}
+        {lifecycleCounts.pendingReview > 0 && (
+          <AndamioBadge variant="outline" className="border-primary/50 text-primary">
+            <AlertIcon className="h-3 w-3 mr-1" />
+            {lifecycleCounts.pendingReview} Needs Review
+          </AndamioBadge>
+        )}
+        {lifecycleCounts.accepted > 0 && (
+          <AndamioBadge variant="outline">
+            <SuccessIcon className="h-3 w-3 mr-1" />
+            {lifecycleCounts.accepted} Accepted
           </AndamioBadge>
         )}
       </div>
@@ -203,8 +464,18 @@ export default function DraftTasksPage() {
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead>Title</AndamioTableHead>
-                  <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
+                  <AndamioTableHead>
+                    <button onClick={() => toggleDraftSort("title")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground">
+                      Title
+                      <SortIcon className={`h-3 w-3 ${draftSortField === "title" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
+                  <AndamioTableHead className="w-32 text-center">
+                    <button onClick={() => toggleDraftSort("reward")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground mx-auto">
+                      Reward
+                      <SortIcon className={`h-3 w-3 ${draftSortField === "reward" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
                   <AndamioTableHead className="w-32 text-center">Status</AndamioTableHead>
                   <AndamioTableHead className="w-32 text-right">Actions</AndamioTableHead>
                 </AndamioTableRow>
@@ -243,24 +514,122 @@ export default function DraftTasksPage() {
       {/* Live Tasks Section */}
       {liveTasks.length > 0 && (
         <div className="space-y-3">
-          <AndamioSectionHeader title="Live Tasks" />
-          <AndamioText variant="small">These tasks are published on-chain and cannot be edited. To modify a live task, remove it from the chain first in Manage Treasury.</AndamioText>
+          <div className="flex items-center justify-between">
+            <AndamioSectionHeader title="Live Tasks" />
+            {lifecycleCounts.pendingReview > 0 && (
+              <Link href={`/studio/project/${projectId}/commitments`}>
+                <AndamioButton variant="outline" size="sm">
+                  <AlertIcon className="h-4 w-4 mr-2" />
+                  Review Submissions ({lifecycleCounts.pendingReview})
+                </AndamioButton>
+              </Link>
+            )}
+          </div>
+          <AndamioText variant="small">Published on-chain. Lifecycle status is derived from contributor commitments.</AndamioText>
+
+          {/* Lifecycle Filter Chips */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setLifecycleFilter("all")}
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                lifecycleFilter === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              All ({liveTasks.length})
+            </button>
+            {lifecycleCounts.available > 0 && (
+              <button
+                onClick={() => setLifecycleFilter("available")}
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  lifecycleFilter === "available"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <NeutralIcon className="h-3 w-3" />
+                Available ({lifecycleCounts.available})
+              </button>
+            )}
+            {lifecycleCounts.inProgress > 0 && (
+              <button
+                onClick={() => setLifecycleFilter("in_progress")}
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  lifecycleFilter === "in_progress"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <PendingIcon className="h-3 w-3" />
+                In Progress ({lifecycleCounts.inProgress})
+              </button>
+            )}
+            {lifecycleCounts.pendingReview > 0 && (
+              <button
+                onClick={() => setLifecycleFilter("pending_review")}
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  lifecycleFilter === "pending_review"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <AlertIcon className="h-3 w-3" />
+                Pending Review ({lifecycleCounts.pendingReview})
+              </button>
+            )}
+            {lifecycleCounts.accepted > 0 && (
+              <button
+                onClick={() => setLifecycleFilter("accepted")}
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  lifecycleFilter === "accepted"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <SuccessIcon className="h-3 w-3" />
+                Accepted ({lifecycleCounts.accepted})
+              </button>
+            )}
+          </div>
+
           <AndamioTableContainer>
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead>Title</AndamioTableHead>
-                  <AndamioTableHead>Task Hash</AndamioTableHead>
-                  <AndamioTableHead className="w-32 text-center">Reward</AndamioTableHead>
-                  <AndamioTableHead className="w-32 text-center">Status</AndamioTableHead>
+                  <AndamioTableHead>
+                    <button onClick={() => toggleSort("title")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground">
+                      Title
+                      <SortIcon className={`h-3 w-3 ${sortField === "title" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
+                  <AndamioTableHead>
+                    <button onClick={() => toggleSort("contributor")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground">
+                      Contributor
+                      <SortIcon className={`h-3 w-3 ${sortField === "contributor" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
+                  <AndamioTableHead className="w-32 text-center">
+                    <button onClick={() => toggleSort("reward")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground mx-auto">
+                      Reward
+                      <SortIcon className={`h-3 w-3 ${sortField === "reward" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
+                  <AndamioTableHead className="w-40 text-center">
+                    <button onClick={() => toggleSort("lifecycle")} className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground mx-auto">
+                      Lifecycle
+                      <SortIcon className={`h-3 w-3 ${sortField === "lifecycle" ? "text-primary" : "text-muted-foreground/50"}`} />
+                    </button>
+                  </AndamioTableHead>
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {liveTasks.map((task, idx) => {
+                {filteredLiveTasks.map((task) => {
                   const taskIndex = task.index ?? 0;
+                  const info = taskLifecycleMap.get(task.taskHash);
+                  const lifecycle = info?.lifecycle ?? "available";
                   return (
-                    <AndamioTableRow key={`${task.taskHash || 'live'}-${taskIndex}-${idx}`}>
-
+                    <AndamioTableRow key={`${task.taskHash}-${taskIndex}`}>
                       <AndamioTableCell className="font-medium">
                         <Link
                           href={`/project/${projectId}/${task.taskHash}`}
@@ -269,16 +638,25 @@ export default function DraftTasksPage() {
                           {task.title || "Untitled Task"}
                         </Link>
                       </AndamioTableCell>
-                      <AndamioTableCell className="font-mono text-xs">
-                        {task.taskHash ? `${task.taskHash.slice(0, 16)}...` : "-"}
+                      <AndamioTableCell>
+                        {info?.contributor ? (
+                          <div className="flex items-center gap-1.5">
+                            <UserIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="font-mono text-xs truncate max-w-[120px]">
+                              {info.contributor}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
                         <AndamioBadge variant="outline">{formatLovelace(task.lovelaceAmount)}</AndamioBadge>
                       </AndamioTableCell>
                       <AndamioTableCell className="text-center">
-                        <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
-                          <OnChainIcon className="h-3 w-3 mr-1" />
-                          On-Chain
+                        <AndamioBadge variant={getLifecycleBadgeVariant(lifecycle)}>
+                          {getLifecycleIcon(lifecycle)}
+                          {getLifecycleLabel(lifecycle)}
                         </AndamioBadge>
                       </AndamioTableCell>
                     </AndamioTableRow>
@@ -287,6 +665,11 @@ export default function DraftTasksPage() {
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>
+          {filteredLiveTasks.length === 0 && lifecycleFilter !== "all" && (
+            <div className="text-center py-4">
+              <AndamioText variant="muted">No tasks match the selected filter.</AndamioText>
+            </div>
+          )}
         </div>
       )}
 

@@ -16,15 +16,19 @@ import { cn } from "~/lib/utils";
 export interface TreasuryBalanceCardProps {
   treasuryFundings: TreasuryFunding[];
   treasuryAddress?: string;
+  /** API-computed treasury balance (preferred over summing fundings) */
+  treasuryBalance?: number;
   className?: string;
 }
 
 export function TreasuryBalanceCard({
   treasuryFundings,
   treasuryAddress,
+  treasuryBalance,
   className,
 }: TreasuryBalanceCardProps) {
-  const totalLovelace = treasuryFundings.reduce(
+  // Use API's treasury_balance if available, otherwise fall back to summing fundings
+  const totalLovelace = treasuryBalance ?? treasuryFundings.reduce(
     (sum, f) => sum + (f.lovelaceAmount ?? 0),
     0,
   );
@@ -38,18 +42,12 @@ export function TreasuryBalanceCard({
         </AndamioCardTitle>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
-        {treasuryFundings.length === 0 ? (
+        {totalLovelace === 0 && treasuryFundings.length === 0 ? (
           <AndamioText variant="muted">No funds yet</AndamioText>
         ) : (
-          <>
-            <div className="text-3xl font-bold">
-              {formatLovelace(totalLovelace)}
-            </div>
-            <AndamioText variant="small" className="text-muted-foreground">
-              from {treasuryFundings.length} contribution
-              {treasuryFundings.length !== 1 ? "s" : ""}
-            </AndamioText>
-          </>
+          <div className="text-3xl font-bold">
+            {formatLovelace(totalLovelace)}
+          </div>
         )}
         {treasuryAddress && (
           <div className="pt-2 border-t">

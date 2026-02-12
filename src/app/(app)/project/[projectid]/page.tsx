@@ -40,6 +40,7 @@ import {
 } from "~/components/icons";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useContributorCommitments } from "~/hooks/api/project/use-project-contributor";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { checkProjectEligibility } from "~/lib/project-eligibility";
 import { formatLovelace } from "~/lib/cardano-utils";
@@ -78,19 +79,54 @@ export default function ProjectDetailPage() {
     return checkProjectEligibility(prerequisites, completions);
   }, [isAuthenticated, prerequisites, completions]);
 
-  // Derive contributor status for authenticated users (must be before early returns)
+  // Authenticated contributor commitments — reliable source for status + completed tasks.
+  // project.assessments has empty taskHash (GH #178), so we use this instead.
+  const { data: myCommitments = [] } = useContributorCommitments(projectId);
+
+  // Derive contributor status from commitments (reliable source of truth).
+  // project.submissions persists after acceptance, so can't be used for "pending" detection.
   const contributorStatus = React.useMemo(() => {
     const alias = user?.accessTokenAlias;
     if (!alias || !project) return null;
-    const contributors = project.contributors ?? [];
-    const isContributor = contributors.some((c) => c.alias === alias);
+    const isContributor = (project.contributors ?? []).some((c) => c.alias === alias);
     if (!isContributor) return null;
-    const hasSubmission = (project.submissions ?? []).some((s) => s.submittedBy === alias);
-    if (hasSubmission) return "task_pending" as const;
-    const hasAcceptedTask = (project.assessments ?? []).some((a) => a.decision === "accept" && a.assessedBy !== alias);
-    if (hasAcceptedTask) return "task_accepted" as const;
+
+    const hasPending = myCommitments.some(c =>
+      c.commitmentStatus === "COMMITTED" ||
+      c.commitmentStatus === "SUBMITTED" ||
+      c.commitmentStatus === "REFUSED" ||
+      c.commitmentStatus === "PENDING_TX_SUBMIT"
+    );
+    if (hasPending) return "task_pending" as const;
+
+    const hasAccepted = myCommitments.some(c => c.commitmentStatus === "ACCEPTED");
+    if (hasAccepted) return "task_accepted" as const;
+
     return "enrolled" as const;
-  }, [user?.accessTokenAlias, project]);
+  }, [user?.accessTokenAlias, project, myCommitments]);
+
+  // Check if the current user has contributed (has submissions in this project)
+  // MUST be above early returns to maintain consistent hook order.
+  const isReturningContributor = React.useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !project?.submissions) return false;
+    return project.submissions.some(s => s.submittedBy === alias);
+  }, [user?.accessTokenAlias, project?.submissions]);
+
+  // Filter to live tasks only + deduplicate by taskHash
+  // (API can return duplicates across merged data sources)
+  const allTasks = mergedTasks ?? project?.tasks ?? [];
+  const liveTasks = React.useMemo(() => {
+    const seen = new Set<string>();
+    return allTasks.filter((t) => {
+      if (t.taskStatus !== "ON_CHAIN") return false;
+      const hash = t.taskHash;
+      if (!hash) return true;
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      return true;
+    });
+  }, [allTasks]);
 
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
@@ -105,9 +141,26 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const allTasks = mergedTasks ?? project.tasks ?? [];
-  const liveTasks = allTasks.filter((t) => t.taskStatus === "ON_CHAIN");
-  const projectTitle = project.title ?? "Project";
+  const projectTitle = project.title || "Project";
+
+  // Split into available vs completed.
+  // Available = no commitment exists (task hash not in submissions).
+  // Completed = manager accepted the assessment.
+  // Tasks with a commitment but not yet accepted appear in neither table.
+  const submittedTaskHashes = new Set(
+    (project.submissions ?? []).map(s => s.taskHash).filter(Boolean),
+  );
+
+  // Use authenticated contributor commitments for completed tasks.
+  // project.assessments has empty taskHash (GH #178), making it unreliable.
+  const acceptedTaskHashes = new Set(
+    myCommitments
+      .filter(c => c.commitmentStatus === "ACCEPTED")
+      .map(c => c.taskHash)
+      .filter(Boolean),
+  );
+  const availableTasks = liveTasks.filter(t => !submittedTaskHashes.has(t.taskHash ?? ""));
+  const completedTasks = liveTasks.filter(t => acceptedTaskHashes.has(t.taskHash ?? ""));
 
   // Derived stats
   const contributors = project.contributors ?? [];
@@ -117,7 +170,8 @@ export default function ProjectDetailPage() {
     (sum, f) => sum + (f.lovelaceAmount ?? 0),
     0,
   );
-  const totalRewards = liveTasks.reduce(
+
+  const availableRewards = availableTasks.reduce(
     (sum, t) => sum + (parseInt(t.lovelaceAmount ?? "0", 10) || 0),
     0,
   );
@@ -133,11 +187,11 @@ export default function ProjectDetailPage() {
             title={projectTitle}
             description={project.description || undefined}
             action={
-              liveTasks.length > 0 ? (
+              isReturningContributor ? (
                 <Link href={`/project/${projectId}/contributor`}>
-                  <AndamioButton>
+                  <AndamioButton variant="outline">
                     <ContributorIcon className="h-4 w-4 mr-2" />
-                    Contribute
+                    My Contributions
                   </AndamioButton>
                 </Link>
               ) : undefined
@@ -145,7 +199,7 @@ export default function ProjectDetailPage() {
           />
         </div>
 
-        <AndamioText variant="small" className="font-mono text-muted-foreground mt-1">
+        <AndamioText variant="small" className="font-mono text-muted-foreground mt-1 truncate">
           {project.projectId}
         </AndamioText>
       </div>
@@ -209,10 +263,10 @@ export default function ProjectDetailPage() {
             <AndamioText variant="small">Available Rewards</AndamioText>
           </div>
           <AndamioText className="text-2xl font-bold">
-            {formatLovelace(totalRewards)}
+            {formatLovelace(availableRewards)}
           </AndamioText>
           <AndamioText variant="small" className="text-muted-foreground">
-            across {liveTasks.length} task{liveTasks.length !== 1 ? "s" : ""}
+            across {availableTasks.length} task{availableTasks.length !== 1 ? "s" : ""}
           </AndamioText>
         </div>
 
@@ -283,27 +337,12 @@ export default function ProjectDetailPage() {
           <AndamioCardContent>
             <PrerequisiteList prerequisites={prerequisites} completions={completions} />
 
-            {/* Eligibility CTA for authenticated users */}
-            {eligibility?.eligible && (
-              <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
-                <AndamioText variant="small" className="text-primary">
-                  You meet all prerequisites
-                </AndamioText>
-                <Link href={`/project/${projectId}/contributor`} className="ml-auto">
-                  <AndamioButton size="sm" variant="outline">
-                    <ContributorIcon className="h-3.5 w-3.5 mr-1.5" />
-                    Get Started
-                  </AndamioButton>
-                </Link>
-              </div>
-            )}
           </AndamioCardContent>
         </AndamioCard>
       )}
 
       {/* ── Available Tasks ───────────────────────────────────────── */}
-      {liveTasks.length > 0 ? (
+      {availableTasks.length > 0 ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -315,18 +354,14 @@ export default function ProjectDetailPage() {
             <AndamioTable>
               <AndamioTableHeader>
                 <AndamioTableRow>
-                  <AndamioTableHead className="w-12">#</AndamioTableHead>
                   <AndamioTableHead>Task</AndamioTableHead>
                   <AndamioTableHead className="hidden md:table-cell">Expiration</AndamioTableHead>
                   <AndamioTableHead className="text-right">Reward</AndamioTableHead>
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {liveTasks.map((task, index) => (
+                {availableTasks.map((task, index) => (
                   <AndamioTableRow key={task.taskHash ?? index}>
-                    <AndamioTableCell className="font-mono text-xs text-muted-foreground">
-                      {task.index ?? index + 1}
-                    </AndamioTableCell>
                     <AndamioTableCell>
                       {task.taskHash ? (
                         <Link href={`/project/${projectId}/${task.taskHash}`}>
@@ -369,6 +404,46 @@ export default function ProjectDetailPage() {
           title="No tasks available"
           description="This project doesn't have any active tasks yet. Check back later."
         />
+      )}
+
+      {/* ── My Completed Tasks (authenticated only, personal) ─── */}
+      {isAuthenticated && completedTasks.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <SuccessIcon className="h-5 w-5 text-muted-foreground" />
+            <AndamioText className="text-lg font-semibold text-muted-foreground">
+              My Completed Tasks
+            </AndamioText>
+          </div>
+          <AndamioTableContainer>
+            <AndamioTable>
+              <AndamioTableHeader>
+                <AndamioTableRow>
+                  <AndamioTableHead>Task</AndamioTableHead>
+                  <AndamioTableHead className="text-right">Reward</AndamioTableHead>
+                </AndamioTableRow>
+              </AndamioTableHeader>
+              <AndamioTableBody>
+                {completedTasks.map((task, index) => (
+                  <AndamioTableRow key={task.taskHash ?? index} className="opacity-70">
+                    <AndamioTableCell>
+                      <Link href={`/project/${projectId}/${task.taskHash}`}>
+                        <AndamioText className="font-medium hover:underline">
+                          {task.title || "Untitled Task"}
+                        </AndamioText>
+                      </Link>
+                    </AndamioTableCell>
+                    <AndamioTableCell className="text-right">
+                      <AndamioBadge variant="outline" className="opacity-70">
+                        {formatLovelace(task.lovelaceAmount ?? "0")}
+                      </AndamioBadge>
+                    </AndamioTableCell>
+                  </AndamioTableRow>
+                ))}
+              </AndamioTableBody>
+            </AndamioTable>
+          </AndamioTableContainer>
+        </div>
       )}
     </div>
   );

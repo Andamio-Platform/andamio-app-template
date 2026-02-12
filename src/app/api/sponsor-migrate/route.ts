@@ -31,7 +31,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build unsigned CBOR from gateway
+    // Get sponsor wallet address for initiator_data
+    const sponsorInfo = sdk.sponsorship.getStaticInfo();
+    const sponsorAddress = sponsorInfo.changeAddress;
+
+    // Build unsigned CBOR from gateway with sponsor's wallet as initiator
     const gatewayUrl = env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL;
     const buildResponse = await fetch(
       `${gatewayUrl}/api/v2/tx/global/user/access-token/claim`,
@@ -41,7 +45,13 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
           "X-API-Key": env.ANDAMIO_API_KEY,
         },
-        body: JSON.stringify({ alias }),
+        body: JSON.stringify({
+          alias,
+          initiator_data: {
+            used_addresses: [sponsorAddress],
+            change_address: sponsorAddress,
+          },
+        }),
       },
     );
 

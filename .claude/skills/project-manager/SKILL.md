@@ -142,6 +142,7 @@ Based on their answer, guide them to the right skill:
 | `/documentarian` | After code changes, doc updates needed |
 | `/review-pr` | PR reviews, code quality checks |
 | `/audit-api-coverage` | Check which API endpoints are implemented |
+| `/sponsored-transactions` | Fee sponsorship via utxos.dev integration |
 | `/getting-started` | Onboard new developers, skill discovery |
 | `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
 | `/sync-template` | Sync app changes to template repo via rebase |

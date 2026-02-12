@@ -5,7 +5,7 @@ description: Interactively onboard new developers to all available skills and le
 
 # Getting Started
 
-Welcome to the Andamio T3 App Template! This skill helps developers discover and learn how to use all 13 available Claude skills.
+Welcome to the Andamio T3 App Template! This skill helps developers discover and learn how to use all available Claude skills.
 
 ## Instructions
 
@@ -127,7 +127,7 @@ See `learning-paths.md` for detailed path content.
 
 Point them to `skill-reference.md` for a complete overview of all 12 skills.
 
-## All 13 Skills at a Glance
+## All Skills at a Glance
 
 | Skill | Purpose |
 |-------|---------|
@@ -147,12 +147,13 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 | `/qa` | Route-level QA audit for production readiness |
 | `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
 | `/ux-readiness` | Assess app flow readiness for documentation guides |
+| `/sponsored-transactions` | Fee sponsorship via utxos.dev tank integration |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `skill-reference.md` | Detailed reference for all 12 skills |
+| `skill-reference.md` | Detailed reference for all skills |
 | `learning-paths.md` | Curated learning paths by role |
 
 ## Output Format
@@ -166,7 +167,7 @@ Conversational, friendly, and helpful. Guide the developer through discovery rat
 **Assistant**:
 "Welcome to the Andamio T3 App Template! I'm here to help you discover the right tools for your work.
 
-We have 12 specialized Claude skills covering everything from API integration to transaction testing.
+We have specialized Claude skills covering everything from API integration to transaction testing.
 
 What brings you here today?
 

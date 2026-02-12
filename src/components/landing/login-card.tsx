@@ -28,7 +28,6 @@ export function LoginCard() {
     isAuthenticating,
     authError,
     isWalletConnected,
-    popupBlocked,
     authenticate,
   } = useAndamioAuth();
 
@@ -86,36 +85,22 @@ export function LoginCard() {
     );
   }
 
-  // Wallet connected, authenticating
-  if (isWalletConnected && (isAuthenticating || (!isAuthenticated && !authError && !popupBlocked))) {
+  // Wallet connected but not authenticated — show sign button or spinner
+  if (isWalletConnected && !isAuthenticated) {
     return (
       <AndamioCard className="flex flex-col">
         <AndamioCardHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
             <WalletIcon className="h-5 w-5 text-muted-foreground" />
           </div>
-          <AndamioCardTitle>Signing in...</AndamioCardTitle>
-          <AndamioCardDescription>Please sign the message in your wallet</AndamioCardDescription>
-        </AndamioCardHeader>
-        <AndamioCardContent className="mt-auto">
-          <div className="flex items-center justify-center py-4">
-            <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-    );
-  }
-
-  // Error or popup blocked
-  if (isWalletConnected && (authError ?? popupBlocked)) {
-    return (
-      <AndamioCard className="flex flex-col">
-        <AndamioCardHeader>
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            <WalletIcon className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <AndamioCardTitle>Sign to Continue</AndamioCardTitle>
-          <AndamioCardDescription>Click below to sign with your wallet</AndamioCardDescription>
+          <AndamioCardTitle>
+            {isAuthenticating ? "Signing in..." : "Sign to Continue"}
+          </AndamioCardTitle>
+          <AndamioCardDescription>
+            {isAuthenticating
+              ? "Please sign the message in your wallet"
+              : "Click below to sign with your wallet"}
+          </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="mt-auto space-y-3">
           {authError && (
@@ -123,9 +108,15 @@ export function LoginCard() {
               <AndamioAlertDescription>{authError}</AndamioAlertDescription>
             </AndamioAlert>
           )}
-          <AndamioButton onClick={authenticate} className="w-full">
-            {authError ? "Try Again" : "Sign to Continue"}
-          </AndamioButton>
+          {isAuthenticating ? (
+            <div className="flex items-center justify-center py-4">
+              <LoadingIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AndamioButton onClick={authenticate} className="w-full">
+              {authError ? "Try Again" : "Sign In"}
+            </AndamioButton>
+          )}
         </AndamioCardContent>
       </AndamioCard>
     );

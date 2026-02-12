@@ -154,19 +154,12 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [popupBlocked, setPopupBlocked] = useState(false);
-  // Track if we've attempted auto-auth for this wallet connection
-  const [hasAttemptedAutoAuth, setHasAttemptedAutoAuth] = useState(false);
-  // Track if JWT validation is in progress (to prevent race condition with auto-auth)
-  // Use BOTH ref (for immediate sync check) and state (for re-renders)
+  // Track if JWT validation is in progress
   const isValidatingJWTRef = useRef(false);
-  const [isValidatingJWT, setIsValidatingJWT] = useState(false);
-  // Ref to hold authenticate function for use in effects without causing re-runs
-  const authenticateRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Helper to update both ref and state
+  // Helper to update ref
   const setValidatingJWT = useCallback((value: boolean) => {
     isValidatingJWTRef.current = value;
-    setIsValidatingJWT(value);
   }, []);
 
   // Validate stored JWT against connected wallet
@@ -177,17 +170,13 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     authLogger.debug("[Effect: validateJWT] Running - connected:", connected);
 
     // Check synchronously if there's a stored JWT to validate
-    // This prevents auto-auth race condition by setting flag before async work
     const storedJWT = getStoredJWT();
     if (!storedJWT) {
       setValidatingJWT(false);
       return;
     }
 
-    // Mark validation in progress SYNCHRONOUSLY via ref to prevent auto-auth race condition
-    // The ref updates immediately (same tick), unlike state which batches
     isValidatingJWTRef.current = true;
-    setValidatingJWT(true);
 
     const validateStoredJWT = async () => {
 
@@ -296,9 +285,6 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
         // Sync access token from wallet (in case wallet has a new one)
         void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
-
-        // Mark as having attempted auto-auth since we restored from JWT
-        setHasAttemptedAutoAuth(true);
         setValidatingJWT(false);
       } catch (error) {
         authLogger.error("Failed to validate stored JWT:", error);
@@ -316,7 +302,6 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     authLogger.debug("[Effect: walletDisconnect] Running - connected:", connected, "isAuthenticated:", isAuthenticated);
     if (!connected) {
-      setHasAttemptedAutoAuth(false);
       setPopupBlocked(false);
       // Clear auth state but keep JWT for reconnection validation
       if (isAuthenticated) {
@@ -452,47 +437,6 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setIsAuthenticating(false);
     }
   }, [connected, wallet, walletName]);
-
-  // Keep authenticateRef in sync with authenticate callback
-  useEffect(() => {
-    authLogger.debug("[Effect: syncAuthenticateRef] Running");
-    authenticateRef.current = authenticate;
-  }, [authenticate]);
-
-  // Auto-authenticate when wallet connects (combines connect + sign into one step)
-  // NOTE: We intentionally exclude `authenticate` and `wallet` from deps:
-  // - `authenticate` changes reference when wallet changes
-  // - `wallet` changes reference on every render from useWallet()
-  // We use refs and access these via closure instead
-  useEffect(() => {
-    authLogger.debug("[Effect: autoAuth] Running");
-    // Debug: log all conditions
-    authLogger.info("Auto-auth check:", {
-      connected,
-      hasWallet: !!wallet,
-      isAuthenticated,
-      isAuthenticating,
-      hasAttemptedAutoAuth,
-      isValidatingJWTRef: isValidatingJWTRef.current,
-    });
-
-    // Only auto-auth if:
-    // 1. Wallet is connected (use `connected` boolean, not `wallet` object)
-    // 2. Not already authenticated
-    // 3. Not currently authenticating
-    // 4. Haven't already attempted auto-auth for this connection
-    // 5. JWT validation is not in progress (check REF for immediate sync value, not state)
-    //    The ref is critical - state updates are batched and may not be visible in same render
-    if (connected && !isAuthenticated && !isAuthenticating && !hasAttemptedAutoAuth && !isValidatingJWTRef.current) {
-      authLogger.info("Auto-authenticating after wallet connection...");
-      setHasAttemptedAutoAuth(true);
-      // Use ref to avoid dependency on authenticate callback
-      if (authenticateRef.current) {
-        void authenticateRef.current();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, isAuthenticated, isAuthenticating, hasAttemptedAutoAuth, isValidatingJWT]);
 
   /**
    * Logout and clear auth state

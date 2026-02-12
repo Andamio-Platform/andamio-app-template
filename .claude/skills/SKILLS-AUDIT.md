@@ -23,9 +23,10 @@
 | `ship` | ✅ Active | Medium | 1 file | Full shipping workflow (version, docs, commit, PR, merge, cleanup) |
 | `qa` | ✅ Active | Medium | 3 files | Route-level QA audit (hooks, types, components, Next.js patterns) |
 | `ux-readiness` | ✅ Active | Medium | 2 files | Cross-repo UX readiness assessment for guide pipeline |
+| `sponsored-transactions` | ✅ Active | Medium | 3 files | Fee sponsorship via utxos.dev tank (migration complete on branch) |
 | `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
 
-**Total**: 17 Andamio skills + 1 external skill
+**Total**: 18 Andamio skills + 1 external skill
 
 ---
 
@@ -231,7 +232,23 @@
 
 ---
 
-### 18. `mesh-expert` 📦 (External)
+### 18. `sponsored-transactions` ✅
+
+**Purpose**: Guide implementation of fee-sponsored transactions using `@utxos/sdk` sponsorship tank
+
+**Status**: Medium maturity — Phase 1 (migration sponsorship) complete on `sponsored-migration` branch
+
+**Foundation**: Jingles' implementation provides reference pattern:
+- `src/lib/utxos-sdk.ts` — Server-side SDK singleton
+- `src/hooks/tx/use-sponsored-transaction.ts` — Client hook
+- `src/app/api/sponsor-migrate/route.ts` — API route
+- `.claude/_plan/sponsorship.md` — 582-line implementation plan
+
+**Files** (3): `SKILL.md`, `env-variables.md`, `ops-setup.md`
+
+---
+
+### 19. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
@@ -281,6 +298,9 @@
 │  ux-readiness ──────────► guide-tracker.json (docs repo)       │
 │      └──────────► gh issues (blocker/friction tracking)       │
 │                                                               │
+│  sponsored-transactions ──► transaction-auditor (TX lifecycle) │
+│      └──────────► hooks-architect (useTransaction updates)   │
+│                                                               │
 │  Standalone skills:                                           │
 │    transaction-auditor    issue-handler                      │
 │    tx-loop-guide          mesh-expert (external)             │
@@ -294,6 +314,7 @@
 
 | Date | Action |
 |------|--------|
+| 2026-02-12 | Added `sponsored-transactions` skill (fee sponsorship via utxos.dev tank). 1 file: SKILL.md. Count: 18. |
 | 2026-02-08 | Added `ux-readiness` skill (cross-repo UX readiness for guide pipeline). 2 files: SKILL.md, assessment-criteria.md. Partner: `guide-pipeline` in docs repo. Count: 17. |
 | 2026-02-05 | Added `qa` skill (route-level QA auditing). 3 files: SKILL.md, checklist.md, best-practices.md. Registered in getting-started. Count: 16. |
 | 2026-02-01 | Full audit: Added hooks-architect, product-iteration, mesh-expert. Fixed stale refs (andamioscan-events, use-event-confirmation, old file paths). Updated skill count to 14. |

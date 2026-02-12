@@ -4,7 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
-import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useSponsoredTransaction } from "~/hooks/tx/use-sponsored-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { TransactionStatus } from "~/components/tx/transaction-status";
@@ -43,7 +43,7 @@ export default function MigratePage() {
   const [migrateState, setMigrateState] = React.useState<MigrateState>("no-wallet");
   const [detectedAlias, setDetectedAlias] = React.useState<string | null>(null);
 
-  const { execute, state: txState, result, error, reset } = useTransaction();
+  const { execute, state: txState, result, error, reset } = useSponsoredTransaction();
   const { isSuccess: streamSuccess } = useTxStream(result?.txHash ?? null);
 
   // Scan wallet for V1 token when connected
@@ -97,10 +97,7 @@ export default function MigratePage() {
 
   const handleClaim = async () => {
     if (!detectedAlias) return;
-    await execute({
-      txType: "GLOBAL_USER_ACCESS_TOKEN_CLAIM",
-      params: { alias: detectedAlias },
-    });
+    await execute({ alias: detectedAlias });
   };
 
   const explorerUrl = result?.txHash
@@ -196,6 +193,12 @@ export default function MigratePage() {
                 <p className="mt-1 font-mono text-lg font-semibold">
                   {detectedAlias}
                 </p>
+              </div>
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
+                <AndamioText variant="small" className="text-primary">
+                  This transaction is sponsored — no ADA fee required
+                </AndamioText>
               </div>
 
               <TransactionButton

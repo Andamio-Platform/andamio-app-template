@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
@@ -10,24 +11,27 @@ import { AndamioSeparator } from "~/components/andamio/andamio-separator";
 import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioBackButton, AndamioErrorAlert, AndamioDashboardStat } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { ContentDisplay } from "~/components/content-display";
-import { ContentEditor } from "~/components/editor";
-import { PendingIcon, TokenIcon, TeacherIcon, EditIcon } from "~/components/icons";
+import { ContentEditor, ContentViewer } from "~/components/editor";
+import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { TaskCommit } from "~/components/tx";
+import { TaskCommit, TaskAction, ProjectCredentialClaim } from "~/components/tx";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
-import { useProjectTask } from "~/hooks/api/project/use-project";
-import { useContributorCommitment, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
+import { useProjectTask, useProject, projectKeys } from "~/hooks/api/project/use-project";
+import { useContributorCommitment, useContributorCommitments, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { getTransactionExplorerUrl } from "~/lib/constants";
 
 /**
- * Task Detail Page - Public view of a task with commitment functionality
+ * Task Detail Page - Public view of a task with full commitment lifecycle
  *
- * Data strategy: Two hooks, no redundancy.
+ * Data strategy: Three hooks, minimal redundancy.
  * - useProjectTask(projectId, taskHash) — selects one task from the shared
  *   projectKeys.tasks(projectId) cache. If the project page was visited first,
- *   this is a pure cache hit (zero network requests). All task fields including
- *   contentJson and contributorStateId come from this single source.
+ *   this is a pure cache hit (zero network requests).
+ * - useProject(projectId) — project-level data for contributor context
+ *   (contributors, submissions, assessments, credentialClaims).
  * - useContributorCommitment(projectId, taskHash) — authenticated-only query
  *   for the user's commitment status on this task. 404 = no commitment yet.
  */
@@ -35,11 +39,14 @@ export default function TaskDetailPage() {
   const params = useParams();
   const projectId = params.projectid as string;
   const taskHash = params.taskhash as string;
-  const { isAuthenticated } = useAndamioAuth();
+  const { isAuthenticated, user } = useAndamioAuth();
   const queryClient = useQueryClient();
 
   // Task data from shared cache — includes contentJson, contributorStateId, etc.
   const { data: task, isLoading: isTaskLoading, error: taskError } = useProjectTask(projectId, taskHash);
+
+  // Project-level data for contributor context
+  const { data: project } = useProject(projectId);
 
   // Commitment status (authenticated only, 404 → null = no commitment yet)
   const { data: commitment, isLoading: isCommitmentLoading } = useContributorCommitment(
@@ -47,14 +54,36 @@ export default function TaskDetailPage() {
     taskHash
   );
 
-  // Whether the user already has a commitment on this task
-  const isEnrolled = !!commitment;
-
   // Evidence editor state
   const [evidence, setEvidence] = useState<JSONContent | null>(null);
   const [isEditingEvidence, setIsEditingEvidence] = useState(false);
 
-  // Helper to format POSIX timestamp
+  // Pending TX hash for task actions
+  const [pendingActionTxHash, setPendingActionTxHash] = useState<string | null>(null);
+
+  // Show claim flow (revealed after clicking "Leave & Claim")
+  const [showClaimFlow, setShowClaimFlow] = useState(false);
+
+  // All commitments in this project (for isFirstCommit + credential context)
+  const { data: allMyCommitments = [] } = useContributorCommitments(projectId);
+
+  // isFirstCommit: true only if user has NEVER successfully committed to any task.
+  // Filter out PENDING_TX_SUBMIT — those haven't confirmed on-chain, so the user
+  // isn't registered as a contributor yet and needs the "join+commit" TX path.
+  const isFirstCommit = allMyCommitments.filter(
+    (c) => c.commitmentStatus !== "PENDING_TX_SUBMIT"
+  ).length === 0;
+
+  const isTaskAccepted = commitment?.commitmentStatus === "ACCEPTED";
+
+  // Derive accepted task reward from project tasks
+  const acceptedTaskReward = useMemo(() => {
+    if (!isTaskAccepted || !task) return "0";
+    return task.lovelaceAmount ?? "0";
+  }, [isTaskAccepted, task]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+
   const formatTimestamp = (timestamp: string): string => {
     const ms = parseInt(timestamp);
     if (isNaN(ms)) return timestamp;
@@ -67,7 +96,6 @@ export default function TaskDetailPage() {
     });
   };
 
-  // Helper to get commitment status variant
   const getCommitmentStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED") return "default";
     if (status.includes("DENIED") || status.includes("REFUSED")) return "destructive";
@@ -75,19 +103,42 @@ export default function TaskDetailPage() {
     return "secondary";
   };
 
-  // Invalidate commitment cache after successful TX
-  const invalidateCommitment = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: projectContributorKeys.commitment(projectId, taskHash),
-    });
-  };
+  // Check if evidence is valid (has actual content)
+  const hasValidEvidence = useMemo(() => {
+    return evidence?.content &&
+      Array.isArray(evidence.content) &&
+      evidence.content.length > 0 &&
+      !(evidence.content.length === 1 &&
+        evidence.content[0]?.type === "paragraph" &&
+        (!evidence.content[0]?.content || evidence.content[0]?.content.length === 0));
+  }, [evidence]);
 
-  // Loading: only wait for task data. Commitment loading doesn't block task display.
+  // Clear stale pending TX hash when commitment status transitions
+  React.useEffect(() => {
+    setPendingActionTxHash(null);
+  }, [commitment?.commitmentStatus]);
+
+  // Refresh all data: invalidate React Query caches (parallel)
+  const refreshData = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: projectContributorKeys.commitment(projectId, taskHash),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: projectKeys.detail(projectId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: projectKeys.tasks(projectId),
+      }),
+    ]);
+  }, [queryClient, projectId, taskHash]);
+
+  // ── Loading / Error states ─────────────────────────────────────────────
+
   if (isTaskLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
-  // Error state
   const errorMessage = taskError instanceof Error ? taskError.message : taskError ? "Failed to load task" : null;
   if (errorMessage || !task) {
     return (
@@ -101,6 +152,9 @@ export default function TaskDetailPage() {
   const createdBy = task.createdByAlias
     ? (task.createdByAlias.length > 12 ? task.createdByAlias.slice(0, 12) + "…" : task.createdByAlias)
     : "Unknown";
+
+  const contributorStateId = project?.contributorStateId ?? task.contributorStateId ?? "0".repeat(56);
+  const commitmentStatus = commitment?.commitmentStatus ?? null;
 
   return (
     <div className="space-y-6">
@@ -192,7 +246,7 @@ export default function TaskDetailPage() {
         </AndamioCard>
       )}
 
-      {/* Commitment Status */}
+      {/* ── Commitment Status Card ─────────────────────────────────────── */}
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle>Your Commitment</AndamioCardTitle>
@@ -201,22 +255,287 @@ export default function TaskDetailPage() {
               ? isCommitmentLoading
                 ? "Loading commitment status…"
                 : commitment
-                  ? "Track your progress on this task"
+                  ? commitmentStatus === "ACCEPTED"
+                    ? "Your work has been accepted!"
+                    : "Track your progress on this task"
                   : "Commit to this task to get started"
               : "Connect your wallet to commit to this task"}
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
           {!isAuthenticated ? (
+            /* ── Not authenticated ──────────────────────────── */
             <div className="text-center py-6">
               <AndamioText variant="muted" className="mb-4">Connect your wallet to commit to this task</AndamioText>
               <ConnectWalletPrompt />
             </div>
           ) : isCommitmentLoading ? (
+            /* ── Loading ────────────────────────────────────── */
             <div className="text-center py-6">
               <AndamioText variant="muted">Checking commitment status…</AndamioText>
             </div>
+          ) : commitmentStatus === "ACCEPTED" ? (
+            /* ── ACCEPTED (current) — Post-acceptance flow ────────── */
+            <div className="space-y-4">
+              {/* Acceptance banner */}
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                <div className="flex items-start gap-3">
+                  <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <AndamioText className="font-medium text-primary">
+                      Your work was accepted!
+                    </AndamioText>
+                    <AndamioText variant="small" className="mt-1">
+                      You earned {formatLovelace(acceptedTaskReward)}. Choose your next step below.
+                    </AndamioText>
+                  </div>
+                </div>
+              </div>
+
+              {!showClaimFlow ? (
+                <>
+                  {/* Decision Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Option A: Continue Contributing */}
+                    <Link href={`/project/${projectId}`} className="block">
+                      <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <div className="flex items-center gap-2">
+                          <ContributorIcon className="h-5 w-5 text-primary" />
+                          <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                        </div>
+                        <AndamioText variant="small">
+                          Browse available tasks and commit to a new one. Your {formatLovelace(acceptedTaskReward)} reward will be claimed automatically.
+                        </AndamioText>
+                      </div>
+                    </Link>
+
+                    {/* Option B: Leave & Claim */}
+                    <button
+                      type="button"
+                      onClick={() => setShowClaimFlow(true)}
+                      className="rounded-lg border border-primary/20 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CredentialIcon className="h-5 w-5 text-primary" />
+                        <AndamioText className="font-medium">Leave & Claim</AndamioText>
+                      </div>
+                      <AndamioText variant="small">
+                        Leave the project, claim {formatLovelace(acceptedTaskReward)} in rewards, and mint your credential NFT.
+                      </AndamioText>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* ProjectCredentialClaim TX component — revealed after clicking Leave & Claim */}
+                  <ProjectCredentialClaim
+                    projectNftPolicyId={projectId}
+                    contributorStateId={contributorStateId}
+                    projectTitle={project?.title || undefined}
+                    pendingRewardLovelace={acceptedTaskReward}
+                    onSuccess={async () => {
+                      await refreshData();
+                    }}
+                  />
+                  <AndamioButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowClaimFlow(false)}
+                    className="cursor-pointer"
+                  >
+                    Back to options
+                  </AndamioButton>
+                </>
+              )}
+            </div>
+          ) : commitmentStatus === "PENDING_TX_SUBMIT" ? (
+            /* ── PENDING_TX_SUBMIT — Read-only evidence + TX info ─── */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
+                <AndamioBadge variant="outline">
+                  Awaiting Confirmation
+                </AndamioBadge>
+              </div>
+
+              {commitment?.pendingTxHash && (
+                <>
+                  <AndamioSeparator />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <OnChainIcon className="h-4 w-4 text-muted-foreground" />
+                      <AndamioText variant="small" className="font-medium">Pending Transaction</AndamioText>
+                    </div>
+                    <a
+                      href={getTransactionExplorerUrl(commitment.pendingTxHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {commitment.pendingTxHash.slice(0, 12)}...
+                    </a>
+                  </div>
+                </>
+              )}
+
+              <AndamioSeparator />
+              <div>
+                <AndamioText variant="small" className="font-medium mb-2">Submitted Evidence</AndamioText>
+                <div className="min-h-[100px] border rounded-lg bg-muted/20 p-4">
+                  {commitment?.evidence ? (
+                    <ContentViewer content={commitment.evidence as JSONContent} />
+                  ) : (
+                    <AndamioText variant="small" className="text-muted-foreground italic">
+                      No evidence recorded
+                    </AndamioText>
+                  )}
+                </div>
+              </div>
+
+              <AndamioText variant="small" className="text-muted-foreground">
+                Waiting for blockchain confirmation. This usually takes a few minutes.
+              </AndamioText>
+
+              <AndamioButton
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await refreshData();
+                  toast.info("Data refreshed", {
+                    description: "Check back in a few seconds if the transaction hasn't confirmed yet.",
+                  });
+                }}
+              >
+                <RefreshIcon className="h-4 w-4 mr-2" />
+                Refresh Status
+              </AndamioButton>
+            </div>
+          ) : commitmentStatus === "COMMITTED" || commitmentStatus === "SUBMITTED" || commitmentStatus === "REFUSED" ? (
+            /* ── COMMITTED / SUBMITTED / REFUSED — Evidence + TaskAction ── */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
+                <AndamioBadge variant={getCommitmentStatusVariant(commitmentStatus)}>
+                  {commitmentStatus.replace(/_/g, " ")}
+                </AndamioBadge>
+              </div>
+
+              {commitmentStatus === "REFUSED" && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertIcon className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <AndamioText variant="small">
+                      Your work was not accepted. Update your evidence and resubmit below.
+                    </AndamioText>
+                  </div>
+                </div>
+              )}
+
+              {commitmentStatus === "COMMITTED" && (
+                <AndamioText variant="small" className="text-muted-foreground">
+                  You&apos;ve joined this task. Your manager may review at any time — submit evidence when ready.
+                </AndamioText>
+              )}
+
+              {commitmentStatus === "SUBMITTED" && (
+                <AndamioText variant="small" className="text-muted-foreground">
+                  Evidence submitted. Waiting for manager review. You can update your evidence below.
+                </AndamioText>
+              )}
+
+              {commitment?.submissionTx && (
+                <>
+                  <AndamioSeparator />
+                  <div>
+                    <AndamioText variant="small" className="mb-1">Submission Transaction</AndamioText>
+                    <a
+                      href={getTransactionExplorerUrl(commitment.submissionTx)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {commitment.submissionTx.slice(0, 16)}...{commitment.submissionTx.slice(-8)}
+                    </a>
+                  </div>
+                </>
+              )}
+
+              <AndamioSeparator />
+
+              {/* Evidence editor */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <EditIcon className="h-4 w-4 text-muted-foreground" />
+                  <AndamioText className="font-medium">
+                    {commitmentStatus === "REFUSED" ? "Resubmit Your Evidence" : "Update Your Evidence"}
+                  </AndamioText>
+                </div>
+                <div className="min-h-[200px] border rounded-lg">
+                  <ContentEditor
+                    content={evidence ?? (commitment?.evidence as JSONContent | null)}
+                    onContentChange={setEvidence}
+                  />
+                </div>
+                {!hasValidEvidence && (
+                  <AndamioText variant="small" className="text-muted-foreground">
+                    Please provide evidence describing your work on this task.
+                  </AndamioText>
+                )}
+                {hasValidEvidence && (
+                  <AndamioText variant="small" className="text-primary flex items-center gap-1">
+                    <SuccessIcon className="h-4 w-4" />
+                    Evidence ready for submission
+                  </AndamioText>
+                )}
+              </div>
+
+              {/* TaskAction TX component */}
+              <TaskAction
+                projectNftPolicyId={projectId}
+                contributorStateId={contributorStateId}
+                taskHash={taskHash}
+                taskCode={`TASK_${task.index}`}
+                taskTitle={task.title ?? undefined}
+                taskEvidence={evidence ?? (commitment?.evidence as JSONContent | undefined)}
+                onSuccess={async (result) => {
+                  setPendingActionTxHash(result.txHash);
+                  await refreshData();
+                }}
+              />
+
+              {/* Pending action TX hash */}
+              {pendingActionTxHash && (
+                <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <OnChainIcon className="h-4 w-4 text-muted-foreground" />
+                      <AndamioText variant="small" className="font-medium">Pending Transaction</AndamioText>
+                    </div>
+                    <a
+                      href={getTransactionExplorerUrl(pendingActionTxHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {pendingActionTxHash.slice(0, 12)}...
+                    </a>
+                  </div>
+                  <AndamioButton
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      await refreshData();
+                      toast.info("Data refreshed");
+                    }}
+                  >
+                    <RefreshIcon className="h-4 w-4 mr-2" />
+                    Refresh Status
+                  </AndamioButton>
+                </div>
+              )}
+            </div>
           ) : commitment ? (
+            /* ── Other commitment status (fallback display) ─── */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
@@ -247,26 +566,35 @@ export default function TaskDetailPage() {
                   </div>
                 </>
               )}
-
             </div>
           ) : (
+            /* ── No commitment — Commit to This Task ────────── */
             <div className="text-center py-6">
-              <AndamioText variant="muted" className="mb-4">
-                You haven&apos;t committed to this task yet
-              </AndamioText>
-              <AndamioButton
-                variant="outline"
-                onClick={() => setIsEditingEvidence(true)}
-              >
-                <EditIcon className="h-4 w-4 mr-2" />
-                Commit to This Task
-              </AndamioButton>
+              {isEditingEvidence ? (
+                <AndamioText variant="muted">
+                  Complete your submission below
+                </AndamioText>
+              ) : (
+                <>
+                  <AndamioText variant="muted" className="mb-4">
+                    You haven&apos;t committed to this task yet
+                  </AndamioText>
+                  <AndamioButton
+                    variant="outline"
+                    onClick={() => setIsEditingEvidence(true)}
+                    className="cursor-pointer"
+                  >
+                    <EditIcon className="h-4 w-4 mr-2" />
+                    Commit to This Task
+                  </AndamioButton>
+                </>
+              )}
             </div>
           )}
         </AndamioCardContent>
       </AndamioCard>
 
-      {/* Evidence Editor and Transaction */}
+      {/* ── Evidence Editor and Transaction (new commitment) ────────── */}
       {isAuthenticated && !commitment && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
@@ -274,7 +602,6 @@ export default function TaskDetailPage() {
             icon={<EditIcon className="h-5 w-5" />}
           />
 
-          {/* Evidence Editor */}
           <AndamioCard>
             <AndamioCardHeader>
               <AndamioCardTitle>Your Submission</AndamioCardTitle>
@@ -295,15 +622,15 @@ export default function TaskDetailPage() {
           {evidence && Object.keys(evidence).length > 0 && (
             <TaskCommit
               projectNftPolicyId={projectId}
-              contributorStateId={task.contributorStateId ?? "0".repeat(56)}
+              contributorStateId={contributorStateId}
               taskHash={taskHash}
               taskCode={`TASK_${task.index}`}
               taskTitle={task.title ?? undefined}
               taskEvidence={evidence}
-              isFirstCommit={!isEnrolled}
+              isFirstCommit={isFirstCommit}
               onSuccess={async () => {
                 setIsEditingEvidence(false);
-                await invalidateCommitment();
+                await refreshData();
               }}
             />
           )}

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useContributorCommitments, type ContributorCommitment } from "~/hooks/api/project/use-project-contributor";
 import { RequireAuth } from "~/components/auth/require-auth";
 import {
   AndamioBadge,
+  AndamioButton,
   AndamioCard,
   AndamioCardContent,
   AndamioCardDescription,
@@ -19,217 +21,64 @@ import {
   AndamioEmptyState,
   AndamioText,
   AndamioDashboardStat,
-  AndamioRemoveButton,
 } from "~/components/andamio";
 import {
   ContributorIcon,
   TaskIcon,
   CredentialIcon,
-  CourseIcon,
   AlertIcon,
   SuccessIcon,
   PendingIcon,
+  OnChainIcon,
 } from "~/components/icons";
-import { useProject, useProjectTasks, projectKeys } from "~/hooks/api/project/use-project";
-import { useContributorCommitments, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
-import { useQueryClient } from "@tanstack/react-query";
+import { useProject, useProjectTasks } from "~/hooks/api/project/use-project";
 import { ProjectCredentialClaim } from "~/components/tx";
+import { ContentViewer } from "~/components/editor";
 import { formatLovelace } from "~/lib/cardano-utils";
-import { checkProjectEligibility, type MissingPrerequisite } from "~/lib/project-eligibility";
+import { getTransactionExplorerUrl } from "~/lib/constants";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
-import { useCourse } from "~/hooks/api/course/use-course";
-import { useCourseModules } from "~/hooks/api/course/use-course-module";
-import { AndamioButton } from "~/components/andamio/andamio-button";
+import { checkProjectEligibility } from "~/lib/project-eligibility";
+import { useQueryClient } from "@tanstack/react-query";
+import { projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
+import { projectKeys } from "~/hooks/api/project/use-project";
+import type { JSONContent } from "@tiptap/core";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+// Helper to extract string from NullableString (API returns object type for nullable strings)
 function getString(value: string | object | undefined | null): string {
   if (typeof value === "string") return value;
   return "";
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 /**
- * Contributor lifecycle status.
+ * My Contributions Page (read-only)
  *
- * Uses project terminology (not course):
- * - "not_joined" (not "not_enrolled")
- * - "active" (not "enrolled")
+ * Shows the contributor's stats, progress, and pending task status.
+ * All workflow actions (commit, evidence editing, credential claims)
+ * are handled on the Task Detail page.
+ *
+ * Data strategy:
+ * - useProject() for project-level info (contributors, credentialClaims, submissions)
+ * - useProjectTasks() for task details (titles, rewards)
+ * - useContributorCommitments(projectId) for the user's ACTUAL commitment statuses
+ *   (avoids API bug #178 where assessments.taskHash is empty)
  */
-type ContributorStatus =
-  | "not_joined"
-  | "active"
-  | "task_pending"
-  | "task_accepted"
-  | "can_claim";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const HOW_IT_WORKS_DISMISSED_KEY = "andamio_contributor_how_it_works_dismissed";
-
-// ---------------------------------------------------------------------------
-// Dismissable "How It Works"
-// ---------------------------------------------------------------------------
-
-function HowItWorksCard({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <AndamioCard>
-      <AndamioCardHeader>
-        <div className="flex items-center justify-between">
-          <AndamioCardTitle>How It Works</AndamioCardTitle>
-          <AndamioRemoveButton onClick={onDismiss} ariaLabel="Dismiss guide" />
-        </div>
-      </AndamioCardHeader>
-      <AndamioCardContent className="space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
-          <div>
-            <AndamioText className="font-medium">Commit to a Task</AndamioText>
-            <AndamioText variant="small">
-              Select a task, describe your approach, and commit on-chain.
-              This automatically adds you as a project contributor.
-            </AndamioText>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">2</div>
-          <div>
-            <AndamioText className="font-medium">Complete the Work</AndamioText>
-            <AndamioText variant="small">
-              Work on your task and update your evidence as needed while
-              awaiting review.
-            </AndamioText>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
-          <div>
-            <AndamioText className="font-medium">Get Reviewed</AndamioText>
-            <AndamioText variant="small">
-              A project manager reviews your commitment. If refused, you can
-              resubmit from the task page.
-            </AndamioText>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
-          <div>
-            <AndamioText className="font-medium">Earn Rewards</AndamioText>
-            <AndamioText variant="small">
-              When accepted, commit to another task (which auto-collects your
-              reward) or leave the project to claim your credential and rewards
-              together.
-            </AndamioText>
-          </div>
-        </div>
-      </AndamioCardContent>
-    </AndamioCard>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Missing prerequisite row (unchanged)
-// ---------------------------------------------------------------------------
-
-function MissingPrerequisiteRow({ prereq }: { prereq: MissingPrerequisite }) {
-  const { data: courseData } = useCourse(prereq.courseId);
-  const { data: modules = [] } = useCourseModules(prereq.courseId);
-  const courseTitle = courseData?.title;
-
-  const moduleMap = new Map(
-    modules.map((m) => [m.sltHash, { moduleCode: m.moduleCode, title: m.title }]),
-  );
-
-  const getModuleLabel = (hash: string) => {
-    const mod = moduleMap.get(hash);
-    if (mod?.moduleCode && mod?.title) return `${mod.moduleCode}: ${mod.title}`;
-    if (mod?.moduleCode) return mod.moduleCode;
-    return `${hash.slice(0, 12)}...`;
-  };
-
-  return (
-    <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CourseIcon className="h-4 w-4 text-muted-foreground" />
-          <AndamioText className="text-sm font-medium">
-            {courseTitle ?? `${prereq.courseId.slice(0, 16)}...`}
-          </AndamioText>
-        </div>
-        <AndamioBadge variant="outline">
-          {prereq.completedModules.length}/{prereq.requiredModules.length} completed
-        </AndamioBadge>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {prereq.missingModules.map((moduleHash) => (
-          <AndamioBadge key={moduleHash} variant="secondary" className="text-xs">
-            <PendingIcon className="h-3 w-3 mr-1" />
-            {getModuleLabel(moduleHash)}
-          </AndamioBadge>
-        ))}
-        {prereq.completedModules.map((moduleHash) => (
-          <AndamioBadge key={moduleHash} variant="default" className="text-xs bg-primary text-primary-foreground">
-            <SuccessIcon className="h-3 w-3 mr-1" />
-            {getModuleLabel(moduleHash)}
-          </AndamioBadge>
-        ))}
-      </div>
-
-      <Link href={`/course/${prereq.courseId}`}>
-        <AndamioButton variant="outline" size="sm" className="mt-2">
-          <CourseIcon className="h-4 w-4 mr-2" />
-          Go to Course
-        </AndamioButton>
-      </Link>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main dashboard content
-// ---------------------------------------------------------------------------
-
-function ContributorDashboardContent() {
+function MyContributionsContent() {
   const params = useParams();
   const projectId = params.projectid as string;
   const { user } = useAndamioAuth();
   const queryClient = useQueryClient();
+  const [showClaimFlow, setShowClaimFlow] = useState(false);
 
-  // ---- Data hooks ----
-  const {
-    data: projectDetail,
-    isLoading: isProjectLoading,
-    error: projectError,
-  } = useProject(projectId);
-  const contributorStateId = projectDetail?.contributorStateId ?? null;
+  // React Query hooks
+  const { data: projectDetail, isLoading: isProjectLoading, error: projectError } = useProject(projectId);
   const { data: tasks = [], isLoading: isTasksLoading } = useProjectTasks(projectId);
-  const { data: myCommitments = [], isLoading: isCommitmentsLoading } =
-    useContributorCommitments(projectId);
 
-  // ---- UI state ----
-  const [statusOverride, setStatusOverride] = useState<ContributorStatus | null>(null);
-  const [orchestrationTrigger, setOrchestrationTrigger] = useState(0);
+  // All of the user's commitments in this project — the source of truth for statuses.
+  // This avoids the assessments.taskHash API bug (#178).
+  const { data: rawCommitments = [], isLoading: isCommitmentsLoading } = useContributorCommitments(projectId);
 
-  // How It Works — default to hidden to avoid flash, then check localStorage
-  const [howItWorksDismissed, setHowItWorksDismissed] = useState(true);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setHowItWorksDismissed(
-        localStorage.getItem(HOW_IT_WORKS_DISMISSED_KEY) === "true",
-      );
-    }
-  }, []);
-
-  // ---- Prerequisites ----
-  const prereqCourseIds = useMemo(() => {
+  // Prerequisite eligibility — safety net for credential claim gating
+  const prereqCourseIds = React.useMemo(() => {
     if (!projectDetail?.prerequisites) return [];
     return projectDetail.prerequisites
       .map((p) => p.courseId)
@@ -238,23 +87,40 @@ function ContributorDashboardContent() {
 
   const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
 
-  const eligibility = useMemo(() => {
-    if (!projectDetail) return null;
-    return checkProjectEligibility(projectDetail.prerequisites ?? [], completions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectDetail?.prerequisites, completions]);
+  const prerequisites = React.useMemo(() => projectDetail?.prerequisites ?? [], [projectDetail?.prerequisites]);
+  const eligibility = React.useMemo(() => {
+    if (prerequisites.length === 0) return null;
+    return checkProjectEligibility(prerequisites, completions);
+  }, [prerequisites, completions]);
 
-  // ---- Status derivation (from authenticated contributor commitments) ----
-  const pendingCommitment = useMemo(
-    () => myCommitments.find((c) => c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "COMMITTED"),
-    [myCommitments],
-  );
+  const isEligible = eligibility === null || eligibility.eligible;
 
-  const acceptedCommitments = useMemo(
-    () => myCommitments.filter((c) => c.commitmentStatus === "ACCEPTED"),
-    [myCommitments],
-  );
+  // Deduplicate commitments by taskHash — API can return multiple records per task
+  // (from chain/DB/merged sources). Keep the most relevant status per task.
+  const commitments = useMemo(() => {
+    const STATUS_PRIORITY: Record<string, number> = {
+      REFUSED: 6, COMMITTED: 5, SUBMITTED: 4,
+      PENDING_TX_SUBMIT: 3, ACCEPTED: 2, UNKNOWN: 1,
+    };
+    const byHash = new Map<string, ContributorCommitment>();
+    for (const c of rawCommitments) {
+      const key = c.taskHash;
+      if (!key) continue;
+      const existing = byHash.get(key);
+      if (!existing) {
+        byHash.set(key, c);
+      } else {
+        const existingPriority = STATUS_PRIORITY[existing.commitmentStatus ?? ""] ?? 0;
+        const newPriority = STATUS_PRIORITY[c.commitmentStatus ?? ""] ?? 0;
+        if (newPriority > existingPriority) {
+          byHash.set(key, c);
+        }
+      }
+    }
+    return Array.from(byHash.values());
+  }, [rawCommitments]);
 
+  // Derive contributor context from project detail
   const myCredentials = useMemo(() => {
     const alias = user?.accessTokenAlias;
     if (!alias || !projectDetail?.credentialClaims) return [];
@@ -267,67 +133,26 @@ function ContributorDashboardContent() {
     return projectDetail.contributors.some((c) => c.alias === alias);
   }, [user?.accessTokenAlias, projectDetail?.contributors]);
 
-  const derivedStatus: ContributorStatus = useMemo(() => {
-    if (isProjectLoading || isTasksLoading || isCommitmentsLoading || !projectDetail || !user?.accessTokenAlias) {
-      return "not_joined";
-    }
-    if (acceptedCommitments.length > 0) return "task_accepted";
-    if (pendingCommitment) return "task_pending";
-    if (myCredentials.length > 0) return "can_claim";
-    if (isContributor) return "active";
-    return "not_joined";
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isProjectLoading,
-    isTasksLoading,
-    isCommitmentsLoading,
-    projectDetail,
-    user?.accessTokenAlias,
-    pendingCommitment,
-    acceptedCommitments.length,
-    myCredentials.length,
-    isContributor,
-    orchestrationTrigger,
-  ]);
+  // Filter to ON_CHAIN + deduplicate by taskHash (safety net)
+  const liveTasks = useMemo(() => {
+    const onChain = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+    const seen = new Set<string>();
+    return onChain.filter((t) => {
+      const hash = t.taskHash;
+      if (!hash) return true;
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      return true;
+    });
+  }, [tasks]);
 
-  const contributorStatus = statusOverride ?? derivedStatus;
-
-  // Clear override when derived status catches up
-  useEffect(() => {
-    if (statusOverride !== null && derivedStatus === statusOverride) {
-      setStatusOverride(null);
-    }
-  }, [derivedStatus, statusOverride]);
-
-  // ---- Refresh ----
-  const refreshData = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) }),
-      queryClient.invalidateQueries({ queryKey: projectContributorKeys.commitments(projectId) }),
-    ]);
-    setOrchestrationTrigger((prev) => prev + 1);
-  }, [queryClient, projectId]);
-
-  // ---- Dismiss How It Works ----
-  const dismissHowItWorks = () => {
-    setHowItWorksDismissed(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(HOW_IT_WORKS_DISMISSED_KEY, "true");
-    }
-  };
-
-  // ---- Loading / Error ----
+  // Loading state
   if (isProjectLoading || isTasksLoading || isCommitmentsLoading) {
     return <AndamioPageLoading variant="content" />;
   }
 
-  const errorMessage =
-    projectError instanceof Error
-      ? projectError.message
-      : projectError
-        ? "Failed to load project"
-        : null;
-
+  // Error state
+  const errorMessage = projectError instanceof Error ? projectError.message : projectError ? "Failed to load project" : null;
   if (errorMessage || !projectDetail) {
     return (
       <div className="space-y-6">
@@ -337,136 +162,121 @@ function ContributorDashboardContent() {
     );
   }
 
-  // ---- Derived data ----
-  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+  // ── Derive stats from commitments (reliable source of truth) ──────────
 
-  // Accepted tasks info (for task_accepted state — may be multiple)
-  const acceptedTasks = acceptedCommitments.map((c) => {
-    const task = tasks.find((t) => getString(t.taskHash) === c.taskHash);
-    return {
-      taskHash: c.taskHash,
-      title: task?.title ?? "Task",
-      reward: task?.lovelaceAmount ?? "0",
-    };
-  });
-
-  // Total earned reward across all accepted commitments
-  const totalEarnedLovelace = acceptedTasks.reduce(
-    (sum, t) => sum + (parseInt(t.reward, 10) || 0),
-    0,
+  const acceptedCommitments = commitments.filter(c => c.commitmentStatus === "ACCEPTED");
+  const pendingCommitments = commitments.filter(c =>
+    c.commitmentStatus === "COMMITTED" ||
+    c.commitmentStatus === "SUBMITTED" ||
+    c.commitmentStatus === "REFUSED" ||
+    c.commitmentStatus === "PENDING_TX_SUBMIT"
   );
 
-  // Pending task info (for task_pending state)
-  const pendingTaskHash = pendingCommitment?.taskHash;
-  const pendingTask = pendingTaskHash
-    ? tasks.find((t) => getString(t.taskHash) === pendingTaskHash)
-    : undefined;
-
-  // Exclude tasks the current user has pending or accepted commitments for
-  const myCommitmentHashes = new Set(
-    myCommitments.map((c) => c.taskHash),
-  );
-
-  // Tasks with at least one accepted assessment (from ANY contributor) are
-  // treated as filled. Currently each task supports one approved commit;
-  // the N-commits feature will make this configurable (see GH backlog).
-  const filledTaskHashes = new Set(
-    (projectDetail.assessments ?? [])
-      .filter((a) => a.decision === "accept")
-      .map((a) => a.taskHash),
-  );
-
-  // Available tasks: exclude filled tasks and user's own commitments
-  const excludedHashes = new Set<string>([
-    ...filledTaskHashes,
-    ...myCommitmentHashes,
-  ]);
-
-  const availableTasks = liveTasks.filter(
-    (t) => !excludedHashes.has(getString(t.taskHash)),
-  );
-
-  // Stats — show contributor-relevant numbers, not raw project totals
-  const stats = {
-    availableTasks: availableTasks.length,
-    earnedRewards: totalEarnedLovelace,
-  };
-
-  const completedTaskCount = myCommitments.filter((c) => c.commitmentStatus === "ACCEPTED").length;
-  const pendingTaskCount = pendingCommitment ? 1 : 0;
+  const completedTaskCount = acceptedCommitments.length;
+  const pendingTaskCount = pendingCommitments.length;
   const credentialCount = myCredentials.length;
 
-  // Status display label
-  const statusLabel =
-    !eligibility?.eligible
-      ? "Prerequisites Required"
-      : contributorStatus === "not_joined"
-        ? "Ready to Join"
-        : contributorStatus === "active"
-          ? "Active Contributor"
-          : contributorStatus === "task_pending"
-            ? "Task Pending"
-            : contributorStatus === "task_accepted"
-              ? "Task Accepted"
-              : "Can Claim";
+  // Earned rewards: only count rewards that have actually been CLAIMED.
+  // In the Andamio protocol, rewards are claimed when you either:
+  // (a) commit to a new task (auto-claims previous ACCEPTED task's reward), or
+  // (b) leave the project via credential claim.
+  // If no active pending commitment exists, the latest ACCEPTED task's reward
+  // is still unclaimed — exclude it from the total.
+  const earnedRewards = (() => {
+    const totalAccepted = acceptedCommitments.reduce((sum, c) => {
+      const matchedTask = liveTasks.find(t => getString(t.taskHash) === c.taskHash);
+      return sum + (matchedTask ? parseInt(matchedTask.lovelaceAmount ?? "0", 10) || 0 : 0);
+    }, 0);
 
-  // ---- Render ----
+    // If there's an active pending commitment, all accepted rewards are claimed
+    if (pendingCommitments.length > 0) return totalAccepted;
+
+    // Otherwise, the latest accepted task's reward is unclaimed — subtract it
+    if (acceptedCommitments.length > 0) {
+      // Last element = most recently accepted (API returns oldest-first insertion order)
+      const latestAccepted = acceptedCommitments.at(-1);
+      const latestTask = liveTasks.find(t => getString(t.taskHash) === latestAccepted?.taskHash);
+      const unclaimedReward = latestTask ? parseInt(latestTask.lovelaceAmount ?? "0", 10) || 0 : 0;
+      return totalAccepted - unclaimedReward;
+    }
+
+    return totalAccepted;
+  })();
+
+  // Available tasks: exclude tasks with any commitment from this user
+  const committedTaskHashes = new Set(commitments.map(c => c.taskHash).filter(Boolean));
+  const availableTaskCount = liveTasks.filter(t => !committedTaskHashes.has(getString(t.taskHash))).length;
+
+  // Find the "active" commitment (the one that needs attention — pending or refused)
+  // Priority: REFUSED > COMMITTED > SUBMITTED > PENDING_TX_SUBMIT > ACCEPTED
+  const activeCommitment: ContributorCommitment | undefined =
+    pendingCommitments.find(c => c.commitmentStatus === "REFUSED") ??
+    pendingCommitments.find(c => c.commitmentStatus === "COMMITTED") ??
+    pendingCommitments.find(c => c.commitmentStatus === "SUBMITTED") ??
+    pendingCommitments.find(c => c.commitmentStatus === "PENDING_TX_SUBMIT") ??
+    // If no pending, show the most recent accepted (for the "next steps" CTA)
+    acceptedCommitments[0];
+
+  // Derive status label from actual commitment data
+  const contributorStatusLabel = (() => {
+    if (credentialCount > 0 && pendingCommitments.length === 0 && acceptedCommitments.length === 0) return "Welcome Back";
+    if (acceptedCommitments.length > 0 && pendingCommitments.length === 0) return "Task Accepted";
+    if (pendingCommitments.length > 0) {
+      const activeStatus = activeCommitment?.commitmentStatus;
+      if (activeStatus === "REFUSED") return "Resubmission Needed";
+      if (activeStatus === "PENDING_TX_SUBMIT") return "Awaiting Confirmation";
+      return "Task Pending";
+    }
+    if (isContributor) return "Active Contributor";
+    return "Ready to Join";
+  })();
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <AndamioBackButton href={`/project/${projectId}`} label="Back to Project" />
 
       <AndamioPageHeader
-        title="Contributor Dashboard"
+        title="My Contributions"
         description={projectDetail.title || undefined}
       />
 
-      {/* Stats */}
+      {/* Project Info */}
+      <div className="flex flex-wrap items-center gap-2">
+        <AndamioBadge variant="outline">
+          <span className="font-mono text-xs">{projectId.slice(0, 16)}...</span>
+        </AndamioBadge>
+      </div>
+
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <AndamioDashboardStat
           icon={ContributorIcon}
           label="Your Status"
-          value={statusLabel}
+          value={contributorStatusLabel}
           valueColor={
-            !eligibility?.eligible
-              ? "warning"
-              : contributorStatus === "can_claim" || contributorStatus === "task_accepted"
-                ? "success"
-                : undefined
+            contributorStatusLabel === "Welcome Back" ? "success" :
+            contributorStatusLabel === "Task Accepted" ? "success" :
+            contributorStatusLabel === "Resubmission Needed" ? "warning" : undefined
           }
           iconColor={
-            !eligibility?.eligible
-              ? "warning"
-              : contributorStatus === "can_claim" || contributorStatus === "task_accepted"
-                ? "success"
-                : undefined
+            contributorStatusLabel === "Welcome Back" ? "success" :
+            contributorStatusLabel === "Task Accepted" ? "success" :
+            contributorStatusLabel === "Resubmission Needed" ? "warning" : undefined
           }
         />
-        <AndamioDashboardStat
-          icon={TaskIcon}
-          label="Available Tasks"
-          value={stats.availableTasks}
-        />
+        <AndamioDashboardStat icon={TaskIcon} label="Available Tasks" value={availableTaskCount} />
         <AndamioDashboardStat
           icon={CredentialIcon}
-          label={stats.earnedRewards > 0 ? "Earned Rewards" : "Available Rewards"}
-          value={formatLovelace(
-            stats.earnedRewards > 0
-              ? stats.earnedRewards.toString()
-              : availableTasks
-                  .reduce((sum, t) => sum + (parseInt(t.lovelaceAmount ?? "0", 10) || 0), 0)
-                  .toString(),
-          )}
-          valueColor="success"
-          iconColor="success"
+          label="Claimed Rewards"
+          value={formatLovelace(earnedRewards.toString())}
+          valueColor={earnedRewards > 0 ? "success" : undefined}
+          iconColor={earnedRewards > 0 ? "success" : undefined}
         />
       </div>
 
-      {/* ================================================================ */}
-      {/* Contribution Progress — always visible for contributors           */}
-      {/* ================================================================ */}
-
-      {isContributor && (
+      {/* Contributor Progress */}
+      {(isContributor || commitments.length > 0) && (
         <AndamioCard>
           <AndamioCardHeader>
             <AndamioCardTitle className="flex items-center gap-2">
@@ -481,15 +291,11 @@ function ContributorDashboardContent() {
                 <AndamioText variant="small">Tasks Completed</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-muted-foreground">
-                  {pendingTaskCount}
-                </AndamioText>
+                <AndamioText className="text-2xl font-bold text-muted-foreground">{pendingTaskCount}</AndamioText>
                 <AndamioText variant="small">Pending Review</AndamioText>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/30">
-                <AndamioText className="text-2xl font-bold text-primary">
-                  {credentialCount}
-                </AndamioText>
+                <AndamioText className="text-2xl font-bold text-primary">{credentialCount}</AndamioText>
                 <AndamioText variant="small">Credentials Earned</AndamioText>
               </div>
             </div>
@@ -497,340 +303,285 @@ function ContributorDashboardContent() {
         </AndamioCard>
       )}
 
-      {/* ================================================================ */}
-      {/* PRIMARY ACTION — depends on contributor status                    */}
-      {/* ================================================================ */}
+      {/* Active Commitment Card (read-only) */}
+      {activeCommitment && (() => {
+        const taskId = activeCommitment.taskHash;
+        const txHash = activeCommitment.submissionTx;
+        const status = activeCommitment.commitmentStatus;
 
-      {/* --- Task Accepted: Reward claim is the priority --- */}
-      {eligibility?.eligible && contributorStatus === "task_accepted" && (
-        <div className="space-y-4">
-          {/* Acceptance Banner — lists ALL accepted tasks */}
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-            <div className="flex items-start gap-3">
-              <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                {acceptedTasks.length === 1 ? (
-                  <AndamioText className="font-medium text-primary">
-                    {acceptedTasks[0]?.title} was accepted!
-                  </AndamioText>
+        // Match to DB task for title/reward
+        const matchedDbTask = tasks.find(t => getString(t.taskHash) === taskId);
+        const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
+
+        return (
+          <AndamioCard className={
+            status === "REFUSED" ? "border-destructive" :
+            status === "ACCEPTED" ? "border-primary" : "border-secondary"
+          }>
+            <AndamioCardHeader>
+              <AndamioCardTitle className={`flex items-center gap-2 ${
+                status === "REFUSED" ? "text-destructive" :
+                status === "ACCEPTED" ? "text-primary" : "text-secondary"
+              }`}>
+                {status === "REFUSED" ? (
+                  <><AlertIcon className="h-5 w-5" />Resubmission Needed</>
+                ) : status === "ACCEPTED" ? (
+                  <><SuccessIcon className="h-5 w-5" />Task Accepted</>
+                ) : status === "PENDING_TX_SUBMIT" ? (
+                  <><PendingIcon className="h-5 w-5" />Awaiting Confirmation</>
                 ) : (
-                  <AndamioText className="font-medium text-primary">
-                    {acceptedTasks.length} tasks accepted!
-                  </AndamioText>
+                  <><PendingIcon className="h-5 w-5" />Task Pending Review</>
                 )}
-                {acceptedTasks.length > 1 && (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {acceptedTasks.map((t) => (
-                      <AndamioBadge key={t.taskHash} variant="outline" className="text-xs">
-                        {t.title} — {formatLovelace(t.reward)}
-                      </AndamioBadge>
-                    ))}
+              </AndamioCardTitle>
+              <AndamioCardDescription>
+                {status === "REFUSED"
+                  ? "Your work was not accepted. Go to the task page to update and resubmit."
+                  : status === "ACCEPTED"
+                    ? "Your work has been accepted! Choose your next step below."
+                    : status === "COMMITTED"
+                      ? "You've joined this task. Visit the task page to submit evidence."
+                      : status === "SUBMITTED"
+                        ? "Evidence submitted. Waiting for manager review."
+                        : status === "PENDING_TX_SUBMIT"
+                          ? "Waiting for blockchain confirmation."
+                          : "Your submission is awaiting manager review."}
+              </AndamioCardDescription>
+            </AndamioCardHeader>
+            <AndamioCardContent className="space-y-4">
+              {/* Task Info from DB (if matched) */}
+              {matchedDbTask && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TaskIcon className="h-4 w-4 text-primary" />
+                    <AndamioText className="font-medium">{matchedDbTask.title}</AndamioText>
+                    <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelaceAmount ?? "0")}</AndamioBadge>
                   </div>
-                )}
-                <AndamioText variant="small" className="mt-1">
-                  You earned {formatLovelace(totalEarnedLovelace.toString())}. You have two ways to collect your rewards:
-                </AndamioText>
-              </div>
-            </div>
-          </div>
-
-          {/* Decision Cards */}
-          {availableTasks.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Option A: Commit to another task */}
-              <div className="rounded-lg border p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <TaskIcon className="h-5 w-5 text-primary" />
-                  <AndamioText className="font-medium">Commit to Another Task</AndamioText>
-                </div>
-                <AndamioText variant="small">
-                  When you commit to a new task, your{" "}
-                  {formatLovelace(totalEarnedLovelace.toString())} reward is
-                  automatically sent to your wallet as part of the commitment
-                  transaction. You stay in the project and keep contributing.
-                </AndamioText>
-                <AndamioBadge variant="outline" className="text-xs">
-                  Rewards collected automatically
-                </AndamioBadge>
-              </div>
-
-              {/* Option B: Leave & Claim */}
-              <div className="rounded-lg border p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <CredentialIcon className="h-5 w-5 text-primary" />
-                  <AndamioText className="font-medium">Leave &amp; Claim Everything</AndamioText>
-                </div>
-                <AndamioText variant="small">
-                  Exit the project to collect your{" "}
-                  {formatLovelace(totalEarnedLovelace.toString())} reward and mint
-                  your on-chain credential in a single transaction. You can
-                  rejoin the project later.
-                </AndamioText>
-                <ProjectCredentialClaim
-                  projectNftPolicyId={projectId}
-                  contributorStateId={contributorStateId ?? "0".repeat(56)}
-                  projectTitle={projectDetail.title || undefined}
-                  pendingRewardLovelace={totalEarnedLovelace.toString()}
-                  onSuccess={async () => {
-                    await refreshData();
-                  }}
-                />
-              </div>
-            </div>
-          ) : (
-            /* No more tasks — leave is the only option */
-            <div className="rounded-lg border p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <CredentialIcon className="h-5 w-5 text-primary" />
-                <AndamioText className="font-medium">Claim Your Rewards &amp; Credential</AndamioText>
-              </div>
-              <AndamioText variant="small">
-                No more tasks are available in this project. Leave the project to
-                collect your {formatLovelace(totalEarnedLovelace.toString())} reward
-                and mint your on-chain credential. You can rejoin the project later
-                if new tasks are added.
-              </AndamioText>
-              <ProjectCredentialClaim
-                projectNftPolicyId={projectId}
-                contributorStateId={contributorStateId ?? "0".repeat(56)}
-                projectTitle={projectDetail.title || undefined}
-                pendingRewardLovelace={totalEarnedLovelace.toString()}
-                onSuccess={async () => {
-                  await refreshData();
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* --- Task Pending: compact status card --- */}
-      {contributorStatus === "task_pending" && pendingCommitment && (
-        <AndamioCard className="border-secondary">
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-secondary">
-              <PendingIcon className="h-5 w-5" />
-              Task Pending Review
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              Your submission is awaiting manager review.
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            {/* Task info */}
-            {pendingTask && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div>
-                  <AndamioText className="font-medium">{pendingTask.title}</AndamioText>
-                  {getString(pendingTask.description) && (
+                  {getString(matchedDbTask.description) && (
                     <AndamioText variant="small" className="text-muted-foreground">
-                      {getString(pendingTask.description)}
+                      {getString(matchedDbTask.description)}
                     </AndamioText>
                   )}
                 </div>
-                <AndamioBadge variant="outline">
-                  {formatLovelace(pendingTask.lovelaceAmount ?? "0")}
-                </AndamioBadge>
-              </div>
-            )}
+              )}
 
-            {/* Link to task detail */}
-            <Link href={`/project/${projectId}/${pendingCommitment.taskHash}`}>
-              <AndamioButton variant="outline" className="cursor-pointer">
-                <TaskIcon className="h-4 w-4 mr-2" />
-                View Task Details
-              </AndamioButton>
-            </Link>
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
-
-      {/* --- Can Claim: credential claim --- */}
-      {eligibility?.eligible && contributorStatus === "can_claim" && (
-        <ProjectCredentialClaim
-          projectNftPolicyId={projectId}
-          contributorStateId={contributorStateId ?? "0".repeat(56)}
-          projectTitle={projectDetail.title || undefined}
-          onSuccess={async () => {
-            await refreshData();
-          }}
-        />
-      )}
-
-      {/* ================================================================ */}
-      {/* Prerequisites                                                     */}
-      {/* ================================================================ */}
-
-      {eligibility && !eligibility.eligible && (
-        <AndamioCard className="border-muted-foreground">
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-muted-foreground">
-              <AlertIcon className="h-5 w-5" />
-              Prerequisites Required
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              Complete the following course modules before contributing to this project
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-4">
-            {/* Progress bar */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-muted transition-all"
-                  style={{
-                    width: `${eligibility.totalRequired > 0 ? (eligibility.totalCompleted / eligibility.totalRequired) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-              <AndamioText variant="small" className="font-medium">
-                {eligibility.totalCompleted}/{eligibility.totalRequired} modules
-              </AndamioText>
-            </div>
-
-            <div className="space-y-3">
-              {eligibility.missingPrerequisites.map((prereq) => (
-                <MissingPrerequisiteRow key={prereq.courseId} prereq={prereq} />
-              ))}
-            </div>
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
-
-      {/* Eligibility met banner (for first-time visitors who just qualified) */}
-      {eligibility?.eligible && contributorStatus === "not_joined" && (
-        <AndamioCard className="border-primary">
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2 text-primary">
-              <SuccessIcon className="h-5 w-5" />
-              Prerequisites Met
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              You&apos;ve completed all required prerequisites.
-              Select a task below to get started!
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-        </AndamioCard>
-      )}
-
-      {/* ================================================================ */}
-      {/* Completed Tasks                                                   */}
-      {/* ================================================================ */}
-
-      {acceptedTasks.length > 0 && contributorStatus !== "task_accepted" && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2">
-              <SuccessIcon className="h-5 w-5 text-primary" />
-              Completed Tasks
-            </AndamioCardTitle>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-2">
-            {acceptedTasks.map((task) => (
-              <Link key={task.taskHash} href={`/project/${projectId}/${task.taskHash}`}>
-                <div className="p-3 border rounded-lg flex items-center justify-between hover:border-primary transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
-                    <AndamioText className="font-medium">{task.title}</AndamioText>
-                  </div>
-                  <AndamioBadge variant="outline">{formatLovelace(task.reward)}</AndamioBadge>
+              <div className="grid gap-2 text-sm p-4 rounded-lg bg-muted/30">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Hash:</span>
+                  <span className="font-mono text-xs">{taskId.slice(0, 16)}...{taskId.slice(-8)}</span>
                 </div>
-              </Link>
-            ))}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
-
-      {/* ================================================================ */}
-      {/* Available Tasks — links to task detail pages                      */}
-      {/* ================================================================ */}
-
-      {eligibility?.eligible && availableTasks.length > 0 && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle className="flex items-center gap-2">
-              <TaskIcon className="h-5 w-5" />
-              Available Tasks
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              {contributorStatus === "task_accepted"
-                ? "Committing to a new task will also collect your pending reward"
-                : "Select a task to view details and commit"}
-            </AndamioCardDescription>
-          </AndamioCardHeader>
-          <AndamioCardContent className="space-y-2">
-            {availableTasks.map((task, idx) => {
-              const hash = getString(task.taskHash);
-              return (
-                <Link
-                  key={`task-${idx}`}
-                  href={`/project/${projectId}/${hash}`}
-                >
-                  <div className="p-4 border rounded-lg hover:border-primary transition-colors cursor-pointer flex items-center justify-between">
-                    <div className="min-w-0 flex-1 mr-4">
-                      <AndamioText className="font-medium">{task.title}</AndamioText>
-                      {getString(task.description) && (
-                        <AndamioText variant="small" className="text-muted-foreground truncate">
-                          {getString(task.description)}
-                        </AndamioText>
-                      )}
-                    </div>
-                    <AndamioBadge variant="outline" className="shrink-0">
-                      {formatLovelace(task.lovelaceAmount ?? "0")}
-                    </AndamioBadge>
+                {txHash && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tx Hash:</span>
+                    <a
+                      href={getTransactionExplorerUrl(txHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {txHash.slice(0, 16)}...{txHash.slice(-8)}
+                    </a>
                   </div>
-                </Link>
-              );
-            })}
-          </AndamioCardContent>
-        </AndamioCard>
-      )}
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reward:</span>
+                  <span>{formatLovelace(taskLovelace.toString())}</span>
+                </div>
+              </div>
 
-      {/* No tasks available */}
-      {eligibility?.eligible && availableTasks.length === 0 && liveTasks.length > 0 && contributorStatus !== "task_accepted" && (
-        <AndamioEmptyState
-          icon={SuccessIcon}
-          title="All Tasks Completed"
-          description="You've completed all available tasks. Leave the project to claim your credential and rewards."
-        />
-      )}
-      {liveTasks.length === 0 && (
+              {/* Evidence Section — Read-only */}
+              {!!activeCommitment.evidence && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <PendingIcon className="h-4 w-4 text-muted-foreground" />
+                    <AndamioText className="font-medium">Your Evidence</AndamioText>
+                    {status && (
+                      <AndamioBadge variant="outline" className="text-xs">
+                        {status.replace(/_/g, " ")}
+                      </AndamioBadge>
+                    )}
+                  </div>
+                  <div className="min-h-[100px] border rounded-lg bg-muted/20 p-4">
+                    <ContentViewer content={activeCommitment.evidence as JSONContent} />
+                  </div>
+                </div>
+              )}
+
+              {/* Pending Transaction Status */}
+              {activeCommitment.pendingTxHash && (
+                <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <OnChainIcon className="h-4 w-4 text-muted-foreground" />
+                      <AndamioText variant="small" className="font-medium">
+                        Pending Transaction
+                      </AndamioText>
+                    </div>
+                    <a
+                      href={getTransactionExplorerUrl(activeCommitment.pendingTxHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-primary hover:underline"
+                    >
+                      {activeCommitment.pendingTxHash.slice(0, 12)}...
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* ACCEPTED: Decision cards + credential claim */}
+              {status === "ACCEPTED" ? (
+                <div className="space-y-4">
+                  {!showClaimFlow ? (
+                    <>
+                      <AndamioText variant="small" className="font-medium">
+                        Choose your next step:
+                      </AndamioText>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Option A: Continue Contributing */}
+                        <Link href={`/project/${projectId}`} className="block">
+                          <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                            <div className="flex items-center gap-2">
+                              <ContributorIcon className="h-5 w-5 text-primary" />
+                              <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                            </div>
+                            <AndamioText variant="small">
+                              Browse available tasks and commit to a new one. Your {formatLovelace(taskLovelace.toString())} reward will be claimed automatically.
+                            </AndamioText>
+                          </div>
+                        </Link>
+
+                        {/* Option B: Leave & Claim */}
+                        <button
+                          type="button"
+                          onClick={() => setShowClaimFlow(true)}
+                          className="rounded-lg border border-primary/20 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CredentialIcon className="h-5 w-5 text-primary" />
+                            <AndamioText className="font-medium">Leave & Claim</AndamioText>
+                          </div>
+                          <AndamioText variant="small">
+                            Leave the project, claim {formatLovelace(taskLovelace.toString())} in rewards, and mint your credential NFT.
+                          </AndamioText>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* ProjectCredentialClaim TX component — revealed after clicking Leave & Claim */}
+                      {isEligible ? (
+                        <ProjectCredentialClaim
+                          projectNftPolicyId={projectId}
+                          contributorStateId={projectDetail?.contributorStateId ?? "0".repeat(56)}
+                          projectTitle={projectDetail?.title || undefined}
+                          pendingRewardLovelace={taskLovelace.toString()}
+                          onSuccess={async () => {
+                            await queryClient.invalidateQueries({ queryKey: projectContributorKeys.commitments(projectId) });
+                            await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+                          }}
+                        />
+                      ) : (
+                        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                          <div className="flex items-start gap-3">
+                            <AlertIcon className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                            <div>
+                              <AndamioText className="font-medium text-destructive">
+                                Prerequisites Not Met
+                              </AndamioText>
+                              <AndamioText variant="small" className="mt-1">
+                                You need to complete the required course modules before claiming your credential.
+                              </AndamioText>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <AndamioButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowClaimFlow(false)}
+                        className="cursor-pointer"
+                      >
+                        Back to options
+                      </AndamioButton>
+                    </>
+                  )}
+                </div>
+              ) : (
+                /* Non-ACCEPTED: View on Task Page CTA */
+                <Link href={`/project/${projectId}/${taskId}`}>
+                  <AndamioButton variant="outline" className="w-full cursor-pointer">
+                    <TaskIcon className="h-4 w-4 mr-2" />
+                    {status === "REFUSED"
+                      ? "Go to Task Page to Resubmit"
+                      : "View on Task Page"}
+                  </AndamioButton>
+                </Link>
+              )}
+            </AndamioCardContent>
+          </AndamioCard>
+        );
+      })()}
+
+      {/* No commitments empty state */}
+      {commitments.length === 0 && !isContributor && (
         <AndamioEmptyState
           icon={TaskIcon}
-          title="No Tasks Available"
-          description="This project doesn't have any active tasks right now. Check back later."
+          title="No Contributions Yet"
+          description="Browse the project tasks and commit to one to get started."
         />
       )}
 
-      {/* Tasks exist but prerequisites not met */}
-      {liveTasks.length > 0 && eligibility && !eligibility.eligible && (
-        <AndamioEmptyState
-          icon={AlertIcon}
-          title="Complete Prerequisites First"
-          description="Complete the required course modules above to unlock these tasks."
-        />
-      )}
-
-      {/* ================================================================ */}
-      {/* How It Works — dismissable, at bottom                            */}
-      {/* ================================================================ */}
-
-      {!howItWorksDismissed && <HowItWorksCard onDismiss={dismissHowItWorks} />}
+      {/* Info about the contributor workflow */}
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>How It Works</AndamioCardTitle>
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
+            <div>
+              <AndamioText className="font-medium">Commit to a Task</AndamioText>
+              <AndamioText variant="small">Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor.</AndamioText>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">2</div>
+            <div>
+              <AndamioText className="font-medium">Complete the Work</AndamioText>
+              <AndamioText variant="small">Work on your task and update your evidence as needed while awaiting review.</AndamioText>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
+            <div>
+              <AndamioText className="font-medium">Get Reviewed</AndamioText>
+              <AndamioText variant="small">A project manager can review your commitment at any point — even before you submit evidence. If refused, you can resubmit.</AndamioText>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
+            <div>
+              <AndamioText className="font-medium">Earn Rewards</AndamioText>
+              <AndamioText variant="small">When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together.</AndamioText>
+            </div>
+          </div>
+        </AndamioCardContent>
+      </AndamioCard>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page export
-// ---------------------------------------------------------------------------
-
-export default function ContributorDashboardPage() {
+/**
+ * My Contributions Page - Requires authentication
+ */
+export default function MyContributionsPage() {
   return (
     <RequireAuth
-      title="Contributor Dashboard"
-      description="Connect your wallet to participate in this project"
+      title="My Contributions"
+      description="Connect your wallet to view your contributions to this project"
     >
-      <ContributorDashboardContent />
+      <MyContributionsContent />
     </RequireAuth>
   );
 }

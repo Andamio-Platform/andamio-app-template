@@ -2,8 +2,8 @@
  * useSponsoredTransaction Hook
  *
  * Handles the sponsored access-token migration transaction.
- * Routes through /api/sponsor-migrate instead of the gateway directly,
- * so the developer wallet pays the fee (gasless for the user).
+ * Routes through /api/sponsor-migrate which builds the tx using
+ * sponsor wallet UTxOs (so the user pays no fee).
  *
  * Returns the same state/result interface as useTransaction so existing
  * UI components (TransactionButton, TransactionStatus) work unchanged.
@@ -51,8 +51,10 @@ export function useSponsoredTransaction() {
           throw new Error("Wallet not connected");
         }
 
-        // Step 1: Request sponsored CBOR from our API route
+        // Step 1: Request unsigned CBOR from our API route
+        // (API builds tx using sponsor wallet's UTxOs)
         setState("fetching");
+
         txLogger.buildRequest(txType, "/api/sponsor-migrate", "POST", {
           alias,
         });
@@ -74,17 +76,17 @@ export function useSponsoredTransaction() {
         }
 
         const data = (await response.json()) as Record<string, unknown>;
-        const sponsoredCbor = data.unsigned_tx as string | undefined;
+        const unsignedTx = data.unsigned_tx as string | undefined;
 
-        if (!sponsoredCbor) {
-          throw new Error("No sponsored transaction returned");
+        if (!unsignedTx) {
+          throw new Error("No transaction returned by API");
         }
 
         txLogger.buildResult(txType, true, data);
 
-        // Step 2: User signs the sponsored CBOR (partial sign)
+        // Step 2: User signs the CBOR (partial sign since sponsor already signed)
         setState("signing");
-        const signedTx = await wallet.signTx(sponsoredCbor, true);
+        const signedTx = await wallet.signTx(unsignedTx, true);
 
         // Step 3: Submit to blockchain
         setState("submitting");

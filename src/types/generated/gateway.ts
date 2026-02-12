@@ -239,7 +239,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientAddFundsTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: any[][];
+  deposit_value?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -292,6 +292,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientClaimProjectCredentia
 export interface AndamioApiInternalInternalApiAtlasTxClientClaimV2AccessTokenTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
+  initiator_data?: AndamioApiInternalInternalApiAtlasTxClientSponsoredInitiatorData;
 }
 
 export interface AndamioApiInternalInternalApiAtlasTxClientCommitAssignmentTxRequest {
@@ -331,7 +332,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientCreateCourseTxRequest
 export interface AndamioApiInternalInternalApiAtlasTxClientCreateProjectTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
-  course_prereqs?: any[][];
+  course_prereqs?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   managers?: string[];
 }
@@ -373,7 +374,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientManageTasksTxRequest 
   /** This is the hash of a minting policy script. */
   contributor_state_id?: string;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  deposit_value?: any[][];
+  deposit_value?: Record<string, any>[][];
   initiator_data?: AndamioApiInternalInternalApiAtlasTxClientWalletData;
   /** This is the hash of a minting policy script. */
   project_id?: string;
@@ -410,6 +411,15 @@ export interface AndamioApiInternalInternalApiAtlasTxClientProjectOutcome {
   outcome?: string;
 }
 
+export interface AndamioApiInternalInternalApiAtlasTxClientSponsoredInitiatorData {
+  /** UTxO reference for collateral (format: txhash#index). */
+  collateral_utxo_ref?: string;
+  /** The sponsor's address that will fund the transaction, serialised as Bech32. */
+  sponsor_address?: string;
+  /** UTxO reference for the static input (format: txhash#index). */
+  static_utxo_ref?: string;
+}
+
 export interface AndamioApiInternalInternalApiAtlasTxClientTaskActionTxRequest {
   /** Plain text alias. Any characters allowed. */
   alias?: string;
@@ -424,7 +434,7 @@ export interface AndamioApiInternalInternalApiAtlasTxClientTaskData {
   expiration_posix?: number;
   lovelace_amount?: number;
   /** List of (asset class, quantity) pairs. This is an asset class, i.e. either \"lovelace\" or some other token with its minting policy and token name delimited by dot (.). */
-  native_assets?: any[][];
+  native_assets?: Record<string, any>[][];
   /** A text string with a maximum length of 140 characters */
   project_content?: string;
 }

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "~/env";
-import { getWeb3Sdk } from "~/lib/utxos-sdk";
 
 const requestSchema = z.object({
   alias: z.string().min(1).max(31),
@@ -10,33 +9,28 @@ const requestSchema = z.object({
 /**
  * POST /api/sponsor-migrate
  *
- * Builds the access-token-claim transaction via the Andamio Gateway,
- * then sponsors it through @utxos/sdk so the user pays no fee.
+ * Builds the access-token-claim transaction via the Andamio Gateway.
+ * User pays the fee (regular transaction).
  *
- * Returns the dev-wallet-signed CBOR — the client still needs to
- * call wallet.signTx(cbor, true) before submitting.
+ * Returns unsigned CBOR — the client signs with their wallet and submits.
  */
 export async function POST(request: Request) {
+  console.log("[sponsor-migrate] Starting request...");
   try {
     const body = (await request.json()) as unknown;
+    console.log("[sponsor-migrate] Body:", JSON.stringify(body));
     const { alias } = requestSchema.parse(body);
+    console.log("[sponsor-migrate] Parsed alias:", alias);
 
-    const sdk = getWeb3Sdk();
-    const sponsorshipId = env.UTXOS_SPONSORSHIP_ID;
 
-    if (!sdk || !sponsorshipId) {
-      return NextResponse.json(
-        { error: "Transaction sponsorship is not configured" },
-        { status: 503 },
-      );
-    }
-
-    // Get sponsor wallet address for initiator_data
-    const sponsorInfo = sdk.sponsorship.getStaticInfo();
-    const sponsorAddress = sponsorInfo.changeAddress;
-
-    // Build unsigned CBOR from gateway with sponsor's wallet as initiator
+    // Build unsigned CBOR from gateway (regular tx - user pays fee)
     const gatewayUrl = env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL;
+    const requestBody = {
+      alias,
+    };
+    console.log("[sponsor-migrate] Gateway URL:", gatewayUrl);
+    console.log("[sponsor-migrate] Gateway request body:", JSON.stringify(requestBody));
+
     const buildResponse = await fetch(
       `${gatewayUrl}/api/v2/tx/global/user/access-token/claim`,
       {
@@ -45,18 +39,14 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
           "X-API-Key": env.ANDAMIO_API_KEY,
         },
-        body: JSON.stringify({
-          alias,
-          initiator_data: {
-            used_addresses: [sponsorAddress],
-            change_address: sponsorAddress,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
+    console.log("[sponsor-migrate] Gateway response status:", buildResponse.status);
 
     if (!buildResponse.ok) {
       const errorText = await buildResponse.text();
+      console.log("[sponsor-migrate] Gateway error text:", errorText);
       return NextResponse.json(
         { error: `Gateway error: ${buildResponse.status} - ${errorText}` },
         { status: buildResponse.status },
@@ -64,9 +54,11 @@ export async function POST(request: Request) {
     }
 
     const buildResult = (await buildResponse.json()) as Record<string, unknown>;
+    console.log("[sponsor-migrate] Gateway build result keys:", Object.keys(buildResult));
     const unsignedTx =
       (buildResult.unsigned_tx as string | undefined) ??
       (buildResult.unsignedTxCBOR as string | undefined);
+    console.log("[sponsor-migrate] Unsigned TX length:", unsignedTx?.length ?? "null");
 
     if (!unsignedTx) {
       return NextResponse.json(
@@ -75,32 +67,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Sponsor: rewrite CBOR with dev-wallet fee UTXO + partial-sign
-    const sponsorResult = await sdk.sponsorship.sponsorTx({
-      sponsorshipId,
-      tx: unsignedTx,
-    });
-
-    if (!sponsorResult.success) {
-      console.error(
-        "[sponsor-migrate] Sponsorship failed:",
-        sponsorResult.error,
-      );
-      return NextResponse.json(
-        { error: `Sponsorship failed: ${sponsorResult.error}` },
-        { status: 502 },
-      );
-    }
-
-    // Return sponsored (dev-signed) CBOR + passthrough gateway fields
+    // Return unsigned CBOR for user to sign and submit
     const { unsigned_tx: _u, unsignedTxCBOR: _c, ...passthroughFields } = buildResult;
+    console.log("[sponsor-migrate] Returning unsigned tx for user to sign");
     return NextResponse.json({
-      unsigned_tx: sponsorResult.data,
-      sponsored: true,
+      unsigned_tx: unsignedTx,
+      sponsored: false,
       ...passthroughFields,
     });
   } catch (error) {
-    console.error("[sponsor-migrate] Error:", error);
+    console.error("[sponsor-migrate] Caught error:", error);
+    console.error("[sponsor-migrate] Error stack:", error instanceof Error ? error.stack : "no stack");
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

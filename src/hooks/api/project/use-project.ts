@@ -240,6 +240,12 @@ export interface ProjectDetail extends Project {
   credentialClaims?: CredentialClaim[];
 
   /**
+   * Spendable lovelace in the treasury (from API, accounts for min-UTxO reserve).
+   * Use this instead of summing treasuryFundings, which only reflects historical deposits.
+   */
+  treasuryBalance?: number;
+
+  /**
    * Legacy states array for backward compatibility
    * @deprecated Use contributorStateId directly
    */
@@ -450,8 +456,18 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
   const category = apiContent?.category as string | undefined;
   const isPublic = apiContent?.is_public as boolean | undefined;
 
-  // Transform related data
-  const tasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
+  // Transform related data — de-duplicate by taskHash (API can return duplicates)
+  const rawTasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
+  const tasks = rawTasks ? (() => {
+    const seen = new Set<string>();
+    return rawTasks.filter((t) => {
+      const hash = t.taskHash;
+      if (!hash) return true;
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      return true;
+    });
+  })() : undefined;
 
   const contributors: ProjectContributor[] | undefined = api.contributors?.map(
     (c: OrchestrationProjectContributorOnChain) => ({
@@ -468,11 +484,21 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
     })
   );
 
+  // Normalize assessment decisions: API returns "Accept"/"Refuse"/"Deny"
+  // but generated types say "ACCEPTED"/"REFUSED"/"DENIED"
+  const normalizeDecision = (raw: string | undefined): string => {
+    if (!raw) return "";
+    const upper = raw.toUpperCase();
+    if (upper.startsWith("ACCEPT")) return "ACCEPTED";
+    if (upper.startsWith("REFUSE")) return "REFUSED";
+    if (upper.startsWith("DEN")) return "DENIED";
+    return upper;
+  };
   const assessments: ProjectAssessment[] | undefined = api.assessments?.map(
     (a: OrchestrationProjectAssessmentOnChain) => ({
       taskHash: a.task_hash ?? "",
       assessedBy: a.assessed_by ?? "",
-      decision: a.decision ?? "",
+      decision: normalizeDecision(a.decision),
       tx: a.tx,
     })
   );
@@ -520,6 +546,7 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
     submissions,
     assessments,
     treasuryFundings,
+    treasuryBalance: api.treasury_balance,
     credentialClaims,
     states,
   };
@@ -779,7 +806,17 @@ export function useProjectTasks(projectId: string | undefined) {
         items = result.data ?? [];
       }
 
-      return items.map(transformMergedTask);
+      // De-duplicate by taskHash — API can return the same ON_CHAIN task
+      // multiple times across merged data sources
+      const transformed = items.map(transformMergedTask);
+      const seen = new Set<string>();
+      return transformed.filter((t) => {
+        const hash = t.taskHash;
+        if (!hash) return true;
+        if (seen.has(hash)) return false;
+        seen.add(hash);
+        return true;
+      });
     },
     enabled: !!projectId,
     staleTime: 60_000,

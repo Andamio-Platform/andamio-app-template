@@ -333,8 +333,6 @@ export const txSchemas = {
   PROJECT_CONTRIBUTOR_TASK_ACTION: z.object({
     alias: aliasSchema,
     project_id: policyIdSchema,
-    contributor_state_id: policyIdSchema,
-    task_hash: hashSchema,
     project_info: shortTextSchema,
     initiator_data: walletDataSchema,
   }),

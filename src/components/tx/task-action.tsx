@@ -167,8 +167,6 @@ export function TaskAction({
       params: {
         alias: user.accessTokenAlias,
         project_id: projectNftPolicyId,
-        contributor_state_id: contributorStateId,
-        task_hash: taskHash,
         project_info: projectInfoValue ?? "",
       },
       metadata: taskEvidence && hash

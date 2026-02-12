@@ -274,13 +274,11 @@ export function ConnectWalletButton({
   const [open, setOpen] = React.useState(false);
   const [connectingId, setConnectingId] = React.useState<string | null>(null);
   const [socialLoading, setSocialLoading] = React.useState<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
   const wallets = useWalletList();
   const { connect, connected, setWallet, setWeb3UserData } = useWallet();
 
-  // Defer Dialog rendering until after hydration to avoid Radix ID mismatch
-  const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-
   React.useEffect(() => {
     if (connected) onConnected?.();
   }, [connected, onConnected]);
@@ -337,7 +335,7 @@ export function ConnectWalletButton({
     return <ConnectedDropdown />;
   }
 
-  // Before hydration, render a plain button to avoid Radix Dialog ID mismatch
+  // Defer Dialog rendering until after hydration to prevent radix ID mismatch
   if (!mounted) {
     return (
       <Button variant="outline" className={className}>
@@ -345,7 +343,6 @@ export function ConnectWalletButton({
       </Button>
     );
   }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>

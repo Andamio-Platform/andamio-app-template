@@ -29,30 +29,33 @@ export const EXPLORER_URLS = {
 
 export type CardanoNetwork = keyof typeof EXPLORER_URLS;
 
+const DEFAULT_NETWORK: CardanoNetwork =
+  (process.env.NEXT_PUBLIC_CARDANO_NETWORK as CardanoNetwork | undefined) ?? "preprod";
+
 /**
  * Get the explorer base URL for the current network
  */
-export function getExplorerBaseUrl(network: CardanoNetwork = "preprod"): string {
+export function getExplorerBaseUrl(network: CardanoNetwork = DEFAULT_NETWORK): string {
   return EXPLORER_URLS[network];
 }
 
 /**
  * Get explorer URL for a transaction
  */
-export function getTransactionExplorerUrl(txHash: string, network: CardanoNetwork = "preprod"): string {
+export function getTransactionExplorerUrl(txHash: string, network: CardanoNetwork = DEFAULT_NETWORK): string {
   return `${EXPLORER_URLS[network]}/transaction/${txHash}`;
 }
 
 /**
  * Get explorer URL for a token/asset
  */
-export function getTokenExplorerUrl(policyId: string, network: CardanoNetwork = "preprod"): string {
+export function getTokenExplorerUrl(policyId: string, network: CardanoNetwork = DEFAULT_NETWORK): string {
   return `${EXPLORER_URLS[network]}/token/${policyId}`;
 }
 
 /**
  * Get explorer URL for an address
  */
-export function getAddressExplorerUrl(address: string, network: CardanoNetwork = "preprod"): string {
+export function getAddressExplorerUrl(address: string, network: CardanoNetwork = DEFAULT_NETWORK): string {
   return `${EXPLORER_URLS[network]}/address/${address}`;
 }

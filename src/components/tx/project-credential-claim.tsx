@@ -162,11 +162,11 @@ export function ProjectCredentialClaim({
           </div>
           <div className="flex-1">
             <AndamioCardTitle>
-              {hasRewards ? "Leave Project & Claim Rewards" : "Claim Project Credentials"}
+              {hasRewards ? "Leave & Claim" : "Claim Project Credentials"}
             </AndamioCardTitle>
             <AndamioCardDescription>
               {hasRewards
-                ? "Leave the project, claim your pending rewards, and mint your credential"
+                ? "Leave the project, claim your pending rewards, and mint your credential NFT"
                 : "Mint your credential tokens for completed tasks"}
             </AndamioCardDescription>
           </div>
@@ -270,10 +270,10 @@ export function ProjectCredentialClaim({
             onClick={handleClaim}
             disabled={!hasAccessToken}
             stateText={{
-              idle: hasRewards ? "Leave & Claim Rewards" : ui.buttonText,
+              idle: hasRewards ? "Leave & Claim" : ui.buttonText,
               fetching: "Preparing Claim...",
               signing: "Sign in Wallet",
-              submitting: hasRewards ? "Claiming Rewards..." : "Minting Credentials...",
+              submitting: hasRewards ? "Leaving & Claiming..." : "Minting Credentials...",
             }}
             className="w-full"
           />

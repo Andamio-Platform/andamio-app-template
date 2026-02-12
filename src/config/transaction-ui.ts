@@ -323,10 +323,10 @@ export const TRANSACTION_UI: Record<TransactionType, TransactionUIConfig> = {
   },
 
   PROJECT_CONTRIBUTOR_TASK_ACTION: {
-    buttonText: "Task Action",
-    title: "Perform Task Action",
+    buttonText: "Submit Evidence",
+    title: "Submit Evidence",
     description: [
-      "Perform an action on your current task, such as updating your submission or transitioning task state.",
+      "Submit or update your evidence for this task. Your manager will review your submission.",
     ],
     footerLink: getDocsUrl("taskAction"),
     footerLinkText: "Tx Documentation",

@@ -452,7 +452,7 @@ export function TasksManage({
             {preConfiguredTaskCodes && preConfiguredTaskCodes.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {preConfiguredTaskCodes.map((code) => (
-                  <AndamioBadge key={code} variant="secondary" className="text-xs font-mono">
+                  <AndamioBadge key={code} variant="secondary" className="text-xs">
                     {code}
                   </AndamioBadge>
                 ))}

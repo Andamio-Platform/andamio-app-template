@@ -29,14 +29,14 @@ export default function Home() {
         <Image
           src="/logos/logo-with-typography-stacked.svg"
           alt="Andamio"
-          width={160}
-          height={160}
+          width={200}
+          height={200}
           className="shrink-0"
           priority
         />
 
-        {/* Card area — centered in remaining space */}
-        <div className="flex flex-1 w-full items-center justify-center">
+        {/* Card area — positioned closer to logo */}
+        <div className="flex flex-1 w-full items-start justify-center pt-[8vh] sm:pt-[10vh]">
           {showFirstLogin ? (
             <FirstLoginCard
               alias={mintedInfo.alias}

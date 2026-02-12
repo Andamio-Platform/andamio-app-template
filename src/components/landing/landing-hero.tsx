@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -205,30 +206,69 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
 
   // Default hero view - clean vertical CTAs
   return (
-    <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+    <div className="flex flex-col items-center text-center max-w-4xl mx-auto gap-12 sm:gap-16">
       {/* Value prop: icon + text pairs with arrows */}
-      <div className="flex items-start gap-4 sm:gap-8">
-        <div className="flex flex-col items-center gap-4">
-          <span className="text-4xl sm:text-5xl">📚</span>
-          <span className="text-muted-foreground">Complete courses.</span>
+      <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-16">
+        <div className="flex flex-col items-center gap-3 w-32 sm:w-44">
+          <div className="relative h-24 w-24 sm:h-36 sm:w-36 translate-x-4">
+            <Image
+              src="/landing-page-icons/01-complete-courses-black.png"
+              alt="Complete courses"
+              fill
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/landing-page-icons/01-complete-courses-white.png"
+              alt="Complete courses"
+              fill
+              className="object-contain hidden dark:block"
+            />
+          </div>
+          <span className="text-muted-foreground text-center text-sm sm:text-base">Complete courses.</span>
         </div>
-        <span className="text-2xl text-muted-foreground pt-2">→</span>
-        <div className="flex flex-col items-center gap-4">
-          <span className="text-4xl sm:text-5xl">✅</span>
-          <span className="text-muted-foreground">Earn credentials.</span>
+        <span className="hidden sm:block text-3xl sm:text-4xl text-muted-foreground">→</span>
+        <div className="flex flex-col items-center gap-3 w-32 sm:w-44">
+          <div className="relative h-24 w-24 sm:h-36 sm:w-36">
+            <Image
+              src="/landing-page-icons/02-earn-credentials-black.png"
+              alt="Earn credentials"
+              fill
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/landing-page-icons/02-earn-credentials-white.png"
+              alt="Earn credentials"
+              fill
+              className="object-contain hidden dark:block"
+            />
+          </div>
+          <span className="text-muted-foreground text-center text-sm sm:text-base translate-x-2">Earn credentials.</span>
         </div>
-        <span className="text-2xl text-muted-foreground pt-2">→</span>
-        <div className="flex flex-col items-center gap-4">
-          <span className="text-4xl sm:text-5xl">🚪</span>
-          <span className="text-muted-foreground">Join projects.</span>
+        <span className="hidden sm:block text-3xl sm:text-4xl text-muted-foreground">→</span>
+        <div className="flex flex-col items-center gap-3 w-32 sm:w-44">
+          <div className="relative h-24 w-24 sm:h-36 sm:w-36">
+            <Image
+              src="/landing-page-icons/03-join-projects-black.png"
+              alt="Join projects"
+              fill
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/landing-page-icons/03-join-projects-white.png"
+              alt="Join projects"
+              fill
+              className="object-contain hidden dark:block"
+            />
+          </div>
+          <span className="text-muted-foreground text-center text-sm sm:text-base">Join projects.</span>
         </div>
       </div>
 
       {/* CTA Cards */}
-      <div className="pt-16 w-full max-w-4xl">
+      <div className="w-full max-w-4xl">
         <hr className="border-border" />
       </div>
-      <div className="pt-6 w-full max-w-4xl">
+      <div className="w-full max-w-4xl">
         <div className="grid gap-6 sm:grid-cols-3">
           <div className="flex flex-col items-center text-center p-6 gap-4">
             <AndamioHeading level={3} size="base">Get Started</AndamioHeading>

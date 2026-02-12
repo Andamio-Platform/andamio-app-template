@@ -49,6 +49,12 @@ export interface PollOptions {
  */
 const STALLED_THRESHOLD = 5;
 
+/**
+ * Max consecutive fetch errors before treating gateway as unreachable.
+ * At 6s intervals, 10 errors ≈ 60s — matches the "20–60 seconds" message shown to users.
+ */
+const MAX_CONSECUTIVE_ERRORS = 10;
+
 export async function pollUntilTerminal(
   txHash: string,
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>,
@@ -58,6 +64,7 @@ export async function pollUntilTerminal(
 ): Promise<TxStatus | null> {
   const { interval = 6_000, maxPolls = 150 } = options;
   let stalledCount = 0;
+  let consecutiveErrors = 0;
 
   for (let i = 0; i < maxPolls; i++) {
     if (signal?.aborted) return null;
@@ -89,11 +96,16 @@ export async function pollUntilTerminal(
 
       if (!response.ok) {
         if (response.status === 404) {
-          // TX not registered yet - expected briefly after submit
+          // TX not registered yet - expected briefly after submit.
+          // Gateway is reachable though, so reset the error counter.
+          consecutiveErrors = 0;
           continue;
         }
         throw new Error(`Failed to get TX status: ${response.status}`);
       }
+
+      // Successful response — reset error counter
+      consecutiveErrors = 0;
 
       const status = (await response.json()) as TxStatus;
       callbacks.onStatus?.(status);
@@ -124,13 +136,35 @@ export async function pollUntilTerminal(
       if (err instanceof DOMException && err.name === "AbortError") return null;
       const error = err instanceof Error ? err : new Error(String(err));
       callbacks.onError?.(error);
+
+      consecutiveErrors++;
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        console.warn(
+          `[TxPolling] Gateway unreachable after ${consecutiveErrors} consecutive errors for ${txHash}`
+        );
+        const gatewayErrorStatus: TxStatus = {
+          tx_hash: txHash,
+          tx_type: "",
+          state: "failed",
+          retry_count: 0,
+          last_error:
+            "Gateway temporarily unreachable. Your transaction was submitted to the blockchain and may still confirm. Please refresh the page later.",
+        };
+        callbacks.onComplete?.(gatewayErrorStatus);
+        return gatewayErrorStatus;
+      }
     }
   }
 
-  // Exceeded max polls
-  const timeoutError = new Error(
-    `TX polling timed out after ${maxPolls} attempts for ${txHash}`
-  );
-  callbacks.onError?.(timeoutError);
-  return null;
+  // Exceeded max polls — create synthetic terminal state
+  const timeoutStatus: TxStatus = {
+    tx_hash: txHash,
+    tx_type: "",
+    state: "failed",
+    retry_count: 0,
+    last_error:
+      "Transaction confirmation timed out. Your transaction was submitted and may still confirm. Please refresh the page later.",
+  };
+  callbacks.onComplete?.(timeoutStatus);
+  return timeoutStatus;
 }

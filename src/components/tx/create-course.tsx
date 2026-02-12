@@ -75,7 +75,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
   }, [courseId]);
 
   // Watch for gateway confirmation after TX submission
-  const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
+  const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
@@ -247,7 +247,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
         )}
 
         {/* Gateway Confirmation Status */}
-        {state === "success" && result?.requiresDBUpdate && !txConfirmed && (
+        {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />

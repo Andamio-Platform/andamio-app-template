@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useOptionalDashboardData } from "~/contexts/dashboard-context";
@@ -9,7 +10,7 @@ import { AndamioSkeleton } from "~/components/andamio/andamio-skeleton";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
-import { AlertIcon, CourseIcon, NextIcon, SuccessIcon } from "~/components/icons";
+import { AlertIcon, CourseIcon, CredentialIcon, NextIcon, SuccessIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
 
 /**
@@ -26,11 +27,13 @@ interface DisplayCourse {
   title: string;
   description: string;
   enrollmentStatus: "enrolled" | "completed";
+  /** Number of approved-but-unclaimed credentials for this course */
+  claimableCount: number;
 }
 
 function EnrolledCourseCard({ course }: { course: DisplayCourse }) {
   const courseId = course.courseId ?? "";
-  const title = course.title ?? `Course ${courseId.slice(0, 8)}...`;
+  const title = course.title || `Course ${courseId.slice(0, 8)}...`;
   const isCompleted = course.enrollmentStatus === "completed";
 
   return (
@@ -41,10 +44,16 @@ function EnrolledCourseCard({ course }: { course: DisplayCourse }) {
       <div
         className={cn(
           "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-          isCompleted ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+          course.claimableCount > 0
+            ? "bg-secondary/15 text-secondary"
+            : isCompleted
+              ? "bg-primary/15 text-primary"
+              : "bg-muted text-muted-foreground"
         )}
       >
-        {isCompleted ? (
+        {course.claimableCount > 0 ? (
+          <CredentialIcon className="h-3.5 w-3.5" />
+        ) : isCompleted ? (
           <SuccessIcon className="h-3.5 w-3.5" />
         ) : (
           <CourseIcon className="h-3.5 w-3.5" />
@@ -53,11 +62,15 @@ function EnrolledCourseCard({ course }: { course: DisplayCourse }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate">{title}</span>
-          {isCompleted && (
+          {course.claimableCount > 0 ? (
+            <span className="shrink-0 rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-medium text-secondary">
+              {course.claimableCount === 1 ? "Claim credential" : `${course.claimableCount} to claim`}
+            </span>
+          ) : isCompleted ? (
             <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
               Completed
             </span>
-          )}
+          ) : null}
         </div>
         {course.description && (
           <AndamioText variant="small" className="line-clamp-1 text-xs">
@@ -85,6 +98,31 @@ export function MyLearning() {
   }
 
   const { student, isLoading, error } = dashboardData;
+
+  // Compute claimable credentials per course:
+  // commitments with ASSIGNMENT_ACCEPTED that aren't yet in credentialsByCourse
+  const claimableByCourseLookup = useMemo(() => {
+    const lookup = new Map<string, number>();
+    const commitments = student?.commitments ?? [];
+    const credentialsByCourse = student?.credentialsByCourse ?? [];
+
+    // Build set of already-claimed sltHashes
+    const claimedHashes = new Set<string>();
+    for (const cc of credentialsByCourse) {
+      for (const hash of cc.credentials) {
+        claimedHashes.add(hash);
+      }
+    }
+
+    // Count approved-but-unclaimed per course
+    for (const c of commitments) {
+      if (c.status === "ASSIGNMENT_ACCEPTED" && !claimedHashes.has(c.sltHash)) {
+        lookup.set(c.courseId, (lookup.get(c.courseId) ?? 0) + 1);
+      }
+    }
+
+    return lookup;
+  }, [student?.commitments, student?.credentialsByCourse]);
 
   // Loading state
   if (isLoading) {
@@ -128,6 +166,7 @@ export function MyLearning() {
     title: c.title,
     description: c.description,
     enrollmentStatus: "enrolled" as const,
+    claimableCount: claimableByCourseLookup.get(c.courseId) ?? 0,
   }));
 
   const completedCourses: DisplayCourse[] = (student?.completedCourses ?? []).map((c) => ({
@@ -135,9 +174,15 @@ export function MyLearning() {
     title: c.title,
     description: c.description,
     enrollmentStatus: "completed" as const,
+    claimableCount: claimableByCourseLookup.get(c.courseId) ?? 0,
   }));
 
-  const allCourses = [...enrolledCourses, ...completedCourses];
+  // Sort: claimable courses first, then enrolled, then completed
+  const allCourses = [...enrolledCourses, ...completedCourses].sort((a, b) => {
+    if (a.claimableCount > 0 && b.claimableCount === 0) return -1;
+    if (a.claimableCount === 0 && b.claimableCount > 0) return 1;
+    return 0;
+  });
 
   // Empty state
   if (allCourses.length === 0) {
@@ -164,6 +209,7 @@ export function MyLearning() {
 
   const enrolledCount = enrolledCourses.length;
   const completedCount = completedCourses.length;
+  const totalClaimable = Array.from(claimableByCourseLookup.values()).reduce((sum, n) => sum + n, 0);
 
   return (
     <AndamioCard>
@@ -178,6 +224,11 @@ export function MyLearning() {
               {completedCount > 0 && (
                 <span className="text-xs text-primary">
                   {completedCount} completed
+                </span>
+              )}
+              {totalClaimable > 0 && (
+                <span className="text-xs text-secondary font-medium">
+                  {totalClaimable} to claim
                 </span>
               )}
             </div>

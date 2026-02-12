@@ -99,7 +99,7 @@ const formatStatus = (status: string | undefined | null): string => {
 const getManagerStatusHint = (status: string | undefined | null): string | null => {
   switch (status) {
     case "AWAITING_SUBMISSION":
-      return "Contributor joined. Waiting for them to submit evidence.";
+      return "Contributor committed to this task. Waiting for evidence submission.";
     case "SUBMITTED":
       return "Evidence submitted. Ready for your review.";
     case "PENDING_TX_COMMIT":
@@ -110,10 +110,10 @@ const getManagerStatusHint = (status: string | undefined | null): string | null 
     case "REFUSED":
       return "You refused this work. The contributor can resubmit with updated evidence.";
     case "DENIED":
-      return "Permanently rejected. The contributor's deposit is forfeited.";
+      return "Permanently rejected. The contributor's deposit has been returned.";
     // Legacy (remove after migration confirmed)
     case "COMMITTED":
-      return "Contributor joined. Waiting for them to submit evidence.";
+      return "Contributor committed to this task. Waiting for evidence submission.";
     default:
       return null;
   }
@@ -175,15 +175,27 @@ export default function ProjectCommitmentsPage() {
   // Filtering
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Task hash → title lookup from project tasks
+  const taskTitleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const task of project?.tasks ?? []) {
+      if (task.taskHash && task.title) {
+        map.set(task.taskHash, task.title);
+      }
+    }
+    return map;
+  }, [project?.tasks]);
+
   // Derived
   const filteredCommitments = useMemo(() => {
     if (!searchQuery) return commitments;
+    const q = searchQuery.toLowerCase();
     return commitments.filter(
       (c) =>
-        c.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.taskHash.toLowerCase().includes(searchQuery.toLowerCase())
+        c.submittedBy.toLowerCase().includes(q) ||
+        (taskTitleMap.get(c.taskHash) ?? c.taskHash).toLowerCase().includes(q)
     );
-  }, [commitments, searchQuery]);
+  }, [commitments, searchQuery, taskTitleMap]);
 
   // Get reward from commitment task context
   const getRewardAda = useCallback((commitment: ManagerCommitment): string | null => {
@@ -327,7 +339,7 @@ export default function ProjectCommitmentsPage() {
                     {project.title ?? "Project"}
                   </AndamioHeading>
                   <AndamioText variant="small" className="text-muted-foreground mt-0.5">
-                    Task Assessments
+                    Commitment Reviews
                   </AndamioText>
                 </div>
                 <div className="flex items-center gap-2">
@@ -411,8 +423,8 @@ export default function ProjectCommitmentsPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <AndamioText variant="small" className="text-muted-foreground font-mono">
-                              {commitment.taskHash.slice(0, 8)}...
+                            <AndamioText variant="small" className="text-muted-foreground truncate">
+                              {taskTitleMap.get(commitment.taskHash) ?? `${commitment.taskHash.slice(0, 8)}...`}
                             </AndamioText>
                             {reward && (
                               <AndamioText variant="small" className="text-muted-foreground">
@@ -464,8 +476,8 @@ export default function ProjectCommitmentsPage() {
                         {formatStatus(selectedCommitment.commitmentStatus)}
                       </AndamioBadge>
                     </div>
-                    <AndamioText variant="small" className="font-mono text-muted-foreground">
-                      Task: {selectedCommitment.taskHash.slice(0, 16)}...
+                    <AndamioText variant="small" className="text-muted-foreground">
+                      Task: {taskTitleMap.get(selectedCommitment.taskHash) ?? selectedCommitment.taskHash.slice(0, 16) + "..."}
                     </AndamioText>
                     {getManagerStatusHint(selectedCommitment.commitmentStatus) && (
                       <AndamioText variant="small" className="text-muted-foreground">
@@ -562,10 +574,10 @@ export default function ProjectCommitmentsPage() {
                         <SuccessIcon className="h-5 w-5 text-primary" />
                         <div className="flex-1">
                           <AndamioText className="font-medium text-primary">
-                            Assessment Recorded
+                            Commitment Recorded
                           </AndamioText>
                           <AndamioText variant="small" className="text-xs text-muted-foreground">
-                            {txResult.contributor}&apos;s submission{" "}
+                            {txResult.contributor}&apos;s commitment{" "}
                             {txResult.outcome === "accept"
                               ? "accepted"
                               : txResult.outcome === "refuse"
@@ -640,7 +652,7 @@ export default function ProjectCommitmentsPage() {
                     <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
                       <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
                       <AndamioText variant="small" className="text-xs text-muted-foreground">
-                        Assessment decisions are recorded on-chain and cannot be undone.
+                        Decisions are recorded on-chain and cannot be undone.
                       </AndamioText>
                     </div>
 
@@ -704,23 +716,34 @@ export default function ProjectCommitmentsPage() {
                             <div className="text-xs font-normal opacity-80">Approve this work. The contributor will receive their reward.</div>
                           </div>
                         </AndamioButton>
+                        <AndamioButton
+                          variant="outline"
+                          className="w-full justify-start h-auto py-2.5 px-3"
+                          onClick={() => handleDecision(selectedCommitment, "refuse")}
+                        >
+                          <ErrorIcon className="h-4 w-4 mr-2 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-medium">Refuse</div>
+                            <div className="text-xs font-normal opacity-80">Send back for revision. The contributor can resubmit.</div>
+                          </div>
+                        </AndamioButton>
                         <AndamioTooltipProvider>
                           <AndamioTooltip>
                             <AndamioTooltipTrigger asChild>
                               <span className="w-full">
                                 <AndamioButton
-                                  variant="outline"
+                                  variant="destructive"
                                   className="w-full justify-start h-auto py-2.5 px-3"
-                                  onClick={() => handleDecision(selectedCommitment, "refuse")}
+                                  onClick={() => handleDecision(selectedCommitment, "deny")}
                                   disabled={!!(selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000)}
                                 >
-                                  <ErrorIcon className="h-4 w-4 mr-2 shrink-0" />
+                                  <BlockIcon className="h-4 w-4 mr-2 shrink-0" />
                                   <div className="text-left">
-                                    <div className="font-medium">Refuse</div>
+                                    <div className="font-medium">Deny</div>
                                     <div className="text-xs font-normal opacity-80">
                                       {selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000
                                         ? `Available after ${new Date(selectedCommitment.task.expirationPosix * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                                        : "Send back for revision. The contributor can resubmit."}
+                                        : "Permanently reject. The contributor\u2019s deposit is returned."}
                                     </div>
                                   </div>
                                 </AndamioButton>
@@ -728,22 +751,11 @@ export default function ProjectCommitmentsPage() {
                             </AndamioTooltipTrigger>
                             {!!(selectedCommitment.task?.expirationPosix && Date.now() < selectedCommitment.task.expirationPosix * 1000) && (
                               <AndamioTooltipContent>
-                                Refuse is available after the task expiration date passes
+                                Deny is available after the task expiration date passes
                               </AndamioTooltipContent>
                             )}
                           </AndamioTooltip>
                         </AndamioTooltipProvider>
-                        <AndamioButton
-                          variant="destructive"
-                          className="w-full justify-start h-auto py-2.5 px-3"
-                          onClick={() => handleDecision(selectedCommitment, "deny")}
-                        >
-                          <BlockIcon className="h-4 w-4 mr-2 shrink-0" />
-                          <div className="text-left">
-                            <div className="font-medium">Deny</div>
-                            <div className="text-xs font-normal opacity-80">Permanently reject. The contributor&apos;s deposit is forfeited.</div>
-                          </div>
-                        </AndamioButton>
                       </div>
                     )}
 

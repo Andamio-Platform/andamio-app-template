@@ -391,7 +391,7 @@ function CourseListItem({ course, isSelected }: CourseListItemProps) {
           "text-sm font-medium truncate transition-colors block",
           isSelected ? "text-primary" : "group-hover:text-foreground"
         )}>
-          {course.title ?? "Untitled Course"}
+          {course.title || "Untitled Course"}
         </span>
       </div>
 
@@ -423,10 +423,10 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
   const prereqs = (project as { prerequisites?: Array<{ courseId: string }> }).prerequisites;
   const tooltipText = useMemo(() => {
     if (!prereqs || prereqs.length === 0) {
-      return project.title ?? "Untitled Project";
+      return project.title || "Untitled Project";
     }
     const courseList = prereqs.map(p => p.courseId.slice(0, 8) + "…").join(", ");
-    return `${project.title ?? "Untitled Project"}\nPrerequisites: ${courseList}`;
+    return `${project.title || "Untitled Project"}\nPrerequisites: ${courseList}`;
   }, [prereqs, project.title]);
 
   return (
@@ -461,7 +461,7 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
           "text-sm font-medium truncate transition-colors block",
           isSelected ? "text-primary" : "group-hover:text-foreground"
         )}>
-          {project.title ?? "Untitled Project"}
+          {project.title || "Untitled Project"}
         </span>
       </div>
 

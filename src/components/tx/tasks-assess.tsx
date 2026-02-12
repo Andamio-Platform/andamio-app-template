@@ -70,7 +70,7 @@ export interface TasksAssessProps {
  * Assessment outcomes:
  * - **Accept**: Contributor receives the task reward, task is marked complete
  * - **Refuse**: Task is rejected but contributor can resubmit
- * - **Deny**: Task is permanently rejected, contributor loses deposit
+ * - **Deny**: Task is permanently rejected, contributor's deposit is returned
  *
  * @example
  * ```tsx
@@ -112,8 +112,8 @@ export function TasksAssess({
                 ? "refused"
                 : "denied";
 
-          toast.success(`Task ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
-            description: `${contributorAlias}'s submission has been ${actionText}`,
+          toast.success(`Commitment ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}!`, {
+            description: `${contributorAlias}'s commitment has been ${actionText}`,
           });
 
           if (assessmentResult) {
@@ -189,7 +189,7 @@ export function TasksAssess({
 
         {/* Assessment Outcomes Explanation */}
         <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
-          <AndamioText variant="small" className="font-medium">Assessment Options:</AndamioText>
+          <AndamioText variant="small" className="font-medium">Decision Options:</AndamioText>
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
               <SuccessIcon className="h-3 w-3 text-primary" />
@@ -201,7 +201,7 @@ export function TasksAssess({
             </div>
             <div className="flex items-center gap-2">
               <BlockIcon className="h-3 w-3 text-destructive" />
-              <span><strong>Deny</strong>: Permanently reject, forfeit deposit</span>
+              <span><strong>Deny</strong>: Permanently reject, deposit is returned</span>
             </div>
           </div>
         </div>
@@ -210,7 +210,7 @@ export function TasksAssess({
         <div className="flex items-start gap-2 rounded-md border border-muted-foreground/30 bg-muted/10 p-3">
           <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
           <AndamioText variant="small" className="text-xs text-muted-foreground">
-            Assessment decisions are recorded on-chain and cannot be undone.
+            Decisions are recorded on-chain and cannot be undone.
           </AndamioText>
         </div>
 
@@ -257,14 +257,14 @@ export function TasksAssess({
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <AndamioText className="font-medium text-primary">
-                  Assessment Recorded!
+                  Commitment Recorded!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
                   {assessmentResult === "accept"
-                    ? `${contributorAlias}'s submission accepted`
+                    ? `${contributorAlias}'s commitment accepted`
                     : assessmentResult === "refuse"
-                      ? `${contributorAlias}'s submission refused`
-                      : `${contributorAlias}'s submission denied`}
+                      ? `${contributorAlias}'s commitment refused`
+                      : `${contributorAlias}'s commitment denied`}
                 </AndamioText>
               </div>
             </div>

@@ -32,7 +32,7 @@ import {
   AndamioScrollArea,
 } from "~/components/andamio";
 // Note: BlockIcon hidden for v2 release (used by Blacklist tab)
-import { TaskIcon, AssignmentIcon, TeacherIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon, ManagerIcon, OwnerIcon, PendingIcon, CompletedIcon, CloseIcon, NeutralIcon, NextIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, ContributorIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon, ManagerIcon, OwnerIcon, PendingIcon, CompletedIcon, CloseIcon, NeutralIcon, NextIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 // Note: BlacklistManage hidden for v2 release - will enable after user research
@@ -628,12 +628,12 @@ export default function ProjectDashboardPage() {
               )}
               <div className="flex items-center justify-between">
                 <AndamioLabel className="flex items-center gap-1.5">
-                  <TeacherIcon className="h-3.5 w-3.5" />
+                  <ContributorIcon className="h-3.5 w-3.5" />
                   Contributors
                 </AndamioLabel>
                 <Link href={`/studio/project/${projectId}/manage-contributors`}>
                   <AndamioButton variant="outline" size="sm">
-                    <TeacherIcon className="h-3.5 w-3.5 mr-1.5" />
+                    <ContributorIcon className="h-3.5 w-3.5 mr-1.5" />
                     View Contributors ({onChainContributorCount})
                   </AndamioButton>
                 </Link>

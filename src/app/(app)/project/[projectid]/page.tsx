@@ -43,6 +43,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { checkProjectEligibility } from "~/lib/project-eligibility";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { NextIcon, PendingIcon } from "~/components/icons";
 
 /**
  * Project detail page — the public-facing view of a project.
@@ -59,7 +60,7 @@ export default function ProjectDetailPage() {
 
   const { data: project, isLoading, error } = useProject(projectId);
   const { data: mergedTasks } = useProjectTasks(projectId);
-  const { isAuthenticated } = useAndamioAuth();
+  const { isAuthenticated, user } = useAndamioAuth();
 
   // Prerequisite eligibility
   const prereqCourseIds = React.useMemo(() => {
@@ -76,6 +77,20 @@ export default function ProjectDetailPage() {
     if (!isAuthenticated || prerequisites.length === 0) return null;
     return checkProjectEligibility(prerequisites, completions);
   }, [isAuthenticated, prerequisites, completions]);
+
+  // Derive contributor status for authenticated users (must be before early returns)
+  const contributorStatus = React.useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !project) return null;
+    const contributors = project.contributors ?? [];
+    const isContributor = contributors.some((c) => c.alias === alias);
+    if (!isContributor) return null;
+    const hasSubmission = (project.submissions ?? []).some((s) => s.submittedBy === alias);
+    if (hasSubmission) return "task_pending" as const;
+    const hasAcceptedTask = (project.assessments ?? []).some((a) => a.decision === "accept" && a.assessedBy !== alias);
+    if (hasAcceptedTask) return "task_accepted" as const;
+    return "enrolled" as const;
+  }, [user?.accessTokenAlias, project]);
 
   if (isLoading) {
     return <AndamioPageLoading variant="detail" />;
@@ -134,6 +149,47 @@ export default function ProjectDetailPage() {
           {project.projectId}
         </AndamioText>
       </div>
+
+      {/* ── Contributor Status Bar ──────────────────────────────── */}
+      {contributorStatus && (
+        <div className={`rounded-lg border p-4 flex items-center justify-between gap-4 ${
+          contributorStatus === "task_accepted"
+            ? "border-primary/30 bg-primary/5"
+            : "border-muted-foreground/20 bg-muted/30"
+        }`}>
+          <div className="flex items-center gap-3 min-w-0">
+            {contributorStatus === "task_accepted" ? (
+              <SuccessIcon className="h-5 w-5 text-primary shrink-0" />
+            ) : contributorStatus === "task_pending" ? (
+              <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
+            ) : (
+              <ContributorIcon className="h-5 w-5 text-primary shrink-0" />
+            )}
+            <div className="min-w-0">
+              <AndamioText className="font-medium">
+                {contributorStatus === "task_accepted"
+                  ? "Task Accepted — Action Required"
+                  : contributorStatus === "task_pending"
+                    ? "Task Pending Review"
+                    : "You're contributing to this project"}
+              </AndamioText>
+              <AndamioText variant="small" className="text-muted-foreground">
+                {contributorStatus === "task_accepted"
+                  ? "Your work was approved! Claim your reward or commit to a new task."
+                  : contributorStatus === "task_pending"
+                    ? "Your submission is waiting for manager review."
+                    : "You have an active contributor role."}
+              </AndamioText>
+            </div>
+          </div>
+          <Link href={`/project/${projectId}/contributor`}>
+            <AndamioButton size="sm" variant={contributorStatus === "task_accepted" ? "default" : "outline"}>
+              {contributorStatus === "task_accepted" ? "Claim Reward" : "Contributor Dashboard"}
+              <NextIcon className="h-3.5 w-3.5 ml-1.5" />
+            </AndamioButton>
+          </Link>
+        </div>
+      )}
 
       {/* ── Stats Bar ─────────────────────────────────────────────── */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">

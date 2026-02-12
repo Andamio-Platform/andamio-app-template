@@ -355,16 +355,7 @@ export function AssignmentCommitment({
           </AndamioAlert>
         )}
 
-        {/* Top-level TX confirmation — persists across view transitions */}
-        {((commitTx.state === "success" && commitTx.result?.requiresDBUpdate && !commitTxConfirmed) ||
-          (updateTx.state === "success" && updateTx.result?.requiresDBUpdate && !updateTxConfirmed)) && (
-          <TxConfirmationProgress
-            txStatus={commitTxStatus ?? updateTxStatus}
-            txHash={commitTx.result?.txHash ?? updateTx.result?.txHash}
-            explorerUrl={commitTx.result?.blockchainExplorerUrl ?? updateTx.result?.blockchainExplorerUrl}
-          />
-        )}
-
+        {/* Top-level TX success — persists after view transition to new branch */}
         {(commitTxConfirmed || updateTxConfirmed) && (
           <TxConfirmationSuccess
             message={commitTxConfirmed ? "Assignment submitted successfully!" : "Evidence updated successfully!"}

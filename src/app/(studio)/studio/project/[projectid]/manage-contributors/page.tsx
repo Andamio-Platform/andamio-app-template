@@ -25,7 +25,7 @@ import {
   AndamioDashboardStat,
   AndamioScrollArea,
 } from "~/components/andamio";
-import { TeacherIcon, SuccessIcon, OnChainIcon } from "~/components/icons";
+import { ContributorIcon, SuccessIcon, OnChainIcon } from "~/components/icons";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 
 /**
@@ -88,7 +88,7 @@ export default function ManageContributorsPage() {
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2">
         <AndamioDashboardStat
-          icon={TeacherIcon}
+          icon={ContributorIcon}
           label="Total Contributors"
           value={contributors.length}
           valueColor={contributors.length > 0 ? "success" : undefined}
@@ -107,7 +107,7 @@ export default function ManageContributorsPage() {
       <AndamioCard>
         <AndamioCardHeader>
           <AndamioCardTitle className="flex items-center gap-2">
-            <TeacherIcon className="h-5 w-5" />
+            <ContributorIcon className="h-5 w-5" />
             On-Chain Contributors
           </AndamioCardTitle>
           <AndamioCardDescription>
@@ -119,7 +119,7 @@ export default function ManageContributorsPage() {
           {contributors.length === 0 && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-3">
-                <TeacherIcon className="h-6 w-6 text-muted-foreground" />
+                <ContributorIcon className="h-6 w-6 text-muted-foreground" />
               </div>
               <AndamioText className="font-medium">No contributors yet</AndamioText>
               <AndamioText variant="muted" className="mt-1 max-w-[320px]">

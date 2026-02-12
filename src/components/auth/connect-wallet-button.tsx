@@ -277,6 +277,10 @@ export function ConnectWalletButton({
   const wallets = useWalletList();
   const { connect, connected, setWallet, setWeb3UserData } = useWallet();
 
+  // Defer Dialog rendering until after hydration to avoid Radix ID mismatch
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   React.useEffect(() => {
     if (connected) onConnected?.();
   }, [connected, onConnected]);
@@ -331,6 +335,15 @@ export function ConnectWalletButton({
 
   if (connected) {
     return <ConnectedDropdown />;
+  }
+
+  // Before hydration, render a plain button to avoid Radix Dialog ID mismatch
+  if (!mounted) {
+    return (
+      <Button variant="outline" className={className}>
+        {label}
+      </Button>
+    );
   }
 
   return (

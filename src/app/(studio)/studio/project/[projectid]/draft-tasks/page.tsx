@@ -256,10 +256,10 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {liveTasks.map((task) => {
+                {liveTasks.map((task, idx) => {
                   const taskIndex = task.index ?? 0;
                   return (
-                    <AndamioTableRow key={task.taskHash || taskIndex}>
+                    <AndamioTableRow key={`${task.taskHash || 'live'}-${taskIndex}-${idx}`}>
 
                       <AndamioTableCell className="font-medium">
                         <Link
@@ -305,10 +305,10 @@ export default function DraftTasksPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {otherTasks.map((task) => {
+                {otherTasks.map((task, idx) => {
                   const taskIndex = task.index ?? 0;
                   return (
-                    <AndamioTableRow key={task.taskHash || taskIndex}>
+                    <AndamioTableRow key={`${task.taskHash || 'other'}-${taskIndex}-${idx}`}>
 
                       <AndamioTableCell className="font-medium">{task.title || "Untitled Task"}</AndamioTableCell>
                       <AndamioTableCell className="text-center">

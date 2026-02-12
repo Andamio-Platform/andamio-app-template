@@ -17,7 +17,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioEmptyState } from "~/components/andamio/andamio-empty-state";
 import { AndamioProgress } from "~/components/andamio/andamio-progress";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ProjectIcon, SuccessIcon, NextIcon } from "~/components/icons";
+import { ProjectIcon, SuccessIcon, NextIcon, CredentialIcon } from "~/components/icons";
 
 const MAX_IN_PROGRESS_SHOWN = 3;
 
@@ -26,6 +26,7 @@ interface ProjectProgressItem {
   title: string;
   totalRequired: number;
   completed: number;
+  approvedUnclaimed: number;
   isReady: boolean;
   nextMissingCourseId?: string;
   nextMissingCount?: number;
@@ -39,7 +40,7 @@ function MissingPrereqLabel({
   missingCount: number;
 }) {
   const { data: course } = useCourse(courseId);
-  const courseLabel = course?.title ?? `Course ${courseId.slice(0, 8)}...`;
+  const courseLabel = course?.title || `Course ${courseId.slice(0, 8)}...`;
 
   return (
     <AndamioText variant="small" className="text-xs text-muted-foreground">
@@ -64,6 +65,18 @@ export function ProjectUnlockProgress() {
     return completed;
   }, [student?.credentialsByCourse]);
 
+  // Get approved-but-unclaimed SLT hashes from commitments
+  const approvedUnclaimedHashes = useMemo(() => {
+    const approved = new Set<string>();
+    const commitments = student?.commitments ?? [];
+    for (const c of commitments) {
+      if (c.status === "ASSIGNMENT_ACCEPTED" && !completedModuleHashes.has(c.sltHash)) {
+        approved.add(c.sltHash);
+      }
+    }
+    return approved;
+  }, [student?.commitments, completedModuleHashes]);
+
   // Transform projects with prerequisites into progress items
   const progressItems = useMemo<ProjectProgressItem[]>(() => {
     const items: ProjectProgressItem[] = [];
@@ -75,6 +88,7 @@ export function ProjectUnlockProgress() {
 
       let totalRequired = 0;
       let completed = 0;
+      let approvedUnclaimed = 0;
       let nextMissingCourseId: string | undefined;
       let nextMissingCount: number | undefined;
 
@@ -86,20 +100,28 @@ export function ProjectUnlockProgress() {
         const completedInCourse = hashes.length - missing.length;
         completed += completedInCourse;
 
+        // Count how many of the "missing" are actually approved but not yet claimed
+        for (const hash of missing) {
+          if (approvedUnclaimedHashes.has(hash)) {
+            approvedUnclaimed++;
+          }
+        }
+
         if (missing.length > 0 && !nextMissingCourseId) {
           nextMissingCourseId = prereq.courseId;
           nextMissingCount = missing.length;
         }
       }
 
-      // Only show projects where user has made some progress
-      if (totalRequired === 0 || completed === 0) continue;
+      // Show projects where user has some progress OR has approved-but-unclaimed credentials
+      if (totalRequired === 0 || (completed === 0 && approvedUnclaimed === 0)) continue;
 
       items.push({
         projectId: project.projectId,
         title: project.title || "Untitled Project",
         totalRequired,
         completed,
+        approvedUnclaimed,
         isReady: project.qualified,
         nextMissingCourseId,
         nextMissingCount,
@@ -107,7 +129,7 @@ export function ProjectUnlockProgress() {
     }
 
     return items;
-  }, [projects?.withPrerequisites, completedModuleHashes]);
+  }, [projects?.withPrerequisites, completedModuleHashes, approvedUnclaimedHashes]);
 
   // In-progress projects (have some prerequisites completed but not all)
   const inProgress = useMemo(
@@ -217,6 +239,7 @@ export function ProjectUnlockProgress() {
         {/* In-progress projects — individual cards with progress bars */}
         {shownInProgress.map((item) => {
           const progressPercent = Math.round((item.completed / item.totalRequired) * 100);
+          const allRemainingApproved = item.approvedUnclaimed > 0 && item.approvedUnclaimed >= (item.totalRequired - item.completed);
           return (
             <Link
               key={item.projectId}
@@ -241,14 +264,29 @@ export function ProjectUnlockProgress() {
                 <AndamioProgress value={progressPercent} />
               </div>
 
-              {item.nextMissingCourseId && item.nextMissingCount && (
+              {/* Approved-but-unclaimed banner — all remaining prereqs are approved */}
+              {allRemainingApproved ? (
+                <div className="mt-2 flex items-center gap-1.5 text-primary">
+                  <CredentialIcon className="h-3.5 w-3.5 shrink-0" />
+                  <AndamioText variant="small" className="text-xs font-medium text-primary">
+                    Approved! Claim {item.approvedUnclaimed === 1 ? "your credential" : `${item.approvedUnclaimed} credentials`} to unlock
+                  </AndamioText>
+                </div>
+              ) : item.approvedUnclaimed > 0 ? (
+                <div className="mt-2 flex items-center gap-1.5 text-primary">
+                  <CredentialIcon className="h-3.5 w-3.5 shrink-0" />
+                  <AndamioText variant="small" className="text-xs text-primary">
+                    {item.approvedUnclaimed} {item.approvedUnclaimed === 1 ? "credential" : "credentials"} ready to claim
+                  </AndamioText>
+                </div>
+              ) : item.nextMissingCourseId && item.nextMissingCount ? (
                 <div className="mt-2">
                   <MissingPrereqLabel
                     courseId={item.nextMissingCourseId}
                     missingCount={item.nextMissingCount}
                   />
                 </div>
-              )}
+              ) : null}
             </Link>
           );
         })}

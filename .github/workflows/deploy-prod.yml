@@ -22,6 +22,9 @@ env:
   NEXT_PUBLIC_CARDANO_NETWORK: mainnet
   NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID: ${{ vars.PROD_ACCESS_TOKEN_POLICY_ID }}
   # TODO: Add TX sponsorship env vars as part of mainnet launch plan
+  # TODO: Set PROD_WEB3_SDK_PROJECT_ID and PROD_WEB3_SDK_NETWORK repo variables for social login
+  # NEXT_PUBLIC_WEB3_SDK_PROJECT_ID: ${{ vars.PROD_WEB3_SDK_PROJECT_ID }}
+  # NEXT_PUBLIC_WEB3_SDK_NETWORK: ${{ vars.PROD_WEB3_SDK_NETWORK }}
 
 jobs:
   build-and-deploy:
@@ -83,6 +86,9 @@ jobs:
             NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL }}
             NEXT_PUBLIC_CARDANO_NETWORK=${{ env.NEXT_PUBLIC_CARDANO_NETWORK }}
             NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${{ env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID }}
+            # TODO: Uncomment when PROD_WEB3_SDK_* repo variables are set
+            # NEXT_PUBLIC_WEB3_SDK_PROJECT_ID=${{ env.NEXT_PUBLIC_WEB3_SDK_PROJECT_ID }}
+            # NEXT_PUBLIC_WEB3_SDK_NETWORK=${{ env.NEXT_PUBLIC_WEB3_SDK_NETWORK }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

@@ -1,8 +1,8 @@
 /**
- * MintAccessToken Component (Simplified)
+ * MintAccessToken Component
  *
  * UI for minting a new Andamio Access Token NFT.
- * Uses the simplified transaction hook with gateway auto-confirmation.
+ * Uses the transaction hook with gateway auto-confirmation.
  *
  * ## TX Lifecycle
  *
@@ -64,7 +64,7 @@ import { useUpdateAccessTokenAlias } from "~/hooks/api/use-user";
 import { getTransactionExplorerUrl } from "~/lib/constants";
 import { env } from "~/env";
 
-export interface MintAccessTokenSimpleProps {
+export interface MintAccessTokenProps {
   /**
    * Callback fired when access token is successfully minted AND user has
    * re-authenticated with their new token. This is the final success state.
@@ -103,14 +103,14 @@ function isValidAlias(alias: string): boolean {
 }
 
 /**
- * MintAccessTokenSimple - Simplified version using new transaction hook
+ * MintAccessToken - Mint an Andamio Access Token NFT
  *
  * @example
  * ```tsx
- * <MintAccessTokenSimple onSuccess={() => router.refresh()} />
+ * <MintAccessToken onSuccess={() => router.refresh()} />
  * ```
  */
-export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = false }: MintAccessTokenSimpleProps) {
+export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }: MintAccessTokenProps) {
   const router = useRouter();
   const { wallet, connected } = useWallet();
   const {
@@ -171,16 +171,16 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
             const addressObj = core.Address.fromString(rawAddress);
             if (addressObj) {
               bech32Address = addressObj.toBech32();
-              console.log("[MintAccessTokenSimple] Converted hex to bech32:", bech32Address.slice(0, 20) + "...");
+              console.log("[MintAccessToken] Converted hex to bech32:", bech32Address.slice(0, 20) + "...");
             }
           } catch (convErr) {
-            console.error("[MintAccessTokenSimple] Failed to convert address:", convErr);
+            console.error("[MintAccessToken] Failed to convert address:", convErr);
           }
         }
 
         setWalletAddress(bech32Address);
       } catch (err) {
-        console.error("[MintAccessTokenSimple] Failed to get wallet address:", err);
+        console.error("[MintAccessToken] Failed to get wallet address:", err);
         setWalletAddress(null);
       }
     })();
@@ -194,7 +194,7 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
       onComplete: (status) => {
         // "updated" means Gateway has confirmed TX AND updated DB
         if (status.state === "updated") {
-          console.log("[MintAccessTokenSimple] TX confirmed and DB updated by gateway");
+          console.log("[MintAccessToken] TX confirmed and DB updated by gateway");
 
           if (skipCeremony) {
             // Parent handles ceremony - just refresh and callback
@@ -204,7 +204,15 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
             });
             void onSuccess?.();
           } else {
-            // Transition to celebration state
+            // CRITICAL: Force re-authentication before allowing dashboard access
+            // The old JWT doesn't have accessTokenAlias, so any operations
+            // (course_create, project_create) would use the wrong owner alias.
+            // By logging out immediately, we ensure the user must re-authenticate
+            // to get a new JWT that includes their accessTokenAlias.
+            // See: https://github.com/Andamio-Platform/andamio-app-v2/issues/286
+            console.log("[MintAccessToken] Forcing re-auth to get JWT with accessTokenAlias");
+            logout();
+            // Transition to celebration state (user will see celebration, then must reconnect)
             setCeremonyState("celebration");
           }
         } else if (status.state === "failed" || status.state === "expired") {
@@ -227,7 +235,7 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
   useEffect(() => {
     if (isPureOnChainSuccess && !hasHandledSuccessRef.current) {
       hasHandledSuccessRef.current = true;
-      console.log("[MintAccessTokenSimple] Pure on-chain TX submitted successfully");
+      console.log("[MintAccessToken] Pure on-chain TX submitted successfully");
 
       if (skipCeremony) {
         // Parent handles ceremony
@@ -297,7 +305,7 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
 
   const handleMint = async () => {
     if (!walletAddress || !alias.trim()) {
-      console.log("[MintAccessTokenSimple] Cannot mint - walletAddress:", walletAddress, "alias:", alias.trim());
+      console.log("[MintAccessToken] Cannot mint - walletAddress:", walletAddress, "alias:", alias.trim());
       return;
     }
 
@@ -332,12 +340,12 @@ export function MintAccessTokenSimple({ onSuccess, onSubmitted, skipCeremony = f
             refreshAuth();
           }
         } catch (dbError) {
-          console.error("[MintAccessTokenSimple] Optimistic update failed:", dbError);
+          console.error("[MintAccessToken] Optimistic update failed:", dbError);
           // Non-critical - gateway will handle on confirmation
         }
       },
       onError: (txError) => {
-        console.error("[MintAccessTokenSimple] Transaction error:", txError);
+        console.error("[MintAccessToken] Transaction error:", txError);
         // Error toast already shown by hook
       },
     });

@@ -12,7 +12,7 @@ import {
   AndamioCardHeader,
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { MintAccessTokenSimple } from "~/components/tx/mint-access-token-simple";
+import { MintAccessToken } from "~/components/tx/mint-access-token";
 import { MARKETING } from "~/config/marketing";
 
 /**
@@ -121,7 +121,7 @@ export function MintCard({ onMinted }: MintCardProps) {
         </AndamioCardDescription>
       </AndamioCardHeader>
       <AndamioCardContent>
-        <MintAccessTokenSimple onSubmitted={onMinted} skipCeremony />
+        <MintAccessToken onSubmitted={onMinted} skipCeremony />
       </AndamioCardContent>
     </AndamioCard>
   );

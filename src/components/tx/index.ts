@@ -18,12 +18,8 @@ export type { TxStatusBadgeProps } from "./tx-status-badge";
 export { PendingTxList } from "./pending-tx-list";
 export type { PendingTxListProps } from "./pending-tx-list";
 
-// MintAccessToken (V1) is deprecated - use MintAccessTokenSimple instead
-export { MintAccessTokenSimple } from "./mint-access-token-simple";
-export type { MintAccessTokenSimpleProps } from "./mint-access-token-simple";
-// Re-export for backwards compatibility
-export { MintAccessTokenSimple as MintAccessToken } from "./mint-access-token-simple";
-export type { MintAccessTokenSimpleProps as MintAccessTokenProps } from "./mint-access-token-simple";
+export { MintAccessToken } from "./mint-access-token";
+export type { MintAccessTokenProps } from "./mint-access-token";
 
 export { MintModuleTokens } from "./mint-module-tokens";
 export type { MintModuleTokensProps } from "./mint-module-tokens";

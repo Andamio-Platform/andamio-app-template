@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTransaction } from "~/hooks/tx/use-transaction";
+import { useSponsoredTransaction } from "~/hooks/tx/use-sponsored-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { TransactionStatus } from "~/components/tx/transaction-status";
@@ -35,7 +35,7 @@ interface V1MigrateCardProps {
 }
 
 export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCardProps) {
-  const { execute, state: txState, result, error, reset } = useTransaction();
+  const { execute, state: txState, result, error, reset } = useSponsoredTransaction();
   const { isSuccess: streamSuccess } = useTxStream(result?.txHash ?? null);
 
   const [claimComplete, setClaimComplete] = React.useState(false);
@@ -48,10 +48,7 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
   }, [txState]);
 
   const handleClaim = async () => {
-    await execute({
-      txType: "GLOBAL_USER_ACCESS_TOKEN_CLAIM",
-      params: { alias: detectedAlias },
-    });
+    await execute({ alias: detectedAlias });
   };
 
   const handleContinue = () => {

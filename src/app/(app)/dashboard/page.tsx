@@ -7,7 +7,7 @@ import { DashboardProvider } from "~/contexts/dashboard-context";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 import { MyLearning } from "~/components/learner/my-learning";
 import { ProjectUnlockProgress } from "~/components/learner/project-unlock-progress";
-import { MintAccessTokenSimple } from "~/components/tx";
+import { MintAccessToken } from "~/components/tx";
 import { WelcomeHero } from "~/components/dashboard/welcome-hero";
 import { GettingStarted } from "~/components/dashboard/getting-started";
 import { AccessTokenConfirmationAlert } from "~/components/dashboard/access-token-confirmation-alert";
@@ -84,7 +84,7 @@ export default function DashboardPage() {
           isAuthenticated={isAuthenticated}
           hasAccessToken={hasAccessToken}
         />
-        <MintAccessTokenSimple onSuccess={() => router.refresh()} />
+        <MintAccessToken onSuccess={() => router.refresh()} />
       </div>
     );
   }

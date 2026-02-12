@@ -69,6 +69,9 @@ jobs:
             NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${{ vars.DEV_ANDAMIO_GATEWAY_URL }}
             NEXT_PUBLIC_CARDANO_NETWORK=${{ vars.DEV_CARDANO_NETWORK }}
             NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${{ vars.DEV_ACCESS_TOKEN_POLICY_ID }}
+            NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=${{ vars.DEV_BLOCKFROST_PROJECT_ID }}
+            NEXT_PUBLIC_WEB3_SDK_PROJECT_ID=${{ vars.DEV_WEB3_SDK_PROJECT_ID }}
+            NEXT_PUBLIC_WEB3_SDK_NETWORK=${{ vars.DEV_WEB3_SDK_NETWORK }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

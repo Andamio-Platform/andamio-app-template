@@ -4,15 +4,21 @@
 # Optimized for Next.js with standalone output mode
 #
 # Build-time environment variables (passed via --build-arg):
-#   NEXT_PUBLIC_ANDAMIO_GATEWAY_URL - API Gateway URL
-#   NEXT_PUBLIC_CARDANO_NETWORK     - Cardano network (preprod/preview/mainnet)
+#   NEXT_PUBLIC_ANDAMIO_GATEWAY_URL    - API Gateway URL
+#   NEXT_PUBLIC_CARDANO_NETWORK        - Cardano network (preprod/preview/mainnet)
 #   NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID - Access token policy ID
+#   NEXT_PUBLIC_BLOCKFROST_PROJECT_ID  - Blockfrost API key (optional, for social wallet TX)
+#   NEXT_PUBLIC_WEB3_SDK_PROJECT_ID    - UTXOS Web3 SDK project ID (optional)
+#   NEXT_PUBLIC_WEB3_SDK_NETWORK       - UTXOS network: mainnet/testnet (optional, default: testnet)
 #
 # Example build command:
 #   docker build \
 #     --build-arg NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=https://dev.api.andamio.io \
 #     --build-arg NEXT_PUBLIC_CARDANO_NETWORK=preprod \
 #     --build-arg NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=29aa6a65f5c890cfa428d59b15dec6293bf4ff0a94305c957508dc78 \
+#     --build-arg NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=preprodXXX \
+#     --build-arg NEXT_PUBLIC_WEB3_SDK_PROJECT_ID=your-project-id \
+#     --build-arg NEXT_PUBLIC_WEB3_SDK_NETWORK=testnet \
 #     -t andamio-frontend .
 # =============================================================================
 
@@ -53,11 +59,17 @@ COPY . .
 ARG NEXT_PUBLIC_ANDAMIO_GATEWAY_URL
 ARG NEXT_PUBLIC_CARDANO_NETWORK
 ARG NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID
+ARG NEXT_PUBLIC_BLOCKFROST_PROJECT_ID
+ARG NEXT_PUBLIC_WEB3_SDK_PROJECT_ID
+ARG NEXT_PUBLIC_WEB3_SDK_NETWORK
 
 # Set environment for build
 ENV NEXT_PUBLIC_ANDAMIO_GATEWAY_URL=${NEXT_PUBLIC_ANDAMIO_GATEWAY_URL}
 ENV NEXT_PUBLIC_CARDANO_NETWORK=${NEXT_PUBLIC_CARDANO_NETWORK}
 ENV NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID=${NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID}
+ENV NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=${NEXT_PUBLIC_BLOCKFROST_PROJECT_ID}
+ENV NEXT_PUBLIC_WEB3_SDK_PROJECT_ID=${NEXT_PUBLIC_WEB3_SDK_PROJECT_ID}
+ENV NEXT_PUBLIC_WEB3_SDK_NETWORK=${NEXT_PUBLIC_WEB3_SDK_NETWORK}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Skip T3 env validation at build time - server-side secrets are injected at runtime

@@ -38,6 +38,7 @@ import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 // Note: BlacklistManage hidden for v2 release - will enable after user research
 import { ManagersManage } from "~/components/tx";
 import { StudioFormSection } from "~/components/studio/studio-editor-pane";
+import { RegisterProject } from "~/components/studio/register-project";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
@@ -181,6 +182,18 @@ export default function ProjectDashboardPage() {
   // Loading state
   if (isProjectLoading || isTasksLoading || isCommitmentsLoading) {
     return <AndamioPageLoading variant="content" />;
+  }
+
+  // Unregistered state - project exists on-chain but not in DB
+  // Show registration form instead of normal dashboard
+  if (projectDetail?.status === "unregistered") {
+    return (
+      <RegisterProject
+        projectId={projectId}
+        owner={projectDetail.owner ?? projectDetail.ownerAlias}
+        managers={projectDetail.managers}
+      />
+    );
   }
 
   // Error state

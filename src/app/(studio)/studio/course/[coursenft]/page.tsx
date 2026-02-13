@@ -60,6 +60,7 @@ import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
 import { toast } from "sonner";
+import { RegisterCourse } from "~/components/studio/register-course";
 // Note: computeSltHashDefinite removed - no longer needed with hook-based data
 
 // =============================================================================
@@ -168,11 +169,18 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   const { data: modules = [], isLoading: isLoadingModules, refetch: refetchModules } = useTeacherCourseModules(courseId);
   const { data: teacherCourses = [] } = useTeacherCourses();
 
+  // Get course from teacher courses list (has status info)
+  const teacherCourse = useMemo(() => {
+    return teacherCourses.find(c => c.courseId === courseId);
+  }, [teacherCourses, courseId]);
+
+  // Check if course is unregistered (on-chain only, no DB data)
+  const isUnregistered = teacherCourse?.status === "onchain_only";
+
   // Get course title - prefer teacher courses list (has DB title) over course detail
   const courseTitle = useMemo(() => {
-    const teacherCourse = teacherCourses.find(c => c.courseId === courseId);
     return teacherCourse?.title || course?.title || "Untitled Course";
-  }, [teacherCourses, courseId, course?.title]);
+  }, [teacherCourse?.title, course?.title]);
 
   // Owner check - compare current user alias to course owner
   const isOwner = Boolean(user?.accessTokenAlias && course?.owner && user.accessTokenAlias === course.owner);
@@ -452,6 +460,17 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   // Loading state
   if (isLoading && !course) {
     return <AndamioStudioLoading variant="centered" />;
+  }
+
+  // Unregistered state - course exists on-chain but not in DB
+  // Show registration form instead of normal editor
+  if (isUnregistered) {
+    return (
+      <RegisterCourse
+        courseId={courseId}
+        owner={teacherCourse?.owner}
+      />
+    );
   }
 
   // Error state

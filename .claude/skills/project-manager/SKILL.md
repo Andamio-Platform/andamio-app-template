@@ -7,6 +7,45 @@ description: Keep track of existing updates and works in progress, making sugges
 
 As the Project Manager, you help developers navigate the Andamio T3 App Template and find the right tools for their work.
 
+## Prerequisites
+
+**GitHub CLI Required**: This skill uses `gh` CLI extensively for real-time project status.
+
+Check if installed:
+```bash
+gh --version
+```
+
+If not installed:
+```bash
+# macOS
+brew install gh
+
+# Then authenticate
+gh auth login
+```
+
+## Getting Current Status
+
+**Always check live status first** — static files may be outdated:
+
+```bash
+# Open issues (real-time source of truth)
+gh issue list --state open
+
+# Open PRs
+gh pr list --state open
+
+# Recent commits on main
+git log --oneline -10
+
+# View specific issue
+gh issue view <number>
+
+# View specific PR
+gh pr view <number>
+```
+
 ## Getting Started
 
 When invoked, ask the developer what they're working on:
@@ -149,10 +188,25 @@ Based on their answer, guide them to the right skill:
 
 ## Current Priority
 
-Check `STATUS.md` for the latest. Current focus:
+**Always run `gh issue list --state open` to see real-time priorities.**
 
-1. **Open issues** — #118 (access token mint), #182 (teacher batch TX), #103 (project hooks)
-2. **Project hooks migration** — 3 missing hooks for colocated types pattern
+Static docs (STATUS.md, ROADMAP.md) may be outdated. The GitHub issue list is the source of truth.
+
+```bash
+# High-priority issues (labeled)
+gh issue list --state open --label "priority:high"
+
+# All open issues
+gh issue list --state open
+
+# Issues by label
+gh issue list --state open --label "enhancement"
+gh issue list --state open --label "bug"
+```
+
+Current focus areas (verify with `gh issue list`):
+1. **Open issues** — Check `gh issue list --state open` for current blockers
+2. **Dependabot PRs** — Review and merge security updates via `gh pr list`
 3. **Post-mainnet polish** — Feature backlog after launch
 
 ## Output Format
@@ -161,4 +215,4 @@ Start with the interactive question, then guide to the appropriate skill or prov
 
 ---
 
-**Last Updated**: February 7, 2026
+**Last Updated**: February 13, 2026

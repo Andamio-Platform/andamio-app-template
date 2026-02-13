@@ -1,6 +1,9 @@
 # Project Status
 
-> **Last Updated**: February 10, 2026
+> **Last Updated**: February 13, 2026
+>
+> **Real-time status**: Always run `gh issue list --state open` and `gh pr list` for current state.
+> This file provides context but may lag behind GitHub.
 
 Current implementation status of the Andamio T3 App Template.
 
@@ -29,65 +32,44 @@ Current implementation status of the Andamio T3 App Template.
 
 ---
 
-## 📌 NEXT SESSION PROMPT
+## 📌 CURRENT STATUS
 
-> **What shipped Feb 4–7 (migration testing + unified studio)**:
->
-> **PR #189** — `fix: display titles instead of asset hashes on dashboard`
-> **PR #190** — `fix: normalize UX copy — replace jargon with user-friendly language`
-> **PR #191** — `fix: add inline ConnectWalletPrompt for wallet reconnect`
-> **PR #192** — `fix: standardize connect-wallet auth gate across all pages`
-> **PR #193** — `feat: unified studio with persistent sidebar layout`
-> **PR #194** — `feat(EUS-47): Detect when wallet changes`
->
-> **Unified Studio (PR #193)** — Major UX consolidation:
-> - Persistent sidebar listing all courses and projects in split-pane layout
-> - Studio routes moved from `(app)` to `(studio)` group with dedicated layout
-> - Context-based state management for create flows (no URL params)
-> - Prerequisites tooltip on project hover in sidebar
-> - Sidebar hides in module wizard mode
-> - Reusable `CopyId` component created (`src/components/andamio/copy-id.tsx`) — not yet wired into detail pages
->
-> **Wallet Switch Detection (PR #194)** — Closes #47:
-> - Auth context polls wallet address every 2s
-> - Auto-logout when wallet changes during active session
-> - Prevents session hijacking / data leakage
->
-> ---
->
-> **Remaining Open Issues (prioritized)**:
->
-> | Issue | Priority | Notes |
-> |-------|----------|-------|
-> | #241 - Course detail returns content: null | 🔴 High | Missing title |
-> | #224 - Create Access Token screen flashes | 🔴 High | UX bug |
-> | #221 - Top bar disappears on course pages | 🔴 High | Layout bug |
-> | #240 - Manager/Teacher invitation flow | 🟡 Medium | Consent before on-chain TX |
-> | #239 - Project managers stale data | 🟡 Medium | Cache/sync issue |
-> | #223 - Wrong pending review count | 🟡 Medium | Dashboard bug |
-> | #222 - Processing message persists | 🟡 Medium | Assignment submission |
-> | #220 - Simplified commitment lifecycle | 🟡 Medium | Frontend update |
-> | #216 - Commitment state healing | 🟡 Medium | Gateway integration |
-> | #214 - Dashboard API waterfall | 🟡 Medium | Performance |
-> | #212 - Assignment status 'Unknown' | 🟡 Medium | Status mapping |
-> | #144 - Batch assessment bug | 🟡 Medium | Only processes one module |
->
-> ---
->
-> **Issues resolved by recent work**:
-> - **#47** — Auto-logout on wallet change → ✅ Closed by PR #194
-> - **#187** — Studio projects: sortable lists, full policy ID, copy button → **Partially resolved** by unified studio (PR #193). CopyId component exists but not wired. Sorting not yet implemented.
-> - **#188** — Studio courses: full course_id + unified studio UX → **Partially resolved**. Unified studio UX is done (the main discussion point). CopyId not yet wired.
->
-> ---
->
-> **Known API bugs**:
->
-> - `/course/user/modules/` returns empty for on-chain-only courses — API team notified
->
-> ---
->
-> **Next Work**: High-priority bugs (#241 content:null, #224 token flash, #221 top bar) → #220 simplified commitment lifecycle → #214 dashboard performance
+> **Get real-time status**: `gh issue list --state open` | `gh pr list`
+
+### Open Issues (as of Feb 13, 2026)
+
+Run `gh issue list --state open` to verify — issues change frequently.
+
+| Issue | Category | Description |
+|-------|----------|-------------|
+| #280 | Enhancement | Unified TX error parser with user-friendly messages |
+| #279 | Enhancement | Configurable max contributors per task (N-commits) |
+| #277 | Enhancement | API: Include moduleCode in dashboard commitments for deep-linking |
+| #260 | Enhancement | Unified transaction hooks for full TX lifecycle |
+| #220 | Enhancement | Update frontend for simplified assignment commitment lifecycle |
+| #143 | Enhancement | Contributor Qualification Course Template |
+| #141 | Enhancement | Display native tokens in treasury balance view |
+
+### Open PRs
+
+Run `gh pr list` to see current PRs. Most are dependabot updates:
+- Mesh SDK, ESLint, react-resizable-panels, react-day-picker, GitHub Actions
+
+### Quick Commands
+
+```bash
+# View specific issue details
+gh issue view 280
+
+# View PR with diff
+gh pr view 247 --web
+
+# Close an issue
+gh issue close <number> --comment "Resolved by PR #XXX"
+
+# Create issue from template
+gh issue create --title "bug: description" --label "bug"
+```
 
 ---
 
@@ -169,14 +151,20 @@ Gateway API (snake_case) → Hook (transform) → Component (camelCase)
 
 ## Current Blockers
 
-| Blocker | Priority | Status | Notes |
-|---------|----------|--------|-------|
-| **Access token mint fails on preprod** (#118) | 🔴 High | Open | Bug report from preprod.app.andamio.io |
-| **Teacher assessment fires multiple TXs** (#182) | 🟡 Medium | PR #195 | Batched into single TX |
-| **Project Hooks Migration** (#103) | 🟡 Medium | In Progress | 3 missing hooks: `useAssessCommitment`, `useClaimCommitment`, `useLeaveCommitment` |
-| **Modules endpoint empty for on-chain courses** | 🟡 Medium | Waiting on API team | `/course/user/modules/` returns `[]` for on-chain-only courses |
-| **ProjectTask sync errors** (#55) | 🟡 Medium | Open | Task manage TX sync failures |
-| **Extra signature after mint** (#32) | 🟡 Medium | Open | Auth flow improvement |
+> **Check real-time blockers**: `gh issue list --state open --label "bug"`
+
+Most legacy blockers have been resolved. Check GitHub for current status:
+
+```bash
+# View all open bugs
+gh issue list --state open --label "bug"
+
+# View enhancement requests
+gh issue list --state open --label "enhancement"
+
+# Search issues
+gh issue list --state open --search "transaction"
+```
 
 ---
 

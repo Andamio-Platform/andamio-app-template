@@ -196,7 +196,12 @@ function createDraftFromServer(
     description: courseModule?.description,
     imageUrl: courseModule?.imageUrl,
     videoUrl: courseModule?.videoUrl,
-    slts: (courseModule?.slts ?? []).map(serverSltToDraft),
+    // Normalize SLT indices to 1-based regardless of server values
+    // This fixes off-by-one issues and prevents data loss during reorder
+    slts: (courseModule?.slts ?? []).map((slt, idx) => ({
+      ...serverSltToDraft(slt),
+      moduleIndex: idx + 1,
+    })),
     _sltsLocked: sltsLocked,
     assignment: courseModule?.assignment
       ? serverAssignmentToDraft(courseModule.assignment)

@@ -49,7 +49,7 @@ Hooks are the **ONLY** interface between UX and API:
 |------|---------|
 | [HOOK-RULES.md](./HOOK-RULES.md) | Precise rules for hook structure |
 | [HOOK-REFERENCE.md](./HOOK-REFERENCE.md) | All existing hooks with exports |
-| [PROGRESS.md](./PROGRESS.md) | Current work status (Phase 3.9, 3.10) |
+| [PROGRESS.md](./PROGRESS.md) | Hook implementation status |
 
 ## Learn Mode
 
@@ -233,4 +233,4 @@ These skills are complementary:
 
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 13, 2026

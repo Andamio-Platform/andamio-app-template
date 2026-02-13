@@ -82,16 +82,6 @@ Update [api-coverage.md](./api-coverage.md) when:
 2. The gateway adds new endpoints (check OpenAPI spec)
 3. An endpoint is deprecated or removed
 
-## Migration Note
-
-**Hook patterns and rules have moved to `/hooks-architect`.**
-
-This skill now focuses purely on endpoint coverage metrics. For:
-- Learning hook patterns → `/hooks-architect` Learn mode
-- Creating new hooks → `/hooks-architect` Implement mode
-- Auditing hook quality → `/hooks-architect` Audit mode
-- Extracting API calls → `/hooks-architect` Extract mode
-
 ---
 
-**Last Updated**: January 28, 2026
+**Last Updated**: February 13, 2026

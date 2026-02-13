@@ -131,28 +131,34 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 
 | Skill | Purpose |
 |-------|---------|
-| `/bootstrap-skill` | Scaffold and register new Claude skills |
 | `/getting-started` | Onboarding and skill discovery |
+| `/project-manager` | Project status, roadmap, skill routing |
 | `/hooks-architect` | Hook patterns, creation, auditing |
 | `/design-system` | UI patterns, styling, components |
 | `/audit-api-coverage` | API endpoint coverage tracking |
 | `/typescript-types-expert` | Type safety and architecture |
-| `/project-manager` | Project status and roadmap |
-| `/review-pr` | Comprehensive PR review |
-| `/documentarian` | Documentation maintenance |
+| `/react-query-auditor` | React Query patterns and cache |
 | `/transaction-auditor` | TX schema sync with API |
 | `/tx-loop-guide` | Transaction flow testing |
-| `/react-query-auditor` | React Query patterns and cache |
+| `/e2e-testing` | Playwright E2E testing with agents |
+| `/test-wallet-setup` | Set up test wallets for E2E |
+| `/review-pr` | Comprehensive PR review |
+| `/qa` | Route-level QA audit |
+| `/fix` | GitHub issue → branch → fix → PR |
+| `/ship` | Full shipping workflow |
+| `/documentarian` | Documentation maintenance |
 | `/issue-handler` | Error routing across repos |
-| `/qa` | Route-level QA audit for production readiness |
-| `/product-iteration` | Full product feedback cycle (Test → Design → Ship) |
-| `/ux-readiness` | Assess app flow readiness for documentation guides |
-| `/sponsored-transactions` | Fee sponsorship via utxos.dev tank integration |
+| `/product-iteration` | Full product feedback cycle |
+| `/ux-readiness` | Assess app flow readiness |
+| `/sponsored-transactions` | Fee sponsorship via utxos.dev |
+| `/sync-template` | Sync app changes to template repo |
+| `/bootstrap-skill` | Scaffold and register new skills |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
+| `SKILLS-MASTERY-COURSE.md` | 10-module curriculum for mastering all skills |
 | `skill-reference.md` | Detailed reference for all skills |
 | `learning-paths.md` | Curated learning paths by role |
 
@@ -189,10 +195,8 @@ What brings you here today?
 - **Extract** - Move direct API calls into proper hooks
 - **Reference** - Find existing hooks and their exports
 
-**Current status**: We're in Phase 3.9 (API Hooks Cleanup) with 6/11 hooks approved, and Phase 3.10 (Extract Direct API Calls) with 50+ calls to migrate.
-
 Would you like to learn the hook pattern first, or jump into implementing a specific hook?"
 
 ---
 
-**Last Updated**: February 1, 2026
+**Last Updated**: February 13, 2026

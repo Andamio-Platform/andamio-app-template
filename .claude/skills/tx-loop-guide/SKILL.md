@@ -38,17 +38,17 @@ No manual TX registration or polling needed.
 
 ## Goals & Questions
 
-### Current Phase (2026-01-24)
+### Current Status
 
-| Domain | Phase | Priority |
-|--------|-------|----------|
-| Course Owner/Teacher | **UX Testing** | Ready - focus on polish |
-| Course Student | **Initial Validation** | High - not yet tested |
-| Project | **Not Implemented** | Blocked - needs UI development |
+| Domain | Status | Notes |
+|--------|--------|-------|
+| Course Owner/Teacher | **UX Ready** | Loops 1, 3, 6 validated |
+| Course Student | **Validated** | Loop 2 validated with real wallets |
+| Project | **In Progress** | UI components exist, testing needed |
 
-**Course Owner/Teacher loops** (1, 3, 6) are functionally validated and ready for UX testing.
-**Course Student loops** (2, 4, 5) need initial validation - this is the current priority.
-**Project loops** (P1-P6) require frontend UI development before testing can begin.
+**Course Owner/Teacher loops** (1, 3, 6) are validated and ready for UX refinement.
+**Course Student loops** (2) are validated via real wallet E2E tests. Loops 4, 5 can be tested next.
+**Project loops** (P1-P6) have UI components built — ready for validation testing.
 
 ### Validation Questions
 
@@ -112,25 +112,25 @@ Always read [loop-history.md](./loop-history.md) first to see current status. Su
 | 4 | **Validated** | Only re-test if related code changed |
 
 **Dependencies to consider:**
-- Loop 1 (Onboarding) must be validated before others — users need Access Tokens ✅ Done
-- Loop 3 (Create & Publish Course) should be validated before Loop 2 — need a course to enroll in ✅ Done
-- **Loop 2 (Earn Credential) is now the priority** — foundation for student flows
-- Loops 4, 5 build on Loop 2's foundation
-- Loop 6 (Team Teaching) is validated ✅ Done
-- Project loops (P1-P6) need UI implementation before testing
+- Loop 1 (Onboarding) ✅ Validated
+- Loop 3 (Create & Publish Course) ✅ Validated
+- Loop 2 (Earn Credential) ✅ Validated — tested with real wallets
+- Loops 4, 5 build on Loop 2's foundation — ready for testing
+- Loop 6 (Team Teaching) ✅ Validated
+- Project loops (P1-P6) have UI built — ready for testing
 
 **Step 2: Suggest a loop (or series)**
 
-Present the tester with a recommendation based on current phase:
+Present the tester with a recommendation:
 
-For **Course Student validation** (current priority):
-> "Based on loop-history.md, **Loop 2: Earn a Credential** is the next priority — Course Owner/Teacher flows are validated, so we can now test the student experience. Want to run that one?"
+For **Course Student flows**:
+> "Loop 2 is validated. Would you like to test **Loop 4 (Assignment Revision)** or **Loop 5 (Multi-Module Path)**?"
 
 For **UX testing** (owner/teacher flows):
-> "Loops 1, 3, and 6 are functionally validated and ready for UX testing. Want to do a detailed UX review of the course creation flow?"
+> "Loops 1, 3, and 6 are functionally validated. Want to do a detailed UX review?"
 
-For **Project flows** (blocked):
-> "Project loops (P1-P6) need UI development before testing. The transaction definitions exist but there's no frontend to trigger them yet."
+For **Project flows**:
+> "Project loops (P1-P6) have UI components built and are ready for validation testing. Want to start with **Loop P1 (Create & Configure Project)**?"
 
 **Step 3: Confirm role setup**
 

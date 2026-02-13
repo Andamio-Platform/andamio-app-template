@@ -51,7 +51,7 @@ Analyze the changed files and categorize them:
 
 | Category | File Patterns | Triggers |
 |----------|---------------|----------|
-| **UI/Styling** | `src/app/**/*.tsx`, `src/components/**/*`, `*.css` | `review-styling` skill |
+| **UI/Styling** | `src/app/**/*.tsx`, `src/components/**/*`, `*.css` | `design-system review` skill |
 | **API Integration** | `src/app/api/**/*`, files importing from API, fetch calls | `audit-api-coverage` skill |
 | **Documentation** | `*.md`, `.claude/**/*`, `docs/**/*` | `documentarian` skill |
 | **Configuration** | `*.config.*`, `.env*`, `package.json` | Manual review notes |
@@ -89,7 +89,7 @@ Based on the categorization in Step 3, invoke relevant skills:
 
 **If UI/Styling changes detected:**
 ```
-Invoke: review-styling
+Invoke: design-system review
 Target: Each changed route/component
 Mode: Quick Scan (unless user requests Full Review)
 ```
@@ -145,7 +145,7 @@ Compile findings into a structured review:
 - Other: X files
 
 ### Delegated Reviews
-- [ ] `review-styling`: <status/findings>
+- [ ] `design-system review`: <status/findings>
 - [ ] `audit-api-coverage`: <status/findings>
 - [ ] `documentarian`: <status/findings>
 
@@ -230,7 +230,7 @@ Output:
 - UI/Styling: 1 file (src/components/courses/course-card.tsx)
 
 ### Delegated Reviews
-- [x] `review-styling`: Quick scan - No violations found
+- [x] `design-system review`: Quick scan - No violations found
 
 ### Code Review Findings
 
@@ -266,7 +266,7 @@ Output:
 - Documentation: 2 files
 
 ### Delegated Reviews
-- [x] `review-styling`: 2 violations found
+- [x] `design-system review`: 2 violations found
   - src/app/(app)/assignments/[id]/page.tsx: Using raw `Badge` instead of `AndamioBadge`
   - src/components/assignments/submit-form.tsx: Hardcoded `text-green-600`
 - [x] `audit-api-coverage`: New endpoint usage documented

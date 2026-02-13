@@ -1,6 +1,6 @@
 # Skills Audit Report
 
-> **Last Updated**: February 8, 2026
+> **Last Updated**: February 13, 2026
 
 ## Summary
 
@@ -8,25 +8,29 @@
 |-------|--------|----------|------------------|-------|
 | `getting-started` | ✅ Active | Medium | 3 files | Interactive onboarding and skill discovery |
 | `hooks-architect` | ✅ Active | High | 4 files | 5 modes (learn, implement, audit, extract, reference) |
-| `design-system` | ✅ Active | High | 11 files | 3 modes (review, diagnose, reference) |
-| `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints, 63% coverage) |
+| `design-system` | ✅ Active | High | 12 files | 3 modes (review, diagnose, reference) |
+| `audit-api-coverage` | ✅ Active | High | 8 files + script | Unified Gateway (108 endpoints) |
 | `typescript-types-expert` | ✅ Active | High | 8 files | 3 modes (audit, fix, design) |
 | `project-manager` | ✅ Active | High | 6 files | Project tracking, status, roadmap |
 | `review-pr` | ✅ Active | High | 3 files | Orchestrates other skills |
-| `documentarian` | ✅ Active | High | 2 files | Active backlog with 190+ completed items |
-| `transaction-auditor` | ✅ Active | Medium | 1 file | Sync TX schemas with Gateway API |
+| `documentarian` | ✅ Active | High | 2 files | Active backlog |
+| `transaction-auditor` | ✅ Active | Medium | 3 files | Sync TX schemas with Gateway API |
 | `tx-loop-guide` | ✅ Active | Medium | 3 files | Guide testers through TX loops |
 | `react-query-auditor` | ✅ Active | Medium | 2 files | Cache and query pattern auditing |
-| `issue-handler` | ✅ Active | Medium | 1 file | Issue routing across repos |
+| `issue-handler` | ✅ Active | Medium | 2 files | Issue routing across repos |
 | `product-iteration` | ✅ Active | Medium | 4 files | Full product feedback cycle (Test → Design → Ship) |
 | `bootstrap-skill` | ✅ Active | Medium | 1 file | Meta-skill: scaffold and register new skills |
-| `ship` | ✅ Active | Medium | 1 file | Full shipping workflow (version, docs, commit, PR, merge, cleanup) |
-| `qa` | ✅ Active | Medium | 3 files | Route-level QA audit (hooks, types, components, Next.js patterns) |
-| `ux-readiness` | ✅ Active | Medium | 2 files | Cross-repo UX readiness assessment for guide pipeline |
-| `sponsored-transactions` | ✅ Active | Medium | 3 files | Fee sponsorship via utxos.dev tank (migration complete on branch) |
-| `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills (not Andamio-specific) |
+| `ship` | ✅ Active | Medium | 1 file | Full shipping workflow |
+| `qa` | ✅ Active | Medium | 3 files | Route-level QA audit |
+| `ux-readiness` | ✅ Active | Medium | 2 files | Cross-repo UX readiness assessment |
+| `sponsored-transactions` | ✅ Active | Medium | 3 files | Fee sponsorship via utxos.dev tank |
+| `fix` | ✅ Active | Medium | 1 file | GitHub issue → branch → fix → PR workflow |
+| `sync-template` | ✅ Active | Medium | 1 file | Sync app changes to template repo |
+| `e2e-testing` | ✅ Active | Medium | 12 files | Playwright E2E testing with agents |
+| `test-wallet-setup` | ✅ Active | Medium | 1 file | Set up test wallets for E2E testing |
+| `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills |
 
-**Total**: 18 Andamio skills + 1 external skill
+**Total**: 22 Andamio skills + 1 external skill
 
 ---
 
@@ -248,11 +252,51 @@
 
 ---
 
-### 19. `mesh-expert` 📦 (External)
+### 19. `fix` ✅
+
+**Purpose**: Open a branch, investigate, fix, and hand off to `/review-pr`
+
+**Commands**: `/fix`, `/fix 42` (with issue number)
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 20. `sync-template` ✅
+
+**Purpose**: Sync changes from andamio-app-v2 to andamio-app-template via rebase workflow
+
+**Note**: Must be run from the template repo. Maintains atomic divergence commits.
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 21. `e2e-testing` ✅
+
+**Purpose**: AI-powered E2E testing orchestrator using Playwright MCP
+
+**Commands**: `/e2e-testing run`, `/e2e-testing auth`, `/e2e-testing transactions`, `/e2e-testing courses`
+
+**Files** (12): `SKILL.md`, agent configs, flow definitions, selector registry
+
+---
+
+### 22. `test-wallet-setup` ✅
+
+**Purpose**: Set up isolated test wallets for E2E testing with real Cardano transactions
+
+**Use when**: Setting up Blockfrost API, generating/funding test wallets, minting Access Tokens
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 23. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
-**Note**: This is a copy of the [MeshJS/Mesh-AI](https://github.com/MeshJS/Mesh-AI) skill files. Not Andamio-specific — provides general Mesh SDK API reference, patterns, and troubleshooting.
+**Note**: Copy of [MeshJS/Mesh-AI](https://github.com/MeshJS/Mesh-AI). Not Andamio-specific.
 
 **Files** (1): `readme.md`
 
@@ -314,6 +358,7 @@
 
 | Date | Action |
 |------|--------|
+| 2026-02-13 | **Full skills cleanup**: Removed migration tracking, updated stale dates/phases, added missing skills (fix, sync-template, e2e-testing, test-wallet-setup). Fixed review-pr references to design-system. Count: 22. |
 | 2026-02-12 | Added `sponsored-transactions` skill (fee sponsorship via utxos.dev tank). 1 file: SKILL.md. Count: 18. |
 | 2026-02-08 | Added `ux-readiness` skill (cross-repo UX readiness for guide pipeline). 2 files: SKILL.md, assessment-criteria.md. Partner: `guide-pipeline` in docs repo. Count: 17. |
 | 2026-02-05 | Added `qa` skill (route-level QA auditing). 3 files: SKILL.md, checklist.md, best-practices.md. Registered in getting-started. Count: 16. |

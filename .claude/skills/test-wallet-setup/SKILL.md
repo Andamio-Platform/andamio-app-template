@@ -1,3 +1,8 @@
+---
+name: test-wallet-setup
+description: Set up isolated test wallets for E2E testing with real Cardano transactions.
+---
+
 # Test Wallet Setup
 
 Guide developers through setting up isolated test wallets for E2E testing with real Cardano transactions.

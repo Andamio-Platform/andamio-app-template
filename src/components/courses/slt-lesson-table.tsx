@@ -1,18 +1,17 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { CourseIcon, SuccessIcon } from "~/components/icons";
+import { CourseIcon, SuccessIcon, NextIcon } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioEmptyState } from "~/components/andamio";
 import {
-  AndamioTable,
-  AndamioTableBody,
-  AndamioTableCell,
-  AndamioTableHead,
-  AndamioTableHeader,
-  AndamioTableRow,
-} from "~/components/andamio/andamio-table";
-import { AndamioTableContainer, AndamioEmptyState } from "~/components/andamio";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "~/components/ui/accordion";
 import { type CourseModule } from "~/hooks/api";
 
 /**
@@ -42,10 +41,11 @@ export interface SLTLessonTableProps {
 }
 
 /**
- * SLTLessonTable - Displays learning targets with their associated lessons
+ * SLTAccordion - Displays learning targets as expandable accordion items
  *
- * Shows a table of Student Learning Targets (SLTs) with linked lesson information,
- * including on-chain verification status when available.
+ * SLTs are the primary hierarchy. Expanding an SLT reveals its lesson
+ * (if one exists) as a compact card with title, description, media badges,
+ * and "Open Lesson" link. SLTs without lessons show a muted message.
  */
 export function SLTLessonTable({
   data,
@@ -53,8 +53,6 @@ export function SLTLessonTable({
   moduleCode,
   onChainModule,
 }: SLTLessonTableProps) {
-  // Build set of on-chain SLT texts for quick lookup
-  // Note: onChainSlts contains SLT hashes/IDs from the chain
   const onChainSltTexts = new Set(onChainModule?.onChainSlts ?? []);
 
   if (data.length === 0) {
@@ -68,71 +66,66 @@ export function SLTLessonTable({
   }
 
   return (
-    <AndamioTableContainer>
-      <AndamioTable>
-        <AndamioTableHeader>
-          <AndamioTableRow>
-            <AndamioTableHead className="w-20">Index</AndamioTableHead>
-            <AndamioTableHead>Learning Target</AndamioTableHead>
-            <AndamioTableHead>Lesson Title</AndamioTableHead>
-            <AndamioTableHead>Description</AndamioTableHead>
-            <AndamioTableHead className="w-32">Media</AndamioTableHead>
-          </AndamioTableRow>
-        </AndamioTableHeader>
-        <AndamioTableBody>
-          {data.map((item) => {
-            const isOnChain = onChainSltTexts.has(item.slt_text);
-            return (
-              <AndamioTableRow key={item.module_index}>
-                <AndamioTableCell className="font-mono text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <AndamioBadge variant="outline">{item.module_index}</AndamioBadge>
-                    {isOnChain && (
-                      <span title="Verified on-chain">
-                        <SuccessIcon className="h-3.5 w-3.5 text-primary" />
-                      </span>
-                    )}
-                  </div>
-                </AndamioTableCell>
-                <AndamioTableCell className="font-medium">
-                  {item.slt_text}
-                </AndamioTableCell>
-                <AndamioTableCell className="font-medium">
-                  {item.lesson ? (
-                    <Link
-                      href={`/course/${courseId}/${moduleCode}/${item.module_index}`}
-                      className="hover:underline text-primary"
-                    >
-                      {item.lesson.title ?? `Lesson ${item.module_index}`}
-                    </Link>
-                  ) : (
-                    <span className="text-muted-foreground italic">No lesson yet</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson?.description ?? (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </AndamioTableCell>
-                <AndamioTableCell>
-                  {item.lesson ? (
-                    <div className="flex gap-1">
-                      {item.lesson.image_url && (
-                        <AndamioBadge variant="outline">Image</AndamioBadge>
+    <Accordion type="multiple">
+      {data.map((item) => {
+        const isOnChain = onChainSltTexts.has(item.slt_text);
+        const hasLesson = !!item.lesson;
+
+        return (
+          <AccordionItem key={item.slt_id} value={item.slt_id}>
+            <AccordionTrigger className="gap-3 hover:no-underline">
+              <div className="flex items-center gap-3 text-left">
+                <AndamioBadge variant="outline" className="font-mono text-xs shrink-0">
+                  {item.module_index}
+                </AndamioBadge>
+                {isOnChain && (
+                  <span title="Verified on-chain">
+                    <SuccessIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                  </span>
+                )}
+                <span className="font-medium">{item.slt_text}</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {hasLesson ? (
+                <div className="rounded-lg border bg-muted/30 p-4 ml-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex-1 space-y-1">
+                      <AndamioText className="font-medium">
+                        {item.lesson!.title ?? `Lesson ${item.module_index}`}
+                      </AndamioText>
+                      {item.lesson!.description && (
+                        <AndamioText variant="small" className="line-clamp-2">
+                          {item.lesson!.description}
+                        </AndamioText>
                       )}
-                      {item.lesson.video_url && (
-                        <AndamioBadge variant="outline">Video</AndamioBadge>
+                      {(item.lesson!.image_url || item.lesson!.video_url) && (
+                        <div className="flex gap-1 pt-1">
+                          {item.lesson!.image_url && (
+                            <AndamioBadge variant="outline" className="text-xs">Image</AndamioBadge>
+                          )}
+                          {item.lesson!.video_url && (
+                            <AndamioBadge variant="outline" className="text-xs">Video</AndamioBadge>
+                          )}
+                        </div>
                       )}
                     </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </AndamioTableCell>
-              </AndamioTableRow>
-            );
-          })}
-        </AndamioTableBody>
-      </AndamioTable>
-    </AndamioTableContainer>
+                    <Link href={`/course/${courseId}/${moduleCode}/${item.module_index}`}>
+                      <AndamioButton variant="outline" size="sm" rightIcon={<NextIcon className="h-3.5 w-3.5" />}>
+                        Open Lesson
+                      </AndamioButton>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <AndamioText variant="muted" className="ml-8 text-sm italic">
+                  No lesson available for this learning target
+                </AndamioText>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
   );
 }

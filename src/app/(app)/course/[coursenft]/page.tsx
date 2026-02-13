@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AndamioSectionHeader,
@@ -168,14 +168,8 @@ function CourseDetailContent() {
         </div>
       </div>
 
-      {/* Your Learning Journey - enrollment status + progress */}
-      <div className="space-y-3">
-        <AndamioSectionHeader title="Your Progress" />
-        <UserCourseStatus
-          courseId={courseId}
-          firstModuleCode={resolvedModules[0]?.moduleCode ?? undefined}
-        />
-      </div>
+      {/* Progress — only renders for enrolled/completed users */}
+      <UserCourseStatus courseId={courseId} />
 
       {/* Course Outline + Course Team — 2-column layout on desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 lg:gap-8">

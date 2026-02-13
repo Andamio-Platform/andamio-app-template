@@ -15,7 +15,8 @@ import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { ContentViewer } from "~/components/editor";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { LessonMediaSection } from "~/components/courses/lesson-media-section";
-import { useCourse, useCourseModule, useLesson } from "~/hooks/api";
+import { useCourse, useCourseModule, useLesson, useSLTs } from "~/hooks/api";
+import { LessonNavigation, type LessonNavItem } from "~/components/courses/lesson-navigation";
 
 /**
  * Public page displaying lesson content
@@ -42,6 +43,23 @@ export default function LessonDetailPage() {
     isLoading,
     error: lessonError,
   } = useLesson(courseId, moduleCode, moduleIndex);
+
+  // Fetch all SLTs for this module to build prev/next navigation
+  const { data: slts } = useSLTs(courseId, moduleCode);
+
+  // Build navigation list: SLTs that have lessons, sorted by index
+  const lessonsWithNav: LessonNavItem[] = React.useMemo(() => {
+    if (!slts) return [];
+    return slts
+      .filter((slt) => slt.lesson)
+      .map((slt) => ({
+        index: slt.moduleIndex ?? 1,
+        title: typeof slt.lesson?.title === "string"
+          ? slt.lesson.title
+          : `Lesson ${slt.moduleIndex ?? 1}`,
+      }))
+      .sort((a, b) => a.index - b.index);
+  }, [slts]);
 
   const error = lessonError?.message ?? null;
 
@@ -159,6 +177,14 @@ export default function LessonDetailPage() {
           </AndamioCardContent>
         </AndamioCard>
       )}
+
+      {/* Prev/Next Lesson Navigation */}
+      <LessonNavigation
+        currentIndex={moduleIndex}
+        lessonsWithNav={lessonsWithNav}
+        courseId={courseId}
+        moduleCode={moduleCode}
+      />
     </div>
   );
 }

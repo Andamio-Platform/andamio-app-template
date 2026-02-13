@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useCourse, useCourseModules, useStudentCourses, type CourseModule } from "~/hooks/api";
-import { useStudentAssignmentCommitments, getModuleCommitmentStatus, groupCommitmentsByModule, type StudentCommitmentSummary } from "~/hooks/api/course/use-student-assignment-commitments";
+import { useCourse, useCourseModules, useStudentCourses } from "~/hooks/api";
+import { useStudentAssignmentCommitments } from "~/hooks/api/course/use-student-assignment-commitments";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
@@ -19,12 +19,8 @@ import { toast } from "sonner";
 import {
   SuccessIcon,
   OnChainIcon,
-  ModuleIcon,
-  CourseIcon,
   LoadingIcon,
-  NextIcon,
 } from "~/components/icons";
-import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 
 /**
  * User Course Status Component
@@ -38,11 +34,9 @@ import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 
 interface UserCourseStatusProps {
   courseId: string;
-  /** First module code for direct navigation */
-  firstModuleCode?: string;
 }
 
-export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatusProps) {
+export function UserCourseStatus({ courseId }: UserCourseStatusProps) {
   const { isAuthenticated } = useAndamioAuth();
 
   // Fetch merged course data
@@ -57,27 +51,13 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
   // Fetch student commitments for progress summary
   const { data: studentCommitments } = useStudentAssignmentCommitments(courseId);
 
-  // Derive commitment progress stats
-  const commitmentStats = useMemo(() => {
-    if (!studentCommitments || studentCommitments.length === 0) return null;
-
-    // Count unique modules with any commitment
-    const modulesStarted = new Set(studentCommitments.map((c) => c.moduleCode)).size;
-    const accepted = studentCommitments.filter(
+  // Count accepted assignments for progress calculation
+  const acceptedCount = useMemo(() => {
+    if (!studentCommitments || studentCommitments.length === 0) return 0;
+    return studentCommitments.filter(
       (c) => c.networkStatus === "ASSIGNMENT_ACCEPTED",
     ).length;
-    const pendingReview = studentCommitments.filter(
-      (c) => c.networkStatus === "PENDING_APPROVAL",
-    ).length;
-
-    return { modulesStarted, accepted, pendingReview };
   }, [studentCommitments]);
-
-  // Group commitments by module code for the checklist
-  const commitmentsByModule = useMemo(
-    () => groupCommitmentsByModule(studentCommitments ?? [], courseId),
-    [studentCommitments, courseId],
-  );
 
   // Find this course in student's courses
   const studentCourseStatus = useMemo(() => {
@@ -86,34 +66,7 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
   }, [studentCourses, courseId]);
 
   if (!isAuthenticated) {
-    return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <div className="flex items-center gap-2">
-            <CourseIcon className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <AndamioCardTitle>Start Learning</AndamioCardTitle>
-              <AndamioCardDescription>
-                Connect your wallet to track progress and earn credentials
-              </AndamioCardDescription>
-            </div>
-          </div>
-        </AndamioCardHeader>
-        <AndamioCardContent>
-          <div className="flex items-center gap-2">
-            <ConnectWalletButton label="Connect Wallet" />
-            {firstModuleCode && (
-              <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
-                <AndamioButton variant="outline">
-                  Preview First Module
-                  <NextIcon className="h-4 w-4 ml-2" />
-                </AndamioButton>
-              </Link>
-            )}
-          </div>
-        </AndamioCardContent>
-      </AndamioCard>
-    );
+    return null;
   }
 
   const isLoading = courseLoading || studentLoading;
@@ -122,39 +75,9 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
     return <AndamioCardLoading title="Your Progress" lines={3} />;
   }
 
-  // If not enrolled, show enrollment prompt with CTA
+  // Not enrolled — module cards with "Earn Credential" CTAs communicate the path
   if (!studentCourseStatus) {
-    return (
-      <AndamioCard>
-        <AndamioCardHeader>
-          <div className="flex items-center gap-2">
-            <CourseIcon className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <AndamioCardTitle>Ready to Begin?</AndamioCardTitle>
-              <AndamioCardDescription>
-                Start your first module in {course?.title ?? "this course"}
-              </AndamioCardDescription>
-            </div>
-          </div>
-        </AndamioCardHeader>
-        <AndamioCardContent className="space-y-4">
-          <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-            <ModuleIcon className="h-4 w-4 text-muted-foreground" />
-            <AndamioText variant="small">
-              Choose a module below, write your assignment, and submit it to enroll.
-            </AndamioText>
-          </div>
-          {firstModuleCode && (
-            <Link href={`/course/${courseId}/${firstModuleCode}/assignment`}>
-              <AndamioButton>
-                Start First Module
-                <NextIcon className="h-4 w-4 ml-2" />
-              </AndamioButton>
-            </Link>
-          )}
-        </AndamioCardContent>
-      </AndamioCard>
-    );
+    return null;
   }
 
   const isCompleted = studentCourseStatus.enrollmentStatus === "completed";
@@ -202,7 +125,7 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
   }
 
   // Enrolled (in progress) state
-  const accepted = commitmentStats?.accepted ?? 0;
+  const accepted = acceptedCount;
   const progressPercent = totalModules > 0 ? Math.round((accepted / totalModules) * 100) : 0;
 
   return (
@@ -234,8 +157,6 @@ export function UserCourseStatus({ courseId, firstModuleCode }: UserCourseStatus
             courseTitle={courseTitle}
             accepted={accepted}
             totalModules={totalModules}
-            dbModules={dbModules ?? []}
-            commitmentsByModule={commitmentsByModule}
             onSuccess={() => void refetchStudent()}
           />
         )}
@@ -254,8 +175,6 @@ interface CredentialClaimCTAProps {
   courseTitle: string;
   accepted: number;
   totalModules: number;
-  dbModules: CourseModule[];
-  commitmentsByModule: Map<string, StudentCommitmentSummary[]>;
   onSuccess: () => void;
 }
 
@@ -264,8 +183,6 @@ function CredentialClaimCTA({
   courseTitle,
   accepted,
   totalModules,
-  dbModules,
-  commitmentsByModule,
   onSuccess,
 }: CredentialClaimCTAProps) {
   const { user } = useAndamioAuth();
@@ -290,27 +207,6 @@ function CredentialClaimCTA({
   );
 
   const allAccepted = accepted === totalModules;
-
-  // Find the first module without an accepted assignment for the "continue" link
-  const nextModule = !allAccepted
-    ? dbModules.find((m) => {
-        const code = m.moduleCode ?? "";
-        const commitments = commitmentsByModule.get(code) ?? [];
-        const status = getModuleCommitmentStatus(commitments);
-        return status !== "ASSIGNMENT_ACCEPTED";
-      })
-    : null;
-  const nextModuleCode = nextModule?.moduleCode;
-
-  // Determine how many modules still need completion
-  const remainingModules = !allAccepted
-    ? dbModules.filter((m) => {
-        const code = m.moduleCode ?? "";
-        const commitments = commitmentsByModule.get(code) ?? [];
-        const status = getModuleCommitmentStatus(commitments);
-        return status !== "ASSIGNMENT_ACCEPTED";
-      }).length
-    : 0;
 
   const handleClaim = async () => {
     if (!user?.accessTokenAlias) return;
@@ -395,38 +291,20 @@ function CredentialClaimCTA({
         </div>
       )}
 
-      {/* CTA button */}
-      {!txConfirmed && (
-        <>
-          {allAccepted ? (
-            <TransactionButton
-              txState={state}
-              onClick={handleClaim}
-              disabled={!user?.accessTokenAlias}
-              stateText={{
-                idle: `Claim ${accepted} ${accepted === 1 ? "Credential" : "Credentials"}`,
-                fetching: "Preparing Claim...",
-                signing: "Sign in Wallet",
-                submitting: "Claiming Credentials...",
-              }}
-              className="w-full"
-            />
-          ) : nextModuleCode && remainingModules > 1 ? (
-            <Link href={`/course/${courseId}/${nextModuleCode}`}>
-              <AndamioButton variant="outline" className="w-full">
-                Continue to {nextModule?.title ?? nextModule?.moduleCode ?? "next module"}
-                <NextIcon className="h-4 w-4 ml-2" />
-              </AndamioButton>
-            </Link>
-          ) : nextModuleCode ? (
-            <Link href={`/course/${courseId}/${nextModuleCode}/assignment`}>
-              <AndamioButton variant="outline" className="w-full">
-                Go to assignment
-                <NextIcon className="h-4 w-4 ml-2" />
-              </AndamioButton>
-            </Link>
-          ) : null}
-        </>
+      {/* Claim button — only when all modules accepted */}
+      {allAccepted && !txConfirmed && (
+        <TransactionButton
+          txState={state}
+          onClick={handleClaim}
+          disabled={!user?.accessTokenAlias}
+          stateText={{
+            idle: `Claim ${accepted} ${accepted === 1 ? "Credential" : "Credentials"}`,
+            fetching: "Preparing Claim...",
+            signing: "Sign in Wallet",
+            submitting: "Claiming Credentials...",
+          }}
+          className="w-full"
+        />
       )}
     </div>
   );

@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { OnChainIcon, NextIcon, SuccessIcon } from "~/components/icons";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   AndamioCard,
@@ -87,13 +86,13 @@ export function CourseModuleCard({
               </div>
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-              <AndamioBadge variant="secondary" className="text-xs sm:text-sm">
-                {slts.length} {slts.length === 1 ? "target" : "targets"}
-              </AndamioBadge>
-              {commitmentStatus && (
+              {commitmentStatus ? (
                 <AssignmentStatusBadge status={commitmentStatus} />
+              ) : (
+                <AndamioButton size="sm" rightIcon={<NextIcon className="h-3.5 w-3.5" />}>
+                  Earn Credential
+                </AndamioButton>
               )}
-              <NextIcon className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         </AndamioCardHeader>

@@ -148,8 +148,8 @@ export function useTxStream(
     isTerminal: status
       ? TERMINAL_STATES.includes(status.state) || isStalled
       : false,
-    /** Whether TX completed successfully (DB updated by Gateway) */
-    isSuccess: status?.state === "updated",
+    /** Whether TX completed successfully (DB updated, or confirmed on-chain but DB sync stalled) */
+    isSuccess: status?.state === "updated" || isStalled,
     /** Whether TX failed */
     isFailed: status?.state === "failed" || status?.state === "expired",
     /** Whether TX confirmed on-chain but gateway DB update is stuck */

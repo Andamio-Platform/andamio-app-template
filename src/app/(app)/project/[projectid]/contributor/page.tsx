@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -43,11 +43,24 @@ import { projectContributorKeys } from "~/hooks/api/project/use-project-contribu
 import { projectKeys } from "~/hooks/api/project/use-project";
 import type { JSONContent } from "@tiptap/core";
 
-// Helper to extract string from NullableString (API returns object type for nullable strings)
-function getString(value: string | object | undefined | null): string {
+/** Safely extract a string from a value that may be a string, object, or nullish (API nullable strings). */
+function safeString(value: string | object | undefined | null): string {
   if (typeof value === "string") return value;
   return "";
 }
+
+function getStatusStatColor(label: string): "success" | "warning" | undefined {
+  if (label === "Welcome Back" || label === "Task Accepted") return "success";
+  if (label === "Resubmission Needed") return "warning";
+  return undefined;
+}
+
+const HOW_IT_WORKS_STEPS = [
+  { title: "Commit to a Task", description: "Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor." },
+  { title: "Complete the Work", description: "Work on your task and update your evidence as needed while awaiting review." },
+  { title: "Get Reviewed", description: "A project manager can review your commitment at any point — even before you submit evidence. If refused, you can resubmit." },
+  { title: "Earn Rewards", description: "When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together." },
+];
 
 /**
  * My Contributions Page (read-only)
@@ -78,7 +91,7 @@ function MyContributionsContent() {
   const { data: rawCommitments = [], isLoading: isCommitmentsLoading } = useContributorCommitments(projectId);
 
   // Prerequisite eligibility — safety net for credential claim gating
-  const prereqCourseIds = React.useMemo(() => {
+  const prereqCourseIds = useMemo(() => {
     if (!projectDetail?.prerequisites) return [];
     return projectDetail.prerequisites
       .map((p) => p.courseId)
@@ -87,8 +100,8 @@ function MyContributionsContent() {
 
   const { completions } = useStudentCompletionsForPrereqs(prereqCourseIds);
 
-  const prerequisites = React.useMemo(() => projectDetail?.prerequisites ?? [], [projectDetail?.prerequisites]);
-  const eligibility = React.useMemo(() => {
+  const prerequisites = useMemo(() => projectDetail?.prerequisites ?? [], [projectDetail?.prerequisites]);
+  const eligibility = useMemo(() => {
     if (prerequisites.length === 0) return null;
     return checkProjectEligibility(prerequisites, completions);
   }, [prerequisites, completions]);
@@ -133,19 +146,6 @@ function MyContributionsContent() {
     return projectDetail.contributors.some((c) => c.alias === alias);
   }, [user?.accessTokenAlias, projectDetail?.contributors]);
 
-  // Filter to ON_CHAIN + deduplicate by taskHash (safety net)
-  const liveTasks = useMemo(() => {
-    const onChain = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
-    const seen = new Set<string>();
-    return onChain.filter((t) => {
-      const hash = t.taskHash;
-      if (!hash) return true;
-      if (seen.has(hash)) return false;
-      seen.add(hash);
-      return true;
-    });
-  }, [tasks]);
-
   // Loading state
   if (isProjectLoading || isTasksLoading || isCommitmentsLoading) {
     return <AndamioPageLoading variant="content" />;
@@ -161,6 +161,19 @@ function MyContributionsContent() {
       </div>
     );
   }
+
+  // Filter to ON_CHAIN + deduplicate by taskHash (safety net)
+  const liveTasks = (() => {
+    const onChain = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
+    const seen = new Set<string>();
+    return onChain.filter((t) => {
+      const hash = t.taskHash;
+      if (!hash) return true;
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      return true;
+    });
+  })();
 
   // ── Derive stats from commitments (reliable source of truth) ──────────
 
@@ -184,7 +197,7 @@ function MyContributionsContent() {
   // is still unclaimed — exclude it from the total.
   const earnedRewards = (() => {
     const totalAccepted = acceptedCommitments.reduce((sum, c) => {
-      const matchedTask = liveTasks.find(t => getString(t.taskHash) === c.taskHash);
+      const matchedTask = liveTasks.find(t => safeString(t.taskHash) === c.taskHash);
       return sum + (matchedTask ? parseInt(matchedTask.lovelaceAmount ?? "0", 10) || 0 : 0);
     }, 0);
 
@@ -195,7 +208,7 @@ function MyContributionsContent() {
     if (acceptedCommitments.length > 0) {
       // Last element = most recently accepted (API returns oldest-first insertion order)
       const latestAccepted = acceptedCommitments.at(-1);
-      const latestTask = liveTasks.find(t => getString(t.taskHash) === latestAccepted?.taskHash);
+      const latestTask = liveTasks.find(t => safeString(t.taskHash) === latestAccepted?.taskHash);
       const unclaimedReward = latestTask ? parseInt(latestTask.lovelaceAmount ?? "0", 10) || 0 : 0;
       return totalAccepted - unclaimedReward;
     }
@@ -205,7 +218,7 @@ function MyContributionsContent() {
 
   // Available tasks: exclude tasks with any commitment from this user
   const committedTaskHashes = new Set(commitments.map(c => c.taskHash).filter(Boolean));
-  const availableTaskCount = liveTasks.filter(t => !committedTaskHashes.has(getString(t.taskHash))).length;
+  const availableTaskCount = liveTasks.filter(t => !committedTaskHashes.has(safeString(t.taskHash))).length;
 
   // Find the "active" commitment (the one that needs attention — pending or refused)
   // Priority: REFUSED > COMMITTED > SUBMITTED > PENDING_TX_SUBMIT > ACCEPTED
@@ -254,16 +267,8 @@ function MyContributionsContent() {
           icon={ContributorIcon}
           label="Your Status"
           value={contributorStatusLabel}
-          valueColor={
-            contributorStatusLabel === "Welcome Back" ? "success" :
-            contributorStatusLabel === "Task Accepted" ? "success" :
-            contributorStatusLabel === "Resubmission Needed" ? "warning" : undefined
-          }
-          iconColor={
-            contributorStatusLabel === "Welcome Back" ? "success" :
-            contributorStatusLabel === "Task Accepted" ? "success" :
-            contributorStatusLabel === "Resubmission Needed" ? "warning" : undefined
-          }
+          valueColor={getStatusStatColor(contributorStatusLabel)}
+          iconColor={getStatusStatColor(contributorStatusLabel)}
         />
         <AndamioDashboardStat icon={TaskIcon} label="Available Tasks" value={availableTaskCount} />
         <AndamioDashboardStat
@@ -310,7 +315,7 @@ function MyContributionsContent() {
         const status = activeCommitment.commitmentStatus;
 
         // Match to DB task for title/reward
-        const matchedDbTask = tasks.find(t => getString(t.taskHash) === taskId);
+        const matchedDbTask = tasks.find(t => safeString(t.taskHash) === taskId);
         const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
 
         return (
@@ -356,9 +361,9 @@ function MyContributionsContent() {
                     <AndamioText className="font-medium">{matchedDbTask.title}</AndamioText>
                     <AndamioBadge variant="outline">{formatLovelace(matchedDbTask.lovelaceAmount ?? "0")}</AndamioBadge>
                   </div>
-                  {getString(matchedDbTask.description) && (
+                  {safeString(matchedDbTask.description) && (
                     <AndamioText variant="small" className="text-muted-foreground">
-                      {getString(matchedDbTask.description)}
+                      {safeString(matchedDbTask.description)}
                     </AndamioText>
                   )}
                 </div>
@@ -477,8 +482,10 @@ function MyContributionsContent() {
                           projectTitle={projectDetail?.title || undefined}
                           pendingRewardLovelace={taskLovelace.toString()}
                           onSuccess={async () => {
-                            await queryClient.invalidateQueries({ queryKey: projectContributorKeys.commitments(projectId) });
-                            await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+                            await Promise.all([
+                              queryClient.invalidateQueries({ queryKey: projectContributorKeys.commitments(projectId) }),
+                              queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) }),
+                            ]);
                           }}
                         />
                       ) : (
@@ -538,34 +545,17 @@ function MyContributionsContent() {
           <AndamioCardTitle>How It Works</AndamioCardTitle>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
-            <div>
-              <AndamioText className="font-medium">Commit to a Task</AndamioText>
-              <AndamioText variant="small">Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor.</AndamioText>
+          {HOW_IT_WORKS_STEPS.map((step, index) => (
+            <div key={step.title} className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
+                {index + 1}
+              </div>
+              <div>
+                <AndamioText className="font-medium">{step.title}</AndamioText>
+                <AndamioText variant="small">{step.description}</AndamioText>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">2</div>
-            <div>
-              <AndamioText className="font-medium">Complete the Work</AndamioText>
-              <AndamioText variant="small">Work on your task and update your evidence as needed while awaiting review.</AndamioText>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
-            <div>
-              <AndamioText className="font-medium">Get Reviewed</AndamioText>
-              <AndamioText variant="small">A project manager can review your commitment at any point — even before you submit evidence. If refused, you can resubmit.</AndamioText>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
-            <div>
-              <AndamioText className="font-medium">Earn Rewards</AndamioText>
-              <AndamioText variant="small">When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together.</AndamioText>
-            </div>
-          </div>
+          ))}
         </AndamioCardContent>
       </AndamioCard>
     </div>

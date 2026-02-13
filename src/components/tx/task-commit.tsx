@@ -141,24 +141,27 @@ export function TaskCommit({
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        // "updated" means Gateway has confirmed TX AND updated DB
-        if (status.state === "updated") {
-          console.log("[TaskCommit] TX confirmed and DB updated by gateway");
+        const isStalled = status.state === "confirmed" && !!status.last_error;
 
-          const successTitle = isFirstCommit
-            ? "Welcome to the Project!"
-            : willClaimRewards
-              ? "Committed & Rewards Claimed!"
-              : "Task Commitment Recorded!";
+        if (status.state === "updated" || isStalled) {
+          let successTitle: string;
+          let successDescription: string;
 
-          const successDescription = isFirstCommit
-            ? `You've joined ${projectTitle ?? "this project"}`
-            : willClaimRewards
-              ? `You've committed to ${taskTitle ?? taskCode} and claimed your rewards`
-              : `You've committed to ${taskTitle ?? taskCode}`;
+          if (isStalled) {
+            successTitle = "Confirmed On-Chain!";
+            successDescription = "Confirmed on-chain. Gateway sync pending — your data will update shortly.";
+          } else if (isFirstCommit) {
+            successTitle = "Welcome to the Project!";
+            successDescription = `You've joined ${projectTitle ?? "this project"}`;
+          } else if (willClaimRewards) {
+            successTitle = "Committed & Rewards Claimed!";
+            successDescription = `You've committed to ${taskTitle ?? taskCode} and claimed your rewards`;
+          } else {
+            successTitle = "Task Commitment Recorded!";
+            successDescription = `You've committed to ${taskTitle ?? taskCode}`;
+          }
 
           toast.success(successTitle, { description: successDescription });
-
           void onSuccess?.();
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Commitment Failed", {
@@ -182,61 +185,34 @@ export function TaskCommit({
   const ui = TRANSACTION_UI.PROJECT_CONTRIBUTOR_TASK_COMMIT;
 
   const handleCommit = async () => {
-    console.log("[TaskCommit] ========== HANDLE COMMIT START ==========");
-    console.log("[TaskCommit] Component props:", {
-      projectNftPolicyId,
-      projectNftPolicyId_length: projectNftPolicyId.length,
-      contributorStateId,
-      contributorStateId_length: contributorStateId.length,
-      taskHash,
-      taskHash_length: taskHash.length,
-      taskCode,
-      taskTitle,
-      hasEvidence: !!taskEvidence,
-      evidenceKeys: taskEvidence ? Object.keys(taskEvidence) : [],
-    });
+    if (!user?.accessTokenAlias) return;
 
-    if (!user?.accessTokenAlias) {
-      console.error("[TaskCommit] No user access token alias");
-      return;
-    }
-    console.log("[TaskCommit] User alias:", user.accessTokenAlias);
-
-    if (!taskEvidence || Object.keys(taskEvidence).length === 0) {
-      console.error("[TaskCommit] No task evidence provided");
+    if (!computedHash) {
       toast.error("Task evidence is required");
       return;
     }
 
     if (taskHash.length !== 64) {
-      console.error("[TaskCommit] Invalid task hash length:", taskHash.length);
       toast.error("Invalid task - please select a valid task");
       return;
     }
 
-    const hash = computeAssignmentInfoHash(taskEvidence);
-    console.log("[TaskCommit] Computed evidence hash:", hash, "length:", hash.length);
-
-    const txParams = {
-      alias: user.accessTokenAlias,
-      project_id: projectNftPolicyId,
-      contributor_state_id: contributorStateId,
-      task_hash: taskHash,
-      task_info: hash,
-    };
-
-    console.log("[TaskCommit] Transaction params:", txParams);
-
     await execute({
       txType: "PROJECT_CONTRIBUTOR_TASK_COMMIT",
-      params: txParams,
+      params: {
+        alias: user.accessTokenAlias,
+        project_id: projectNftPolicyId,
+        contributor_state_id: contributorStateId,
+        task_hash: taskHash,
+        task_info: computedHash,
+      },
       metadata: {
         task_hash: taskHash,
         evidence: JSON.stringify(taskEvidence),
-        evidence_hash: hash,
+        evidence_hash: computedHash,
       },
       onSuccess: async (txResult) => {
-        console.log("[TaskCommit] TX submitted successfully!", txResult);
+        console.log("[TaskCommit] TX submitted:", txResult.txHash);
       },
       onError: (txError) => {
         console.error("[TaskCommit] Error:", txError);
@@ -253,23 +229,35 @@ export function TaskCommit({
   const hasValidTaskHash = taskHash.length === 64;
   const canCommit = hasAccessToken && hasEvidence && hasValidTaskHash;
 
-  // Dynamic title and description based on context
+  // Dynamic title, description, and button text based on context
   const cardTitle = isFirstCommit ? "Join & Commit" : ui.title;
-  const cardDescription = isFirstCommit
-    ? projectTitle
-      ? `Join ${projectTitle} and commit to your first task`
-      : "Join this project and commit to your first task"
-    : willClaimRewards
-      ? "Continue contributing and claim your rewards"
-      : projectTitle
-        ? `Take on a new task in ${projectTitle}`
-        : "Commit to your next task";
 
-  const buttonText = isFirstCommit
-    ? "Join & Commit"
-    : willClaimRewards
-      ? "Commit & Claim Rewards"
-      : ui.buttonText;
+  let cardDescription: string;
+  let buttonText: string;
+
+  let successTitle: string;
+  let successSubtitle: string;
+
+  if (isFirstCommit) {
+    cardDescription = projectTitle
+      ? `Join ${projectTitle} and commit to your first task`
+      : "Join this project and commit to your first task";
+    buttonText = "Join & Commit";
+    successTitle = "Welcome to the Project!";
+    successSubtitle = `You've joined ${projectTitle ?? "this project"}`;
+  } else if (willClaimRewards) {
+    cardDescription = "Continue contributing and claim your rewards";
+    buttonText = "Commit & Claim Rewards";
+    successTitle = "Committed & Rewards Claimed!";
+    successSubtitle = `Committed to ${taskTitle ?? taskCode} and claimed rewards`;
+  } else {
+    cardDescription = projectTitle
+      ? `Take on a new task in ${projectTitle}`
+      : "Commit to your next task";
+    buttonText = ui.buttonText;
+    successTitle = "Task Commitment Recorded!";
+    successSubtitle = `You've committed to ${taskTitle ?? taskCode}`;
+  }
 
   return (
     <AndamioCard>
@@ -379,18 +367,10 @@ export function TaskCommit({
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <AndamioText className="font-medium text-primary">
-                  {isFirstCommit
-                    ? "Welcome to the Project!"
-                    : willClaimRewards
-                      ? "Committed & Rewards Claimed!"
-                      : "Task Commitment Recorded!"}
+                  {successTitle}
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
-                  {isFirstCommit
-                    ? `You've joined ${projectTitle ?? "this project"}`
-                    : willClaimRewards
-                      ? `Committed to ${taskTitle ?? taskCode} and claimed rewards`
-                      : `You've committed to ${taskTitle ?? taskCode}`}
+                  {successSubtitle}
                 </AndamioText>
               </div>
             </div>

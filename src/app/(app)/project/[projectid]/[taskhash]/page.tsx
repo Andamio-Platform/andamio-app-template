@@ -1,15 +1,26 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
-import { AndamioSeparator } from "~/components/andamio/andamio-separator";
-import { AndamioPageHeader, AndamioPageLoading, AndamioSectionHeader, AndamioBackButton, AndamioErrorAlert, AndamioDashboardStat } from "~/components/andamio";
-import { AndamioText } from "~/components/andamio/andamio-text";
+import {
+  AndamioBadge,
+  AndamioButton,
+  AndamioCard,
+  AndamioCardContent,
+  AndamioCardDescription,
+  AndamioCardHeader,
+  AndamioCardTitle,
+  AndamioDashboardStat,
+  AndamioBackButton,
+  AndamioErrorAlert,
+  AndamioPageHeader,
+  AndamioPageLoading,
+  AndamioSectionHeader,
+  AndamioSeparator,
+  AndamioText,
+} from "~/components/andamio";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor, ContentViewer } from "~/components/editor";
 import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
@@ -22,6 +33,35 @@ import { useContributorCommitment, useContributorCommitments, projectContributor
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getTransactionExplorerUrl } from "~/lib/constants";
+
+// ── Pure helpers (no component state dependency) ──────────────────────────
+
+function formatPosixTimestamp(timestamp: string): string {
+  const ms = parseInt(timestamp);
+  if (isNaN(ms)) return timestamp;
+  return new Date(ms).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getCommitmentStatusVariant(
+  status: string,
+): "default" | "secondary" | "outline" | "destructive" {
+  if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED") return "default";
+  if (status.includes("DENIED") || status.includes("REFUSED")) return "destructive";
+  if (status.includes("PENDING")) return "outline";
+  return "secondary";
+}
+
+function truncateAlias(alias: string | undefined, maxLength = 12): string {
+  if (!alias) return "Unknown";
+  if (alias.length <= maxLength) return alias;
+  return alias.slice(0, maxLength) + "\u2026";
+}
 
 /**
  * Task Detail Page - Public view of a task with full commitment lifecycle
@@ -74,6 +114,14 @@ export default function TaskDetailPage() {
     (c) => c.commitmentStatus !== "PENDING_TX_SUBMIT"
   ).length === 0;
 
+  // Fallback: when the commitment detail endpoint returns 404 but the contributor
+  // is still in REFUSED state on-chain, detect it from the commitments list.
+  // This prevents the UI from showing TaskCommit (which fails with STATE_ERROR)
+  // instead of TaskAction (which correctly handles re-submission after refusal).
+  const refusedFallback = !commitment
+    ? allMyCommitments.find(c => c.taskHash === taskHash && c.commitmentStatus === "REFUSED") ?? null
+    : null;
+
   const isTaskAccepted = commitment?.commitmentStatus === "ACCEPTED";
 
   // Derive accepted task reward from project tasks
@@ -82,39 +130,16 @@ export default function TaskDetailPage() {
     return task.lovelaceAmount ?? "0";
   }, [isTaskAccepted, task]);
 
-  // ── Helpers ────────────────────────────────────────────────────────────
-
-  const formatTimestamp = (timestamp: string): string => {
-    const ms = parseInt(timestamp);
-    if (isNaN(ms)) return timestamp;
-    return new Date(ms).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getCommitmentStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
-    if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED") return "default";
-    if (status.includes("DENIED") || status.includes("REFUSED")) return "destructive";
-    if (status.includes("PENDING")) return "outline";
-    return "secondary";
-  };
-
   // Check if evidence is valid (has actual content)
-  const hasValidEvidence = useMemo(() => {
-    return evidence?.content &&
-      Array.isArray(evidence.content) &&
-      evidence.content.length > 0 &&
-      !(evidence.content.length === 1 &&
-        evidence.content[0]?.type === "paragraph" &&
-        (!evidence.content[0]?.content || evidence.content[0]?.content.length === 0));
-  }, [evidence]);
+  const hasValidEvidence = evidence?.content &&
+    Array.isArray(evidence.content) &&
+    evidence.content.length > 0 &&
+    !(evidence.content.length === 1 &&
+      evidence.content[0]?.type === "paragraph" &&
+      (!evidence.content[0]?.content || evidence.content[0]?.content.length === 0));
 
   // Clear stale pending TX hash when commitment status transitions
-  React.useEffect(() => {
+  useEffect(() => {
     setPendingActionTxHash(null);
   }, [commitment?.commitmentStatus]);
 
@@ -149,12 +174,28 @@ export default function TaskDetailPage() {
     );
   }
 
-  const createdBy = task.createdByAlias
-    ? (task.createdByAlias.length > 12 ? task.createdByAlias.slice(0, 12) + "…" : task.createdByAlias)
-    : "Unknown";
+  const createdBy = truncateAlias(task.createdByAlias);
 
   const contributorStateId = project?.contributorStateId ?? task.contributorStateId ?? "0".repeat(56);
-  const commitmentStatus = commitment?.commitmentStatus ?? null;
+
+  // Unified reference: the commitment detail, or the REFUSED fallback from the list endpoint.
+  // Used throughout the JSX for data access (evidence, submissionTx, etc.).
+  const activeCommitment = commitment ?? refusedFallback;
+  const commitmentStatus = activeCommitment?.commitmentStatus ?? null;
+
+  // Card description for the commitment status section
+  let commitmentCardDescription: string;
+  if (!isAuthenticated) {
+    commitmentCardDescription = "Connect your wallet to commit to this task";
+  } else if (isCommitmentLoading) {
+    commitmentCardDescription = "Loading commitment status\u2026";
+  } else if (!activeCommitment) {
+    commitmentCardDescription = "Commit to this task to get started";
+  } else if (commitmentStatus === "ACCEPTED") {
+    commitmentCardDescription = "Your work has been accepted!";
+  } else {
+    commitmentCardDescription = "Track your progress on this task";
+  }
 
   return (
     <div className="space-y-6">
@@ -188,7 +229,7 @@ export default function TaskDetailPage() {
         <AndamioDashboardStat
           icon={PendingIcon}
           label="Expires"
-          value={formatTimestamp(task.expirationTime ?? "0")}
+          value={formatPosixTimestamp(task.expirationTime ?? "0")}
         />
         <AndamioDashboardStat
           icon={TeacherIcon}
@@ -232,11 +273,9 @@ export default function TaskDetailPage() {
                 const displayName = token.assetName || (token.policyId ? token.policyId.slice(0, 16) : `Token ${idx + 1}`);
                 return (
                   <div key={token.policyId || idx} className="flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <AndamioText className="font-medium font-mono text-sm">
-                        {displayName}
-                      </AndamioText>
-                    </div>
+                    <AndamioText className="font-medium font-mono text-sm">
+                      {displayName}
+                    </AndamioText>
                     <AndamioBadge variant="outline">{token.quantity}</AndamioBadge>
                   </div>
                 );
@@ -251,15 +290,7 @@ export default function TaskDetailPage() {
         <AndamioCardHeader>
           <AndamioCardTitle>Your Commitment</AndamioCardTitle>
           <AndamioCardDescription>
-            {isAuthenticated
-              ? isCommitmentLoading
-                ? "Loading commitment status…"
-                : commitment
-                  ? commitmentStatus === "ACCEPTED"
-                    ? "Your work has been accepted!"
-                    : "Track your progress on this task"
-                  : "Commit to this task to get started"
-              : "Connect your wallet to commit to this task"}
+            {commitmentCardDescription}
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
@@ -443,18 +474,18 @@ export default function TaskDetailPage() {
                 </AndamioText>
               )}
 
-              {commitment?.submissionTx && (
+              {activeCommitment?.submissionTx && (
                 <>
                   <AndamioSeparator />
                   <div>
                     <AndamioText variant="small" className="mb-1">Submission Transaction</AndamioText>
                     <a
-                      href={getTransactionExplorerUrl(commitment.submissionTx)}
+                      href={getTransactionExplorerUrl(activeCommitment.submissionTx)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-xs text-primary hover:underline"
                     >
-                      {commitment.submissionTx.slice(0, 16)}...{commitment.submissionTx.slice(-8)}
+                      {activeCommitment.submissionTx.slice(0, 16)}...{activeCommitment.submissionTx.slice(-8)}
                     </a>
                   </div>
                 </>
@@ -472,7 +503,7 @@ export default function TaskDetailPage() {
                 </div>
                 <div className="min-h-[200px] border rounded-lg">
                   <ContentEditor
-                    content={evidence ?? (commitment?.evidence as JSONContent | null)}
+                    content={evidence ?? (activeCommitment?.evidence as JSONContent | null)}
                     onContentChange={setEvidence}
                   />
                 </div>
@@ -554,7 +585,7 @@ export default function TaskDetailPage() {
                 </>
               )}
 
-              {commitment.evidence !== undefined && commitment.evidence !== null && (
+              {commitment.evidence != null && (
                 <>
                   <AndamioSeparator />
                   <div>
@@ -595,7 +626,7 @@ export default function TaskDetailPage() {
       </AndamioCard>
 
       {/* ── Evidence Editor and Transaction (new commitment) ────────── */}
-      {isAuthenticated && !commitment && isEditingEvidence && (
+      {isAuthenticated && !activeCommitment && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
             title="Your Work"

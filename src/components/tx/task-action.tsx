@@ -10,7 +10,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
@@ -105,19 +105,21 @@ export function TaskAction({
 }: TaskActionProps) {
   const { user, isAuthenticated } = useAndamioAuth();
   const { state, result, error, execute, reset } = useTransaction();
-  const [evidenceHash, setEvidenceHash] = useState<string | null>(null);
 
   // Watch for gateway confirmation after TX submission
   const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
       onComplete: (status) => {
-        // "updated" means Gateway has confirmed TX AND updated DB
-        if (status.state === "updated") {
-          console.log("[TaskAction] TX confirmed and DB updated by gateway");
+        const isStalled = status.state === "confirmed" && !!status.last_error;
+
+        if (status.state === "updated" || isStalled) {
+          console.log("[TaskAction] TX confirmed:", status.state, isStalled ? "(stalled)" : "");
 
           toast.success("Task Action Completed!", {
-            description: `Action on ${taskTitle ?? taskCode} recorded successfully`,
+            description: isStalled
+              ? `Confirmed on-chain. Gateway sync pending — your data will update shortly.`
+              : `Action on ${taskTitle ?? taskCode} recorded successfully`,
           });
 
           if (result?.txHash) {
@@ -149,18 +151,9 @@ export function TaskAction({
       return;
     }
 
-    // Compute evidence hash if evidence provided - this becomes the project_info
-    const hash = taskEvidence && Object.keys(taskEvidence).length > 0
-      ? computeAssignmentInfoHash(taskEvidence)
-      : undefined;
-
-    if (hash) {
-      setEvidenceHash(hash);
-    }
-
-    // Use computed hash as project_info (evidence hash on-chain)
-    // Falls back to explicit projectInfo prop if no evidence provided
-    const projectInfoValue = hash ?? projectInfo;
+    // Use pre-computed evidence hash as project_info (on-chain evidence hash).
+    // Falls back to explicit projectInfo prop if no evidence provided.
+    const projectInfoValue = computedHash ?? projectInfo;
 
     await execute({
       txType: "PROJECT_CONTRIBUTOR_TASK_ACTION",
@@ -169,15 +162,15 @@ export function TaskAction({
         project_id: projectNftPolicyId,
         project_info: projectInfoValue ?? "",
       },
-      metadata: taskEvidence && hash
+      metadata: computedHash
         ? {
             task_hash: taskHash,
             evidence: JSON.stringify(taskEvidence),
-            evidence_hash: hash,
+            evidence_hash: computedHash,
           }
         : undefined,
       onSuccess: async (txResult) => {
-        console.log("[TaskAction] TX submitted successfully!", txResult);
+        console.log("[TaskAction] TX submitted:", txResult.txHash);
       },
       onError: (txError) => {
         console.error("[TaskAction] Error:", txError);
@@ -279,8 +272,8 @@ export function TaskAction({
                   Task Action Completed!
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
-                  {evidenceHash
-                    ? `Recorded with hash ${evidenceHash.slice(0, 16)}...`
+                  {computedHash
+                    ? `Recorded with hash ${computedHash.slice(0, 16)}...`
                     : "Your action has been recorded on-chain"}
                 </AndamioText>
               </div>

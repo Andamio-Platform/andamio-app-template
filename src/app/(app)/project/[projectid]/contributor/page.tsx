@@ -162,18 +162,8 @@ function MyContributionsContent() {
     );
   }
 
-  // Filter to ON_CHAIN + deduplicate by taskHash (safety net)
-  const liveTasks = (() => {
-    const onChain = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
-    const seen = new Set<string>();
-    return onChain.filter((t) => {
-      const hash = t.taskHash;
-      if (!hash) return true;
-      if (seen.has(hash)) return false;
-      seen.add(hash);
-      return true;
-    });
-  })();
+  // Filter to ON_CHAIN tasks (keep all instances — same taskHash = same content, different UTxOs)
+  const liveTasks = tasks.filter((t) => t.taskStatus === "ON_CHAIN");
 
   // ── Derive stats from commitments (reliable source of truth) ──────────
 

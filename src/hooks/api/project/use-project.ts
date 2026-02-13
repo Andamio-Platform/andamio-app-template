@@ -129,6 +129,66 @@ export interface Task {
 }
 
 /**
+ * TaskGroup - groups tasks with the same taskHash (content hash)
+ *
+ * When a project manager creates multiple identical tasks (e.g., "Review PR" × 5),
+ * they share the same taskHash. Each instance is a separate on-chain UTxO with
+ * unique contributorStateId.
+ *
+ * Use groupTasksByHash() to convert Task[] → TaskGroup[] for display.
+ */
+export interface TaskGroup {
+  /** The shared taskHash (content hash) */
+  taskHash: string;
+  /** Number of task instances with this hash */
+  count: number;
+  /** Representative task (first in the group) for display purposes */
+  representative: Task;
+  /** All task instances with this hash */
+  instances: Task[];
+}
+
+/**
+ * Group tasks by taskHash for display
+ *
+ * @param tasks - Array of tasks (may include duplicates by taskHash)
+ * @returns Array of TaskGroups, each containing tasks with the same hash
+ *
+ * @example
+ * ```tsx
+ * const tasks = useProjectTasks(projectId);
+ * const groups = groupTasksByHash(tasks.data ?? []);
+ *
+ * groups.map(group => (
+ *   <div key={group.taskHash}>
+ *     {group.representative.title}
+ *     {group.count > 1 && <span>(×{group.count})</span>}
+ *   </div>
+ * ));
+ * ```
+ */
+export function groupTasksByHash(tasks: Task[]): TaskGroup[] {
+  const groupMap = new Map<string, Task[]>();
+
+  for (const task of tasks) {
+    const hash = task.taskHash || "";
+    const existing = groupMap.get(hash);
+    if (existing) {
+      existing.push(task);
+    } else {
+      groupMap.set(hash, [task]);
+    }
+  }
+
+  return Array.from(groupMap.entries()).map(([taskHash, instances]) => ({
+    taskHash,
+    count: instances.length,
+    representative: instances[0]!,
+    instances,
+  }));
+}
+
+/**
  * Project prerequisite
  */
 export interface ProjectPrerequisite {
@@ -456,18 +516,8 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
   const category = apiContent?.category as string | undefined;
   const isPublic = apiContent?.is_public as boolean | undefined;
 
-  // Transform related data — de-duplicate by taskHash (API can return duplicates)
-  const rawTasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
-  const tasks = rawTasks ? (() => {
-    const seen = new Set<string>();
-    return rawTasks.filter((t) => {
-      const hash = t.taskHash;
-      if (!hash) return true;
-      if (seen.has(hash)) return false;
-      seen.add(hash);
-      return true;
-    });
-  })() : undefined;
+  // Transform related data — keep all task instances (same taskHash = same content, different UTxOs)
+  const tasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
 
   const contributors: ProjectContributor[] | undefined = api.contributors?.map(
     (c: OrchestrationProjectContributorOnChain) => ({
@@ -806,17 +856,9 @@ export function useProjectTasks(projectId: string | undefined) {
         items = result.data ?? [];
       }
 
-      // De-duplicate by taskHash — API can return the same ON_CHAIN task
-      // multiple times across merged data sources
-      const transformed = items.map(transformMergedTask);
-      const seen = new Set<string>();
-      return transformed.filter((t) => {
-        const hash = t.taskHash;
-        if (!hash) return true;
-        if (seen.has(hash)) return false;
-        seen.add(hash);
-        return true;
-      });
+      // Return all task instances — same taskHash = same content, different on-chain UTxOs
+      // UI should group by taskHash and show counts when multiple instances exist
+      return items.map(transformMergedTask);
     },
     enabled: !!projectId,
     staleTime: 60_000,

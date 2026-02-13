@@ -4,7 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useProject } from "~/hooks/api";
-import { useProjectTasks } from "~/hooks/api/project/use-project";
+import { useProjectTasks, groupTasksByHash } from "~/hooks/api/project/use-project";
 import {
   AndamioBadge,
   AndamioButton,
@@ -113,19 +113,10 @@ export default function ProjectDetailPage() {
     return project.submissions.some(s => s.submittedBy === alias);
   }, [user?.accessTokenAlias, project?.submissions]);
 
-  // Filter to live tasks only + deduplicate by taskHash
-  // (API can return duplicates across merged data sources)
+  // Filter to live tasks only (keep all instances — same taskHash = same content, different UTxOs)
   const allTasks = mergedTasks ?? project?.tasks ?? [];
   const liveTasks = React.useMemo(() => {
-    const seen = new Set<string>();
-    return allTasks.filter((t) => {
-      if (t.taskStatus !== "ON_CHAIN") return false;
-      const hash = t.taskHash;
-      if (!hash) return true;
-      if (seen.has(hash)) return false;
-      seen.add(hash);
-      return true;
-    });
+    return allTasks.filter((t) => t.taskStatus === "ON_CHAIN");
   }, [allTasks]);
 
   if (isLoading) {
@@ -161,6 +152,10 @@ export default function ProjectDetailPage() {
   );
   const availableTasks = liveTasks.filter(t => !submittedTaskHashes.has(t.taskHash ?? ""));
   const completedTasks = liveTasks.filter(t => acceptedTaskHashes.has(t.taskHash ?? ""));
+
+  // Group tasks by taskHash for display (same content = same hash, shown with count)
+  const availableTaskGroups = groupTasksByHash(availableTasks);
+  const completedTaskGroups = groupTasksByHash(completedTasks);
 
   // Derived stats
   const contributors = project.contributors ?? [];
@@ -342,12 +337,15 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ── Available Tasks ───────────────────────────────────────── */}
-      {availableTasks.length > 0 ? (
+      {availableTaskGroups.length > 0 ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TaskIcon className="h-5 w-5" />
               <AndamioText className="text-lg font-semibold">Available Tasks</AndamioText>
+              <AndamioText variant="small" className="text-muted-foreground">
+                ({availableTasks.length} total)
+              </AndamioText>
             </div>
           </div>
           <AndamioTableContainer>
@@ -360,40 +358,51 @@ export default function ProjectDetailPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {availableTasks.map((task, index) => (
-                  <AndamioTableRow key={task.taskHash ?? index}>
-                    <AndamioTableCell>
-                      {task.taskHash ? (
-                        <Link href={`/project/${projectId}/${task.taskHash}`}>
-                          <AndamioText className="font-medium hover:underline">
-                            {task.title || "Untitled Task"}
+                {availableTaskGroups.map((group) => {
+                  const task = group.representative;
+                  return (
+                    <AndamioTableRow key={group.taskHash}>
+                      <AndamioTableCell>
+                        {task.taskHash ? (
+                          <Link href={`/project/${projectId}/${task.taskHash}`}>
+                            <div className="flex items-center gap-2">
+                              <AndamioText className="font-medium hover:underline">
+                                {task.title || "Untitled Task"}
+                              </AndamioText>
+                              {group.count > 1 && (
+                                <AndamioBadge variant="secondary" className="text-xs">
+                                  ×{group.count}
+                                </AndamioBadge>
+                              )}
+                            </div>
+                            <AndamioText variant="small" className="font-mono text-xs text-muted-foreground">
+                              {task.taskHash.slice(0, 20)}...
+                            </AndamioText>
+                          </Link>
+                        ) : (
+                          <AndamioText className="text-muted-foreground">No ID</AndamioText>
+                        )}
+                      </AndamioTableCell>
+                      <AndamioTableCell className="hidden md:table-cell">
+                        {task.expirationTime ? (
+                          <AndamioText variant="small">
+                            {new Date(Number(task.expirationTime)).toLocaleDateString()}
                           </AndamioText>
-                          <AndamioText variant="small" className="font-mono text-xs text-muted-foreground">
-                            {task.taskHash.slice(0, 20)}...
+                        ) : (
+                          <AndamioText variant="small" className="text-muted-foreground">
+                            None
                           </AndamioText>
-                        </Link>
-                      ) : (
-                        <AndamioText className="text-muted-foreground">No ID</AndamioText>
-                      )}
-                    </AndamioTableCell>
-                    <AndamioTableCell className="hidden md:table-cell">
-                      {task.expirationTime ? (
-                        <AndamioText variant="small">
-                          {new Date(Number(task.expirationTime)).toLocaleDateString()}
-                        </AndamioText>
-                      ) : (
-                        <AndamioText variant="small" className="text-muted-foreground">
-                          None
-                        </AndamioText>
-                      )}
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-right">
-                      <AndamioBadge variant="outline">
-                        {formatLovelace(task.lovelaceAmount ?? "0")}
-                      </AndamioBadge>
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                ))}
+                        )}
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-right">
+                        <AndamioBadge variant="outline">
+                          {formatLovelace(task.lovelaceAmount ?? "0")}
+                          {group.count > 1 && ` each`}
+                        </AndamioBadge>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  );
+                })}
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>
@@ -407,7 +416,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ── My Completed Tasks (authenticated only, personal) ─── */}
-      {isAuthenticated && completedTasks.length > 0 && (
+      {isAuthenticated && completedTaskGroups.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <SuccessIcon className="h-5 w-5 text-muted-foreground" />
@@ -424,22 +433,32 @@ export default function ProjectDetailPage() {
                 </AndamioTableRow>
               </AndamioTableHeader>
               <AndamioTableBody>
-                {completedTasks.map((task, index) => (
-                  <AndamioTableRow key={task.taskHash ?? index} className="opacity-70">
-                    <AndamioTableCell>
-                      <Link href={`/project/${projectId}/${task.taskHash}`}>
-                        <AndamioText className="font-medium hover:underline">
-                          {task.title || "Untitled Task"}
-                        </AndamioText>
-                      </Link>
-                    </AndamioTableCell>
-                    <AndamioTableCell className="text-right">
-                      <AndamioBadge variant="outline" className="opacity-70">
-                        {formatLovelace(task.lovelaceAmount ?? "0")}
-                      </AndamioBadge>
-                    </AndamioTableCell>
-                  </AndamioTableRow>
-                ))}
+                {completedTaskGroups.map((group) => {
+                  const task = group.representative;
+                  return (
+                    <AndamioTableRow key={group.taskHash} className="opacity-70">
+                      <AndamioTableCell>
+                        <Link href={`/project/${projectId}/${task.taskHash}`}>
+                          <div className="flex items-center gap-2">
+                            <AndamioText className="font-medium hover:underline">
+                              {task.title || "Untitled Task"}
+                            </AndamioText>
+                            {group.count > 1 && (
+                              <AndamioBadge variant="secondary" className="text-xs opacity-70">
+                                ×{group.count}
+                              </AndamioBadge>
+                            )}
+                          </div>
+                        </Link>
+                      </AndamioTableCell>
+                      <AndamioTableCell className="text-right">
+                        <AndamioBadge variant="outline" className="opacity-70">
+                          {formatLovelace(task.lovelaceAmount ?? "0")}
+                        </AndamioBadge>
+                      </AndamioTableCell>
+                    </AndamioTableRow>
+                  );
+                })}
               </AndamioTableBody>
             </AndamioTable>
           </AndamioTableContainer>

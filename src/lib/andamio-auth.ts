@@ -321,8 +321,14 @@ export async function createLoginSession(): Promise<LoginSession> {
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as { message?: string };
-    throw new Error(error.message ?? "Failed to create login session");
+    const error = (await response.json()) as { message?: string; error?: string; details?: unknown };
+    authLogger.error("Create login session failed:", {
+      status: response.status,
+      statusText: response.statusText,
+      error,
+    });
+    const msg = error.message ?? error.error ?? "Failed to create login session";
+    throw new Error(msg);
   }
 
   return response.json() as Promise<LoginSession>;
@@ -430,6 +436,9 @@ export async function authenticateWithWallet(params: {
     try {
       const assets = await params.getAssets();
 
+      // DEBUG: Log wallet assets for access token detection
+      console.log("[Auth] Fresh auth - wallet assets:", assets.length, "policy:", ACCESS_TOKEN_POLICY_ID);
+
       // Find access token in wallet assets
       const accessToken = assets.find((asset) =>
         asset.unit.startsWith(ACCESS_TOKEN_POLICY_ID)
@@ -438,15 +447,12 @@ export async function authenticateWithWallet(params: {
       if (accessToken) {
         accessTokenUnit = accessToken.unit;
         const alias = extractAliasFromUnit(accessToken.unit, ACCESS_TOKEN_POLICY_ID);
-        authLogger.info("Access Token detected in wallet:", {
-          unit: accessTokenUnit,
-          alias: alias,
-        });
+        console.log("[Auth] Access token detected:", { unit: accessTokenUnit, alias });
       } else {
-        authLogger.info("No access token found in wallet");
+        console.log("[Auth] No matching access token. Asset units:", assets.map(a => a.unit.slice(0, 20) + "..."));
       }
     } catch (error) {
-      authLogger.warn("Failed to detect access token:", error);
+      console.warn("[Auth] Failed to detect access token:", error);
       // Continue with auth - access token is optional
     }
   }

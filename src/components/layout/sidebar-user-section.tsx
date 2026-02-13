@@ -4,9 +4,9 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioText } from "~/components/andamio/andamio-text";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { LogOutIcon } from "~/components/icons";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { PendingTxIndicator } from "~/components/tx/pending-tx-indicator";
 import { truncateWalletAddress } from "~/config";
 import { cn } from "~/lib/utils";
@@ -45,7 +45,7 @@ interface SidebarUserSectionProps {
  * - Truncated wallet address with connection indicator
  * - Optional disconnect button
  *
- * When not authenticated, shows "Connect wallet to start" message.
+ * When not authenticated, shows a "Sign In" button via ConnectWalletButton.
  */
 export function SidebarUserSection({
   showDisconnect = true,
@@ -68,19 +68,13 @@ export function SidebarUserSection({
   if (!isAuthenticated || !user) {
     return (
       <div className={cn("border-t border-sidebar-border p-2", className)}>
-        <div
+        <ConnectWalletButton
+          label="Sign In"
           className={cn(
-            "rounded-md bg-sidebar-accent/50 text-center",
-            isExpanded ? "p-3 rounded-lg" : "p-2"
+            "w-full",
+            isExpanded ? "text-sm h-9" : "text-[11px] h-7"
           )}
-        >
-          <AndamioText
-            variant="small"
-            className={isExpanded ? "text-xs" : "text-[10px]"}
-          >
-            Connect wallet to start
-          </AndamioText>
-        </div>
+        />
       </div>
     );
   }

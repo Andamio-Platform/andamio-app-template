@@ -6,6 +6,7 @@ import { useWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { MobileNav } from "./mobile-nav";
 import {
   WalletIcon,
@@ -227,7 +228,7 @@ export function AuthStatusBar() {
             </AndamioButton>
           )}
 
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <AndamioButton
               variant="ghost"
               size="sm"
@@ -237,6 +238,11 @@ export function AuthStatusBar() {
               <LogOutIcon className="mr-1.5 h-3 w-3" />
               Sign Out
             </AndamioButton>
+          ) : (
+            <ConnectWalletButton
+              label="Sign In"
+              className="hidden sm:flex h-6 px-2 text-xs border-0 bg-transparent text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
+            />
           )}
         </div>
       </div>

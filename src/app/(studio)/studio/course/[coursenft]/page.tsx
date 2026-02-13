@@ -155,7 +155,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
-  const validTabs = ["modules", "credentials", "commitments", "settings"];
+  const validTabs = ["modules", "credentials", "teacher", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "modules";
 
   // Update studio header
@@ -649,9 +649,9 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                   <CredentialIcon className="h-4 w-4" />
                   Credentials
                 </AndamioTabsTrigger>
-                <AndamioTabsTrigger value="commitments" className="text-sm gap-1.5 px-4">
+                <AndamioTabsTrigger value="teacher" className="text-sm gap-1.5 px-4">
                   <TeacherIcon className="h-4 w-4" />
-                  Commitments
+                  Teacher
                   {pendingCommitmentsForCourse.length > 0 && (
                     <AndamioBadge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px]">
                       {pendingCommitmentsForCourse.length}
@@ -1071,8 +1071,34 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                 )}
               </AndamioTabsContent>
 
-              {/* Commitments Tab */}
-              <AndamioTabsContent value="commitments" className="mt-0 space-y-6">
+              {/* Teacher Tab */}
+              <AndamioTabsContent value="teacher" className="mt-0 space-y-6">
+                {/* Summary Bar + Assessment View Button */}
+                <div className="flex items-center justify-between gap-4 rounded-xl border p-4 bg-muted/30">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <PendingIcon className="h-3.5 w-3.5 text-secondary" />
+                      <strong>{pendingCommitmentsForCourse.length}</strong> Pending
+                    </span>
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      <NeutralIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <strong>{inProgressCommitments.length}</strong> In Progress
+                    </span>
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      <CompletedIcon className="h-3.5 w-3.5 text-primary" />
+                      <strong>{resolvedCommitments.length}</strong> Resolved
+                    </span>
+                  </div>
+                  <AndamioButton size="sm" asChild>
+                    <Link href={`/studio/course/${courseId}/teacher`}>
+                      <TeacherIcon className="h-4 w-4 mr-1.5" />
+                      Open Assessment View
+                    </Link>
+                  </AndamioButton>
+                </div>
+
                 {/* Pending Review */}
                 {pendingCommitmentsForCourse.length > 0 ? (
                   <StudioFormSection title={`Pending Review (${pendingCommitmentsForCourse.length})`}>
@@ -1185,6 +1211,51 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                     </div>
                   </StudioFormSection>
                 )}
+
+                {/* Teaching Team */}
+                <StudioFormSection title="Teaching Team">
+                  <div className="space-y-3">
+                    {course.owner && (
+                      <div className="flex items-center justify-between">
+                        <AndamioLabel className="flex items-center gap-1.5">
+                          <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                          Owner
+                        </AndamioLabel>
+                        <AndamioBadge variant="default" className="font-mono text-xs">
+                          {course.owner}
+                        </AndamioBadge>
+                      </div>
+                    )}
+                    {(course.teachers ?? []).length > 0 && (
+                      <div className="flex items-center justify-between gap-4">
+                        <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                          <TeacherIcon className="h-3.5 w-3.5" />
+                          Teachers
+                        </AndamioLabel>
+                        <div className="flex flex-wrap gap-1.5 justify-end">
+                          {(course.teachers ?? []).map((teacher: string) => (
+                            <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
+                              {teacher}
+                            </AndamioBadge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </StudioFormSection>
+
+                {/* Manage Teachers - Owner only */}
+                {isOwner && (
+                  <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
+                    <TeachersUpdate
+                      courseId={courseId}
+                      currentTeachers={course.teachers ?? []}
+                      onSuccess={() => {
+                        void refetchCourse();
+                      }}
+                    />
+                  </StudioFormSection>
+                )}
               </AndamioTabsContent>
 
               {/* Settings Tab */}
@@ -1275,49 +1346,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                     )}
                   </div>
                 </StudioFormSection>
-
-                {/* Team */}
-                <StudioFormSection title="Team" description="Course owner and teachers">
-                  <div className="space-y-3">
-                    {course.owner && (
-                      <div className="flex items-center justify-between">
-                        <AndamioLabel className="flex items-center gap-1.5">
-                          <OwnerIcon className="h-3.5 w-3.5 text-primary" />
-                          Owner
-                        </AndamioLabel>
-                        <AndamioBadge variant="default" className="font-mono text-xs">
-                          {course.owner}
-                        </AndamioBadge>
-                      </div>
-                    )}
-                    {(course.teachers ?? []).length > 0 && (
-                      <div className="flex items-center justify-between gap-4">
-                        <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
-                          <TeacherIcon className="h-3.5 w-3.5" />
-                          Teachers
-                        </AndamioLabel>
-                        <div className="flex flex-wrap gap-1.5 justify-end">
-                          {(course.teachers ?? []).map((teacher: string) => (
-                            <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
-                              {teacher}
-                            </AndamioBadge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </StudioFormSection>
-                {isOwner && (
-                  <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
-                    <TeachersUpdate
-                      courseId={courseId}
-                      currentTeachers={course.teachers ?? []}
-                      onSuccess={() => {
-                        void refetchCourse();
-                      }}
-                    />
-                  </StudioFormSection>
-                )}
 
                 {/* Course ID */}
                 <StudioFormSection title="Course ID" description="Unique identifier for this course">

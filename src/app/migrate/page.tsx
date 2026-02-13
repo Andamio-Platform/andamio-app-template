@@ -32,7 +32,7 @@ import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 
 // V1 access token policy ID
-const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
+const V1_POLICY_ID = "e760308d0c14096ff479ec5f2495455505feb790503903fe976c4fd2";
 
 type MigrateState = "no-wallet" | "scanning" | "no-token" | "ready" | "success";
 

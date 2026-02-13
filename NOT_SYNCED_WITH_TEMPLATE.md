@@ -44,7 +44,7 @@ The V1 access token migration functionality is excluded from the template. Only 
 | `src/components/landing/v1-migrate-card.tsx` | V1 migration card component | References V1 policy ID |
 | `src/components/landing/landing-hero.tsx` | V1 token detection logic | Scans for V1 tokens to show migration flow |
 
-**V1 Policy ID**: `c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305` (specific to original Andamio deployment)
+**V1 Policy ID**: `e760308d0c14096ff479ec5f2495455505feb790503903fe976c4fd2` (specific to original Andamio deployment)
 
 **Template commit**: `dc39c0c template: remove V1→V2 migration route`
 

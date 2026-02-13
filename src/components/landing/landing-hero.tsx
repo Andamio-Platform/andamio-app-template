@@ -16,7 +16,7 @@ import { LoadingIcon } from "~/components/icons";
 import { MARKETING } from "~/config/marketing";
 import { env } from "~/env";
 
-const V1_POLICY_ID = "c76c35088ac826c8a0e6947c8ff78d8d4495789bc729419b3a334305";
+const V1_POLICY_ID = "e760308d0c14096ff479ec5f2495455505feb790503903fe976c4fd2";
 const V2_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
 
 interface LandingHeroProps {
@@ -299,6 +299,12 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
               <Link href="/studio">Launch</Link>
             </AndamioButton>
           </div>
+        </div>
+
+        <div className="pt-4">
+          <Link href="/migrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Have a V1 Access Token? Migrate to V2 →
+          </Link>
         </div>
       </div>
     </div>

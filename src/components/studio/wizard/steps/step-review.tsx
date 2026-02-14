@@ -22,6 +22,7 @@ import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioErrorAlert } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -379,12 +380,7 @@ export function StepReview({ config, direction }: StepReviewProps) {
             </AndamioAlert>
           )}
 
-          {error && (
-            <AndamioAlert variant="destructive">
-              <AlertIcon className="h-4 w-4" />
-              <AndamioAlertDescription>{error}</AndamioAlertDescription>
-            </AndamioAlert>
-          )}
+          {error && <AndamioErrorAlert error={error} />}
         </>
       )}
 

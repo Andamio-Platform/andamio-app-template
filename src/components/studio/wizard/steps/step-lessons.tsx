@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AddIcon, CompletedIcon, LessonIcon, SparkleIcon, CollapseIcon, EditIcon, AlertIcon } from "~/components/icons";
+import { AddIcon, CompletedIcon, LessonIcon, SparkleIcon, CollapseIcon, EditIcon, TipIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
-import { WizardStep, WizardStepTip } from "../wizard-step";
+import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { AndamioCard, AndamioCardContent, AndamioCardHeader } from "~/components/andamio/andamio-card";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioErrorAlert } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
@@ -263,11 +264,15 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
       </div>
 
       {lessonsCreated === 0 && (
-        <WizardStepTip>
-          <strong>Lessons are optional!</strong> Some modules work great with just
-          an assignment. You can always add lessons later — click &quot;Skip to Introduction&quot;
-          to move on.
-        </WizardStepTip>
+        <AndamioCard>
+          <AndamioCardHeader>
+            <AndamioCardIconHeader
+              icon={TipIcon}
+              title="Lessons are optional!"
+              description='Some modules work great with just an assignment. You can always add lessons later — click "Skip to Introduction" to move on.'
+            />
+          </AndamioCardHeader>
+        </AndamioCard>
       )}
 
       {lessonsCreated > 0 && lessonsCreated < totalSLTs && (
@@ -304,12 +309,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         </div>
       )}
 
-      {lastError && (
-        <AndamioAlert variant="destructive">
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
-        </AndamioAlert>
-      )}
+      {lastError && <AndamioErrorAlert error={lastError} />}
 
       {/* Navigation */}
       <WizardNavigation

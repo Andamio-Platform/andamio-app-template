@@ -15,7 +15,7 @@ export const WIZARD_STEPS: WizardStepConfig[] = [
   {
     id: "credential",
     title: "Credential",
-    subtitle: "One Module = One Credential",
+    subtitle: "1 Course Module = 1 Interoperable Credential",
     description: "Define your module's identity and understand the backwards design approach",
     icon: SparkleIcon,
   },
@@ -36,7 +36,7 @@ export const WIZARD_STEPS: WizardStepConfig[] = [
   {
     id: "lessons",
     title: "Lessons",
-    subtitle: "Help Them Prepare",
+    subtitle: "What Do Students Need to Know?",
     description: "Add supporting content for each learning target",
     icon: LessonIcon,
     optional: true,
@@ -44,7 +44,7 @@ export const WIZARD_STEPS: WizardStepConfig[] = [
   {
     id: "introduction",
     title: "Introduction",
-    subtitle: "Set the Stage",
+    subtitle: "Introduce this Course Module",
     description: "Now write the intro that ties it all together",
     icon: IntroductionIcon,
   },

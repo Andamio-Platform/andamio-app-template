@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { AlertIcon, TipIcon } from "~/components/icons";
+import { TipIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
+import { AndamioErrorAlert } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { ContentEditor } from "~/components/editor";
@@ -133,11 +134,10 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
             <TipIcon className="h-8 w-8 text-muted-foreground" />
           </motion.div>
           <div>
-            <AndamioHeading level={3} size="base" className="mb-1">The Backwards Design Payoff</AndamioHeading>
+            <AndamioHeading level={3} size="base" className="mb-1">What do students need to hear first?</AndamioHeading>
             <AndamioText variant="small">
               Now that you know exactly what learners will achieve ({slts.length} Learning Target{slts.length !== 1 ? "s" : ""})
-              and how they&apos;ll prove it (the assignment), writing the introduction
-              is easy. You already know the whole story!
+              and how they&apos;ll prove it (the assignment), write an introduction that sets the stage for what this course module is all about.
             </AndamioText>
           </div>
         </div>
@@ -148,10 +148,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <AndamioCardTitle className="text-base">Module Introduction</AndamioCardTitle>
-              <AndamioCardDescription>
-                Set the stage for learners
-              </AndamioCardDescription>
+              <AndamioCardTitle className="text-base">Course Module Introduction</AndamioCardTitle>
             </div>
             {isDirty && (
               <span className="text-xs text-muted-foreground">
@@ -197,11 +194,15 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
         </motion.div>
       )}
 
-      <WizardStepTip>
-        <strong>Keep it welcoming.</strong> The introduction sets the tone. Tell learners
-        what they&apos;ll accomplish, why it matters, and what to expect. You&apos;ve already
-        defined the &quot;what&quot; — now add the &quot;why&quot; and &quot;how.&quot;
-      </WizardStepTip>
+      <AndamioCard>
+        <AndamioCardHeader className="">
+          <AndamioCardIconHeader
+            icon={TipIcon}
+            title="What is your hook?"
+            description="Why would someone want to complete this module and earn this credential?"
+          />
+        </AndamioCardHeader>
+      </AndamioCard>
 
       {/* Dirty indicator */}
       {isDirty && !isSaving && (
@@ -210,12 +211,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
         </div>
       )}
 
-      {lastError && (
-        <AndamioAlert variant="destructive">
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
-        </AndamioAlert>
-      )}
+      {lastError && <AndamioErrorAlert error={lastError} />}
 
       {/* Navigation */}
       <WizardNavigation

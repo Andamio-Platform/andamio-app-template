@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { VerifiedIcon, AlertIcon } from "~/components/icons";
+import { VerifiedIcon, TipIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
-import { WizardStep, WizardStepTip } from "../wizard-step";
+import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle, AndamioCardDescription } from "~/components/andamio/andamio-card";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
+import { AndamioErrorAlert } from "~/components/andamio";
 import { ContentEditor } from "~/components/editor";
 import type { WizardStepConfig } from "../types";
 import type { JSONContent } from "@tiptap/core";
@@ -172,12 +173,15 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         </AndamioCardContent>
       </AndamioCard>
 
-      <WizardStepTip>
-        <strong>A great assignment is specific.</strong> Instead of &quot;Write about
-        smart contracts&quot;, try &quot;Deploy a smart contract that accepts a deposit
-        and refunds it after 24 hours. Submit the transaction hash and explain
-        your code.&quot;
-      </WizardStepTip>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardIconHeader
+            icon={TipIcon}
+            title="A great assignment is specific"
+            description={'Instead of "Write about smart contracts", try "Deploy a smart contract that accepts a deposit and refunds it after 24 hours. Submit the transaction hash and explain your code."'}
+          />
+        </AndamioCardHeader>
+      </AndamioCard>
 
       {/* Dirty indicator */}
       {isDirty && !isSaving && (
@@ -186,12 +190,7 @@ export function StepAssignment({ config, direction }: StepAssignmentProps) {
         </div>
       )}
 
-      {lastError && (
-        <AndamioAlert variant="destructive">
-          <AlertIcon className="h-4 w-4" />
-          <AndamioAlertDescription>{lastError}</AndamioAlertDescription>
-        </AndamioAlert>
-      )}
+      {lastError && <AndamioErrorAlert error={lastError} />}
 
       {/* Navigation */}
       <WizardNavigation

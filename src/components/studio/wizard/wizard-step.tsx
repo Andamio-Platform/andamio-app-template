@@ -48,7 +48,7 @@ export function WizardStep({
       </div>
 
       {/* Step content - constrained width to prevent overflow */}
-      <div className="min-h-[400px] w-full min-w-0 overflow-hidden">
+      <div className="min-h-[400px] w-full min-w-0 overflow-hidden space-y-6">
         {children}
       </div>
     </motion.div>

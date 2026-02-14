@@ -3,17 +3,19 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { SparkleIcon, CredentialIcon, SLTIcon, CopyIcon } from "~/components/icons";
+import { SparkleIcon, CredentialIcon, SLTIcon, TipIcon, CopyIcon } from "~/components/icons";
 import { useWizard } from "../module-wizard";
 import { WizardStep, WizardStepTip, WizardStepHighlight } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioTextarea } from "~/components/andamio/andamio-textarea";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
-import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { AndamioCard, AndamioCardContent, AndamioCardHeader } from "~/components/andamio/andamio-card";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioErrorAlert } from "~/components/andamio";
 import {
   AndamioDialog,
   AndamioDialogContent,
@@ -251,7 +253,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
     <WizardStep config={config} direction={direction}>
       {/* Philosophy explanation */}
       <WizardStepHighlight>
-        <div className="flex flex-col sm:flex-row items-start gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6">
           {/* Credential visualization */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -276,31 +278,24 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
 
           {/* Explanation */}
           <div className="space-y-3">
-            <AndamioHeading level={3} size="lg">
-              One Module = One Verifiable Credential
-            </AndamioHeading>
             <AndamioText variant="small" className="leading-relaxed">
-              Each module you create becomes a{" "}
-              <span className="font-medium text-foreground">
-                blockchain-verified credential
-              </span>{" "}
-              that learners can earn and prove. The credential&apos;s value comes from
-              its <span className="font-medium text-foreground">Learning Targets</span> —
-              the specific skills and knowledge learners will demonstrate.
+              When you build a Course Module, you define an{" "}
+              <span className="font-medium text-foreground">interoperable credential</span> that is anchored on the blockchain.
             </AndamioText>
-            <div className="flex items-center gap-2 text-sm">
-              <SLTIcon className="h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">
-                We&apos;ll define Learning Targets in the next step
-              </span>
-            </div>
           </div>
         </div>
       </WizardStepHighlight>
 
       {/* Module form */}
       <AndamioCard>
-        <AndamioCardContent className="pt-6 space-y-6">
+        <AndamioCardHeader className="pb-3">
+          <AndamioCardIconHeader
+            icon={SLTIcon}
+            title="Start by giving this course module a title"
+            iconColor="text-primary"
+          />
+        </AndamioCardHeader>
+        <AndamioCardContent className="space-y-6">
           <div className="grid gap-6 sm:grid-cols-[1fr_auto]">
             <div className="space-y-2">
               <AndamioLabel htmlFor="title">
@@ -315,7 +310,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
                 className="text-lg"
               />
               <AndamioText variant="small" className="text-xs">
-                Choose a title that captures what learners will achieve
+              Students will be able to see this title. You can change it any time.
               </AndamioText>
             </div>
 
@@ -378,16 +373,24 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
         </AndamioCardContent>
       </AndamioCard>
 
-      <WizardStepTip>
-        <strong>Backwards Design:</strong> We&apos;re starting with the end in mind.
-        First, you&apos;ll define what learners will achieve (Learning Targets), then how they&apos;ll
-        prove it (assignment), then supporting content, and finally the introduction.
-        It&apos;s not backwards — it&apos;s brilliant.
-      </WizardStepTip>
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardIconHeader
+            icon={TipIcon}
+            title="Next: Backwards Design"
+          />
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <ol className="list-decimal list-inside space-y-2 ml-4 text-sm text-muted-foreground">
+            <li>Learning Targets — what learners will achieve</li>
+            <li>Assignment — how they prove it</li>
+            <li>Lessons — supporting content</li>
+            <li>Introduction — set the stage</li>
+          </ol>
+        </AndamioCardContent>
+      </AndamioCard>
 
-      {error && (
-        <div className="text-sm text-destructive">{error}</div>
-      )}
+      {error && <AndamioErrorAlert error={error} />}
 
       {/* Navigation */}
       <WizardNavigation

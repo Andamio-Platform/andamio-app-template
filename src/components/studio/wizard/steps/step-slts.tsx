@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useId } from "react";
-import { DeleteIcon, EditIcon, CompletedIcon, CloseIcon, AlertIcon, AddIcon, SLTIcon, DragHandleIcon, LockedIcon } from "~/components/icons";
+import { DeleteIcon, EditIcon, CompletedIcon, CloseIcon, AddIcon, SLTIcon, DragHandleIcon, LockedIcon } from "~/components/icons";
 import {
   DndContext,
   closestCenter,
@@ -22,12 +22,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { useWizard } from "../module-wizard";
 import { WizardStep } from "../wizard-step";
 import { WizardNavigation } from "../wizard-navigation";
-import { Button } from "~/components/ui/button";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { cn } from "~/lib/utils";
 import type { WizardStepConfig } from "../types";
 import type { SLTDraft } from "~/stores/module-draft-store";
 import { AndamioInput } from "~/components/andamio";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { AndamioErrorAlert } from "~/components/andamio";
 
 interface StepSLTsProps {
   config: WizardStepConfig;
@@ -182,25 +183,20 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
                 className="h-12 flex-1 text-base px-4"
                 disabled={isSaving}
               />
-              <Button
+              <AndamioButton
                 onClick={handleCreate}
                 disabled={!newSltText.trim() || isSaving}
                 className="h-11 px-5"
               >
                 <AddIcon className="h-4 w-4 mr-2" />
                 Add
-              </Button>
+              </AndamioButton>
             </div>
           </div>
         )}
 
         {/* Error display */}
-        {lastError && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-            <AlertIcon className="h-4 w-4 flex-shrink-0" />
-            {lastError}
-          </div>
-        )}
+        {lastError && <AndamioErrorAlert error={lastError} />}
 
         {/* Dirty indicator */}
         {isDirty && !isSaving && (
@@ -362,7 +358,7 @@ function SortableSltItem({
               if (e.key === "Escape") onCancelEditing();
             }}
           />
-          <Button
+          <AndamioButton
             size="icon"
             variant="ghost"
             onClick={onUpdate}
@@ -370,15 +366,15 @@ function SortableSltItem({
             className="h-8 w-8 text-primary hover:text-primary"
           >
             <CompletedIcon className="h-4 w-4" />
-          </Button>
-          <Button
+          </AndamioButton>
+          <AndamioButton
             size="icon"
             variant="ghost"
             onClick={onCancelEditing}
             className="h-8 w-8"
           >
             <CloseIcon className="h-4 w-4" />
-          </Button>
+          </AndamioButton>
         </div>
       ) : (
         <>
@@ -388,22 +384,22 @@ function SortableSltItem({
           {/* Edit/Delete buttons - hidden when locked */}
           {!isLocked && (
             <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
+              <AndamioButton
                 size="icon"
                 variant="ghost"
                 onClick={onStartEditing}
                 className="h-7 w-7"
               >
                 <EditIcon className="h-3.5 w-3.5" />
-              </Button>
-              <Button
+              </AndamioButton>
+              <AndamioButton
                 size="icon"
                 variant="ghost"
                 onClick={onDelete}
                 className="h-7 w-7 hover:text-destructive"
               >
                 <DeleteIcon className="h-3.5 w-3.5" />
-              </Button>
+              </AndamioButton>
             </div>
           )}
         </>

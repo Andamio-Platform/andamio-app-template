@@ -177,10 +177,9 @@ function createDraftFromServer(
   const lessons = new Map<number, LessonDraft>();
 
   if (courseModule?.slts) {
-    courseModule.slts.forEach((slt) => {
+    courseModule.slts.forEach((slt, idx) => {
       if (slt.lesson) {
-        const sltIndex = slt.lesson.sltIndex ?? slt.moduleIndex ?? 1;
-        lessons.set(sltIndex, serverLessonToDraft(slt.lesson));
+        lessons.set(idx + 1, serverLessonToDraft(slt.lesson));
       }
     });
   }

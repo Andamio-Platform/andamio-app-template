@@ -114,12 +114,10 @@ export function useModuleWizardData({
 
     // Extract embedded lessons from SLTs
     // The teacher endpoint embeds lesson data directly in each SLT object
-    slts.forEach((slt) => {
+    slts.forEach((slt, idx) => {
       if (slt.lesson) {
-        const sltIndex = slt.lesson.sltIndex ?? slt.moduleIndex;
-        if (typeof sltIndex === "number") {
-          lessonMap.set(sltIndex, slt.lesson);
-        }
+        const normalizedIndex = idx + 1;
+        lessonMap.set(normalizedIndex, { ...slt.lesson, sltIndex: normalizedIndex });
       }
     });
 

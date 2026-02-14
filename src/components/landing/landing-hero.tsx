@@ -215,12 +215,16 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
               src="/landing-page-icons/01-complete-courses-black.png"
               alt="Complete courses"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain dark:hidden"
             />
             <Image
               src="/landing-page-icons/01-complete-courses-white.png"
               alt="Complete courses"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain hidden dark:block"
             />
           </div>
@@ -233,12 +237,16 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
               src="/landing-page-icons/02-earn-credentials-black.png"
               alt="Earn credentials"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain dark:hidden"
             />
             <Image
               src="/landing-page-icons/02-earn-credentials-white.png"
               alt="Earn credentials"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain hidden dark:block"
             />
           </div>
@@ -251,12 +259,16 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
               src="/landing-page-icons/03-join-projects-black.png"
               alt="Join projects"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain dark:hidden"
             />
             <Image
               src="/landing-page-icons/03-join-projects-white.png"
               alt="Join projects"
               fill
+              sizes="(min-width: 640px) 144px, 96px"
+              priority
               className="object-contain hidden dark:block"
             />
           </div>

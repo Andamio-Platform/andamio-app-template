@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@meshsdk/react";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
-import { core } from "@meshsdk/core";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import {
@@ -70,29 +69,24 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
 
     void (async () => {
       try {
-        const addresses = await wallet.getUsedAddresses();
-        let rawAddress = addresses[0];
-
-        if (!rawAddress) {
-          rawAddress = await wallet.getChangeAddress();
+        // MeshSDK v2: getUsedAddressesBech32() can throw InvalidStringError
+        // on some wallets, so use getChangeAddressBech32() as primary method
+        let bech32Address: string | undefined;
+        try {
+          const addresses = await wallet.getUsedAddressesBech32();
+          bech32Address = addresses[0];
+        } catch {
+          // Fallback: some wallet CIP-30 implementations return non-hex
+          // from getUsedAddresses(), causing the bech32 conversion to fail
         }
 
-        if (!rawAddress) {
+        if (!bech32Address) {
+          bech32Address = await wallet.getChangeAddressBech32();
+        }
+
+        if (!bech32Address) {
           setWalletAddress(null);
           return;
-        }
-
-        // Convert to bech32 if needed
-        let bech32Address = rawAddress;
-        if (!rawAddress.startsWith("addr")) {
-          try {
-            const addressObj = core.Address.fromString(rawAddress);
-            if (addressObj) {
-              bech32Address = addressObj.toBech32();
-            }
-          } catch (convErr) {
-            console.error("[RegistrationFlow] Failed to convert address:", convErr);
-          }
         }
 
         setWalletAddress(bech32Address);
@@ -259,6 +253,11 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
 
   // Step 2a: Auth error (user declined or something went wrong)
   if (isWalletConnected && authError && !isAuthenticated) {
+    const isUserDeclined =
+      authError.includes("rejected") ||
+      authError.includes("declined") ||
+      authError.includes("cancel");
+
     return (
       <div className="w-full max-w-md mx-auto">
         <AndamioCard>
@@ -270,7 +269,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
             </div>
             <AndamioCardTitle className="text-xl">Sign-In Failed</AndamioCardTitle>
             <AndamioCardDescription>
-              {authError.includes("rejected") || authError.includes("declined") || authError.includes("cancel")
+              {isUserDeclined
                 ? "You declined to sign the message."
                 : "Something went wrong during sign-in."}
             </AndamioCardDescription>
@@ -278,13 +277,22 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
 
           <AndamioCardContent className="space-y-4">
             <AndamioText variant="small" className="text-center text-muted-foreground">
-              You need to sign a message to verify wallet ownership. No transaction is made.
+              {isUserDeclined
+                ? "You need to sign a message to verify wallet ownership. No transaction is made."
+                : authError}
             </AndamioText>
             <AndamioButton
-              onClick={() => void logout()}
+              onClick={() => void authenticate()}
               className="w-full"
             >
               Try Again
+            </AndamioButton>
+            <AndamioButton
+              variant="outline"
+              onClick={() => void logout()}
+              className="w-full"
+            >
+              Disconnect Wallet
             </AndamioButton>
             {onBack && (
               <AndamioButton variant="ghost" onClick={onBack} className="w-full" size="sm">
@@ -309,21 +317,21 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
                 <AccessTokenIcon className="h-7 w-7 text-primary" />
               </div>
             </div>
-            <AndamioCardTitle className="text-xl">Popup Blocked</AndamioCardTitle>
+            <AndamioCardTitle className="text-xl">Sign to Continue</AndamioCardTitle>
             <AndamioCardDescription>
-              Your browser blocked the wallet popup.
+              Next, sign a message to verify your wallet.
             </AndamioCardDescription>
           </AndamioCardHeader>
 
           <AndamioCardContent className="space-y-4">
             <AndamioText variant="small" className="text-center text-muted-foreground">
-              Please allow popups for this site in your browser settings, then click below to try again.
+              Tap below to open your wallet and authorize.
             </AndamioText>
             <AndamioButton
               onClick={() => void authenticate()}
               className="w-full"
             >
-              Click to Retry
+              Authorize
             </AndamioButton>
             {onBack && (
               <AndamioButton variant="ghost" onClick={onBack} className="w-full" size="sm">

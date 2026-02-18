@@ -31,7 +31,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
-import { core } from "@meshsdk/core";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
@@ -142,7 +141,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
     }
   }, []);
 
-  // Get wallet address from connected wallet (converted to bech32)
+  // Get wallet address from connected wallet
   useEffect(() => {
     if (!connected || !wallet) {
       setWalletAddress(null);
@@ -151,31 +150,22 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
 
     void (async () => {
       try {
-        const addresses = await wallet.getUsedAddresses();
-        let rawAddress = addresses[0];
-
-        if (!rawAddress) {
-          // Fallback to change address
-          rawAddress = await wallet.getChangeAddress();
+        // MeshSDK v2: use Bech32 variants directly (no manual conversion needed)
+        let bech32Address: string | undefined;
+        try {
+          const addresses = await wallet.getUsedAddressesBech32();
+          bech32Address = addresses[0];
+        } catch {
+          // Fallback: some wallet CIP-30 implementations return non-hex
         }
 
-        if (!rawAddress) {
+        if (!bech32Address) {
+          bech32Address = await wallet.getChangeAddressBech32();
+        }
+
+        if (!bech32Address) {
           setWalletAddress(null);
           return;
-        }
-
-        // Convert to bech32 if needed (some wallets return hex format)
-        let bech32Address = rawAddress;
-        if (!rawAddress.startsWith("addr")) {
-          try {
-            const addressObj = core.Address.fromString(rawAddress);
-            if (addressObj) {
-              bech32Address = addressObj.toBech32();
-              console.log("[MintAccessToken] Converted hex to bech32:", bech32Address.slice(0, 20) + "...");
-            }
-          } catch (convErr) {
-            console.error("[MintAccessToken] Failed to convert address:", convErr);
-          }
         }
 
         setWalletAddress(bech32Address);

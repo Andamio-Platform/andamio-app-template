@@ -215,7 +215,7 @@ export function useTransaction() {
 
         // Step 3: Sign transaction
         setState("signing");
-        const signedTx = await wallet.signTx(unsignedCbor, true); // partialSign=true for V2
+        const signedTx = await wallet.signTxReturnFullTx(unsignedCbor, true); // partialSign=true for V2
 
         // Step 4: Submit to blockchain
         setState("submitting");

@@ -345,8 +345,14 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
       }
 
       try {
-        const usedAddresses = await wallet.getUsedAddresses();
-        const changeAddress = await wallet.getChangeAddress();
+        // MeshSDK v2: use Bech32 variants (raw methods return hex now)
+        const changeAddress = await wallet.getChangeAddressBech32();
+        let usedAddresses: string[];
+        try {
+          usedAddresses = await wallet.getUsedAddressesBech32();
+        } catch {
+          usedAddresses = [changeAddress];
+        }
         setInitiatorData({
           used_addresses: usedAddresses,
           change_address: changeAddress,

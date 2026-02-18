@@ -226,12 +226,22 @@ export default function ApiSetupPage() {
       }
 
       try {
-        const addresses = await wallet.getUsedAddresses();
-        const address = addresses[0] ?? (await wallet.getChangeAddress());
+        // MeshSDK v2: getUsedAddressesBech32() can throw InvalidStringError
+        // on some wallets, so wrap with fallback to getChangeAddressBech32()
+        let address: string | undefined;
+        try {
+          const addresses = await wallet.getUsedAddressesBech32();
+          address = addresses[0];
+        } catch {
+          // Fallback: some wallet CIP-30 implementations return non-hex
+        }
+        if (!address) {
+          address = await wallet.getChangeAddressBech32();
+        }
 
-        const assets = await wallet.getAssets();
+        const assets = await wallet.getBalanceMesh();
         const accessTokenPolicyId = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
-        const accessToken = assets.find((asset) =>
+        const accessToken = assets.find((asset: { unit: string }) =>
           asset.unit.startsWith(accessTokenPolicyId)
         );
 
@@ -339,9 +349,9 @@ export default function ApiSetupPage() {
 
     try {
       // Sign the nonce with wallet (CIP-30)
-      // Mesh SDK ISigner interface: signData(payload: string, address?: string)
-      // Note: payload (nonce) comes FIRST, address is optional second parameter
-      const signResult = await wallet.signData(registerSession.nonce, walletInfo.address);
+      // Mesh SDK v2: signData(address: string, payload: string)
+      // Note: address comes FIRST, payload second (swapped from v1)
+      const signResult = await wallet.signData(walletInfo.address, registerSession.nonce);
 
       // Complete registration with signature (requires End User JWT)
       await completeDevRegistration({

@@ -54,7 +54,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     async function scanForV2Token() {
       setV2Scanning(true);
       try {
-        const assets = await wallet.getAssets();
+        const assets = await wallet.getBalanceMesh();
         const v2Asset = assets.find((asset: { unit: string }) =>
           asset.unit.startsWith(V2_POLICY_ID)
         );
@@ -95,7 +95,7 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     async function scanForV1Token() {
       setV1Scanning(true);
       try {
-        const assets = await wallet.getAssets();
+        const assets = await wallet.getBalanceMesh();
         const v1Asset = assets.find((asset: { unit: string }) =>
           asset.unit.startsWith(V1_POLICY_ID)
         );

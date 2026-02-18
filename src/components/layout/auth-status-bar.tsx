@@ -40,7 +40,9 @@ export function AuthStatusBar() {
     isAuthenticated,
     user,
     logout,
-    authError
+    authError,
+    popupBlocked,
+    authenticate,
   } = useAndamioAuth();
 
   const [mounted, setMounted] = useState(false);
@@ -145,27 +147,36 @@ export function AuthStatusBar() {
           <div className="hidden xs:flex items-center gap-2">
             {isAuthenticated ? (
               <VerifiedIcon className="h-3.5 w-3.5 text-success-foreground flex-shrink-0" />
-            ) : authError ? (
+            ) : authError || popupBlocked ? (
               <SecurityAlertIcon className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
             ) : (
               <ShieldIcon className="h-3.5 w-3.5 text-primary-foreground/50 flex-shrink-0" />
             )}
-            <span
-              className={cn(
-                "text-xs whitespace-nowrap",
-                isAuthenticated
-                  ? "text-success-foreground"
+            {popupBlocked && !isAuthenticated ? (
+              <button
+                onClick={() => void authenticate()}
+                className="text-xs whitespace-nowrap text-destructive underline underline-offset-2 hover:text-destructive/80"
+              >
+                Sign In
+              </button>
+            ) : (
+              <span
+                className={cn(
+                  "text-xs whitespace-nowrap",
+                  isAuthenticated
+                    ? "text-success-foreground"
+                    : authError
+                    ? "text-destructive"
+                    : "text-primary-foreground/50"
+                )}
+              >
+                {isAuthenticated
+                  ? "Auth"
                   : authError
-                  ? "text-destructive"
-                  : "text-primary-foreground/50"
-              )}
-            >
-              {isAuthenticated
-                ? "Auth"
-                : authError
-                ? "Error"
-                : "Unauth"}
-            </span>
+                  ? "Error"
+                  : "Unauth"}
+              </span>
+            )}
           </div>
 
           {/* JWT Timer - Only show when authenticated, hidden on small screens */}

@@ -314,11 +314,12 @@ export function ConnectWalletButton({
         const user = web3Wallet.getUser();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk UserSocialData uses camelCase avatarUrl, @meshsdk/react expects snake_case avatar_url
         setWeb3UserData(user as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk v0.2.0 uses MeshCardanoHeadlessWallet, @meshsdk/react setWallet expects MeshCardanoBrowserWallet
         setWallet(
-          web3Wallet.cardano,
+          web3Wallet.cardano as any,
           "Mesh Web3 Services",
           persist
-            ? { walletAddress: await web3Wallet.cardano.getChangeAddress(), user }
+            ? { walletAddress: await web3Wallet.cardano.getChangeAddressBech32(), user }
             : undefined
         );
         setOpen(false);

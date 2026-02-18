@@ -59,7 +59,7 @@ export default function MigratePage() {
     async function scanForV1Token() {
       setMigrateState("scanning");
       try {
-        const assets = await wallet.getAssets();
+        const assets = await wallet.getBalanceMesh();
         const v1Asset = assets.find((asset: { unit: string }) =>
           asset.unit.startsWith(V1_POLICY_ID)
         );

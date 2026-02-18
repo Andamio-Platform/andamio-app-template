@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useWallet } from "@meshsdk/react";
-import { core } from "@meshsdk/core";
 import {
   authenticateWithWallet,
   storeJWT,
@@ -29,7 +28,7 @@ import { GATEWAY_API_BASE } from "~/lib/api-utils";
  */
 async function syncAccessTokenFromWallet(
   wallet: {
-    getAssets: () => Promise<Array<{ unit: string; quantity: string }>>;
+    getBalanceMesh: () => Promise<Array<{ unit: string; quantity: string }>>;
   },
   currentUser: AuthUser | null,
   jwt: string,
@@ -47,7 +46,7 @@ async function syncAccessTokenFromWallet(
   // First, detect the access token in wallet (outside try-catch for API call)
   let alias: string | undefined;
   try {
-    const assets = await wallet.getAssets();
+    const assets = await wallet.getBalanceMesh();
     const ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
 
     // Find access token in wallet
@@ -207,28 +206,10 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         // Fetch wallet data in parallel for performance
         // If JWT has accessTokenAlias, we need both address and assets
         // Otherwise, just fetch the address
-        const [rawAddress, assets] = await Promise.all([
-          wallet.getChangeAddress(),
-          payload.accessTokenAlias ? wallet.getAssets() : Promise.resolve(null),
+        const [walletAddress, assets] = await Promise.all([
+          wallet.getChangeAddressBech32(),
+          payload.accessTokenAlias ? wallet.getBalanceMesh() : Promise.resolve(null),
         ]);
-
-        // Convert address to bech32 if needed (Eternl returns hex, others may return bech32)
-        let walletAddress: string;
-        if (rawAddress.startsWith("addr")) {
-          walletAddress = rawAddress;
-        } else {
-          try {
-            const addressObj = core.Address.fromString(rawAddress);
-            if (!addressObj) {
-              throw new Error("Failed to parse address");
-            }
-            walletAddress = addressObj.toBech32();
-          } catch (conversionError) {
-            authLogger.error("Failed to convert wallet address:", conversionError);
-            setValidatingJWT(false);
-            return;
-          }
-        }
 
         // Check address match
         if (payload.cardanoBech32Addr && payload.cardanoBech32Addr !== walletAddress) {
@@ -335,6 +316,12 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       return;
     }
 
+    // Skip if popup was blocked - user needs to click retry manually
+    // Without this check, autoAuth re-triggers and creates an infinite loop
+    if (popupBlocked) {
+      return;
+    }
+
     // Skip if we're still validating a stored JWT
     if (isValidatingJWTRef.current) {
       return;
@@ -352,7 +339,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, triggering authentication");
     void authenticate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, isAuthenticated, isAuthenticating, authError]);
+  }, [connected, isAuthenticated, isAuthenticating, authError, popupBlocked]);
 
   /**
    * Authenticate with connected wallet
@@ -367,39 +354,19 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
     setIsAuthenticating(true);
     setAuthError(null);
+    setPopupBlocked(false);
 
     try {
-      // Get wallet address (may be hex or bech32 depending on wallet)
-      const rawAddress = await wallet.getChangeAddress();
+      // Get wallet address in bech32 format (v2 provides explicit bech32 method)
+      const bech32Address = await wallet.getChangeAddressBech32();
 
-      if (!rawAddress || rawAddress.length < 10) {
-        console.error("Invalid address from wallet:", rawAddress);
-        throw new Error(`Invalid wallet address: ${rawAddress || "(empty)"}`);
-      }
-
-      // Convert to bech32 if needed (Eternl returns hex, other wallets may return bech32)
-      let bech32Address: string;
-      if (rawAddress.startsWith("addr")) {
-        // Already bech32 format
-        bech32Address = rawAddress;
-      } else {
-        // Hex format - convert to bech32 using Mesh SDK
-        try {
-          const addressObj = core.Address.fromString(rawAddress);
-          if (!addressObj) {
-            throw new Error("Failed to parse address");
-          }
-          bech32Address = addressObj.toBech32();
-          authLogger.debug("Converted hex address to bech32:", { hex: rawAddress.slice(0, 20) + "...", bech32: bech32Address });
-        } catch (conversionError) {
-          console.error("Failed to convert address format:", conversionError);
-          throw new Error(`Unable to convert wallet address format: ${rawAddress.slice(0, 20)}...`);
-        }
+      if (!bech32Address || bech32Address.length < 10) {
+        console.error("Invalid address from wallet:", bech32Address);
+        throw new Error(`Invalid wallet address: ${bech32Address || "(empty)"}`);
       }
 
       // Debug logging
       authLogger.debug("Authentication addresses:", {
-        rawAddress: rawAddress.slice(0, 20) + "...",
         bech32Address,
         walletName,
       });
@@ -410,9 +377,9 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
           authLogger.debug("Signing nonce:", { nonce: nonce.slice(0, 20) + "...", length: nonce.length });
           authLogger.debug("Using bech32 address for signing:", bech32Address);
 
-          // Mesh SDK ISigner interface: signData(payload: string, address?: string)
-          // Note: payload comes FIRST, address is optional second parameter
-          const signature = await wallet.signData(nonce, bech32Address);
+          // Mesh SDK v2: signData(address: string, payload: string)
+          // Note: address comes FIRST, payload second (swapped from v1)
+          const signature = await wallet.signData(bech32Address, nonce);
           return signature;
         },
         address: bech32Address, // Always send bech32 to the API
@@ -420,7 +387,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         convertUTF8: false, // Try false first, can be made configurable
         getAssets: async () => {
           // Get wallet assets to detect access token
-          const assets = await wallet.getAssets();
+          const assets = await wallet.getBalanceMesh();
           return assets;
         },
       });
@@ -467,7 +434,10 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       const errorMessage = error instanceof Error ? error.message : "Authentication failed";
 
       // Detect popup blocked error (Web3Services wallets use popups for signing)
-      if (errorMessage.includes("Failed to open window")) {
+      if (
+        errorMessage.includes("Failed to open window") ||
+        errorMessage.includes("popup")
+      ) {
         // Set popupBlocked instead of authError - user can click to retry
         setPopupBlocked(true);
       } else {
@@ -507,26 +477,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
     const checkWalletMatch = async () => {
       try {
-        // Get current wallet address
-        const rawAddress = await wallet.getChangeAddress();
-
-        // Convert to bech32 if needed (same logic as authenticate function)
-        let currentWalletAddress: string;
-        if (rawAddress.startsWith("addr")) {
-          currentWalletAddress = rawAddress;
-        } else {
-          try {
-            const addressObj = core.Address.fromString(rawAddress);
-            if (!addressObj) {
-              authLogger.warn("Failed to parse wallet address during switch detection");
-              return;
-            }
-            currentWalletAddress = addressObj.toBech32();
-          } catch (conversionError) {
-            authLogger.warn("Failed to convert wallet address during switch detection:", conversionError);
-            return;
-          }
-        }
+        // Get current wallet address in bech32 format
+        const currentWalletAddress = await wallet.getChangeAddressBech32();
 
         // Compare with authenticated user's address
         if (currentWalletAddress !== user.cardanoBech32Addr) {

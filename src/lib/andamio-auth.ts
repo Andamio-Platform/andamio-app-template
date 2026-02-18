@@ -321,14 +321,15 @@ export async function createLoginSession(): Promise<LoginSession> {
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as { message?: string; error?: string; details?: unknown };
-    authLogger.error("Create login session failed:", {
-      status: response.status,
-      statusText: response.statusText,
-      error,
-    });
-    const msg = error.message ?? error.error ?? "Failed to create login session";
-    throw new Error(msg);
+    let errorMessage = `Login session failed (${response.status})`;
+    try {
+      const error = (await response.json()) as { message?: string; error?: string; details?: string };
+      errorMessage = error.message ?? error.error ?? error.details ?? errorMessage;
+    } catch {
+      // Response wasn't JSON
+    }
+    authLogger.error("createLoginSession failed:", { status: response.status, errorMessage });
+    throw new Error(errorMessage);
   }
 
   return response.json() as Promise<LoginSession>;

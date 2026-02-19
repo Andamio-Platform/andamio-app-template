@@ -496,11 +496,11 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
         {/* Content Area */}
         <div className={cn(
           "mx-auto px-6",
-          isEmpty ? "max-w-5xl py-8" : "max-w-4xl py-6"
+          isEmpty ? "max-w-3xl py-8" : "max-w-4xl py-6"
         )}>
           {/* Course Header - Always visible */}
-          <div className="mb-6">
-            <AndamioHeading level={1} size="4xl" className="mb-12">{courseTitle}</AndamioHeading>
+          <div className={cn("mb-6", isEmpty && "text-center")}>
+            <AndamioHeading level={1} size="4xl" className="mb-2">{courseTitle}</AndamioHeading>
             {!isEmpty && (
               <div className="flex items-center gap-3">
                 <AndamioBadge variant="default" className="text-[10px]">
@@ -517,7 +517,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
             /* Empty State - Full Welcome Experience (No Tabs) */
             <div className="flex flex-col items-center">
               {/* Hero Section */}
-              <div className="text-center max-w-2xl mb-12">
+              <div className="text-center mb-10">
                 <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 mx-auto mb-6 shadow-xl shadow-primary/30">
                   <CredentialIcon className="h-12 w-12 text-primary-foreground" />
                 </div>
@@ -531,7 +531,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
               </div>
 
               {/* Two Path Options */}
-              <div className="grid md:grid-cols-2 gap-6 w-full max-w-3xl mb-16">
+              <div className="grid md:grid-cols-2 gap-6 w-full mb-12">
                 {/* Guided Path */}
                 <button
                   type="button"
@@ -577,7 +577,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
               </div>
 
               {/* Credential Anatomy */}
-              <div className="w-full max-w-3xl">
+              <div className="w-full">
                 <div className="text-center mb-8">
                   <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Anatomy of a Credential

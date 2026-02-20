@@ -47,20 +47,33 @@ The following locations MAY import directly from lucide-react:
 | `CourseIcon` | BookOpen | Courses, learning containers |
 | `ModuleIcon` | Layers | Course modules |
 | `CredentialIcon` | Award | Verifiable credentials, achievements |
+| `AchievementIcon` | Trophy | Major accomplishments |
 | `SLTIcon` | Target | Student Learning Targets |
 | `LessonIcon` | FileText | Lesson content |
 | `AssignmentIcon` | ClipboardList | Assignment tasks |
 | `IntroductionIcon` | FileEdit | Module introductions |
+| `DiplomaIcon` | ScrollText | Completed/accepted assignments |
 | `LearnerIcon` | GraduationCap | Students, learners |
 | `TeacherIcon` | Users | Instructors, teachers |
-| `AccessTokenIcon` | Key | Access tokens, authentication |
+| `InstructorIcon` | Crown | Course owners |
+| `OwnerIcon` | Crown | Entity owner (courses, projects) |
+| `AccessTokenIcon` | Key | Access tokens, on-chain identity |
+| `KeyIcon` | KeyRound | API keys, authentication keys |
 | `WalletIcon` | Wallet | Blockchain wallets |
+| `UserIcon` | User | Generic user/person |
+| `ManagerIcon` | UserCog | Project managers |
+| `ContributorIcon` | UserCheck | Project contributors |
+| `BlockIcon` | Ban | Blacklisting/blocking actions |
+| `MailIcon` | Mail | Communication, notifications |
+| `PaymentIcon` | CreditCard | Payment methods, billing |
+| `DeveloperIcon` | Code2 | API users, builders |
 | `ProjectIcon` | FolderKanban | Projects |
 | `TaskIcon` | ListChecks | Project tasks |
 | `TreasuryIcon` | Coins | Treasury, funding |
 | `OnChainIcon` | Blocks | Blockchain/on-chain status |
 | `TransactionIcon` | Hash | Blockchain transactions |
 | `TokenIcon` | Coins | Tokens |
+| `SignatureIcon` | PenLine | Wallet/cryptographic signatures |
 
 ### Status Icons - State Indicators
 
@@ -68,9 +81,12 @@ The following locations MAY import directly from lucide-react:
 |---------------|-------------|---------|
 | `SuccessIcon` | CheckCircle | Success states |
 | `CompletedIcon` | Check | Step/task completion |
+| `CheckIcon` | Check | Generic checkmark (alias) |
 | `VerifiedIcon` | CheckCircle2 | Verified states |
 | `ErrorIcon` | XCircle | Error states |
-| `AlertIcon` | AlertCircle | Warnings, alerts |
+| `AlertIcon` | AlertCircle | General alerts (circle) |
+| `WarningIcon` | AlertTriangle | Important warnings (triangle) |
+| `InfoIcon` | Info | Informational messages |
 | `SecurityAlertIcon` | ShieldAlert | Security warnings |
 | `LoadingIcon` | Loader2 | Loading/async states |
 | `PendingIcon` | Clock | Pending/waiting states |
@@ -87,8 +103,12 @@ The following locations MAY import directly from lucide-react:
 | `EditIcon` | Pencil | Edit actions |
 | `DeleteIcon` | Trash2 | Delete actions |
 | `SaveIcon` | Save | Save actions |
+| `UndoIcon` | Undo2 | Undo/discard changes |
 | `SendIcon` | Send | Submit/send actions |
 | `CopyIcon` | Copy | Copy to clipboard |
+| `DownloadIcon` | Download | Download/import content |
+| `ShareIcon` | Share | Share content |
+| `StarIcon` | Star | Favorite/bookmark |
 | `RefreshIcon` | RefreshCw | Refresh/retry |
 | `PreviewIcon` | Eye | Preview/view |
 | `DragHandleIcon` | GripVertical | Drag to reorder |
@@ -97,6 +117,7 @@ The following locations MAY import directly from lucide-react:
 | `CelebrateIcon` | PartyPopper | Success celebrations |
 | `TipIcon` | Lightbulb | Tips/hints |
 | `AssessIcon` | ClipboardCheck | Assessment/review |
+| `LogOutIcon` | LogOut | Sign out/disconnect |
 
 ### Navigation Icons - Direction & Navigation
 
@@ -129,8 +150,22 @@ The following locations MAY import directly from lucide-react:
 | `ChartIcon` | BarChart3 | Analytics/charts |
 | `HistoryIcon` | History | History/logs |
 | `DashboardIcon` | LayoutDashboard | Dashboard views |
+| `LayoutIcon` | Layout | Generic layout |
 | `MenuIcon` | Menu | Navigation menu |
 | `SidebarIcon` | PanelLeft | Sidebar toggle |
+| `MonitorIcon` | Monitor | Display/screen |
+| `LightModeIcon` | Sun | Light theme |
+| `DarkModeIcon` | Moon | Dark theme |
+| `ThemeIcon` | Palette | Theme customization |
+| `SitemapIcon` | Map | Site structure |
+| `GlobalIcon` | Globe | Worldwide/public scope |
+| `ExploreIcon` | Compass | Discovery/exploration |
+| `DatabaseIcon` | Database | Data storage |
+| `ServerIcon` | Server | Backend/server |
+| `SortIcon` | ArrowUpDown | Sort toggle |
+| `LinkIcon` | Link | Linked relationships |
+| `TestIcon` | Beaker | Testing functionality |
+| `CalendarIcon` | Calendar | Date/schedule |
 
 ## Adding New Icons
 

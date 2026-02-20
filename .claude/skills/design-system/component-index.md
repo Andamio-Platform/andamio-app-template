@@ -8,6 +8,11 @@ Quick reference for Andamio components. For full usage docs, see `extracted-comp
 | `AndamioNotFoundCard` | 404/error states |
 | `AndamioEmptyState` | Empty data states |
 | `AndamioPageLoading` | Full-page loading skeleton |
+| `AndamioStudioLoading` | Studio layout loading skeleton |
+| `AndamioCardLoading` | Card-level loading skeleton |
+| `AndamioListLoading` | List item loading skeleton |
+| `AndamioSectionLoading` | Section-level loading skeleton |
+| `AndamioInlineLoading` | Minimal inline spinner |
 | `AndamioErrorAlert` | Error messages |
 
 ## Stats & Cards
@@ -19,6 +24,8 @@ Quick reference for Andamio components. For full usage docs, see `extracted-comp
 | `StudioCourseCard` | Course card in studio |
 | `StudioModuleCard` | Module card in studio |
 | `CourseModuleCard` | Module display card |
+
+> **Note**: `StudioHubCard`, `StudioCourseCard`, and `StudioModuleCard` are in `~/components/studio/`, not `~/components/andamio/`.
 | `AccountDetailsCard` | User account info |
 | `AndamioCardIconHeader` | Card header with icon |
 
@@ -51,6 +58,10 @@ Quick reference for Andamio components. For full usage docs, see `extracted-comp
 | Component | Purpose |
 |-----------|---------|
 | `AndamioText` | Styled paragraph text |
+| `AndamioHeading` | Semantic heading with decoupled visual size |
+| `AndamioCode` | Formatted JSON/code block display |
+| `AndamioSectionDescription` | Centered, constrained section description |
+| `CopyId` | Copyable ID with truncation and feedback |
 | `AndamioStatusIcon` | Status indicator icon |
 | `AndamioBreadcrumb` | Navigation breadcrumbs |
 

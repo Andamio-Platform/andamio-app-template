@@ -299,15 +299,25 @@ Metric display for dashboards.
 
 ```tsx
 import { AndamioStatCard } from "~/components/andamio";
+import { CourseIcon, CredentialIcon } from "~/components/icons";
 
+// Basic stat
 <AndamioStatCard
-  label="Total Courses"
+  icon={CourseIcon}
   value={42}
-  icon={<BookOpen className="h-4 w-4" />}
-  trend="+12%"
-  trendDirection="up"
+  label="Total Courses"
+/>
+
+// With semantic color
+<AndamioStatCard
+  icon={CredentialIcon}
+  value={5}
+  label="Credentials"
+  iconColor="warning"
 />
 ```
+
+**Note**: `icon` accepts an `IconComponent` (the constructor), NOT a JSX element like `<BookOpen />`. The component does NOT support `trend`, `trendDirection`, or `description` props.
 
 ---
 

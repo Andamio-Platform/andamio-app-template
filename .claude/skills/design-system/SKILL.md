@@ -59,6 +59,8 @@ Work through each file. Apply rules from:
 
 **Quick checks for each file:**
 - Importing from `~/components/ui/`? → Change to `~/components/andamio/`
+- Using raw `<p>` for UI text? → Change to `AndamioText`
+- Using raw `<h1>`-`<h6>` without `AndamioHeading`? → Consider using `AndamioHeading`
 - Using non-prefixed names (`Sheet` vs `AndamioSheet`)? → Use Andamio prefix
 - Hardcoded colors (`text-green-600`)? → Use semantic (`text-success`)
 - Inline loading skeletons? → Use `AndamioPageLoading`
@@ -99,36 +101,34 @@ When a user reports "the style didn't apply", identify which HTML element is inv
 
 Review [global-overrides.md](./global-overrides.md) for known conflicts.
 
-**High-Risk Elements** (have global styles that WILL override utilities):
-| Element | Overrides |
-|---------|-----------|
-| `<code>` | text-sm, font-mono, bg-muted, padding, rounded |
-| `<p>` | text-base, leading-relaxed, max-width |
-| `<h1>`-`<h6>` | ALL styles use `!important` |
-| `<ul>`, `<ol>` | list styles, margins, spacing |
-| `<input>`, `<textarea>` | borders, padding (`!important`) |
-| `<label>` | display, font-weight, font-size |
+**Elements with global styles:**
+| Element | Layer | Overridable? | Notes |
+|---------|-------|--------------|-------|
+| `<h1>`-`<h6>` | `@layer base` | **Yes** — utilities win | No `!important`. Use `AndamioHeading` for decoupled sizing |
+| `<p>`, `<ul>`, `<ol>`, `<code>` | `.prose-content` only | N/A | No global styles — only styled inside `.prose-content` |
+| Checkbox | Unlayered | **No** | Intentional brand override |
+| Active tab | Unlayered | **No** | Intentional brand override |
 
 #### Step 3: Recommend Alternatives
 
-| Element | Problem | Solution |
-|---------|---------|----------|
-| `<code>` | Global `text-sm` overrides | Use `<span className="font-mono">` |
-| `<p>` | Global `max-width: 70ch` | Add `max-w-none` or use `<div>` |
-| Headings | `!important` prevents overrides | Use semantic heading level |
-| `<input>` | Global border/padding | Use `AndamioInput` component |
+| Element | Situation | Solution |
+|---------|-----------|----------|
+| Headings | Need different visual size than semantic level | Use `AndamioHeading level={2} size="lg"` |
+| `<p>` inside `.prose-content` | `max-width: 70ch` too narrow | Add `max-w-none` to the `<p>`, or move outside `.prose-content` |
+| `<code>` inside `.prose-content` | Styled by `.prose-content` scope | Use `<span className="font-mono">` instead |
+| `<input>` | No global overrides exist anymore | Use `AndamioInput` for consistency (not because of overrides) |
 
 #### Step 4: Quick Diagnostic Commands
 
 ```bash
-# Find raw <code> with size utilities (likely broken)
-grep -n '<code.*text-\[' path/to/file.tsx
+# Find headings with inline styles that may conflict with @layer base defaults
+grep -n '<h[1-6].*style=' path/to/file.tsx
 
-# Find headings with custom sizes (will be ignored)
-grep -n '<h[1-6].*text-' path/to/file.tsx
+# Find raw <p> tags that should use AndamioText
+grep -n '<p ' path/to/file.tsx | grep -v 'AndamioText'
 
-# Find raw inputs (should use AndamioInput)
-grep -n '<input' path/to/file.tsx | grep -v 'AndamioInput'
+# Find prose-content usage
+grep -rn 'prose-content' path/to/file.tsx
 ```
 
 ### Output Format
@@ -160,18 +160,22 @@ Provide guidance about Andamio's design system, layout patterns, and theme rules
 
 ### Key Principles
 
-**Consistency Over Creativity**: All UI follows established patterns. No custom one-off styling.
+**Read [philosophy.md](./philosophy.md) first** — it defines the vision and six principles that guide every design decision.
 
-**Semantic Over Literal**: Use semantic colors (`text-success`) not literal (`text-green-600`).
-
-**Composition Over Configuration**: Build complex UIs by composing Andamio components, not adding props.
-
-**Andamio Prefix**: All components use `Andamio` prefix for consistency.
+| # | Principle | One-Liner |
+|---|-----------|-----------|
+| 1 | Invisible Infrastructure | The blockchain is the engine, never the dashboard |
+| 2 | Clarity Over Cleverness | Every element answers "what is this?" and "what do I do next?" instantly |
+| 3 | Earned Progression | The UI reflects demonstrated competence, not navigation skill |
+| 4 | Moments of Commitment | The wallet appears only at genuine decision points |
+| 5 | Breathing Room | Space creates hierarchy, separates ideas, and signals confidence |
+| 6 | Accessibility is Not Optional | WCAG 2.1 AA minimum. No exceptions. |
 
 ### Documentation Files
 
 | File | Contents |
 |------|----------|
+| [philosophy.md](./philosophy.md) | **Start here.** Design vision, six principles, accessibility standards |
 | [layouts.md](./layouts.md) | Layout patterns (app shell, studio, master-detail, wizard) |
 | [semantic-colors.md](./semantic-colors.md) | Color system and usage guidelines |
 | [spacing.md](./spacing.md) | Spacing scales and consistent patterns |
@@ -223,6 +227,7 @@ Provide clear, actionable guidance with:
 
 | File | Purpose |
 |------|---------|
+| [philosophy.md](./philosophy.md) | **Foundation.** Design vision, principles, accessibility |
 | [style-rules.md](./style-rules.md) | Core styling rules (no custom styling, Andamio prefix) |
 | [semantic-colors.md](./semantic-colors.md) | Color system and usage |
 | [responsive-design.md](./responsive-design.md) | Responsive layout components |

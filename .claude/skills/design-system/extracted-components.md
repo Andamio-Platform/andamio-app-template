@@ -699,6 +699,7 @@ Shows completion status for 6 wizard steps:
 | 2026-01 | `/dashboard` | 6 Andamioscan summary components: `EnrolledCoursesSummary`, `PendingReviewsSummary`, `CredentialsSummary`, `ContributingProjectsSummary`, `ManagingProjectsSummary`, `OwnedCoursesSummary` |
 | 2026-01 | `/credentials` | New page using `useCompletedCourses` hook |
 | 2026-01 | `/studio/course` | `InstructorIcon` - Crown icon for course ownership indicator |
+| 2026-02 | Design system audit | `AndamioHeading`, `AndamioCode`, `AndamioSectionDescription`, `CopyId` — Documented existing undocumented components |
 
 ---
 
@@ -1019,6 +1020,137 @@ import { AndamioText } from "~/components/andamio";
 | `small` | `text-sm text-muted-foreground` |
 | `lead` | `text-lg text-muted-foreground` |
 | `overline` | `text-xs font-medium uppercase tracking-wider text-muted-foreground` |
+
+---
+
+### AndamioHeading
+
+**File**: `src/components/andamio/andamio-heading.tsx`
+
+**Extracted From**: Heading standardization (2026-01)
+
+**Purpose**: Decouples semantic heading level (h1-h6) from visual size for flexible, accessible headings. Uses CVA for variant management. Applies `m-0` to override global heading margins.
+
+**Pattern Replaced**:
+```tsx
+<h2 className="text-xl font-bold tracking-tight mb-2">Section Title</h2>
+```
+
+**Usage**:
+```tsx
+import { AndamioHeading } from "~/components/andamio";
+
+// Default (h2, size 2xl)
+<AndamioHeading>Section Title</AndamioHeading>
+
+// Semantic h1, visual size 4xl
+<AndamioHeading level={1} size="4xl">Page Title</AndamioHeading>
+
+// Semantic h3, visual size lg
+<AndamioHeading level={3} size="lg" className="text-muted-foreground">Subsection</AndamioHeading>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `level` | `1 \| 2 \| 3 \| 4 \| 5 \| 6` | `2` | Semantic heading level |
+| `size` | `"5xl" \| "4xl" \| "3xl" \| "2xl" \| "xl" \| "lg" \| "base"` | `"2xl"` | Visual size variant |
+| `className` | `string` | - | Additional CSS classes |
+
+**Size Scale**:
+| Size | Base | sm: breakpoint |
+|------|------|----------------|
+| `5xl` | text-5xl | text-6xl |
+| `4xl` | text-4xl | text-5xl |
+| `3xl` | text-3xl | text-4xl |
+| `2xl` | text-2xl | text-3xl |
+| `xl` | text-xl | text-2xl |
+| `lg` | text-lg | text-xl |
+| `base` | text-base | text-lg |
+
+---
+
+### AndamioCode
+
+**File**: `src/components/andamio/andamio-code.tsx`
+
+**Purpose**: Displays formatted JSON data or raw code in a monospace block. Designed for API responses, debug info, or code snippets.
+
+**Usage**:
+```tsx
+import { AndamioCode } from "~/components/andamio";
+
+// Display JSON data (auto-stringified)
+<AndamioCode data={myObject} />
+
+// Custom indent
+<AndamioCode data={response} indent={4} />
+
+// Raw code block
+<AndamioCode>const foo = "bar";</AndamioCode>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `unknown` | - | Data to stringify as JSON |
+| `indent` | `number` | `2` | JSON indentation spaces |
+| `children` | `ReactNode` | - | Raw code content (used when `data` not provided) |
+| `className` | `string` | - | Additional CSS classes |
+
+---
+
+### AndamioSectionDescription
+
+**File**: `src/components/andamio/andamio-section-description.tsx`
+
+**Purpose**: Centered, constrained-width paragraph for section descriptions on landing pages.
+
+**Usage**:
+```tsx
+import { AndamioSectionDescription } from "~/components/andamio";
+
+<AndamioSectionDescription>
+  Build verifiable credentials on-chain with Andamio's learning platform.
+</AndamioSectionDescription>
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | required | Description text |
+| `className` | `string` | - | Additional CSS classes |
+
+**Renders**: `AndamioText variant="lead"` inside a centered `max-w-2xl` container with vertical padding.
+
+---
+
+### CopyId
+
+**File**: `src/components/andamio/copy-id.tsx`
+
+**Purpose**: Displays a copyable ID with responsive truncation. Mobile shows truncated, desktop shows full. Click to copy with checkmark feedback.
+
+**Usage**:
+```tsx
+import { CopyId } from "~/components/andamio/copy-id";
+
+<CopyId id={project.projectId} label="Project ID" />
+<CopyId id={course.courseId} label="Course ID" />
+```
+
+**Props**:
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `id` | `string` | required | The full ID to display and copy |
+| `label` | `string` | - | Accessibility label |
+| `className` | `string` | - | Additional CSS classes |
+
+**Features**:
+- Mobile (< md): Truncated display (first 8...last 6 chars)
+- Desktop (md+): Full ID display
+- Click anywhere to copy with `useCopyFeedback` hook
+- Subtle icon transition: CopyIcon → CompletedIcon
 
 ---
 

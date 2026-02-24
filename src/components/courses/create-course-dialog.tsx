@@ -34,6 +34,7 @@ import {
 } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { useInvalidateTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useRegisterCourse, useUpdateCourse } from "~/hooks/api/course/use-course-owner";
 
@@ -193,7 +194,7 @@ export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogPr
 
       try {
         // MeshSDK v2: use Bech32 variants (raw methods return hex now)
-        const changeAddress = await wallet.getChangeAddressBech32();
+        const changeAddress = await getWalletAddressBech32(wallet);
         let usedAddresses: string[];
         try {
           usedAddresses = await wallet.getUsedAddressesBech32();

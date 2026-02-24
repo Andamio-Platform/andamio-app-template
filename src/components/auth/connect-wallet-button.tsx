@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { WEB3_SERVICES_CONFIG } from "~/config/wallet";
 
 /* -------------------------------------------------------------------------- */
@@ -321,7 +322,7 @@ export function ConnectWalletButton({
           web3Wallet.cardano as any,
           "Mesh Web3 Services",
           persist
-            ? { walletAddress: await web3Wallet.cardano.getChangeAddressBech32(), user }
+            ? { walletAddress: await getWalletAddressBech32(web3Wallet.cardano), user }
             : undefined
         );
         setOpen(false);

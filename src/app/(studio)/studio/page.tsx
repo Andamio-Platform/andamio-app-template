@@ -36,6 +36,7 @@ import {
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { useStudioContext } from "./studio-context";
 
 // =============================================================================
@@ -346,7 +347,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
 
       try {
         // MeshSDK v2: use Bech32 variants (raw methods return hex now)
-        const changeAddress = await wallet.getChangeAddressBech32();
+        const changeAddress = await getWalletAddressBech32(wallet);
         let usedAddresses: string[];
         try {
           usedAddresses = await wallet.getUsedAddressesBech32();

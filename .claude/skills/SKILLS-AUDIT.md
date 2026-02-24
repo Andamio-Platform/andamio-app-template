@@ -28,9 +28,10 @@
 | `sync-template` | ✅ Active | Medium | 1 file | Sync app changes to template repo |
 | `e2e-testing` | ✅ Active | Medium | 12 files | Playwright E2E testing with agents |
 | `test-wallet-setup` | ✅ Active | Medium | 1 file | Set up test wallets for E2E testing |
+| `compound` | ✅ Active | Low | 1 file | Capture session learnings into skills/CLAUDE.md/memory |
 | `mesh-expert` | 📦 External | N/A | 1 file (readme) | Third-party Mesh SDK AI skills |
 
-**Total**: 22 Andamio skills + 1 external skill
+**Total**: 23 Andamio skills + 1 external skill
 
 ---
 
@@ -292,7 +293,19 @@
 
 ---
 
-### 23. `mesh-expert` 📦 (External)
+### 23. `compound` ✅
+
+**Purpose**: Capture session learnings into skill files, CLAUDE.md, and auto memory (step 9 of development pipeline)
+
+**Workflow**: Scan session → classify learnings → present plan → apply changes → verify
+
+**Integration**: Runs after review/verify, before `ship` or `finishing-a-development-branch`. Complements `claude-md-management:revise-claude-md` (which does full audits; compound does targeted updates).
+
+**Files** (1): `SKILL.md`
+
+---
+
+### 24. `mesh-expert` 📦 (External)
 
 **Purpose**: Third-party Mesh SDK AI skills for Cardano wallet/transaction integration
 
@@ -345,6 +358,10 @@
 │  sponsored-transactions ──► transaction-auditor (TX lifecycle) │
 │      └──────────► hooks-architect (useTransaction updates)   │
 │                                                               │
+│  compound ────────────► skill files (targeted updates)         │
+│      ├──────────► CLAUDE.md (new rules)                      │
+│      └──────────► memory/*.md (cross-session patterns)       │
+│                                                               │
 │  Standalone skills:                                           │
 │    transaction-auditor    issue-handler                      │
 │    tx-loop-guide          mesh-expert (external)             │
@@ -358,6 +375,7 @@
 
 | Date | Action |
 |------|--------|
+| 2026-02-20 | Added `compound` skill (session learning capture — pipeline step 9). Also updated `review-pr` with Batch Review section. Count: 23. |
 | 2026-02-13 | **Full skills cleanup**: Removed migration tracking, updated stale dates/phases, added missing skills (fix, sync-template, e2e-testing, test-wallet-setup). Fixed review-pr references to design-system. Count: 22. |
 | 2026-02-12 | Added `sponsored-transactions` skill (fee sponsorship via utxos.dev tank). 1 file: SKILL.md. Count: 18. |
 | 2026-02-08 | Added `ux-readiness` skill (cross-repo UX readiness for guide pipeline). 2 files: SKILL.md, assessment-criteria.md. Partner: `guide-pipeline` in docs repo. Count: 17. |

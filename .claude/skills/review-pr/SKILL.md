@@ -36,7 +36,7 @@ Gather comprehensive PR information:
 # Get PR metadata
 gh pr view <number> --json title,body,author,state,labels,additions,deletions,changedFiles,baseRefName,headRefName,reviewDecision,reviews
 
-# Get the diff
+# Get the diff — THIS IS THE PRIMARY SOURCE OF TRUTH for code review
 gh pr diff <number>
 
 # Get list of changed files
@@ -44,6 +44,8 @@ gh pr diff <number> --name-only
 ```
 
 Store this information for analysis.
+
+> **CRITICAL: Diff is the source of truth.** The `gh pr diff` output shows exactly what the PR changes, regardless of which branch is currently checked out. When delegating to subagent reviewers, always pass the diff output — **never instruct subagents to read files from disk** unless you have first checked out the correct branch. Files on disk reflect the current checkout, which may be a completely different branch than the PR under review.
 
 ### 3. Categorize Changes
 
@@ -182,6 +184,44 @@ gh pr review <number> --request-changes --body "Review body"
 # Comment only
 gh pr review <number> --comment --body "Review body"
 ```
+
+## Batch Review (Multiple PRs)
+
+When reviewing multiple PRs at once (e.g., `/review-pr #336, #337, #338`):
+
+### Strategy
+
+1. **Fetch all diffs first** — run `gh pr diff <number>` for each PR in parallel and store the output
+2. **Dispatch one subagent per PR** — pass each agent the diff text and PR metadata as context
+3. **Never let agents read files from disk** — the working directory only reflects one branch at a time. Agents MUST review from the diff output, not from file reads
+4. **Consolidate into a summary table** — after all agents return, compile a single report with a summary table and per-PR sections
+
+### Subagent Prompt Template for Batch Review
+
+When dispatching a code-reviewer subagent for a specific PR in batch mode, provide:
+
+```
+You are reviewing PR #<number>: <title>
+
+IMPORTANT: Review ONLY from the diff provided below. Do NOT read files from disk —
+the current checkout is a different branch and will produce false results.
+
+## PR Metadata
+- Branch: <headRefName> → <baseRefName>
+- Changes: +<additions> / -<deletions> across <changedFiles> files
+
+## Changed Files
+<output of gh pr diff --name-only>
+
+## Full Diff
+<output of gh pr diff>
+
+Review for: code quality, security, best practices, design system compliance.
+```
+
+### Why This Matters
+
+In a February 2026 review of 6 PRs from different branches, all 6 subagents read source files from the current working directory instead of the PR branch. Every agent reported 100% false positives. The fix: always use diff output as the review input, never disk reads.
 
 ## Decision Tree
 

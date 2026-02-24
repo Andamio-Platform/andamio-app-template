@@ -152,6 +152,7 @@ Point them to `skill-reference.md` for a complete overview of all 12 skills.
 | `/ux-readiness` | Assess app flow readiness |
 | `/sponsored-transactions` | Fee sponsorship via utxos.dev |
 | `/sync-template` | Sync app changes to template repo |
+| `/compound` | Capture session learnings into skills/CLAUDE.md/memory |
 | `/bootstrap-skill` | Scaffold and register new skills |
 
 ## Key Files

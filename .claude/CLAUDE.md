@@ -171,5 +171,6 @@ For detailed documentation, invoke the relevant skill:
 | TypeScript types | `/typescript-types-expert` |
 | Transaction flows | `/tx-loop-guide` |
 | Guide UX readiness | `/ux-readiness` |
+| Capture session learnings | `/compound` |
 
 Full skill list: `.claude/skills/*/SKILL.md`

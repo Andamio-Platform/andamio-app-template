@@ -23,7 +23,7 @@ import {
 } from "~/components/andamio";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor, ContentViewer } from "~/components/editor";
-import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
+import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon, CourseIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { formatCommitmentStatus, formatTaskStatus } from "~/lib/format-status";
@@ -34,6 +34,9 @@ import { useContributorCommitment, useContributorCommitments, projectContributor
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getTransactionExplorerUrl } from "~/lib/constants";
+import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
+import { checkProjectEligibility } from "~/lib/project-eligibility";
+import { PrerequisiteList } from "~/components/project/prerequisite-list";
 
 // ── Pure helpers (no component state dependency) ──────────────────────────
 
@@ -88,6 +91,23 @@ export default function TaskDetailPage() {
 
   // Project-level data for contributor context
   const { data: project } = useProject(projectId);
+
+  // Prerequisite eligibility (same pattern as project detail page)
+  const prereqCourseIds = useMemo(() => {
+    if (!project?.prerequisites) return [];
+    return project.prerequisites
+      .map((p) => p.courseId)
+      .filter((id): id is string => !!id);
+  }, [project?.prerequisites]);
+
+  const { completions: prereqCompletions, isLoading: isEligibilityLoading } =
+    useStudentCompletionsForPrereqs(prereqCourseIds);
+
+  const prerequisites = useMemo(() => project?.prerequisites ?? [], [project?.prerequisites]);
+  const eligibility = useMemo(() => {
+    if (!isAuthenticated || prerequisites.length === 0) return null;
+    return checkProjectEligibility(prerequisites, prereqCompletions);
+  }, [isAuthenticated, prerequisites, prereqCompletions]);
 
   // Commitment status (authenticated only, 404 → null = no commitment yet)
   const { data: commitment, isLoading: isCommitmentLoading } = useContributorCommitment(
@@ -394,15 +414,31 @@ export default function TaskDetailPage() {
               ) : (
                 <>
                   {/* ProjectCredentialClaim TX component — revealed after clicking Leave & Claim */}
-                  <ProjectCredentialClaim
-                    projectNftPolicyId={projectId}
-                    contributorStateId={contributorStateId}
-                    projectTitle={project?.title || undefined}
-                    pendingRewardLovelace={acceptedTaskReward}
-                    onSuccess={async () => {
-                      await refreshData();
-                    }}
-                  />
+                  {eligibility === null || eligibility.eligible ? (
+                    <ProjectCredentialClaim
+                      projectNftPolicyId={projectId}
+                      contributorStateId={contributorStateId}
+                      projectTitle={project?.title || undefined}
+                      pendingRewardLovelace={acceptedTaskReward}
+                      onSuccess={async () => {
+                        await refreshData();
+                      }}
+                    />
+                  ) : (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertIcon className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div>
+                          <AndamioText className="font-medium text-destructive">
+                            Prerequisites Not Met
+                          </AndamioText>
+                          <AndamioText variant="small" className="mt-1">
+                            You need to complete the required course modules before claiming your credential.
+                          </AndamioText>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <AndamioButton
                     variant="ghost"
                     size="sm"
@@ -633,6 +669,47 @@ export default function TaskDetailPage() {
                 </>
               )}
             </div>
+          ) : isEligibilityLoading && prereqCourseIds.length > 0 ? (
+            /* ── Eligibility loading ────────────────────────── */
+            <div className="text-center py-6">
+              <AndamioText variant="muted">Checking eligibility…</AndamioText>
+            </div>
+          ) : eligibility?.eligible === false ? (
+            /* ── Not eligible — show prerequisites ────────── */
+            <div className="py-6 space-y-4">
+              <div className="text-center space-y-2">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-muted mx-auto">
+                  <CourseIcon className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <AndamioText className="font-medium">
+                  Prerequisites Required
+                </AndamioText>
+                <AndamioText variant="muted">
+                  Complete the required courses to unlock this task
+                </AndamioText>
+                <div>
+                  <AndamioBadge variant="outline">
+                    <CredentialIcon className="h-3 w-3 mr-1" />
+                    {eligibility.totalCompleted} of {eligibility.totalRequired} completed
+                  </AndamioBadge>
+                </div>
+              </div>
+              <PrerequisiteList
+                prerequisites={prerequisites}
+                completions={prereqCompletions}
+              />
+              <div className="text-center">
+                <Link href={`/project/${projectId}`}>
+                  <AndamioButton
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    View Project
+                  </AndamioButton>
+                </Link>
+              </div>
+            </div>
           ) : isBlockedByPreAssignment ? (
             /* ── Pre-assigned to someone else — blocked ────── */
             <div className="text-center py-6 space-y-4">
@@ -687,7 +764,7 @@ export default function TaskDetailPage() {
       </AndamioCard>
 
       {/* ── Evidence Editor and Transaction (new commitment) ────────── */}
-      {isAuthenticated && !activeCommitment && !isBlockedByPreAssignment && isEditingEvidence && (
+      {isAuthenticated && !activeCommitment && eligibility?.eligible !== false && !isBlockedByPreAssignment && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
             title="Your Work"

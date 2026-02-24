@@ -27,11 +27,13 @@ import type { StudentCompletionInput } from "~/lib/project-eligibility";
 export function useStudentCompletionsForPrereqs(
   prerequisiteCourseIds: string[],
 ) {
+  const hasPrereqs = prerequisiteCourseIds.length > 0;
+
   const {
     data: credentials,
     isLoading,
     isError,
-  } = useStudentCredentials();
+  } = useStudentCredentials({ enabled: hasPrereqs });
 
   // Memoize to produce a stable reference — without this, .map() returns a
   // new array every render, which triggers any useEffect that depends on it.

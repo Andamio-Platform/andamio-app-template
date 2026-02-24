@@ -111,7 +111,7 @@ function transformStudentCredential(
  *
  * @returns StudentCourseCredential[] — safe for .map()/.filter() (never null)
  */
-export function useStudentCredentials() {
+export function useStudentCredentials(options?: { enabled?: boolean }) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
@@ -145,7 +145,7 @@ export function useStudentCredentials() {
 
       return (result.data ?? []).map(transformStudentCredential);
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }

@@ -26,6 +26,8 @@ import { format } from "date-fns";
 import { ContentEditor } from "~/components/editor";
 import type { JSONContent } from "@tiptap/core";
 import type { Task } from "~/hooks/api/project/use-project";
+import { setPreAssignment } from "~/lib/task-metadata";
+import { AliasListInput } from "~/components/tx/alias-list-input";
 
 // =============================================================================
 // Types
@@ -41,6 +43,7 @@ export interface TaskFormValues {
   lovelaceAmount: string;
   expirationTime: string;
   contentJson: JSONContent | null;
+  preAssignedAlias: string | null;
 }
 
 export interface TaskFormProps {
@@ -79,6 +82,8 @@ export function TaskForm({
   const [expirationTime, setExpirationTime] = useState("");
   const [contentJson, setContentJson] = useState<JSONContent | null>(null);
   const [formInitialized, setFormInitialized] = useState(!initialTask);
+  const [preAssignedAliases, setPreAssignedAliases] = useState<string[]>([]);
+  const [isAliasValidating, setIsAliasValidating] = useState(false);
 
   // Populate form from existing task data (edit mode)
   useEffect(() => {
@@ -88,6 +93,8 @@ export function TaskForm({
     setLovelace(initialTask.lovelaceAmount ?? "1000000");
     setExpirationTime(initialTask.expirationTime ?? "");
     setContentJson((initialTask.contentJson as JSONContent) ?? null);
+    const existingAlias = initialTask.preAssignedAlias;
+    setPreAssignedAliases(existingAlias ? [existingAlias] : []);
     setFormInitialized(true);
   }, [initialTask, formInitialized]);
 
@@ -118,12 +125,15 @@ export function TaskForm({
 
   const handleSubmit = () => {
     if (!isValid) return;
+    const alias = preAssignedAliases[0] ?? null;
+    const finalContentJson = setPreAssignment(contentJson, alias);
     void onSubmit({
       title: title.trim(),
       content: content.trim(),
       lovelaceAmount: lovelace,
       expirationTime,
-      contentJson,
+      contentJson: finalContentJson,
+      preAssignedAlias: alias,
     });
   };
 
@@ -217,6 +227,29 @@ export function TaskForm({
             </AndamioText>
           </div>
           </div>
+
+          {/* Pre-assignment (Optional) */}
+          <div className="space-y-2">
+            <AliasListInput
+              value={preAssignedAliases}
+              onChange={(aliases) => {
+                // Cap at 1 alias
+                if (aliases.length > 1) {
+                  setPreAssignedAliases([aliases[aliases.length - 1]!]);
+                } else {
+                  setPreAssignedAliases(aliases);
+                }
+              }}
+              label="Pre-assign to (Optional)"
+              placeholder="Enter contributor alias"
+              onValidatingChange={setIsAliasValidating}
+              helperText={
+                preAssignedAliases.length > 0
+                  ? `Only @${preAssignedAliases[0]} will be able to commit to this task`
+                  : "Leave empty to allow any contributor. Alias is verified on-chain."
+              }
+            />
+          </div>
         </div>
 
         {/* Section: Content — Description + Rich Editor */}
@@ -255,7 +288,7 @@ export function TaskForm({
           {cancelAction}
           <AndamioButton
             onClick={handleSubmit}
-            disabled={!isValid || isSubmitting}
+            disabled={!isValid || isSubmitting || isAliasValidating}
           >
             {isSubmitting ? "Saving..." : submitLabel}
           </AndamioButton>

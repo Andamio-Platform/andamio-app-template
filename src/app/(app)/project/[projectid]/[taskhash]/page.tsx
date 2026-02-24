@@ -183,6 +183,15 @@ export default function TaskDetailPage() {
   const activeCommitment = commitment ?? refusedFallback;
   const commitmentStatus = activeCommitment?.commitmentStatus ?? null;
 
+  // Pre-assignment gate: check if task is reserved for a specific contributor
+  const preAssignedAlias = task?.preAssignedAlias ?? null;
+  const isPreAssigned = !!preAssignedAlias;
+  const isAssignedToCurrentUser =
+    isPreAssigned && user?.accessTokenAlias === preAssignedAlias;
+  // Frontend-only gate — API has no pre-assignment awareness; enforce server-side in future
+  const isBlockedByPreAssignment =
+    isPreAssigned && isAuthenticated && !isAssignedToCurrentUser;
+
   // Card description for the commitment status section
   let commitmentCardDescription: string;
   if (!isAuthenticated) {
@@ -598,6 +607,32 @@ export default function TaskDetailPage() {
                 </>
               )}
             </div>
+          ) : isBlockedByPreAssignment ? (
+            /* ── Pre-assigned to someone else — blocked ────── */
+            <div className="text-center py-6 space-y-4">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-muted mx-auto">
+                <AlertIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <AndamioText className="font-medium">
+                  This task is reserved
+                </AndamioText>
+                <AndamioText variant="muted">
+                  Pre-assigned to{" "}
+                  <span className="font-medium">@{preAssignedAlias}</span>.
+                  Only they can commit to this task.
+                </AndamioText>
+              </div>
+              <Link href={`/project/${projectId}`}>
+                <AndamioButton
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  Browse other tasks
+                </AndamioButton>
+              </Link>
+            </div>
           ) : (
             /* ── No commitment — Commit to This Task ────────── */
             <div className="text-center py-6">
@@ -626,7 +661,7 @@ export default function TaskDetailPage() {
       </AndamioCard>
 
       {/* ── Evidence Editor and Transaction (new commitment) ────────── */}
-      {isAuthenticated && !activeCommitment && isEditingEvidence && (
+      {isAuthenticated && !activeCommitment && !isBlockedByPreAssignment && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
             title="Your Work"

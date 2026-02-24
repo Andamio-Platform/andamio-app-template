@@ -39,6 +39,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { CourseIcon, TeacherIcon, AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 
 export interface CreateCourseProps {
   /**
@@ -107,7 +108,7 @@ export function CreateCourse({ onSuccess }: CreateCourseProps) {
 
       try {
         // MeshSDK v2: use Bech32 variants (raw methods return hex now)
-        const changeAddress = await wallet.getChangeAddressBech32();
+        const changeAddress = await getWalletAddressBech32(wallet);
         let usedAddresses: string[];
         try {
           usedAddresses = await wallet.getUsedAddressesBech32();

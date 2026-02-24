@@ -61,6 +61,7 @@ import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 import { useUpdateAccessTokenAlias } from "~/hooks/api/use-user";
 import { getTransactionExplorerUrl } from "~/lib/constants";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { env } from "~/env";
 
 export interface MintAccessTokenProps {
@@ -160,7 +161,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
         }
 
         if (!bech32Address) {
-          bech32Address = await wallet.getChangeAddressBech32();
+          bech32Address = await getWalletAddressBech32(wallet);
         }
 
         if (!bech32Address) {

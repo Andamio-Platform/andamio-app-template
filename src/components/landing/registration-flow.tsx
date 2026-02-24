@@ -22,6 +22,7 @@ import {
   LoadingIcon,
   ShieldIcon,
 } from "~/components/icons";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 
 // Alias must contain only alphanumeric characters and underscores
 const ALIAS_PATTERN = /^[a-zA-Z0-9_]+$/;
@@ -70,7 +71,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
     void (async () => {
       try {
         // MeshSDK v2: getUsedAddressesBech32() can throw InvalidStringError
-        // on some wallets, so use getChangeAddressBech32() as primary method
+        // on some wallets, so use getWalletAddressBech32() as primary method
         let bech32Address: string | undefined;
         try {
           const addresses = await wallet.getUsedAddressesBech32();
@@ -81,7 +82,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
         }
 
         if (!bech32Address) {
-          bech32Address = await wallet.getChangeAddressBech32();
+          bech32Address = await getWalletAddressBech32(wallet);
         }
 
         if (!bech32Address) {

@@ -14,6 +14,7 @@ import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
 import { env } from "~/env";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 
 /**
  * Detect and sync access token from wallet to database
@@ -206,7 +207,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         // If JWT has accessTokenAlias, we need both address and assets
         // Otherwise, just fetch the address
         const [walletAddress, assets] = await Promise.all([
-          wallet.getChangeAddressBech32(),
+          getWalletAddressBech32(wallet),
           payload.accessTokenAlias ? wallet.getBalanceMesh() : Promise.resolve(null),
         ]);
 
@@ -346,7 +347,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
     try {
       // Get wallet address in bech32 format (v2 provides explicit bech32 method)
-      const bech32Address = await wallet.getChangeAddressBech32();
+      const bech32Address = await getWalletAddressBech32(wallet);
 
       if (!bech32Address || bech32Address.length < 10) {
         console.error("Invalid address from wallet:", bech32Address);
@@ -445,7 +446,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     const checkWalletMatch = async () => {
       try {
         // Get current wallet address in bech32 format
-        const currentWalletAddress = await wallet.getChangeAddressBech32();
+        const currentWalletAddress = await getWalletAddressBech32(wallet);
 
         // Compare with authenticated user's address
         if (currentWalletAddress !== user.cardanoBech32Addr) {

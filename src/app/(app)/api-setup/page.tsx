@@ -58,6 +58,7 @@ import {
 } from "~/lib/andamio-auth";
 import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { AndamioScrollArea } from "~/components/andamio/andamio-scroll-area";
 
 type SetupStep = "connect" | "register" | "sign" | "verify-email" | "api-key" | "complete";
@@ -227,7 +228,7 @@ export default function ApiSetupPage() {
 
       try {
         // MeshSDK v2: getUsedAddressesBech32() can throw InvalidStringError
-        // on some wallets, so wrap with fallback to getChangeAddressBech32()
+        // on some wallets, so wrap with fallback to getWalletAddressBech32()
         let address: string | undefined;
         try {
           const addresses = await wallet.getUsedAddressesBech32();
@@ -236,7 +237,7 @@ export default function ApiSetupPage() {
           // Fallback: some wallet CIP-30 implementations return non-hex
         }
         if (!address) {
-          address = await wallet.getChangeAddressBech32();
+          address = await getWalletAddressBech32(wallet);
         }
 
         const assets = await wallet.getBalanceMesh();

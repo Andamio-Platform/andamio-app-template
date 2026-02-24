@@ -42,6 +42,7 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
+import { getWalletAddressBech32 } from "~/lib/wallet-address";
 
 // =============================================================================
 // ChecklistStep — vertical stepper item with numbered circle / checkmark
@@ -173,7 +174,7 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
 
       try {
         // MeshSDK v2: use Bech32 variants (raw methods return hex now)
-        const changeAddress = await wallet.getChangeAddressBech32();
+        const changeAddress = await getWalletAddressBech32(wallet);
         let usedAddresses: string[];
         try {
           usedAddresses = await wallet.getUsedAddressesBech32();

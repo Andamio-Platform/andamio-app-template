@@ -43,6 +43,7 @@ import {
   TeacherIcon,
   OwnerIcon,
   NeutralIcon,
+  LearnerIcon,
 } from "~/components/icons";
 import { AndamioTabs, AndamioTabsList, AndamioTabsTrigger, AndamioTabsContent } from "~/components/andamio/andamio-tabs";
 import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
@@ -232,6 +233,10 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   );
   const resolvedCommitments = useMemo(
     () => allCommitmentsForCourse.filter((c) => (RESOLVED_COMMITMENT_STATUSES as readonly string[]).includes(c.commitmentStatus ?? "")),
+    [allCommitmentsForCourse]
+  );
+  const uniqueLearnerCount = useMemo(
+    () => new Set(allCommitmentsForCourse.filter(c => c.commitmentStatus !== "LEFT").map(c => c.studentAlias)).size,
     [allCommitmentsForCourse]
   );
 
@@ -1269,6 +1274,66 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                       })}
                       <ViewAllLink href={assessmentViewHref} count={resolvedCommitments.length} label="resolved" />
                     </div>
+                  </StudioFormSection>
+                )}
+
+                {/* Teaching Team */}
+                <StudioFormSection title="Teaching Team">
+                  <div className="space-y-3">
+                    {course.owner && (
+                      <div className="flex items-center justify-between">
+                        <AndamioLabel className="flex items-center gap-1.5">
+                          <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                          Owner
+                        </AndamioLabel>
+                        <AndamioBadge variant="default" className="font-mono text-xs">
+                          {course.owner}
+                        </AndamioBadge>
+                      </div>
+                    )}
+                    {(course.teachers ?? []).length > 0 && (
+                      <div className="flex items-center justify-between gap-4">
+                        <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                          <TeacherIcon className="h-3.5 w-3.5" />
+                          Teachers
+                        </AndamioLabel>
+                        <div className="flex flex-wrap gap-1.5 justify-end">
+                          {(course.teachers ?? []).map((teacher: string) => (
+                            <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
+                              {teacher}
+                            </AndamioBadge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </StudioFormSection>
+
+                {/* Learners */}
+                <StudioFormSection title="Learners" description="Students with assignment activity">
+                  <div className="flex items-center justify-between">
+                    <AndamioText variant="small">
+                      View all students who have submitted assignments for this course.
+                    </AndamioText>
+                    <Link href={`/studio/course/${courseId}/manage-learners`}>
+                      <AndamioButton variant="outline" size="sm">
+                        <LearnerIcon className="h-3.5 w-3.5 mr-1.5" />
+                        View Learners ({uniqueLearnerCount})
+                      </AndamioButton>
+                    </Link>
+                  </div>
+                </StudioFormSection>
+
+                {/* Manage Teachers - Owner only */}
+                {isOwner && (
+                  <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
+                    <TeachersUpdate
+                      courseId={courseId}
+                      currentTeachers={course.teachers ?? []}
+                      onSuccess={() => {
+                        void refetchCourse();
+                      }}
+                    />
                   </StudioFormSection>
                 )}
               </AndamioTabsContent>

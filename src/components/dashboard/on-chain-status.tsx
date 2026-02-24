@@ -88,7 +88,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={DatabaseIcon} title="On-Chain Data" />
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch} aria-label="Refresh on-chain data">
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>
@@ -126,7 +126,7 @@ export function OnChainStatus({ accessTokenAlias }: OnChainStatusProps) {
               <VerifiedIcon className="mr-1 h-3 w-3 text-primary" />
               Live
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch} aria-label="Refresh on-chain data">
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

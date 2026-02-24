@@ -89,6 +89,10 @@ export interface AndamioStatusIconProps {
    * Additional className
    */
   className?: string;
+  /**
+   * Accessible label for screen readers
+   */
+  "aria-label"?: string;
 }
 
 const sizeConfig = {
@@ -126,6 +130,7 @@ export function AndamioStatusIcon({
   size = "md",
   shape = "rounded",
   className,
+  "aria-label": ariaLabel,
 }: AndamioStatusIconProps) {
   // Resolve configuration
   const preset = status ? presetConfig[status] : null;
@@ -146,6 +151,8 @@ export function AndamioStatusIcon({
         styles.bg,
         className
       )}
+      aria-label={ariaLabel}
+      role={ariaLabel ? "img" : undefined}
     >
       <Icon
         className={cn(

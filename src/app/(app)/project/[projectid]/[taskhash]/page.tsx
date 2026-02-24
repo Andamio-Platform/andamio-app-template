@@ -125,6 +125,14 @@ export default function TaskDetailPage() {
 
   const isTaskAccepted = commitment?.commitmentStatus === "ACCEPTED";
 
+  // After Leave & Claim, the gateway may still return commitmentStatus "ACCEPTED".
+  // Cross-reference credentialClaims to detect the post-claim state.
+  const hasClaimed = useMemo(() => {
+    const alias = user?.accessTokenAlias;
+    if (!alias || !project?.credentialClaims) return false;
+    return project.credentialClaims.some((c) => c.alias === alias);
+  }, [user?.accessTokenAlias, project?.credentialClaims]);
+
   // Derive accepted task reward from project tasks
   const acceptedTaskReward = useMemo(() => {
     if (!isTaskAccepted || !task) return "0";
@@ -145,10 +153,12 @@ export default function TaskDetailPage() {
   }, [commitment?.commitmentStatus]);
 
   // Refresh all data: invalidate React Query caches (parallel)
+  // Must invalidate ALL contributor keys so sibling pages (contributor, project detail)
+  // don't show stale commitment status after Leave & Claim or other TX flows.
   const refreshData = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitment(projectId, taskHash),
+        queryKey: projectContributorKeys.all,
       }),
       queryClient.invalidateQueries({
         queryKey: projectKeys.detail(projectId),
@@ -157,7 +167,7 @@ export default function TaskDetailPage() {
         queryKey: projectKeys.tasks(projectId),
       }),
     ]);
-  }, [queryClient, projectId, taskHash]);
+  }, [queryClient, projectId]);
 
   // ── Loading / Error states ─────────────────────────────────────────────
 
@@ -314,6 +324,21 @@ export default function TaskDetailPage() {
             /* ── Loading ────────────────────────────────────── */
             <div className="text-center py-6">
               <AndamioText variant="muted">Checking commitment status…</AndamioText>
+            </div>
+          ) : commitmentStatus === "ACCEPTED" && hasClaimed ? (
+            /* ── ACCEPTED + already claimed — Show completed state ──── */
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-start gap-3">
+                <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <AndamioText className="font-medium">
+                    Rewards Claimed
+                  </AndamioText>
+                  <AndamioText variant="small" className="mt-1 text-muted-foreground">
+                    You&apos;ve claimed your credential and rewards for this task.
+                  </AndamioText>
+                </div>
+              </div>
             </div>
           ) : commitmentStatus === "ACCEPTED" ? (
             /* ── ACCEPTED (current) — Post-acceptance flow ────────── */

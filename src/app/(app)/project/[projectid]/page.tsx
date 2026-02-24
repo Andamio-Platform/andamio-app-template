@@ -85,11 +85,16 @@ export default function ProjectDetailPage() {
 
   // Derive contributor status from commitments (reliable source of truth).
   // project.submissions persists after acceptance, so can't be used for "pending" detection.
+  // After Leave & Claim, the gateway may still return "ACCEPTED" — cross-reference
+  // credentialClaims to detect the post-claim state and suppress stale banners.
   const contributorStatus = React.useMemo(() => {
     const alias = user?.accessTokenAlias;
     if (!alias || !project) return null;
+
     const isContributor = (project.contributors ?? []).some((c) => c.alias === alias);
     if (!isContributor) return null;
+
+    const hasClaimed = (project.credentialClaims ?? []).some((c) => c.alias === alias);
 
     const hasPending = myCommitments.some(c =>
       c.commitmentStatus === "COMMITTED" ||
@@ -100,7 +105,10 @@ export default function ProjectDetailPage() {
     if (hasPending) return "task_pending" as const;
 
     const hasAccepted = myCommitments.some(c => c.commitmentStatus === "ACCEPTED");
-    if (hasAccepted) return "task_accepted" as const;
+    if (hasAccepted && !hasClaimed) return "task_accepted" as const;
+
+    // After Leave & Claim, suppress stale "enrolled" banner — the contribution cycle is complete.
+    if (hasClaimed) return null;
 
     return "enrolled" as const;
   }, [user?.accessTokenAlias, project, myCommitments]);

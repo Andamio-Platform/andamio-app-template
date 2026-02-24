@@ -27,13 +27,13 @@ interface PendingAssessmentsSummaryProps {
 }
 
 /**
- * Pending Assessments Summary Card
+ * Pending Reviews Summary Card
  *
  * Displays a summary of task submissions awaiting manager review.
  * Shows on the dashboard for users who manage projects.
  *
  * Powered by the consolidated dashboard endpoint.
- * The backend pre-aggregates pending assessment counts per project.
+ * The backend pre-aggregates pending review counts per project.
  *
  * UX States:
  * - Loading: Skeleton cards
@@ -53,7 +53,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
     return (
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
-          <AndamioCardIconHeader icon={ManagerIcon} title="Pending Assessments" />
+          <AndamioCardIconHeader icon={ManagerIcon} title="Pending Reviews" />
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -76,7 +76,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <AndamioCardIconHeader icon={ManagerIcon} title="Pending Assessments" />
+            <AndamioCardIconHeader icon={ManagerIcon} title="Pending Reviews" />
             <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
@@ -88,7 +88,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
               <AlertIcon className="h-5 w-5 text-destructive" />
             </div>
             <AndamioText variant="small" className="font-medium text-destructive">
-              Failed to load pending assessments
+              Failed to load pending reviews
             </AndamioText>
             <AndamioText variant="small" className="text-xs mt-1 max-w-[200px]">
               {error.message}
@@ -120,7 +120,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
       <AndamioCard>
         <AndamioCardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <AndamioCardIconHeader icon={ManagerIcon} title="Pending Assessments" />
+            <AndamioCardIconHeader icon={ManagerIcon} title="Pending Reviews" />
             <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
@@ -130,7 +130,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
           <AndamioEmptyState
             icon={SuccessIcon}
             title="All Caught Up!"
-            description="No pending task assessments at this time."
+            description="No pending reviews at this time."
           />
         </AndamioCardContent>
       </AndamioCard>
@@ -141,7 +141,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
     <AndamioCard>
       <AndamioCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <AndamioCardIconHeader icon={ManagerIcon} title="Pending Assessments" />
+          <AndamioCardIconHeader icon={ManagerIcon} title="Pending Reviews" />
           <div className="flex items-center gap-2">
             <AndamioBadge variant="secondary" className="text-xs">
               {totalPending} pending
@@ -169,7 +169,7 @@ export function PendingAssessmentsSummary({ accessTokenAlias }: PendingAssessmen
           {sortedAssessments.slice(0, 3).map((assessment) => (
             <Link
               key={assessment.projectId}
-              href={`/studio/project/${assessment.projectId}/manager`}
+              href={`/studio/project/${assessment.projectId}?tab=commitments`}
               className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
               <div className="flex items-center gap-2 min-w-0">

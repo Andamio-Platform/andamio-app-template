@@ -235,7 +235,7 @@ function CredentialClaimCTA({
             All assignments complete!
           </AndamioText>
           <AndamioText variant="small">
-            You earned it. Claim your {accepted === 1 ? "credential" : "credentials"} to add {accepted === 1 ? "it" : "them"} permanently to your wallet.
+            You earned it. Claim your {accepted === 1 ? "credential" : "credentials"} to record {accepted === 1 ? "it" : "them"} on-chain as proof of your achievement.
           </AndamioText>
         </div>
       ) : (
@@ -285,7 +285,7 @@ function CredentialClaimCTA({
           <div className="flex items-center gap-3">
             <SuccessIcon className="h-4 w-4 text-success" />
             <AndamioText variant="small" className="font-medium text-success">
-              Credentials claimed! Your credentials have been added to your wallet.
+              Credentials claimed! Your achievements have been recorded on-chain.
             </AndamioText>
           </div>
         </div>

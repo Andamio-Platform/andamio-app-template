@@ -71,8 +71,9 @@ export interface BurnModuleTokensProps {
 /**
  * BurnModuleTokens - Teacher UI for burning module tokens
  *
- * Allows teachers to permanently remove module tokens from the blockchain.
- * This is a destructive operation and cannot be undone.
+ * Allows teachers to remove module tokens from the blockchain.
+ * Modules revert to DRAFT status and can be re-published later.
+ * Student credentials remain verifiable via historical on-chain records.
  */
 export function BurnModuleTokens({
   courseId,
@@ -186,7 +187,7 @@ export function BurnModuleTokens({
             <div>
               <AndamioCardTitle className="text-destructive">Disable Modules</AndamioCardTitle>
               <AndamioCardDescription>
-                Permanently remove selected modules from the blockchain
+                Remove selected modules from the blockchain and revert to draft
               </AndamioCardDescription>
             </div>
           </div>
@@ -207,11 +208,11 @@ export function BurnModuleTokens({
           <AlertIcon className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
           <div className="text-xs">
             <AndamioText variant="small" className="font-medium text-destructive">
-              This action cannot be undone
+              Modules will revert to draft
             </AndamioText>
             <AndamioText variant="small">
-              Disabling removes the module tokens from the blockchain permanently.
-              Students who have earned these credentials will no longer be able to verify them on-chain.
+              Disabling removes the module tokens from the blockchain and reverts them to DRAFT status.
+              You can re-publish them later. Student credentials remain verifiable via historical on-chain records.
             </AndamioText>
           </div>
         </div>

@@ -194,7 +194,7 @@ export function ProjectCredentialClaim({
               </AndamioBadge>
             </div>
             <AndamioText variant="small" className="text-xs">
-              Your completed task rewards will be sent to your wallet along with your project credential.
+              Your completed task rewards will be sent to your wallet along with your on-chain credential.
             </AndamioText>
           </div>
         )}
@@ -255,8 +255,8 @@ export function ProjectCredentialClaim({
                 </AndamioText>
                 <AndamioText variant="small" className="text-xs">
                   {hasRewards
-                    ? `${formatLovelace(pendingRewardLovelace!)} and your credential tokens have been sent to your wallet`
-                    : "Your credential tokens have been minted to your wallet"}
+                    ? `${formatLovelace(pendingRewardLovelace!)} sent to your wallet and credential recorded on-chain`
+                    : "Your credential has been recorded on-chain as proof of your contributions"}
                 </AndamioText>
               </div>
             </div>

@@ -58,7 +58,7 @@ function getStatusStatColor(label: string): "success" | "warning" | undefined {
 const HOW_IT_WORKS_STEPS = [
   { title: "Commit to a Task", description: "Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor." },
   { title: "Complete the Work", description: "Work on your task and update your evidence as needed while awaiting review." },
-  { title: "Get Reviewed", description: "A project manager can review your commitment at any point — even before you submit evidence. If refused, you can resubmit." },
+  { title: "Get Reviewed", description: "Submit your evidence when ready. A project manager will review your work and either accept it or request revisions." },
   { title: "Earn Rewards", description: "When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together." },
 ];
 

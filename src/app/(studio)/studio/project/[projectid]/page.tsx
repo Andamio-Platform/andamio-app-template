@@ -32,7 +32,7 @@ import {
   AndamioScrollArea,
 } from "~/components/andamio";
 // Note: BlockIcon hidden for v2 release (used by Blacklist tab)
-import { TaskIcon, AssignmentIcon, ContributorIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon, ManagerIcon, OwnerIcon, PendingIcon, CompletedIcon, CloseIcon, NeutralIcon, NextIcon } from "~/components/icons";
+import { TaskIcon, AssignmentIcon, ContributorIcon, TreasuryIcon, ChartIcon, SettingsIcon, AlertIcon, OnChainIcon, CourseIcon, ManagerIcon, OwnerIcon, PendingIcon, CompletedIcon, CloseIcon, NeutralIcon, NextIcon, PreviewIcon } from "~/components/icons";
 import { CopyId } from "~/components/andamio/copy-id";
 import { ConnectWalletGate } from "~/components/auth/connect-wallet-gate";
 // Note: BlacklistManage hidden for v2 release - will enable after user research
@@ -221,8 +221,20 @@ export default function ProjectDashboardPage() {
     <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
       {/* Project Header */}
       <div className="mb-2">
-        <AndamioHeading level={1} size="2xl" className="mb-2">{projectDetail.title || "Untitled Project"}</AndamioHeading>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
+          <AndamioHeading level={1} size="2xl">{projectDetail.title || "Untitled Project"}</AndamioHeading>
+          <AndamioButton
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <Link href={`/project/${projectId}`}>
+              <PreviewIcon className="h-3.5 w-3.5 mr-1" />
+              Preview
+            </Link>
+          </AndamioButton>
+        </div>
+        <div className="flex items-center gap-3 mt-2">
           <AndamioBadge variant="default" className="text-[10px]">
             <OnChainIcon className="h-2.5 w-2.5 mr-1" />
             Published

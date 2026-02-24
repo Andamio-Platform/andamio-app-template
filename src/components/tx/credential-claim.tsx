@@ -243,7 +243,7 @@ export function CredentialClaim({
               </AndamioButton>
             }
             title="Claim Your Credential?"
-            description="This adds a permanent credential to your wallet. This action is recorded on-chain and cannot be undone."
+            description="This records a permanent credential on-chain as proof of your achievement. This action cannot be undone."
             confirmText="Claim Credential"
             onConfirm={handleClaim}
           />

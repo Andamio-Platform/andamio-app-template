@@ -10,6 +10,7 @@ import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { ContentDisplay } from "~/components/content-display";
 import type { JSONContent } from "@tiptap/core";
+import { formatCommitmentStatus } from "~/lib/format-status";
 import {
   AndamioBadge,
   AndamioButton,
@@ -88,13 +89,6 @@ const getStatusVariant = (
   return "outline";
 };
 
-const formatStatus = (status: string | undefined | null): string => {
-  if (!status) return "Unknown";
-  return status
-    .split("_")
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(" ");
-};
 
 const getManagerStatusHint = (status: string | undefined | null): string | null => {
   switch (status) {
@@ -435,7 +429,7 @@ export default function ProjectCommitmentsPage() {
                               variant={getStatusVariant(commitment.commitmentStatus)}
                               className="text-[10px] px-1.5 py-0"
                             >
-                              {formatStatus(commitment.commitmentStatus)}
+                              {formatCommitmentStatus(commitment.commitmentStatus ?? "")}
                             </AndamioBadge>
                           </div>
                         </div>
@@ -473,7 +467,7 @@ export default function ProjectCommitmentsPage() {
                         {selectedCommitment.submittedBy}
                       </AndamioHeading>
                       <AndamioBadge variant={getStatusVariant(selectedCommitment.commitmentStatus)}>
-                        {formatStatus(selectedCommitment.commitmentStatus)}
+                        {formatCommitmentStatus(selectedCommitment.commitmentStatus ?? "")}
                       </AndamioBadge>
                     </div>
                     <AndamioText variant="small" className="text-muted-foreground">

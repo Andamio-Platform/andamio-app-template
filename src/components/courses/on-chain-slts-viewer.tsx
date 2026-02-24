@@ -62,7 +62,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
               <OnChainIcon className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-xs text-muted-foreground">On-chain</span>
+            <span className="text-xs text-muted-foreground">Verified</span>
           </div>
           <code className="text-xs font-mono text-muted-foreground">{truncatedHash}</code>
         </div>
@@ -267,7 +267,7 @@ export function OnChainSltsBadge({
       <AndamioTooltipTrigger asChild>
         <AndamioBadge variant="outline" className="text-primary border-primary">
           <OnChainIcon className="h-3 w-3 mr-1" />
-          {totalSlts} on-chain
+          {totalSlts} verified
         </AndamioBadge>
       </AndamioTooltipTrigger>
       <AndamioTooltipContent>

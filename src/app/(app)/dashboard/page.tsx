@@ -101,30 +101,53 @@ export default function DashboardPage() {
         {/* Project Unlock Progress - Shows prerequisites progress or aspirational empty state */}
         <ProjectUnlockProgress />
 
-        {/* Account Details Section */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Accomplishments Card - Enrolled courses, completed courses, credentials (single API call) */}
-          <StudentAccomplishments accessTokenAlias={user.accessTokenAlias} />
-          {/* Pending Reviews Card - Shows on-chain pending assessments for teachers */}
-          <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
-          {/* Contributing Projects Card - Shows on-chain project contributions */}
-          <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
-          {/* Managing Projects Card - Shows projects user is a manager of (only if any) */}
-          <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
-          {/* Pending Assessments Card - Shows pending task submissions for project managers */}
-          <PendingAssessmentsSummary accessTokenAlias={user.accessTokenAlias} />
-          {/* Owned Courses Card - Shows on-chain courses user owns/created */}
-          <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
-          {/* Wallet & Session Card */}
-          <AccountDetailsCard
-            cardanoBech32Addr={user.cardanoBech32Addr}
-            accessTokenAlias={user.accessTokenAlias}
-            jwtExpiration={jwtExpiration}
-          />
+        {/* Accomplishments & On-Chain Data */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Accomplishments
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <StudentAccomplishments accessTokenAlias={user.accessTokenAlias} />
+            <OnChainStatus accessTokenAlias={user.accessTokenAlias} />
+          </div>
+        </section>
 
-          {/* On-Chain Data Card - Live blockchain data from Andamioscan */}
-          <OnChainStatus accessTokenAlias={user.accessTokenAlias} />
-        </div>
+        {/* Teaching & Managing */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Teaching & Managing
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <PendingReviewsSummary accessTokenAlias={user.accessTokenAlias} />
+            <PendingAssessmentsSummary accessTokenAlias={user.accessTokenAlias} />
+            <OwnedCoursesSummary accessTokenAlias={user.accessTokenAlias} />
+            <ManagingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+          </div>
+        </section>
+
+        {/* Contributing */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Contributing
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <ContributingProjectsSummary accessTokenAlias={user.accessTokenAlias} />
+          </div>
+        </section>
+
+        {/* Account */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Account
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            <AccountDetailsCard
+              cardanoBech32Addr={user.cardanoBech32Addr}
+              accessTokenAlias={user.accessTokenAlias}
+              jwtExpiration={jwtExpiration}
+            />
+          </div>
+        </section>
       </div>
     </DashboardProvider>
   );

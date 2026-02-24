@@ -424,14 +424,34 @@ export default function ManageTreasuryPage() {
                 {/* Publish Transaction */}
                 {(tasksToAdd.length > 0 || txInProgress === "add") && contributorStateId && (
                   <>
-                    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs space-y-1">
-                      <div className="font-medium">Publish Summary</div>
-                      <div className="text-primary">Publishing {tasksToAdd.length} task{tasksToAdd.length !== 1 ? "s" : ""} ({addLovelace / 1_000_000} ADA)</div>
-                      <div className="text-muted-foreground">Treasury balance: {availableFunds / 1_000_000} ADA available</div>
-                      <div className={publishDepositAmount > 0 ? "text-muted-foreground" : "text-primary"}>
-                        {publishDepositAmount > 0
-                          ? `Wallet deposit required: ${publishDepositAmount / 1_000_000} ADA`
-                          : "No additional deposit needed — treasury covers it"}
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 space-y-3">
+                      <AndamioText className="font-semibold text-base">Transaction Summary</AndamioText>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1">
+                          <AndamioText variant="small" className="text-sm text-muted-foreground">Publishing</AndamioText>
+                          <AndamioText className="text-xl font-bold text-primary">
+                            {tasksToAdd.length} {tasksToAdd.length !== 1 ? "tasks" : "task"}
+                          </AndamioText>
+                        </div>
+                        <div className="space-y-1">
+                          <AndamioText variant="small" className="text-sm text-muted-foreground">Total Rewards</AndamioText>
+                          <AndamioText className="text-xl font-bold text-primary">
+                            {addLovelace / 1_000_000} ADA
+                          </AndamioText>
+                        </div>
+                        <div className="space-y-1">
+                          <AndamioText variant="small" className="text-sm text-muted-foreground">Treasury Available</AndamioText>
+                          <AndamioText className="text-xl font-bold">
+                            {availableFunds / 1_000_000} ADA
+                          </AndamioText>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <AndamioText variant="small" className={`text-sm ${publishDepositAmount > 0 ? "text-muted-foreground" : "text-primary font-medium"}`}>
+                          {publishDepositAmount > 0
+                            ? `Wallet deposit required: ${publishDepositAmount / 1_000_000} ADA`
+                            : "No additional deposit needed — treasury covers it"}
+                        </AndamioText>
                       </div>
                     </div>
 

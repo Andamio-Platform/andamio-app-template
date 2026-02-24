@@ -86,6 +86,17 @@ export const LAYOUT = {
 } as const;
 
 /**
+ * Transaction cost estimates displayed in confirmation dialogs (in ADA).
+ * These are approximate per-entity costs shown to users before signing.
+ */
+export const TX_COSTS = {
+  /** Cost per teacher added to a course */
+  PER_TEACHER_ADA: 10,
+  /** Cost per manager added to a project */
+  PER_MANAGER_ADA: 10,
+} as const;
+
+/**
  * Animation durations (in milliseconds)
  */
 export const ANIMATIONS = {

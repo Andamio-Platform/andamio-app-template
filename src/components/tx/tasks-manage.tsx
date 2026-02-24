@@ -17,6 +17,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -230,6 +231,7 @@ export function TasksManage({
   );
 
   const ui = TRANSACTION_UI.PROJECT_MANAGER_TASKS_MANAGE;
+  const showAction = state !== "success" && !txConfirmed;
 
   const handleManageTasks = async () => {
     if (!user?.accessTokenAlias) {
@@ -405,6 +407,42 @@ export function TasksManage({
       ? "remove"
       : "add"
     : action;
+
+  // Compute dialog content based on mode
+  const depositAda = (() => {
+    if (isBatchMode && preConfiguredDepositValue) {
+      const lovelaceEntry = preConfiguredDepositValue.find(([unit]) => unit === "lovelace");
+      return lovelaceEntry ? lovelaceEntry[1] / 1_000_000 : 0;
+    }
+    if (!isBatchMode && action === "add") {
+      return (parseInt(rewardLovelace, 10) || 5_000_000) / 1_000_000;
+    }
+    return 0;
+  })();
+
+  const confirmDialogProps = (() => {
+    if (isBatchMode && effectiveAction === "remove") {
+      const count = preConfiguredTasksToRemove?.length ?? 0;
+      return {
+        title: "Remove Tasks from Treasury?",
+        description: `This will remove ${count} task(s) from the project and return their locked rewards. This action is recorded on-chain.`,
+        confirmText: "Remove Tasks",
+      };
+    }
+    if (isBatchMode) {
+      const count = preConfiguredTasksToAdd?.length ?? 0;
+      return {
+        title: "Publish Tasks to Treasury?",
+        description: `This will publish ${count} task(s) and lock ${depositAda} ADA in the project treasury. This action is recorded on-chain.`,
+        confirmText: "Publish Tasks",
+      };
+    }
+    return {
+      title: "Publish Task to Treasury?",
+      description: `This will publish 1 task and lock ${depositAda} ADA in the project treasury.`,
+      confirmText: "Add Task",
+    };
+  })();
 
   return (
     <AndamioCard>
@@ -640,8 +678,23 @@ export function TasksManage({
           </div>
         )}
 
-        {/* Submit Button */}
-        {state !== "success" && !txConfirmed && (
+        {/* Submit Button — idle state shows confirmation dialog */}
+        {showAction && state === "idle" && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton disabled={!canSubmit}>
+                {isBatchMode
+                  ? effectiveAction === "remove" ? "Remove Tasks" : "Publish Tasks"
+                  : action === "add" ? "Add Task" : "Remove Task(s)"}
+              </AndamioButton>
+            }
+            title={confirmDialogProps.title}
+            description={confirmDialogProps.description}
+            confirmText={confirmDialogProps.confirmText}
+            onConfirm={handleManageTasks}
+          />
+        )}
+        {showAction && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleManageTasks}

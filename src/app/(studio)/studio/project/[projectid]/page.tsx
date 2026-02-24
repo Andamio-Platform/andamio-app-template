@@ -41,6 +41,7 @@ import { StudioFormSection } from "~/components/studio/studio-editor-pane";
 import { RegisterProject } from "~/components/studio/register-project";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { RESOLVED_COMMITMENT_STATUSES } from "~/config/ui-constants";
 import { useProject, projectKeys } from "~/hooks/api/project/use-project";
 import { useManagerTasks, useManagerCommitments, projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { useUpdateProject } from "~/hooks/api/project/use-project-owner";
@@ -66,7 +67,7 @@ export default function ProjectDashboardPage() {
   // URL-based tab persistence
   const urlTab = searchParams.get("tab");
   // Note: "blacklist" tab hidden for v2 release - will enable after user research
-  const validTabs = ["overview", "tasks", "commitments", "settings"];
+  const validTabs = ["overview", "tasks", "managers", "settings"];
   const activeTab = urlTab && validTabs.includes(urlTab) ? urlTab : "overview";
 
   const handleTabChange = (value: string) => {
@@ -83,7 +84,6 @@ export default function ProjectDashboardPage() {
   const updateProject = useUpdateProject();
 
   // Commitment categorization (mirrors course studio pattern)
-  const RESOLVED_STATUSES = ["ACCEPTED", "REFUSED", "DENIED"];
   const pendingCommitments = useMemo(
     () => allCommitments.filter((c) => c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "COMMITTED"),
     [allCommitments]
@@ -97,7 +97,7 @@ export default function ProjectDashboardPage() {
     [allCommitments]
   );
   const resolvedCommitments = useMemo(
-    () => allCommitments.filter((c) => RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")),
+    () => allCommitments.filter((c) => (RESOLVED_COMMITMENT_STATUSES as readonly string[]).includes(c.commitmentStatus ?? "")),
     [allCommitments]
   );
   const pendingCommitmentCount = pendingCommitments.length;
@@ -273,9 +273,9 @@ export default function ProjectDashboardPage() {
             <TaskIcon className="h-4 w-4" />
             Tasks
           </AndamioTabsTrigger>
-          <AndamioTabsTrigger value="commitments" className="text-sm gap-1.5 px-4">
-            <AssignmentIcon className="h-4 w-4" />
-            Commitments
+          <AndamioTabsTrigger value="managers" className="text-sm gap-1.5 px-4">
+            <ManagerIcon className="h-4 w-4" />
+            Managers
             {pendingCommitmentCount > 0 && (
               <AndamioBadge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px]">
                 {pendingCommitmentCount}
@@ -424,8 +424,62 @@ export default function ProjectDashboardPage() {
 
         </AndamioTabsContent>
 
-        {/* Commitments Tab */}
-        <AndamioTabsContent value="commitments" className="mt-0 space-y-6">
+        {/* Managers Tab */}
+        <AndamioTabsContent value="managers" className="mt-0 space-y-6">
+          {/* Team Overview */}
+          <StudioFormSection title="Team" description="Project owner, managers, and contributors">
+            <div className="space-y-3">
+              {projectDetail.ownerAlias && (
+                <div className="flex items-center justify-between">
+                  <AndamioLabel className="flex items-center gap-1.5">
+                    <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                    Owner
+                  </AndamioLabel>
+                  <AndamioBadge variant="default" className="font-mono text-xs">
+                    {projectDetail.ownerAlias}
+                  </AndamioBadge>
+                </div>
+              )}
+              {(projectDetail.managers ?? []).length > 0 && (
+                <div className="flex items-center justify-between gap-4">
+                  <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                    <ManagerIcon className="h-3.5 w-3.5" />
+                    Managers
+                  </AndamioLabel>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    {(projectDetail.managers ?? []).map((manager: string) => (
+                      <AndamioBadge key={manager} variant="secondary" className="font-mono text-xs">
+                        {manager}
+                      </AndamioBadge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <AndamioLabel className="flex items-center gap-1.5">
+                  <ContributorIcon className="h-3.5 w-3.5" />
+                  Contributors
+                </AndamioLabel>
+                <Link href={`/studio/project/${projectId}/manage-contributors`}>
+                  <AndamioButton variant="outline" size="sm">
+                    <ContributorIcon className="h-3.5 w-3.5 mr-1.5" />
+                    View Contributors ({onChainContributorCount})
+                  </AndamioButton>
+                </Link>
+              </div>
+            </div>
+          </StudioFormSection>
+
+          {/* Manage Managers */}
+          {userRole === "owner" && (
+            <ManagersManage
+              projectNftPolicyId={projectId}
+              currentManagers={projectDetail.managers ?? []}
+              projectOwner={projectDetail.owner ?? null}
+              onSuccess={refreshData}
+            />
+          )}
+
           {/* Pending Review */}
           {pendingCommitments.length > 0 ? (
             <StudioFormSection title={`Pending Review (${pendingCommitments.length})`}>
@@ -621,62 +675,6 @@ export default function ProjectDashboardPage() {
               </div>
             </div>
           </StudioFormSection>
-
-          {/* Team */}
-          <StudioFormSection title="Team" description="Project owner, managers, and contributors">
-            <div className="space-y-3">
-              {projectDetail.ownerAlias && (
-                <div className="flex items-center justify-between">
-                  <AndamioLabel className="flex items-center gap-1.5">
-                    <OwnerIcon className="h-3.5 w-3.5 text-primary" />
-                    Owner
-                  </AndamioLabel>
-                  <AndamioBadge variant="default" className="font-mono text-xs">
-                    {projectDetail.ownerAlias}
-                  </AndamioBadge>
-                </div>
-              )}
-              {(projectDetail.managers ?? []).length > 0 && (
-                <div className="flex items-center justify-between gap-4">
-                  <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
-                    <ManagerIcon className="h-3.5 w-3.5" />
-                    Managers
-                  </AndamioLabel>
-                  <div className="flex flex-wrap gap-1.5 justify-end">
-                    {(projectDetail.managers ?? []).map((manager: string) => (
-                      <AndamioBadge key={manager} variant="secondary" className="font-mono text-xs">
-                        {manager}
-                      </AndamioBadge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <AndamioLabel className="flex items-center gap-1.5">
-                  <ContributorIcon className="h-3.5 w-3.5" />
-                  Contributors
-                </AndamioLabel>
-                <Link href={`/studio/project/${projectId}/manage-contributors`}>
-                  <AndamioButton variant="outline" size="sm">
-                    <ContributorIcon className="h-3.5 w-3.5 mr-1.5" />
-                    View Contributors ({onChainContributorCount})
-                  </AndamioButton>
-                </Link>
-              </div>
-            </div>
-          </StudioFormSection>
-
-          {/* Manage Managers */}
-          {userRole === "owner" && (
-            <StudioFormSection title="Manage Managers" description="Add or remove managers from this project">
-              <ManagersManage
-                projectNftPolicyId={projectId}
-                currentManagers={projectDetail.managers ?? []}
-                projectOwner={projectDetail.owner ?? null}
-                onSuccess={refreshData}
-              />
-            </StudioFormSection>
-          )}
 
           {/* On-Chain Info */}
           <StudioFormSection title="Project ID" description="On-chain identifier for this project">

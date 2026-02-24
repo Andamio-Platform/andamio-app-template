@@ -31,6 +31,15 @@ import { ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon, CloseIcon, OnChainIco
 import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
 
+/** Parse alias-related TX errors into user-friendly messages */
+function parseAliasTxError(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (raw.includes("ACCESS_TOKEN_ERROR")) {
+    return "One or more aliases could not be found on-chain. Verify each alias has an active Andamio access token.";
+  }
+  return raw;
+}
+
 export interface ManagersManageProps {
   projectNftPolicyId: string;
   currentManagers?: string[];
@@ -70,19 +79,9 @@ export function ManagersManage({
 
   // Clear optimistic state once API catches up
   React.useEffect(() => {
-    if (optimisticAdds.length > 0) {
-      const synced = optimisticAdds.filter((a) => currentManagers.includes(a));
-      if (synced.length > 0) {
-        setOptimisticAdds((prev) => prev.filter((a) => !currentManagers.includes(a)));
-      }
-    }
-    if (optimisticRemoves.length > 0) {
-      const synced = optimisticRemoves.filter((a) => !currentManagers.includes(a));
-      if (synced.length > 0) {
-        setOptimisticRemoves((prev) => prev.filter((a) => currentManagers.includes(a)));
-      }
-    }
-  }, [currentManagers, optimisticAdds, optimisticRemoves]);
+    setOptimisticAdds((prev) => prev.filter((a) => !currentManagers.includes(a)));
+    setOptimisticRemoves((prev) => prev.filter((a) => currentManagers.includes(a)));
+  }, [currentManagers]);
 
   const hasChanges = aliasesToAdd.length > 0 || aliasesToRemove.length > 0;
 
@@ -108,6 +107,7 @@ export function ManagersManage({
           toast.error("Update Failed", {
             description: status.last_error ?? "Please try again or contact support.",
           });
+          reset();
         }
       },
     }
@@ -322,7 +322,7 @@ export function ManagersManage({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseAliasTxError(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -369,7 +369,7 @@ export function ManagersManage({
             onClick={handleSubmit}
             disabled={!canSubmit}
             stateText={{
-              idle: "Save Team Changes",
+              idle: "Verify & Add",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",

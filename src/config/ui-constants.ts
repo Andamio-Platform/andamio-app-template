@@ -100,6 +100,11 @@ export const ANIMATIONS = {
 } as const;
 
 /**
+ * Commitment status categories for filtering assignment/commitment lists
+ */
+export const RESOLVED_COMMITMENT_STATUSES = ["ACCEPTED", "REFUSED", "DENIED"] as const;
+
+/**
  * Z-index layers
  */
 export const Z_INDEX = {

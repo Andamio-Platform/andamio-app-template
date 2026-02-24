@@ -59,6 +59,7 @@ import { MintModuleTokens } from "~/components/tx/mint-module-tokens";
 import { BurnModuleTokens, type ModuleToBurn } from "~/components/tx/burn-module-tokens";
 import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import { cn } from "~/lib/utils";
+import { RESOLVED_COMMITMENT_STATUSES } from "~/config/ui-constants";
 import { toast } from "sonner";
 import { RegisterCourse } from "~/components/studio/register-course";
 // Note: computeSltHashDefinite removed - no longer needed with hook-based data
@@ -75,6 +76,37 @@ import { RegisterCourse } from "~/components/studio/register-course";
 // Helper Components
 // =============================================================================
 
+
+const COMMITMENT_STATUS_LABELS: Record<string, string> = {
+  LEFT: "Left",
+  DRAFT: "Draft",
+  AWAITING_SUBMISSION: "Awaiting Submission",
+  SUBMITTED: "Submitted",
+};
+
+function CommitmentInfo({ studentAlias, moduleCode }: { studentAlias: string; moduleCode?: string | null }) {
+  return (
+    <div className="min-w-0">
+      <span className="font-mono text-sm font-medium">{studentAlias}</span>
+      {moduleCode && (
+        <AndamioText variant="small" className="truncate">
+          Module {moduleCode}
+        </AndamioText>
+      )}
+    </div>
+  );
+}
+
+function ViewAllLink({ href, count, label }: { href: string; count: number; label: string }) {
+  if (count <= 3) return null;
+  return (
+    <AndamioButton variant="ghost" size="sm" asChild className="w-full">
+      <Link href={href}>
+        View all {count} {label}
+      </Link>
+    </AndamioButton>
+  );
+}
 
 function ImagePreview({ url, alt }: { url: string; alt: string }) {
   const [error, setError] = useState(false);
@@ -184,22 +216,22 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // Owner check - compare current user alias to course owner
   const isOwner = Boolean(user?.accessTokenAlias && course?.owner && user.accessTokenAlias === course.owner);
+  const teachers = course?.teachers ?? [];
 
   // Fetch assignment commitments for this course, split into categories
   const { data: allCommitmentsForCourse = [] } = useTeacherAssignmentCommitments(courseId);
-  const RESOLVED_STATUSES = ["ACCEPTED", "REFUSED"];
   const pendingCommitmentsForCourse = useMemo(
     () => allCommitmentsForCourse.filter((c) => c.commitmentStatus === "PENDING_APPROVAL"),
     [allCommitmentsForCourse]
   );
   const inProgressCommitments = useMemo(
     () => allCommitmentsForCourse.filter((c) =>
-      c.commitmentStatus !== "PENDING_APPROVAL" && !RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")
+      c.commitmentStatus !== "PENDING_APPROVAL" && !(RESOLVED_COMMITMENT_STATUSES as readonly string[]).includes(c.commitmentStatus ?? "")
     ),
     [allCommitmentsForCourse]
   );
   const resolvedCommitments = useMemo(
-    () => allCommitmentsForCourse.filter((c) => RESOLVED_STATUSES.includes(c.commitmentStatus ?? "")),
+    () => allCommitmentsForCourse.filter((c) => (RESOLVED_COMMITMENT_STATUSES as readonly string[]).includes(c.commitmentStatus ?? "")),
     [allCommitmentsForCourse]
   );
 
@@ -449,6 +481,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
   // Computed values
   const isLoading = isLoadingCourse || isLoadingModules;
+  const assessmentViewHref = `/studio/course/${courseId}/teacher`;
   // Note: video_url comparison is always vs "" since it's not in merged type
   const hasChanges = course && (
     formTitle !== (course.title ?? "") ||
@@ -651,7 +684,7 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                 </AndamioTabsTrigger>
                 <AndamioTabsTrigger value="teacher" className="text-sm gap-1.5 px-4">
                   <TeacherIcon className="h-4 w-4" />
-                  Teacher
+                  Teachers
                   {pendingCommitmentsForCourse.length > 0 && (
                     <AndamioBadge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px]">
                       {pendingCommitmentsForCourse.length}
@@ -1073,7 +1106,52 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
 
               {/* Teacher Tab */}
               <AndamioTabsContent value="teacher" className="mt-0 space-y-6">
-                {/* Summary Bar + Assessment View Button */}
+                {/* Teaching Team — first so it's always visible */}
+                <StudioFormSection title="Teaching Team">
+                  <div className="space-y-3">
+                    {course.owner && (
+                      <div className="flex items-center justify-between">
+                        <AndamioLabel className="flex items-center gap-1.5">
+                          <OwnerIcon className="h-3.5 w-3.5 text-primary" />
+                          Owner
+                        </AndamioLabel>
+                        <AndamioBadge variant="default" className="font-mono text-xs">
+                          {course.owner}
+                        </AndamioBadge>
+                      </div>
+                    )}
+                    {teachers.length > 0 && (
+                      <div className="flex items-center justify-between gap-4">
+                        <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
+                          <TeacherIcon className="h-3.5 w-3.5" />
+                          Teachers
+                        </AndamioLabel>
+                        <div className="flex flex-wrap gap-1.5 justify-end">
+                          {teachers.map((teacher: string) => (
+                            <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
+                              {teacher}
+                            </AndamioBadge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </StudioFormSection>
+
+                {/* Manage Teachers - Owner only */}
+                {isOwner && (
+                  <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
+                    <TeachersUpdate
+                      courseId={courseId}
+                      currentTeachers={teachers}
+                      onSuccess={() => {
+                        void refetchCourse();
+                      }}
+                    />
+                  </StudioFormSection>
+                )}
+
+                {/* Assessment Summary Bar */}
                 <div className="flex items-center justify-between gap-4 rounded-xl border p-4 bg-muted/30">
                   <div className="flex items-center gap-4 text-sm">
                     <span className="flex items-center gap-1.5">
@@ -1092,18 +1170,18 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                     </span>
                   </div>
                   <AndamioButton size="sm" asChild>
-                    <Link href={`/studio/course/${courseId}/teacher`}>
+                    <Link href={assessmentViewHref}>
                       <TeacherIcon className="h-4 w-4 mr-1.5" />
                       Open Assessment View
                     </Link>
                   </AndamioButton>
                 </div>
 
-                {/* Pending Review */}
+                {/* Pending Review — capped at 3 */}
                 {pendingCommitmentsForCourse.length > 0 ? (
                   <StudioFormSection title={`Pending Review (${pendingCommitmentsForCourse.length})`}>
                     <div className="space-y-3">
-                      {pendingCommitmentsForCourse.map((commitment, i) => (
+                      {pendingCommitmentsForCourse.slice(0, 3).map((commitment, i) => (
                         <Link
                           key={`${commitment.studentAlias}-${commitment.sltHash}-${i}`}
                           href={`/studio/course/${courseId}/teacher?student=${encodeURIComponent(commitment.studentAlias)}&sltHash=${encodeURIComponent(commitment.sltHash ?? "")}`}
@@ -1114,19 +1192,13 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
                                 <PendingIcon className="h-4 w-4 text-secondary" />
                               </div>
-                              <div className="min-w-0">
-                                <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
-                                {commitment.moduleCode && (
-                                  <AndamioText variant="small" className="truncate">
-                                    Module {commitment.moduleCode}
-                                  </AndamioText>
-                                )}
-                              </div>
+                              <CommitmentInfo studentAlias={commitment.studentAlias} moduleCode={commitment.moduleCode} />
                             </div>
                             <NextIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           </div>
                         </Link>
                       ))}
+                      <ViewAllLink href={assessmentViewHref} count={pendingCommitmentsForCourse.length} label="pending reviews" />
                     </div>
                   </StudioFormSection>
                 ) : (
@@ -1139,121 +1211,64 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                   </div>
                 )}
 
-                {/* In Progress Commitments (COMMITTED, DRAFT, LEFT, etc.) */}
+                {/* In Progress — capped at 3 */}
                 {inProgressCommitments.length > 0 && (
                   <StudioFormSection title={`In Progress (${inProgressCommitments.length})`}>
                     <div className="space-y-3">
-                      {inProgressCommitments.map((commitment, i) => (
+                      {inProgressCommitments.slice(0, 3).map((commitment, i) => (
                         <div key={`${commitment.studentAlias}-${commitment.sltHash}-progress-${i}`} className="rounded-xl border p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                                 <NeutralIcon className="h-4 w-4 text-muted-foreground" />
                               </div>
-                              <div className="min-w-0">
-                                <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
-                                {commitment.moduleCode && (
-                                  <AndamioText variant="small" className="truncate">
-                                    Module {commitment.moduleCode}
-                                  </AndamioText>
-                                )}
-                              </div>
+                              <CommitmentInfo studentAlias={commitment.studentAlias} moduleCode={commitment.moduleCode} />
                             </div>
                             <AndamioBadge variant="outline" className="text-[10px]">
-                              {commitment.commitmentStatus === "LEFT" ? "Left" :
-                                commitment.commitmentStatus === "DRAFT" ? "Draft" :
-                                  commitment.commitmentStatus === "AWAITING_SUBMISSION" ? "Awaiting Submission" :
-                                    commitment.commitmentStatus === "SUBMITTED" ? "Submitted" : "In Progress"}
+                              {COMMITMENT_STATUS_LABELS[commitment.commitmentStatus ?? ""] ?? "In Progress"}
                             </AndamioBadge>
                           </div>
                         </div>
                       ))}
+                      <ViewAllLink href={assessmentViewHref} count={inProgressCommitments.length} label="in progress" />
                     </div>
                   </StudioFormSection>
                 )}
 
-                {/* Resolved Commitments (ACCEPTED / REFUSED) */}
+                {/* Resolved — capped at 3 */}
                 {resolvedCommitments.length > 0 && (
                   <StudioFormSection title="Resolved">
                     <div className="space-y-3">
-                      {resolvedCommitments.map((commitment, i) => (
-                        <div key={`${commitment.studentAlias}-${commitment.sltHash}-resolved-${i}`} className="rounded-xl border p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={cn(
-                                "flex h-8 w-8 items-center justify-center rounded-full",
-                                commitment.commitmentStatus === "ACCEPTED" ? "bg-primary/20" : "bg-destructive/20"
-                              )}>
-                                {commitment.commitmentStatus === "ACCEPTED" ? (
-                                  <CompletedIcon className="h-4 w-4 text-primary" />
-                                ) : (
-                                  <CloseIcon className="h-4 w-4 text-destructive" />
-                                )}
+                      {resolvedCommitments.slice(0, 3).map((commitment, i) => {
+                        const isAccepted = commitment.commitmentStatus === "ACCEPTED";
+                        return (
+                          <div key={`${commitment.studentAlias}-${commitment.sltHash}-resolved-${i}`} className="rounded-xl border p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={cn(
+                                  "flex h-8 w-8 items-center justify-center rounded-full",
+                                  isAccepted ? "bg-primary/20" : "bg-destructive/20"
+                                )}>
+                                  {isAccepted ? (
+                                    <CompletedIcon className="h-4 w-4 text-primary" />
+                                  ) : (
+                                    <CloseIcon className="h-4 w-4 text-destructive" />
+                                  )}
+                                </div>
+                                <CommitmentInfo studentAlias={commitment.studentAlias} moduleCode={commitment.moduleCode} />
                               </div>
-                              <div className="min-w-0">
-                                <span className="font-mono text-sm font-medium">{commitment.studentAlias}</span>
-                                {commitment.moduleCode && (
-                                  <AndamioText variant="small" className="truncate">
-                                    Module {commitment.moduleCode}
-                                  </AndamioText>
-                                )}
-                              </div>
+                              <AndamioBadge
+                                variant={isAccepted ? "default" : "destructive"}
+                                className="text-[10px]"
+                              >
+                                {isAccepted ? "Accepted" : "Refused"}
+                              </AndamioBadge>
                             </div>
-                            <AndamioBadge
-                              variant={commitment.commitmentStatus === "ACCEPTED" ? "default" : "destructive"}
-                              className="text-[10px]"
-                            >
-                              {commitment.commitmentStatus === "ACCEPTED" ? "Accepted" : "Refused"}
-                            </AndamioBadge>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
+                      <ViewAllLink href={assessmentViewHref} count={resolvedCommitments.length} label="resolved" />
                     </div>
-                  </StudioFormSection>
-                )}
-
-                {/* Teaching Team */}
-                <StudioFormSection title="Teaching Team">
-                  <div className="space-y-3">
-                    {course.owner && (
-                      <div className="flex items-center justify-between">
-                        <AndamioLabel className="flex items-center gap-1.5">
-                          <OwnerIcon className="h-3.5 w-3.5 text-primary" />
-                          Owner
-                        </AndamioLabel>
-                        <AndamioBadge variant="default" className="font-mono text-xs">
-                          {course.owner}
-                        </AndamioBadge>
-                      </div>
-                    )}
-                    {(course.teachers ?? []).length > 0 && (
-                      <div className="flex items-center justify-between gap-4">
-                        <AndamioLabel className="flex items-center gap-1.5 flex-shrink-0">
-                          <TeacherIcon className="h-3.5 w-3.5" />
-                          Teachers
-                        </AndamioLabel>
-                        <div className="flex flex-wrap gap-1.5 justify-end">
-                          {(course.teachers ?? []).map((teacher: string) => (
-                            <AndamioBadge key={teacher} variant="secondary" className="font-mono text-xs">
-                              {teacher}
-                            </AndamioBadge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </StudioFormSection>
-
-                {/* Manage Teachers - Owner only */}
-                {isOwner && (
-                  <StudioFormSection title="Manage Teachers" description="Add or remove teachers from this course">
-                    <TeachersUpdate
-                      courseId={courseId}
-                      currentTeachers={course.teachers ?? []}
-                      onSuccess={() => {
-                        void refetchCourse();
-                      }}
-                    />
                   </StudioFormSection>
                 )}
               </AndamioTabsContent>

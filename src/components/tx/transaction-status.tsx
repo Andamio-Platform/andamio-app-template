@@ -8,7 +8,7 @@
  */
 
 import React from "react";
-import { VerifiedIcon, ErrorIcon, ExternalLinkIcon, LoadingIcon } from "~/components/icons";
+import { VerifiedIcon, ErrorIcon, ExternalLinkIcon, LoadingIcon, CloseIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import type { TransactionResult, TransactionState } from "~/types/transaction";
@@ -30,7 +30,9 @@ export interface TransactionStatusProps {
   error?: string | null;
 
   /**
-   * Optional callback to retry transaction
+   * Optional callback to reset/retry transaction.
+   * Called by both "Try again" link and dismiss button in error state.
+   * Callers should pass a reset function (not a re-execute function).
    */
   onRetry?: () => void;
 
@@ -127,6 +129,16 @@ export function TransactionStatus({
               </AndamioButton>
             )}
           </div>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="shrink-0 rounded-full p-1 hover:bg-destructive/10"
+              aria-label="Dismiss"
+            >
+              <CloseIcon className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
         </div>
       </div>
     );

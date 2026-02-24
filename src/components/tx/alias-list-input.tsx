@@ -1,14 +1,6 @@
-/**
- * AliasListInput - Validated alias list input with on-chain verification
- *
- * Reusable component for adding aliases one at a time, with existence
- * checks via GET /api/v2/user/exists/{alias}. Used by create-project,
- * create-course, managers-manage, and teachers-update forms.
- */
-
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { AndamioInput } from "~/components/andamio/andamio-input";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -37,21 +29,6 @@ export interface AliasListInputProps {
   hideBadges?: boolean;
 }
 
-/**
- * AliasListInput - Add aliases one at a time with on-chain validation
- *
- * @example
- * ```tsx
- * <AliasListInput
- *   value={managers}
- *   onChange={setManagers}
- *   label="Additional Managers"
- *   placeholder="Enter alias"
- *   excludeAliases={[currentUserAlias]}
- *   helperText="Each alias is verified on-chain before being added."
- * />
- * ```
- */
 export function AliasListInput({
   value,
   onChange,
@@ -67,6 +44,13 @@ export function AliasListInput({
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [lastVerified, setLastVerified] = useState<string | null>(null);
+  const verifiedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (verifiedTimerRef.current) clearTimeout(verifiedTimerRef.current);
+    };
+  }, []);
 
   const addAlias = useCallback(async () => {
     const alias = inputValue.trim();
@@ -107,9 +91,10 @@ export function AliasListInput({
         onChange([...value, alias]);
         setInputValue("");
         setLastVerified(alias);
-        setTimeout(() => setLastVerified(null), 3000);
+        if (verifiedTimerRef.current) clearTimeout(verifiedTimerRef.current);
+        verifiedTimerRef.current = setTimeout(() => setLastVerified(null), 3000);
       } else if (response.status === 404) {
-        setValidationError(`"${alias}" was not found. Make sure the alias has an Access Token on-chain.`);
+        setValidationError(`"${alias}" was not found. The person must have an Andamio access token to be added.`);
       } else {
         setValidationError("Failed to verify alias. Please try again.");
       }
@@ -118,7 +103,7 @@ export function AliasListInput({
     } finally {
       setIsValidating(false);
     }
-  }, [inputValue, value, excludeAliases, onChange]);
+  }, [inputValue, value, excludeAliases, getExcludeReason, onChange]);
 
   const removeAlias = useCallback(
     (alias: string) => {
@@ -177,39 +162,34 @@ export function AliasListInput({
         />
         <AndamioButton
           type="button"
-          size="sm"
           variant="outline"
           onClick={() => void addAlias()}
           disabled={disabled || isValidating || inputValue.trim().length === 0}
+          aria-label="Add alias"
+          className="h-9 w-9 shrink-0 p-0"
         >
           {isValidating ? (
-            <>
-              <LoadingIcon className="h-4 w-4 animate-spin" />
-              <span className="ml-1">Verifying...</span>
-            </>
+            <LoadingIcon className="h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <AddIcon className="h-4 w-4" />
-              <span className="ml-1">Verify & Add</span>
-            </>
+            <AddIcon className="h-4 w-4" />
           )}
         </AndamioButton>
       </div>
 
       {/* Validation success */}
       {lastVerified && (
-        <div className="flex items-center gap-1.5 text-primary">
-          <SuccessIcon className="h-3.5 w-3.5 shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <SuccessIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
           <AndamioText variant="small" className="text-xs text-primary">
-            &ldquo;{lastVerified}&rdquo; verified and added
+            &ldquo;{lastVerified}&rdquo; added
           </AndamioText>
         </div>
       )}
 
       {/* Validation error */}
       {validationError && (
-        <div className="flex items-center gap-1.5 text-destructive">
-          <ErrorIcon className="h-3.5 w-3.5 shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <ErrorIcon className="h-3.5 w-3.5 shrink-0 text-destructive" />
           <AndamioText variant="small" className="text-xs text-destructive">
             {validationError}
           </AndamioText>

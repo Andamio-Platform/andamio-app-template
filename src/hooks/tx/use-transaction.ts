@@ -79,6 +79,18 @@ import { txWatcherStore } from "~/stores/tx-watcher-store";
 /** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
 const loadingSpinner = React.createElement(LoadingIcon, { className: "size-4 animate-spin" });
 
+/** Map known wallet/SDK error messages to user-friendly text */
+function humanizeTxError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("user declined") || lower.includes("user rejected") || lower.includes("user denied")) {
+    return "You declined to sign the transaction.";
+  }
+  if (lower.includes("insufficient") && lower.includes("fund")) {
+    return "Insufficient funds in your wallet to complete this transaction.";
+  }
+  return message;
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -290,9 +302,13 @@ export function useTransaction() {
         // Call success callback
         await onSuccess?.(txResult);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        console.error(`[${txType}] Transaction failed:`, error);
-        txLogger.txError(txType, error);
+        const rawError = err instanceof Error ? err : new Error(String(err));
+        const friendlyMessage = humanizeTxError(rawError.message);
+        const error = friendlyMessage !== rawError.message
+          ? new Error(friendlyMessage)
+          : rawError;
+        console.error(`[${txType}] Transaction failed:`, rawError);
+        txLogger.txError(txType, rawError);
 
         setError(error);
         setState("error");

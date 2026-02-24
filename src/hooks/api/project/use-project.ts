@@ -38,6 +38,7 @@ import type {
   OrchestrationProjectPrerequisite,
 } from "~/types/generated/gateway";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { getPreAssignedAlias } from "~/lib/task-metadata";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -126,6 +127,9 @@ export interface Task {
   // On-chain data
   onChainContent?: string;
   contributorStateId?: string;
+
+  // Pre-assignment (Web2 only, stored in contentJson._metadata)
+  preAssignedAlias: string | null;
 }
 
 /**
@@ -393,6 +397,7 @@ export function transformOnChainTask(
     onChainContent: api.on_chain_content,
     contributorStateId: api.contributor_state_id,
     tokens: api.assets ? transformAssets(api.assets) : undefined,
+    preAssignedAlias: null, // On-chain-only tasks don't carry DB metadata
     status: "active", // On-chain tasks are always active
     taskStatus: "ON_CHAIN", // On-chain tasks have ON_CHAIN status
   };
@@ -442,6 +447,7 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
     title,
     description,
     contentJson: api.content?.content_json,
+    preAssignedAlias: getPreAssignedAlias(api.content?.content_json),
     lovelaceAmount: String(api.lovelace_amount ?? 0),
     expirationTime: api.expiration_posix
       ? String(api.expiration_posix)

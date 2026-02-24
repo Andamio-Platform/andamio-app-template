@@ -27,6 +27,8 @@ export interface AliasListInputProps {
   helperText?: string;
   /** Hide the inline badge list (when parent manages its own display) */
   hideBadges?: boolean;
+  /** Called when validation starts or ends — use to disable parent save buttons */
+  onValidatingChange?: (isValidating: boolean) => void;
 }
 
 export function AliasListInput({
@@ -39,6 +41,7 @@ export function AliasListInput({
   getExcludeReason,
   helperText,
   hideBadges = false,
+  onValidatingChange,
 }: AliasListInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -83,18 +86,22 @@ export function AliasListInput({
     }
 
     // Existence check via gateway
+    // API returns 200 with { exists: boolean } — check the body, not just status
     setIsValidating(true);
+    onValidatingChange?.(true);
     try {
       const response = await fetch(`/api/gateway/api/v2/user/exists/${encodeURIComponent(alias)}`);
       if (response.ok) {
-        // 200 = alias exists on-chain
-        onChange([...value, alias]);
-        setInputValue("");
-        setLastVerified(alias);
-        if (verifiedTimerRef.current) clearTimeout(verifiedTimerRef.current);
-        verifiedTimerRef.current = setTimeout(() => setLastVerified(null), 3000);
-      } else if (response.status === 404) {
-        setValidationError(`"${alias}" was not found. The person must have an Andamio access token to be added.`);
+        const data = (await response.json()) as { exists?: boolean };
+        if (data.exists) {
+          onChange([...value, alias]);
+          setInputValue("");
+          setLastVerified(alias);
+          if (verifiedTimerRef.current) clearTimeout(verifiedTimerRef.current);
+          verifiedTimerRef.current = setTimeout(() => setLastVerified(null), 3000);
+        } else {
+          setValidationError(`"${alias}" was not found. Make sure the alias has an Access Token on-chain.`);
+        }
       } else {
         setValidationError("Failed to verify alias. Please try again.");
       }
@@ -102,8 +109,9 @@ export function AliasListInput({
       setValidationError("Failed to verify alias. Please try again.");
     } finally {
       setIsValidating(false);
+      onValidatingChange?.(false);
     }
-  }, [inputValue, value, excludeAliases, getExcludeReason, onChange]);
+  }, [inputValue, value, excludeAliases, getExcludeReason, onChange, onValidatingChange]);
 
   const removeAlias = useCallback(
     (alias: string) => {

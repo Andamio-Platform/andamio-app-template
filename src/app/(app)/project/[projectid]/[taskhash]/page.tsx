@@ -26,6 +26,7 @@ import { ContentEditor, ContentViewer } from "~/components/editor";
 import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { formatCommitmentStatus, formatTaskStatus } from "~/lib/format-status";
 import { TaskCommit, TaskAction, ProjectCredentialClaim } from "~/components/tx";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import { useProjectTask, useProject, projectKeys } from "~/hooks/api/project/use-project";
@@ -216,7 +217,7 @@ export default function TaskDetailPage() {
             #{task.index}
           </AndamioBadge>
           <AndamioBadge variant="default">
-            {task.taskStatus === "ON_CHAIN" ? "Live" : task.taskStatus}
+            {formatTaskStatus(task.taskStatus ?? "")}
           </AndamioBadge>
         </div>
       </div>
@@ -456,7 +457,7 @@ export default function TaskDetailPage() {
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
                 <AndamioBadge variant={getCommitmentStatusVariant(commitmentStatus)}>
-                  {commitmentStatus.replace(/_/g, " ")}
+                  {formatCommitmentStatus(commitmentStatus)}
                 </AndamioBadge>
               </div>
 
@@ -580,7 +581,7 @@ export default function TaskDetailPage() {
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
                 <AndamioBadge variant={getCommitmentStatusVariant(commitment.commitmentStatus ?? "")}>
-                  {(commitment.commitmentStatus ?? "").replace(/_/g, " ")}
+                  {formatCommitmentStatus(commitment.commitmentStatus ?? "")}
                 </AndamioBadge>
               </div>
 

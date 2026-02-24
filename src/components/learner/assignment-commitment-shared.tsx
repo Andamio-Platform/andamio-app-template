@@ -154,7 +154,7 @@ export function EvidenceEditorSection({
   placeholder,
   content,
   onContentChange,
-  showHash = true,
+  showHash = false,
   onLock,
   lockDisabled,
 }: EvidenceEditorSectionProps) {
@@ -179,7 +179,7 @@ export function EvidenceEditorSection({
         <div className="flex justify-end pt-2">
           <AndamioButton onClick={onLock} disabled={lockDisabled}>
             <SuccessIcon className="h-4 w-4 mr-2" />
-            Finalize
+            Lock My Work
           </AndamioButton>
         </div>
       )}

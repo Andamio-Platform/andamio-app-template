@@ -54,7 +54,7 @@ const STATUS_CONFIG: Record<CourseModuleStatus, StatusConfig> = {
   approved: {
     icon: NeutralIcon,
     iconColor: "text-muted-foreground fill-warning",
-    label: "Ready to Mint",
+    label: "Ready to Publish",
     textColor: "text-muted-foreground",
   },
   draft: {

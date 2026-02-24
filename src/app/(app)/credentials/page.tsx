@@ -24,6 +24,7 @@ import {
   CourseIcon,
   OnChainIcon,
   ExternalLinkIcon,
+  ContributorIcon,
 } from "~/components/icons";
 
 /**
@@ -213,16 +214,30 @@ export default function CredentialsPage() {
                 </AndamioText>
               </div>
 
-              {/* Action */}
-              <Link
-                href={`/course/${course.courseId}`}
-                className="flex items-center justify-between p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors"
-              >
-                <AndamioText variant="small" className="text-primary font-medium">
-                  View Course
-                </AndamioText>
-                <ExternalLinkIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </Link>
+              {/* Actions */}
+              <div className="space-y-1">
+                <Link
+                  href={`/course/${course.courseId}`}
+                  className="flex items-center justify-between p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <AndamioText variant="small" className="text-primary font-medium">
+                    View Course
+                  </AndamioText>
+                  <ExternalLinkIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+                <Link
+                  href="/project"
+                  className="flex items-center justify-between p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <ContributorIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <AndamioText variant="small" className="text-primary font-medium">
+                      View eligible projects
+                    </AndamioText>
+                  </div>
+                  <ExternalLinkIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              </div>
             </AndamioCardContent>
           </AndamioCard>
         ))}

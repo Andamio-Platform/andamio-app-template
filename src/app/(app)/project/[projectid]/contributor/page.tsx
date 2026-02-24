@@ -35,6 +35,7 @@ import { useProject, useProjectTasks } from "~/hooks/api/project/use-project";
 import { ProjectCredentialClaim } from "~/components/tx";
 import { ContentViewer } from "~/components/editor";
 import { formatLovelace } from "~/lib/cardano-utils";
+import { formatCommitmentStatus } from "~/lib/format-status";
 import { getTransactionExplorerUrl } from "~/lib/constants";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { checkProjectEligibility } from "~/lib/project-eligibility";
@@ -391,7 +392,7 @@ function MyContributionsContent() {
                     <AndamioText className="font-medium">Your Evidence</AndamioText>
                     {status && (
                       <AndamioBadge variant="outline" className="text-xs">
-                        {status.replace(/_/g, " ")}
+                        {formatCommitmentStatus(status ?? "")}
                       </AndamioBadge>
                     )}
                   </div>

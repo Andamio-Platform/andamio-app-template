@@ -16,6 +16,8 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -84,6 +86,7 @@ export function TreasuryAddFunds({
   );
 
   const ui = TRANSACTION_UI.PROJECT_USER_TREASURY_ADD_FUNDS;
+  const showAction = state !== "success" && !txConfirmed;
 
   const handleAddFunds = async () => {
     if (!user?.accessTokenAlias || !adaAmount) {
@@ -220,8 +223,21 @@ export function TreasuryAddFunds({
           </div>
         )}
 
-        {/* Submit Button */}
-        {state !== "success" && !txConfirmed && (
+        {/* Submit Button — idle state shows confirmation dialog */}
+        {showAction && state === "idle" && isValidAmount && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton className="w-full" disabled={!canSubmit}>
+                {ui.buttonText}
+              </AndamioButton>
+            }
+            title="Add Funds to Treasury?"
+            description={`This will transfer ${parsedAmount} ADA from your wallet to the project treasury. Funds are used for task rewards. This action is recorded on-chain.`}
+            confirmText={`Add ${parsedAmount} ADA`}
+            onConfirm={handleAddFunds}
+          />
+        )}
+        {showAction && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleAddFunds}

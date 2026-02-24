@@ -6,6 +6,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -14,10 +15,12 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TeacherIcon, AlertIcon, LoadingIcon, SuccessIcon, CloseIcon, OnChainIcon } from "~/components/icons";
 import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
+import { TX_COSTS } from "~/config/ui-constants";
 
 /** Parse alias-related TX errors into user-friendly messages */
 function parseAliasTxError(raw: string | null | undefined): string | null {
@@ -138,12 +141,26 @@ export function TeachersUpdate({
 
   const hasAccessToken = !!user.accessTokenAlias;
   const isProcessing = state !== "idle" && state !== "error";
+  const showAction = state !== "success" && !txConfirmed;
 
   // Minimum-1 enforcement: count teachers that would remain after pending removals
   const remainingCount = effectiveTeachers.filter(
     (t) => !aliasesToRemove.includes(t)
   ).length;
   const canSubmit = hasAccessToken && hasChanges && (remainingCount > 0 || aliasesToAdd.length > 0);
+
+  // Compute dialog description based on what's changing
+  const confirmDescription = (() => {
+    const addCount = aliasesToAdd.length;
+    const removeCount = aliasesToRemove.length;
+    if (addCount > 0 && removeCount > 0) {
+      return `This will add ${addCount} teacher(s) (${addCount * TX_COSTS.PER_TEACHER_ADA} ADA) and remove ${removeCount} teacher(s). Removed teachers lose course access. This action is recorded on-chain.`;
+    }
+    if (addCount > 0) {
+      return `This will add ${addCount} teacher(s) at a cost of ${addCount * TX_COSTS.PER_TEACHER_ADA} ADA. Teachers can manage modules and assess assignments. This action is recorded on-chain.`;
+    }
+    return `This will remove ${removeCount} teacher(s) and revoke their course management access. This action is recorded on-chain.`;
+  })();
 
   return (
     <AndamioCard>
@@ -337,19 +354,32 @@ export function TeachersUpdate({
               Transaction cost
             </AndamioText>
             <AndamioText variant="small" className="font-medium">
-              {aliasesToAdd.length} &times; 10 ADA = {aliasesToAdd.length * 10} ADA
+              {aliasesToAdd.length} &times; {TX_COSTS.PER_TEACHER_ADA} ADA = {aliasesToAdd.length * TX_COSTS.PER_TEACHER_ADA} ADA
             </AndamioText>
           </div>
         )}
 
-        {/* Submit Button — only visible when there are changes */}
-        {state !== "success" && !txConfirmed && hasChanges && (
+        {/* Submit Button — idle state shows confirmation dialog */}
+        {showAction && hasChanges && state === "idle" && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton className="w-full sm:w-auto" disabled={!canSubmit}>
+                Save Teacher Changes
+              </AndamioButton>
+            }
+            title="Save Teacher Changes?"
+            description={confirmDescription}
+            confirmText="Save Teacher Changes"
+            onConfirm={handleSubmit}
+          />
+        )}
+        {showAction && hasChanges && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleSubmit}
             disabled={!canSubmit}
             stateText={{
-              idle: "Verify & Add",
+              idle: "Save Teacher Changes",
               fetching: "Preparing Transaction...",
               signing: "Sign in Wallet",
               submitting: "Updating on Blockchain...",

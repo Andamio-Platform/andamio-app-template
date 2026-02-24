@@ -18,6 +18,8 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -30,6 +32,7 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import { ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon, CloseIcon, OnChainIcon } from "~/components/icons";
 import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
+import { TX_COSTS } from "~/config/ui-constants";
 
 /** Parse alias-related TX errors into user-friendly messages */
 function parseAliasTxError(raw: string | null | undefined): string | null {
@@ -127,6 +130,8 @@ export function ManagersManage({
     return null;
   }, [projectOwner, effectiveManagers, aliasesToAdd]);
 
+  const showAction = state !== "success" && !txConfirmed;
+
   const toggleRemove = useCallback((alias: string) => {
     setAliasesToRemove((prev) =>
       prev.includes(alias) ? prev.filter((a) => a !== alias) : [...prev, alias]
@@ -160,6 +165,19 @@ export function ManagersManage({
   const hasAccessToken = !!user.accessTokenAlias;
   const canSubmit = hasAccessToken && hasChanges;
   const isProcessing = state !== "idle" && state !== "error";
+
+  // Compute dialog description based on what's changing
+  const confirmDescription = (() => {
+    const addCount = aliasesToAdd.length;
+    const removeCount = aliasesToRemove.length;
+    if (addCount > 0 && removeCount > 0) {
+      return `This will add ${addCount} manager(s) (${addCount * TX_COSTS.PER_MANAGER_ADA} ADA) and remove ${removeCount} manager(s). Removed managers lose project access. This action is recorded on-chain.`;
+    }
+    if (addCount > 0) {
+      return `This will add ${addCount} manager(s) at a cost of ${addCount * TX_COSTS.PER_MANAGER_ADA} ADA. They will be able to manage tasks and assess submissions. This action is recorded on-chain.`;
+    }
+    return `This will remove ${removeCount} manager(s) and revoke their project access. This action is recorded on-chain.`;
+  })();
 
   return (
     <AndamioCard>
@@ -357,13 +375,26 @@ export function ManagersManage({
               Transaction cost
             </AndamioText>
             <AndamioText variant="small" className="font-medium">
-              {aliasesToAdd.length} &times; 10 ADA = {aliasesToAdd.length * 10} ADA
+              {aliasesToAdd.length} &times; {TX_COSTS.PER_MANAGER_ADA} ADA = {aliasesToAdd.length * TX_COSTS.PER_MANAGER_ADA} ADA
             </AndamioText>
           </div>
         )}
 
-        {/* Submit Button */}
-        {state !== "success" && !txConfirmed && hasChanges && (
+        {/* Submit Button — idle state shows confirmation dialog */}
+        {showAction && hasChanges && state === "idle" && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton className="w-full sm:w-auto" disabled={!canSubmit}>
+                Save Team Changes
+              </AndamioButton>
+            }
+            title="Save Team Changes?"
+            description={confirmDescription}
+            confirmText="Save Team Changes"
+            onConfirm={handleSubmit}
+          />
+        )}
+        {showAction && hasChanges && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleSubmit}

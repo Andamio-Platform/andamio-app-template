@@ -30,7 +30,9 @@ import {
   AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
+import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { TaskIcon, TransactionIcon, AlertIcon, SuccessIcon, ContributorIcon, LoadingIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
@@ -183,6 +185,7 @@ export function TaskCommit({
   }, [taskEvidence]);
 
   const ui = TRANSACTION_UI.PROJECT_CONTRIBUTOR_TASK_COMMIT;
+  const showAction = state !== "success" && !txConfirmed;
 
   const handleCommit = async () => {
     if (!user?.accessTokenAlias) return;
@@ -387,8 +390,25 @@ export function TaskCommit({
           </div>
         )}
 
-        {/* Commit Button */}
-        {state !== "success" && !txConfirmed && (
+        {/* Commit Button — idle state shows confirmation dialog */}
+        {showAction && state === "idle" && (
+          <ConfirmDialog
+            trigger={
+              <AndamioButton className="w-full" disabled={!canCommit}>
+                {buttonText}
+              </AndamioButton>
+            }
+            title={isFirstCommit ? "Join This Project?" : "Submit Your Work?"}
+            description={
+              isFirstCommit
+                ? "This enrolls you in the project and records your commitment on-chain. This action cannot be undone."
+                : "This records your work submission on-chain. Your project manager will review it."
+            }
+            confirmText={buttonText}
+            onConfirm={handleCommit}
+          />
+        )}
+        {showAction && state !== "idle" && (
           <TransactionButton
             txState={state}
             onClick={handleCommit}

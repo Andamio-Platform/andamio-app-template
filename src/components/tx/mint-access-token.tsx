@@ -433,7 +433,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
       <AndamioCard className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
         <AndamioCardHeader className="text-center pb-2 relative">
           {/* Celebration confetti effect */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             <div className="absolute top-0 left-1/4 text-2xl animate-bounce" style={{ animationDelay: "0ms" }}>🎉</div>
             <div className="absolute top-2 right-1/4 text-2xl animate-bounce" style={{ animationDelay: "150ms" }}>✨</div>
             <div className="absolute top-4 left-1/3 text-xl animate-bounce" style={{ animationDelay: "300ms" }}>🎊</div>

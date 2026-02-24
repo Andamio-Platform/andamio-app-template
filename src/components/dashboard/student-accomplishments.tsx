@@ -93,7 +93,7 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
           <div className="flex items-center justify-between">
             <AndamioCardIconHeader icon={AchievementIcon} title="My Accomplishments" />
             {!error && (
-              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+              <AndamioButton variant="ghost" size="icon-sm" onClick={refetch} aria-label="Refresh accomplishments">
                 <RefreshIcon className="h-4 w-4" />
               </AndamioButton>
             )}
@@ -127,7 +127,7 @@ export function StudentAccomplishments({ accessTokenAlias }: StudentAccomplishme
             <AndamioBadge variant="secondary" className="text-xs">
               {totalCourses} {totalCourses === 1 ? "course" : "courses"}
             </AndamioBadge>
-            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch}>
+            <AndamioButton variant="ghost" size="icon-sm" onClick={refetch} aria-label="Refresh accomplishments">
               <RefreshIcon className="h-4 w-4" />
             </AndamioButton>
           </div>

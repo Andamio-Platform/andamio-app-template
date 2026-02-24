@@ -530,7 +530,9 @@ export default function DraftTasksPage() {
           {/* Lifecycle Filter Chips */}
           <div className="flex flex-wrap gap-2">
             <button
+              type="button"
               onClick={() => setLifecycleFilter("all")}
+              aria-pressed={lifecycleFilter === "all"}
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                 lifecycleFilter === "all"
                   ? "bg-primary text-primary-foreground"
@@ -541,7 +543,9 @@ export default function DraftTasksPage() {
             </button>
             {lifecycleCounts.available > 0 && (
               <button
+                type="button"
                 onClick={() => setLifecycleFilter("available")}
+                aria-pressed={lifecycleFilter === "available"}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   lifecycleFilter === "available"
                     ? "bg-primary text-primary-foreground"
@@ -554,7 +558,9 @@ export default function DraftTasksPage() {
             )}
             {lifecycleCounts.inProgress > 0 && (
               <button
+                type="button"
                 onClick={() => setLifecycleFilter("in_progress")}
+                aria-pressed={lifecycleFilter === "in_progress"}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   lifecycleFilter === "in_progress"
                     ? "bg-primary text-primary-foreground"
@@ -567,7 +573,9 @@ export default function DraftTasksPage() {
             )}
             {lifecycleCounts.pendingReview > 0 && (
               <button
+                type="button"
                 onClick={() => setLifecycleFilter("pending_review")}
+                aria-pressed={lifecycleFilter === "pending_review"}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   lifecycleFilter === "pending_review"
                     ? "bg-primary text-primary-foreground"
@@ -580,7 +588,9 @@ export default function DraftTasksPage() {
             )}
             {lifecycleCounts.accepted > 0 && (
               <button
+                type="button"
                 onClick={() => setLifecycleFilter("accepted")}
+                aria-pressed={lifecycleFilter === "accepted"}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   lifecycleFilter === "accepted"
                     ? "bg-primary text-primary-foreground"

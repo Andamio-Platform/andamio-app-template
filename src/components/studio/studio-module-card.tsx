@@ -199,10 +199,8 @@ export function StudioModuleCard({
     );
   }
 
-  // "Ready to Mint" modules should go to Credentials tab, not back into the wizard
-  const cardHref = status === "approved"
-    ? `/studio/course/${courseId}?tab=credentials`
-    : `/studio/course/${courseId}/${moduleCode}`;
+  // All modules link to the edit wizard — the status badge communicates the next step
+  const cardHref = `/studio/course/${courseId}/${moduleCode}`;
 
   return (
     <Link

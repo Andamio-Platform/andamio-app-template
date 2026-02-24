@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
+import { UI_TIMEOUTS } from "~/config/ui-constants";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,7 +63,7 @@ export function AssignmentCommitment({
 }: AssignmentCommitmentProps) {
   const { isAuthenticated, user } = useAndamioAuth();
   const queryClient = useQueryClient();
-  const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification();
+  const { isSuccess: showSuccess, message: successMessage, showSuccess: triggerSuccess } = useSuccessNotification(UI_TIMEOUTS.WORKFLOW_NOTIFICATION);
 
   // Check enrollment status before TX to detect first-time enrollment
   const { data: studentCourses } = useStudentCourses();
@@ -364,12 +365,23 @@ export function AssignmentCommitment({
 
         {/* Branch: Module completed on-chain */}
         {hasCompletedOnChain ? (
-          <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-primary/10 border-primary/20">
-            <SuccessIcon className="h-12 w-12 text-primary mb-4" />
-            <AndamioText className="font-medium mb-2">Module Completed</AndamioText>
-            <AndamioText variant="small" className="text-muted-foreground">
-              You have successfully completed this module on-chain.
-            </AndamioText>
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center py-8 border rounded-lg bg-primary/10 border-primary/20">
+              <SuccessIcon className="h-12 w-12 text-primary mb-4" />
+              <AndamioText className="font-medium mb-2">Module Completed</AndamioText>
+              <AndamioText variant="small" className="text-muted-foreground">
+                You have successfully completed this module on-chain.
+              </AndamioText>
+            </div>
+            {commitment?.networkEvidence && (
+              <div className="space-y-2">
+                <AndamioLabel>Your Approved Work</AndamioLabel>
+                <ContentDisplay content={commitment.networkEvidence} variant="muted" />
+                {commitment.networkEvidenceHash && (
+                  <EvidenceHashDisplay label="Evidence Hash:" hash={commitment.networkEvidenceHash} />
+                )}
+              </div>
+            )}
           </div>
 
         ) : commitment?.networkStatus === "ASSIGNMENT_ACCEPTED" ? (
@@ -593,72 +605,72 @@ export function AssignmentCommitment({
 // CommitmentStatusBanner — inline helper for the read-only branch
 // =============================================================================
 
+interface BannerConfig {
+  icon: typeof SuccessIcon;
+  iconClass: string;
+  bannerClass: string;
+  title: string;
+  subtitle: string;
+}
+
+function getBannerConfig(networkStatus: string): BannerConfig | null {
+  switch (networkStatus) {
+    case "PENDING_APPROVAL":
+      return {
+        icon: PendingIcon,
+        iconClass: "text-secondary",
+        bannerClass: "bg-secondary/10 border-secondary/30",
+        title: "Pending Teacher Review",
+        subtitle: "Your assignment has been submitted and is awaiting review by your teacher.",
+      };
+    case "CREDENTIAL_CLAIMED":
+      return {
+        icon: SuccessIcon,
+        iconClass: "text-primary",
+        bannerClass: "bg-primary/10 border-primary/20",
+        title: "Credential Claimed",
+        subtitle: "You have claimed your credential for this assignment.",
+      };
+    case "IN_PROGRESS":
+      return {
+        icon: PendingIcon,
+        iconClass: "text-secondary",
+        bannerClass: "bg-secondary/10 border-secondary/30",
+        title: "In Progress",
+        subtitle: "Your assignment is in progress. Submit your work when ready.",
+      };
+    default:
+      // PENDING_TX_* states (except PENDING_TX_COMMIT which is handled in the submit flow)
+      if (networkStatus.startsWith("PENDING_TX") && networkStatus !== "PENDING_TX_COMMIT") {
+        return {
+          icon: LoadingIcon,
+          iconClass: "animate-spin text-secondary",
+          bannerClass: "bg-muted/30",
+          title: "Processing transaction...",
+          subtitle: "Your transaction is being confirmed on the blockchain.",
+        };
+      }
+      return null;
+  }
+}
+
 function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
-  if (networkStatus === "PENDING_APPROVAL") {
-    return (
-      <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
-        <div className="flex items-center gap-3">
-          <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
-          <div>
-            <AndamioText className="font-medium">Pending Teacher Review</AndamioText>
-            <AndamioText variant="small" className="text-xs">
-              Your assignment has been submitted and is awaiting review by your teacher.
-            </AndamioText>
-          </div>
+  const config = getBannerConfig(networkStatus);
+  if (!config) return null;
+
+  const Icon = config.icon;
+
+  return (
+    <div className={`rounded-lg border p-4 ${config.bannerClass}`}>
+      <div className="flex items-center gap-3">
+        <Icon className={`h-5 w-5 shrink-0 ${config.iconClass}`} />
+        <div>
+          <AndamioText className="font-medium">{config.title}</AndamioText>
+          <AndamioText variant="small" className="text-xs">
+            {config.subtitle}
+          </AndamioText>
         </div>
       </div>
-    );
-  }
-
-  if (networkStatus === "CREDENTIAL_CLAIMED") {
-    return (
-      <div className="rounded-lg border bg-primary/10 border-primary/20 p-4">
-        <div className="flex items-center gap-3">
-          <SuccessIcon className="h-5 w-5 text-primary shrink-0" />
-          <div>
-            <AndamioText className="font-medium">Credential Claimed</AndamioText>
-            <AndamioText variant="small" className="text-xs">
-              You have claimed your credential for this assignment.
-            </AndamioText>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // PENDING_TX_* states (except PENDING_TX_COMMIT which is handled in the submit flow)
-  if (networkStatus.startsWith("PENDING_TX") && networkStatus !== "PENDING_TX_COMMIT") {
-    return (
-      <div className="rounded-lg border bg-muted/30 p-4">
-        <div className="flex items-center gap-3">
-          <LoadingIcon className="h-5 w-5 animate-spin text-secondary shrink-0" />
-          <div>
-            <AndamioText className="font-medium">Processing transaction...</AndamioText>
-            <AndamioText variant="small" className="text-xs">
-              Your transaction is being confirmed on the blockchain.
-            </AndamioText>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // IN_PROGRESS — waiting for student to submit
-  if (networkStatus === "IN_PROGRESS") {
-    return (
-      <div className="rounded-lg border bg-secondary/10 border-secondary/30 p-4">
-        <div className="flex items-center gap-3">
-          <PendingIcon className="h-5 w-5 text-secondary shrink-0" />
-          <div>
-            <AndamioText className="font-medium">In Progress</AndamioText>
-            <AndamioText variant="small" className="text-xs">
-              Your assignment is in progress. Submit your work when ready.
-            </AndamioText>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

@@ -21,6 +21,8 @@ export const UI_TIMEOUTS = {
   ERROR_NOTIFICATION: 5000,
   /** Duration to show success state before transitioning (confirmation alerts) */
   SUCCESS_TRANSITION: 3000,
+  /** Duration for workflow notifications (assignment finalization, multi-step flows) */
+  WORKFLOW_NOTIFICATION: 8000,
   /** Threshold to show "taking longer than expected" warning */
   LONG_WAIT_WARNING: 120000, // 2 minutes
   /** Debounce delay for search inputs */

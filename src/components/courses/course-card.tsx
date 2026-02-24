@@ -9,7 +9,6 @@ import {
   SuccessIcon,
   PendingIcon,
   NextIcon,
-  UserIcon,
   TeacherIcon,
 } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -88,6 +87,30 @@ function CourseStatusBadge({ status }: { status: CourseStatus }) {
 }
 
 /**
+ * Enrollment badge for authenticated students
+ */
+function EnrollmentBadge({ status }: { status?: "enrolled" | "completed" }) {
+  switch (status) {
+    case "completed":
+      return (
+        <AndamioBadge status="success" className="text-xs">
+          <SuccessIcon className="h-3 w-3 mr-1" />
+          Completed
+        </AndamioBadge>
+      );
+    case "enrolled":
+      return (
+        <AndamioBadge status="pending" className="text-xs">
+          <OnChainIcon className="h-3 w-3 mr-1" />
+          Enrolled
+        </AndamioBadge>
+      );
+    default:
+      return null;
+  }
+}
+
+/**
  * CourseCard - Display a course in a beautiful card format
  *
  * Shows course title, description, status, and metadata.
@@ -100,7 +123,6 @@ export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
     description,
     imageUrl,
     status,
-    owner,
     teachers,
   } = course;
 
@@ -139,11 +161,6 @@ export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
             </AndamioCardTitle>
             <NextIcon className="h-5 w-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-1" />
           </div>
-          {courseId && (
-            <AndamioText variant="small" className="font-mono text-muted-foreground truncate">
-              {courseId.slice(0, 20)}...
-            </AndamioText>
-          )}
         </AndamioCardHeader>
 
         <AndamioCardContent className="flex-1">
@@ -158,48 +175,19 @@ export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
           )}
         </AndamioCardContent>
 
-        <AndamioCardFooter className="border-t pt-4 mt-auto">
-          <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
-            {/* Owner info */}
-            {owner && (
-              <div className="flex items-center gap-1.5 truncate">
-                <UserIcon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate font-mono text-xs">
-                  {owner.slice(0, 12)}...
-                </span>
-              </div>
-            )}
-
-            {/* Teacher count */}
-            {teacherCount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <TeacherIcon className="h-3.5 w-3.5" />
-                <span>{teacherCount} {teacherCount === 1 ? "teacher" : "teachers"}</span>
-              </div>
-            )}
-
-            {/* Enrollment status badge */}
-            {enrollmentStatus === "completed" ? (
-              <AndamioBadge status="success" className="text-xs">
-                <SuccessIcon className="h-3 w-3 mr-1" />
-                Completed
-              </AndamioBadge>
-            ) : enrollmentStatus === "enrolled" ? (
-              <AndamioBadge status="pending" className="text-xs">
-                <OnChainIcon className="h-3 w-3 mr-1" />
-                Enrolled
-              </AndamioBadge>
-            ) : (
-              /* Active indicator (only when no enrollment status) */
-              status === "active" && (
-                <div className="flex items-center gap-1">
-                  <SuccessIcon className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-primary text-xs">Live</span>
+        {(teacherCount > 0 || enrollmentStatus) && (
+          <AndamioCardFooter className="border-t pt-4 mt-auto">
+            <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
+              {teacherCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <TeacherIcon className="h-3.5 w-3.5" />
+                  <span>{teacherCount} {teacherCount === 1 ? "teacher" : "teachers"}</span>
                 </div>
-              )
-            )}
-          </div>
-        </AndamioCardFooter>
+              )}
+              <EnrollmentBadge status={enrollmentStatus} />
+            </div>
+          </AndamioCardFooter>
+        )}
       </AndamioCard>
     </Link>
   );

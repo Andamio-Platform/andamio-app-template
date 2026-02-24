@@ -20,6 +20,7 @@ import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { useTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
+import { useStudentCredentials, type StudentCourseCredential } from "~/hooks/api/course/use-student-credentials";
 import { AssignmentStatusBadge } from "~/components/learner/assignment-status-badge";
 import { CourseBreadcrumb } from "~/components/courses/course-breadcrumb";
 import { SLTLessonTable, type CombinedSLTLesson } from "~/components/courses/slt-lesson-table";
@@ -63,14 +64,32 @@ export default function ModuleLessonsPage() {
     isAuthenticated ? courseId : undefined,
   );
 
-  // Derive commitment status for this specific module
+  // Fetch student credentials to detect claimed credentials (gated on isAuthenticated internally)
+  // Commitment API stays at ACCEPTED after claim — credentials are separate on-chain tokens
+  const { data: studentCredentials } = useStudentCredentials();
+
+  // Derive commitment status for this specific module, cross-referencing credential data
   const moduleCommitmentStatus = useMemo(() => {
     if (!studentCommitments) return null;
     const moduleCommitments = studentCommitments.filter(
-      (c) => c.moduleCode === moduleCode,
+      (c) => c.courseId === courseId && c.moduleCode === moduleCode,
     );
-    return getModuleCommitmentStatus(moduleCommitments);
-  }, [studentCommitments, moduleCode]);
+    const commitmentStatus = getModuleCommitmentStatus(moduleCommitments);
+
+    // If status is ASSIGNMENT_ACCEPTED, check if credential has actually been claimed.
+    // The commitment API stays at ACCEPTED permanently — credential claiming is a
+    // separate on-chain transaction that does not update the commitment record.
+    if (commitmentStatus === "ASSIGNMENT_ACCEPTED") {
+      const hasClaimedCredential = hasClaimedModuleCredential(
+        studentCredentials ?? [],
+        courseId,
+        moduleCode,
+      );
+      if (hasClaimedCredential) return "CREDENTIAL_CLAIMED";
+    }
+
+    return commitmentStatus;
+  }, [studentCommitments, studentCredentials, moduleCode, courseId]);
 
   // Get on-chain modules from the merged course data - memoized to stabilize reference
   const onChainModules = useMemo(() => course?.modules ?? [], [course?.modules]);
@@ -202,6 +221,33 @@ export default function ModuleLessonsPage() {
 }
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Returns true if the student has a claimed credential for the given module.
+ *
+ * Cross-references the flat claimedCredentials hash list against the module
+ * entries to determine whether any SLT for this module has been claimed.
+ */
+function hasClaimedModuleCredential(
+  credentials: StudentCourseCredential[],
+  courseId: string,
+  moduleCode: string,
+): boolean {
+  const courseCredential = credentials.find((c) => c.courseId === courseId);
+  if (!courseCredential || courseCredential.claimedCredentials.length === 0) {
+    return false;
+  }
+  return courseCredential.modules.some(
+    (m) =>
+      m.courseModuleCode === moduleCode &&
+      m.sltHash !== "" &&
+      courseCredential.claimedCredentials.includes(m.sltHash),
+  );
+}
+
+// =============================================================================
 // Assignment CTA - adapts heading and button based on commitment status
 // =============================================================================
 
@@ -236,14 +282,16 @@ function AssignmentCTA({
             </div>
             <AndamioText variant="muted">{ctaConfig.description}</AndamioText>
           </div>
-          <div className="flex-shrink-0">
-            <Link href={`/course/${courseId}/${moduleCode}/assignment`}>
-              <AndamioButton size="lg">
-                {ctaConfig.buttonLabel}
-                <NextIcon className="h-4 w-4 ml-2" />
-              </AndamioButton>
-            </Link>
-          </div>
+          {ctaConfig.buttonLabel && (
+            <div className="flex-shrink-0">
+              <Link href={`/course/${courseId}/${moduleCode}/assignment`}>
+                <AndamioButton size="lg">
+                  {ctaConfig.buttonLabel}
+                  <NextIcon className="h-4 w-4 ml-2" />
+                </AndamioButton>
+              </Link>
+            </div>
+          )}
         </div>
       </AndamioCardContent>
     </AndamioCard>
@@ -265,6 +313,13 @@ function getAssignmentCTAConfig(status: string | null) {
         description:
           "Your assignment has been approved. Claim your credential to record your achievement on-chain.",
         buttonLabel: "Claim Credential",
+      };
+    case "CREDENTIAL_CLAIMED":
+      return {
+        heading: "Credential Earned",
+        description:
+          "You've claimed your credential for this module. Your achievement is recorded on-chain.",
+        buttonLabel: "View Assignment",
       };
     case "ASSIGNMENT_REFUSED":
       return {

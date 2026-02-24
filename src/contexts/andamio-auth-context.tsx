@@ -13,7 +13,6 @@ import {
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
 import { env } from "~/env";
-import { BRANDING } from "~/config";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 
 /**
@@ -251,18 +250,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         setUser(userData);
         authLogger.info("User data loaded from stored JWT:", userData);
 
-        // Log JWT to console for debugging/testing (restored session)
-        console.group(`🔐 ${BRANDING.name} Session Restored`);
-        console.log("JWT Token:", storedJWT);
-        console.log("User:", userData);
-        console.log("\nTo use in API requests:");
-        console.log(`Authorization: Bearer ${storedJWT}`);
-        console.log("\nCurl example:");
-        console.log(`curl -X POST "${GATEWAY_API_BASE}/course/owner/course/sync-teachers" \\
-  -H "Authorization: Bearer ${storedJWT}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
-        console.groupEnd();
+        authLogger.debug("Session restored for user:", userData.id);
 
         // Sync access token from wallet (in case wallet has a new one)
         void syncAccessTokenFromWallet(wallet, userData, storedJWT, setUser);
@@ -407,28 +395,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       // Sync access token from wallet to database (in case it wasn't detected during auth)
       await syncAccessTokenFromWallet(wallet, authResponse.user, authResponse.jwt, setUser);
 
-      // Log JWT to console for debugging/testing
-      console.group(`🔐 ${BRANDING.name} Authentication Successful`);
-      console.log("JWT Token:", authResponse.jwt);
-
-      // Decode and display JWT payload
-      try {
-        const payload = JSON.parse(atob(authResponse.jwt.split(".")[1]!)) as { exp: number };
-        console.log("JWT Payload:", payload);
-        console.log("Expires:", new Date(payload.exp * 1000).toLocaleString());
-      } catch {
-        console.log("Could not decode JWT payload");
-      }
-
-      console.log("User:", authResponse.user);
-      console.log("\nTo use in API requests:");
-      console.log(`Authorization: Bearer ${authResponse.jwt}`);
-      console.log("\nCurl example:");
-      console.log(`curl -X POST "${GATEWAY_API_BASE}/course/owner/course/sync-teachers" \\
-  -H "Authorization: Bearer ${authResponse.jwt}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"course_nft_policy_id": "YOUR_COURSE_POLICY_ID"}'`);
-      console.groupEnd();
+      authLogger.debug("Authentication successful for user:", authResponse.user.id);
     } catch (error) {
       authLogger.error("Authentication failed:", error);
       const errorMessage = error instanceof Error ? error.message : "Authentication failed";

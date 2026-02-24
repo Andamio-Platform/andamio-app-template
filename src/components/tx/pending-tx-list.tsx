@@ -36,6 +36,7 @@ import {
 import type { TxStatus } from "~/hooks/tx/use-tx-watcher";
 import { cn } from "~/lib/utils";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { getTransactionExplorerUrl } from "~/lib/constants";
 
 export interface PendingTxListProps {
   /** Polling interval in ms (default: 5000 = 5 seconds) */
@@ -65,19 +66,6 @@ function formatTimeSince(isoString: string | undefined): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-/**
- * Get blockchain explorer URL
- */
-function getExplorerUrl(txHash: string): string {
-  // Uses preprod by default - could be made configurable
-  const network = process.env.NEXT_PUBLIC_CARDANO_NETWORK ?? "preprod";
-  const baseUrl =
-    network === "mainnet"
-      ? "https://cardanoscan.io"
-      : "https://preprod.cardanoscan.io";
-  return `${baseUrl}/transaction/${txHash}`;
 }
 
 /**
@@ -243,7 +231,7 @@ export function PendingTxList({
                         {truncateTxHash(tx.tx_hash, 16)}
                       </code>
                       <a
-                        href={getExplorerUrl(tx.tx_hash)}
+                        href={getTransactionExplorerUrl(tx.tx_hash)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-0.5 text-primary hover:underline"

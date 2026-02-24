@@ -7,20 +7,31 @@
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { env } from "~/env";
 
-const KOIOS_API_BASE = "https://preprod.koios.rest/api/v1";
+const KOIOS_URLS = {
+  mainnet: "https://api.koios.rest/api/v1",
+  preprod: "https://preprod.koios.rest/api/v1",
+  preview: "https://preview.koios.rest/api/v1",
+} as const;
+
+const KOIOS_API_BASE = KOIOS_URLS[env.NEXT_PUBLIC_CARDANO_NETWORK];
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const isDev = process.env.NODE_ENV === "development";
+
   try {
     const { path } = await params;
     const koiosPath = path.join("/");
     const searchParams = request.nextUrl.searchParams.toString();
     const koiosUrl = `${KOIOS_API_BASE}/${koiosPath}${searchParams ? `?${searchParams}` : ""}`;
 
-    console.log(`[Koios Proxy] Proxying request to: ${koiosUrl}`);
+    if (isDev) {
+      console.log(`[Koios Proxy] Proxying request to: ${koiosUrl}`);
+    }
 
     const response = await fetch(koiosUrl, {
       method: "GET",
@@ -66,13 +77,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const isDev = process.env.NODE_ENV === "development";
+
   try {
     const { path } = await params;
     const koiosPath = path.join("/");
     const body = await request.text();
     const koiosUrl = `${KOIOS_API_BASE}/${koiosPath}`;
 
-    console.log(`[Koios Proxy] Proxying POST request to: ${koiosUrl}`);
+    if (isDev) {
+      console.log(`[Koios Proxy] Proxying POST request to: ${koiosUrl}`);
+    }
 
     const response = await fetch(koiosUrl, {
       method: "POST",

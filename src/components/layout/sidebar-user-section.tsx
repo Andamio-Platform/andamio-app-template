@@ -108,7 +108,7 @@ export function SidebarUserSection({
           <div className="flex items-center gap-1.5">
             <div
               className={cn(
-                "rounded-full bg-primary animate-pulse flex-shrink-0",
+                "rounded-full bg-primary motion-safe:animate-pulse flex-shrink-0",
                 isExpanded ? "h-2 w-2" : "h-1.5 w-1.5"
               )}
             />

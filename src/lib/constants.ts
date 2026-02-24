@@ -16,6 +16,8 @@ export {
   FORM_LIMITS,
 } from "~/config/ui-constants";
 
+import { env } from "~/env";
+
 /**
  * Cardano explorer URLs by network
  *
@@ -29,8 +31,7 @@ export const EXPLORER_URLS = {
 
 export type CardanoNetwork = keyof typeof EXPLORER_URLS;
 
-const DEFAULT_NETWORK: CardanoNetwork =
-  (process.env.NEXT_PUBLIC_CARDANO_NETWORK as CardanoNetwork | undefined) ?? "preprod";
+const DEFAULT_NETWORK: CardanoNetwork = env.NEXT_PUBLIC_CARDANO_NETWORK;
 
 /**
  * Get the explorer base URL for the current network

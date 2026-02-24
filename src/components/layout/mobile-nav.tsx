@@ -41,7 +41,7 @@ export function MobileNav() {
         <AndamioButton
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground md:hidden"
+          className="h-9 w-9 p-0 text-primary-foreground/80 hover:text-primary-foreground md:hidden"
           aria-label="Open navigation menu"
         >
           <MenuIcon className="h-4 w-4" />

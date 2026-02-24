@@ -125,6 +125,7 @@ function WalletIconButton({
           )}
           onClick={onClick}
           disabled={loading}
+          aria-label={`Connect ${wallet.name} wallet`}
         >
           {loading ? (
             <LoadingIcon className="h-5 w-5 animate-spin text-primary" />
@@ -173,6 +174,7 @@ function SocialIconButton({
           )}
           onClick={onClick}
           disabled={loading}
+          aria-label={`Sign in with ${provider.name}`}
         >
           {loading ? (
             <LoadingIcon className="h-5 w-5 animate-spin text-primary" />

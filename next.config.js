@@ -35,14 +35,6 @@ const config = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "*", // Allow images from all domains
-      },
-      {
-        protocol: "http",
-        hostname: "*", // Allow images from all domains
-      },
-      {
-        protocol: "https",
         hostname: "*.andamio.io",
       },
       {

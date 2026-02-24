@@ -120,12 +120,15 @@ export function AuthStatusBar() {
     <div className="h-10 border-b border-primary-foreground/10 bg-primary text-primary-foreground">
       <div className="flex h-full items-center justify-between px-3 sm:px-4">
         {/* Left: Mobile Menu + Status Indicators */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0" role="status" aria-live="polite">
           {/* Mobile Menu - Visible on small screens only */}
           <MobileNav />
 
           {/* Wallet Status - Hidden on very small screens */}
-          <div className="hidden xs:flex items-center gap-2">
+          <div
+            className="hidden xs:flex items-center gap-2"
+            aria-label={isWalletConnected ? `Wallet connected: ${walletName ?? "Wallet"}` : "Wallet not connected"}
+          >
             <WalletIcon className="h-3.5 w-3.5 text-primary-foreground/70 flex-shrink-0" />
             <div className="flex items-center gap-1.5 min-w-0">
               <NeutralIcon
@@ -144,7 +147,10 @@ export function AuthStatusBar() {
           <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
 
           {/* Auth Status - Hidden on very small screens */}
-          <div className="hidden xs:flex items-center gap-2">
+          <div
+            className="hidden xs:flex items-center gap-2"
+            aria-label={isAuthenticated ? "Authenticated" : authError ? "Authentication error" : "Not authenticated"}
+          >
             {isAuthenticated ? (
               <VerifiedIcon className="h-3.5 w-3.5 text-success-foreground flex-shrink-0" />
             ) : authError || popupBlocked ? (
@@ -183,7 +189,7 @@ export function AuthStatusBar() {
           {isAuthenticated && timeUntilExpiry && (
             <>
               <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
-              <div className="hidden sm:flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1.5" aria-label={`Session expires in ${timeUntilExpiry}`}>
                 <PendingIcon
                   className={cn(
                     "h-3.5 w-3.5 flex-shrink-0",
@@ -228,8 +234,8 @@ export function AuthStatusBar() {
               variant="ghost"
               size="sm"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="h-6 w-6 p-0 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
-              aria-label="Toggle theme"
+              className="h-9 w-9 p-0 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (
                 <LightModeIcon className="h-3.5 w-3.5" />

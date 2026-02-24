@@ -61,7 +61,7 @@
 import React, { useState, useCallback } from "react";
 import { useWallet } from "@meshsdk/react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 import { env } from "~/env";
 import { txLogger } from "~/lib/tx-logger";
 import { getTransactionExplorerUrl } from "~/lib/constants";
@@ -77,7 +77,7 @@ import { PROXY_BASE } from "~/lib/gateway";
 import { txWatcherStore } from "~/stores/tx-watcher-store";
 
 /** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
-const loadingSpinner = React.createElement(Loader2, { className: "size-4 animate-spin" });
+const loadingSpinner = React.createElement(LoadingIcon, { className: "size-4 animate-spin" });
 
 // =============================================================================
 // Types

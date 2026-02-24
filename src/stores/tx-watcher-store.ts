@@ -30,7 +30,7 @@
 import React from "react";
 import { createStore } from "zustand/vanilla";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { LoadingIcon } from "~/components/icons";
 import type { TxState, TxStatus } from "~/hooks/tx/use-tx-watcher";
 import { TERMINAL_STATES } from "~/hooks/tx/use-tx-watcher";
 import type {
@@ -48,7 +48,7 @@ import { pollUntilTerminal } from "~/lib/tx-polling-fallback";
 const STREAM_PROXY_BASE = "/api/gateway-stream/api/v2";
 
 /** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
-const loadingSpinner = React.createElement(Loader2, { className: "size-4 animate-spin" });
+const loadingSpinner = React.createElement(LoadingIcon, { className: "size-4 animate-spin" });
 
 /** Remove completed transactions from the map after this delay */
 const CLEANUP_DELAY_MS = 60_000;

@@ -15,15 +15,13 @@ export function getWeb3Sdk(): Web3Sdk | null {
 
   const apiKey = env.WEB3_SDK_API_KEY;
   const privateKey = env.WEB3_SDK_PRIVATE_KEY;
-  const projectId = process.env.NEXT_PUBLIC_WEB3_SDK_PROJECT_ID;
+  const projectId = env.NEXT_PUBLIC_WEB3_SDK_PROJECT_ID;
 
   if (!apiKey || !privateKey || !projectId) return null;
 
-  const network = (process.env.NEXT_PUBLIC_WEB3_SDK_NETWORK ?? "testnet") as
-    | "mainnet"
-    | "testnet";
+  const network = env.NEXT_PUBLIC_WEB3_SDK_NETWORK;
 
-  const blockfrostKey = process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID;
+  const blockfrostKey = env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID;
   const fetcher = blockfrostKey
     ? new BlockfrostProvider(blockfrostKey)
     : undefined;

@@ -29,11 +29,16 @@ export interface MockWalletConfig {
 }
 
 // Default mock wallet for testing
+// IMPORTANT: addressHex must be the correct hex encoding of address (bech32).
+// MeshCardanoBrowserWallet.getChangeAddressBech32() converts hex → bech32
+// via Address.fromBytes(HexBlob(hex)).toBech32(). If these don't correspond,
+// auth JWT validation will reject the session.
 export const DEFAULT_MOCK_WALLET: MockWalletConfig = {
   name: "MockWallet",
-  address: "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwq2ytjqp",
+  address:
+    "addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwq2ytjqp",
   addressHex:
-    "00a4918d9a0bf9c6b77b85d8b2f4c5c5f0e8a3b1d2e4f6a8c0d2e4f6a8c0d2e4f6a8c0d2e4f6a8c0d2e4f6a8c0d2e4f6a8c0",
+    "009493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc",
   mode: "approve",
 };
 
@@ -51,8 +56,12 @@ export const MOCK_WALLET_WITH_TOKEN: MockWalletConfig = {
 function generateMockSignature(payload: string): string {
   // Create a deterministic mock signature based on the payload
   // This follows the CIP-8 signature format
-  const mockKey = "a501010327200621582000000000000000000000000000000000000000000000000000000000deadbeef";
-  const mockSig = "845846a201276761646472657373583900" + payload.slice(0, 64) + "a166686173686564f458";
+  const mockKey =
+    "a501010327200621582000000000000000000000000000000000000000000000000000000000deadbeef";
+  const mockSig =
+    "845846a201276761646472657373583900" +
+    payload.slice(0, 64) +
+    "a166686173686564f458";
 
   return JSON.stringify({
     signature: mockSig,
@@ -88,11 +97,16 @@ function generateMockTxHash(): string {
  * This replaces the useWallet hook's wallet object with a mock implementation
  * that doesn't require a browser wallet extension.
  */
-export async function injectMockWallet(page: Page, config: MockWalletConfig = DEFAULT_MOCK_WALLET): Promise<void> {
+export async function injectMockWallet(
+  page: Page,
+  config: MockWalletConfig = DEFAULT_MOCK_WALLET,
+): Promise<void> {
   await page.addInitScript(
     ({ walletConfig }) => {
       // Store mock wallet config in window for access
-      (window as unknown as { __mockWalletConfig: MockWalletConfig }).__mockWalletConfig = walletConfig;
+      (
+        window as unknown as { __mockWalletConfig: MockWalletConfig }
+      ).__mockWalletConfig = walletConfig;
 
       // Create mock wallet object
       const mockWallet = {
@@ -130,7 +144,9 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
         },
 
         getBalance: async () => {
-          return "10000000000"; // 10,000 ADA in lovelace
+          // CIP-30 requires CBOR-encoded Value. For lovelace-only, Value = coin = uint.
+          // CBOR for 10000000000: major type 0 + 8-byte uint = 1b 00000002540be400
+          return "1b00000002540be400";
         },
 
         getUtxos: async () => {
@@ -155,7 +171,9 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
             throw new Error("User rejected the signing request");
           }
           if (walletConfig.mode === "timeout") {
-            await new Promise((resolve) => setTimeout(resolve, walletConfig.timeoutMs ?? 30000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, walletConfig.timeoutMs ?? 30000),
+            );
             throw new Error("Wallet signing timed out");
           }
           // Approve mode - return mock signature
@@ -169,7 +187,9 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
             throw new Error("User rejected the transaction");
           }
           if (walletConfig.mode === "timeout") {
-            await new Promise((resolve) => setTimeout(resolve, walletConfig.timeoutMs ?? 30000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, walletConfig.timeoutMs ?? 30000),
+            );
             throw new Error("Wallet signing timed out");
           }
           // Approve mode - return mock signed tx
@@ -182,7 +202,9 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
             throw new Error("Transaction submission rejected");
           }
           if (walletConfig.mode === "timeout") {
-            await new Promise((resolve) => setTimeout(resolve, walletConfig.timeoutMs ?? 30000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, walletConfig.timeoutMs ?? 30000),
+            );
             throw new Error("Transaction submission timed out");
           }
           // Approve mode - return mock tx hash
@@ -202,41 +224,46 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
       };
 
       // Store the mock wallet for injection
-      (window as unknown as { __mockWallet: typeof mockWallet }).__mockWallet = mockWallet;
+      (window as unknown as { __mockWallet: typeof mockWallet }).__mockWallet =
+        mockWallet;
 
-      // Override the Mesh SDK useWallet hook by intercepting React context
-      // This is done by patching the wallet connector
-      const originalDefineProperty = Object.defineProperty;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (Object as any).defineProperty = function <T>(
-        obj: T,
-        prop: PropertyKey,
-        descriptor: PropertyDescriptor
-      ): T {
-        // Intercept cardano object creation for wallet connectors
-        if (prop === "cardano" && typeof obj === "object" && obj !== null && (obj as unknown) === window) {
-          const originalGetter = descriptor.get;
-          if (originalGetter) {
-            descriptor.get = function () {
-              const cardano = originalGetter.call(this) as Record<string, unknown>;
-              // Add mock wallet as a connector option
-              if (cardano && typeof cardano === "object") {
-                cardano.mockwallet = {
-                  name: walletConfig.name,
-                  icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiLz4=",
-                  apiVersion: "0.1.0",
-                  enable: async () => mockWallet,
-                  isEnabled: async () => true,
-                };
-              }
-              return cardano;
-            };
-          }
-        }
-        return originalDefineProperty.call(Object, obj, prop, descriptor) as T;
+      // CIP-30 connector object — Mesh SDK's getInstalledWallets() scans
+      // globalThis.cardano for entries with name, icon, and apiVersion.
+      const cip30Connector = {
+        name: walletConfig.name,
+        icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiLz4=",
+        apiVersion: "0.1.0",
+        enable: async () => mockWallet,
+        isEnabled: async () => true,
+        supportedExtensions: [],
       };
+
+      // Register the mock wallet in globalThis.cardano and PROTECT it
+      // from being overridden by later scripts (e.g., Mesh SDK internal
+      // Object.defineProperty calls that can replace window.cardano).
+      //
+      // writable: true — allows `window.cardano.nami = ...` (other wallets)
+      // configurable: false — prevents `Object.defineProperty(window, "cardano", ...)`
+      //   from replacing our object with a getter/setter or new value.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cardanoObj: Record<string, any> = {
+        mockwallet: cip30Connector,
+      };
+      Object.defineProperty(globalThis, "cardano", {
+        value: cardanoObj,
+        writable: true,
+        enumerable: true,
+        configurable: false,
+      });
+
+      // Persist wallet session so MeshProvider auto-reconnects on mount.
+      // Requires ConnectWalletButton to call setPersist(true) (which it does).
+      localStorage.setItem(
+        "mesh-wallet-persist",
+        JSON.stringify({ walletName: "mockwallet" }),
+      );
     },
-    { walletConfig: config }
+    { walletConfig: config },
   );
 }
 
@@ -244,9 +271,14 @@ export async function injectMockWallet(page: Page, config: MockWalletConfig = DE
  * Set mock wallet mode during test execution
  * Useful for testing different wallet behaviors mid-test
  */
-export async function setMockWalletMode(page: Page, mode: MockWalletConfig["mode"]): Promise<void> {
+export async function setMockWalletMode(
+  page: Page,
+  mode: MockWalletConfig["mode"],
+): Promise<void> {
   await page.evaluate((newMode) => {
-    const config = (window as unknown as { __mockWalletConfig: MockWalletConfig }).__mockWalletConfig;
+    const config = (
+      window as unknown as { __mockWalletConfig: MockWalletConfig }
+    ).__mockWalletConfig;
     if (config) {
       config.mode = newMode;
     }
@@ -256,9 +288,14 @@ export async function setMockWalletMode(page: Page, mode: MockWalletConfig["mode
 /**
  * Set mock wallet access token during test execution
  */
-export async function setMockWalletAccessToken(page: Page, accessTokenUnit: string | undefined): Promise<void> {
+export async function setMockWalletAccessToken(
+  page: Page,
+  accessTokenUnit: string | undefined,
+): Promise<void> {
   await page.evaluate((unit) => {
-    const config = (window as unknown as { __mockWalletConfig: MockWalletConfig }).__mockWalletConfig;
+    const config = (
+      window as unknown as { __mockWalletConfig: MockWalletConfig }
+    ).__mockWalletConfig;
     if (config) {
       config.accessTokenUnit = unit;
     }
@@ -268,7 +305,9 @@ export async function setMockWalletAccessToken(page: Page, accessTokenUnit: stri
 /**
  * Create a mock wallet config with custom settings
  */
-export function createMockWalletConfig(overrides: Partial<MockWalletConfig>): MockWalletConfig {
+export function createMockWalletConfig(
+  overrides: Partial<MockWalletConfig>,
+): MockWalletConfig {
   return {
     ...DEFAULT_MOCK_WALLET,
     ...overrides,
@@ -282,8 +321,11 @@ export function createMockWalletConfig(overrides: Partial<MockWalletConfig>): Mo
 export async function simulateWalletConnect(page: Page): Promise<void> {
   // Dispatch a custom event that the auth provider can listen for
   await page.evaluate(() => {
-    const mockWallet = (window as unknown as { __mockWallet: unknown }).__mockWallet;
-    const config = (window as unknown as { __mockWalletConfig: MockWalletConfig }).__mockWalletConfig;
+    const mockWallet = (window as unknown as { __mockWallet: unknown })
+      .__mockWallet;
+    const config = (
+      window as unknown as { __mockWalletConfig: MockWalletConfig }
+    ).__mockWalletConfig;
 
     // Dispatch wallet connected event
     window.dispatchEvent(
@@ -292,7 +334,42 @@ export async function simulateWalletConnect(page: Page): Promise<void> {
           wallet: mockWallet,
           name: config.name,
         },
-      })
+      }),
     );
   });
+}
+
+/**
+ * Connect the mock wallet through the app's UI.
+ *
+ * After navigating to a page behind RequireAuth, the app shows a
+ * ConnectWalletGate. This helper clicks "Connect Wallet", selects the
+ * mock wallet from the dialog, and waits for the auth context to
+ * resolve the JWT into an authenticated session.
+ *
+ * Prerequisites:
+ *   - injectMockWallet() was called before navigation
+ *   - JWT was injected into localStorage (via injectJWTToStorage)
+ *   - Gateway mock is active (auth validation routes intercepted)
+ */
+export async function connectMockWalletViaUI(page: Page): Promise<void> {
+  // Click any visible "Connect Wallet" button. There may be multiple
+  // (sidebar header + inline ConnectWalletPrompt), so use .first().
+  const connectTrigger = page
+    .getByRole("button", { name: "Connect Wallet" })
+    .first();
+  await connectTrigger.waitFor({ state: "visible", timeout: 10000 });
+  await connectTrigger.click();
+
+  // The ConnectWalletButton dialog renders wallet icons.
+  // Our mock wallet's icon has alt="MockWallet".
+  const mockWalletIcon = page.locator('img[alt="MockWallet"]');
+  await mockWalletIcon.waitFor({ state: "visible", timeout: 5000 });
+  await mockWalletIcon.click();
+
+  // Wait for the Mesh SDK to connect and the auth context to validate
+  // the stored JWT against the wallet. The page should re-render with
+  // authenticated content once isAuthenticated flips to true.
+  // Give React time to process state updates and re-render.
+  await page.waitForTimeout(3000);
 }

@@ -279,9 +279,10 @@ export function ConnectWalletButton({
   const [socialLoading, setSocialLoading] = React.useState<string | null>(null);
   const [mounted, setMounted] = React.useState(false);
   const wallets = useWalletList();
-  const { connect, connected, setWallet, setWeb3UserData } = useWallet();
+  const { connect, connected, setWallet, setWeb3UserData, setPersist } = useWallet();
 
   React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => { setPersist(persist); }, [persist, setPersist]);
   React.useEffect(() => {
     if (connected) onConnected?.();
   }, [connected, onConnected]);

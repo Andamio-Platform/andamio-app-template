@@ -56,6 +56,54 @@ function getStatusStatColor(label: string): "success" | "warning" | undefined {
   return undefined;
 }
 
+/** Card border/text color for commitment status. */
+function getCommitmentCardStyle(
+  status: string | undefined,
+  hasClaimed: boolean,
+): { border: string; text: string } {
+  if (status === "REFUSED") return { border: "border-destructive", text: "text-destructive" };
+  if (status === "ACCEPTED" && !hasClaimed) return { border: "border-primary", text: "text-primary" };
+  return { border: "border-secondary", text: "text-secondary" };
+}
+
+/** Card title label and icon type for commitment status. */
+function getCommitmentCardTitle(
+  status: string | undefined,
+  hasClaimed: boolean,
+): { label: string; icon: "alert" | "success" | "pending" } {
+  if (status === "REFUSED") return { label: "Resubmission Needed", icon: "alert" };
+  if (status === "ACCEPTED" && !hasClaimed) return { label: "Task Accepted", icon: "success" };
+  if (status === "ACCEPTED" && hasClaimed) return { label: "Rewards Claimed", icon: "success" };
+  if (status === "PENDING_TX_SUBMIT") return { label: "Awaiting Confirmation", icon: "pending" };
+  return { label: "Task Pending Review", icon: "pending" };
+}
+
+/** Card description for the active commitment status. */
+function getCommitmentCardDescription(
+  status: string | undefined,
+  hasClaimed: boolean,
+): string {
+  if (status === "REFUSED") {
+    return "Your work was not accepted. Go to the task page to update and resubmit.";
+  }
+  if (status === "ACCEPTED" && hasClaimed) {
+    return "You've claimed your credential and rewards for this task.";
+  }
+  if (status === "ACCEPTED") {
+    return "Your work has been accepted! Choose your next step below.";
+  }
+  if (status === "COMMITTED") {
+    return "You've joined this task. Visit the task page to submit evidence.";
+  }
+  if (status === "SUBMITTED") {
+    return "Evidence submitted. Waiting for manager review.";
+  }
+  if (status === "PENDING_TX_SUBMIT") {
+    return "Waiting for blockchain confirmation.";
+  }
+  return "Your submission is awaiting manager review.";
+}
+
 const HOW_IT_WORKS_STEPS = [
   { title: "Commit to a Task", description: "Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor." },
   { title: "Complete the Work", description: "Work on your task and update your evidence as needed while awaiting review." },
@@ -180,36 +228,46 @@ function MyContributionsContent() {
   const pendingTaskCount = pendingCommitments.length;
   const credentialCount = myCredentials.length;
 
+  // After Leave & Claim, the gateway may still return commitmentStatus "ACCEPTED"
+  // even though the user has already claimed. Treat accepted-with-credential as historical.
+  const hasClaimed = credentialCount > 0;
+
   // Earned rewards: only count rewards that have actually been CLAIMED.
   // In the Andamio protocol, rewards are claimed when you either:
   // (a) commit to a new task (auto-claims previous ACCEPTED task's reward), or
   // (b) leave the project via credential claim.
-  // If no active pending commitment exists, the latest ACCEPTED task's reward
-  // is still unclaimed — exclude it from the total.
+  // If neither condition applies, the latest ACCEPTED task's reward is still
+  // unclaimed and must be excluded from the total.
   const earnedRewards = (() => {
     const totalAccepted = acceptedCommitments.reduce((sum, c) => {
       const matchedTask = liveTasks.find(t => safeString(t.taskHash) === c.taskHash);
       return sum + (matchedTask ? parseInt(matchedTask.lovelaceAmount ?? "0", 10) || 0 : 0);
     }, 0);
 
-    // If there's an active pending commitment, all accepted rewards are claimed
-    if (pendingCommitments.length > 0) return totalAccepted;
+    // All accepted rewards are claimed if the user left the project or has a new pending task
+    if (hasClaimed || pendingCommitments.length > 0) return totalAccepted;
 
-    // Otherwise, the latest accepted task's reward is unclaimed — subtract it
+    // Otherwise, the latest accepted task's reward is still unclaimed — subtract it
     if (acceptedCommitments.length > 0) {
-      // Last element = most recently accepted (API returns oldest-first insertion order)
       const latestAccepted = acceptedCommitments.at(-1);
       const latestTask = liveTasks.find(t => safeString(t.taskHash) === latestAccepted?.taskHash);
       const unclaimedReward = latestTask ? parseInt(latestTask.lovelaceAmount ?? "0", 10) || 0 : 0;
       return totalAccepted - unclaimedReward;
     }
 
-    return totalAccepted;
+    return 0;
   })();
 
-  // Available tasks: exclude tasks with any commitment from this user
-  const committedTaskHashes = new Set(commitments.map(c => c.taskHash).filter(Boolean));
-  const availableTaskCount = liveTasks.filter(t => !committedTaskHashes.has(safeString(t.taskHash))).length;
+  // Available tasks: match the project page logic — exclude tasks that have been
+  // submitted to (consumed UTxOs), then count unique hashes.
+  const submittedTaskHashes = new Set(
+    (projectDetail.submissions ?? []).map(s => s.taskHash).filter(Boolean),
+  );
+  const availableTasks = liveTasks.filter(t => !submittedTaskHashes.has(safeString(t.taskHash)));
+  const uniqueAvailableHashes = new Set(
+    availableTasks.map(t => safeString(t.taskHash)).filter(Boolean)
+  );
+  const availableTaskCount = uniqueAvailableHashes.size;
 
   // Find the "active" commitment (the one that needs attention — pending or refused)
   // Priority: REFUSED > COMMITTED > SUBMITTED > PENDING_TX_SUBMIT > ACCEPTED
@@ -223,7 +281,7 @@ function MyContributionsContent() {
 
   // Derive status label from actual commitment data
   const contributorStatusLabel = (() => {
-    if (credentialCount > 0 && pendingCommitments.length === 0 && acceptedCommitments.length === 0) return "Welcome Back";
+    if (hasClaimed && pendingCommitments.length === 0) return "Welcome Back";
     if (acceptedCommitments.length > 0 && pendingCommitments.length === 0) return "Task Accepted";
     if (pendingCommitments.length > 0) {
       const activeStatus = activeCommitment?.commitmentStatus;
@@ -309,38 +367,21 @@ function MyContributionsContent() {
         const matchedDbTask = tasks.find(t => safeString(t.taskHash) === taskId);
         const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
 
+        const cardStyle = getCommitmentCardStyle(status, hasClaimed);
+        const cardTitle = getCommitmentCardTitle(status, hasClaimed);
+        const TitleIcon = cardTitle.icon === "alert" ? AlertIcon
+          : cardTitle.icon === "success" ? SuccessIcon
+          : PendingIcon;
+
         return (
-          <AndamioCard className={
-            status === "REFUSED" ? "border-destructive" :
-            status === "ACCEPTED" ? "border-primary" : "border-secondary"
-          }>
+          <AndamioCard className={cardStyle.border}>
             <AndamioCardHeader>
-              <AndamioCardTitle className={`flex items-center gap-2 ${
-                status === "REFUSED" ? "text-destructive" :
-                status === "ACCEPTED" ? "text-primary" : "text-secondary"
-              }`}>
-                {status === "REFUSED" ? (
-                  <><AlertIcon className="h-5 w-5" />Resubmission Needed</>
-                ) : status === "ACCEPTED" ? (
-                  <><SuccessIcon className="h-5 w-5" />Task Accepted</>
-                ) : status === "PENDING_TX_SUBMIT" ? (
-                  <><PendingIcon className="h-5 w-5" />Awaiting Confirmation</>
-                ) : (
-                  <><PendingIcon className="h-5 w-5" />Task Pending Review</>
-                )}
+              <AndamioCardTitle className={`flex items-center gap-2 ${cardStyle.text}`}>
+                <TitleIcon className="h-5 w-5" />
+                {cardTitle.label}
               </AndamioCardTitle>
               <AndamioCardDescription>
-                {status === "REFUSED"
-                  ? "Your work was not accepted. Go to the task page to update and resubmit."
-                  : status === "ACCEPTED"
-                    ? "Your work has been accepted! Choose your next step below."
-                    : status === "COMMITTED"
-                      ? "You've joined this task. Visit the task page to submit evidence."
-                      : status === "SUBMITTED"
-                        ? "Evidence submitted. Waiting for manager review."
-                        : status === "PENDING_TX_SUBMIT"
-                          ? "Waiting for blockchain confirmation."
-                          : "Your submission is awaiting manager review."}
+                {getCommitmentCardDescription(status, hasClaimed)}
               </AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
@@ -424,8 +465,8 @@ function MyContributionsContent() {
                 </div>
               )}
 
-              {/* ACCEPTED: Decision cards + credential claim */}
-              {status === "ACCEPTED" ? (
+              {/* ACCEPTED: Decision cards + credential claim (only if not already claimed) */}
+              {status === "ACCEPTED" && !hasClaimed ? (
                 <div className="space-y-4">
                   {!showClaimFlow ? (
                     <>
@@ -474,8 +515,9 @@ function MyContributionsContent() {
                           pendingRewardLovelace={taskLovelace.toString()}
                           onSuccess={async () => {
                             await Promise.all([
-                              queryClient.invalidateQueries({ queryKey: projectContributorKeys.commitments(projectId) }),
+                              queryClient.invalidateQueries({ queryKey: projectContributorKeys.all }),
                               queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) }),
+                              queryClient.invalidateQueries({ queryKey: projectKeys.tasks(projectId) }),
                             ]);
                           }}
                         />

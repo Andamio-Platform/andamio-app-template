@@ -124,13 +124,15 @@ export default function ManageTreasuryPage() {
   // Derived: on-chain task count
   const onChainTaskCount = onChainTasks.length;
 
-  // Cache invalidation for onSuccess callbacks
+  // Cache invalidation for onSuccess callbacks.
+  // useManagerTasks caches under projectManagerKeys.tasks(projectId),
+  // so we must invalidate with projectId — not contributorStateId.
   const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
-    if (contributorStateId) {
-      await queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(contributorStateId) });
-    }
-  }, [queryClient, projectId, contributorStateId]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) }),
+      queryClient.invalidateQueries({ queryKey: projectManagerKeys.tasks(projectId) }),
+    ]);
+  }, [queryClient, projectId]);
 
   const handleToggleTask = (taskIndex: number) => {
     setSelectedTaskIndices((prev) => {

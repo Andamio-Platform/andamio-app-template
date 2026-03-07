@@ -1,6 +1,6 @@
 {
   "name": "andamio-app-template",
-  "version": "2.0.2",
+  "version": "2.0.3-dev-20260307-a",
   "apiVersion": "2.0.1-dev-20260223-c",
   "private": true,
   "type": "module",

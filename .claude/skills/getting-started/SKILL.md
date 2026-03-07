@@ -1,105 +1,171 @@
 ---
 name: getting-started
-description: Welcome new developers and help them feel successful quickly.
+description: Welcome new developers and deliver a quick win - guide them to customize the app's theme colors and see instant results via hot reload.
 ---
 
 # Getting Started
 
-Welcome to the Andamio T3 App Template! You have 4 skills to help you build fast.
+Welcome the developer and give them a visible, tangible win in under 2 minutes: changing the app's brand colors.
 
 ## Instructions
 
-### 1. Warm Welcome
+### 1. Welcome and Orient
 
-Greet the developer and show them the 4 core skills:
+Greet the developer briefly. Mention what this template gives them:
 
-| Skill | What it does |
-|-------|--------------|
-| `/auth` | How authentication works — API keys and JWTs |
-| `/transactions` | How Cardano transactions work — state machine and hooks |
-| `/design-system` | Styling help, component patterns, color references |
-| `/fix` | AI-assisted bug fixing — describe the issue, get a solution |
-| `/ship` | Commit, create PR, and merge when you're ready |
+> Next.js 15, tRPC, Tailwind CSS v4, Cardano via Mesh SDK, and shadcn/ui components — all wired together and ready to build on.
 
-### 2. Ask What They Want to Do
+Then tell them:
 
-Use AskUserQuestion:
+> Let's make it yours. We'll change the brand colors — you'll see the whole app transform in real time.
 
-**Question**: "What would you like to do?"
+### 2. Check the Dev Server
 
-| Option | Next Step |
-|--------|-----------|
-| **Build something** | Point to `/design-system reference` for patterns |
-| **Fix a bug** | Point to `/fix` |
-| **Ship my changes** | Point to `/ship` |
-| **Just explore** | Walk through the codebase structure |
+Check if the dev server is running on port 3000:
 
-### 3. Quick Tips
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+```
 
-Share these based on their choice:
+If not running, start it:
 
-**Building something:**
-- Use semantic colors: `primary`, `secondary`, `muted`, `destructive`
-- Import icons from `~/components/icons` with semantic names
-- Check `/design-system reference` before creating new components
+```bash
+npm run dev
+```
 
-**Fixing a bug:**
-- `/fix 42` will open issue #42 and start fixing
-- Or just describe the bug and let Claude help
+Tell the developer to open http://localhost:3000 in their browser so they can watch the changes happen live.
 
-**Shipping:**
-- `/ship` handles version bump, commit, PR, and merge
-- Clean commits with co-author attribution
+### 3. Show the Theme File
 
-**Exploring:**
-- `src/app/` — Next.js app router pages
-- `src/components/` — UI components (shadcn + Andamio)
-- `src/hooks/` — API and transaction hooks
-- `src/types/generated/` — Auto-generated API types
+Read `src/styles/globals.css` and point the developer to the `:root` block (light theme) and `.dark` block (dark theme). Explain:
 
-### 4. Point to Deeper Learning
+> Every color in the app flows through these CSS custom properties. Change one variable and buttons, links, focus rings, sidebar highlights, and charts all update instantly.
 
-If they want more:
+Show them specifically the `--primary` and `--secondary` lines in both `:root` and `.dark`:
 
-> "These 4 skills cover your daily workflow. Want to go deeper into API integration, transaction flows, or production patterns? Check out **Open Venture** at andamio.io — we have full courses on advanced Cardano dApp development."
+```css
+/* In :root (light mode) */
+--primary: oklch(0.669 0.199 38.581);    /* Orange/Coral */
+--secondary: oklch(0.387 0.134 250.505); /* Deep Blue */
+
+/* In .dark (dark mode) */
+--primary: oklch(0.719 0.174 38.581);
+--secondary: oklch(0.605 0.155 250.505);
+```
+
+### 4. Ask for Their Brand Color
+
+Ask the developer what they'd like. Accept any of:
+
+- A hex code (`#6366f1`)
+- A color name ("ocean blue", "emerald green")
+- A preset name from the table below
+- "surprise me"
+
+#### Preset Palettes
+
+| Preset | Primary (hue) | Secondary (hue) | Vibe |
+|--------|---------------|------------------|------|
+| **Indigo Night** | `oklch(0.585 0.203 277)` | `oklch(0.716 0.155 215)` | Calm, techy |
+| **Ocean Blue** | `oklch(0.588 0.178 241)` | `oklch(0.637 0.128 168)` | Clean, trustworthy |
+| **Forest** | `oklch(0.527 0.152 155)` | `oklch(0.638 0.113 75)` | Natural, grounded |
+| **Royal Purple** | `oklch(0.553 0.213 293)` | `oklch(0.637 0.128 168)` | Bold, creative |
+| **Crimson** | `oklch(0.577 0.214 18)` | `oklch(0.467 0.127 250)` | Energetic, strong |
+| **Sunset** | `oklch(0.705 0.191 47)` | `oklch(0.553 0.213 293)` | Warm, vibrant |
+
+If the developer gives a hex code, convert it to OKLCH. If they give a color name, pick appropriate OKLCH values. If "surprise me", pick a preset that contrasts with the current Andamio orange.
+
+#### Dark Mode Variants
+
+When setting dark mode values, adjust the primary for better contrast on dark backgrounds:
+- Increase lightness by ~0.05-0.10 (e.g. 0.585 -> 0.650)
+- Decrease chroma slightly (e.g. 0.203 -> 0.180)
+- Keep the hue the same
+
+### 5. Make the Change
+
+Edit `src/styles/globals.css` — update `--primary` and `--secondary` in both `:root` and `.dark`. Also update `--ring`, `--sidebar-primary`, and `--sidebar-ring` to match the new primary (they should stay in sync).
+
+Variables to update for primary color change:
+
+**In `:root`:**
+- `--primary`
+- `--ring`
+- `--chart-1` (optional, use a lighter variant)
+- `--chart-4` (optional, match primary)
+- `--sidebar-primary`
+- `--sidebar-ring`
+
+**In `.dark`:**
+- `--primary`
+- `--ring`
+- `--chart-1` (optional)
+- `--chart-4` (optional)
+- `--sidebar-primary`
+- `--sidebar-ring`
+
+### 6. Celebrate the Result
+
+After the edit, tell the developer:
+
+> Done! Check your browser — hot reload should have already applied the changes. Your buttons, links, focus rings, sidebar, and active tabs all use your new colors now.
+
+Show a summary of what changed:
+
+```
+Primary:   Orange/Coral -> [new color name]
+Secondary: Deep Blue -> [new color name]
+
+Affected: buttons, links, focus rings, sidebar highlights,
+          active tabs, chart colors, ring outlines
+```
+
+### 7. Offer Next Steps
+
+> Want to keep customizing? Here's what you can explore:
+>
+> | What | How |
+> |------|-----|
+> | Full color system | Change `--success`, `--warning`, `--info`, `--destructive` in globals.css |
+> | Component patterns | Run `/design-system` for the full design reference |
+> | Authentication | Run `/auth` to learn API keys and JWT login |
+> | Cardano transactions | Run `/transactions` for the TX state machine |
+> | Fix a bug | Run `/fix` with an issue number or description |
+> | Ship your changes | Run `/ship` to commit, PR, and merge |
+>
+> Each of these is a **skill** — a set of instructions any coding agent can follow.
+> Learn more at [agentskills.io](https://agentskills.io).
 
 ## Output Style
 
-Conversational and encouraging. Make them feel capable, not overwhelmed. Quick answers, clear next steps.
+Encouraging and concise. Show, don't lecture. The dev should feel like they accomplished something real, not like they read a tutorial.
+
+Keep the pre-change explanation short — get to the edit fast so they see the result.
 
 ## Example
 
 **User**: `/getting-started`
 
-**Claude**:
-"Welcome! This template gives you a Cardano dApp foundation with Next.js 15, tRPC, and Mesh SDK.
+**Agent**:
 
-You have 4 skills to help you build:
+Welcome to the Andamio App Template! You've got a full Cardano dApp foundation — Next.js 15, tRPC, Mesh SDK, shadcn/ui — ready to build on.
 
-| Skill | Purpose |
-|-------|---------|
-| `/design-system` | Styling patterns and component help |
-| `/fix` | AI-assisted bug fixing |
-| `/ship` | Commit → PR → Merge workflow |
-| `/getting-started` | You're here! |
+Let's make it yours. We'll change the brand colors and you'll see the whole app update in real time.
 
-What would you like to do?"
+Right now your primary color is **Orange/Coral** and secondary is **Deep Blue** (Andamio defaults). What would you like instead?
 
----
+Pick a preset or tell me your brand color:
 
-## Compound Engineering
+| Preset | Vibe |
+|--------|------|
+| Indigo Night | Calm, techy |
+| Ocean Blue | Clean, trustworthy |
+| Forest | Natural, grounded |
+| Royal Purple | Bold, creative |
+| Crimson | Energetic, strong |
+| Sunset | Warm, vibrant |
 
-This repo uses **compound engineering** — documenting solutions so they're findable later.
-
-When you solve a non-trivial problem:
-
-```bash
-/workflows:compound
-```
-
-This captures the problem, root cause, and fix in `docs/solutions/`. The next time someone hits a similar issue, they find the answer in minutes instead of hours.
-
-> Each unit of engineering work should make subsequent units of work easier — not harder.
+Or give me a hex code, color name, or just say "surprise me".
 
 ---
 

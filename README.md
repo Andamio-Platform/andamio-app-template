@@ -76,7 +76,7 @@ andamio-app-template/
 │
 └── .claude/
     ├── CLAUDE.md               # AI development rules
-    └── skills/                 # Claude Code skills
+    └── skills/                 # Agent Skills (works with any compatible agent)
 ```
 
 ## Key Patterns
@@ -127,19 +127,20 @@ Always import from the centralized icon system:
 import { CredentialIcon, CourseIcon } from "~/components/icons";
 ```
 
-## Claude Skills
+## Agent Skills
 
-This template includes Claude Code skills for building with Andamio. Key skills:
+This template includes [Agent Skills](https://agentskills.io) — portable instructions that work with any compatible coding agent (Claude Code, Cursor, Copilot, Gemini CLI, Roo Code, and [30+ others](https://agentskills.io/home)).
 
 | Skill | What it does |
 |-------|-------------|
-| `/getting-started` | Interactive onboarding |
-| `/hooks-architect` | Create and audit API hooks |
-| `/design-system` | UI patterns and component reference |
-| `/qa` | Route-level production readiness audit |
+| `/getting-started` | Quick win: customize your theme colors in 2 minutes |
+| `/design-system` | UI patterns, component reference, styling audits |
+| `/auth` | API key and JWT authentication guide |
+| `/transactions` | Cardano TX state machine and hooks |
+| `/fix` | AI-assisted bug fixing |
 | `/ship` | Version bump, commit, PR, merge |
 
-Full skill list: `.claude/skills/*/SKILL.md`
+Skills live in `.claude/skills/*/SKILL.md` and follow the open [Agent Skills spec](https://agentskills.io/specification).
 
 ## Customization
 

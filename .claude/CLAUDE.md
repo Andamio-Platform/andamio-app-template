@@ -126,9 +126,11 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 
 ## Skills
 
+[Agent Skills](https://agentskills.io) — works with any compatible coding agent.
+
 | Skill | Purpose |
 |-------|---------|
-| `/getting-started` | Welcome and orientation |
+| `/getting-started` | Quick win: customize theme colors in 2 minutes |
 | `/auth` | API keys and JWT authentication |
 | `/transactions` | TX state machine and hooks |
 | `/design-system` | Styling patterns, components |

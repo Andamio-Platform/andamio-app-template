@@ -64,16 +64,15 @@ Ask the developer what they'd like. Accept any of:
 
 #### Preset Palettes
 
-| Preset | Primary (hue) | Secondary (hue) | Vibe |
-|--------|---------------|------------------|------|
-| **Indigo Night** | `oklch(0.585 0.203 277)` | `oklch(0.716 0.155 215)` | Calm, techy |
-| **Ocean Blue** | `oklch(0.588 0.178 241)` | `oklch(0.637 0.128 168)` | Clean, trustworthy |
-| **Forest** | `oklch(0.527 0.152 155)` | `oklch(0.638 0.113 75)` | Natural, grounded |
-| **Royal Purple** | `oklch(0.553 0.213 293)` | `oklch(0.637 0.128 168)` | Bold, creative |
-| **Crimson** | `oklch(0.577 0.214 18)` | `oklch(0.467 0.127 250)` | Energetic, strong |
-| **Sunset** | `oklch(0.705 0.191 47)` | `oklch(0.553 0.213 293)` | Warm, vibrant |
+| Preset | Primary | Secondary | Vibe |
+|--------|---------|-----------|------|
+| **Pioneers Demo** | `oklch(0.58 0.145 192)` | `oklch(0.62 0.195 35)` | Comic book: teal + orange-red |
 
-If the developer gives a hex code, convert it to OKLCH. If they give a color name, pick appropriate OKLCH values. If "surprise me", pick a preset that contrasts with the current Andamio orange.
+**Pioneers Demo dark mode variants:**
+- Primary: `oklch(0.68 0.135 192)`
+- Secondary: `oklch(0.72 0.175 35)`
+
+If the developer gives a hex code, convert it to OKLCH. If they give a color name, pick appropriate OKLCH values. If "surprise me", use Pioneers Demo.
 
 #### Dark Mode Variants
 
@@ -158,12 +157,7 @@ Pick a preset or tell me your brand color:
 
 | Preset | Vibe |
 |--------|------|
-| Indigo Night | Calm, techy |
-| Ocean Blue | Clean, trustworthy |
-| Forest | Natural, grounded |
-| Royal Purple | Bold, creative |
-| Crimson | Energetic, strong |
-| Sunset | Warm, vibrant |
+| Pioneers Demo | Comic book: teal + orange-red |
 
 Or give me a hex code, color name, or just say "surprise me".
 

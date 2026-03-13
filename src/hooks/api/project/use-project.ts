@@ -23,19 +23,19 @@ import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated/index.ts
 import type {
-  MergedHandlersMergedProjectDetailResponse,
-  MergedHandlersMergedProjectsResponse,
-  MergedHandlersMergedTasksResponse,
-  OrchestrationMergedProjectDetail,
-  OrchestrationMergedProjectListItem,
-  OrchestrationMergedTaskListItem,
-  OrchestrationProjectTaskOnChain,
-  OrchestrationProjectContributorOnChain,
-  OrchestrationProjectSubmissionOnChain,
-  OrchestrationProjectAssessmentOnChain,
-  OrchestrationProjectTreasuryFundingOnChain,
-  OrchestrationProjectCredentialClaimOnChain,
-  OrchestrationProjectPrerequisite,
+  MergedProjectDetailResponse,
+  MergedProjectsResponse,
+  MergedTasksResponse,
+  MergedProjectDetail,
+  MergedProjectListItem,
+  MergedTaskListItem,
+  ProjectTaskOnChain,
+  ProjectContributorOnChain,
+  ProjectSubmissionOnChain,
+  ProjectAssessmentOnChain,
+  ProjectTreasuryFundingOnChain,
+  ProjectCredentialClaimOnChain,
+  ProjectPrerequisite as ApiProjectPrerequisite,
 } from "~/types/generated/gateway";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import { getPreAssignedAlias } from "~/lib/task-metadata";
@@ -225,6 +225,7 @@ export interface ProjectAssessment {
   assessedBy: string;
   decision: string;
   tx?: string;
+  slot?: number;
 }
 
 /**
@@ -362,11 +363,11 @@ function transformAssets(assets: { policy_id?: string; name?: string; amount?: s
 }
 
 /**
- * Transform OrchestrationProjectTaskOnChain → Task
+ * Transform ProjectTaskOnChain → Task
  * Exported for use in other project hooks
  */
 export function transformOnChainTask(
-  api: OrchestrationProjectTaskOnChain,
+  api: ProjectTaskOnChain,
   projectId: string
 ): Task {
   // Try to decode on-chain content as title
@@ -421,12 +422,12 @@ function getTaskStatusFromSource(source: string | undefined): TaskStatusValue {
 }
 
 /**
- * Transform OrchestrationMergedTaskListItem → Task
+ * Transform MergedTaskListItem → Task
  * Exported for use in other project hooks
  *
  * Note: `task_id` in merged response IS the task_hash (content-addressed).
  */
-export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task {
+export function transformMergedTask(api: MergedTaskListItem): Task {
   // Use DB title if available, otherwise decode on-chain content as fallback
   let title = api.content?.title ?? "";
   if (!title && api.on_chain_content) {
@@ -463,9 +464,9 @@ export function transformMergedTask(api: OrchestrationMergedTaskListItem): Task 
 }
 
 /**
- * Transform OrchestrationProjectPrerequisite → ProjectPrerequisite
+ * Transform ApiProjectPrerequisite → ProjectPrerequisite
  */
-function transformPrerequisite(api: OrchestrationProjectPrerequisite): ProjectPrerequisite {
+function transformPrerequisite(api: ApiProjectPrerequisite): ProjectPrerequisite {
   return {
     courseId: api.course_id ?? "",
     sltHashes: api.slt_hashes,
@@ -473,10 +474,10 @@ function transformPrerequisite(api: OrchestrationProjectPrerequisite): ProjectPr
 }
 
 /**
- * Transform OrchestrationMergedProjectListItem → Project
+ * Transform MergedProjectListItem → Project
  * Exported for use in other project hooks
  */
-export function transformProjectListItem(api: OrchestrationMergedProjectListItem): Project {
+export function transformProjectListItem(api: MergedProjectListItem): Project {
   // Cast content to access potential extra fields from api_types if present
   const apiContent = api.content as Record<string, unknown> | undefined;
   const title = api.content?.title ?? "";
@@ -509,10 +510,10 @@ export function transformProjectListItem(api: OrchestrationMergedProjectListItem
 }
 
 /**
- * Transform OrchestrationMergedProjectDetail → ProjectDetail
+ * Transform MergedProjectDetail → ProjectDetail
  * Exported for use in other project hooks
  */
-export function transformProjectDetail(api: OrchestrationMergedProjectDetail): ProjectDetail {
+export function transformProjectDetail(api: MergedProjectDetail): ProjectDetail {
   // Cast content to access potential extra fields from api_types if present
   const apiContent = api.content as Record<string, unknown> | undefined;
   const title = api.content?.title ?? "";
@@ -526,13 +527,13 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
   const tasks = api.tasks?.map((t) => transformOnChainTask(t, api.project_id ?? ""));
 
   const contributors: ProjectContributor[] | undefined = api.contributors?.map(
-    (c: OrchestrationProjectContributorOnChain) => ({
+    (c: ProjectContributorOnChain) => ({
       alias: c.alias ?? "",
     })
   );
 
   const submissions: ProjectSubmission[] | undefined = api.submissions?.map(
-    (s: OrchestrationProjectSubmissionOnChain) => ({
+    (s: ProjectSubmissionOnChain) => ({
       taskHash: s.task_hash ?? "",
       submittedBy: s.submitted_by ?? "",
       submissionTx: s.submission_tx,
@@ -551,16 +552,17 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
     return upper;
   };
   const assessments: ProjectAssessment[] | undefined = api.assessments?.map(
-    (a: OrchestrationProjectAssessmentOnChain) => ({
+    (a: ProjectAssessmentOnChain) => ({
       taskHash: a.task_hash ?? "",
       assessedBy: a.assessed_by ?? "",
       decision: normalizeDecision(a.decision),
       tx: a.tx,
+      slot: a.slot,
     })
   );
 
   const treasuryFundings: TreasuryFunding[] | undefined = api.treasury_fundings?.map(
-    (f: OrchestrationProjectTreasuryFundingOnChain) => ({
+    (f: ProjectTreasuryFundingOnChain) => ({
       alias: f.alias ?? "",
       lovelaceAmount: f.lovelace_amount ?? 0,
       slot: f.slot,
@@ -570,7 +572,7 @@ export function transformProjectDetail(api: OrchestrationMergedProjectDetail): P
   );
 
   const credentialClaims: CredentialClaim[] | undefined = api.credential_claims?.map(
-    (c: OrchestrationProjectCredentialClaimOnChain) => ({
+    (c: ProjectCredentialClaimOnChain) => ({
       alias: c.alias ?? "",
       tx: c.tx,
     })
@@ -689,10 +691,10 @@ export function useProject(projectId: string | undefined) {
         throw new Error(`Failed to fetch project: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersMergedProjectDetailResponse;
+      const result = (await response.json()) as MergedProjectDetailResponse;
 
-      if (result.warning) {
-        console.warn("[useProject] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useProject] API warning:", result.meta?.warning);
       }
 
       if (!result.data) return null;
@@ -711,7 +713,7 @@ export function useProject(projectId: string | undefined) {
 export function useProjectRaw(projectId: string | undefined) {
   return useQuery({
     queryKey: [...projectKeys.detail(projectId ?? ""), "raw"] as const,
-    queryFn: async (): Promise<OrchestrationMergedProjectDetail | null> => {
+    queryFn: async (): Promise<MergedProjectDetail | null> => {
       const response = await fetch(
         `${GATEWAY_API_BASE}/project/user/project/${projectId}`
       );
@@ -724,10 +726,10 @@ export function useProjectRaw(projectId: string | undefined) {
         throw new Error(`Failed to fetch project: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersMergedProjectDetailResponse;
+      const result = (await response.json()) as MergedProjectDetailResponse;
 
-      if (result.warning) {
-        console.warn("[useProjectRaw] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useProjectRaw] API warning:", result.meta?.warning);
       }
 
       return result.data ?? null;
@@ -781,19 +783,19 @@ export function useProjects() {
       }
 
       const result = (await response.json()) as
-        | MergedHandlersMergedProjectsResponse
-        | OrchestrationMergedProjectListItem[];
+        | MergedProjectsResponse
+        | MergedProjectListItem[];
 
       // Handle both wrapped { data: [...] } and raw array formats
-      let items: OrchestrationMergedProjectListItem[];
+      let items: MergedProjectListItem[];
 
       if (Array.isArray(result)) {
         // Legacy/raw array format
         items = result;
       } else {
         // Wrapped format with data property
-        if (result.warning) {
-          console.warn("[useProjects] API warning:", result.warning);
+        if (result.meta?.warning) {
+          console.warn("[useProjects] API warning:", result.meta?.warning);
         }
         items = result.data ?? [];
       }
@@ -847,17 +849,17 @@ export function useProjectTasks(projectId: string | undefined) {
       }
 
       const result = (await response.json()) as
-        | MergedHandlersMergedTasksResponse
-        | OrchestrationMergedTaskListItem[];
+        | MergedTasksResponse
+        | MergedTaskListItem[];
 
       // Handle both wrapped { data: [...] } and raw array formats
-      let items: OrchestrationMergedTaskListItem[];
+      let items: MergedTaskListItem[];
 
       if (Array.isArray(result)) {
         items = result;
       } else {
-        if (result.warning) {
-          console.warn("[useProjectTasks] API warning:", result.warning);
+        if (result.meta?.warning) {
+          console.warn("[useProjectTasks] API warning:", result.meta?.warning);
         }
         items = result.data ?? [];
       }
@@ -899,16 +901,16 @@ export function useProjectTask(projectId: string | undefined, taskHash: string |
       }
 
       const result = (await response.json()) as
-        | MergedHandlersMergedTasksResponse
-        | OrchestrationMergedTaskListItem[];
+        | MergedTasksResponse
+        | MergedTaskListItem[];
 
-      let items: OrchestrationMergedTaskListItem[];
+      let items: MergedTaskListItem[];
 
       if (Array.isArray(result)) {
         items = result;
       } else {
-        if (result.warning) {
-          console.warn("[useProjectTask] API warning:", result.warning);
+        if (result.meta?.warning) {
+          console.warn("[useProjectTask] API warning:", result.meta?.warning);
         }
         items = result.data ?? [];
       }

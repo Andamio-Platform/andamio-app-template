@@ -29,8 +29,8 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
-  MergedHandlersMergedProjectsResponse,
-  OrchestrationMergedProjectListItem,
+  MergedProjectsResponse,
+  MergedProjectListItem,
 } from "~/types/generated/gateway";
 import {
   projectKeys,
@@ -100,8 +100,8 @@ export function useOwnerProjects() {
       }
 
       const result = (await response.json()) as
-        | OrchestrationMergedProjectListItem[]
-        | MergedHandlersMergedProjectsResponse;
+        | MergedProjectListItem[]
+        | MergedProjectsResponse;
 
       // Handle both wrapped { data: [...] } and raw array formats
       const items = Array.isArray(result) ? result : (result.data ?? []);

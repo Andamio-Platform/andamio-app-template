@@ -27,9 +27,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import type {
-  MergedHandlersStudentCredentialsResponse,
-  OrchestrationStudentCourseCredential,
-  OrchestrationCredentialModuleInfo,
+  StudentCredentialsResponse,
+  StudentCourseCredential as ApiStudentCourseCredential,
+  CredentialModuleInfo as ApiCredentialModuleInfo,
 } from "~/types/generated/gateway";
 import { courseStudentKeys } from "./use-course-student";
 
@@ -76,7 +76,7 @@ export const studentCredentialKeys = {
 // Transform
 // =============================================================================
 
-function transformModuleInfo(api: OrchestrationCredentialModuleInfo): CredentialModuleInfo {
+function transformModuleInfo(api: ApiCredentialModuleInfo): CredentialModuleInfo {
   return {
     sltHash: api.slt_hash ?? "",
     courseModuleCode: api.course_module_code ?? "",
@@ -85,7 +85,7 @@ function transformModuleInfo(api: OrchestrationCredentialModuleInfo): Credential
 }
 
 function transformStudentCredential(
-  api: OrchestrationStudentCourseCredential,
+  api: ApiStudentCourseCredential,
 ): StudentCourseCredential {
   return {
     courseId: api.course_id ?? "",
@@ -137,10 +137,10 @@ export function useStudentCredentials(options?: { enabled?: boolean }) {
       }
 
       const result =
-        (await response.json()) as MergedHandlersStudentCredentialsResponse;
+        (await response.json()) as StudentCredentialsResponse;
 
-      if (result.warning) {
-        console.warn("[useStudentCredentials] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useStudentCredentials] API warning:", result.meta?.warning);
       }
 
       return (result.data ?? []).map(transformStudentCredential);

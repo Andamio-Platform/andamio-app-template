@@ -47,11 +47,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type { JSONContent } from "@tiptap/core";
 import type {
-  MergedHandlersContributorProjectsResponse,
-  MergedHandlersContributorCommitmentsResponse,
-  OrchestrationContributorProjectListItem,
-  OrchestrationContributorCommitmentItem,
-  OrchestrationMyCommitmentSummary,
+  ContributorProjectsResponse as ApiContributorProjectsResponse,
+  ContributorCommitmentsResponse as ApiContributorCommitmentsResponse,
+  ContributorCommitmentResponse as ApiContributorCommitmentResponse,
+  ContributorProjectListItem,
+  ContributorCommitmentItem,
+  MyCommitmentSummary as ApiMyCommitmentSummary,
 } from "~/types/generated/gateway";
 import {
   getProjectStatusFromSource,
@@ -188,10 +189,10 @@ function normalizeProjectCommitmentStatus(raw: string | undefined): string {
 // =============================================================================
 
 /**
- * Transform OrchestrationMyCommitmentSummary → MyCommitmentSummary
+ * Transform ApiMyCommitmentSummary → MyCommitmentSummary
  */
 function transformMyCommitmentSummary(
-  api: OrchestrationMyCommitmentSummary
+  api: ApiMyCommitmentSummary
 ): MyCommitmentSummary {
   return {
     taskHash: api.task_hash ?? "",
@@ -202,10 +203,10 @@ function transformMyCommitmentSummary(
 }
 
 /**
- * Transform OrchestrationContributorProjectListItem → ContributorProject
+ * Transform ContributorProjectListItem → ContributorProject
  */
 function transformContributorProject(
-  api: OrchestrationContributorProjectListItem
+  api: ContributorProjectListItem
 ): ContributorProject {
   return {
     // Identity
@@ -239,14 +240,14 @@ function transformContributorProject(
 }
 
 /**
- * Transform OrchestrationContributorCommitmentItem → ContributorCommitment
+ * Transform ContributorCommitmentItem → ContributorCommitment
  */
 function transformContributorCommitment(
-  api: OrchestrationContributorCommitmentItem
+  api: ContributorCommitmentItem
 ): ContributorCommitment {
   // Content may include pending_tx_hash not in the generated type
   const content = api.content as
-    | (OrchestrationContributorCommitmentItem["content"] & {
+    | (ContributorCommitmentItem["content"] & {
         pending_tx_hash?: string;
       })
     | undefined;
@@ -324,11 +325,11 @@ export function useContributorProjects() {
         throw new Error(`Failed to fetch contributor projects: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersContributorProjectsResponse;
+      const result = (await response.json()) as ApiContributorProjectsResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useContributorProjects] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useContributorProjects] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types with camelCase fields
@@ -385,11 +386,11 @@ export function useContributorCommitments(projectId?: string) {
         throw new Error(`Failed to fetch contributor commitments: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersContributorCommitmentsResponse;
+      const result = (await response.json()) as ApiContributorCommitmentsResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useContributorCommitments] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useContributorCommitments] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types with camelCase fields
@@ -451,13 +452,10 @@ export function useContributorCommitment(
         throw new Error(`Failed to fetch commitment: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as {
-        data?: OrchestrationContributorCommitmentItem;
-        warning?: string;
-      };
+      const result = (await response.json()) as ApiContributorCommitmentResponse;
 
-      if (result.warning) {
-        console.warn("[useContributorCommitment] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useContributorCommitment] API warning:", result.meta.warning);
       }
 
       if (!result.data) return null;

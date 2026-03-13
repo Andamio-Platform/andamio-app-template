@@ -24,10 +24,11 @@
 import { useQuery } from "@tanstack/react-query";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
-  OrchestrationMergedCourseDetail,
-  MergedHandlersMergedCourseDetailResponse,
-  OrchestrationMergedCourseListItem,
-  MergedHandlersMergedCoursesResponse,
+  MergedCourseDetail,
+  MergedCourseDetailResponse,
+  MergedCourseListItem,
+  MergedCoursesResponse,
+  CourseModule as ApiCourseModule,
 } from "~/types/generated/gateway";
 import { type CourseModule } from "./use-course-module";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
@@ -113,7 +114,7 @@ export interface CourseDetail extends Course {
  * Transform API response to app-level Course type
  * Handles snake_case → camelCase conversion and field flattening
  */
-export function transformCourse(item: OrchestrationMergedCourseListItem): Course {
+export function transformCourse(item: MergedCourseListItem): Course {
   return {
     // On-chain fields
     courseId: item.course_id ?? "",
@@ -142,14 +143,14 @@ export function transformCourse(item: OrchestrationMergedCourseListItem): Course
  * Note: The course detail endpoint returns a simplified view of modules (on-chain metadata only).
  * For full module data with content fields, use useCourseModules() or useTeacherCourseModules().
  */
-export function transformCourseDetail(detail: OrchestrationMergedCourseDetail): CourseDetail {
+export function transformCourseDetail(detail: MergedCourseDetail): CourseDetail {
   // Transform modules inline - course detail endpoint provides simplified on-chain view
-  const modules = detail.modules?.map((m): CourseModule => ({
-    sltHash: (m as { slt_hash?: string }).slt_hash ?? "",
+  const modules = detail.modules?.map((m: ApiCourseModule): CourseModule => ({
+    sltHash: m.slt_hash ?? "",
     courseId: detail.course_id ?? "",
-    createdBy: (m as { created_by?: string }).created_by,
-    prerequisites: (m as { prerequisites?: string[] }).prerequisites,
-    onChainSlts: (m as { slts?: string[] }).slts,
+    createdBy: m.created_by,
+    prerequisites: m.prerequisites,
+    onChainSlts: m.slts,
     // Modules from course detail are always from on-chain (active status)
     status: "active",
     // Note: Content fields (title, description, etc.) are not available in course detail response
@@ -239,10 +240,10 @@ export function useCourse(courseId: string | undefined) {
         throw new Error(`Failed to fetch course: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedCourseDetailResponse;
+      const result = await response.json() as MergedCourseDetailResponse;
 
-      if (result.warning) {
-        console.warn("[useCourse] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useCourse] API warning:", result.meta?.warning);
       }
 
       if (!result.data) return null;
@@ -304,17 +305,17 @@ export function useActiveCourses() {
         throw new Error(`Failed to fetch active courses: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedCoursesResponse | OrchestrationMergedCourseListItem[];
+      const result = await response.json() as MergedCoursesResponse | MergedCourseListItem[];
 
       // Handle both wrapped { data: [...] } and raw array formats
-      let items: OrchestrationMergedCourseListItem[];
+      let items: MergedCourseListItem[];
       if (Array.isArray(result)) {
         // Legacy/raw array format
         items = result;
       } else {
         // Wrapped format with data property
-        if (result.warning) {
-          console.warn("[useActiveCourses] API warning:", result.warning);
+        if (result.meta?.warning) {
+          console.warn("[useActiveCourses] API warning:", result.meta?.warning);
         }
         items = result.data ?? [];
       }

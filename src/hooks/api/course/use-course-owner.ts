@@ -29,8 +29,8 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
-  OrchestrationMergedCourseListItem,
-  MergedHandlersMergedCoursesResponse,
+  MergedCourseListItem,
+  MergedCoursesResponse,
 } from "~/types/generated/gateway";
 import { transformCourse, courseKeys, type Course } from "./use-course";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
@@ -91,8 +91,8 @@ export function useOwnerCourses() {
       }
 
       const result = (await response.json()) as
-        | OrchestrationMergedCourseListItem[]
-        | MergedHandlersMergedCoursesResponse;
+        | MergedCourseListItem[]
+        | MergedCoursesResponse;
 
       // Handle both wrapped { data: [...] } and raw array formats
       const items = Array.isArray(result) ? result : (result.data ?? []);
@@ -263,6 +263,10 @@ export function useUpdateCourse() {
       // Invalidate owner courses
       void queryClient.invalidateQueries({
         queryKey: ownerCourseKeys.all,
+      });
+      // Invalidate teacher courses (used by project creation prereq selector)
+      void queryClient.invalidateQueries({
+        queryKey: ["teacher-courses"],
       });
     },
   });

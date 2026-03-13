@@ -23,9 +23,9 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 // Import directly from gateway.ts to avoid circular dependency with ~/types/generated
 import type {
-  OrchestrationMergedCourseModuleItem,
-  MergedHandlersMergedCourseModulesResponse,
-  MergedHandlersRegisterModuleResponse,
+  MergedCourseModuleItem,
+  MergedCourseModulesResponse,
+  RegisterModuleResponse,
 } from "~/types/generated/gateway";
 
 import type { JSONContent } from "@tiptap/core";
@@ -383,7 +383,7 @@ export function transformIntroduction(raw: Record<string, unknown>): Introductio
  * - title: First SLT text or "Untitled Module"
  * - slts: Converted from on_chain_slts array
  */
-export function transformCourseModule(item: OrchestrationMergedCourseModuleItem): CourseModule {
+export function transformCourseModule(item: MergedCourseModuleItem): CourseModule {
   const isChainOnly = item.source === "chain_only" || !item.content;
 
   // Transform nested entities if present (merged modules only)
@@ -519,11 +519,11 @@ export function useCourseModules(courseId: string | undefined) {
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+      const result = await response.json() as MergedCourseModulesResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useCourseModules] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useCourseModules] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types and sort by moduleCode alphabetically
@@ -588,11 +588,11 @@ export function useTeacherCourseModules(courseId: string | undefined) {
         throw new Error(`Failed to fetch teacher modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+      const result = await response.json() as MergedCourseModulesResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useTeacherCourseModules] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useTeacherCourseModules] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types and sort by moduleCode alphabetically
@@ -643,7 +643,7 @@ export function useCourseModule(
         throw new Error(`Failed to fetch modules: ${response.statusText}`);
       }
 
-      const result = await response.json() as MergedHandlersMergedCourseModulesResponse;
+      const result = await response.json() as MergedCourseModulesResponse;
 
       // Transform to app-level types
       const modules = (result.data ?? []).map(transformCourseModule);
@@ -1068,10 +1068,33 @@ export interface RegisteredModule {
 }
 
 /**
+ * WORKAROUND: API spec has recursive bug (RegisterModuleResponse.data: RegisterModuleResponse)
+ * These interfaces define the actual shape of the response.
+ * TODO: Remove when API spec is fixed (see gateway.ts RegisterModuleResponse)
+ */
+interface RegisterModuleResponseData {
+  course_id?: string;
+  course_module_code?: string;
+  slt_hash?: string;
+  module_status?: string;
+  slt_count?: number;
+  source?: string;
+  slts?: Array<{
+    slt_index?: number;
+    slt_text?: string;
+  }>;
+}
+
+interface RegisterModuleResponseWorkaround {
+  data?: RegisterModuleResponseData;
+  meta?: { warning?: string };
+}
+
+/**
  * Transform API response to RegisteredModule type
  */
 function transformRegisteredModule(
-  data: MergedHandlersRegisterModuleResponse["data"]
+  data: RegisterModuleResponseData | undefined
 ): RegisteredModule | null {
   if (!data) return null;
   return {
@@ -1153,7 +1176,7 @@ export function useRegisterCourseModule() {
         );
       }
 
-      const result = (await response.json()) as MergedHandlersRegisterModuleResponse;
+      const result = (await response.json()) as RegisterModuleResponseWorkaround;
       return transformRegisteredModule(result.data);
     },
     onSuccess: (_, variables) => {

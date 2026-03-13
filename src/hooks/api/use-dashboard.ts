@@ -31,20 +31,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import type {
-  MergedHandlersDashboardResponseWrapper,
-  OrchestrationDashboardResponse,
-  OrchestrationDashboardCounts,
-  OrchestrationDashboardUser,
-  OrchestrationStudentDashboard,
-  OrchestrationTeacherDashboard,
-  OrchestrationProjectsDashboard,
-  OrchestrationDashboardCourseSummary,
-  OrchestrationDashboardCredentialSummary,
-  OrchestrationDashboardCommitmentSummary,
-  OrchestrationDashboardPendingReviewSummary,
-  OrchestrationDashboardPendingAssessmentSummary,
-  OrchestrationDashboardProjectSummary,
-  OrchestrationDashboardProjectWithPrereqs,
+  DashboardResponseWrapper,
+  DashboardResponse as ApiDashboardResponse,
+  DashboardCounts as ApiDashboardCounts,
+  DashboardUser as ApiDashboardUser,
+  StudentDashboard,
+  TeacherDashboard,
+  ProjectsDashboard,
+  DashboardCourseSummary as ApiDashboardCourseSummary,
+  DashboardCredentialSummary as ApiDashboardCredentialSummary,
+  DashboardCommitmentSummary as ApiDashboardCommitmentSummary,
+  DashboardPendingReviewSummary,
+  DashboardPendingAssessmentSummary,
+  DashboardProjectSummary as ApiDashboardProjectSummary,
+  DashboardProjectWithPrereqs as ApiDashboardProjectWithPrereqs,
+  DashboardProjectPrerequisite as ApiDashboardProjectPrerequisite,
 } from "~/types/generated/gateway";
 
 // =============================================================================
@@ -164,7 +165,7 @@ export const dashboardKeys = {
 // =============================================================================
 
 function transformCourseSummary(
-  api: OrchestrationDashboardCourseSummary,
+  api: ApiDashboardCourseSummary,
 ): DashboardCourseSummary {
   return {
     courseId: api.course_id ?? "",
@@ -175,7 +176,7 @@ function transformCourseSummary(
 }
 
 function transformCredentialSummary(
-  api: OrchestrationDashboardCredentialSummary,
+  api: ApiDashboardCredentialSummary,
 ): DashboardCredentialSummary {
   return {
     courseId: api.course_id ?? "",
@@ -185,7 +186,7 @@ function transformCredentialSummary(
 }
 
 function transformCommitmentSummary(
-  api: OrchestrationDashboardCommitmentSummary,
+  api: ApiDashboardCommitmentSummary,
 ): DashboardCommitmentSummary {
   return {
     courseId: api.course_id ?? "",
@@ -195,7 +196,7 @@ function transformCommitmentSummary(
 }
 
 function transformPendingReview(
-  api: OrchestrationDashboardPendingReviewSummary,
+  api: DashboardPendingReviewSummary,
 ): DashboardPendingReview {
   return {
     courseId: api.course_id ?? "",
@@ -205,7 +206,7 @@ function transformPendingReview(
 }
 
 function transformPendingAssessment(
-  api: OrchestrationDashboardPendingAssessmentSummary,
+  api: DashboardPendingAssessmentSummary,
 ): DashboardPendingAssessment {
   return {
     projectId: api.project_id ?? "",
@@ -215,7 +216,7 @@ function transformPendingAssessment(
 }
 
 function transformProjectSummary(
-  api: OrchestrationDashboardProjectSummary,
+  api: ApiDashboardProjectSummary,
 ): DashboardProjectSummary {
   return {
     projectId: api.project_id ?? "",
@@ -226,28 +227,28 @@ function transformProjectSummary(
 }
 
 function transformProjectWithPrereqs(
-  api: OrchestrationDashboardProjectWithPrereqs,
+  api: ApiDashboardProjectWithPrereqs,
 ): DashboardProjectWithPrereqs {
   return {
     projectId: api.project_id ?? "",
     title: api.title ?? "",
     imageUrl: api.image_url ?? "",
     qualified: api.qualified ?? false,
-    prerequisites: (api.prerequisites ?? []).map((p) => ({
+    prerequisites: (api.prerequisites ?? []).map((p: ApiDashboardProjectPrerequisite) => ({
       courseId: p.course_id ?? "",
       sltHashes: p.slt_hashes ?? [],
     })),
   };
 }
 
-function transformUser(api: OrchestrationDashboardUser | undefined): DashboardUser {
+function transformUser(api: ApiDashboardUser | undefined): DashboardUser {
   return {
     alias: api?.alias ?? "",
     walletAddress: api?.wallet_address ?? "",
   };
 }
 
-function transformCounts(api: OrchestrationDashboardCounts | undefined): DashboardCounts {
+function transformCounts(api: ApiDashboardCounts | undefined): DashboardCounts {
   return {
     enrolledCourses: api?.enrolled_courses ?? 0,
     completedCourses: api?.completed_courses ?? 0,
@@ -260,7 +261,7 @@ function transformCounts(api: OrchestrationDashboardCounts | undefined): Dashboa
   };
 }
 
-function transformStudent(api: OrchestrationStudentDashboard | undefined): DashboardStudent {
+function transformStudent(api: StudentDashboard | undefined): DashboardStudent {
   return {
     enrolledCourses: (api?.enrolled_courses ?? []).map(transformCourseSummary),
     completedCourses: (api?.completed_courses ?? []).map(transformCourseSummary),
@@ -270,7 +271,7 @@ function transformStudent(api: OrchestrationStudentDashboard | undefined): Dashb
   };
 }
 
-function transformTeacher(api: OrchestrationTeacherDashboard | undefined): DashboardTeacher {
+function transformTeacher(api: TeacherDashboard | undefined): DashboardTeacher {
   return {
     courses: (api?.courses ?? []).map(transformCourseSummary),
     pendingReviews: (api?.pending_reviews ?? []).map(transformPendingReview),
@@ -278,7 +279,7 @@ function transformTeacher(api: OrchestrationTeacherDashboard | undefined): Dashb
   };
 }
 
-function transformProjects(api: OrchestrationProjectsDashboard | undefined): DashboardProjects {
+function transformProjects(api: ProjectsDashboard | undefined): DashboardProjects {
   return {
     contributing: (api?.contributing ?? []).map(transformProjectSummary),
     managing: (api?.managing ?? []).map(transformProjectSummary),
@@ -289,7 +290,7 @@ function transformProjects(api: OrchestrationProjectsDashboard | undefined): Das
 }
 
 function transformDashboard(
-  api: OrchestrationDashboardResponse,
+  api: ApiDashboardResponse,
   warning?: string,
 ): Dashboard {
   return {
@@ -337,13 +338,13 @@ export function useDashboard() {
         throw new Error(`Failed to fetch dashboard: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersDashboardResponseWrapper;
+      const result = (await response.json()) as DashboardResponseWrapper;
 
-      if (result.warning) {
-        console.warn("[useDashboard] API warning (partial content):", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useDashboard] API warning (partial content):", result.meta?.warning);
       }
 
-      return transformDashboard(result.data ?? {}, result.warning);
+      return transformDashboard(result.data ?? {}, result.meta?.warning);
     },
     enabled: isAuthenticated,
     staleTime: 30_000, // 30 seconds - dashboard data should be relatively fresh

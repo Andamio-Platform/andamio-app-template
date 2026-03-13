@@ -516,20 +516,29 @@ export function useTeacherCoursesWithModules() {
                 courseId: course.courseId,
                 title: course.title,
                 isPublic: course.isPublic,
-                modules: validModules.map((m) => {
-                  // SLT count: prefer DB slts array, fall back to on_chain_slts
-                  const sltCount = m.content?.slts ?? m.on_chain_slts ?? [];
-                  return {
-                    assignmentId: m.slt_hash!,
-                    moduleCode: m.content?.course_module_code,
-                    title: m.content?.title,
-                    slts: Array.isArray(sltCount)
-                      ? sltCount.map((s) =>
-                          typeof s === "string" ? s : String(s),
-                        )
-                      : [],
-                  };
-                }),
+                modules: validModules
+                  .map((m) => {
+                    // SLT count: prefer DB slts array, fall back to on_chain_slts
+                    const sltCount = m.content?.slts ?? m.on_chain_slts ?? [];
+                    return {
+                      assignmentId: m.slt_hash!,
+                      moduleCode: m.content?.course_module_code,
+                      title: m.content?.title,
+                      slts: Array.isArray(sltCount)
+                        ? sltCount.map((s) =>
+                            typeof s === "string" ? s : String(s),
+                          )
+                        : [],
+                    };
+                  })
+                  // Sort by module code (numeric-aware: 101, 102, ... 110)
+                  .sort((a, b) =>
+                    (a.moduleCode ?? "").localeCompare(
+                      b.moduleCode ?? "",
+                      undefined,
+                      { numeric: true },
+                    ),
+                  ),
               });
             }
           }

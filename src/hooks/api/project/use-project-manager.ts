@@ -52,13 +52,13 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import type {
-  MergedHandlersManagerProjectsResponse,
-  MergedHandlersManagerCommitmentsResponse,
-  MergedHandlersMergedTasksResponse,
-  OrchestrationManagerProjectListItem,
-  OrchestrationManagerCommitmentItem,
-  OrchestrationMergedTaskListItem,
-  OrchestrationPendingAssessmentSummary,
+  ManagerProjectsResponse as ApiManagerProjectsResponse,
+  ManagerCommitmentsResponse as ApiManagerCommitmentsResponse,
+  MergedTasksResponse,
+  ManagerProjectListItem,
+  ManagerCommitmentItem,
+  MergedTaskListItem,
+  PendingAssessmentSummary as ApiPendingAssessmentSummary,
 } from "~/types/generated/gateway";
 import {
   projectKeys,
@@ -176,10 +176,10 @@ export interface ManagerCommitment {
 // =============================================================================
 
 /**
- * Transform OrchestrationPendingAssessmentSummary → PendingAssessment
+ * Transform ApiPendingAssessmentSummary → PendingAssessment
  */
 function transformPendingAssessment(
-  api: OrchestrationPendingAssessmentSummary
+  api: ApiPendingAssessmentSummary
 ): PendingAssessment {
   return {
     taskHash: api.task_hash ?? "",
@@ -190,9 +190,9 @@ function transformPendingAssessment(
 }
 
 /**
- * Transform OrchestrationManagerProjectListItem → ManagerProject
+ * Transform ManagerProjectListItem → ManagerProject
  */
-function transformManagerProject(api: OrchestrationManagerProjectListItem): ManagerProject {
+function transformManagerProject(api: ManagerProjectListItem): ManagerProject {
   return {
     // Identity
     projectId: api.project_id ?? "",
@@ -225,9 +225,9 @@ function transformManagerProject(api: OrchestrationManagerProjectListItem): Mana
 }
 
 /**
- * Transform OrchestrationManagerCommitmentItem → ManagerCommitment
+ * Transform ManagerCommitmentItem → ManagerCommitment
  */
-function transformManagerCommitment(api: OrchestrationManagerCommitmentItem): ManagerCommitment {
+function transformManagerCommitment(api: ManagerCommitmentItem): ManagerCommitment {
   return {
     // Identifiers
     projectId: api.project_id ?? "",
@@ -311,11 +311,11 @@ export function useManagerProjects() {
         throw new Error(`Failed to fetch manager projects: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersManagerProjectsResponse;
+      const result = (await response.json()) as ApiManagerProjectsResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useManagerProjects] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useManagerProjects] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types with camelCase fields
@@ -347,7 +347,10 @@ export function useManagerProjects() {
  * }
  * ```
  */
-export function useManagerCommitments(projectId?: string) {
+export function useManagerCommitments(
+  projectId?: string,
+  options?: { enabled?: boolean }
+) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
 
   return useQuery({
@@ -372,17 +375,17 @@ export function useManagerCommitments(projectId?: string) {
         throw new Error(`Failed to fetch manager commitments: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as MergedHandlersManagerCommitmentsResponse;
+      const result = (await response.json()) as ApiManagerCommitmentsResponse;
 
       // Log warning if partial data returned
-      if (result.warning) {
-        console.warn("[useManagerCommitments] API warning:", result.warning);
+      if (result.meta?.warning) {
+        console.warn("[useManagerCommitments] API warning:", result.meta?.warning);
       }
 
       // Transform to app-level types with camelCase fields
       return (result.data ?? []).map(transformManagerCommitment);
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }
@@ -433,17 +436,17 @@ export function useManagerTasks(projectId: string | undefined) {
       }
 
       const result = (await response.json()) as
-        | MergedHandlersMergedTasksResponse
-        | OrchestrationMergedTaskListItem[];
+        | MergedTasksResponse
+        | MergedTaskListItem[];
 
       // Handle both wrapped { data: [...] } and raw array formats
-      let items: OrchestrationMergedTaskListItem[];
+      let items: MergedTaskListItem[];
 
       if (Array.isArray(result)) {
         items = result;
       } else {
-        if (result.warning) {
-          console.warn("[useManagerTasks] API warning:", result.warning);
+        if (result.meta?.warning) {
+          console.warn("[useManagerTasks] API warning:", result.meta?.warning);
         }
         items = result.data ?? [];
       }

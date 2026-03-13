@@ -27,7 +27,7 @@
     "test:e2e:pr": "playwright test --config=e2e/playwright.config.ts --project=chromium e2e/tests/pr/"
   },
   "dependencies": {
-    "@andamio/core": "^0.1.1",
+    "@andamio/core": "^0.3.0",
     "@andamiojs/datum-utils": "^0.4.6",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

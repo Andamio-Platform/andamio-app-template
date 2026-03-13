@@ -298,12 +298,21 @@ export function TasksManage({
       const taskIndex = preConfiguredTaskIndices?.[index] ?? index;
 
       // Compute the on-chain task hash using Blake2b-256
-      // Note: computeTaskHash expects expiration_time, API uses expiration_posix (same value)
+      // Note: computeTaskHash expects bigint values to match on-chain Plutus types
+      // Transform native_assets from ["policyId.tokenName", qty] to [policyId, tokenName, BigInt(qty)]
+      const transformedAssets: [string, string, bigint][] = task.native_assets.map(([assetClass, qty]) => {
+        // assetClass format: "policyId.tokenName" where policyId is 56 hex chars
+        const dotIndex = assetClass.indexOf(".");
+        const policyId = dotIndex > 0 ? assetClass.slice(0, dotIndex) : assetClass;
+        const tokenName = dotIndex > 0 ? assetClass.slice(dotIndex + 1) : "";
+        return [policyId, tokenName, BigInt(qty)];
+      });
+
       const taskHashValue = computeTaskHash({
         project_content: task.project_content,
-        expiration_time: task.expiration_posix, // Map API field to hash function field
-        lovelace_amount: task.lovelace_amount,
-        native_assets: task.native_assets,
+        expiration_time: BigInt(task.expiration_posix),
+        lovelace_amount: BigInt(task.lovelace_amount),
+        native_assets: transformedAssets,
       });
 
       console.log("[TasksManage] Computed task hash:", {

@@ -128,11 +128,15 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 
 [Agent Skills](https://agentskills.io) — works with any compatible coding agent.
 
+**Learning Path**: `/getting-started` → `/auth` → `/transactions` → `/tx-challenge`
+
 | Skill | Purpose |
 |-------|---------|
 | `/getting-started` | Quick win: customize theme colors in 2 minutes |
 | `/auth` | API keys and JWT authentication |
-| `/transactions` | TX state machine and hooks |
+| `/transactions` | TX state machine reference |
+| `/tx-challenge` | Learn TX by building — 4 progressive challenges |
+| `/task-lifecycle` | Hands-on commit → submit → assess on preprod |
 | `/design-system` | Styling patterns, components |
 | `/fix` | AI-assisted bug fixing |
 | `/ship` | Commit → PR → Merge workflow |

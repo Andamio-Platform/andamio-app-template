@@ -346,18 +346,18 @@ function ModuleWizardContent({
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-3 px-2 py-1">
-        {/* Unsaved changes indicator */}
-        {isDirty && (
+        {/* Unsaved changes indicator — hidden for uncreated modules */}
+        {isDirty && !effectiveIsNewModule && (
           <span className="text-xs text-muted-foreground">Unsaved changes</span>
         )}
 
-        {/* Save button - active when there are unsaved changes */}
+        {/* Save button - disabled for uncreated modules (use "Create Module" instead) */}
         <AndamioButton
-          variant={isDirty ? "default" : "ghost"}
+          variant={isDirty && !effectiveIsNewModule ? "default" : "ghost"}
           size="sm"
           className="h-8 px-3"
           onClick={() => void saveAndSync()}
-          disabled={!isDirty || isSaving}
+          disabled={!isDirty || isSaving || effectiveIsNewModule}
         >
           {isSaving ? (
             <LoadingIcon className="h-4 w-4 mr-1 animate-spin" />
@@ -368,7 +368,7 @@ function ModuleWizardContent({
         </AndamioButton>
       </div>
     );
-  }, [setActions, isDirty, isSaving, saveAndSync]);
+  }, [setActions, isDirty, isSaving, saveAndSync, effectiveIsNewModule]);
 
   // Auto-save on unmount (navigate away from wizard)
   // Use refs to avoid stale closures - always have latest values
@@ -376,9 +376,14 @@ function ModuleWizardContent({
   draftStoreRef.current = draftStore;
   const saveAndSyncRef = useRef(saveAndSync);
   saveAndSyncRef.current = saveAndSync;
+  const effectiveIsNewModuleRef = useRef(effectiveIsNewModule);
+  effectiveIsNewModuleRef.current = effectiveIsNewModule;
 
   useEffect(() => {
     return () => {
+      // Skip auto-save for uncreated modules (would 404)
+      if (effectiveIsNewModuleRef.current) return;
+
       // Check if dirty directly from store (avoids stale closure)
       const state = draftStoreRef.current.getState();
       if (state.isDirty && state.draft) {
@@ -461,10 +466,10 @@ function ModuleWizardContent({
               </div>
             </AndamioScrollArea>
 
-            {/* Contextual Save Bar - appears when there are unsaved changes */}
+            {/* Contextual Save Bar - hidden for uncreated modules (use "Create Module" instead) */}
             <div className="shrink-0 border-t px-4 py-3">
               <WizardSaveBar
-                isDirty={isDirty}
+                isDirty={isDirty && !effectiveIsNewModule}
                 isSaving={isSaving}
                 onSave={() => void saveAndSync()}
                 onDiscard={discardChanges}

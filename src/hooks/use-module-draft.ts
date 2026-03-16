@@ -165,6 +165,12 @@ export function useModuleDraft(
    * 3. The mutation's onSuccess will invalidate React Query cache for background refresh
    */
   const saveAndSync = useCallback(async (): Promise<boolean> => {
+    // Guard: cannot save a module that hasn't been created yet
+    if (isNewModule) {
+      console.warn("[saveAndSync] Cannot save draft for uncreated module");
+      return false;
+    }
+
     // Check current state directly from store (avoids stale closures)
     const currentState = store.getState();
     if (!currentState.isDirty) {
@@ -194,6 +200,7 @@ export function useModuleDraft(
     save,
     saveModuleDraft.mutateAsync,
     markClean,
+    isNewModule,
   ]);
 
   /**

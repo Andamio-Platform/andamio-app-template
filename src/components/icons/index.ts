@@ -62,6 +62,7 @@ export {
   TransactionIcon,
   TokenIcon,
   SignatureIcon,
+  TerminalIcon,
 } from "./entity-icons";
 
 // =============================================================================

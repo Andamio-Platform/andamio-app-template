@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "~/lib/utils";
 import { AndamioText } from "./andamio-text";
 import { AndamioHeading } from "./andamio-heading";
@@ -28,35 +31,40 @@ interface AndamioPageHeaderProps {
    * Center the header text (useful for landing pages)
    */
   centered?: boolean;
+  /**
+   * Cover image URL — enables hero banner mode.
+   * When provided, the header renders as a 220px hero banner with the image
+   * as background and a gradient overlay for text readability.
+   * When absent, renders the standard text-only header (backward compatible).
+   */
+  imageUrl?: string;
+  /**
+   * Alt text for the cover image (defaults to title)
+   */
+  imageAlt?: string;
 }
 
 /**
  * AndamioPageHeader - Responsive page header component
  *
  * Provides consistent, responsive page headers across the application.
- * Handles title, description, badges, and action buttons with proper
- * stacking behavior on mobile devices.
+ * Supports an optional hero banner mode with cover images.
  *
  * @example
  * ```tsx
- * // Basic usage
+ * // Standard text header
  * <AndamioPageHeader
  *   title="Dashboard"
  *   description="Welcome to your personalized dashboard"
  * />
  *
- * // With action button
+ * // Hero banner with cover image
  * <AndamioPageHeader
- *   title="Courses"
- *   description="Manage your courses"
- *   action={<Button>Create Course</Button>}
- * />
- *
- * // Centered (for landing pages)
- * <AndamioPageHeader
- *   title="Welcome"
- *   description="Start your learning journey"
- *   centered
+ *   title="Andamio for Project Owners"
+ *   description="Learn how to create and manage projects"
+ *   imageUrl={course.imageUrl}
+ *   badge={<Badge>12 SLTs</Badge>}
+ *   action={<Button>Preview</Button>}
  * />
  * ```
  */
@@ -67,7 +75,78 @@ export function AndamioPageHeader({
   badge,
   className,
   centered = false,
+  imageUrl,
+  imageAlt,
 }: AndamioPageHeaderProps) {
+  const [imageError, setImageError] = React.useState(false);
+
+  // Hero banner mode: when imageUrl prop is passed (even if empty string)
+  if (imageUrl !== undefined) {
+    const showImage = imageUrl && !imageError;
+
+    return (
+      <div
+        className={cn(
+          "relative h-40 sm:h-[220px] w-full overflow-hidden rounded-lg",
+          className,
+        )}
+      >
+        {/* Image or gradient fallback */}
+        {showImage ? (
+          <Image
+            src={imageUrl}
+            alt={imageAlt ?? title}
+            fill
+            className="object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/15" />
+        )}
+
+        {/* Gradient overlay for text readability (WCAG AA: ≥4.5:1 for white text) */}
+        <div
+          className={cn(
+            "absolute inset-0",
+            showImage
+              ? "bg-gradient-to-t from-black/80 via-black/40 to-black/10"
+              : "bg-gradient-to-t from-black/70 via-black/40 to-black/20",
+          )}
+        />
+
+        {/* Content overlay — pinned to bottom */}
+        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* White text for WCAG AA contrast (4.5:1) against image/gradient overlays */}
+                <h1
+                  className="text-lg sm:text-2xl font-bold line-clamp-1 !m-0"
+                  style={{ color: "white" }}
+                >
+                  {title}
+                </h1>
+                {badge}
+              </div>
+              {description && (
+                <p className="text-xs sm:text-sm line-clamp-2 mt-1" style={{ color: "rgba(255,255,255,0.8)" }}>
+                  {description}
+                </p>
+              )}
+            </div>
+            {action && (
+              <div className="shrink-0">
+                {action}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Standard text-only modes (unchanged) ---
+
   if (centered) {
     return (
       <div className={cn("text-center max-w-3xl mx-auto space-y-2 sm:space-y-4 px-4 sm:px-0", className)}>
@@ -86,7 +165,6 @@ export function AndamioPageHeader({
     );
   }
 
-  // Layout with action: flex container that stacks on mobile
   if (action) {
     return (
       <div className={cn("flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4", className)}>
@@ -108,7 +186,6 @@ export function AndamioPageHeader({
     );
   }
 
-  // Simple layout without action
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">

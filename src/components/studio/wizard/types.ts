@@ -161,18 +161,15 @@ export interface WizardStepProps {
  * Avoid spring animations that feel sluggish.
  */
 export const stepVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 20 : -20,
+  enter: {
     opacity: 0,
-  }),
+  },
   center: {
-    x: 0,
     opacity: 1,
   },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 20 : -20,
+  exit: {
     opacity: 0,
-  }),
+  },
 };
 
 export const stepTransition = {

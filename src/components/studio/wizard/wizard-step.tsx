@@ -29,7 +29,6 @@ export function WizardStep({
 
   return (
     <motion.div
-      custom={direction}
       variants={stepVariants}
       initial="enter"
       animate="center"

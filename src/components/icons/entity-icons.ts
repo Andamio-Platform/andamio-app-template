@@ -110,3 +110,6 @@ export { Coins as TokenIcon } from "lucide-react";
 
 /** Signature - wallet/cryptographic signature verification */
 export { PenLine as SignatureIcon } from "lucide-react";
+
+/** Terminal/CLI - command-line interface */
+export { Terminal as TerminalIcon } from "lucide-react";

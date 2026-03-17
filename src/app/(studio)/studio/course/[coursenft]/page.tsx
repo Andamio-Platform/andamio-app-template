@@ -305,9 +305,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
   // Burn selection state - stores on-chain hashes of selected modules
   const [selectedForBurn, setSelectedForBurn] = useState<Set<string>>(new Set());
 
-  // Module deletion confirmation state
-  const [moduleToDelete, setModuleToDelete] = useState<{ code: string; title: string | null } | null>(null);
-
   // Registration state for unregistered modules
   const [registeringHash, setRegisteringHash] = useState<string | null>(null);
   const [registerModuleCode, setRegisterModuleCode] = useState("");
@@ -436,27 +433,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
       toast.error("Failed to update visibility", {
         description: err instanceof Error ? err.message : "Unknown error",
       });
-    }
-  };
-
-  const handleDeleteModule = (moduleCode: string, moduleTitle: string | null) => {
-    setModuleToDelete({ code: moduleCode, title: moduleTitle });
-  };
-
-  const confirmDeleteModule = async () => {
-    if (!moduleToDelete) return;
-    try {
-      await deleteModuleMutation.mutateAsync({
-        courseId: courseId,
-        moduleCode: moduleToDelete.code,
-      });
-      toast.success(`Module "${moduleToDelete.code}" deleted`);
-    } catch (err) {
-      toast.error("Failed to delete module", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setModuleToDelete(null);
     }
   };
 
@@ -712,7 +688,20 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
                         key={courseModule.sltHash || courseModule.moduleCode || `module-${index}`}
                         courseModule={courseModule}
                         courseId={courseId}
-                        onDelete={() => handleDeleteModule(courseModule.moduleCode ?? "", courseModule.title ?? null)}
+                        onDelete={async () => {
+                          const code = courseModule.moduleCode ?? "";
+                          try {
+                            await deleteModuleMutation.mutateAsync({
+                              courseId: courseId,
+                              moduleCode: code,
+                            });
+                            toast.success(`Module "${code}" deleted`);
+                          } catch (err) {
+                            toast.error("Failed to delete module", {
+                              description: err instanceof Error ? err.message : "Unknown error",
+                            });
+                          }
+                        }}
                         isDeleting={deleteModuleMutation.isPending}
                       />
                     ))}
@@ -1468,17 +1457,6 @@ function CourseEditorContent({ courseId }: { courseId: string }) {
         </div>
       </div>
 
-      {/* Module deletion confirmation dialog */}
-      <AndamioConfirmDialog
-        open={!!moduleToDelete}
-        onOpenChange={(open) => { if (!open) setModuleToDelete(null); }}
-        title="Delete Module"
-        description={`Are you sure you want to delete "${moduleToDelete?.title ?? moduleToDelete?.code}"? This cannot be undone.`}
-        confirmText="Delete Module"
-        variant="destructive"
-        onConfirm={confirmDeleteModule}
-        isLoading={deleteModuleMutation.isPending}
-      />
     </AndamioScrollArea>
   );
 }

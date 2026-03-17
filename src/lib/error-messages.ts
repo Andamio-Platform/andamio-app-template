@@ -23,11 +23,13 @@ import { parseTxErrorMessage, isTxError } from "~/lib/tx-error-messages";
 import { parseAuthErrorMessage, isAuthError } from "~/lib/auth-error-messages";
 import { parseApiErrorMessage, isGatewayError } from "~/lib/api-error-messages";
 import { GatewayError } from "~/lib/gateway";
+import { ApiValidationError, isApiValidationError } from "~/lib/api-validation";
 
 // Re-export domain-specific parsers for direct use
 export { parseTxErrorMessage, isTxError } from "~/lib/tx-error-messages";
 export { parseAuthErrorMessage, isAuthError } from "~/lib/auth-error-messages";
 export { parseApiErrorMessage, isGatewayError } from "~/lib/api-error-messages";
+export { ApiValidationError, isApiValidationError } from "~/lib/api-validation";
 
 // Re-export types
 export type { ParsedError, ErrorDomain, ErrorInput, ErrorMapEntry } from "~/types/errors";
@@ -62,6 +64,11 @@ export type { ParsedError, ErrorDomain, ErrorInput, ErrorMapEntry } from "~/type
  */
 export function parseErrorMessage(error: unknown): ParsedError | null {
   if (!error) return null;
+
+  // Check for ApiValidationError (API domain - malformed response data)
+  if (error instanceof ApiValidationError) {
+    return error.toParsedError();
+  }
 
   // Check for GatewayError (API domain)
   if (error instanceof GatewayError) {

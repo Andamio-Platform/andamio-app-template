@@ -254,3 +254,9 @@ export {
   type DashboardProjectWithPrereqs,
   type DashboardProjectPrerequisite,
 } from "./use-dashboard";
+
+// =============================================================================
+// Image Upload Hook
+// =============================================================================
+
+export { useImageUpload, type ImageUploadResult } from "./use-image-upload";

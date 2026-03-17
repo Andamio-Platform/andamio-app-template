@@ -195,6 +195,156 @@ export async function gatewayAuth<T>(path: string, jwt: string): Promise<T> {
 }
 
 // =============================================================================
+// Validated Gateway Functions (with Zod runtime validation)
+// =============================================================================
+
+import type { ZodSchema } from "zod";
+import { validateResponse, validateResponseSoft } from "./api-validation";
+
+/**
+ * Options for validated gateway calls
+ */
+export interface ValidatedGatewayOptions {
+  /**
+   * Use soft validation mode - logs warnings but doesn't throw.
+   * Use during migration to identify issues without breaking the app.
+   */
+  soft?: boolean;
+}
+
+/**
+ * Make a validated GET request to the gateway
+ *
+ * @param path - API path
+ * @param schema - Zod schema to validate response against
+ * @param options - Validation options
+ * @returns Validated and typed response
+ * @throws ApiValidationError if validation fails (unless soft mode)
+ *
+ * @example
+ * ```typescript
+ * import { DashboardResponseWrapperSchema } from "~/lib/api-schemas";
+ *
+ * const data = await gatewayValidated(
+ *   "/v2/user/dashboard",
+ *   DashboardResponseWrapperSchema
+ * );
+ * ```
+ */
+export async function gatewayValidated<T>(
+  path: string,
+  schema: ZodSchema<T>,
+  options?: ValidatedGatewayOptions
+): Promise<T> {
+  const data = await gateway<unknown>(path);
+  return options?.soft
+    ? validateResponseSoft(data, schema, path)
+    : validateResponse(data, schema, path);
+}
+
+/**
+ * Make a validated authenticated GET request to the gateway
+ *
+ * @param path - API path
+ * @param jwt - User JWT token
+ * @param schema - Zod schema to validate response against
+ * @param options - Validation options
+ * @returns Validated and typed response
+ * @throws ApiValidationError if validation fails (unless soft mode)
+ *
+ * @example
+ * ```typescript
+ * import { DashboardResponseWrapperSchema } from "~/lib/api-schemas";
+ *
+ * const data = await gatewayAuthValidated(
+ *   "/v2/user/dashboard",
+ *   jwt,
+ *   DashboardResponseWrapperSchema
+ * );
+ * ```
+ */
+export async function gatewayAuthValidated<T>(
+  path: string,
+  jwt: string,
+  schema: ZodSchema<T>,
+  options?: ValidatedGatewayOptions
+): Promise<T> {
+  const data = await gatewayAuth<unknown>(path, jwt);
+  return options?.soft
+    ? validateResponseSoft(data, schema, path)
+    : validateResponse(data, schema, path);
+}
+
+/**
+ * Make a validated POST request to the gateway
+ *
+ * @param path - API path
+ * @param body - Request body
+ * @param schema - Zod schema to validate response against
+ * @param options - Validation options
+ * @returns Validated and typed response
+ * @throws ApiValidationError if validation fails (unless soft mode)
+ *
+ * @example
+ * ```typescript
+ * import { CourseResponseSchema } from "~/lib/api-schemas";
+ *
+ * const data = await gatewayPostValidated(
+ *   "/v2/course/create",
+ *   { title: "My Course" },
+ *   CourseResponseSchema
+ * );
+ * ```
+ */
+export async function gatewayPostValidated<T>(
+  path: string,
+  body: unknown,
+  schema: ZodSchema<T>,
+  options?: ValidatedGatewayOptions
+): Promise<T> {
+  const data = await gatewayPost<unknown>(path, body);
+  return options?.soft
+    ? validateResponseSoft(data, schema, path)
+    : validateResponse(data, schema, path);
+}
+
+/**
+ * Make a validated authenticated POST request to the gateway
+ *
+ * @param path - API path
+ * @param jwt - User JWT token
+ * @param body - Request body
+ * @param schema - Zod schema to validate response against
+ * @param options - Validation options
+ * @returns Validated and typed response
+ * @throws ApiValidationError if validation fails (unless soft mode)
+ *
+ * @example
+ * ```typescript
+ * import { CourseResponseSchema } from "~/lib/api-schemas";
+ *
+ * const data = await gatewayAuthPostValidated(
+ *   "/v2/course/owner/course/create",
+ *   jwt,
+ *   { title: "My Course" },
+ *   CourseResponseSchema
+ * );
+ * ```
+ */
+export async function gatewayAuthPostValidated<T>(
+  path: string,
+  jwt: string,
+  body: unknown,
+  schema: ZodSchema<T>,
+  options?: ValidatedGatewayOptions
+): Promise<T> {
+  const data = await gatewayAuthPost<unknown>(path, jwt, body);
+  return options?.soft
+    ? validateResponseSoft(data, schema, path)
+    : validateResponse(data, schema, path);
+}
+
+// =============================================================================
 // Utility Functions
 // =============================================================================
 

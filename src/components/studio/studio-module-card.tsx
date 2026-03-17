@@ -141,12 +141,10 @@ export function StudioModuleCard({
   const canDelete = onDelete && status === "draft";
 
   const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
   };
 
   const handleDeleteConfirm = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     onDelete?.();
   };

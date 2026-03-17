@@ -30,6 +30,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { DashboardResponseWrapperSchema } from "~/lib/api-schemas";
+import { validateResponse } from "~/lib/api-validation";
 import type {
   DashboardResponseWrapper,
   DashboardResponse as ApiDashboardResponse,
@@ -338,7 +340,14 @@ export function useDashboard() {
         throw new Error(`Failed to fetch dashboard: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as DashboardResponseWrapper;
+      const rawData = await response.json();
+
+      // Validate response at runtime to catch API contract violations
+      const result = validateResponse(
+        rawData,
+        DashboardResponseWrapperSchema,
+        "/v2/user/dashboard"
+      );
 
       if (result.meta?.warning) {
         console.warn("[useDashboard] API warning (partial content):", result.meta?.warning);

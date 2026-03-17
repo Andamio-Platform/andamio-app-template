@@ -1,16 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ProjectIcon,
-  OnChainIcon,
   SuccessIcon,
   PendingIcon,
-  NextIcon,
   UserIcon,
-  ManagerIcon,
   CredentialIcon,
 } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
@@ -18,8 +14,6 @@ import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   AndamioCard,
   AndamioCardContent,
-  AndamioCardHeader,
-  AndamioCardTitle,
   AndamioCardDescription,
   AndamioCardFooter,
 } from "~/components/andamio/andamio-card";
@@ -49,13 +43,7 @@ function EligibilityBadge({
   eligibility?: EligibilityResult;
   isAuthenticated?: boolean;
 }) {
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (!eligibility) {
-    return null;
-  }
+  if (!isAuthenticated || !eligibility) return null;
 
   if (eligibility.eligible) {
     if (eligibility.totalRequired === 0) {
@@ -63,10 +51,7 @@ function EligibilityBadge({
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge
-                variant="outline"
-                className="text-primary border-primary/30"
-              >
+              <AndamioBadge variant="outline" className="text-primary border-primary/30">
                 <SuccessIcon className="h-3 w-3 mr-1" />
                 Open
               </AndamioBadge>
@@ -82,10 +67,7 @@ function EligibilityBadge({
       <AndamioTooltip>
         <AndamioTooltipTrigger asChild>
           <div className="flex items-center gap-1.5">
-            <AndamioBadge
-              variant="outline"
-              className="text-primary border-primary/30"
-            >
+            <AndamioBadge variant="outline" className="text-primary border-primary/30">
               <CredentialIcon className="h-3 w-3 mr-1" />
               Qualified
             </AndamioBadge>
@@ -101,19 +83,14 @@ function EligibilityBadge({
 
   const progress =
     eligibility.totalRequired > 0
-      ? Math.round(
-          (eligibility.totalCompleted / eligibility.totalRequired) * 100,
-        )
+      ? Math.round((eligibility.totalCompleted / eligibility.totalRequired) * 100)
       : 0;
 
   return (
     <AndamioTooltip>
       <AndamioTooltipTrigger asChild>
         <div className="flex items-center gap-1.5">
-          <AndamioBadge
-            variant="outline"
-            className="text-muted-foreground border-muted-foreground/30"
-          >
+          <AndamioBadge variant="outline" className="text-muted-foreground border-muted-foreground/30">
             <PendingIcon className="h-3 w-3 mr-1" />
             {eligibility.totalCompleted}/{eligibility.totalRequired}
           </AndamioBadge>
@@ -128,8 +105,7 @@ function EligibilityBadge({
           {eligibility.missingPrerequisites.length > 0 && (
             <div className="text-xs">
               Complete {eligibility.missingPrerequisites.length} more course
-              {eligibility.missingPrerequisites.length !== 1 ? "s" : ""} to
-              qualify
+              {eligibility.missingPrerequisites.length !== 1 ? "s" : ""} to qualify
             </div>
           )}
         </div>
@@ -139,26 +115,27 @@ function EligibilityBadge({
 }
 
 /**
- * ProjectCard - Display a project in a card format matching CourseCard style
+ * ProjectCard - Card with taller image header and title overlaid on gradient.
+ * Description, badges, and footer sit on the solid card body below.
  */
 export function ProjectCard({
   project,
   eligibility,
   isAuthenticated,
 }: ProjectCardProps) {
+  const [imageError, setImageError] = useState(false);
   const {
     projectId,
     title,
     description,
     imageUrl,
     ownerAlias,
-    managers,
     prerequisites,
   } = project;
 
   const displayTitle = title || projectId?.slice(0, 24) || "Untitled Project";
-  const managerCount = managers?.length ?? 0;
   const prereqCount = prerequisites?.length ?? 0;
+  const showImage = imageUrl && !imageError;
 
   return (
     <Link
@@ -167,95 +144,67 @@ export function ProjectCard({
       data-testid="project-card"
     >
       <AndamioCard className="h-full transition-all duration-200 hover:shadow-md hover:border-primary/20 group-hover:bg-accent/5">
-        {/* Image or Gradient Header */}
-        <div className="relative h-32 sm:h-40 overflow-hidden rounded-t-xl -mt-6 -mx-0">
-          {imageUrl ? (
+        {/* Image header — taller, with title overlaid */}
+        <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-xl -mt-6 -mx-0">
+          {showImage ? (
             <Image
               src={imageUrl}
               alt={displayTitle}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
-              unoptimized
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-secondary/20 via-secondary/10 to-accent/20 flex items-center justify-center">
-              <ProjectIcon className="h-12 w-12 text-secondary/40" />
-            </div>
+            <div className="w-full h-full bg-gradient-to-br from-secondary/30 via-secondary/20 to-accent/15" />
           )}
-          {/* Status & eligibility badge overlay */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            <AndamioBadge
-              variant="outline"
-              className="text-primary-foreground border-primary/80 bg-primary/80 shadow-sm"
+          {/* Gradient overlay for title readability */}
+          <div className={showImage
+            ? "absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+            : "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+          } />
+          {/* Title overlay — pinned to bottom */}
+          <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
+            {/* White text for WCAG AA contrast against image/gradient overlays */}
+            <h3
+              className="text-base sm:text-lg font-semibold line-clamp-2 !m-0"
+              style={{ color: "white" }}
             >
-              <OnChainIcon className="h-3 w-3 mr-1" />
-              Active
-            </AndamioBadge>
+              {displayTitle}
+            </h3>
           </div>
         </div>
 
-        <AndamioCardHeader className="pt-4">
-          <div className="flex items-start justify-between gap-2">
-            <AndamioCardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-              {displayTitle}
-            </AndamioCardTitle>
-            <NextIcon className="h-5 w-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-1" />
-          </div>
-          {/* Eligibility badge */}
-          <EligibilityBadge
-            eligibility={eligibility}
-            isAuthenticated={isAuthenticated}
-          />
-        </AndamioCardHeader>
-
-        <AndamioCardContent className="flex-1">
+        {/* Card body — solid background */}
+        <AndamioCardContent className="pt-3">
           {description ? (
-            <AndamioCardDescription className="line-clamp-3">
+            <AndamioCardDescription className="line-clamp-2">
               {description}
             </AndamioCardDescription>
           ) : (
-            <AndamioText
-              variant="small"
-              className="text-muted-foreground italic"
-            >
+            <AndamioText variant="small" className="text-muted-foreground italic">
               No description available
             </AndamioText>
           )}
         </AndamioCardContent>
 
-        <AndamioCardFooter className="border-t pt-4 mt-auto">
+        <AndamioCardFooter className="border-t pt-3 mt-auto">
           <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
-            {/* Owner info */}
-            {ownerAlias && (
-              <div className="flex items-center gap-1.5 truncate">
-                <UserIcon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate font-mono text-xs">
-                  {ownerAlias}
-                </span>
-              </div>
-            )}
-
-            {/* Manager count */}
-            {managerCount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <ManagerIcon className="h-3.5 w-3.5" />
-                <span>
-                  {managerCount} {managerCount === 1 ? "manager" : "managers"}
-                </span>
-              </div>
-            )}
-
-            {/* Prerequisite count */}
-            {prereqCount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <CredentialIcon className="h-3.5 w-3.5" />
-                <span>
-                  {prereqCount}{" "}
-                  {prereqCount === 1 ? "prerequisite" : "prerequisites"}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {ownerAlias && (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <UserIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate font-mono text-xs">{ownerAlias}</span>
+                </div>
+              )}
+              {prereqCount > 0 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <CredentialIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs">{prereqCount} {prereqCount === 1 ? "prereq" : "prereqs"}</span>
+                </div>
+              )}
+            </div>
+            <EligibilityBadge eligibility={eligibility} isAuthenticated={isAuthenticated} />
           </div>
         </AndamioCardFooter>
       </AndamioCard>

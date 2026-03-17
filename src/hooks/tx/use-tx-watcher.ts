@@ -106,7 +106,7 @@ export async function registerTransaction(
  *
  * The gateway uses a specific set of tx_type values defined in the API spec.
  * @see GatewayTxType for valid values
- * @see https://dev-api.andamio.io/api/v1/docs/ for API docs
+ * @see https://preprod.api.andamio.io/api/v1/docs/ for API docs
  */
 export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
   // Global

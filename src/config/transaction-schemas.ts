@@ -20,7 +20,7 @@
  * const params: TxParams["COURSE_STUDENT_ASSIGNMENT_COMMIT"] = result.data;
  * ```
  *
- * @see https://dev-api.andamio.io/api/v1/docs/
+ * @see https://preprod.api.andamio.io/api/v1/docs/
  */
 
 import { z } from "zod";
@@ -79,7 +79,7 @@ export const valueSchema = z.array(z.tuple([z.string(), z.number()]));
  * All transaction parameter schemas mapped by transaction type
  *
  * These schemas match the Andamio Gateway API spec exactly.
- * @see https://dev-api.andamio.io/api/v1/docs/
+ * @see https://preprod.api.andamio.io/api/v1/docs/
  */
 export const txSchemas = {
   // ===========================================================================

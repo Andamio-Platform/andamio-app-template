@@ -52,6 +52,7 @@ export {
   BlockIcon,
   MailIcon,
   PaymentIcon,
+  BillingIcon,
   DeveloperIcon,
   // Projects & Contributions
   ProjectIcon,

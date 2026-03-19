@@ -24,13 +24,13 @@
  * 5. When subscriberCount is 0 (user navigated away), the store fires toasts
  * 6. When subscriberCount > 0 (user on page), the component handles its own toasts
  *
- * ## Migration Note (Issue #204)
+ * ## Confirmed-State Timeout (Issue #449)
  *
- * Previously this hook owned the SSE connection directly. Now the connection
- * is managed by `txWatcherStore` so it persists across page navigation.
- * The public API is unchanged — all 18 TX components work without modification.
+ * The store manages a 30-second timeout for TXs stuck in "confirmed" state.
+ * If the SSE `complete` event is lost, the store calls `handleTerminal` with
+ * a synthetic `last_error`, which this hook picks up as `isStalled: true`.
  *
- * @see ~/stores/tx-watcher-store.ts - Global store managing connections
+ * @see ~/stores/tx-watcher-store.ts - Global store managing connections + timeout
  * @see ~/types/tx-stream.ts - SSE event types
  * @see ~/lib/tx-polling-fallback.ts - Polling fallback
  * @see ~/hooks/tx/use-tx-watcher.ts - Original polling-only hook
@@ -70,7 +70,6 @@ export function useTxStream(
   options: UseTxStreamOptions = {}
 ) {
   const [status, setStatus] = useState<TxStatus | null>(null);
-  const [error] = useState<Error | null>(null);
 
   // Refs for callbacks to avoid effect restarts
   const onCompleteRef = useRef(options.onComplete);
@@ -135,15 +134,12 @@ export function useTxStream(
     };
   }, [txHash]);
 
-  // Derived state (identical to previous implementation)
+  // Derived state
   const isStalled =
     status?.state === "confirmed" && !!status.last_error;
 
   return {
     status,
-    /** @deprecated Polling is now managed by the global store */
-    isPolling: false,
-    error,
     /** Whether TX is in a terminal state (or stalled) */
     isTerminal: status
       ? TERMINAL_STATES.includes(status.state) || isStalled

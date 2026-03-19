@@ -353,18 +353,6 @@ export interface TaskCommitment {
 // =============================================================================
 
 /**
- * Extract treasury_assets from API response.
- * TODO: Remove once treasury_assets is added to MergedProjectDetail in generated types.
- * Track: run `npm run generate:types` after API spec includes the field.
- */
-function extractTreasuryAssets(
-  api: MergedProjectDetail,
-): { policy_id?: string; name?: string; amount?: string }[] | undefined {
-  const raw = (api as unknown as Record<string, unknown>).treasury_assets;
-  return Array.isArray(raw) ? raw : undefined;
-}
-
-/**
  * Transform API Asset[] to app-level TaskToken[]
  *
  * API schema (ApiTypesAsset): { policy_id, name, amount }
@@ -620,10 +608,7 @@ export function transformProjectDetail(api: MergedProjectDetail): ProjectDetail 
     assessments,
     treasuryFundings,
     treasuryBalance: api.treasury_balance,
-    treasuryAssets: (() => {
-      const raw = extractTreasuryAssets(api);
-      return raw ? transformAssets(raw) : undefined;
-    })(),
+    treasuryAssets: api.treasury_assets ? transformAssets(api.treasury_assets) : undefined,
     credentialClaims,
     states,
   };

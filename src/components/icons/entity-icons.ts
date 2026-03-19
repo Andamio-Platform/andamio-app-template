@@ -79,6 +79,9 @@ export { Mail as MailIcon } from "lucide-react";
 /** Payment/Credit - payment methods, billing */
 export { CreditCard as PaymentIcon } from "lucide-react";
 
+/** Billing - subscription management, invoices */
+export { Receipt as BillingIcon } from "lucide-react";
+
 /** Developer - API users, builders */
 export { Code2 as DeveloperIcon } from "lucide-react";
 

@@ -10,7 +10,7 @@ import {
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { TreasuryIcon } from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
-import type { TreasuryFunding } from "~/hooks/api/project/use-project";
+import type { TreasuryFunding, TaskToken } from "~/hooks/api/project/use-project";
 import { cn } from "~/lib/utils";
 
 export interface TreasuryBalanceCardProps {
@@ -18,6 +18,8 @@ export interface TreasuryBalanceCardProps {
   treasuryAddress?: string;
   /** API-computed treasury balance (preferred over summing fundings) */
   treasuryBalance?: number;
+  /** Native assets in the treasury UTxO */
+  treasuryAssets?: TaskToken[];
   className?: string;
 }
 
@@ -25,6 +27,7 @@ export function TreasuryBalanceCard({
   treasuryFundings,
   treasuryAddress,
   treasuryBalance,
+  treasuryAssets,
   className,
 }: TreasuryBalanceCardProps) {
   // Use API's treasury_balance if available, otherwise fall back to summing fundings
@@ -42,11 +45,30 @@ export function TreasuryBalanceCard({
         </AndamioCardTitle>
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-3">
-        {totalLovelace === 0 && treasuryFundings.length === 0 ? (
+        {totalLovelace === 0 && treasuryFundings.length === 0 && !treasuryAssets?.length ? (
           <AndamioText variant="muted">No funds yet</AndamioText>
         ) : (
-          <div className="text-3xl font-bold">
-            {formatLovelace(totalLovelace)}
+          <div className="space-y-2">
+            <div className="text-3xl font-bold">
+              {formatLovelace(totalLovelace)}
+            </div>
+            {treasuryAssets?.length ? (
+              <div className="space-y-1">
+                {treasuryAssets.map((asset) => (
+                  <div
+                    key={`${asset.policyId}.${asset.assetName}`}
+                    className="flex items-baseline gap-2"
+                  >
+                    <span className="text-lg font-semibold text-secondary">
+                      {asset.quantity.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {asset.assetName || asset.policyId.slice(0, 8) + "..."}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
         {treasuryAddress && (

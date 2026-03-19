@@ -321,6 +321,7 @@ export default function ManageTreasuryPage() {
         treasuryFundings={projectDetail?.treasuryFundings ?? []}
         treasuryAddress={projectDetail?.treasuryAddress}
         treasuryBalance={projectDetail?.treasuryBalance}
+        treasuryAssets={projectDetail?.treasuryAssets}
       />
 
       {/* Add Funds to Treasury */}

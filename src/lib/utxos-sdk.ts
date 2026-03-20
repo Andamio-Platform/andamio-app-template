@@ -1,3 +1,4 @@
+import "server-only";
 import { Web3Sdk } from "@utxos/sdk";
 import { BlockfrostProvider } from "@meshsdk/core";
 import { env } from "~/env";

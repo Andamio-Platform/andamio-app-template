@@ -142,10 +142,12 @@ export function StudioModuleCard({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent Link navigation
   };
 
   const handleDeleteConfirm = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent Link navigation
     onDelete?.();
   };
 

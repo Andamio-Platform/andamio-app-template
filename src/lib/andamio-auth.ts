@@ -37,6 +37,47 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+/**
+ * Race a promise against a timeout.
+ * Rejects with a descriptive message if the timeout fires first.
+ */
+export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e: unknown) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+/**
+ * Retry-aware fetch for gateway calls.
+ * Retries up to `maxRetries` times on 5xx responses with linear backoff.
+ * Each attempt gets its own fresh timeout via `withTimeout`.
+ * Does NOT retry on 4xx, timeout, or network errors.
+ */
+const RETRYABLE_STATUSES = new Set([500, 502, 503, 504]);
+
+async function fetchWithRetry(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string,
+  maxRetries = 2,
+): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await withTimeout(fetch(input, init), timeoutMs, label);
+    if (response.ok || !RETRYABLE_STATUSES.has(response.status)) {
+      return response;
+    }
+    authLogger.warn(`Retry ${attempt + 1}/${maxRetries} for ${label} after ${response.status}`);
+    await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+  }
+  // Final attempt — return whatever we get, no more retries
+  return withTimeout(fetch(input, init), timeoutMs, label);
+}
+
 // Use proxy for API calls to include the API key
 // All auth requests go through the local proxy which adds X-API-Key header
 const API_PROXY = "/api/gateway";
@@ -50,13 +91,16 @@ const API_PROXY = "/api/gateway";
  * Returns a nonce that must be signed with the user's wallet
  */
 export async function createLoginSession(): Promise<LoginSession> {
-  const response = await fetch(`${API_PROXY}/api/v2/auth/login/session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetchWithRetry(
+    `${API_PROXY}/api/v2/auth/login/session`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
     },
-    body: JSON.stringify({}),
-  });
+    15_000,
+    "Login session request",
+  );
 
   if (!response.ok) {
     let errorMessage = `Login session failed (${response.status})`;
@@ -102,20 +146,23 @@ export async function validateSignature(params: {
   walletPreference?: string;
   andamioAccessTokenUnit?: string | null;
 }): Promise<AuthResponse> {
-  const response = await fetch(`${API_PROXY}/api/v2/auth/login/validate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetchWithRetry(
+    `${API_PROXY}/api/v2/auth/login/validate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: params.sessionId,
+        signature: params.signature,
+        address: params.address,
+        convert_utf8: params.convertUTF8 ?? false,
+        wallet_preference: params.walletPreference,
+        andamio_access_token_unit: params.andamioAccessTokenUnit,
+      }),
     },
-    body: JSON.stringify({
-      id: params.sessionId,
-      signature: params.signature,
-      address: params.address,
-      convert_utf8: params.convertUTF8 ?? false,
-      wallet_preference: params.walletPreference,
-      andamio_access_token_unit: params.andamioAccessTokenUnit,
-    }),
-  });
+    15_000,
+    "Signature validation request",
+  );
 
   if (!response.ok) {
     const error = (await response.json()) as { message?: string; error?: string; details?: unknown };
@@ -167,10 +214,7 @@ export async function authenticateWithWallet(params: {
 
   if (params.getAssets) {
     try {
-      const assets = await params.getAssets();
-
-      // DEBUG: Log wallet assets for access token detection
-      console.log("[Auth] Fresh auth - wallet assets:", assets.length, "policy:", ACCESS_TOKEN_POLICY_ID);
+      const assets = await withTimeout(params.getAssets(), 15_000, "Wallet asset query");
 
       // Find access token in wallet assets
       const accessToken = assets.find((asset) =>
@@ -180,12 +224,12 @@ export async function authenticateWithWallet(params: {
       if (accessToken) {
         accessTokenUnit = accessToken.unit;
         const alias = extractAliasFromUnit(accessToken.unit, ACCESS_TOKEN_POLICY_ID);
-        console.log("[Auth] Access token detected:", { unit: accessTokenUnit, alias });
+        authLogger.info("Access token detected for alias:", alias);
       } else {
-        console.log("[Auth] No matching access token. Asset units:", assets.map(a => a.unit.slice(0, 20) + "..."));
+        authLogger.debug("No access token found in wallet assets");
       }
     } catch (error) {
-      console.warn("[Auth] Failed to detect access token:", error);
+      authLogger.warn("Failed to detect access token:", error);
       // Continue with auth - access token is optional
     }
   }
@@ -196,8 +240,9 @@ export async function authenticateWithWallet(params: {
   authLogger.info("Login session created, nonce received");
 
   // Step 3: Sign nonce with wallet (CIP-30)
+  // 60s timeout: user needs time to interact with the wallet popup
   authLogger.info("Requesting wallet signature...");
-  const signature = await params.signMessage(session.nonce);
+  const signature = await withTimeout(params.signMessage(session.nonce), 60_000, "Wallet signature request");
   authLogger.info("Wallet signature obtained");
 
   // Step 4: Validate signature and get JWT
@@ -227,7 +272,7 @@ export function storeJWT(jwt: string): void {
       localStorage.setItem(JWT_STORAGE_KEY, jwt);
     } catch {
       // localStorage may be unavailable (private browsing, quota exceeded)
-      console.warn("[Auth] Failed to store JWT in localStorage");
+      authLogger.warn("Failed to store JWT in localStorage");
     }
   }
 }

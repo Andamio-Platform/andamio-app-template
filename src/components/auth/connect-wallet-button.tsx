@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
+import { env } from "~/env";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { WEB3_SERVICES_CONFIG } from "~/config/wallet";
 
@@ -287,6 +288,13 @@ export function ConnectWalletButton({
     if (connected) onConnected?.();
   }, [connected, onConnected]);
 
+  // Prefetch @meshsdk/core chunk when dialog opens so it's cached before social login click
+  React.useEffect(() => {
+    if (open && web3Services && env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID) {
+      void import("@meshsdk/core");
+    }
+  }, [open, web3Services]);
+
   const handleConnect = React.useCallback(
     async (walletId: string) => {
       setConnectingId(walletId);
@@ -307,14 +315,21 @@ export function ConnectWalletButton({
       if (!web3Services) return;
       setSocialLoading(directTo);
       try {
-        const web3Wallet = await Web3Wallet.enable({
+        // Create BlockfrostProvider lazily to avoid @meshsdk/core module-scope
+        // import which triggers libsodium WASM initialization during SSR (#453)
+        const enableOpts: EnableWeb3WalletOptions = {
           networkId: web3Services.networkId ?? 0,
-          fetcher: web3Services.fetcher,
-          submitter: web3Services.submitter,
-          appUrl: web3Services.appUrl,
           projectId: web3Services.projectId,
           directTo,
-        });
+        };
+        if (env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID) {
+          const { BlockfrostProvider } = await import("@meshsdk/core");
+          const provider = new BlockfrostProvider(env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID);
+          enableOpts.fetcher = provider;
+          enableOpts.submitter = provider;
+        }
+
+        const web3Wallet = await Web3Wallet.enable(enableOpts);
         const user = web3Wallet.getUser();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk UserSocialData uses camelCase avatarUrl, @meshsdk/react expects snake_case avatar_url
         setWeb3UserData(user as any);

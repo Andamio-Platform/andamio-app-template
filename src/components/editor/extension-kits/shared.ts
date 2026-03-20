@@ -50,8 +50,9 @@ export const EDITOR_STYLES = {
   listItem: "leading-relaxed pl-1",
 
   // Code blocks - distinct background with syntax highlighting support
+  // Use bg-muted (not bg-muted/70) for sufficient contrast in both normal and fullscreen modes
   codeBlock:
-    "bg-muted/70 text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto not-prose border border-border/50 shadow-sm",
+    "bg-muted text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto not-prose border border-border/50 shadow-sm",
 
   // Images - rounded with subtle shadow
   image: "rounded-lg max-w-full h-auto shadow-md",

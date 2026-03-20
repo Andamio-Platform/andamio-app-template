@@ -510,7 +510,7 @@
 }
 
 .ProseMirror pre {
-  @apply bg-muted/70 text-foreground border border-border/50;
+  @apply bg-muted text-foreground border border-border/50;
   @apply p-4 my-6 rounded-lg shadow-sm overflow-x-auto;
 }
 

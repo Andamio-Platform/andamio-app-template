@@ -3,7 +3,7 @@
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
-import { authenticateWithWallet, type AuthResponse } from "~/lib/andamio-auth";
+import { authenticateWithWallet, withTimeout, type AuthResponse } from "~/lib/andamio-auth";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { stringToHex } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
@@ -128,6 +128,15 @@ function classifyAuthError(error: unknown): CliAuthError {
     };
   }
 
+  if (message.includes("timeout")) {
+    return {
+      code: "auth_failed",
+      title: "Request Timed Out",
+      description:
+        "The wallet or server took too long to respond. Click retry to try again.",
+    };
+  }
+
   return {
     code: "auth_failed",
     title: "Authentication Failed",
@@ -221,7 +230,10 @@ export function CliAuthFlow() {
 
     try {
       // Capture starting address for wallet switch detection
-      const startAddress = await getWalletAddressBech32(wallet);
+      // Timeout protects against wallet extension not being fully ready
+      const startAddress = await withTimeout(
+        getWalletAddressBech32(wallet), 10_000, "Wallet address request"
+      );
 
       if (signal.aborted) return;
 
@@ -276,11 +288,16 @@ export function CliAuthFlow() {
   }, [wallet, walletName, parsed, redirectToCli]);
 
   // Auto-authenticate when wallet connects (with StrictMode dedup)
+  // Short delay lets the wallet extension fully initialize its CIP-30 API
   React.useEffect(() => {
     if (authAttemptedRef.current) return;
     if (state === "ready" && connected && wallet) {
-      authAttemptedRef.current = true;
-      void handleAuthenticate();
+      const timer = setTimeout(() => {
+        if (!mountedRef.current || authAttemptedRef.current) return;
+        authAttemptedRef.current = true;
+        void handleAuthenticate();
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [state, connected, wallet, handleAuthenticate]);
 

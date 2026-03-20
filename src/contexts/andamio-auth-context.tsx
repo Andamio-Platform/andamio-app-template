@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useWallet } from "@meshsdk/react";
 import {
   authenticateWithWallet,
+  withTimeout,
   storeJWT,
   getStoredJWT,
   clearStoredJWT,
@@ -12,6 +13,7 @@ import {
 } from "~/lib/andamio-auth";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
+import { parseAuthErrorMessage } from "~/lib/auth-error-messages";
 import { env } from "~/env";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
@@ -206,10 +208,15 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         // Fetch wallet data in parallel for performance
         // If JWT has accessTokenAlias, we need both address and assets
         // Otherwise, just fetch the address
-        const [walletAddress, assets] = await Promise.all([
-          getWalletAddressBech32(wallet),
-          payload.accessTokenAlias ? wallet.getBalanceMesh() : Promise.resolve(null),
-        ]);
+        // Timeout protects against wallet extension not being fully ready on first page load
+        const [walletAddress, assets] = await withTimeout(
+          Promise.all([
+            getWalletAddressBech32(wallet),
+            payload.accessTokenAlias ? wallet.getBalanceMesh() : Promise.resolve(null),
+          ]),
+          15_000,
+          "JWT validation wallet queries",
+        );
 
         // Check address match
         if (payload.cardanoBech32Addr && payload.cardanoBech32Addr !== walletAddress) {
@@ -324,9 +331,15 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       return;
     }
 
-    // No valid JWT - trigger authentication
-    authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, triggering authentication");
-    void authenticate();
+    // No valid JWT - trigger authentication after a short delay
+    // The delay gives the wallet extension time to fully initialize its CIP-30 API
+    // (on first page load, `connected` can fire before signData/getBalance are ready)
+    authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, scheduling authentication");
+    const timer = setTimeout(() => {
+      authLogger.info("[Effect: autoAuth] Triggering authentication");
+      void authenticate();
+    }, 500);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, isAuthenticated, isAuthenticating, authError, popupBlocked]);
 
@@ -347,7 +360,10 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
     try {
       // Get wallet address in bech32 format (v2 provides explicit bech32 method)
-      const bech32Address = await getWalletAddressBech32(wallet);
+      // Timeout protects against wallet extension not being fully ready
+      const bech32Address = await withTimeout(
+        getWalletAddressBech32(wallet), 10_000, "Wallet address request"
+      );
 
       if (!bech32Address || bech32Address.length < 10) {
         console.error("Invalid address from wallet:", bech32Address);
@@ -399,17 +415,19 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       authLogger.debug("Authentication successful for user:", authResponse.user.id);
     } catch (error) {
       authLogger.error("Authentication failed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Authentication failed";
+      const rawMessage = error instanceof Error ? error.message : "Authentication failed";
 
       // Detect popup blocked error (Web3Services wallets use popups for signing)
       if (
-        errorMessage.includes("Failed to open window") ||
-        errorMessage.includes("popup")
+        rawMessage.includes("Failed to open window") ||
+        rawMessage.includes("popup")
       ) {
         // Set popupBlocked instead of authError - user can click to retry
         setPopupBlocked(true);
       } else {
-        setAuthError(errorMessage);
+        // Parse the error into a user-friendly message
+        const parsed = parseAuthErrorMessage(rawMessage);
+        setAuthError(parsed?.message ?? "Authentication failed. Please try again.");
       }
       setIsAuthenticated(false);
     } finally {

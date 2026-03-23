@@ -65,7 +65,7 @@ function ManageContributorsContent({ projectId }: { projectId: string }) {
       const entry = stats.get(c.submittedBy) ?? { committed: 0, accepted: 0, pending: 0 };
       entry.committed++;
       if (c.commitmentStatus === "ACCEPTED") entry.accepted++;
-      if (c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "PENDING_APPROVAL") entry.pending++;
+      if (c.commitmentStatus === "SUBMITTED") entry.pending++;
       stats.set(c.submittedBy, entry);
     }
     return stats;

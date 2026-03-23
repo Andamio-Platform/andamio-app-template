@@ -105,9 +105,6 @@ const getManagerStatusHint = (status: string | undefined | null): string | null 
       return "You refused this work. The contributor can resubmit with updated evidence.";
     case "DENIED":
       return "Permanently rejected. The contributor's deposit has been returned.";
-    // Legacy (backwards compat — remove after v2.2 confirmed)
-    case "COMMITTED":
-      return "Contributor committed to this task. Waiting for evidence submission.";
     default:
       return null;
   }

@@ -87,7 +87,7 @@ export const projectContributorKeys = {
  */
 export interface MyCommitmentSummary {
   taskHash: string;
-  commitmentStatus: string;
+  commitmentStatus: ProjectCommitmentStatus;
   taskEvidenceHash?: string;
   evidence?: unknown;
   evidenceUrl?: string;
@@ -140,7 +140,7 @@ export interface ContributorCommitment {
   onChainStatus?: string;
 
   // Off-chain content (contributor's evidence)
-  commitmentStatus?: string;
+  commitmentStatus?: ProjectCommitmentStatus;
   taskEvidenceHash?: string;
   evidence?: unknown;
   evidenceUrl?: string;
@@ -154,6 +154,25 @@ export interface ContributorCommitment {
   // Metadata
   status: ProjectStatus;
 }
+
+// =============================================================================
+// Status Types
+// =============================================================================
+
+/** Valid project commitment status values after normalization. */
+export type ProjectCommitmentStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "ACCEPTED"
+  | "REFUSED"
+  | "REWARDED"
+  | "ABANDONED"
+  | "AWAITING_SUBMISSION"
+  | "PENDING_TX_COMMIT"
+  | "PENDING_TX_ASSESS"
+  | "PENDING_TX_CLAIM"
+  | "PENDING_TX_LEAVE"
+  | "UNKNOWN";
 
 // =============================================================================
 // Status Normalization
@@ -181,10 +200,10 @@ const PROJECT_STATUS_MAP: Record<string, string> = {
   PENDING_TX_SUBMIT: "PENDING_TX_COMMIT",
 };
 
-function normalizeProjectCommitmentStatus(raw: string | undefined): string {
+export function normalizeProjectCommitmentStatus(raw: string | undefined): ProjectCommitmentStatus {
   if (!raw) return "UNKNOWN";
   const upper = raw.toUpperCase();
-  return PROJECT_STATUS_MAP[upper] ?? upper;
+  return (PROJECT_STATUS_MAP[upper] ?? upper) as ProjectCommitmentStatus;
 }
 
 // =============================================================================

@@ -130,7 +130,7 @@ export function transformAssignmentCommitment(
     APPROVED: "ASSIGNMENT_ACCEPTED",
     REJECTED: "ASSIGNMENT_REFUSED",
     // Legacy (backwards compat — remove after v2.2 confirmed)
-    COMMITTED: "SUBMITTED",
+    COMMITTED: "PENDING_APPROVAL",
     AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
     CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
     LEFT: "LEFT",

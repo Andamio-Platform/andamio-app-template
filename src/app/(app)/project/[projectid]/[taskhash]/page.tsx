@@ -129,10 +129,10 @@ export default function TaskDetailPage() {
   const { data: allMyCommitments = [] } = useContributorCommitments(projectId);
 
   // isFirstCommit: true only if user has NEVER successfully committed to any task.
-  // Filter out PENDING_TX_SUBMIT — those haven't confirmed on-chain, so the user
+  // Filter out PENDING_TX_COMMIT — those haven't confirmed on-chain, so the user
   // isn't registered as a contributor yet and needs the "join+commit" TX path.
   const isFirstCommit = allMyCommitments.filter(
-    (c) => c.commitmentStatus !== "PENDING_TX_SUBMIT"
+    (c) => c.commitmentStatus !== "PENDING_TX_COMMIT"
   ).length === 0;
 
   // Fallback: when the commitment detail endpoint returns 404 but the contributor
@@ -450,8 +450,8 @@ export default function TaskDetailPage() {
                 </>
               )}
             </div>
-          ) : commitmentStatus === "PENDING_TX_SUBMIT" ? (
-            /* ── PENDING_TX_SUBMIT — Read-only evidence + TX info ─── */
+          ) : commitmentStatus === "PENDING_TX_COMMIT" ? (
+            /* ── PENDING_TX_COMMIT — Read-only evidence + TX info ─── */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
@@ -512,8 +512,8 @@ export default function TaskDetailPage() {
                 Refresh Status
               </AndamioButton>
             </div>
-          ) : commitmentStatus === "COMMITTED" || commitmentStatus === "SUBMITTED" || commitmentStatus === "REFUSED" ? (
-            /* ── COMMITTED / SUBMITTED / REFUSED — Evidence + TaskAction ── */
+          ) : commitmentStatus === "SUBMITTED" || commitmentStatus === "REFUSED" ? (
+            /* ── SUBMITTED / REFUSED — Evidence + TaskAction ── */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
@@ -533,15 +533,9 @@ export default function TaskDetailPage() {
                 </div>
               )}
 
-              {commitmentStatus === "COMMITTED" && (
-                <AndamioText variant="small" className="text-muted-foreground">
-                  You&apos;ve joined this task. Your manager may review at any time — submit evidence when ready.
-                </AndamioText>
-              )}
-
               {commitmentStatus === "SUBMITTED" && (
                 <AndamioText variant="small" className="text-muted-foreground">
-                  Evidence submitted. Waiting for manager review. You can update your evidence below.
+                  Your commitment is active. You can update your evidence below while awaiting review.
                 </AndamioText>
               )}
 

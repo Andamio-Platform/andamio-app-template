@@ -69,6 +69,7 @@ import {
   type ProjectPrerequisite,
 } from "./use-project";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import { normalizeProjectCommitmentStatus, type ProjectCommitmentStatus } from "./use-project-contributor";
 
 // =============================================================================
 // Query Keys
@@ -158,7 +159,7 @@ export interface ManagerCommitment {
   onChainContent?: string;
 
   // Off-chain content (contributor's evidence)
-  commitmentStatus?: string;
+  commitmentStatus?: ProjectCommitmentStatus;
   taskEvidenceHash?: string;
   evidence?: unknown;
   assessedBy?: string;
@@ -238,8 +239,8 @@ function transformManagerCommitment(api: ManagerCommitmentItem): ManagerCommitme
     submissionTx: api.submission_tx,
     onChainContent: api.on_chain_content,
 
-    // Off-chain content
-    commitmentStatus: api.content?.commitment_status,
+    // Off-chain content (normalized for stale cache safety)
+    commitmentStatus: normalizeProjectCommitmentStatus(api.content?.commitment_status),
     taskEvidenceHash: api.content?.task_evidence_hash,
     evidence: api.content?.evidence,
     assessedBy: api.content?.assessed_by,

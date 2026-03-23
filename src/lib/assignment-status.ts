@@ -23,7 +23,8 @@ const STATUS_ALIASES: Record<string, AssignmentStatus> = {
   COMPLETED: "CREDENTIAL_CLAIMED",
   CURRENT: "IN_PROGRESS",
   PENDING: "PENDING_APPROVAL",
-  // Legacy (remove after migration confirmed)
+  SUBMITTED: "PENDING_APPROVAL",
+  // Legacy (backwards compat — remove after v2.2 confirmed)
   COMMITTED: "PENDING_APPROVAL",
   SAVE_FOR_LATER: "IN_PROGRESS",
   COMMITMENT: "IN_PROGRESS",

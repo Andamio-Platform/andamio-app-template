@@ -129,8 +129,8 @@ export function transformAssignmentCommitment(
     // Legacy aliases (gateway may still send these)
     APPROVED: "ASSIGNMENT_ACCEPTED",
     REJECTED: "ASSIGNMENT_REFUSED",
-    // DB API statuses that should pass through with app-level names
-    COMMITTED: "COMMITTED",
+    // Legacy (backwards compat — remove after v2.2 confirmed)
+    COMMITTED: "PENDING_APPROVAL",
     AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
     CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
     LEFT: "LEFT",

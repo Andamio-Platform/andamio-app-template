@@ -105,7 +105,7 @@ const getManagerStatusHint = (status: string | undefined | null): string | null 
       return "You refused this work. The contributor can resubmit with updated evidence.";
     case "DENIED":
       return "Permanently rejected. The contributor's deposit has been returned.";
-    // Legacy (remove after migration confirmed)
+    // Legacy (backwards compat — remove after v2.2 confirmed)
     case "COMMITTED":
       return "Contributor committed to this task. Waiting for evidence submission.";
     default:
@@ -279,7 +279,7 @@ export default function ProjectCommitmentsPage() {
     (current: ManagerCommitment | null) => {
       const pending = commitments.filter(
         (c) =>
-          (c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "COMMITTED") &&
+          c.commitmentStatus === "SUBMITTED" &&
           !(c.taskHash === current?.taskHash && c.submittedBy === current?.submittedBy)
       );
       return pending[0] ?? null;
@@ -314,7 +314,7 @@ export default function ProjectCommitmentsPage() {
   }
 
   const pendingCount = commitments.filter(
-    (c) => c.commitmentStatus === "SUBMITTED" || c.commitmentStatus === "COMMITTED"
+    (c) => c.commitmentStatus === "SUBMITTED"
   ).length;
 
   return (
@@ -638,8 +638,7 @@ export default function ProjectCommitmentsPage() {
                       Try Again
                     </AndamioButton>
                   </div>
-                ) : selectedCommitment.commitmentStatus === "SUBMITTED" ||
-                  selectedCommitment.commitmentStatus === "COMMITTED" ? (
+                ) : selectedCommitment.commitmentStatus === "SUBMITTED" ? (
                   // Decision buttons
                   <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 -mx-6 px-6 space-y-3">
                     {/* Irreversibility warning */}

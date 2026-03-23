@@ -231,9 +231,9 @@ const TEACHER_STATUS_MAP: Record<string, string> = {
   // Legacy aliases (gateway may still send these)
   APPROVED: "ACCEPTED",
   REJECTED: "REFUSED",
-  // DB statuses that may survive before gateway healing (andamio-api#133)
-  COMMITTED: "COMMITTED",
-  AWAITING_SUBMISSION: "COMMITTED",
+  // Legacy (backwards compat — remove after v2.2 confirmed)
+  COMMITTED: "SUBMITTED",
+  AWAITING_SUBMISSION: "SUBMITTED",
   LEFT: "LEFT",
 };
 

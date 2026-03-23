@@ -74,7 +74,7 @@ function getCommitmentCardTitle(
   if (status === "REFUSED") return { label: "Resubmission Needed", icon: "alert" };
   if (status === "ACCEPTED" && !hasClaimed) return { label: "Task Accepted", icon: "success" };
   if (status === "ACCEPTED" && hasClaimed) return { label: "Rewards Claimed", icon: "success" };
-  if (status === "PENDING_TX_SUBMIT") return { label: "Awaiting Confirmation", icon: "pending" };
+  if (status === "PENDING_TX_COMMIT") return { label: "Awaiting Confirmation", icon: "pending" };
   return { label: "Task Pending Review", icon: "pending" };
 }
 
@@ -92,13 +92,10 @@ function getCommitmentCardDescription(
   if (status === "ACCEPTED") {
     return "Your work has been accepted! Choose your next step below.";
   }
-  if (status === "COMMITTED") {
-    return "You've joined this task. Visit the task page to submit evidence.";
-  }
   if (status === "SUBMITTED") {
-    return "Evidence submitted. Waiting for manager review.";
+    return "Your commitment is active. Visit the task page to view or submit evidence.";
   }
-  if (status === "PENDING_TX_SUBMIT") {
+  if (status === "PENDING_TX_COMMIT") {
     return "Waiting for blockchain confirmation.";
   }
   return "Your submission is awaiting manager review.";
@@ -161,8 +158,8 @@ function MyContributionsContent() {
   // (from chain/DB/merged sources). Keep the most relevant status per task.
   const commitments = useMemo(() => {
     const STATUS_PRIORITY: Record<string, number> = {
-      REFUSED: 6, COMMITTED: 5, SUBMITTED: 4,
-      PENDING_TX_SUBMIT: 3, ACCEPTED: 2, UNKNOWN: 1,
+      REFUSED: 5, SUBMITTED: 4,
+      PENDING_TX_COMMIT: 3, ACCEPTED: 2, UNKNOWN: 1,
     };
     const byHash = new Map<string, ContributorCommitment>();
     for (const c of rawCommitments) {
@@ -218,10 +215,9 @@ function MyContributionsContent() {
 
   const acceptedCommitments = commitments.filter(c => c.commitmentStatus === "ACCEPTED");
   const pendingCommitments = commitments.filter(c =>
-    c.commitmentStatus === "COMMITTED" ||
     c.commitmentStatus === "SUBMITTED" ||
     c.commitmentStatus === "REFUSED" ||
-    c.commitmentStatus === "PENDING_TX_SUBMIT"
+    c.commitmentStatus === "PENDING_TX_COMMIT"
   );
 
   const completedTaskCount = acceptedCommitments.length;
@@ -270,12 +266,11 @@ function MyContributionsContent() {
   const availableTaskCount = uniqueAvailableHashes.size;
 
   // Find the "active" commitment (the one that needs attention — pending or refused)
-  // Priority: REFUSED > COMMITTED > SUBMITTED > PENDING_TX_SUBMIT > ACCEPTED
+  // Priority: REFUSED > SUBMITTED > PENDING_TX_COMMIT > ACCEPTED
   const activeCommitment: ContributorCommitment | undefined =
     pendingCommitments.find(c => c.commitmentStatus === "REFUSED") ??
-    pendingCommitments.find(c => c.commitmentStatus === "COMMITTED") ??
     pendingCommitments.find(c => c.commitmentStatus === "SUBMITTED") ??
-    pendingCommitments.find(c => c.commitmentStatus === "PENDING_TX_SUBMIT") ??
+    pendingCommitments.find(c => c.commitmentStatus === "PENDING_TX_COMMIT") ??
     // If no pending, show the most recent accepted (for the "next steps" CTA)
     acceptedCommitments[0];
 
@@ -286,7 +281,7 @@ function MyContributionsContent() {
     if (pendingCommitments.length > 0) {
       const activeStatus = activeCommitment?.commitmentStatus;
       if (activeStatus === "REFUSED") return "Resubmission Needed";
-      if (activeStatus === "PENDING_TX_SUBMIT") return "Awaiting Confirmation";
+      if (activeStatus === "PENDING_TX_COMMIT") return "Awaiting Confirmation";
       return "Task Pending";
     }
     if (isContributor) return "Active Contributor";

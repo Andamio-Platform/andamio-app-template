@@ -346,5 +346,5 @@ Then visually check:
 ## Support
 
 - **Andamio Documentation:** https://docs.andamio.io
-- **GitHub Issues:** https://github.com/Andamio-Platform/andamio-app-v2/issues
+- **GitHub Issues:** https://github.com/Andamio-Platform/andamio-app-template/issues
 - **Discord:** https://discord.gg/andamio

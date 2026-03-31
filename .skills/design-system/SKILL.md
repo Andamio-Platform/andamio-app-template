@@ -254,9 +254,4 @@ CSS specificity bugs, hydration mismatches, and layout edge cases can eat hours.
 /workflows:compound
 ```
 
-This captures the issue in `docs/solutions/ui-bugs/` so others don't repeat the investigation. Examples:
-- `ui-bugs/prose-content-max-width-override.md`
-- `ui-bugs/mesh-css-preflight-conflict.md`
-- `ui-bugs/heading-layer-specificity.md`
-
-Check `docs/solutions/ui-bugs/` before debugging — the fix may already be documented.
+This captures the issue so others don't repeat the investigation.

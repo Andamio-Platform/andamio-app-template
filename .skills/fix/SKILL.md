@@ -212,4 +212,4 @@ This captures:
 - The fix (how to solve it)
 - Prevention (how to avoid it)
 
-The documentation lands in `docs/solutions/` where it's searchable for future issues. Before starting Phase 3 (Investigate), check `docs/solutions/` — someone may have already solved this class of problem.
+This documentation is searchable for future issues.

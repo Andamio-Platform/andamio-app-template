@@ -81,15 +81,6 @@ The compound workflow captures:
 - **Root cause**: Why it happened
 - **Solution**: How to fix it (with code)
 - **Prevention**: How to avoid it
-
-Documentation lands in `docs/solutions/` organized by category:
-- `build-errors/` — Compilation, bundling, types
-- `runtime-errors/` — Exceptions, crashes
-- `integration-issues/` — API, third-party services
-- `ui-bugs/` — Styling, layout, hydration
-- And more...
-
-The `learnings-researcher` agent searches this directory when planning features or debugging, surfacing relevant past solutions automatically.
 </compound-engineering>
 
 <skip-if>

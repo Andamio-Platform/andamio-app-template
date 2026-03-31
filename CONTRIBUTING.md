@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Andamio-Platform/andamio-app-v2.git
-   cd andamio-app-v2
+   git clone https://github.com/Andamio-Platform/andamio-app-template.git
+   cd andamio-app-template
    ```
 
 2. **Install dependencies**
@@ -40,16 +40,14 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ### API Configuration
 
-The template connects to deployed Andamio APIs by default. Check your `.env` file for the correct API URLs:
+The template connects to the unified Andamio Gateway by default. Check your `.env` file for the correct URL:
 
 ```bash
-# Default: connects to preprod APIs
-NEXT_PUBLIC_ANDAMIO_API_URL="https://andamio-db-api-343753432212.europe-west1.run.app/api/v0"
-ANDAMIOSCAN_API_URL="https://preprod.andamioscan.andamio.space"
-ATLAS_TX_API_URL="https://atlas-api-preprod-507341199760.us-central1.run.app"
+# Default: connects to preprod gateway
+NEXT_PUBLIC_ANDAMIO_GATEWAY_URL="https://preprod.api.andamio.io"
 ```
 
-No local backend setup is required - all APIs are deployed and accessible.
+No local backend setup is required - the gateway is deployed and accessible.
 
 ## Development Workflow
 
@@ -139,8 +137,7 @@ When making changes:
 
 1. **Update relevant documentation** in `docs/`
 2. **Update README.md** if adding new features or changing setup
-3. **Update CHANGELOG.md** with your changes
-4. **Add JSDoc comments** for exported functions
+3. **Add JSDoc comments** for exported functions
 
 ## Pull Request Process
 

@@ -149,7 +149,7 @@ Auth issues can be tricky — wallet signatures, hex-to-bech32 conversion, JWT e
 /workflows:compound
 ```
 
-This captures the problem in `docs/solutions/` so the next person (or future you) finds the fix in minutes. Check `docs/solutions/` before debugging — someone may have already solved it.
+This captures the problem so the next person (or future you) finds the fix in minutes.
 
 ---
 

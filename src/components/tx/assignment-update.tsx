@@ -22,6 +22,7 @@ import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { useSubmitEvidence } from "~/hooks/api/course/use-assignment-commitment";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -293,7 +294,7 @@ export function AssignmentUpdate({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",

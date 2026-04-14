@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import { CloseIcon, LessonIcon } from "~/components/icons";
+import { CloseIcon, LessonIcon, LoadingIcon } from "~/components/icons";
 import { cn } from "~/lib/utils";
-import { EditorExtensionKit } from "../../extension-kits/shared";
+import { SharedExtensionKit } from "../../extension-kits/shared";
 import { EditorToolbar, type ToolbarConfig } from "./EditorToolbar";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { useImageUpload } from "~/hooks/api/use-image-upload";
+import { toast } from "sonner";
 
 /**
  * ContentEditor Props
@@ -111,6 +114,13 @@ export interface ContentEditorProps {
    * @default false
    */
   autoFocus?: boolean;
+
+  /**
+   * Enable image upload via paste and drag-drop.
+   * Requires user to be authenticated.
+   * @default true
+   */
+  enableImageUpload?: boolean;
 }
 
 /**
@@ -167,12 +177,41 @@ export function ContentEditor({
   footer,
   disabled = false,
   autoFocus = false,
+  enableImageUpload = true,
 }: ContentEditorProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
-  const extensions = useMemo(() => EditorExtensionKit(), []);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Image upload integration
+  const { isAuthenticated } = useAndamioAuth();
+  const uploadMutation = useImageUpload();
+
+  // Configure extensions with optional image upload
+  const extensions = useMemo(() => {
+    // Enable image upload if: feature enabled, user authenticated, and storage configured
+    const shouldEnableUpload = enableImageUpload && isAuthenticated;
+
+    return SharedExtensionKit({
+      readonly: false,
+      ...(shouldEnableUpload && {
+        imageUpload: {
+          onUpload: async (file: File) => {
+            const result = await uploadMutation.mutateAsync(file);
+            return result.url;
+          },
+          onUploadStart: () => setIsUploading(true),
+          onUploadEnd: () => setIsUploading(false),
+          onUploadError: (error: Error) => {
+            toast.error(error.message);
+            setIsUploading(false);
+          },
+        },
+      }),
+    });
+  }, [enableImageUpload, isAuthenticated, uploadMutation]);
 
   // Initialize editor
   const editor = useEditor({
@@ -211,7 +250,7 @@ export function ContentEditor({
           "prose-blockquote:italic prose-blockquote:text-muted-foreground prose-blockquote:not-italic",
 
           // Code - inline and blocks
-          "prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
+          "prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono",
           "prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
           "prose-code:border prose-code:border-border/30",
           "prose-pre:bg-muted/70 prose-pre:border prose-pre:border-border/50 prose-pre:shadow-sm",
@@ -326,10 +365,75 @@ export function ContentEditor({
     );
   }
 
+  // Editor-specific styles — must render in BOTH normal and fullscreen modes.
+  // Previously lived inside the normal mode branch, causing styles to unmount in fullscreen (#428).
+  const editorStyles = (
+    <style jsx global>{`
+      .andamio-editor-content.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        pointer-events: none;
+        height: 0;
+      }
+      .andamio-editor-content p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        pointer-events: none;
+        height: 0;
+      }
+      /* Table styles for responsive scrolling */
+      .andamio-editor-content .tableWrapper {
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+      .andamio-editor-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0;
+      }
+      .andamio-editor-content th,
+      .andamio-editor-content td {
+        border: 1px solid hsl(var(--border));
+        padding: 0.5rem;
+        min-width: 100px;
+        vertical-align: top;
+        position: relative;
+      }
+      .andamio-editor-content th {
+        background-color: hsl(var(--muted));
+        font-weight: 600;
+        text-align: left;
+      }
+      /* Selected cell highlight */
+      .andamio-editor-content .selectedCell::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: hsl(var(--primary) / 0.1);
+        pointer-events: none;
+      }
+      /* Column resize handle (disabled but styled for consistency) */
+      .andamio-editor-content .column-resize-handle {
+        position: absolute;
+        right: -2px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: hsl(var(--primary));
+        cursor: col-resize;
+      }
+    `}</style>
+  );
+
   // Fullscreen mode - immersive writing experience
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-background">
+        {editorStyles}
         {/* Fullscreen header - clean and minimal */}
         <div className="flex items-center justify-between border-b border-border/50 bg-background/95 backdrop-blur-sm px-6 py-4">
           <div className="flex items-center gap-3">
@@ -430,66 +534,17 @@ export function ContentEditor({
           }}
         />
 
-        {/* Empty state placeholder styling and table support */}
-        <style jsx global>{`
-          .andamio-editor-content.is-editor-empty:first-child::before {
-            content: attr(data-placeholder);
-            float: left;
-            color: hsl(var(--muted-foreground));
-            opacity: 0.5;
-            pointer-events: none;
-            height: 0;
-          }
-          .andamio-editor-content p.is-editor-empty:first-child::before {
-            content: attr(data-placeholder);
-            float: left;
-            color: hsl(var(--muted-foreground));
-            opacity: 0.5;
-            pointer-events: none;
-            height: 0;
-          }
-          /* Table styles for responsive scrolling */
-          .andamio-editor-content .tableWrapper {
-            overflow-x: auto;
-            margin: 1rem 0;
-          }
-          .andamio-editor-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 0;
-          }
-          .andamio-editor-content th,
-          .andamio-editor-content td {
-            border: 1px solid hsl(var(--border));
-            padding: 0.5rem;
-            min-width: 100px;
-            vertical-align: top;
-            position: relative;
-          }
-          .andamio-editor-content th {
-            background-color: hsl(var(--muted));
-            font-weight: 600;
-            text-align: left;
-          }
-          /* Selected cell highlight */
-          .andamio-editor-content .selectedCell::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: hsl(var(--primary) / 0.1);
-            pointer-events: none;
-          }
-          /* Column resize handle (disabled but styled for consistency) */
-          .andamio-editor-content .column-resize-handle {
-            position: absolute;
-            right: -2px;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background-color: hsl(var(--primary));
-            cursor: col-resize;
-          }
-        `}</style>
+        {/* Image upload loading overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center rounded-xl z-10">
+            <div className="flex items-center gap-2 text-muted-foreground bg-background/90 px-4 py-2 rounded-lg shadow-lg border border-border">
+              <LoadingIcon className="h-4 w-4 animate-spin" />
+              <span className="text-sm font-medium">Uploading image...</span>
+            </div>
+          </div>
+        )}
+
+        {editorStyles}
       </div>
 
       {/* Footer - clean stats display */}
@@ -534,7 +589,7 @@ export function useContentEditor(
   options: Pick<ContentEditorProps, "content" | "onContentChange" | "onUpdate" | "disabled"> = {},
 ) {
   const { content, onContentChange, onUpdate, disabled = false } = options;
-  const extensions = useMemo(() => EditorExtensionKit(), []);
+  const extensions = useMemo(() => SharedExtensionKit({ readonly: false }), []);
 
   const editor = useEditor({
     extensions,

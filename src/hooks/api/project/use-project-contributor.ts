@@ -87,7 +87,7 @@ export const projectContributorKeys = {
  */
 export interface MyCommitmentSummary {
   taskHash: string;
-  commitmentStatus: ProjectCommitmentStatus;
+  commitmentStatus: string;
   taskEvidenceHash?: string;
   evidence?: unknown;
   evidenceUrl?: string;
@@ -140,7 +140,7 @@ export interface ContributorCommitment {
   onChainStatus?: string;
 
   // Off-chain content (contributor's evidence)
-  commitmentStatus?: ProjectCommitmentStatus;
+  commitmentStatus?: string;
   taskEvidenceHash?: string;
   evidence?: unknown;
   evidenceUrl?: string;
@@ -156,54 +156,38 @@ export interface ContributorCommitment {
 }
 
 // =============================================================================
-// Status Types
-// =============================================================================
-
-/** Valid project commitment status values after normalization. */
-export type ProjectCommitmentStatus =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "ACCEPTED"
-  | "REFUSED"
-  | "REWARDED"
-  | "ABANDONED"
-  | "AWAITING_SUBMISSION"
-  | "PENDING_TX_COMMIT"
-  | "PENDING_TX_ASSESS"
-  | "PENDING_TX_CLAIM"
-  | "PENDING_TX_LEAVE"
-  | "UNKNOWN";
-
-// =============================================================================
 // Status Normalization
 // =============================================================================
 
 /**
  * Normalize project commitment status to uppercase display values.
  *
- * The gateway may send lowercase (OpenAPI: "submitted, approved")
- * or uppercase (DB: "DRAFT, SUBMITTED, ACCEPTED"). Components
- * expect uppercase. This normalizer handles both and maps legacy values.
+ * The gateway may send lowercase (OpenAPI: "committed, submitted, approved")
+ * or uppercase (DB: "DRAFT, COMMITTED, ACCEPTED"). Components expect uppercase.
+ * This normalizer handles both and maps legacy values.
  *
- * DB values: DRAFT, SUBMITTED, ACCEPTED, REFUSED, PENDING_TX_COMMIT
- * Legacy aliases: APPROVED → ACCEPTED, REJECTED/DENIED → REFUSED
+ * Valid statuses: DRAFT, COMMITTED, ACCEPTED, REFUSED, DENIED, REWARDED, ABANDONED,
+ *   PENDING_TX_COMMIT, PENDING_TX_ASSESS, PENDING_TX_CLAIM, PENDING_TX_LEAVE
+ * Legacy aliases: APPROVED → ACCEPTED, REJECTED → REFUSED,
+ *   SUBMITTED → COMMITTED (#469), PENDING_TX_SUBMIT → PENDING_TX_COMMIT (#460)
  */
 const PROJECT_STATUS_MAP: Record<string, string> = {
   ACCEPTED: "ACCEPTED",
   REFUSED: "REFUSED",
+  REWARDED: "REWARDED",
+  DENIED: "DENIED",
   // Legacy aliases
   APPROVED: "ACCEPTED",
   REJECTED: "REFUSED",
-  DENIED: "REFUSED",
-  // Legacy (backwards compat — remove after v2.2 confirmed)
-  COMMITTED: "SUBMITTED",
+  // API normalization (#469): SUBMITTED renamed to COMMITTED in v2.1.3
+  SUBMITTED: "COMMITTED",
   PENDING_TX_SUBMIT: "PENDING_TX_COMMIT",
 };
 
-export function normalizeProjectCommitmentStatus(raw: string | undefined): ProjectCommitmentStatus {
+export function normalizeProjectCommitmentStatus(raw: string | undefined): string {
   if (!raw) return "UNKNOWN";
   const upper = raw.toUpperCase();
-  return (PROJECT_STATUS_MAP[upper] ?? upper) as ProjectCommitmentStatus;
+  return PROJECT_STATUS_MAP[upper] ?? upper;
 }
 
 // =============================================================================
@@ -285,7 +269,14 @@ function transformContributorCommitment(
     onChainStatus: api.on_chain_status,
 
     // Off-chain content (normalized to uppercase)
-    commitmentStatus: normalizeProjectCommitmentStatus(content?.commitment_status),
+    // Chain-only items have no DB content — derive status from on_chain_status.
+    // Unlike the manager hook (which hardcodes "COMMITTED" since its list only
+    // contains pending assessments), the contributor view shows all states.
+    commitmentStatus: content?.commitment_status
+      ? normalizeProjectCommitmentStatus(content.commitment_status)
+      : api.source === "chain_only"
+        ? normalizeProjectCommitmentStatus(api.on_chain_status)
+        : "UNKNOWN",
     taskEvidenceHash: content?.task_evidence_hash,
     evidence: content?.evidence,
     assessedBy: content?.assessed_by,

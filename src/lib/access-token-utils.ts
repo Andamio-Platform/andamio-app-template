@@ -4,8 +4,24 @@
  * Helper functions for working with Andamio Access Token NFTs
  */
 
+import { env } from "~/env";
+
+/** V2 access token policy ID (current). */
+export const V2_ACCESS_TOKEN_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
+
 /**
- * Convert a string to hexadecimal
+ * V1 access token policy ID (legacy).
+ * V1 tokens can be migrated to V2 via the registration flow.
+ */
+export const V1_ACCESS_TOKEN_POLICY_ID =
+  "e760308d0c14096ff479ec5f2495455505feb790503903fe976c4fd2";
+
+/** V1 token name prefix length — V1 uses a 3-character prefix (legacy format). */
+export const V1_ACCESS_TOKEN_PREFIX_LENGTH = 3;
+
+/**
+ * Convert a string to hexadecimal.
+ * Required for CIP-30 wallet.signData() which expects hex-encoded payloads.
  */
 export function stringToHex(str: string): string {
   return str

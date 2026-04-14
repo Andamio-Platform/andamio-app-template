@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
@@ -12,7 +11,6 @@ import {
   ExternalLinkIcon,
   InfoIcon,
 } from "~/components/icons";
-import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -28,6 +26,16 @@ import { env } from "~/env";
 interface FirstLoginCardProps {
   alias: string;
   txHash: string | null;
+  /**
+   * Fires once, ~2s after the new JWT carries an accessTokenAlias matching
+   * `alias`. Required — call sites must state where the user goes next.
+   */
+  onActivated: () => void;
+  /**
+   * Terminal celebration description shown during the 2s delay before
+   * `onActivated` fires. Defaults to the landing copy.
+   */
+  terminalMessage?: string;
 }
 
 /**
@@ -35,13 +43,20 @@ interface FirstLoginCardProps {
  *
  * Flow:
  * 1. Shows TX submitted with real-time confirmation status via SSE
- * 2. Once confirmed, reveals "Sign In" button + ceremony message
- * 3. User clicks "Sign In" → logout clears session and disconnects wallet
- * 4. Card shows wallet connect button for re-connection
- * 5. Wallet connects → auto-auth picks up the new token → redirect to dashboard
+ * 2. Once confirmed, shows celebration and auto-logouts after 2s
+ * 3. Card shows wallet connect button for re-connection
+ * 4. Wallet connects → auto-auth picks up the new token → onActivated fires
+ *
+ * `onActivated` only fires when the re-authenticated wallet carries the same
+ * alias the ceremony was initiated for. This prevents a mid-ceremony identity
+ * swap (different wallet reconnects) from revealing the success state.
  */
-export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
-  const router = useRouter();
+export function FirstLoginCard({
+  alias,
+  txHash,
+  onActivated,
+  terminalMessage = "Redirecting to your dashboard...",
+}: FirstLoginCardProps) {
   const {
     isAuthenticated,
     user,
@@ -51,33 +66,58 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
   } = useAndamioAuth();
 
   const [hasLoggedOut, setHasLoggedOut] = React.useState(false);
+  const [confirmationStalled, setConfirmationStalled] = React.useState(false);
 
   // Track on-chain confirmation via gateway SSE
   const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     txHash,
+    {
+      onComplete: (status) => {
+        // Auto-transition to reconnect flow when TX is confirmed
+        if (status.state === "updated" && !hasLoggedOut) {
+          console.log("[FirstLoginCard] TX confirmed - auto-transitioning to reconnect flow");
+          // Show celebration for 2 seconds, then auto-logout
+          setTimeout(() => {
+            setHasLoggedOut(true);
+            logout();
+          }, 2000);
+        }
+      },
+    }
   );
+
+  // Client-side stall fallback. The gateway's tx-watcher stall timeout (~30s)
+  // is the primary signal, but a broken SSE stream or a buggy watcher could
+  // leave the user staring at "Access Token Submitted!" indefinitely. Flip
+  // to a recoverable error state after 2 minutes.
+  React.useEffect(() => {
+    if (txConfirmed || txFailed || hasLoggedOut) return;
+    const stallTimer = setTimeout(() => {
+      setConfirmationStalled(true);
+    }, 120_000);
+    return () => clearTimeout(stallTimer);
+  }, [txConfirmed, txFailed, hasLoggedOut, txHash]);
 
   const explorerUrl = txHash
     ? getTransactionExplorerUrl(txHash, env.NEXT_PUBLIC_CARDANO_NETWORK)
     : null;
 
-  // After re-authenticating with the token, redirect to dashboard
+  // Identity-bound terminal state: a mid-ceremony wallet swap will NOT
+  // satisfy this predicate, so onActivated won't fire under the wrong alias.
+  const isActivatedWithExpectedAlias =
+    hasLoggedOut && isAuthenticated && user?.accessTokenAlias === alias;
+
+  // After re-authenticating with the matching alias, fire onActivated.
   React.useEffect(() => {
-    if (hasLoggedOut && isAuthenticated && user?.accessTokenAlias) {
-      const timer = setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasLoggedOut, isAuthenticated, user?.accessTokenAlias, router]);
+    if (!isActivatedWithExpectedAlias) return;
+    const timer = setTimeout(() => {
+      onActivated();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isActivatedWithExpectedAlias, onActivated]);
 
-  const handleSignIn = React.useCallback(() => {
-    setHasLoggedOut(true);
-    logout();
-  }, [logout]);
-
-  // ── Re-authenticated with token: celebration + auto-redirect ──
-  if (hasLoggedOut && isAuthenticated && user?.accessTokenAlias) {
+  // ── Re-authenticated with matching alias: celebration + onActivated handoff ──
+  if (isActivatedWithExpectedAlias) {
     return (
       <AndamioCard className="w-full max-w-lg">
         <AndamioCardHeader className="text-center">
@@ -86,7 +126,7 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           </div>
           <AndamioCardTitle className="text-2xl">Welcome to Andamio!</AndamioCardTitle>
           <AndamioCardDescription className="mx-auto max-w-sm text-center">
-            Signed in as <span className="font-mono font-semibold text-foreground">{user.accessTokenAlias}</span>. Redirecting to your dashboard...
+            Signed in as <span className="font-mono font-semibold text-foreground">{alias}</span>. {terminalMessage}
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent>
@@ -146,8 +186,15 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
     );
   }
 
-  // ── Logged out, waiting for wallet reconnect ──
-  if (hasLoggedOut && !isAuthenticated) {
+  // ── Logged out, waiting for the correct wallet to reconnect ──
+  // Matches both "not authenticated yet" AND "authenticated but the alias
+  // doesn't match the mint". The latter catches a mid-ceremony wallet swap:
+  // if a different wallet reconnects, we keep the user on the reconnect card
+  // rather than falling through to a stale "TX submitted" render.
+  if (
+    hasLoggedOut &&
+    (!isAuthenticated || user?.accessTokenAlias !== alias)
+  ) {
     return (
       <AndamioCard className="w-full max-w-lg">
         <AndamioCardHeader className="text-center">
@@ -155,10 +202,10 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
             <AccessTokenIcon className="h-8 w-8 text-primary" />
           </div>
           <AndamioCardTitle className="text-2xl">
-            Sign In as {alias}
+            Almost Done!
           </AndamioCardTitle>
           <AndamioCardDescription className="mx-auto max-w-sm text-center">
-            Connect your wallet to authenticate with your new access token.
+            Connect your wallet to activate your access token.
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
@@ -166,7 +213,8 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
             <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <AndamioText variant="small" className="text-muted-foreground">
-              Once connected, you&apos;ll be signed in automatically with your new on-chain identity.
+              This creates a fresh session with your new on-chain identity as{" "}
+              <span className="font-mono font-semibold">{alias}</span>.
             </AndamioText>
           </div>
         </AndamioCardContent>
@@ -225,6 +273,19 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           </AndamioAlert>
         )}
 
+        {/* Client-side stall fallback — primary signal is the gateway watcher,
+            this catches SSE breakage / watcher bugs that would otherwise hang
+            the user here indefinitely. */}
+        {!txConfirmed && !txFailed && confirmationStalled && (
+          <AndamioAlert variant="destructive">
+            <AndamioAlertDescription>
+              We haven&apos;t heard confirmation for this transaction yet. It
+              may still succeed — check the explorer. If it does, refresh
+              this page to continue.
+            </AndamioAlertDescription>
+          </AndamioAlert>
+        )}
+
         {/* TX explorer link */}
         {explorerUrl && (
           <div className="flex items-center justify-center">
@@ -240,34 +301,19 @@ export function FirstLoginCard({ alias, txHash }: FirstLoginCardProps) {
           </div>
         )}
 
-        {/* The ceremony — shown once TX is confirmed */}
+        {/* The ceremony — shown once TX is confirmed, auto-transitions after 2 seconds */}
         {txConfirmed && (
-          <>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-2">
-              <AndamioText className="font-semibold text-lg">
-                Welcome to Andamio!
-              </AndamioText>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-3">
+            <AndamioText className="font-semibold text-lg">
+              Welcome to Andamio!
+            </AndamioText>
+            <div className="flex items-center justify-center gap-2">
+              <LoadingIcon className="h-4 w-4 animate-spin text-primary" />
               <AndamioText variant="muted">
-                Now you can authenticate to Andamio
-                <br />
-                with your Access Token.
+                Preparing your session...
               </AndamioText>
             </div>
-
-            {/* Sign In button — logs out and shows wallet connect */}
-            <AndamioButton onClick={handleSignIn} size="lg" className="w-full">
-              <AccessTokenIcon className="h-5 w-5" />
-              Sign In with Your Access Token
-            </AndamioButton>
-
-            {/* Explanation */}
-            <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
-              <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <AndamioText variant="small" className="text-muted-foreground">
-                This will reconnect your wallet and sign in with your new on-chain identity.
-              </AndamioText>
-            </div>
-          </>
+          </div>
         )}
 
       </AndamioCardContent>

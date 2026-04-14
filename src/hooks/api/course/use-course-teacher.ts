@@ -231,10 +231,15 @@ const TEACHER_STATUS_MAP: Record<string, string> = {
   // Legacy aliases (gateway may still send these)
   APPROVED: "ACCEPTED",
   REJECTED: "REFUSED",
-  // Legacy (backwards compat — remove after v2.2 confirmed)
-  COMMITTED: "SUBMITTED",
-  AWAITING_SUBMISSION: "SUBMITTED",
+  // DB statuses that may survive before gateway healing (andamio-api#133)
+  // Note: project endpoints normalize COMMITTED → SUBMITTED (#460),
+  // but course endpoints may still send these values.
+  COMMITTED: "AWAITING_SUBMISSION",
+  AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
   LEFT: "LEFT",
+  // TX lifecycle: student submitted evidence, tx committed but not yet indexed.
+  // Treat as pending approval so it appears in Pending Review tab.
+  PENDING_TX_COMMIT: "PENDING_APPROVAL",
 };
 
 function mapToDisplayStatus(

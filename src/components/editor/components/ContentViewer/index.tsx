@@ -193,7 +193,7 @@ export function ContentViewer({
           "prose-blockquote:italic prose-blockquote:text-muted-foreground prose-blockquote:not-italic",
 
           // Code - inline and blocks
-          "prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
+          "prose-code:bg-muted/70 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono",
           "prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
           "prose-code:border prose-code:border-border/30",
           "prose-pre:bg-muted/70 prose-pre:border prose-pre:border-border/50 prose-pre:shadow-sm",

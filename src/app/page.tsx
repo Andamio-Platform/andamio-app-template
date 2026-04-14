@@ -1,30 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import Image from "next/image";
 import { env } from "~/env";
 import { LandingHero } from "~/components/landing/landing-hero";
-import { FirstLoginCard } from "~/components/landing/first-login-card";
-
-interface MintedInfo {
-  alias: string;
-  txHash: string;
-}
 
 export default function Home() {
   const network = env.NEXT_PUBLIC_CARDANO_NETWORK;
-  const [mintedInfo, setMintedInfo] = useState<MintedInfo | null>(null);
-
-  const handleMinted = useCallback((info: MintedInfo) => {
-    setMintedInfo(info);
-  }, []);
-
-  // Show FirstLoginCard after minting
-  const showFirstLogin = !!mintedInfo;
 
   return (
     <main className="bg-background text-foreground h-dvh flex flex-col overflow-y-auto">
-      <section className="flex flex-1 flex-col items-center px-6 pt-[6vh]">
+      <section className="flex flex-1 flex-col items-center px-6 pt-[4vh]">
         {/* Logo — pinned near top so it doesn't shift between states */}
         <Image
           src="/logos/logo-with-typography-stacked.svg"
@@ -35,16 +20,9 @@ export default function Home() {
           priority
         />
 
-        {/* Card area — positioned closer to logo */}
-        <div className="flex flex-1 w-full items-start justify-center pt-[8vh] sm:pt-[10vh]">
-          {showFirstLogin ? (
-            <FirstLoginCard
-              alias={mintedInfo.alias}
-              txHash={mintedInfo.txHash}
-            />
-          ) : (
-            <LandingHero onMinted={handleMinted} />
-          )}
+        {/* Card area — centered for short content, naturally top-anchored for tall hero */}
+        <div className="flex flex-1 w-full items-center justify-center pt-[4vh] sm:pt-[6vh]">
+          <LandingHero />
         </div>
       </section>
 
@@ -53,7 +31,7 @@ export default function Home() {
         <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground font-mono">
           <span className="uppercase tracking-wider">{network}</span>
           <span className="text-border">•</span>
-          <span>v2.0.0</span>
+          <span>v2.2.0</span>
         </div>
       </footer>
     </main>

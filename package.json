@@ -1,7 +1,7 @@
 {
   "name": "andamio-app-template",
-  "version": "2.1.0",
-  "apiVersion": "2.1.1",
+  "version": "2.2.0",
+  "apiVersion": "2.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -105,11 +105,15 @@
     "react-hook-form": "^7.66.0",
     "react-resizable-panels": "^3.0.6",
     "recharts": "^3.8.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "superjson": "^2.2.1",
     "tailwind-merge": "^3.4.0",
     "tiptap-markdown": "^0.9.0",
+    "unified": "^11.0.5",
     "vaul": "^1.1.2",
     "zod": "^3.24.0",
     "zustand": "^5.0.11"

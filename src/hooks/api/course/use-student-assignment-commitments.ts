@@ -63,9 +63,6 @@ const STATUS_MAP: Record<string, string> = {
   // Legacy aliases (gateway may still send these)
   APPROVED: "ASSIGNMENT_ACCEPTED",
   REJECTED: "ASSIGNMENT_REFUSED",
-  // Legacy (backwards compat — remove after v2.2 confirmed)
-  COMMITTED: "PENDING_APPROVAL",
-  PENDING_TX_SUBMIT: "IN_PROGRESS",
 };
 
 function normalizeStatus(raw: RawStudentCommitment): string {

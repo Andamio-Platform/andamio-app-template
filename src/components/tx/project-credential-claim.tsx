@@ -17,22 +17,20 @@
 
 "use client";
 
-import React from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
-  AndamioCardDescription,
   AndamioCardHeader,
-  AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { CredentialIcon, ShieldIcon, ProjectIcon, LoadingIcon, SuccessIcon, TreasuryIcon } from "~/components/icons";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
+import { CredentialIcon, LoadingIcon, SuccessIcon, TreasuryIcon } from "~/components/icons";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
@@ -52,6 +50,12 @@ export interface ProjectCredentialClaimProps {
    * Project title for display
    */
   projectTitle?: string;
+
+  /**
+   * Task hash for the commitment being claimed. Passed as TX registration
+   * metadata so the gateway can reliably transition the commitment to REWARDED.
+   */
+  taskHash: string;
 
   /**
    * Pending reward amount in lovelace. When provided, the component
@@ -85,6 +89,7 @@ export interface ProjectCredentialClaimProps {
 export function ProjectCredentialClaim({
   projectNftPolicyId,
   contributorStateId,
+  taskHash,
   projectTitle,
   pendingRewardLovelace,
   onSuccess,
@@ -135,6 +140,9 @@ export function ProjectCredentialClaim({
         project_id: projectNftPolicyId,
         contributor_state_id: contributorStateId,
       },
+      metadata: {
+        task_hash: taskHash,
+      },
       onSuccess: async (txResult) => {
         console.log("[ProjectCredentialClaim] TX submitted successfully!", txResult);
       },
@@ -155,68 +163,32 @@ export function ProjectCredentialClaim({
 
   return (
     <AndamioCard>
-      <AndamioCardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <CredentialIcon className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <AndamioCardTitle>
-              {hasRewards ? "Leave & Claim" : "Claim Project Credentials"}
-            </AndamioCardTitle>
-            <AndamioCardDescription>
-              {hasRewards
-                ? "Leave the project, claim your pending rewards, and mint your credential NFT"
-                : "Mint your credential tokens for completed tasks"}
-            </AndamioCardDescription>
-          </div>
-        </div>
+      <AndamioCardHeader>
+        <AndamioCardIconHeader
+          icon={CredentialIcon}
+          title={projectTitle ?? "Project Credentials"}
+          description={hasRewards
+            ? `Leave project and claim ${formatLovelace(pendingRewardLovelace!)}`
+            : undefined}
+          iconColor="text-primary"
+        />
       </AndamioCardHeader>
-      <AndamioCardContent className="space-y-4">
-        {/* Project Info */}
-        {projectTitle && (
-          <div className="flex flex-wrap items-center gap-2">
-            <AndamioBadge variant="secondary" className="text-xs">
-              <ProjectIcon className="h-3 w-3 mr-1" />
-              {projectTitle}
-            </AndamioBadge>
-          </div>
-        )}
-
-        {/* Reward Amount (when claiming with rewards) */}
+      <AndamioCardContent>
+        {/* Pending Rewards — only when leaving with rewards */}
         {hasRewards && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <TreasuryIcon className="h-4 w-4 text-primary" />
-              <AndamioText className="font-medium">Pending Rewards</AndamioText>
-              <AndamioBadge variant="default" className="bg-primary text-primary-foreground">
-                {formatLovelace(pendingRewardLovelace!)}
-              </AndamioBadge>
-            </div>
-            <AndamioText variant="small" className="text-xs">
-              Your completed task rewards will be sent to your wallet along with your on-chain credential.
-            </AndamioText>
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <TreasuryIcon className="h-4 w-4 shrink-0 text-primary" />
+            <span className="text-sm font-medium">Pending Rewards:</span>
+            <span className="text-sm font-bold text-primary">{formatLovelace(pendingRewardLovelace!)}</span>
           </div>
         )}
 
-        {/* What You're Getting */}
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <ShieldIcon className="h-4 w-4 text-primary" />
-            <AndamioText className="font-medium">On-Chain Credentials</AndamioText>
-          </div>
-          <AndamioText variant="small" className="text-xs">
-            Native Cardano tokens that serve as permanent, verifiable proof of your contributions
-            and achievements in this project.
-          </AndamioText>
-        </div>
-
-        {/* Transaction Status - Only show during processing, not when showing gateway confirmation */}
+        {/* Transaction Status */}
         {state !== "idle" && !txConfirmed && !(state === "success" && result?.requiresDBUpdate) && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -230,13 +202,13 @@ export function ProjectCredentialClaim({
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
-                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
-                <AndamioText variant="small" className="text-xs">
+                <span className="font-medium">Confirming on blockchain...</span>
+                <AndamioText variant="small">
                   {txStatus?.state === "pending" && "Waiting for block confirmation"}
                   {txStatus?.state === "confirmed" && "Processing credential mint"}
                   {!txStatus && "Registering transaction..."}
                 </AndamioText>
-                <AndamioText variant="small" className="text-xs text-muted-foreground">
+                <AndamioText variant="muted">
                   This usually takes 20–60 seconds.
                 </AndamioText>
               </div>
@@ -250,21 +222,28 @@ export function ProjectCredentialClaim({
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-primary">
-                  {hasRewards ? "Rewards & Credentials Claimed!" : "Credentials Claimed Successfully!"}
-                </AndamioText>
-                <AndamioText variant="small" className="text-xs">
+                <span className="font-medium text-primary">
+                  {hasRewards ? "Rewards & Credentials Claimed!" : "Credentials Claimed!"}
+                </span>
+                <AndamioText variant="small">
                   {hasRewards
-                    ? `${formatLovelace(pendingRewardLovelace!)} sent to your wallet and credential recorded on-chain`
-                    : "Your credential has been recorded on-chain as proof of your contributions"}
+                    ? `${formatLovelace(pendingRewardLovelace!)} sent to your wallet`
+                    : "Your credential has been recorded on-chain"}
                 </AndamioText>
               </div>
             </div>
           </div>
         )}
 
+        {/* Commission Notice */}
+        {hasRewards && !txConfirmed && (
+          <AndamioText variant="small" className="text-xs text-muted-foreground">
+            A small commission is deducted from task rewards to support the Andamio platform.
+          </AndamioText>
+        )}
+
         {/* Claim Button */}
-        {state !== "success" && !txConfirmed && (
+        {!txConfirmed && (
           <TransactionButton
             txState={state}
             onClick={handleClaim}

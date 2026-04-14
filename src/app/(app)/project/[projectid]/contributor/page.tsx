@@ -59,21 +59,21 @@ function getStatusStatColor(label: string): "success" | "warning" | undefined {
 /** Card border/text color for commitment status. */
 function getCommitmentCardStyle(
   status: string | undefined,
-  hasClaimed: boolean,
 ): { border: string; text: string } {
-  if (status === "REFUSED") return { border: "border-destructive", text: "text-destructive" };
-  if (status === "ACCEPTED" && !hasClaimed) return { border: "border-primary", text: "text-primary" };
+  if (status === "REFUSED" || status === "DENIED") return { border: "border-destructive", text: "text-destructive" };
+  if (status === "REWARDED") return { border: "border-primary", text: "text-primary" };
+  if (status === "ACCEPTED") return { border: "border-primary", text: "text-primary" };
   return { border: "border-secondary", text: "text-secondary" };
 }
 
 /** Card title label and icon type for commitment status. */
 function getCommitmentCardTitle(
   status: string | undefined,
-  hasClaimed: boolean,
 ): { label: string; icon: "alert" | "success" | "pending" } {
+  if (status === "DENIED") return { label: "Denied", icon: "alert" };
   if (status === "REFUSED") return { label: "Resubmission Needed", icon: "alert" };
-  if (status === "ACCEPTED" && !hasClaimed) return { label: "Task Accepted", icon: "success" };
-  if (status === "ACCEPTED" && hasClaimed) return { label: "Rewards Claimed", icon: "success" };
+  if (status === "REWARDED") return { label: "Reward Claimed", icon: "success" };
+  if (status === "ACCEPTED") return { label: "Task Accepted", icon: "success" };
   if (status === "PENDING_TX_COMMIT") return { label: "Awaiting Confirmation", icon: "pending" };
   return { label: "Task Pending Review", icon: "pending" };
 }
@@ -81,19 +81,21 @@ function getCommitmentCardTitle(
 /** Card description for the active commitment status. */
 function getCommitmentCardDescription(
   status: string | undefined,
-  hasClaimed: boolean,
 ): string {
+  if (status === "DENIED") {
+    return "Your contribution has been permanently denied. You cannot rejoin this task.";
+  }
   if (status === "REFUSED") {
     return "Your work was not accepted. Go to the task page to update and resubmit.";
   }
-  if (status === "ACCEPTED" && hasClaimed) {
-    return "You've claimed your credential and rewards for this task.";
+  if (status === "REWARDED") {
+    return "You've claimed your reward for this task.";
   }
   if (status === "ACCEPTED") {
     return "Your work has been accepted! Choose your next step below.";
   }
-  if (status === "SUBMITTED") {
-    return "Your commitment is active. Visit the task page to view or submit evidence.";
+  if (status === "COMMITTED") {
+    return "Evidence submitted. Waiting for manager review.";
   }
   if (status === "PENDING_TX_COMMIT") {
     return "Waiting for blockchain confirmation.";
@@ -105,7 +107,7 @@ const HOW_IT_WORKS_STEPS = [
   { title: "Commit to a Task", description: "Select a task, describe your approach, and commit on-chain. This automatically adds you as a project contributor." },
   { title: "Complete the Work", description: "Work on your task and update your evidence as needed while awaiting review." },
   { title: "Get Reviewed", description: "Submit your evidence when ready. A project manager will review your work and either accept it or request revisions." },
-  { title: "Earn Rewards", description: "When your task is accepted, you have two choices: commit to another task (which claims your rewards and keeps you active in the project), or leave the project to claim your credential and rewards together." },
+  { title: "Earn Rewards", description: "When your task is accepted, you can commit to another task (which claims your rewards automatically and keeps you active), or leave the project to claim your credential and rewards together. If no tasks are available, claim your credential to collect your reward." },
 ];
 
 /**
@@ -154,12 +156,13 @@ function MyContributionsContent() {
 
   const isEligible = eligibility === null || eligibility.eligible;
 
-  // Deduplicate commitments by taskHash — API can return multiple records per task
-  // (from chain/DB/merged sources). Keep the most relevant status per task.
+  // Defensive dedup by taskHash — API deduplicates server-side (andamio-api#293),
+  // but we keep client-side dedup for cache merge edge cases and richer
+  // status priority (REFUSED, PENDING_TX_COMMIT) beyond the API's rule.
   const commitments = useMemo(() => {
     const STATUS_PRIORITY: Record<string, number> = {
-      REFUSED: 5, SUBMITTED: 4,
-      PENDING_TX_COMMIT: 3, ACCEPTED: 2, UNKNOWN: 1,
+      REFUSED: 6, COMMITTED: 5, DENIED: 7,
+      PENDING_TX_COMMIT: 3, REWARDED: 4, ACCEPTED: 2, UNKNOWN: 1,
     };
     const byHash = new Map<string, ContributorCommitment>();
     for (const c of rawCommitments) {
@@ -214,44 +217,44 @@ function MyContributionsContent() {
   // ── Derive stats from commitments (reliable source of truth) ──────────
 
   const acceptedCommitments = commitments.filter(c => c.commitmentStatus === "ACCEPTED");
+  const rewardedCommitments = commitments.filter(c => c.commitmentStatus === "REWARDED");
+  const completedCommitments = [...acceptedCommitments, ...rewardedCommitments];
   const pendingCommitments = commitments.filter(c =>
-    c.commitmentStatus === "SUBMITTED" ||
+    c.commitmentStatus === "COMMITTED" ||
     c.commitmentStatus === "REFUSED" ||
     c.commitmentStatus === "PENDING_TX_COMMIT"
   );
 
-  const completedTaskCount = acceptedCommitments.length;
+  const completedTaskCount = completedCommitments.length;
   const pendingTaskCount = pendingCommitments.length;
   const credentialCount = myCredentials.length;
 
-  // After Leave & Claim, the gateway may still return commitmentStatus "ACCEPTED"
-  // even though the user has already claimed. Treat accepted-with-credential as historical.
-  const hasClaimed = credentialCount > 0;
-
-  // Earned rewards: only count rewards that have actually been CLAIMED.
-  // In the Andamio protocol, rewards are claimed when you either:
-  // (a) commit to a new task (auto-claims previous ACCEPTED task's reward), or
-  // (b) leave the project via credential claim.
-  // If neither condition applies, the latest ACCEPTED task's reward is still
-  // unclaimed and must be excluded from the total.
-  const earnedRewards = (() => {
-    const totalAccepted = acceptedCommitments.reduce((sum, c) => {
+  // Earned rewards: count rewards that have actually been CLAIMED.
+  // REWARDED commitments are definitively claimed (gateway sets this on TX confirmation).
+  // ACCEPTED commitments may or may not be claimed yet — use heuristics for those.
+  const sumLovelace = (cs: ContributorCommitment[]) =>
+    cs.reduce((sum, c) => {
       const matchedTask = liveTasks.find(t => safeString(t.taskHash) === c.taskHash);
       return sum + (matchedTask ? parseInt(matchedTask.lovelaceAmount ?? "0", 10) || 0 : 0);
     }, 0);
 
-    // All accepted rewards are claimed if the user left the project or has a new pending task
-    if (hasClaimed || pendingCommitments.length > 0) return totalAccepted;
+  const earnedRewards = (() => {
+    const rewardedTotal = sumLovelace(rewardedCommitments);
+    const acceptedTotal = sumLovelace(acceptedCommitments);
+
+    // All accepted rewards are claimed if the user has a new pending task
+    // (committing to a new task auto-claims the previous accepted reward)
+    if (pendingCommitments.length > 0) return rewardedTotal + acceptedTotal;
 
     // Otherwise, the latest accepted task's reward is still unclaimed — subtract it
     if (acceptedCommitments.length > 0) {
       const latestAccepted = acceptedCommitments.at(-1);
       const latestTask = liveTasks.find(t => safeString(t.taskHash) === latestAccepted?.taskHash);
       const unclaimedReward = latestTask ? parseInt(latestTask.lovelaceAmount ?? "0", 10) || 0 : 0;
-      return totalAccepted - unclaimedReward;
+      return rewardedTotal + acceptedTotal - unclaimedReward;
     }
 
-    return 0;
+    return rewardedTotal;
   })();
 
   // Available tasks: match the project page logic — exclude tasks that have been
@@ -266,17 +269,21 @@ function MyContributionsContent() {
   const availableTaskCount = uniqueAvailableHashes.size;
 
   // Find the "active" commitment (the one that needs attention — pending or refused)
-  // Priority: REFUSED > SUBMITTED > PENDING_TX_COMMIT > ACCEPTED
+  // Priority: DENIED > REFUSED > COMMITTED > PENDING_TX_COMMIT > ACCEPTED > REWARDED
   const activeCommitment: ContributorCommitment | undefined =
+    commitments.find(c => c.commitmentStatus === "DENIED") ??
     pendingCommitments.find(c => c.commitmentStatus === "REFUSED") ??
-    pendingCommitments.find(c => c.commitmentStatus === "SUBMITTED") ??
+    pendingCommitments.find(c => c.commitmentStatus === "COMMITTED") ??
     pendingCommitments.find(c => c.commitmentStatus === "PENDING_TX_COMMIT") ??
     // If no pending, show the most recent accepted (for the "next steps" CTA)
-    acceptedCommitments[0];
+    acceptedCommitments[0] ??
+    // If all completed tasks are rewarded, show the most recent one
+    rewardedCommitments[0];
 
   // Derive status label from actual commitment data
   const contributorStatusLabel = (() => {
-    if (hasClaimed && pendingCommitments.length === 0) return "Welcome Back";
+    if (activeCommitment?.commitmentStatus === "DENIED") return "Denied";
+    if (rewardedCommitments.length > 0 && acceptedCommitments.length === 0 && pendingCommitments.length === 0) return "Welcome Back";
     if (acceptedCommitments.length > 0 && pendingCommitments.length === 0) return "Task Accepted";
     if (pendingCommitments.length > 0) {
       const activeStatus = activeCommitment?.commitmentStatus;
@@ -362,8 +369,8 @@ function MyContributionsContent() {
         const matchedDbTask = tasks.find(t => safeString(t.taskHash) === taskId);
         const taskLovelace = matchedDbTask ? parseInt(matchedDbTask.lovelaceAmount ?? "0") : 0;
 
-        const cardStyle = getCommitmentCardStyle(status, hasClaimed);
-        const cardTitle = getCommitmentCardTitle(status, hasClaimed);
+        const cardStyle = getCommitmentCardStyle(status);
+        const cardTitle = getCommitmentCardTitle(status);
         const TitleIcon = cardTitle.icon === "alert" ? AlertIcon
           : cardTitle.icon === "success" ? SuccessIcon
           : PendingIcon;
@@ -376,7 +383,7 @@ function MyContributionsContent() {
                 {cardTitle.label}
               </AndamioCardTitle>
               <AndamioCardDescription>
-                {getCommitmentCardDescription(status, hasClaimed)}
+                {getCommitmentCardDescription(status)}
               </AndamioCardDescription>
             </AndamioCardHeader>
             <AndamioCardContent className="space-y-4">
@@ -461,27 +468,39 @@ function MyContributionsContent() {
               )}
 
               {/* ACCEPTED: Decision cards + credential claim (only if not already claimed) */}
-              {status === "ACCEPTED" && !hasClaimed ? (
+              {status === "ACCEPTED" ? (
                 <div className="space-y-4">
                   {!showClaimFlow ? (
                     <>
                       <AndamioText variant="small" className="font-medium">
-                        Choose your next step:
+                        {availableTaskCount > 0 ? "Choose your next step:" : "Claim your reward:"}
                       </AndamioText>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Option A: Continue Contributing */}
-                        <Link href={`/project/${projectId}`} className="block">
-                          <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                      <div className={`grid grid-cols-1 ${availableTaskCount > 0 ? "md:grid-cols-2" : ""} gap-4`}>
+                        {/* Option A: Continue Contributing (only when tasks are available) */}
+                        {availableTaskCount > 0 ? (
+                          <Link href={`/project/${projectId}`} className="block">
+                            <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                              <div className="flex items-center gap-2">
+                                <ContributorIcon className="h-5 w-5 text-primary" />
+                                <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                              </div>
+                              <AndamioText variant="small">
+                                Browse {availableTaskCount} available {availableTaskCount === 1 ? "task" : "tasks"} and commit to a new one. Your {formatLovelace(taskLovelace.toString())} reward will be claimed automatically.
+                              </AndamioText>
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="rounded-lg border border-muted p-4 space-y-3">
                             <div className="flex items-center gap-2">
-                              <ContributorIcon className="h-5 w-5 text-primary" />
-                              <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                              <AlertIcon className="h-5 w-5 text-muted-foreground" />
+                              <AndamioText className="font-medium text-muted-foreground">No Tasks Available</AndamioText>
                             </div>
                             <AndamioText variant="small">
-                              Browse available tasks and commit to a new one. Your {formatLovelace(taskLovelace.toString())} reward will be claimed automatically.
+                              There are no open tasks in this project right now. Claim your credential and {formatLovelace(taskLovelace.toString())} reward below.
                             </AndamioText>
                           </div>
-                        </Link>
+                        )}
 
                         {/* Option B: Leave & Claim */}
                         <button
@@ -506,6 +525,7 @@ function MyContributionsContent() {
                         <ProjectCredentialClaim
                           projectNftPolicyId={projectId}
                           contributorStateId={projectDetail?.contributorStateId ?? "0".repeat(56)}
+                          taskHash={activeCommitment.taskHash}
                           projectTitle={projectDetail?.title || undefined}
                           pendingRewardLovelace={taskLovelace.toString()}
                           onSuccess={async () => {

@@ -16,6 +16,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -179,7 +180,7 @@ export function AssessAssignment({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => {
               setAssessmentResult(null);
               reset();

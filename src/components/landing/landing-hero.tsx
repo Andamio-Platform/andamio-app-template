@@ -4,75 +4,15 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@meshsdk/react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
-import { RegistrationFlow } from "~/components/landing/registration-flow";
-import { LoadingIcon } from "~/components/icons";
-import { MARKETING } from "~/config/marketing";
-import { env } from "~/env";
+import { AccessTokenOnboarding } from "~/components/auth/access-token-onboarding";
 
-const V2_POLICY_ID = env.NEXT_PUBLIC_ACCESS_TOKEN_POLICY_ID;
-
-interface LandingHeroProps {
-  onMinted?: (info: { alias: string; txHash: string }) => void;
-}
-
-export function LandingHero({ onMinted }: LandingHeroProps) {
+export function LandingHero() {
   const [showEnter, setShowEnter] = React.useState(false);
-  const [v2Scanning, setV2Scanning] = React.useState(false);
   const router = useRouter();
-  const { wallet } = useWallet();
-  const {
-    isAuthenticated,
-    user,
-    isAuthenticating,
-    isWalletConnected,
-  } = useAndamioAuth();
-
-  const copy = MARKETING.landingHero;
-
-  // Scan for V2 token when authenticated but accessTokenAlias not yet set
-  // This catches the case where the auth context sync hasn't completed yet
-  React.useEffect(() => {
-    if (!isAuthenticated || user?.accessTokenAlias || !isWalletConnected || !wallet) {
-      setV2Scanning(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function scanForV2Token() {
-      setV2Scanning(true);
-      try {
-        const assets = await wallet.getBalanceMesh();
-        const v2Asset = assets.find((asset: { unit: string }) =>
-          asset.unit.startsWith(V2_POLICY_ID)
-        );
-
-        if (cancelled) return;
-
-        if (v2Asset) {
-          // User has V2 token - redirect to dashboard
-          // The auth context will eventually sync the alias
-          router.push("/dashboard");
-        }
-      } catch (err) {
-        console.error("[LandingHero] Failed to scan for V2 token:", err);
-      } finally {
-        if (!cancelled) {
-          setV2Scanning(false);
-        }
-      }
-    }
-
-    void scanForV2Token();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, user?.accessTokenAlias, isWalletConnected, wallet, router]);
+  const { isAuthenticated, user, isWalletConnected } = useAndamioAuth();
 
   // Auto-redirect authenticated users with access token to dashboard
   React.useEffect(() => {
@@ -80,6 +20,10 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, user?.accessTokenAlias, router]);
+
+  const goToDashboard = React.useCallback(() => {
+    router.push("/dashboard");
+  }, [router]);
 
   const handleEnter = () => {
     if (isAuthenticated && user?.accessTokenAlias) {
@@ -89,46 +33,23 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
     }
   };
 
-  // Authenticating state
-  if (isWalletConnected && isAuthenticating) {
+  // Once the wallet is connected (and authenticating or authenticated), hand
+  // off to the shared onboarding component. It handles authenticating spinner,
+  // V2/V1 scans, migrate card, registration flow, and the post-mint ceremony.
+  if (showEnter || isWalletConnected) {
     return (
-      <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <AndamioHeading level={1} size="4xl">
-          Signing In...
-        </AndamioHeading>
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
-          <AndamioText variant="muted">Please sign the message in your wallet</AndamioText>
-        </div>
+      <div className="flex flex-1 w-full items-center justify-center">
+        <AccessTokenOnboarding
+          onActivated={goToDashboard}
+          onExistingTokenDetected={goToDashboard}
+        />
       </div>
-    );
-  }
-
-  // Scanning for V2 token (to detect existing users before showing registration)
-  if (v2Scanning) {
-    return (
-      <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <AndamioHeading level={1} size="4xl">
-          Checking Your Wallet...
-        </AndamioHeading>
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <LoadingIcon className="h-8 w-8 animate-spin text-muted-foreground" />
-          <AndamioText variant="muted">Scanning for existing access tokens</AndamioText>
-        </div>
-      </div>
-    );
-  }
-
-  // Show registration flow (handles wallet connect + minting)
-  if (showEnter) {
-    return (
-      <RegistrationFlow onMinted={onMinted} onBack={() => setShowEnter(false)} />
     );
   }
 
   // Default hero view - clean vertical CTAs
   return (
-    <div className="flex flex-col items-center text-center max-w-4xl mx-auto gap-12 sm:gap-16">
+    <div className="flex flex-col items-center text-center max-w-4xl mx-auto gap-8 sm:gap-12">
       {/* Value prop: icon + text pairs with arrows */}
       <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-16">
         <div className="flex flex-col items-center gap-3 w-32 sm:w-44">
@@ -233,6 +154,12 @@ export function LandingHero({ onMinted }: LandingHeroProps) {
               <Link href="/studio">Launch</Link>
             </AndamioButton>
           </div>
+        </div>
+
+        <div className="pt-4 pb-8">
+          <Link href="/migrate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Have a V1 Access Token? Migrate to V2 →
+          </Link>
         </div>
       </div>
     </div>

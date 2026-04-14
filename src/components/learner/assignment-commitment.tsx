@@ -7,6 +7,7 @@ import { useSuccessNotification } from "~/hooks/ui/use-success-notification";
 import { UI_TIMEOUTS } from "~/config/ui-constants";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAssignmentCommitment, useSubmitEvidence } from "~/hooks/api/course";
 import { courseStudentKeys, useStudentCourses } from "~/hooks/api/course/use-course-student";
@@ -29,6 +30,7 @@ import {
   LoadingIcon,
 } from "~/components/icons";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
+import { AccessTokenOnboarding } from "~/components/auth/access-token-onboarding";
 import {
   TxConfirmationProgress,
   TxConfirmationSuccess,
@@ -298,6 +300,25 @@ export function AssignmentCommitment({
     );
   }
 
+  if (!user?.accessTokenAlias) {
+    return (
+      <AndamioCard>
+        <AndamioCardHeader>
+          <AndamioCardTitle>Assignment Progress</AndamioCardTitle>
+          <AndamioCardDescription>Create an access token to submit your work for this module</AndamioCardDescription>
+        </AndamioCardHeader>
+        <AndamioCardContent>
+          <AccessTokenOnboarding
+            onActivated={() => {
+              /* no-op: auth context rerender reveals the editor */
+            }}
+            terminalMessage="Returning to your assignment..."
+          />
+        </AndamioCardContent>
+      </AndamioCard>
+    );
+  }
+
   if (!sltHash) {
     return (
       <AndamioCard>
@@ -464,7 +485,7 @@ export function AssignmentCommitment({
                 <UpdateTxStatusSection
                   txState={updateTx.state}
                   txResult={updateTx.result}
-                  txError={updateTx.error?.message ?? null}
+                  txError={parseTxErrorMessage(updateTx.error?.message)}
                   txStatus={updateTxStatus}
                   txConfirmed={updateTxConfirmed}
                   onRetry={() => updateTx.reset()}
@@ -524,7 +545,7 @@ export function AssignmentCommitment({
                   <UpdateTxStatusSection
                     txState={commitTx.state}
                     txResult={commitTx.result}
-                    txError={commitTx.error?.message ?? null}
+                    txError={parseTxErrorMessage(commitTx.error?.message)}
                     txStatus={commitTxStatus}
                     txConfirmed={commitTxConfirmed}
                     onRetry={() => commitTx.reset()}

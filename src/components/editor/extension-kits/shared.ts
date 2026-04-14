@@ -17,6 +17,7 @@ import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { CodeBlock } from "../extensions/CodeBlock";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -24,6 +25,8 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { common, createLowlight } from "lowlight";
 import type { Extensions } from "@tiptap/core";
 import { ImageBlock } from "../extensions/ImageBlock";
+import { ImageUpload, type ImageUploadOptions } from "../extensions/ImageUpload";
+import { MarkdownPaste } from "../extensions/MarkdownPaste";
 
 /**
  * Extension configuration options
@@ -34,6 +37,21 @@ export interface ExtensionConfig {
    * Affects link behavior (clickable vs editable)
    */
   readonly?: boolean;
+
+  /**
+   * Image upload configuration
+   * When provided, enables paste and drag-drop image upload
+   */
+  imageUpload?: {
+    /** Callback to upload a file and return its public URL */
+    onUpload: (file: File) => Promise<string>;
+    /** Called when upload starts */
+    onUploadStart?: () => void;
+    /** Called when upload ends */
+    onUploadEnd?: () => void;
+    /** Called when upload fails */
+    onUploadError?: (error: Error) => void;
+  };
 }
 
 /**
@@ -95,7 +113,7 @@ function createLowlightInstance() {
  * @returns Array of Tiptap extensions
  */
 export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
-  const { readonly = false } = config;
+  const { readonly = false, imageUpload } = config;
   const lowlight = createLowlightInstance();
 
   return [
@@ -114,10 +132,19 @@ export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
       },
     }),
 
-    // Markdown support for paste/copy
+    // Markdown support for copy (markdown → clipboard on copy).
+    //
+    // `transformPastedText` is intentionally disabled: its hook only fires
+    // when the clipboard has no `text/html`, which excludes every major
+    // source (VS Code, Obsidian, Notion, Slack, GitHub, Google Docs). The
+    // `MarkdownPaste` extension below replaces it with a `handlePaste`
+    // implementation that runs regardless of mime type.
+    //
+    // `transformCopiedText` stays on so users copying *out* of the editor
+    // still land markdown on their clipboard.
     Markdown.configure({
       html: true,
-      transformPastedText: true,
+      transformPastedText: false,
       transformCopiedText: true,
     }),
 
@@ -170,12 +197,9 @@ export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
       },
     }),
 
-    // Code blocks with syntax highlighting
-    CodeBlockLowlight.configure({
+    // Code blocks with syntax highlighting and copy button
+    CodeBlock.configure({
       lowlight,
-      HTMLAttributes: {
-        class: EDITOR_STYLES.codeBlock,
-      },
     }),
 
     // Tables - conservative config (no resizing to avoid known bugs)
@@ -200,6 +224,24 @@ export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
         class: EDITOR_STYLES.tableHeader,
       },
     }),
+
+    // Image upload - only included when configured (editing mode with auth)
+    ...(imageUpload
+      ? [
+          ImageUpload.configure({
+            onUpload: imageUpload.onUpload,
+            onUploadStart: imageUpload.onUploadStart,
+            onUploadEnd: imageUpload.onUploadEnd,
+            onUploadError: imageUpload.onUploadError,
+          }),
+        ]
+      : []),
+
+    // Markdown auto-detect on paste - editing mode only. Placed *after*
+    // ImageUpload so ImageUpload's `handlePaste` gets first priority on
+    // file / image clipboards; MarkdownPaste only runs when the clipboard
+    // is text-shaped. See `extensions/MarkdownPaste/MarkdownPaste.ts`.
+    ...(!readonly ? [MarkdownPaste] : []),
   ];
 }
 

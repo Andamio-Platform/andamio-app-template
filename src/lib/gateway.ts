@@ -37,6 +37,37 @@ export class GatewayError extends Error {
 export type GatewayRequestOptions = Omit<RequestInit, "method" | "body">;
 
 // =============================================================================
+// Error Parsing
+// =============================================================================
+
+/** Extract a human-readable message and details from a gateway error response.
+ * Handles both ErrorEnvelope shape {error: {code, message, details}} and
+ * legacy flat shape {details: "..."}. */
+function parseGatewayError(
+  response: Response,
+  data: unknown
+): { message: string; details?: string } {
+  const fallbackMessage = `Gateway API error: ${response.status} ${response.statusText}`;
+
+  if (
+    data != null &&
+    typeof data === "object" &&
+    "error" in data &&
+    data.error != null &&
+    typeof data.error === "object" &&
+    "message" in data.error &&
+    typeof data.error.message === "string"
+  ) {
+    const err = data.error as { message: string; details?: unknown };
+    return { message: err.message, details: typeof err.details === "string" ? err.details : undefined };
+  }
+
+  // Legacy flat shape or unknown structure
+  const flat = data as { details?: string; message?: string };
+  return { message: fallbackMessage, details: flat?.details ?? flat?.message };
+}
+
+// =============================================================================
 // Core Functions
 // =============================================================================
 
@@ -56,12 +87,9 @@ export async function gateway<T>(path: string): Promise<T> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { details?: string };
-    throw new GatewayError(
-      `Gateway API error: ${response.status} ${response.statusText}`,
-      response.status,
-      errorData.details
-    );
+    const errorData = await response.json().catch(() => ({}));
+    const parsed = parseGatewayError(response, errorData);
+    throw new GatewayError(parsed.message, response.status, parsed.details);
   }
 
   return response.json() as Promise<T>;
@@ -100,12 +128,9 @@ export async function gatewayPost<T>(
   });
 
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { details?: string };
-    throw new GatewayError(
-      `Gateway API error: ${response.status} ${response.statusText}`,
-      response.status,
-      errorData.details
-    );
+    const errorData = await response.json().catch(() => ({}));
+    const parsed = parseGatewayError(response, errorData);
+    throw new GatewayError(parsed.message, response.status, parsed.details);
   }
 
   return response.json() as Promise<T>;
@@ -148,12 +173,9 @@ export async function gatewayAuthPost<T>(
   });
 
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { details?: string };
-    throw new GatewayError(
-      `Gateway API error: ${response.status} ${response.statusText}`,
-      response.status,
-      errorData.details
-    );
+    const errorData = await response.json().catch(() => ({}));
+    const parsed = parseGatewayError(response, errorData);
+    throw new GatewayError(parsed.message, response.status, parsed.details);
   }
 
   return response.json() as Promise<T>;
@@ -183,12 +205,9 @@ export async function gatewayAuth<T>(path: string, jwt: string): Promise<T> {
   });
 
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { details?: string };
-    throw new GatewayError(
-      `Gateway API error: ${response.status} ${response.statusText}`,
-      response.status,
-      errorData.details
-    );
+    const errorData = await response.json().catch(() => ({}));
+    const parsed = parseGatewayError(response, errorData);
+    throw new GatewayError(parsed.message, response.status, parsed.details);
   }
 
   return response.json() as Promise<T>;

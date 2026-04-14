@@ -11,6 +11,7 @@ import React from "react";
 import { VerifiedIcon, ErrorIcon, ExternalLinkIcon, LoadingIcon, CloseIcon } from "~/components/icons";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
+import { isCollateralError } from "~/lib/tx-error-messages";
 import type { TransactionResult, TransactionState } from "~/types/transaction";
 
 export interface TransactionStatusProps {
@@ -118,6 +119,18 @@ export function TransactionStatus({
           <ErrorIcon className="h-5 w-5 text-destructive shrink-0" />
           <div className="flex-1 space-y-2">
             <AndamioText variant="small" className="font-medium text-foreground">{error ?? text.error}</AndamioText>
+            {error && isCollateralError(error) && (
+              <AndamioText variant="small" className="text-xs">
+                <a
+                  href="https://docs.cardano.org/about-cardano/learn/collateral-mechanism"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  Learn about collateral <ExternalLinkIcon className="h-3 w-3" />
+                </a>
+              </AndamioText>
+            )}
             {onRetry && (
               <AndamioButton
                 variant="link"

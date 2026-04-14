@@ -75,20 +75,22 @@ import { registerTransaction, getGatewayTxType } from "~/hooks/tx/use-tx-watcher
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { PROXY_BASE } from "~/lib/gateway";
 import { txWatcherStore } from "~/stores/tx-watcher-store";
+import { pendingTxRegistrations } from "~/lib/pending-tx-registrations";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 
 /** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
 const loadingSpinner = React.createElement(LoadingIcon, { className: "size-4 animate-spin" });
 
-/** Map known wallet/SDK error messages to user-friendly text */
+/** Map raw TX/wallet error messages to user-friendly text.
+ * Handles wallet SDK errors (user declined) first, then delegates to
+ * parseTxErrorMessage for API errors (ACCESS_TOKEN_ERROR, SCRIPT_FAILURE, etc.)
+ * and nested JSON extraction. */
 function humanizeTxError(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes("user declined") || lower.includes("user rejected") || lower.includes("user denied")) {
     return "You declined to sign the transaction.";
   }
-  if (lower.includes("insufficient") && lower.includes("fund")) {
-    return "Insufficient funds in your wallet to complete this transaction.";
-  }
-  return message;
+  return parseTxErrorMessage(message) ?? message;
 }
 
 // =============================================================================
@@ -168,18 +170,12 @@ export function useTransaction() {
       setResult(null);
 
       try {
-        // =========================================================================
-        // PHASE 0: PREREQUISITES
-        // Check wallet connection before proceeding
-        // =========================================================================
+        // Step 0: Check wallet connection
         if (!connected || !wallet) {
           throw new Error("Wallet not connected");
         }
 
-        // =========================================================================
-        // PHASE 1: VALIDATION
-        // Validate params against Zod schema. Gateway will also validate.
-        // =========================================================================
+        // Step 1: Validate params (part of "fetching" state)
         setState("fetching");
         if (!skipValidation) {
           const validation = validateTxParams(txType, params);
@@ -191,10 +187,7 @@ export function useTransaction() {
           }
         }
 
-        // =========================================================================
-        // PHASE 2: BUILD
-        // POST to gateway endpoint, receive unsigned CBOR
-        // =========================================================================
+        // Step 2: Build transaction (fetch unsigned CBOR)
         const endpoint = TRANSACTION_ENDPOINTS[txType];
         const url = `${PROXY_BASE}${endpoint}`;
 
@@ -210,13 +203,20 @@ export function useTransaction() {
           const errorText = await response.text();
           let errorDetails: string;
           try {
-            const errorJson = JSON.parse(errorText) as {
-              error?: string;
-              details?: string;
-              message?: string;
-            };
-            errorDetails =
-              errorJson.details ?? errorJson.message ?? errorJson.error ?? errorText;
+            const errorJson = JSON.parse(errorText) as Record<string, unknown>;
+            // ErrorEnvelope shape: {error: {code, message, details}}
+            if (
+              errorJson.error != null &&
+              typeof errorJson.error === "object" &&
+              "message" in errorJson.error &&
+              typeof (errorJson.error as { message?: unknown }).message === "string"
+            ) {
+              errorDetails = (errorJson.error as { message: string }).message;
+            } else {
+              // Legacy flat shape or unknown structure
+              const flat = errorJson as { details?: string; message?: string; error?: string };
+              errorDetails = flat.details ?? flat.message ?? (typeof flat.error === "string" ? flat.error : null) ?? errorText;
+            }
           } catch {
             errorDetails = errorText;
           }
@@ -234,39 +234,33 @@ export function useTransaction() {
 
         txLogger.buildResult(txType, true, apiResponse);
 
-        // =========================================================================
-        // PHASE 3: SIGN
-        // User signs with connected wallet. partialSign=true for V2 protocol.
-        // =========================================================================
+        // Step 3: Sign transaction
         setState("signing");
         const signedTx = await wallet.signTxReturnFullTx(unsignedCbor, true); // partialSign=true for V2
 
-        // =========================================================================
-        // PHASE 4: SUBMIT
-        // Submit signed transaction to Cardano blockchain. Point of no return.
-        // =========================================================================
+        // Step 4: Submit to blockchain
         setState("submitting");
         const txHash = await wallet.submitTx(signedTx);
 
         const explorerUrl = getExplorerUrl(txHash);
         txLogger.txSubmitted(txType, txHash, explorerUrl);
 
-        // =========================================================================
-        // PHASE 5: REGISTER
-        // Register with gateway + global store for tracking. Gateway handles DB sync.
-        // =========================================================================
-        // For TXs that need DB updates OR on-chain confirmation tracking
+        // Step 5: Register with gateway (for TXs that need DB updates OR on-chain confirmation tracking)
         // JWT is optional — gateway only requires X-API-Key (added by proxy).
         // This allows access token mint to be registered before the user has a JWT.
         const shouldRegister = ui.requiresDBUpdate || ui.requiresOnChainConfirmation;
         if (shouldRegister) {
+          const gatewayTxType = getGatewayTxType(txType);
           try {
-            const gatewayTxType = getGatewayTxType(txType);
             await registerTransaction(txHash, gatewayTxType, jwt, metadata);
             console.log(`[${txType}] Transaction registered with gateway`);
           } catch (regError) {
-            // Registration failure is non-critical - gateway may still pick it up
-            console.warn(`[${txType}] Failed to register TX:`, regError);
+            // Registration failed after retries — persist for recovery on next load
+            console.warn(`[${txType}] Failed to register TX after retries:`, regError);
+            pendingTxRegistrations.add({ txHash, txType: gatewayTxType, metadata });
+            toast("Transaction submitted but tracking failed", {
+              description: "Your transaction is on the blockchain. Registration will retry automatically.",
+            });
           }
 
           // Step 5b: Register with global TX watcher store for persistent monitoring.
@@ -280,10 +274,7 @@ export function useTransaction() {
           console.log(`[${txType}] Pure on-chain TX - skipping registration`);
         }
 
-        // =========================================================================
-        // PHASE 6: SUCCESS
-        // Update state, fire toasts, call callbacks
-        // =========================================================================
+        // Step 6: Success!
         setState("success");
 
         const txResult: SimpleTransactionResult = {

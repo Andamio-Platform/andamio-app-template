@@ -23,13 +23,14 @@ import {
 } from "~/components/andamio";
 import { ContentDisplay } from "~/components/content-display";
 import { ContentEditor, ContentViewer } from "~/components/editor";
-import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon, CourseIcon } from "~/components/icons";
+import { PendingIcon, TokenIcon, TeacherIcon, EditIcon, SuccessIcon, ContributorIcon, CredentialIcon, AlertIcon, OnChainIcon, RefreshIcon, CourseIcon, LockedIcon } from "~/components/icons";
 import type { JSONContent } from "@tiptap/core";
+import { computeAssignmentInfoHash } from "@andamio/core/hashing";
 import { formatLovelace } from "~/lib/cardano-utils";
 import { formatCommitmentStatus, formatTaskStatus } from "~/lib/format-status";
 import { TaskCommit, TaskAction, ProjectCredentialClaim } from "~/components/tx";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
-import { useProjectTask, useProject, projectKeys } from "~/hooks/api/project/use-project";
+import { useProjectTask, useProject, useProjectTasks, projectKeys } from "~/hooks/api/project/use-project";
 import { useContributorCommitment, useContributorCommitments, projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ import { PrerequisiteList } from "~/components/project/prerequisite-list";
 function formatPosixTimestamp(timestamp: string): string {
   const ms = parseInt(timestamp);
   if (isNaN(ms)) return timestamp;
-  return new Date(ms).toLocaleDateString("en-US", {
+  return new Date(ms).toLocaleString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -55,7 +56,7 @@ function formatPosixTimestamp(timestamp: string): string {
 function getCommitmentStatusVariant(
   status: string,
 ): "default" | "secondary" | "outline" | "destructive" {
-  if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED") return "default";
+  if (status.includes("ACCEPTED") || status === "REWARDS_CLAIMED" || status === "REWARDED") return "default";
   if (status.includes("DENIED") || status.includes("REFUSED")) return "destructive";
   if (status.includes("PENDING")) return "outline";
   return "secondary";
@@ -91,6 +92,17 @@ export default function TaskDetailPage() {
 
   // Project-level data for contributor context
   const { data: project } = useProject(projectId);
+  const { data: allTasks = [] } = useProjectTasks(projectId);
+
+  // Available tasks: exclude consumed UTxOs, count unique hashes
+  const availableTaskCount = useMemo(() => {
+    const liveTasks = allTasks.filter((t) => t.taskStatus === "ON_CHAIN");
+    const submittedHashes = new Set(
+      (project?.submissions ?? []).map((s) => s.taskHash).filter(Boolean),
+    );
+    const available = liveTasks.filter((t) => !submittedHashes.has(t.taskHash ?? ""));
+    return new Set(available.map((t) => t.taskHash).filter(Boolean)).size;
+  }, [allTasks, project?.submissions]);
 
   // Prerequisite eligibility (same pattern as project detail page)
   const prereqCourseIds = useMemo(() => {
@@ -135,23 +147,27 @@ export default function TaskDetailPage() {
     (c) => c.commitmentStatus !== "PENDING_TX_COMMIT"
   ).length === 0;
 
-  // Fallback: when the commitment detail endpoint returns 404 but the contributor
-  // is still in REFUSED state on-chain, detect it from the commitments list.
-  // This prevents the UI from showing TaskCommit (which fails with STATE_ERROR)
-  // instead of TaskAction (which correctly handles re-submission after refusal).
-  const refusedFallback = !commitment
-    ? allMyCommitments.find(c => c.taskHash === taskHash && c.commitmentStatus === "REFUSED") ?? null
+  // Previous ACCEPTED task hash — used to pass previous_task_hash in TX metadata
+  // so the gateway can transition the previous commitment to REWARDED.
+  const previousAcceptedTaskHash = useMemo(() => {
+    return allMyCommitments.find(
+      (c) => c.commitmentStatus === "ACCEPTED" && c.taskHash !== taskHash
+    )?.taskHash;
+  }, [allMyCommitments, taskHash]);
+
+  const willClaimRewards = !!previousAcceptedTaskHash;
+
+  // Fallback: when the commitment detail endpoint returns 404 (chain-only
+  // commitments, REFUSED state, or other cases where the single-get endpoint
+  // misses data), detect ANY matching commitment from the list endpoint.
+  // This prevents the UI from showing TaskCommit (which fails with STATE_ERROR
+  // since the UTxO is already consumed on-chain) instead of the correct
+  // status-specific UI (TaskAction for REFUSED/COMMITTED, etc.).
+  const listFallback = !commitment
+    ? allMyCommitments.find(c => c.taskHash === taskHash) ?? null
     : null;
 
   const isTaskAccepted = commitment?.commitmentStatus === "ACCEPTED";
-
-  // After Leave & Claim, the gateway may still return commitmentStatus "ACCEPTED".
-  // Cross-reference credentialClaims to detect the post-claim state.
-  const hasClaimed = useMemo(() => {
-    const alias = user?.accessTokenAlias;
-    if (!alias || !project?.credentialClaims) return false;
-    return project.credentialClaims.some((c) => c.alias === alias);
-  }, [user?.accessTokenAlias, project?.credentialClaims]);
 
   // Derive accepted task reward from project tasks
   const acceptedTaskReward = useMemo(() => {
@@ -166,6 +182,22 @@ export default function TaskDetailPage() {
     !(evidence.content.length === 1 &&
       evidence.content[0]?.type === "paragraph" &&
       (!evidence.content[0]?.content || evidence.content[0]?.content.length === 0));
+
+  // Detect unchanged evidence: hash the current editor content and compare
+  // with the on-chain evidence hash. Prevents accidental resubmission when
+  // the contributor hasn't actually updated their evidence.
+  const evidenceUnchanged = useMemo(() => {
+    const activeEvidence = evidence ?? (commitment?.evidence as JSONContent | undefined)
+      ?? (listFallback?.evidence as JSONContent | undefined);
+    if (!activeEvidence || Object.keys(activeEvidence).length === 0) return false;
+    const onChainHash = commitment?.taskEvidenceHash ?? listFallback?.taskEvidenceHash;
+    if (!onChainHash) return false;
+    try {
+      return computeAssignmentInfoHash(activeEvidence) === onChainHash;
+    } catch {
+      return false;
+    }
+  }, [evidence, commitment?.evidence, commitment?.taskEvidenceHash, listFallback?.evidence, listFallback?.taskEvidenceHash]);
 
   // Clear stale pending TX hash when commitment status transitions
   useEffect(() => {
@@ -209,9 +241,9 @@ export default function TaskDetailPage() {
 
   const contributorStateId = project?.contributorStateId ?? task.contributorStateId ?? "0".repeat(56);
 
-  // Unified reference: the commitment detail, or the REFUSED fallback from the list endpoint.
+  // Unified reference: the commitment detail, or list-endpoint fallback.
   // Used throughout the JSX for data access (evidence, submissionTx, etc.).
-  const activeCommitment = commitment ?? refusedFallback;
+  const activeCommitment = commitment ?? listFallback;
   const commitmentStatus = activeCommitment?.commitmentStatus ?? null;
 
   // Pre-assignment gate: check if task is reserved for a specific contributor
@@ -222,6 +254,11 @@ export default function TaskDetailPage() {
   // Frontend-only gate — API has no pre-assignment awareness; enforce server-side in future
   const isBlockedByPreAssignment =
     isPreAssigned && isAuthenticated && !isAssignedToCurrentUser;
+
+  // Task publication status — prevent commits to unpublished tasks
+  const isTaskDraft = task.taskStatus === "DRAFT";
+  const isTaskPendingTx = task.taskStatus === "PENDING_TX";
+  const isTaskUnpublished = isTaskDraft || isTaskPendingTx;
 
   // Card description for the commitment status section
   let commitmentCardDescription: string;
@@ -259,7 +296,7 @@ export default function TaskDetailPage() {
       />
 
       {/* Task Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-2 gap-4 ${preAssignedAlias ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <AndamioDashboardStat
           icon={TokenIcon}
           label="Reward"
@@ -277,6 +314,14 @@ export default function TaskDetailPage() {
           value={createdBy}
           iconColor="info"
         />
+        {preAssignedAlias && (
+          <AndamioDashboardStat
+            icon={LockedIcon}
+            label="Assigned To"
+            value={`@${preAssignedAlias}`}
+            iconColor="info"
+          />
+        )}
       </div>
 
       {/* Task Hash */}
@@ -345,17 +390,15 @@ export default function TaskDetailPage() {
             <div className="text-center py-6">
               <AndamioText variant="muted">Checking commitment status…</AndamioText>
             </div>
-          ) : commitmentStatus === "ACCEPTED" && hasClaimed ? (
-            /* ── ACCEPTED + already claimed — Show completed state ──── */
+          ) : commitmentStatus === "REWARDED" ? (
+            /* ── Reward claimed — per-commitment REWARDED status ── */
             <div className="rounded-lg border bg-muted/30 p-4">
               <div className="flex items-start gap-3">
                 <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <AndamioText className="font-medium">
-                    Rewards Claimed
-                  </AndamioText>
+                  <AndamioText className="font-medium">Reward Claimed</AndamioText>
                   <AndamioText variant="small" className="mt-1 text-muted-foreground">
-                    You&apos;ve claimed your credential and rewards for this task.
+                    You&apos;ve claimed your reward for this task.
                   </AndamioText>
                 </div>
               </div>
@@ -381,19 +424,31 @@ export default function TaskDetailPage() {
               {!showClaimFlow ? (
                 <>
                   {/* Decision Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Option A: Continue Contributing */}
-                    <Link href={`/project/${projectId}`} className="block">
-                      <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                  <div className={`grid grid-cols-1 ${availableTaskCount > 0 ? "md:grid-cols-2" : ""} gap-4`}>
+                    {/* Option A: Continue Contributing (only when tasks are available) */}
+                    {availableTaskCount > 0 ? (
+                      <Link href={`/project/${projectId}`} className="block">
+                        <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                          <div className="flex items-center gap-2">
+                            <ContributorIcon className="h-5 w-5 text-primary" />
+                            <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                          </div>
+                          <AndamioText variant="small">
+                            Browse {availableTaskCount} available {availableTaskCount === 1 ? "task" : "tasks"} and commit to a new one. Your {formatLovelace(acceptedTaskReward)} reward will be claimed automatically.
+                          </AndamioText>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="rounded-lg border border-muted p-4 space-y-3">
                         <div className="flex items-center gap-2">
-                          <ContributorIcon className="h-5 w-5 text-primary" />
-                          <AndamioText className="font-medium">Continue Contributing</AndamioText>
+                          <AlertIcon className="h-5 w-5 text-muted-foreground" />
+                          <AndamioText className="font-medium text-muted-foreground">No Tasks Available</AndamioText>
                         </div>
                         <AndamioText variant="small">
-                          Browse available tasks and commit to a new one. Your {formatLovelace(acceptedTaskReward)} reward will be claimed automatically.
+                          There are no open tasks in this project right now. Claim your credential and {formatLovelace(acceptedTaskReward)} reward below.
                         </AndamioText>
                       </div>
-                    </Link>
+                    )}
 
                     {/* Option B: Leave & Claim */}
                     <button
@@ -418,6 +473,7 @@ export default function TaskDetailPage() {
                     <ProjectCredentialClaim
                       projectNftPolicyId={projectId}
                       contributorStateId={contributorStateId}
+                      taskHash={taskHash}
                       projectTitle={project?.title || undefined}
                       pendingRewardLovelace={acceptedTaskReward}
                       onSuccess={async () => {
@@ -460,7 +516,7 @@ export default function TaskDetailPage() {
                 </AndamioBadge>
               </div>
 
-              {commitment?.pendingTxHash && (
+              {activeCommitment?.pendingTxHash && (
                 <>
                   <AndamioSeparator />
                   <div className="flex items-center justify-between">
@@ -469,12 +525,12 @@ export default function TaskDetailPage() {
                       <AndamioText variant="small" className="font-medium">Pending Transaction</AndamioText>
                     </div>
                     <a
-                      href={getTransactionExplorerUrl(commitment.pendingTxHash)}
+                      href={getTransactionExplorerUrl(activeCommitment.pendingTxHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-xs text-primary hover:underline"
                     >
-                      {commitment.pendingTxHash.slice(0, 12)}...
+                      {activeCommitment.pendingTxHash.slice(0, 12)}...
                     </a>
                   </div>
                 </>
@@ -484,8 +540,8 @@ export default function TaskDetailPage() {
               <div>
                 <AndamioText variant="small" className="font-medium mb-2">Submitted Evidence</AndamioText>
                 <div className="min-h-[100px] border rounded-lg bg-muted/20 p-4">
-                  {commitment?.evidence ? (
-                    <ContentViewer content={commitment.evidence as JSONContent} />
+                  {activeCommitment?.evidence ? (
+                    <ContentViewer content={activeCommitment.evidence as JSONContent} />
                   ) : (
                     <AndamioText variant="small" className="text-muted-foreground italic">
                       No evidence recorded
@@ -512,8 +568,26 @@ export default function TaskDetailPage() {
                 Refresh Status
               </AndamioButton>
             </div>
-          ) : commitmentStatus === "SUBMITTED" || commitmentStatus === "REFUSED" ? (
-            /* ── SUBMITTED / REFUSED — Evidence + TaskAction ── */
+          ) : commitmentStatus === "DENIED" ? (
+            /* ── DENIED — Terminal state, no resubmit ── */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
+                <AndamioBadge variant="destructive">
+                  {formatCommitmentStatus(commitmentStatus)}
+                </AndamioBadge>
+              </div>
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertIcon className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  <AndamioText variant="small">
+                    Your contribution has been permanently denied. You cannot rejoin this task.
+                  </AndamioText>
+                </div>
+              </div>
+            </div>
+          ) : commitmentStatus === "COMMITTED" || commitmentStatus === "REFUSED" ? (
+            /* ── COMMITTED / REFUSED — Evidence + TaskAction ── */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
@@ -533,9 +607,9 @@ export default function TaskDetailPage() {
                 </div>
               )}
 
-              {commitmentStatus === "SUBMITTED" && (
+              {commitmentStatus === "COMMITTED" && (
                 <AndamioText variant="small" className="text-muted-foreground">
-                  Your commitment is active. You can update your evidence below while awaiting review.
+                  Evidence submitted. Waiting for manager review. You can update your evidence below.
                 </AndamioText>
               )}
 
@@ -585,19 +659,45 @@ export default function TaskDetailPage() {
                 )}
               </div>
 
-              {/* TaskAction TX component */}
-              <TaskAction
-                projectNftPolicyId={projectId}
-                contributorStateId={contributorStateId}
-                taskHash={taskHash}
-                taskCode={`TASK_${task.index}`}
-                taskTitle={task.title ?? undefined}
-                taskEvidence={evidence ?? (commitment?.evidence as JSONContent | undefined)}
-                onSuccess={async (result) => {
-                  setPendingActionTxHash(result.txHash);
-                  await refreshData();
-                }}
-              />
+              {/* TaskAction TX component — hidden when evidence hasn't changed */}
+              {evidenceUnchanged ? (
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <AndamioText className="font-medium">
+                        {commitmentStatus === "REFUSED"
+                          ? "Update your evidence to resubmit"
+                          : "Evidence already submitted"}
+                      </AndamioText>
+                      <AndamioText variant="small" className="text-muted-foreground mt-1">
+                        {commitmentStatus === "REFUSED"
+                          ? "Your current evidence matches what was refused. Edit your evidence above before resubmitting."
+                          : "Your current evidence matches what\u2019s already on chain. Edit your evidence above to submit an update."}
+                      </AndamioText>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <TaskAction
+                  projectNftPolicyId={projectId}
+                  contributorStateId={contributorStateId}
+                  taskHash={taskHash}
+                  taskCode={`TASK_${task.index}`}
+                  taskTitle={task.title ?? undefined}
+                  taskEvidence={evidence ?? (activeCommitment?.evidence as JSONContent | undefined)}
+                  onSuccess={async (result) => {
+                    setPendingActionTxHash(result.txHash);
+                    try {
+                      await refreshData();
+                    } finally {
+                      // Clear after cache settles (or fails) — evidenceUnchanged
+                      // guard now shows the correct state, no stale "Pending" block.
+                      setPendingActionTxHash(null);
+                    }
+                  }}
+                />
+              )}
 
               {/* Pending action TX hash */}
               {pendingActionTxHash && (
@@ -630,33 +730,33 @@ export default function TaskDetailPage() {
                 </div>
               )}
             </div>
-          ) : commitment ? (
+          ) : activeCommitment ? (
             /* ── Other commitment status (fallback display) ─── */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <AndamioText as="span" variant="small" className="font-medium">Status</AndamioText>
-                <AndamioBadge variant={getCommitmentStatusVariant(commitment.commitmentStatus ?? "")}>
-                  {formatCommitmentStatus(commitment.commitmentStatus ?? "")}
+                <AndamioBadge variant={getCommitmentStatusVariant(activeCommitment.commitmentStatus ?? "")}>
+                  {formatCommitmentStatus(activeCommitment.commitmentStatus ?? "")}
                 </AndamioBadge>
               </div>
 
-              {commitment.submissionTx && (
+              {activeCommitment.submissionTx && (
                 <>
                   <AndamioSeparator />
                   <div>
                     <AndamioText variant="small" className="mb-1">Pending Transaction</AndamioText>
-                    <AndamioText className="font-mono text-xs break-all">{commitment.submissionTx}</AndamioText>
+                    <AndamioText className="font-mono text-xs break-all">{activeCommitment.submissionTx}</AndamioText>
                   </div>
                 </>
               )}
 
-              {commitment.evidence != null && (
+              {activeCommitment.evidence != null && (
                 <>
                   <AndamioSeparator />
                   <div>
                     <AndamioText variant="small" className="font-medium mb-2">Your Evidence</AndamioText>
                     <ContentDisplay
-                      content={commitment.evidence as JSONContent}
+                      content={activeCommitment.evidence as JSONContent}
                       variant="muted"
                     />
                   </div>
@@ -730,9 +830,47 @@ export default function TaskDetailPage() {
                 </AndamioButton>
               </Link>
             </div>
+          ) : isTaskUnpublished ? (
+            /* ── Task not published — show message ────── */
+            <div className="text-center py-6 space-y-4">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-muted mx-auto">
+                <AlertIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <AndamioText className="font-medium">
+                  Task Not Yet Published
+                </AndamioText>
+                <AndamioText variant="muted">
+                  This task hasn&apos;t been published on-chain yet. Ask the project manager to publish tasks before committing.
+                </AndamioText>
+                {isTaskPendingTx && (
+                  <AndamioBadge variant="outline">
+                    <PendingIcon className="h-3 w-3 mr-1" />
+                    Publishing in progress
+                  </AndamioBadge>
+                )}
+              </div>
+              <Link href={`/project/${projectId}`}>
+                <AndamioButton
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  Back to Project
+                </AndamioButton>
+              </Link>
+            </div>
           ) : (
             /* ── No commitment — Commit to This Task ────────── */
             <div className="text-center py-6">
+              {isAssignedToCurrentUser && (
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
+                  <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
+                  <AndamioText variant="small">
+                    This task is assigned to you
+                  </AndamioText>
+                </div>
+              )}
               {isEditingEvidence ? (
                 <AndamioText variant="muted">
                   Complete your submission below
@@ -758,7 +896,7 @@ export default function TaskDetailPage() {
       </AndamioCard>
 
       {/* ── Evidence Editor and Transaction (new commitment) ────────── */}
-      {isAuthenticated && !activeCommitment && eligibility?.eligible !== false && !isBlockedByPreAssignment && isEditingEvidence && (
+      {isAuthenticated && !activeCommitment && eligibility?.eligible !== false && !isBlockedByPreAssignment && !isTaskUnpublished && isEditingEvidence && (
         <div className="space-y-6">
           <AndamioSectionHeader
             title="Your Work"
@@ -790,10 +928,21 @@ export default function TaskDetailPage() {
               taskCode={`TASK_${task.index}`}
               taskTitle={task.title ?? undefined}
               taskEvidence={evidence}
+              taskStatus={task.taskStatus}
               isFirstCommit={isFirstCommit}
+              willClaimRewards={willClaimRewards}
+              previousAcceptedTaskHash={previousAcceptedTaskHash}
               onSuccess={async () => {
-                setIsEditingEvidence(false);
-                await refreshData();
+                // Await cache refresh BEFORE clearing editing state.
+                // If we clear isEditingEvidence first, React re-renders
+                // while activeCommitment is still null → flashes
+                // "You haven't committed" with a submit button → confused
+                // contributors click it again.
+                try {
+                  await refreshData();
+                } finally {
+                  setIsEditingEvidence(false);
+                }
               }}
             />
           )}

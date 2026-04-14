@@ -59,6 +59,7 @@ import type {
   ManagerCommitmentItem,
   MergedTaskListItem,
   PendingAssessmentSummary as ApiPendingAssessmentSummary,
+  CreateTaskToken,
 } from "~/types/generated/gateway";
 import {
   projectKeys,
@@ -69,7 +70,7 @@ import {
   type ProjectPrerequisite,
 } from "./use-project";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
-import { normalizeProjectCommitmentStatus, type ProjectCommitmentStatus } from "./use-project-contributor";
+import { normalizeProjectCommitmentStatus } from "./use-project-contributor";
 
 // =============================================================================
 // Query Keys
@@ -159,7 +160,7 @@ export interface ManagerCommitment {
   onChainContent?: string;
 
   // Off-chain content (contributor's evidence)
-  commitmentStatus?: ProjectCommitmentStatus;
+  commitmentStatus?: string;
   taskEvidenceHash?: string;
   evidence?: unknown;
   assessedBy?: string;
@@ -239,8 +240,12 @@ function transformManagerCommitment(api: ManagerCommitmentItem): ManagerCommitme
     submissionTx: api.submission_tx,
     onChainContent: api.on_chain_content,
 
-    // Off-chain content (normalized for stale cache safety)
-    commitmentStatus: normalizeProjectCommitmentStatus(api.content?.commitment_status),
+    // Off-chain content (chain_only items in pending list are always COMMITTED)
+    commitmentStatus: api.content?.commitment_status
+      ? normalizeProjectCommitmentStatus(api.content.commitment_status)
+      : api.source === "chain_only"
+        ? "COMMITTED"
+        : "UNKNOWN",
     taskEvidenceHash: api.content?.task_evidence_hash,
     evidence: api.content?.evidence,
     assessedBy: api.content?.assessed_by,
@@ -499,6 +504,7 @@ export function useCreateTask() {
       lovelaceAmount: string;
       expirationTime: string;
       contentJson?: unknown;
+      tokens?: CreateTaskToken[];
     }) => {
       // Endpoint: POST /project/manager/task/create
       // API expects: contributor_state_id (required), title, lovelace_amount, expiration_time
@@ -514,6 +520,7 @@ export function useCreateTask() {
             lovelace_amount: input.lovelaceAmount,
             expiration_time: input.expirationTime,
             content_json: input.contentJson,
+            ...(input.tokens?.length ? { tokens: input.tokens } : {}),
           }),
         }
       );
@@ -581,6 +588,7 @@ export function useUpdateTask() {
       lovelaceAmount: string;
       expirationTime: string;
       contentJson?: unknown;
+      tokens?: CreateTaskToken[];
     }) => {
       // Endpoint: POST /project/manager/task/update
       // API expects: contributor_state_id (required), index (required)
@@ -597,6 +605,7 @@ export function useUpdateTask() {
             lovelace_amount: input.lovelaceAmount,
             expiration_time: input.expirationTime,
             content_json: input.contentJson,
+            ...(input.tokens?.length ? { tokens: input.tokens } : {}),
           }),
         }
       );

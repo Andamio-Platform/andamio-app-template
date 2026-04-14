@@ -113,6 +113,8 @@ export interface Task {
   status: ProjectStatus;
   /** Task publication status: "DRAFT" or "ON_CHAIN" */
   taskStatus?: TaskStatusValue;
+  /** Number of active commitments (excludes ABANDONED, DENIED). From dbapi#188. */
+  commitmentCount: number;
   createdByAlias?: string;
 
   // Rewards
@@ -215,6 +217,7 @@ export interface ProjectSubmission {
   submittedBy: string;
   submissionTx?: string;
   onChainContent?: string;
+  slot?: number;
 }
 
 /**
@@ -281,6 +284,10 @@ export interface Project {
 
   // Prerequisites
   prerequisites?: ProjectPrerequisite[];
+
+  // Reward aggregation (v2.1.3) — null/absent when detail call failed
+  totalRewardLovelace?: number;
+  availableTaskCount?: number;
 }
 
 /**
@@ -352,6 +359,12 @@ export interface TaskCommitment {
 // Transform Functions (API snake_case → App camelCase)
 // =============================================================================
 
+function extractTreasuryAssets(
+  api: MergedProjectDetail,
+): { policy_id?: string; name?: string; amount?: string }[] | undefined {
+  return api.treasury_assets;
+}
+
 /**
  * Transform API Asset[] to app-level TaskToken[]
  *
@@ -404,6 +417,7 @@ export function transformOnChainTask(
     preAssignedAlias: null, // On-chain-only tasks don't carry DB metadata
     status: "active", // On-chain tasks are always active
     taskStatus: "ON_CHAIN", // On-chain tasks have ON_CHAIN status
+    commitmentCount: 0, // On-chain-only transform has no commitment data; cross-reference via useManagerTasks
   };
 }
 
@@ -463,6 +477,7 @@ export function transformMergedTask(api: MergedTaskListItem): Task {
     tokens: api.assets ? transformAssets(api.assets) : undefined,
     status: getProjectStatusFromSource(api.source),
     taskStatus: getTaskStatusFromSource(api.source),
+    commitmentCount: api.commitment_count ?? 0,
   };
 }
 
@@ -490,6 +505,9 @@ export function transformProjectListItem(api: MergedProjectListItem): Project {
   const category = apiContent?.category as string | undefined;
   const isPublic = apiContent?.is_public as boolean | undefined;
 
+  const totalRewardLovelace = api.total_reward_lovelace;
+  const availableTaskCount = api.available_task_count;
+
   return {
     projectId: api.project_id ?? "",
     status: getProjectStatusFromSource(api.source),
@@ -509,6 +527,8 @@ export function transformProjectListItem(api: MergedProjectListItem): Project {
     createdSlot: api.created_slot,
     createdTx: api.created_tx,
     prerequisites: api.prerequisites?.map(transformPrerequisite),
+    totalRewardLovelace,
+    availableTaskCount,
   };
 }
 
@@ -541,6 +561,7 @@ export function transformProjectDetail(api: MergedProjectDetail): ProjectDetail 
       submittedBy: s.submitted_by ?? "",
       submissionTx: s.submission_tx,
       onChainContent: s.on_chain_content,
+      slot: s.slot,
     })
   );
 
@@ -608,7 +629,10 @@ export function transformProjectDetail(api: MergedProjectDetail): ProjectDetail 
     assessments,
     treasuryFundings,
     treasuryBalance: api.treasury_balance,
-    treasuryAssets: api.treasury_assets ? transformAssets(api.treasury_assets) : undefined,
+    treasuryAssets: (() => {
+      const raw = extractTreasuryAssets(api);
+      return raw ? transformAssets(raw) : undefined;
+    })(),
     credentialClaims,
     states,
   };

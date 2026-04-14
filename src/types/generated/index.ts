@@ -215,6 +215,21 @@ export type { MeResponse as DeveloperProfileResponse } from "./gateway";
 export type { UsageResponse as DeveloperUsageResponse } from "./gateway";
 
 // =============================================================================
+// Billing Types (Stripe subscription billing)
+// =============================================================================
+
+export type {
+  BillingStatusResponse,
+  BillingStatusResponseEnvelope,
+  CheckoutRequest,
+  CheckoutResponse,
+  CheckoutResponseEnvelope,
+  PortalResponse,
+  PortalResponseEnvelope,
+  SubscriptionStatus,
+} from "./gateway";
+
+// =============================================================================
 // Dashboard Types (clean names from v2.1.0)
 // =============================================================================
 

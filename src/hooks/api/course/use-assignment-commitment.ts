@@ -21,8 +21,17 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import {
+  normalizeCommitmentNetworkStatus,
+  type CommitmentNetworkStatus,
+} from "~/lib/assignment-status";
 import { courseStudentKeys } from "./use-course-student";
 import type { JSONContent } from "@tiptap/core";
+// Import directly from gateway.ts to avoid circular dependency with ~/types/generated/index.ts
+import type {
+  StudentAssignmentCommitmentResponse,
+  StudentAssignmentCommitmentItem,
+} from "~/types/generated/gateway";
 
 // =============================================================================
 // Query Keys
@@ -41,8 +50,8 @@ export const assignmentCommitmentKeys = {
 /**
  * App-level AssignmentCommitment type with camelCase fields.
  *
- * Normalized from the V2 merged API response which may return
- * flat or nested `content` structures.
+ * Normalized from the V2 merged API response (StudentAssignmentCommitmentItem)
+ * where commitment fields live under `data.content`.
  */
 export interface AssignmentCommitment {
   courseId: string;
@@ -50,32 +59,16 @@ export interface AssignmentCommitment {
   sltHash: string | null;
   onChainStatus: string | null;
   onChainContent: string | null; // Evidence hash from chain
-  networkStatus: string; // From commitment_status or inferred
+  /**
+   * Normalized status from commitment_status or inferred from on-chain state.
+   * Uses the canonical `CommitmentNetworkStatus` union — `PENDING_TX_*` raw
+   * values are preserved (so the UI can render a TX-processing banner) and
+   * everything else is collapsed to the canonical `AssignmentStatus` set.
+   */
+  networkStatus: CommitmentNetworkStatus;
   networkEvidence: Record<string, unknown> | null; // From evidence field
   networkEvidenceHash: string | null; // From assignment_evidence_hash
   source: "merged" | "chain_only" | "db_only";
-}
-
-/** Raw API response shape from /course/student/assignment-commitment/get */
-interface CommitmentApiResponse {
-  data?: {
-    course_id?: string;
-    course_module_code?: string;
-    slt_hash?: string;
-    on_chain_status?: string;
-    on_chain_content?: string;
-    commitment_status?: string;
-    evidence?: Record<string, unknown>;
-    assignment_evidence_hash?: string;
-    // Legacy: some endpoints may still nest these in content
-    content?: {
-      commitment_status?: string;
-      evidence?: Record<string, unknown>;
-      assignment_evidence_hash?: string;
-    };
-    source?: "merged" | "chain_only" | "db_only";
-  };
-  warning?: string;
 }
 
 // =============================================================================
@@ -85,28 +78,32 @@ interface CommitmentApiResponse {
 /**
  * Transform raw V2 merged API response to app-level AssignmentCommitment.
  *
- * Handles both flat structure and nested `content` structures from the API.
+ * Reads nested `content` fields per the gateway contract
+ * (`StudentAssignmentCommitmentItem`). Commitment fields (`commitment_status`,
+ * `evidence`, `assignment_evidence_hash`) live on `data.content`, not flat.
  */
 export function transformAssignmentCommitment(
-  data: NonNullable<CommitmentApiResponse["data"]>,
+  data: StudentAssignmentCommitmentItem,
   fallbackCourseId: string,
   fallbackModuleCode: string,
 ): AssignmentCommitment {
-  // API may return flat structure OR nested content — check both
-  const evidence = data.evidence ?? data.content?.evidence;
-  const commitmentStatus =
-    data.commitment_status ?? data.content?.commitment_status;
-  const evidenceHash =
-    data.assignment_evidence_hash ?? data.content?.assignment_evidence_hash;
+  const evidence = data.content?.evidence as
+    | Record<string, unknown>
+    | undefined;
+  const commitmentStatus = data.content?.commitment_status;
+  const evidenceHash = data.content?.assignment_evidence_hash;
 
-  // Determine source: prefer explicit API value, otherwise infer from data
+  // Determine source: prefer explicit API value, otherwise infer from data.
+  // Generated type widens `source` to `string`; the equality checks narrow it
+  // to the app's three-value union inside each branch.
   let source: "merged" | "chain_only" | "db_only";
   if (data.source === "chain_only" || data.source === "db_only") {
     source = data.source;
   } else if (data.source === "merged") {
     source = "merged";
   } else {
-    // Infer source from data structure when API doesn't provide it
+    // Infer source from data structure when API doesn't provide it (or sends
+    // an unrecognized string).
     const hasOnChainData = !!(data.on_chain_status ?? data.on_chain_content);
     const hasDbData = !!(commitmentStatus ?? evidence);
     if (hasOnChainData && !hasDbData) {
@@ -118,23 +115,21 @@ export function transformAssignmentCommitment(
     }
   }
 
-  // Normalize raw DB status values to display-friendly values
-  // The DB sends: SUBMITTED, ACCEPTED, REFUSED
-  // The UI expects: PENDING_APPROVAL, ASSIGNMENT_ACCEPTED, ASSIGNMENT_REFUSED
-  const rawStatus = commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL";
-  const STATUS_MAP: Record<string, string> = {
-    SUBMITTED: "PENDING_APPROVAL",
-    ACCEPTED: "ASSIGNMENT_ACCEPTED",
-    REFUSED: "ASSIGNMENT_REFUSED",
-    // Legacy aliases (gateway may still send these)
-    APPROVED: "ASSIGNMENT_ACCEPTED",
-    REJECTED: "ASSIGNMENT_REFUSED",
-    // DB API statuses that should pass through with app-level names
-    AWAITING_SUBMISSION: "AWAITING_SUBMISSION",
-    CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
-    LEFT: "LEFT",
-  };
-  const networkStatus = STATUS_MAP[rawStatus] ?? rawStatus;
+  // Route raw status through the canonical normalizer (issue #520).
+  // Aliases (SUBMITTED/ACCEPTED/REFUSED/APPROVED/REJECTED/AWAITING_SUBMISSION/
+  // LEFT/CREDENTIAL_CLAIMED, plus on-chain values) now live in STATUS_ALIASES
+  // in `src/lib/assignment-status.ts`. The wrapper preserves `PENDING_TX_*`
+  // raw values so the commitment UI can render a TX-processing banner.
+  //
+  // The `?? "PENDING_APPROVAL"` default synthesizes a status for sparse
+  // responses where neither `commitment_status` nor `on_chain_status` is set.
+  // Load-bearing for the UI read path — downstream rendering assumes a
+  // non-null `networkStatus`. The TX indexer fallback in
+  // `src/lib/tx-indexer-fallback.ts` deliberately bypasses this default so
+  // it can distinguish "sparse response" from "on-chain PENDING_APPROVAL".
+  const rawStatus =
+    commitmentStatus ?? data.on_chain_status ?? "PENDING_APPROVAL";
+  const networkStatus = normalizeCommitmentNetworkStatus(rawStatus);
 
   return {
     courseId: data.course_id ?? fallbackCourseId,
@@ -196,9 +191,11 @@ export function useAssignmentCommitment(
         throw new Error(`Failed to fetch commitment: ${response.status}`);
       }
 
-      const apiResponse = (await response.json()) as CommitmentApiResponse;
+      const apiResponse = (await response.json()) as StudentAssignmentCommitmentResponse;
       console.log("[useAssignmentCommitment] API response:", apiResponse);
 
+      // `data` is declared required on the generated type but keep the guard
+      // as defense against malformed runtime responses.
       const data = apiResponse.data;
       if (!data) {
         return null;

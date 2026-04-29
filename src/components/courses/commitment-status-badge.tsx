@@ -34,7 +34,7 @@ export function CommitmentStatusBadge({ status }: CommitmentStatusBadgeProps) {
           Completed
         </AndamioBadge>
       );
-    case "ASSIGNMENT_REFUSED":
+    case "ASSIGNMENT_DENIED":
       return (
         <AndamioBadge variant="destructive" className="text-xs gap-1">
           <AlertIcon className="h-3 w-3" />

@@ -8,6 +8,10 @@
  *
  * Both components use a shared extension configuration to ensure
  * content created in the editor renders identically in the viewer.
+ *
+ * ContentViewer accepts Tiptap `JSONContent` via the `content` prop.
+ * Use `trustedHtml` only for developer-controlled HTML — never pass
+ * chain-sourced or user-submitted strings there (see issue #509).
  */
 
 // =============================================================================
@@ -40,15 +44,6 @@ export {
 // =============================================================================
 // LEGACY COMPONENTS - Deprecated, use ContentEditor/ContentViewer instead
 // =============================================================================
-
-/**
- * @deprecated Use ContentViewer instead
- */
-export {
-  RenderEditor,
-  RenderEditorSm,
-  RenderEditorLg,
-} from "./components/RenderEditor";
 
 /**
  * @deprecated Use EditorToolbar instead

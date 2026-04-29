@@ -1,11 +1,14 @@
 /**
  * ContentDisplay Component
  *
- * A styled wrapper around ContentViewer for displaying read-only content.
- * Handles Tiptap JSON, HTML strings, and stringified JSON automatically.
+ * A styled wrapper around ContentViewer for displaying read-only Tiptap
+ * JSON content. Adds container styling (border, background, padding)
+ * around the read-only viewer.
  *
- * NOTE: Consider using ContentViewer directly for simpler use cases.
- * ContentDisplay adds container styling (border, background, padding).
+ * String input is not accepted (issue #509) — chain-sourced or
+ * user-submitted strings must not silently reach the HTML parser. Use
+ * `ContentViewer` directly with its `trustedHtml` prop for
+ * developer-controlled HTML.
  *
  * @example
  * ```tsx
@@ -28,12 +31,12 @@ import { cn } from "~/lib/utils";
 
 export interface ContentDisplayProps {
   /**
-   * Content to display - can be:
-   * - Tiptap JSONContent object
-   * - HTML string
-   * - Stringified JSON
+   * Content to display — Tiptap `JSONContent` or an object shaped like
+   * one (e.g. `commitment.networkEvidence` which is typed as
+   * `Record<string, unknown>` upstream). String input is not accepted;
+   * Tiptap's schema is the authoritative validator for the object shape.
    */
-  content: string | JSONContent | Record<string, unknown> | null | undefined;
+  content: JSONContent | Record<string, unknown> | null | undefined;
 
   /**
    * Additional CSS classes for the container
@@ -75,6 +78,12 @@ export function ContentDisplay({
         className,
       )}
     >
+      {/*
+        Cast: `Record<string, unknown>` (e.g. `commitment.networkEvidence`) is
+        structurally assignable to `JSONContent`. Tiptap's schema validates
+        node shapes at render time, so malformed objects fail closed rather
+        than injecting arbitrary HTML (see #509 for the narrowed contract).
+      */}
       <ContentViewerCompact content={content as JSONContent} />
     </div>
   );

@@ -27,6 +27,7 @@ import type { Extensions } from "@tiptap/core";
 import { ImageBlock } from "../extensions/ImageBlock";
 import { ImageUpload, type ImageUploadOptions } from "../extensions/ImageUpload";
 import { MarkdownPaste } from "../extensions/MarkdownPaste";
+import { isAllowedLinkUri } from "./link-safety";
 
 /**
  * Extension configuration options
@@ -159,11 +160,20 @@ export function SharedExtensionKit(config: ExtensionConfig = {}): Extensions {
       alignments: ["left", "center", "right", "justify"],
     }),
 
-    // Links - behavior differs between edit and view modes
+    // Links - behavior differs between edit and view modes.
+    // `isAllowedUri` is the defense — it enforces an explicit app-level scheme
+    // allow-list (see `isAllowedLinkUri` in ./link-safety). The `protocols`
+    // option is NOT a restriction; Tiptap's internal isAllowedUri treats it as
+    // ADDITIVE to a hardcoded 10-scheme default. We pass our narrow list here
+    // only so linkifyjs's autolink detection matches what `isAllowedUri` will
+    // accept at render time — keeps UI autolink behavior consistent with the
+    // security allow-list. See #508.
     Link.configure({
       openOnClick: readonly,
       autolink: true,
       defaultProtocol: "https",
+      protocols: ["http", "https", "mailto"],
+      isAllowedUri: isAllowedLinkUri,
       HTMLAttributes: {
         class: EDITOR_STYLES.link,
         ...(readonly && {

@@ -25,9 +25,8 @@ import { hashNormalizedContent } from "~/lib/hashing";
 import type { JSONContent } from "@tiptap/core";
 import {
   AlertIcon,
-  SuccessIcon,
-  PendingIcon,
   LoadingIcon,
+  SuccessIcon,
 } from "~/components/icons";
 import { ConnectWalletPrompt } from "~/components/auth/connect-wallet-prompt";
 import { AccessTokenOnboarding } from "~/components/auth/access-token-onboarding";
@@ -39,6 +38,8 @@ import {
   UpdateTxStatusSection,
   UpdateEvidenceActions,
 } from "./assignment-commitment-shared";
+import { getBannerConfig } from "./assignment-commitment-banner";
+import type { CommitmentNetworkStatus } from "~/lib/assignment-status";
 
 /**
  * Assignment Commitment Component
@@ -148,7 +149,7 @@ export function AssignmentCommitment({
   const [evidenceContent, setEvidenceContent] = useState<JSONContent | null>(null);
   const [localEvidenceContent, setLocalEvidenceContent] = useState<JSONContent | null>(null);
 
-  // Revision flow state (for ASSIGNMENT_REFUSED)
+  // Revision flow state (for ASSIGNMENT_DENIED)
   const [isRevisionLocked, setIsRevisionLocked] = useState(false);
   const [revisionHash, setRevisionHash] = useState<string | null>(null);
 
@@ -435,8 +436,8 @@ export function AssignmentCommitment({
             />
           </div>
 
-        ) : commitment?.networkStatus === "ASSIGNMENT_REFUSED" ? (
-          /* Branch: Assignment refused — revision flow with Finalize step */
+        ) : commitment?.networkStatus === "ASSIGNMENT_DENIED" ? (
+          /* Branch: Assignment denied — revision flow with Finalize step */
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-destructive/10 border-destructive/30">
               <AlertIcon className="h-8 w-8 text-destructive shrink-0" />
@@ -629,59 +630,16 @@ export function AssignmentCommitment({
 }
 
 // =============================================================================
-// CommitmentStatusBanner — inline helper for the read-only branch
+// CommitmentStatusBanner — JSX wrapper for getBannerConfig
 // =============================================================================
+// The config function lives in `./assignment-commitment-banner.ts` so it can
+// be unit-tested without React rendering. See issue #520.
 
-interface BannerConfig {
-  icon: typeof SuccessIcon;
-  iconClass: string;
-  bannerClass: string;
-  title: string;
-  subtitle: string;
-}
-
-function getBannerConfig(networkStatus: string): BannerConfig | null {
-  switch (networkStatus) {
-    case "PENDING_APPROVAL":
-      return {
-        icon: PendingIcon,
-        iconClass: "text-secondary",
-        bannerClass: "bg-secondary/10 border-secondary/30",
-        title: "Pending Teacher Review",
-        subtitle: "Your assignment has been submitted and is awaiting review by your teacher.",
-      };
-    case "CREDENTIAL_CLAIMED":
-      return {
-        icon: SuccessIcon,
-        iconClass: "text-primary",
-        bannerClass: "bg-primary/10 border-primary/20",
-        title: "Credential Claimed",
-        subtitle: "You have claimed your credential for this assignment.",
-      };
-    case "IN_PROGRESS":
-      return {
-        icon: PendingIcon,
-        iconClass: "text-secondary",
-        bannerClass: "bg-secondary/10 border-secondary/30",
-        title: "In Progress",
-        subtitle: "Your assignment is in progress. Submit your work when ready.",
-      };
-    default:
-      // PENDING_TX_* states (except PENDING_TX_COMMIT which is handled in the submit flow)
-      if (networkStatus.startsWith("PENDING_TX") && networkStatus !== "PENDING_TX_COMMIT") {
-        return {
-          icon: LoadingIcon,
-          iconClass: "animate-spin text-secondary",
-          bannerClass: "bg-muted/30",
-          title: "Processing transaction...",
-          subtitle: "Your transaction is being confirmed on the blockchain.",
-        };
-      }
-      return null;
-  }
-}
-
-function CommitmentStatusBanner({ networkStatus }: { networkStatus: string }) {
+function CommitmentStatusBanner({
+  networkStatus,
+}: {
+  networkStatus: CommitmentNetworkStatus;
+}) {
   const config = getBannerConfig(networkStatus);
   if (!config) return null;
 

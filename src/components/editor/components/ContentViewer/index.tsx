@@ -5,6 +5,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { cn } from "~/lib/utils";
 import { ViewerExtensionKit } from "../../extension-kits/shared";
+import { parseContent } from "./parse-content";
 
 /**
  * ContentViewer Props
@@ -14,10 +15,23 @@ import { ViewerExtensionKit } from "../../extension-kits/shared";
  */
 export interface ContentViewerProps {
   /**
-   * Content to display.
-   * Can be Tiptap JSONContent, HTML string, or stringified JSON.
+   * Content to display — Tiptap `JSONContent` only.
+   *
+   * String input is not accepted (issue #509). Callers that need to render
+   * developer-controlled HTML should use `trustedHtml` instead.
    */
-  content: JSONContent | string | null | undefined;
+  content?: JSONContent | null;
+
+  /**
+   * Explicit HTML string for Tiptap's `setContent` HTML parser.
+   *
+   * ⚠️ SECURITY: ONLY pass developer-controlled, trusted HTML. NEVER pass
+   * chain-sourced, user-submitted, or API-response strings — use `content`
+   * with a structured `JSONContent` object instead. This prop exists as a
+   * deliberate escape hatch for markup authored by the app itself and is
+   * ignored when `content` is present.
+   */
+  trustedHtml?: string;
 
   /**
    * Size variant for typography scaling.
@@ -56,54 +70,6 @@ export interface ContentViewerProps {
 }
 
 /**
- * Parses content into valid Tiptap JSONContent format.
- *
- * Handles various input formats:
- * - JSONContent object (passed through)
- * - Stringified JSON (parsed)
- * - HTML string (used directly)
- * - Invalid content (returns null)
- */
-function parseContent(content: JSONContent | string | null | undefined): JSONContent | string | null {
-  if (!content) return null;
-
-  // Already JSONContent object
-  if (typeof content === "object") {
-    // Ensure it has the doc wrapper
-    if (content.type === "doc") {
-      return content;
-    }
-    // Wrap in doc if needed
-    return {
-      type: "doc",
-      content: Array.isArray(content) ? content : [content],
-    };
-  }
-
-  // String content - could be JSON or HTML
-  if (typeof content === "string") {
-    // Try to parse as JSON first
-    try {
-      const parsed = JSON.parse(content) as JSONContent;
-      if (parsed && typeof parsed === "object") {
-        if (parsed.type === "doc") {
-          return parsed;
-        }
-        return {
-          type: "doc",
-          content: Array.isArray(parsed) ? parsed : [parsed],
-        };
-      }
-    } catch {
-      // Not JSON, treat as HTML
-      return content;
-    }
-  }
-
-  return null;
-}
-
-/**
  * ContentViewer - Read-only display component for Tiptap content.
  *
  * Use this component for:
@@ -113,7 +79,8 @@ function parseContent(content: JSONContent | string | null | undefined): JSONCon
  * - Any read-only content display
  *
  * Features:
- * - Handles multiple content formats (JSON, HTML, stringified JSON)
+ * - Accepts Tiptap `JSONContent` only via `content`; opt-in `trustedHtml`
+ *   escape hatch for developer-controlled HTML (see #509)
  * - Proper hydration handling for SSR
  * - Clickable links (open in new tab)
  * - Code syntax highlighting
@@ -138,6 +105,7 @@ function parseContent(content: JSONContent | string | null | undefined): JSONCon
  */
 export function ContentViewer({
   content,
+  trustedHtml,
   size = "default",
   className,
   withBackground = false,
@@ -147,17 +115,21 @@ export function ContentViewer({
 }: ContentViewerProps) {
   const [isMounted, setIsMounted] = useState(false);
 
-  // Parse content once
+  // Parse structured content once. `trustedHtml` is not inspected here —
+  // the fallback happens downstream in the useEditor init and setContent
+  // effect, where `parsedContent ?? trustedHtml` picks JSON first.
   const parsedContent = useMemo(() => parseContent(content), [content]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Initialize read-only editor with polished styling
+  // Initialize read-only editor with polished styling.
+  // Prefer structured JSON; allow `trustedHtml` as the initial content when
+  // JSON is absent (rare, opt-in only).
   const editor = useEditor({
     extensions: ViewerExtensionKit(),
-    content: parsedContent ?? undefined,
+    content: parsedContent ?? trustedHtml ?? undefined,
     editable: false,
     editorProps: {
       attributes: {
@@ -220,19 +192,22 @@ export function ContentViewer({
     immediatelyRender: false,
   });
 
-  // Update content when prop changes
+  // Update content when prop changes.
+  // Prefer structured JSON via `parsedContent`; fall back to `trustedHtml`
+  // only when JSON is absent (developer-controlled HTML opt-in, see #509).
   useEffect(() => {
-    if (editor && parsedContent && isMounted) {
-      // Use queueMicrotask to avoid hydration issues
-      queueMicrotask(() => {
-        try {
-          editor.commands.setContent(parsedContent);
-        } catch (error) {
-          console.error("ContentViewer: Error setting content", error);
-        }
-      });
-    }
-  }, [editor, parsedContent, isMounted]);
+    if (!editor || !isMounted) return;
+    const next: JSONContent | string | null = parsedContent ?? trustedHtml ?? null;
+    if (!next) return;
+    // Use queueMicrotask to avoid hydration issues
+    queueMicrotask(() => {
+      try {
+        editor.commands.setContent(next);
+      } catch (error) {
+        console.error("ContentViewer: Error setting content", error);
+      }
+    });
+  }, [editor, parsedContent, trustedHtml, isMounted]);
 
   // SSR loading state - elegant skeleton
   if (!isMounted) {
@@ -251,8 +226,11 @@ export function ContentViewer({
     );
   }
 
-  // No content state
-  if (!parsedContent) {
+  // No content state — render emptyContent only when neither source is present.
+  // Both checks are required because `content` and `trustedHtml` are
+  // independent props: a caller passing only `trustedHtml` still has real
+  // content to render even though `parsedContent` is null.
+  if (!parsedContent && !trustedHtml) {
     return <>{emptyContent}</>;
   }
 

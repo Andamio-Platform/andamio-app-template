@@ -31,6 +31,7 @@ The Andamio Editor is designed to feel **uniquely beautiful and effective**. Whe
 | **Code Blocks** | Syntax highlighting via lowlight | ✅ Included |
 | **Links** | Insert/edit/remove links with URL validation | ✅ Included |
 | **Images** | Block-level images with alignment options | ✅ Included |
+| **Image Upload** | Paste (Ctrl/Cmd+V) or drag-drop images directly | ✅ Included |
 | **Text Alignment** | Left, center, right, justify | ✅ Included |
 | **Text Color** | Color picker for text styling | ✅ Included |
 | **Markdown Paste** | Paste markdown and auto-convert to rich text | ✅ Included |
@@ -52,7 +53,7 @@ The Andamio Editor is designed to feel **uniquely beautiful and effective**. Whe
 | **Blockquote** | Quote block | basic, full |
 | **Code Block** | Syntax-highlighted code | full |
 | **Link** | Insert/remove link | full |
-| **Image** | Insert image by URL | full |
+| **Image** | Insert image by URL or upload | full |
 | **Focus Mode** | Full-screen toggle | all (when enabled) |
 
 ### Viewer Features (ContentViewer)
@@ -262,6 +263,58 @@ toolbarConfig={{
 | Blockquote | `Ctrl/Cmd + Shift + B` |
 | Code Block | `Ctrl/Cmd + Alt + C` |
 
+## Image Upload
+
+The editor supports direct image upload via paste (Ctrl/Cmd+V) and drag-drop. Images are uploaded to Google Cloud Storage and inserted as `imageBlock` nodes.
+
+### Requirements
+
+- User must be authenticated (signed in)
+- Storage must be configured (see Environment Variables below)
+- Supported formats: PNG, JPEG, GIF, WebP
+- Maximum file size: 5MB
+
+### How It Works
+
+1. **Paste**: Copy an image (screenshot, file, from web) and press Ctrl/Cmd+V in the editor
+2. **Drag-drop**: Drag an image file from your file manager onto the editor
+3. The image uploads automatically with a loading overlay
+4. Once complete, the image appears at cursor position
+
+### Environment Variables
+
+```bash
+# Required for image upload
+STORAGE_PROVIDER=gcs
+STORAGE_BUCKET=your-bucket-name
+GCS_PROJECT_ID=your-gcp-project
+
+# Optional - uses ADC (Application Default Credentials) if not provided
+# ADC is automatic on Cloud Run, GCE, and other GCP environments
+GCS_CLIENT_EMAIL=storage@your-project.iam.gserviceaccount.com
+GCS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# Optional
+STORAGE_FOLDER=uploads  # Default folder for uploads
+```
+
+### Error Handling
+
+| Scenario | User Message |
+|----------|--------------|
+| Not signed in | "You must be signed in to upload images" |
+| Invalid file type | "Only PNG, JPEG, GIF, and WebP images are supported" |
+| File too large | "Image is too large. Maximum size is 5MB" |
+| Upload failed | "Failed to upload image. Please try again." |
+| Storage not configured | "Image upload is not available" |
+
+### Security
+
+- Files are stored with UUID-based names (user-provided filenames are ignored)
+- Authentication is required for all uploads
+- Files are validated server-side before storage
+- Public read access is controlled at the bucket level
+
 ## Markdown Support
 
 The editor supports Markdown input via paste and copy:
@@ -287,11 +340,25 @@ The editor supports Markdown input via paste and copy:
 
 ### Markdown Paste Behavior
 
-When you paste Markdown content:
-1. The editor automatically converts it to rich text
-2. Links become clickable
-3. Code blocks get syntax highlighting
-4. Lists are properly nested
+When you paste content from any source (VS Code, Obsidian, Notion, Slack,
+GitHub, a terminal `cat README.md`, etc.), the editor auto-detects whether
+the `text/plain` payload is Markdown and routes it through
+`markdownToTipTap()`:
+
+1. Markdown is converted to structured rich text — headings, lists, code
+   blocks with syntax highlighting, GFM tables, blockquotes, links.
+2. Pastes that don't look like Markdown fall through to the default HTML
+   paste pipeline, preserving web-page fidelity.
+3. Pasting inside a code block is verbatim — Markdown syntax stays as
+   literal source.
+4. Image / file paste continues to be handled by the `ImageUpload`
+   extension (Markdown paste explicitly bails on file clipboards).
+
+Detection is provided by the `MarkdownPaste` extension
+(`src/components/editor/extensions/MarkdownPaste/`). See
+[`docs/solutions/features/tiptap-markdown-paste.md`](../../../docs/solutions/features/tiptap-markdown-paste.md)
+for the design rationale and the asymmetric heuristic (strict when HTML is
+present, permissive when it isn't).
 
 ### HTML Support
 
@@ -376,14 +443,17 @@ Both ContentEditor and ContentViewer use a shared extension configuration to ens
 ```
 SharedExtensionKit
 ├── StarterKit (core Tiptap functionality)
-├── Markdown (paste/copy markdown support)
+├── Markdown (copy-out-as-markdown via transformCopiedText)
 ├── Underline
 ├── TextStyle + Color
 ├── TextAlign
 ├── Link (openOnClick differs by mode)
 ├── BulletList + OrderedList + ListItem
 ├── ImageBlock (custom block-level images)
-└── CodeBlockLowlight (syntax highlighting)
+├── CodeBlockLowlight (syntax highlighting)
+├── Table suite (Table, TableRow, TableCell, TableHeader)
+├── ImageUpload (editing mode only — paste/drop file uploads)
+└── MarkdownPaste (editing mode only — auto-detect markdown on paste)
 ```
 
 ### Custom Extensions
@@ -393,6 +463,17 @@ SharedExtensionKit
 - Width/height attributes
 - Alt text
 - React NodeView rendering
+
+**ImageUpload** - Paste/drop image file handler. Intercepts file clipboards
+and dropped images, uploads via `onUpload` callback, inserts as `imageBlock`.
+
+**MarkdownPaste** - Paste-time markdown auto-detection and conversion.
+Hooks `handlePaste` (unlike `tiptap-markdown`'s `transformPastedText` which
+only hooks `clipboardTextParser` and silently misses the common case), runs
+a strong/weak-signal heuristic on `text/plain`, and routes detected
+markdown through `markdownToTiptap()`. Falls through to default HTML paste
+for non-markdown content. Skips verbatim inside code blocks and when
+`ImageUpload` owns the clipboard.
 
 ## Styling
 
@@ -416,7 +497,6 @@ import {
   useAndamioEditor,
   ContentEditor,
   AndamioFixedToolbar,
-  RenderEditor,
 } from "~/components/editor";
 import { useFullscreenEditor } from "~/components/editor/hooks/use-fullscreen-editor";
 import { FullscreenEditorWrapper } from "~/components/editor/components/FullscreenEditorWrapper";
@@ -429,9 +509,6 @@ const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreenEditor()
   <AndamioFixedToolbar editor={editor} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
   <ContentEditor editor={editor} height="500px" isFullscreen={isFullscreen} />
 </FullscreenEditorWrapper>
-
-// Viewing
-{editor && <RenderEditor content={editor.getJSON()} />}
 
 // Saving
 const json = editor?.getJSON();
@@ -470,7 +547,6 @@ src/components/editor/
 │   │   └── EditorToolbar.tsx         # Toolbar component
 │   ├── ContentViewer/
 │   │   └── index.tsx                 # Viewer component
-│   ├── RenderEditor/                 # [DEPRECATED]
 │   ├── FullscreenEditorWrapper/      # [DEPRECATED - built into ContentEditor]
 │   └── menus/
 │       ├── AndamioFixedToolbar/      # [DEPRECATED - use EditorToolbar]
@@ -485,10 +561,12 @@ src/components/editor/
 ├── extensions/
 │   ├── Image/
 │   │   └── Image.ts
-│   └── ImageBlock/
-│       ├── ImageBlock.ts
-│       └── components/
-│           └── ImageBlockView.tsx
+│   ├── ImageBlock/
+│   │   ├── ImageBlock.ts
+│   │   └── components/
+│   │       └── ImageBlockView.tsx
+│   └── ImageUpload/
+│       └── ImageUpload.ts              # Paste/drop upload extension
 ├── hooks/
 │   ├── index.ts
 │   ├── use-andamio-editor.ts         # [DEPRECATED - use useContentEditor]
@@ -549,14 +627,10 @@ npm install @tiptap/extension-task-list @tiptap/extension-task-item
 - Progress tracking visualization
 - Nested task lists
 
-#### 3. File Uploads / Drag & Drop Images
-**Why**: Currently images require URL input; direct upload would significantly improve UX.
+#### 3. ~~File Uploads / Drag & Drop Images~~ ✅ IMPLEMENTED
+**Status**: Completed in PR #XXX (2026-02-27)
 
-**Implementation approach**:
-- Integrate with cloud storage (S3, Cloudflare R2, etc.)
-- Add drag-and-drop zone
-- Show upload progress
-- Thumbnail preview before upload
+See [Image Upload](#image-upload) section above for usage and configuration.
 
 #### 4. Bubble Menu for Text Selection
 **Why**: Contextual formatting toolbar that appears on text selection—more intuitive than fixed toolbar.
@@ -659,7 +733,7 @@ npm install @tiptap/extension-youtube
 |---------|--------|--------|----------|
 | Tables | High | Medium | 🔴 High |
 | Task Lists | High | Low | 🔴 High |
-| File Upload | High | High | 🔴 High |
+| ~~File Upload~~ | ~~High~~ | ~~High~~ | ✅ Done |
 | Bubble Menu | Medium | Low | 🔴 High |
 | Highlight | Medium | Low | 🟡 Medium |
 | Sub/Superscript | Medium | Low | 🟡 Medium |
